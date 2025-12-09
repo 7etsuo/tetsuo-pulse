@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="DTLS configuration constants and secure defaults.">
 <polygon fill="#999999" stroke="#666666" points="110,-74 0,-74 0,-55 110,-55 110,-74"/>
 <text text-anchor="middle" x="55" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLSConfig.h</text>
 </a>

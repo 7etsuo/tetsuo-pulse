@@ -4,25 +4,33 @@
 /**
  * @file SocketRetry.h
  * @ingroup utilities
- * @brief Generic retry framework with exponential backoff and jitter.
+ * @brief Generic retry framework with exponential backoff and jitter for transient failures.
  *
- * Provides a generic retry mechanism with exponential backoff and jitter.
- * Can be used for any operation that may fail transiently.
+ * Standalone utility module providing configurable retry logic for operations prone to
+ * temporary failures, such as network I/O, DNS resolution, or resource acquisition.
  *
- * Features:
- * - Configurable exponential backoff (initial delay, max delay, multiplier)
- * - Jitter to prevent thundering herd
- * - Pluggable retry decision callback
- * - Attempt counting and statistics
+ * Key capabilities:
+ * - Exponential backoff with configurable initial delay, multiplier, max cap.
+ * - Randomized jitter to avoid synchronized retries (thundering herd prevention).
+ * - Optional custom retry decision based on error codes and attempt count.
+ * - Built-in statistics tracking for monitoring and debugging.
  *
- * Thread Safety:
- * - SocketRetry_T instances are NOT thread-safe
- * - Multiple instances can be used from different threads
- * - Policy configuration functions are thread-safe
+ * Integrates with @ref foundation module for exception handling and memory management.
+ * Commonly used in conjunction with @ref connection_mgmt (e.g., SocketReconnect) and
+ * @ref core_io modules for robust I/O operations.
  *
- * @see SocketRetry_new() for creating retry instances.
- * @see SocketRetry_execute() for running operations with retry.
- * @see SocketRetry_Policy for configuration options.
+ * Thread safety notes:
+ * - SocketRetry_T instances: NOT thread-safe (internal state mutation).
+ * - Multiple instances: Safe across threads.
+ * - Pure functions (e.g., policy helpers, calculate_delay): Thread-safe.
+ *
+ * @see SocketRetry_T opaque context type.
+ * @see SocketRetry_Policy configuration structure.
+ * @see SocketRetry_execute() primary execution function.
+ * @see SocketRetry_calculate_delay() for manual backoff computation.
+ * @see @ref utilities "Utility Modules" group.
+ * @see docs/ERROR_HANDLING.md for exception patterns.
+ * @see SocketError_is_retryable_errno() for common retry decisions.
  */
 
 #include <stddef.h>
@@ -30,10 +38,37 @@
 
 #include "core/Except.h"
 
+/**
+ * @brief Opaque handle for a retry context.
+ * @ingroup utilities
+ *
+ * Manages retry policy, state, statistics, and backoff logic for retryable operations.
+ * Created via SocketRetry_new(), used in execute() functions, and freed with SocketRetry_free().
+ *
+ * Internal implementation uses Arena for memory management and tracks execution metrics.
+ * Not thread-safe; designed for single-threaded use per instance.
+ *
+ * @see SocketRetry_new() for allocation.
+ * @see SocketRetry_execute() for usage.
+ * @see SocketRetry_Stats for performance metrics.
+ */
 #define T SocketRetry_T
 typedef struct T *T;
 
-/* Exception for retry failures */
+/**
+ * @brief Exception raised on critical retry operation failures.
+ * @ingroup utilities
+ *
+ * Thrown in cases such as:
+ * - Memory allocation failure during context creation.
+ * - Invalid policy parameters (e.g., negative delays).
+ * - Maximum retry attempts reached without success.
+ *
+ * @see Except_T base exception type.
+ * @see SocketRetry_new() for context creation.
+ * @see SocketRetry_execute() for retry execution.
+ * @see docs/ERROR_HANDLING.md for handling patterns.
+ */
 extern const Except_T SocketRetry_Failed;
 
 /* ============================================================================
@@ -42,17 +77,24 @@ extern const Except_T SocketRetry_Failed;
  */
 
 /**
- * SocketRetry_Policy - Retry behavior configuration
+ * @brief Configuration structure for retry policy.
+ * @ingroup utilities
  *
- * Controls retry timing, limits, and backoff behavior.
+ * Defines parameters for exponential backoff with jitter, controlling retry timing,
+ * attempt limits, and backoff behavior.
+ *
+ * Default values can be overridden via compile-time macros or SocketRetry_policy_defaults().
+ *
+ * @see SocketRetry_new() to create retry context with policy.
+ * @see SocketRetry_set_policy() to update policy on existing context.
  */
 typedef struct SocketRetry_Policy
 {
   int max_attempts;     /**< Maximum retry attempts (default: 3) */
-  int initial_delay_ms; /**< Initial backoff delay (default: 100ms) */
-  int max_delay_ms;     /**< Maximum backoff delay cap (default: 30000ms) */
+  int initial_delay_ms; /**< Initial backoff delay in ms (default: 100ms) */
+  int max_delay_ms;     /**< Maximum backoff delay cap in ms (default: 30000ms) */
   double multiplier;    /**< Backoff multiplier per attempt (default: 2.0) */
-  double jitter;        /**< Jitter factor 0.0-1.0 (default: 0.25) */
+  double jitter;        /**< Jitter factor 0.0-1.0 to randomize delays (default: 0.25) */
 } SocketRetry_Policy;
 
 /* Default policy values - can be overridden at compile time */
@@ -86,39 +128,58 @@ typedef struct SocketRetry_Policy
  */
 
 /**
- * SocketRetry_Operation - Operation to retry
- * @context: User-provided context
- * @attempt: Current attempt number (1-based)
+ * @brief Callback type for the operation to be retried.
+ * @ingroup utilities
+ * @param context User-provided context pointer, passed unchanged from SocketRetry_execute().
+ * @param attempt Current attempt number (1-based, starts at 1).
+ * @return 0 on success, non-zero error code (typically errno) on failure.
  *
- * Returns: 0 on success, non-zero error code on failure
+ * This callback implements the retryable operation. It will be invoked repeatedly
+ * until it returns 0 (success), the maximum attempts are reached, or the should_retry
+ * callback decides against further retries.
  *
- * The operation will be called repeatedly until it succeeds (returns 0),
- * max_attempts is reached, or should_retry returns 0.
+ * @note The operation should be idempotent or handle partial states appropriately.
+ * @note Error codes should be consistent with system errors (e.g., errno values).
  *
- * Example:
- *   int connect_op(void *ctx, int attempt) {
- *     ConnectionCtx *c = ctx;
- *     return connect(c->fd, c->addr, c->addrlen) < 0 ? errno : 0;
- *   }
+ * Example usage for a connection attempt:
+ * @code{c}
+ * int connect_operation(void *ctx, int attempt) {
+ *   ConnectionCtx *conn = (ConnectionCtx *)ctx;
+ *   int res = connect(conn->fd, conn->addr, conn->addrlen);
+ *   return (res < 0) ? errno : 0;
+ * }
+ * @endcode
+ *
+ * @see SocketRetry_ShouldRetry for deciding on retries.
+ * @see SocketRetry_execute() for execution context.
  */
 typedef int (*SocketRetry_Operation) (void *context, int attempt);
 
 /**
- * SocketRetry_ShouldRetry - Decide whether to retry after failure
- * @error: Error code returned by operation
- * @attempt: Attempt number that failed (1-based)
- * @context: User-provided context
+ * @brief Callback type to decide whether to retry after an operation failure.
+ * @ingroup utilities
+ * @param error Non-zero error code returned by the operation.
+ * @param attempt Attempt number that just failed (1-based).
+ * @param context User-provided context pointer, same as passed to operation.
+ * @return 1 to continue retrying, 0 to stop and propagate the error.
  *
- * Returns: 1 to retry, 0 to stop retrying
+ * This optional callback allows custom logic to determine retry eligibility based
+ * on error type, attempt count, or context-specific state. If not provided (NULL),
+ * the framework retries all non-zero error returns up to max_attempts.
  *
- * Use to implement custom retry logic based on error type.
- * If NULL is passed to SocketRetry_execute(), all non-zero errors
- * will be retried up to max_attempts.
+ * Typical usage filters retryable errors like timeouts or temporary network issues.
  *
- * Example:
- *   int should_retry_connect(int err, int attempt, void *ctx) {
- *     return SocketError_is_retryable_errno(err);
- *   }
+ * Example for connection retries:
+ * @code{c}
+ * int should_retry_connect(int err, int attempt, void *ctx) {
+ *   (void)ctx; (void)attempt;  // Unused parameters
+ *   return SocketError_is_retryable_errno(err);
+ * }
+ * @endcode
+ *
+ * @see SocketError_is_retryable_errno() for common retryable errors.
+ * @see SocketRetry_execute() for integration.
+ * @see SocketRetry_Operation for the operation being retried.
  */
 typedef int (*SocketRetry_ShouldRetry) (int error, int attempt, void *context);
 
@@ -128,14 +189,23 @@ typedef int (*SocketRetry_ShouldRetry) (int error, int attempt, void *context);
  */
 
 /**
- * SocketRetry_Stats - Statistics from retry execution
+ * @brief Structure holding statistics from a retry execution.
+ * @ingroup utilities
+ *
+ * Captures metrics from the last SocketRetry_execute() or SocketRetry_execute_simple() call,
+ * useful for monitoring, logging, or performance analysis.
+ *
+ * Fields are updated after each execution and can be reset via SocketRetry_reset().
+ *
+ * @see SocketRetry_get_stats() to retrieve these statistics.
+ * @see SocketRetry_reset() to clear for next use.
  */
 typedef struct SocketRetry_Stats
 {
-  int attempts;           /**< Total attempts made */
-  int last_error;         /**< Last error code (0 if succeeded) */
-  int64_t total_delay_ms; /**< Total time spent in backoff delays */
-  int64_t total_time_ms;  /**< Total execution time including operations */
+  int attempts;           /**< Total number of operation attempts made (including successful one if applicable). */
+  int last_error;         /**< Last error code from operation (0 if succeeded, else error code). */
+  int64_t total_delay_ms; /**< Cumulative time spent in backoff delays between attempts (ms). */
+  int64_t total_time_ms;  /**< Total wall-clock time from start to end of execution, including ops and delays (ms). */
 } SocketRetry_Stats;
 
 /* ============================================================================
@@ -144,20 +214,36 @@ typedef struct SocketRetry_Stats
  */
 
 /**
- * SocketRetry_new - Create a new retry context
- * @policy: Retry policy (NULL for defaults)
+ * @brief Create a new retry context instance.
+ * @ingroup utilities
+ * @param policy Optional retry policy configuration (NULL uses defaults).
  *
- * Returns: New retry context
- * Raises: SocketRetry_Failed on allocation failure or invalid policy
- * parameters Thread-safe: Yes (creates new instance)
+ * Allocates and initializes a new SocketRetry_T instance with the given policy.
+ * If policy is NULL, default values are applied (see SocketRetry_policy_defaults()).
+ *
+ * @return New opaque SocketRetry_T instance, or NULL on failure.
+ * @throws SocketRetry_Failed if memory allocation fails or policy parameters are invalid (e.g., negative values).
+ * @threadsafe Yes - creation is thread-safe and produces independent instances.
+ *
+ * @see SocketRetry_policy_defaults() for default policy values.
+ * @see SocketRetry_free() for destruction.
+ * @see SocketRetry_set_policy() to modify policy after creation.
  */
 extern T SocketRetry_new (const SocketRetry_Policy *policy);
 
 /**
- * SocketRetry_free - Free a retry context
- * @retry: Pointer to context (will be set to NULL)
+ * @brief Free a retry context instance.
+ * @ingroup utilities
+ * @param retry Pointer to the SocketRetry_T instance (set to NULL on success).
  *
- * Thread-safe: No
+ * Releases all resources associated with the retry context, including internal state and statistics.
+ * The pointer is set to NULL to prevent use-after-free.
+ *
+ * @note Must be called to avoid memory leaks; arenas used internally are cleared.
+ * @threadsafe No - instance must not be accessed concurrently.
+ *
+ * @see SocketRetry_new() for creation.
+ * @see Arena_T for memory management details.
  */
 extern void SocketRetry_free (T *retry);
 
@@ -167,39 +253,60 @@ extern void SocketRetry_free (T *retry);
  */
 
 /**
- * SocketRetry_execute - Execute operation with retries
- * @retry: Retry context
- * @operation: Operation to execute (must not be NULL)
- * @should_retry: Retry decision callback (NULL = retry all errors)
- * @context: User context passed to callbacks
+ * @brief Execute a retryable operation with exponential backoff.
+ * @ingroup utilities
+ * @param retry Initialized retry context holding policy and state.
+ * @param operation Non-NULL callback implementing the retryable operation.
+ * @param should_retry Optional callback to decide retry eligibility (NULL retries all errors).
+ * @param context Arbitrary user context passed to operation and should_retry callbacks.
+ * @return 0 if operation succeeded eventually, otherwise the last error code returned by operation.
  *
- * Returns: 0 on success, last error code on failure
- * Thread-safe: No
+ * Performs the operation callback repeatedly according to the policy:
+ * - Initial attempt (attempt=1) without delay.
+ * - On failure (non-zero return), optional should_retry check.
+ * - If retry approved, sleep with jittered exponential backoff.
+ * - Continues until success, max_attempts reached, or should_retry denies.
  *
- * Executes operation repeatedly with exponential backoff until:
- * - Operation succeeds (returns 0)
- * - max_attempts is reached
- * - should_retry returns 0
+ * Backoff formula:
+ * - base_delay = initial_delay_ms * pow(multiplier, attempt-1)
+ * - capped_delay = min(base_delay, max_delay_ms)
+ * - jittered_delay = capped_delay * (1 + jitter * (2*rand() - 1))  [full jitter]
  *
- * Backoff delay calculation:
- *   delay = min(initial * multiplier^attempt, max_delay)
- *   jittered_delay = delay * (1 + jitter * (2*random - 1))
+ * Updates internal statistics accessible via SocketRetry_get_stats().
+ * Does not throw exceptions; errors are returned as codes.
+ *
+ * @note Delays use monotonic clock for accuracy; interrupted sleeps resume.
+ * @note Context pointer remains unchanged across calls.
+ * @threadsafe No - modifies retry instance state.
+ *
+ * @see SocketRetry_execute_simple() for simplified version without should_retry.
+ * @see SocketRetry_Operation for callback details.
+ * @see SocketRetry_ShouldRetry for custom retry logic.
+ * @see SocketRetry_Policy for backoff configuration.
+ * @see Socket_get_monotonic_ms() for timing implementation.
  */
 extern int SocketRetry_execute (T retry, SocketRetry_Operation operation,
                                 SocketRetry_ShouldRetry should_retry,
                                 void *context);
 
 /**
- * SocketRetry_execute_simple - Execute operation with default retry logic
- * @retry: Retry context
- * @operation: Operation to execute
- * @context: User context passed to operation
+ * @brief Simplified retry execution that retries all operation failures.
+ * @ingroup utilities
+ * @param retry Initialized retry context.
+ * @param operation Non-NULL retryable operation callback.
+ * @param context User context passed to the operation.
+ * @return 0 on eventual success, last error code on final failure.
  *
- * Returns: 0 on success, last error code on failure
- * Thread-safe: No
+ * Convenience wrapper around SocketRetry_execute() with should_retry set to NULL,
+ * meaning all non-zero returns from operation are considered retryable up to max_attempts.
  *
- * Convenience function that retries all non-zero returns.
- * Equivalent to SocketRetry_execute(retry, op, NULL, ctx).
+ * Ideal for simple cases without custom error filtering.
+ *
+ * @note Updates statistics in the retry context.
+ * @threadsafe No - modifies instance state.
+ *
+ * @see SocketRetry_execute() for full control with should_retry callback.
+ * @see SocketRetry_Operation for operation requirements.
  */
 extern int SocketRetry_execute_simple (T retry,
                                        SocketRetry_Operation operation,
@@ -211,43 +318,78 @@ extern int SocketRetry_execute_simple (T retry,
  */
 
 /**
- * SocketRetry_get_stats - Get statistics from last execution
- * @retry: Retry context
- * @stats: Output structure for statistics
+ * @brief Retrieve statistics from the most recent retry execution.
+ * @ingroup utilities
+ * @param retry Retry context to query.
+ * @param stats Pointer to SocketRetry_Stats structure to populate.
  *
- * Thread-safe: No
+ * Copies current statistics into the provided structure. Stats reflect the last
+ * SocketRetry_execute() or SocketRetry_execute_simple() call, or zeros if none executed.
  *
- * Returns statistics from the most recent SocketRetry_execute() call.
+ * @note Does not reset statistics; use SocketRetry_reset() for that.
+ * @note stats must not be NULL.
+ * @threadsafe No - reads instance state, but concurrent modifications may race.
+ *
+ * @see SocketRetry_Stats for field details.
+ * @see SocketRetry_reset() to clear stats.
+ * @see SocketRetry_execute() which updates stats.
  */
 extern void SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats);
 
 /**
- * SocketRetry_reset - Reset retry context for reuse
- * @retry: Retry context
+ * @brief Reset retry context state for reuse.
+ * @ingroup utilities
+ * @param retry Retry context to reset.
  *
- * Thread-safe: No
+ * Clears accumulated statistics, attempt counters, and internal state,
+ * preparing the context for a new execution sequence.
  *
- * Clears statistics and prepares context for new execution.
- * Policy settings are preserved.
+ * Policy configuration remains unchanged.
+ *
+ * @note Does not free or deallocate the context; use SocketRetry_free() for that.
+ * @threadsafe No - modifies instance state.
+ *
+ * @see SocketRetry_get_stats() for pre-reset statistics.
+ * @see SocketRetry_execute() for next use.
+ * @see SocketRetry_set_policy() if policy change needed.
  */
 extern void SocketRetry_reset (T retry);
 
 /**
- * SocketRetry_get_policy - Get current policy
- * @retry: Retry context
- * @policy: Output structure for policy
+ * @brief Retrieve the current policy configuration from retry context.
+ * @ingroup utilities
+ * @param retry Retry context to query.
+ * @param policy Pointer to SocketRetry_Policy structure to fill with current settings.
  *
- * Thread-safe: No
+ * Copies the active policy (set at creation or via set_policy) into the provided structure.
+ *
+ * @note policy must not be NULL.
+ * @note Returned policy reflects effective values, including defaults if not customized.
+ * @threadsafe No - but read-only operation; safe if no concurrent modifications.
+ *
+ * @see SocketRetry_Policy for structure details.
+ * @see SocketRetry_set_policy() for updating.
+ * @see SocketRetry_policy_defaults() for defaults.
  */
 extern void SocketRetry_get_policy (const T retry, SocketRetry_Policy *policy);
 
 /**
- * SocketRetry_set_policy - Update policy
- * @retry: Retry context
- * @policy: New policy settings
+ * @brief Update the policy configuration of an existing retry context.
+ * @ingroup utilities
+ * @param retry Retry context to update.
+ * @param policy New policy settings to apply (NULL not allowed).
  *
- * Raises: SocketRetry_Failed on NULL arguments or invalid policy parameters
- * Thread-safe: No
+ * Reconfigures the retry behavior dynamically. Validates parameters and applies
+ * changes immediately for future executions. Does not affect ongoing executions.
+ *
+ * @throws SocketRetry_Failed if retry or policy is NULL, or policy contains invalid values
+ * (e.g., negative delays, multiplier <=0, jitter <0 or >1).
+ * @threadsafe No - modifies instance state; call only when not executing.
+ *
+ * @note Existing statistics and state remain; use SocketRetry_reset() to start fresh.
+ * @see SocketRetry_Policy for valid parameter ranges.
+ * @see SocketRetry_get_policy() to verify changes.
+ * @see SocketRetry_new() which sets initial policy.
  */
 extern void SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy);
 
@@ -257,30 +399,52 @@ extern void SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy);
  */
 
 /**
- * SocketRetry_policy_defaults - Initialize policy with defaults
- * @policy: Policy structure to initialize
+ * @brief Initialize a SocketRetry_Policy structure with recommended defaults.
+ * @ingroup utilities
+ * @param policy Pointer to policy structure to populate.
  *
- * Thread-safe: Yes
+ * Sets conservative defaults suitable for most transient failure scenarios:
+ * - max_attempts = SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS (3)
+ * - initial_delay_ms = SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS (100)
+ * - max_delay_ms = SOCKET_RETRY_DEFAULT_MAX_DELAY_MS (30000)
+ * - multiplier = SOCKET_RETRY_DEFAULT_MULTIPLIER (2.0)
+ * - jitter = SOCKET_RETRY_DEFAULT_JITTER (0.25)
  *
- * Fills policy with recommended defaults:
- * - max_attempts: 3
- * - initial_delay_ms: 100ms
- * - max_delay_ms: 30000ms (30s)
- * - multiplier: 2.0
- * - jitter: 0.25 (25%)
+ * These can be overridden before passing to SocketRetry_new().
+ *
+ * @note policy must not be NULL.
+ * @threadsafe Yes - pure function, no side effects.
+ *
+ * @see SocketRetry_Policy for field details.
+ * @see Compile-time macros (e.g., SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS) for customization.
+ * @see SocketRetry_new() for using the policy.
  */
 extern void SocketRetry_policy_defaults (SocketRetry_Policy *policy);
 
 /**
- * SocketRetry_calculate_delay - Calculate backoff delay for attempt
- * @policy: Policy to use for calculation
- * @attempt: Attempt number (1-based)
+ * @brief Calculate the jittered backoff delay for a specific attempt.
+ * @ingroup utilities
+ * @param policy Policy containing backoff parameters.
+ * @param attempt Attempt number for which to compute delay (1-based).
+ * @return Computed delay in milliseconds (>=0), or -1 on invalid input.
  *
- * Returns: Delay in milliseconds (with jitter applied)
- * Thread-safe: Yes
+ * Standalone utility to compute the backoff delay as used in execute() for preview,
+ * logging, or integration with external schedulers/timers.
  *
- * Utility function to calculate delay without executing retries.
- * Useful for logging or external scheduling.
+ * Formula:
+ * - base = initial_delay_ms * pow(multiplier, attempt - 1)
+ * - capped = min(base, max_delay_ms)
+ * - jittered = capped * (1 + jitter * (2 * rand_uniform() - 1))  // full jitter range [-jitter, +jitter]
+ *
+ * Random jitter requires seeding; internally uses high-quality RNG.
+ *
+ * @note attempt <=0 or > SOCKET_RETRY_MAX_ATTEMPTS returns -1.
+ * @note policy NULL returns -1.
+ * @threadsafe Yes - pure function, but rand() may not be if unseeded.
+ *
+ * @see SocketRetry_Policy for parameter effects.
+ * @see SocketRetry_execute() for runtime usage.
+ * @see rand() or equivalent for jitter randomness.
  */
 extern int SocketRetry_calculate_delay (const SocketRetry_Policy *policy,
                                         int attempt);

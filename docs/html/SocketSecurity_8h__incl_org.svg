@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Centralized security configuration, limits, and validation utilities.">
 <polygon fill="#999999" stroke="#666666" points="190.5,-129 100.5,-129 100.5,-110 190.5,-110 190.5,-129"/>
 <text text-anchor="middle" x="145.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketSecurity.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="77,-74 0,-74 0,-55 77,-55 77,-74"/>
 <text text-anchor="middle" x="38.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="472.5,-74 366.5,-74 366.5,-55 472.5,-55 472.5,-74"/>
 <text text-anchor="middle" x="419.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

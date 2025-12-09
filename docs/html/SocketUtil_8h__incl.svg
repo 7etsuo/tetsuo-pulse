@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Consolidated utility header for logging, metrics, events, and error handling.">
 <polygon fill="#999999" stroke="#666666" points="352.5,-184 281.5,-184 281.5,-165 352.5,-165 352.5,-184"/>
 <text text-anchor="middle" x="317" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketUtil.h</text>
 </a>
@@ -210,7 +210,7 @@ var sectionId = 'dynsection-0';
 <!-- Node10 -->
 <g id="Node000010" class="node">
 <title>Node10</title>
-<g id="a_Node000010"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000010"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="132,-129 60,-129 60,-110 132,-110 132,-129"/>
 <text text-anchor="middle" x="96" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -228,7 +228,7 @@ var sectionId = 'dynsection-0';
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000011"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="147.5,-74 70.5,-74 70.5,-55 147.5,-55 147.5,-74"/>
 <text text-anchor="middle" x="109" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -246,7 +246,7 @@ var sectionId = 'dynsection-0';
 <!-- Node13 -->
 <g id="Node000013" class="node">
 <title>Node13</title>
-<g id="a_Node000013"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000013"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="370,-129 264,-129 264,-110 370,-110 370,-129"/>
 <text text-anchor="middle" x="317" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

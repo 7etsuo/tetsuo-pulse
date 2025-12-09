@@ -29,32 +29,97 @@
 #include "core/SocketConfig.h" /* Defines SocketTimeouts_T */
 
 /* Common exception types (Except_T is defined in Except.h) */
+
+/**
+ * @brief General TCP socket operation failure exception.
+ * @ingroup core_io
+ *
+ * See Socket.h for detailed documentation on when this is raised,
+ * retryability, and error categorization.
+ *
+ * @see Socket_Failed in @ref Socket.h "Socket.h" for full details.
+ */
 extern const Except_T Socket_Failed;
+
+/**
+ * @brief General UDP/datagram socket operation failure exception.
+ * @ingroup core_io
+ *
+ * Raised for errors specific to datagram sockets such as:
+ * - Invalid multicast group addresses
+ * - Broadcast permission failures
+ * - TTL/hop limit setting errors
+ *
+ * Category: NETWORK
+ * Retryable: Depends on errno
+ *
+ * @see SocketDgram.h for detailed documentation.
+ * @see Socket_error_is_retryable() for retryability checking.
+ */
 extern const Except_T SocketDgram_Failed;
+
+/**
+ * @brief General failure in shared socket common utilities.
+ * @ingroup core_io
+ *
+ * Category: NETWORK or APPLICATION
+ * Retryable: Depends on errno - use Socket_error_is_retryable() to check
+ *
+ * Raised for errors in common functions such as:
+ * - Address resolution failures (getaddrinfo errors)
+ * - Hostname/port validation failures
+ * - Socket option setting failures (setsockopt)
+ * - iovec manipulation errors (overflow, invalid parameters)
+ * - Bind/connect helper failures
+ * - Multicast join/leave errors
+ *
+ * Always check errno via Socket_geterrno() for specific error details.
+ *
+ * @see Socket_resolve_address() for address resolution that may raise this.
+ * @see SocketCommon_validate_port() for port validation.
+ * @see SocketCommon_set_option_int() for option setting.
+ * @see SocketCommon_calculate_total_iov_len() for iovec operations.
+ * @see Socket_error_is_retryable() for retry decisions.
+ * @see Socket_geterrno() for error code access.
+ * @see docs/ERROR_HANDLING.md for exception handling patterns.
+ */
 extern const Except_T SocketCommon_Failed;
 
 /**
- * @brief SocketCommon_setup_hints - Initialize addrinfo hints structure
+ * @brief Initialize addrinfo hints structure for resolution.
  * @ingroup core_io
- * @hints: Hints structure to initialize
- * @socktype: Socket type (SOCK_STREAM or SOCK_DGRAM)
- * @flags: Additional flags (0 for connect/sendto, AI_PASSIVE for bind)
+ * @param hints Hints structure to initialize (must be zeroed first with memset).
+ * @param socktype Socket type (SOCK_STREAM or SOCK_DGRAM).
+ * @param flags Additional flags (0 for connect/sendto, AI_PASSIVE for bind).
+ * @note Sets ai_family to AF_UNSPEC for dual-stack support, ai_socktype, ai_protocol=0, ai_flags.
+ * @see SocketCommon_resolve_address() for using initialized hints in resolution.
+ * @see getaddrinfo(3) for full addrinfo hints documentation.
  */
 void SocketCommon_setup_hints (struct addrinfo *hints, int socktype,
                                int flags);
 
 /**
- * @brief SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure
+ * @brief Resolve hostname/port to addrinfo structure using getaddrinfo wrapper.
  * @ingroup core_io
- * @host: Hostname or IP address (NULL for wildcard)
- * @port: Port number (1 to SOCKET_MAX_PORT)
- * @hints: Addrinfo hints structure
- * @res: Output pointer to resolved addrinfo
- * @exception_type: Exception type to raise on failure
- * @socket_family: Socket family to match (AF_UNSPEC if none)
- * @use_exceptions: If true, raise exceptions; if false, return error codes
- * Returns: 0 on success, -1 on failure (if not using exceptions)
- * Raises: Specified exception type on failure (if using exceptions)
+ * @param host Hostname or IP address (NULL for wildcard/any).
+ * @param port Port number (1 to SOCKET_MAX_PORT).
+ * @param hints Addrinfo hints structure (prepared via SocketCommon_setup_hints()).
+ * @param res Output pointer to resolved addrinfo list (caller must free with freeaddrinfo()).
+ * @param exception_type Exception type to raise on failure.
+ * @param socket_family Preferred socket family to match (AF_UNSPEC for any).
+ * @param use_exceptions If true, raise exceptions on failure; if false, return error codes and set errno.
+ * @return 0 on success, -1 on failure (if not using exceptions).
+ * @throws Specified exception_type on resolution failure (getaddrinfo errors, invalid port, etc.).
+ * @note Uses global DNS resolver (SocketCommon_get_dns_resolver()) for timeout guarantees if hostname provided.
+ * @note Filters resolved addresses to match socket_family if specified (e.g., AF_INET only).
+ * @note Caller responsible for validating and freeing the addrinfo chain.
+ * @note Thread-safe: Yes (uses thread-local error buffers).
+ * @see SocketCommon_setup_hints() for preparing hints structure.
+ * @see Socket_bind() and Socket_connect() which use this internally.
+ * @see SocketCommon_get_dns_resolver() for global DNS timeout configuration.
+ * @see SocketCommon_copy_addrinfo() for duplicating resolved chains.
+ * @see freeaddrinfo(3) for cleaning up resolved structures.
+ * @see docs/ERROR_HANDLING.md for exception patterns in network code.
  */
 int SocketCommon_resolve_address (const char *host, int port,
                                   const struct addrinfo *hints,
@@ -63,119 +128,112 @@ int SocketCommon_resolve_address (const char *host, int port,
                                   int use_exceptions);
 
 /**
- * @brief SocketCommon_validate_port - Validate port number is in valid range
+ * @brief Validate port number is in valid range
  * @ingroup core_io
- * @port: Port number to validate
- * @exception_type: Exception type to raise on invalid port
- * Raises: Specified exception type if port is invalid
+ * @param port Port number to validate
+ * @param exception_type Exception type to raise on invalid port
+ * @throws Specified exception type if port is invalid
  */
 void SocketCommon_validate_port (int port, Except_T exception_type);
 
 /**
- * @brief SocketCommon_validate_hostname - Validate hostname length
+ * @brief Validate hostname length
  * @ingroup core_io
- * @host: Hostname to validate
- * @exception_type: Exception type to raise on invalid hostname
- * Raises: Specified exception type if hostname is too long
+ * @param host Hostname to validate
+ * @param exception_type Exception type to raise on invalid hostname
+ * @throws Specified exception type if hostname is too long
  */
 void SocketCommon_validate_hostname (const char *host,
                                      Except_T exception_type);
 
 /**
- * @brief SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to
+ * @brief Normalize wildcard host addresses to NULL
  * @ingroup core_io
- * NULL
- * @host: Host string to normalize
- * Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
+ * @param host Host string to normalize
+ * @return NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
  */
 const char *SocketCommon_normalize_wildcard_host (const char *host);
 
 /**
- * @brief SocketCommon_cache_endpoint - Cache numeric address/port from sockaddr
+ * @brief Cache numeric address/port from sockaddr
  * @ingroup core_io
- * @arena: Arena to allocate cached address string
- * @addr: Socket address to format
- * @addrlen: Length of socket address
- * @addr_out: Output pointer updated to arena-allocated address string
- * @port_out: Output integer updated with numeric port (0 if unavailable)
- * Returns: 0 on success, -1 on failure (addr_out unchanged on failure)
+ * @param arena Arena to allocate cached address string
+ * @param addr Socket address to format
+ * @param addrlen Length of socket address
+ * @param addr_out Output pointer updated to arena-allocated address string
+ * @param port_out Output integer updated with numeric port (0 if unavailable)
+ * @return 0 on success, -1 on failure (addr_out unchanged on failure)
  */
 int SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
                                  socklen_t addrlen, char **addr_out,
                                  int *port_out);
 
 /**
- * @brief SocketCommon_setcloexec - Set close-on-exec flag on file descriptor
+ * @brief Set close-on-exec flag on file descriptor
  * @ingroup core_io
- * @fd: File descriptor to modify
- * @enable: 1 to enable CLOEXEC, 0 to disable
- * Returns: 0 on success, -1 on failure
+ * @param fd File descriptor to modify
+ * @param enable 1 to enable CLOEXEC, 0 to disable
+ * @return 0 on success, -1 on failure
  * @note Thread-safe: Yes (operates on single fd)
- * @ingroup core_io
  */
 int SocketCommon_setcloexec (int fd, int enable);
 
 /**
- * @brief SocketCommon_has_cloexec - Check if close-on-exec flag is set
+ * @brief Check if close-on-exec flag is set
  * @ingroup core_io
- * @fd: File descriptor to check
- * Returns: 1 if CLOEXEC is set, 0 if not set, -1 on error
+ * @param fd File descriptor to check
+ * @return 1 if CLOEXEC is set, 0 if not set, -1 on error
  * @note Thread-safe: Yes (operates on single fd)
- * @ingroup core_io
  */
 int SocketCommon_has_cloexec (int fd);
 
 /**
- * @brief SocketCommon_getoption_int - Get integer socket option
+ * @brief Get integer socket option
  * @ingroup core_io
- * @fd: File descriptor
- * @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
- * @optname: Option name (SO_KEEPALIVE, TCP_NODELAY, etc.)
- * @value: Output pointer for option value
- * @exception_type: Exception type to raise on failure
- * Returns: 0 on success, -1 on failure
- * Raises: Specified exception type on failure
+ * @param fd File descriptor
+ * @param level Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
+ * @param optname Option name (SO_KEEPALIVE, TCP_NODELAY, etc.)
+ * @param value Output pointer for option value
+ * @param exception_type Exception type to raise on failure
+ * @return 0 on success, -1 on failure
+ * @throws Specified exception type on failure
  * @note Thread-safe: Yes (operates on single fd)
- * @ingroup core_io
  */
 int SocketCommon_getoption_int (int fd, int level, int optname, int *value,
                                 Except_T exception_type);
 
 /**
- * @brief SocketCommon_getoption_timeval - Get timeval socket option
+ * @brief Get timeval socket option
  * @ingroup core_io
- * @fd: File descriptor
- * @level: Option level (SOL_SOCKET)
- * @optname: Option name (SO_RCVTIMEO, SO_SNDTIMEO)
- * @tv: Output pointer for timeval structure
- * @exception_type: Exception type to raise on failure
- * Returns: 0 on success, -1 on failure
- * Raises: Specified exception type on failure
+ * @param fd File descriptor
+ * @param level Option level (SOL_SOCKET)
+ * @param optname Option name (SO_RCVTIMEO, SO_SNDTIMEO)
+ * @param tv Output pointer for timeval structure
+ * @param exception_type Exception type to raise on failure
+ * @return 0 on success, -1 on failure
+ * @throws Specified exception type on failure
  * @note Thread-safe: Yes (operates on single fd)
- * @ingroup core_io
  */
 int SocketCommon_getoption_timeval (int fd, int level, int optname,
                                     struct timeval *tv,
                                     Except_T exception_type);
 
 /**
- * @brief SocketCommon_reverse_lookup - Perform reverse DNS lookup (getnameinfo
+ * @brief Perform reverse DNS lookup (getnameinfo wrapper)
  * @ingroup core_io
- * wrapper)
- * @addr: Socket address to look up
- * @addrlen: Length of socket address
- * @host: Output buffer for hostname (NULL to skip)
- * @hostlen: Size of host buffer
- * @serv: Output buffer for service/port (NULL to skip)
- * @servlen: Size of service buffer
- * @flags: getnameinfo flags (NI_NUMERICHOST, NI_NAMEREQD, etc.)
- * @exception_type: Exception type to raise on failure
- * Returns: 0 on success, -1 on failure
- * Raises: Specified exception type on failure
+ * @param addr Socket address to look up
+ * @param addrlen Length of socket address
+ * @param host Output buffer for hostname (NULL to skip)
+ * @param hostlen Size of host buffer
+ * @param serv Output buffer for service/port (NULL to skip)
+ * @param servlen Size of service buffer
+ * @param flags getnameinfo flags (NI_NUMERICHOST, NI_NAMEREQD, etc.)
+ * @param exception_type Exception type to raise on failure
+ * @return 0 on success, -1 on failure
+ * @throws Specified exception type on failure
  * @note Thread-safe: Yes
- * @ingroup core_io
- * Note: Wrapper around getnameinfo() for reverse DNS lookups.
- * Use NI_NUMERICHOST flag to get numeric IP address instead of hostname.
+ * @note Wrapper around getnameinfo() for reverse DNS lookups.
+ * @note Use NI_NUMERICHOST flag to get numeric IP address instead of hostname.
  */
 int SocketCommon_reverse_lookup (const struct sockaddr *addr,
                                  socklen_t addrlen, char *host,
@@ -184,36 +242,33 @@ int SocketCommon_reverse_lookup (const struct sockaddr *addr,
                                  Except_T exception_type);
 
 /**
- * @brief SocketCommon_parse_ip - Validate and parse IP address string
+ * @brief Validate and parse IP address string
  * @ingroup core_io
- * @ip_str: IP address string to validate
- * @family: Output pointer for address family (AF_INET or AF_INET6), can be
- * NULL Returns: 1 if valid IP address, 0 if invalid Thread-safe: Yes Note:
- * Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4,
- * AF_INET6 for IPv6, or AF_UNSPEC if invalid.
+ * @param ip_str IP address string to validate
+ * @param family Output pointer for address family (AF_INET or AF_INET6), can be NULL
+ * @return 1 if valid IP address, 0 if invalid
+ * @note Thread-safe: Yes
+ * @note Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid.
  */
 int SocketCommon_parse_ip (const char *ip_str, int *family);
 
 /**
- * @brief SocketCommon_cidr_match - Check if IP address matches CIDR range
+ * @brief Check if IP address matches CIDR range
  * @ingroup core_io
- * @ip_str: IP address string to check
- * @cidr_str: CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32")
- * Returns: 1 if IP matches CIDR range, 0 if not, -1 on error
+ * @param ip_str IP address string to check
+ * @param cidr_str CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32")
+ * @return 1 if IP matches CIDR range, 0 if not, -1 on error
  * @note Thread-safe: Yes
- * @ingroup core_io
- * Note: Supports both IPv4 and IPv6 CIDR notation.
- * @brief Returns -1 if IP or CIDR string is invalid.
- * @ingroup core_io
+ * @note Supports both IPv4 and IPv6 CIDR notation.
+ * @note Returns -1 if IP or CIDR string is invalid.
  */
 int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
 
 /**
- * @brief SocketBase_T - Opaque base structure for shared socket functionality
+ * @brief Opaque base structure for shared socket functionality.
  * @ingroup core_io
  *
- * Contains common fields shared across socket subtypes (Socket_T,
- * SocketDgram_T, etc.):
+ * Contains common fields shared across socket subtypes (Socket_T, SocketDgram_T, etc.):
  * - File descriptor (fd)
  * - Memory arena for lifecycle management
  * - Local and remote endpoint information (addresses, ports)
@@ -224,191 +279,189 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
  * Subtypes embed a pointer to SocketBase_T for shared resource management.
  * Allocation: Use SocketCommon_new_base() which creates arena and initializes.
  * Deallocation: Use SocketCommon_free_base() in reverse order.
- * Thread Safety: Individual fields not thread-safe; protect with external
- * mutexes if shared.
+ * Thread Safety: Individual fields not thread-safe; protect with external mutexes if shared.
  *
- * Rationale: Reduces code duplication in creation, initialization, cleanup
- * across modules. Ensures consistent resource acquisition/cleanup order per
- * layered architecture rules.
+ * Rationale: Reduces code duplication in creation, initialization, cleanup across modules.
+ * Ensures consistent resource acquisition/cleanup order per layered architecture rules.
  */
 #define SocketBase_T SocketBase_T
 typedef struct SocketBase_T *SocketBase_T;
 
+/**
+ * @brief Create a new socket base structure.
+ * @ingroup core_io
+ * @param domain Address family (AF_INET, AF_INET6, AF_UNIX).
+ * @param type Socket type (SOCK_STREAM, SOCK_DGRAM).
+ * @param protocol Protocol (usually 0 for default).
+ * @return New socket base instance.
+ * @throws SocketCommon_Failed on allocation failure.
+ */
 extern SocketBase_T SocketCommon_new_base (int domain, int type, int protocol);
+
+/**
+ * @brief Free a socket base structure.
+ * @ingroup core_io
+ * @param base_ptr Pointer to socket base (will be set to NULL).
+ * @note Cleans up all resources associated with the socket base.
+ */
 extern void SocketCommon_free_base (SocketBase_T *base_ptr);
 
 /**
- * @brief SocketCommon_set_option_int - Set integer socket option
+ * @brief Set integer socket option
  * @ingroup core_io
- * @base: Base with fd
- * @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
- * @optname: Option name (SO_REUSEADDR, TCP_NODELAY, etc.)
- * @value: Value to set
- * @exc_type: Exception to raise on failure
- * Generic setter for standard socket options, unifies duplicated setsockopt
- * calls Thread-safe: Yes for own resources
+ * @param base Base with fd
+ * @param level Option level (SOL_SOCKET, IPPROTO_TCP, etc.)
+ * @param optname Option name (SO_REUSEADDR, TCP_NODELAY, etc.)
+ * @param value Value to set
+ * @param exc_type Exception to raise on failure
+ * @note Generic setter for standard socket options, unifies duplicated setsockopt calls
+ * @note Thread-safe: Yes for own resources
  */
 extern void SocketCommon_set_option_int (SocketBase_T base, int level,
                                          int optname, int value,
                                          Except_T exc_type);
 
 /**
- * @brief SocketCommon_set_ttl - Set TTL or hop limit based on family
+ * @brief Set TTL or hop limit based on family
  * @ingroup core_io
- * @base: Base with fd
- * @family: AF_INET or AF_INET6
- * @ttl: TTL value
- * @exc_type: Raise on fail
- * Unifies set_ipv4_ttl and set_ipv6_hop_limit
+ * @param base Base with fd
+ * @param family AF_INET or AF_INET6
+ * @param ttl TTL value
+ * @param exc_type Raise on fail
+ * @note Unifies set_ipv4_ttl and set_ipv6_hop_limit
  */
 extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl,
                                   Except_T exc_type);
 
 /**
- * @brief SocketCommon_join_multicast - Join multicast group
+ * @brief Join multicast group
  * @ingroup core_io
- * @base: Socket base with fd (must be datagram for standard use)
- * @group: Multicast group string (e.g., "239.0.0.1" or "ff02::1")
- * @interface: Interface IP or NULL for default
- * @exc_type: Exception to raise on failure
- * Resolves group, joins via setsockopt based on family (IPv4/IPv6)
- * Handles resolution, interface setup, family-specific mreq
- * @brief Thread-safe for own fd
- * @ingroup core_io
+ * @param base Socket base with fd (must be datagram for standard use)
+ * @param group Multicast group string (e.g., "239.0.0.1" or "ff02::1")
+ * @param interface Interface IP or NULL for default
+ * @param exc_type Exception to raise on failure
+ * @note Resolves group, joins via setsockopt based on family (IPv4/IPv6)
+ * @note Handles resolution, interface setup, family-specific mreq
+ * @note Thread-safe for own fd
  */
 extern void SocketCommon_join_multicast (SocketBase_T base, const char *group,
                                          const char *interface,
                                          Except_T exc_type);
 
 /**
- * @brief SocketCommon_leave_multicast - Leave multicast group
+ * @brief Leave multicast group
  * @ingroup core_io
- * @base: Socket base with fd
- * @group: Multicast group string
- * @interface: Interface IP or NULL
- * @exc_type: Exception to raise on failure
- * Symmetric to join; drops membership via setsockopt
+ * @param base Socket base with fd
+ * @param group Multicast group string
+ * @param interface Interface IP or NULL
+ * @param exc_type Exception to raise on failure
+ * @note Symmetric to join; drops membership via setsockopt
  */
 extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group,
                                           const char *interface,
                                           Except_T exc_type);
 
 /**
- * @brief SocketCommon_set_nonblock - Set non-blocking mode
+ * @brief Set non-blocking mode
  * @ingroup core_io
- * @base: Base with fd
- * @enable: True to enable non-block
- * @exc_type: Raise on fail
- * Unifies duplicated fcntl calls for O_NONBLOCK
+ * @param base Base with fd
+ * @param enable True to enable non-block
+ * @param exc_type Raise on fail
+ * @note Unifies duplicated fcntl calls for O_NONBLOCK
  */
 extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable,
                                        Except_T exc_type);
 
 /**
- * @brief SocketCommon_calculate_total_iov_len - Calculate total length of iovec array
+ * @brief Calculate total length of iovec array with overflow protection
  * @ingroup core_io
- * with overflow protection
- * @iov: Array of iovec structures
- * @iovcnt: Number of iovec structures (>0, <=IOV_MAX)
- * @returns: Total bytes across all iov_len
- * Raises: SocketCommon_Failed on integer overflow during summation
+ * @param iov Array of iovec structures
+ * @param iovcnt Number of iovec structures (>0, <=IOV_MAX)
+ * @return Total bytes across all iov_len
+ * @throws SocketCommon_Failed on integer overflow during summation
  * @note Thread-safe: Yes
- * @ingroup core_io
- * Unifies duplicated calculation loops across modules
+ * @note Unifies duplicated calculation loops across modules
  */
 extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
                                                     int iovcnt);
 
 /**
- * @brief SocketCommon_advance_iov - Advance iovec array past sent/received bytes
+ * @brief Advance iovec array past sent/received bytes (modifies in place)
  * @ingroup core_io
- * (modifies in place)
- * @iov: Array of iovec structures to advance
- * @iovcnt: Number of iovec structures
- * @bytes: Bytes to advance (must <= total iov len)
- * Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len
- * reduced Raises: SocketCommon_Failed if bytes > total iov len or invalid
- * params Thread-safe: Yes (local ops) Unifies duplicated advance logic for
- * sendvall/recvvall
+ * @param iov Array of iovec structures to advance
+ * @param iovcnt Number of iovec structures
+ * @param bytes Bytes to advance (must <= total iov len)
+ * @note Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len reduced
+ * @throws SocketCommon_Failed if bytes > total iov len or invalid params
+ * @note Thread-safe: Yes (local ops)
+ * @note Unifies duplicated advance logic for sendvall/recvvall
  */
 extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt,
                                       size_t bytes);
 
 /**
- * @brief SocketCommon_find_active_iov - Find first non-empty iovec in array
+ * @brief Find first non-empty iovec in array
  * @ingroup core_io
- * @iov: Array of iovec structures to search
- * @iovcnt: Number of iovec structures
- * @active_iovcnt: Output for count of remaining iovecs from active position
- *
- * Returns: Pointer to first iovec with iov_len > 0, or NULL if all empty
+ * @param iov Array of iovec structures to search
+ * @param iovcnt Number of iovec structures
+ * @param active_iovcnt Output for count of remaining iovecs from active position
+ * @return Pointer to first iovec with iov_len > 0, or NULL if all empty
  * @note Thread-safe: Yes (read-only operation)
- * @ingroup core_io
- *
- * Used by sendvall/recvvall to find the next active buffer segment
- * after partial I/O operations have consumed some of the iovec array.
+ * @note Used by sendvall/recvvall to find the next active buffer segment after partial I/O operations have consumed some of the iovec array.
  */
 extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov,
                                                    int iovcnt,
                                                    int *active_iovcnt);
 
 /**
- * @brief SocketCommon_sync_iov_progress - Sync original iovec with working copy
+ * @brief Sync original iovec with working copy progress
  * @ingroup core_io
- * progress
- * @original: Original iovec array to update
- * @copy: Working copy that has been advanced
- * @iovcnt: Number of iovec structures
- *
- * Updates the original iovec array to reflect progress made in the copy.
- * Used when recvvall needs to update caller's iovec on partial completion.
+ * @param original Original iovec array to update
+ * @param copy Working copy that has been advanced
+ * @param iovcnt Number of iovec structures
+ * @note Updates the original iovec array to reflect progress made in the copy.
+ * @note Used when recvvall needs to update caller's iovec on partial completion.
  * @note Thread-safe: Yes (local ops)
- * @ingroup core_io
  */
 extern void SocketCommon_sync_iov_progress (struct iovec *original,
                                             const struct iovec *copy,
                                             int iovcnt);
 
 /**
- * @brief SocketCommon_alloc_iov_copy - Allocate and copy iovec array
+ * @brief Allocate and copy iovec array
  * @ingroup core_io
- * @iov: Source iovec array to copy
- * @iovcnt: Number of iovec structures (>0, <=IOV_MAX)
- * @exc_type: Exception type to raise on allocation failure
- *
- * Returns: Newly allocated copy of iovec array (caller must free)
- * Raises: exc_type on allocation failure
+ * @param iov Source iovec array to copy
+ * @param iovcnt Number of iovec structures (>0, <=IOV_MAX)
+ * @param exc_type Exception type to raise on allocation failure
+ * @return Newly allocated copy of iovec array (caller must free)
+ * @throws exc_type on allocation failure
  * @note Thread-safe: Yes
- * @ingroup core_io
- *
- * Common helper for sendvall/recvvall implementations. Consolidates
- * duplicate calloc+memcpy patterns across Socket and SocketDgram modules.
+ * @note Common helper for sendvall/recvvall implementations. Consolidates duplicate calloc+memcpy patterns across Socket and SocketDgram modules.
  */
 extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
                                                   int iovcnt,
                                                   Except_T exc_type);
 
 /**
- * @brief SocketCommon_set_cloexec_fd - Set close-on-exec flag on fd (unifies dups)
+ * @brief Set close-on-exec flag on fd (unifies dups)
  * @ingroup core_io
- * @fd: File descriptor
- * @enable: True to enable FD_CLOEXEC
- * @exc_type: Raise on fail
- * Uses fcntl F_SETFD; called after socket()/socketpair()/accept() fallback
+ * @param fd File descriptor
+ * @param enable True to enable FD_CLOEXEC
+ * @param exc_type Raise on fail
+ * @note Uses fcntl F_SETFD; called after socket()/socketpair()/accept() fallback
  */
 extern void SocketCommon_set_cloexec_fd (int fd, bool enable,
                                          Except_T exc_type);
 
 /**
- * @brief SocketCommon_try_bind_address - Try bind fd to address (extracted from
+ * @brief Try bind fd to address (extracted from Socket.c)
  * @ingroup core_io
- * Socket.c)
- * @base: Socket base with fd
- * @addr: Address to bind
- * @addrlen: Addr length
- * @exc_type: Raise on fail
- * Returns: 0 success, -1 fail (raises on error)
- * Integrates with base endpoints if success (caller handles)
+ * @param base Socket base with fd
+ * @param addr Address to bind
+ * @param addrlen Addr length
+ * @param exc_type Raise on fail
+ * @return 0 success, -1 fail (raises on error)
+ * @note Integrates with base endpoints if success (caller handles)
  */
 extern int SocketCommon_try_bind_address (SocketBase_T base,
                                           const struct sockaddr *addr,
@@ -416,16 +469,15 @@ extern int SocketCommon_try_bind_address (SocketBase_T base,
                                           Except_T exc_type);
 
 /**
- * @brief SocketCommon_try_bind_resolved_addresses - Try bind to resolved addrinfo
+ * @brief Try bind to resolved addrinfo list
  * @ingroup core_io
- * list
- * @base: Socket base with fd
- * @res: addrinfo list from resolve
- * @family: Preferred family (AF_INET etc)
- * @exc_type: Raise on all fails
- * Returns: 0 success (bound to first successful), -1 fail
- * Loops addresses, calls try_bind_address, sets base local endpoint on success
- * Handles dual-stack, reuseaddr hints via set_option_int
+ * @param base Socket base with fd
+ * @param res addrinfo list from resolve
+ * @param family Preferred family (AF_INET etc)
+ * @param exc_type Raise on all fails
+ * @return 0 success (bound to first successful), -1 fail
+ * @note Loops addresses, calls try_bind_address, sets base local endpoint on success
+ * @note Handles dual-stack, reuseaddr hints via set_option_int
  */
 extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
                                                      struct addrinfo *res,
@@ -433,76 +485,76 @@ extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
                                                      Except_T exc_type);
 
 /**
- * @brief SocketCommon_handle_bind_error - Log and raise bind error
+ * @brief Log and raise bind error
  * @ingroup core_io
- * @err: errno from bind
- * @addr_str: Addr string for log
- * @exc_type: Type to raise
- * Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal raise
+ * @param err errno from bind
+ * @param addr_str Addr string for log
+ * @param exc_type Type to raise
+ * @note Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal raise
  */
 extern int SocketCommon_handle_bind_error (int err, const char *addr_str,
                                            Except_T exc_type);
 
 /**
- * @brief SocketCommon_format_bind_error - Format descriptive bind error message
+ * @brief Format descriptive bind error message
  * @ingroup core_io
- * @host: Host string (NULL defaults to "any")
- * @port: Port number
- *
- * Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES, etc.)
- * Consolidated helper for Socket and SocketDgram bind error handling.
- * Does not raise - caller should raise after calling this.
+ * @param host Host string (NULL defaults to "any")
+ * @param port Port number
+ * @note Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES, etc.)
+ * @note Consolidated helper for Socket and SocketDgram bind error handling.
+ * @note Does not raise - caller should raise after calling this.
  */
 extern void SocketCommon_format_bind_error (const char *host, int port);
 
-extern void SocketCommon_update_local_endpoint (
-    SocketBase_T base); /* Common endpoint update, non-raising */
+/**
+ * @brief Update local endpoint information from getsockname.
+ * @ingroup core_io
+ * @param base Socket base to update.
+ * @note Non-raising helper for updating local address/port after bind.
+ */
+extern void SocketCommon_update_local_endpoint (SocketBase_T base);
 
 /**
- * @brief SocketCommon_get_socket_family - Get socket's address family
+ * @brief Get socket's address family
  * @ingroup core_io
- * @base: Socket base to query
- * Returns: Socket family or AF_UNSPEC on error
- * Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
+ * @param base Socket base to query
+ * @return Socket family or AF_UNSPEC on error
+ * @note Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
  */
 extern int SocketCommon_get_socket_family (SocketBase_T base);
 
 /**
- * @brief SocketCommon_validate_host_not_null - Validate host is not NULL
+ * @brief Validate host is not NULL
  * @ingroup core_io
- * @host: Host string to validate
- * @exception_type: Exception type to raise on NULL host
- * Raises: Specified exception type if host is NULL
+ * @param host Host string to validate
+ * @param exception_type Exception type to raise on NULL host
+ * @throws Specified exception type if host is NULL
  * @note Thread-safe: Yes
- * @ingroup core_io
  */
 extern void SocketCommon_validate_host_not_null (const char *host,
                                                  Except_T exception_type);
 
 /**
- * @brief SocketCommon_copy_addrinfo - Deep copy of addrinfo linked list
+ * @brief Deep copy of addrinfo linked list
  * @ingroup core_io
- * @src: Source chain to copy (may be NULL)
- * @return: malloc-allocated deep copy, or NULL on error
- *
- * Deep copies the entire chain including ai_addr and ai_canonname fields.
- * Caller takes ownership and MUST free with SocketCommon_free_addrinfo().
- * Do NOT use freeaddrinfo() on the result - it's undefined behavior.
- * No exceptions raised; returns NULL on malloc failure or src==NULL.
+ * @param src Source chain to copy (may be NULL)
+ * @return malloc-allocated deep copy, or NULL on error
+ * @note Deep copies the entire chain including ai_addr and ai_canonname fields.
+ * @note Caller takes ownership and MUST free with SocketCommon_free_addrinfo().
+ * @note Do NOT use freeaddrinfo() on the result - it's undefined behavior.
+ * @note No exceptions raised; returns NULL on malloc failure or src==NULL.
  * @note Thread-safe: Yes
- * @ingroup core_io
  */
 extern struct addrinfo *
 SocketCommon_copy_addrinfo (const struct addrinfo *src);
 
 /**
- * @brief SocketCommon_free_addrinfo - Free addrinfo chain created by copy_addrinfo
+ * @brief Free addrinfo chain created by copy_addrinfo
  * @ingroup core_io
- * @ai: Chain to free (may be NULL, safe no-op)
- *
- * Frees all nodes in the chain including ai_addr and ai_canonname fields.
- * Use this instead of freeaddrinfo() for chains from
- * SocketCommon_copy_addrinfo. Thread-safe: Yes
+ * @param ai Chain to free (may be NULL, safe no-op)
+ * @note Frees all nodes in the chain including ai_addr and ai_canonname fields.
+ * @note Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo.
+ * @note Thread-safe: Yes
  */
 extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
 
@@ -510,24 +562,42 @@ extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
  * (getters/setters for base fields) */
 
 /* Extern globals for shared defaults - defined in SocketCommon.c */
+
+/**
+ * @brief Global default timeout configuration for socket operations.
+ * @ingroup core_io
+ * @var socket_default_timeouts
+ * @note Internal global variable.
+ * @note Thread-safe access via SocketCommon_timeouts_getdefaults() and SocketCommon_timeouts_setdefaults().
+ * @note Modified only through public setter functions.
+ * @see SocketCommon_timeouts_getdefaults()
+ * @see SocketCommon_timeouts_setdefaults()
+ */
 extern SocketTimeouts_T socket_default_timeouts;
+
+/**
+ * @brief Mutex protecting the global default timeouts variable.
+ * @ingroup core_io
+ * @var socket_default_timeouts_mutex
+ * @note Internal synchronization primitive.
+ * @note Ensures thread-safe modification and reading of socket_default_timeouts.
+ * @warning Do not use directly - use the provided getter/setter functions.
+ */
 extern pthread_mutex_t socket_default_timeouts_mutex;
 
 /**
- * @brief SocketCommon_timeouts_getdefaults - Get global default timeouts
+ * @brief Get global default timeouts
  * @ingroup core_io
- * @timeouts: Output pointer for timeout structure
+ * @param timeouts Output pointer for timeout structure
  * @note Thread-safe: Yes (uses mutex protection)
- * @ingroup core_io
  */
 extern void SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts);
 
 /**
- * @brief SocketCommon_timeouts_setdefaults - Set global default timeouts
+ * @brief Set global default timeouts
  * @ingroup core_io
- * @timeouts: Timeout values to set as defaults
+ * @param timeouts Timeout values to set as defaults
  * @note Thread-safe: Yes (uses mutex protection)
- * @ingroup core_io
  */
 extern void
 SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
@@ -535,10 +605,10 @@ SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 /* ==================== Socket State Helpers ==================== */
 
 /**
- * @brief SocketCommon_check_bound_ipv4 - Check if IPv4 socket is bound
+ * @brief Check if IPv4 socket is bound
  * @ingroup core_io
- * @addr: sockaddr_storage containing address
- * Returns: 1 if bound (port != 0), 0 otherwise
+ * @param addr sockaddr_storage containing address
+ * @return 1 if bound (port != 0), 0 otherwise
  */
 static inline int
 SocketCommon_check_bound_ipv4 (const struct sockaddr_storage *addr)
@@ -548,10 +618,10 @@ SocketCommon_check_bound_ipv4 (const struct sockaddr_storage *addr)
 }
 
 /**
- * @brief SocketCommon_check_bound_ipv6 - Check if IPv6 socket is bound
+ * @brief Check if IPv6 socket is bound
  * @ingroup core_io
- * @addr: sockaddr_storage containing address
- * Returns: 1 if bound (port != 0), 0 otherwise
+ * @param addr sockaddr_storage containing address
+ * @return 1 if bound (port != 0), 0 otherwise
  */
 static inline int
 SocketCommon_check_bound_ipv6 (const struct sockaddr_storage *addr)
@@ -561,10 +631,10 @@ SocketCommon_check_bound_ipv6 (const struct sockaddr_storage *addr)
 }
 
 /**
- * @brief SocketCommon_check_bound_unix - Check if Unix socket is bound
+ * @brief Check if Unix socket is bound
  * @ingroup core_io
- * @addr: sockaddr_storage containing address (unused)
- * Returns: 1 (Unix domain sockets are bound if getsockname succeeds)
+ * @param addr sockaddr_storage containing address (unused)
+ * @return 1 (Unix domain sockets are bound if getsockname succeeds)
  */
 static inline int
 SocketCommon_check_bound_unix (const struct sockaddr_storage *addr)
@@ -574,11 +644,10 @@ SocketCommon_check_bound_unix (const struct sockaddr_storage *addr)
 }
 
 /**
- * @brief SocketCommon_check_bound_by_family - Check if socket is bound based on
+ * @brief Check if socket is bound based on family
  * @ingroup core_io
- * family
- * @addr: sockaddr_storage containing address
- * Returns: 1 if bound, 0 otherwise
+ * @param addr sockaddr_storage containing address
+ * @return 1 if bound, 0 otherwise
  */
 static inline int
 SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
@@ -599,7 +668,6 @@ SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
 
 /**
  * @brief SocketLiveCount - Thread-safe live count tracker for socket instances
- * @ingroup core_io
  *
  * Provides thread-safe increment/decrement operations for tracking
  * live socket instances. Used by both Socket_T and SocketDgram_T
@@ -617,9 +685,9 @@ struct SocketLiveCount
   }
 
 /**
- * @brief SocketLiveCount_increment - Increment live count (thread-safe)
+ * @brief Increment live count (thread-safe)
  * @ingroup core_io
- * @tracker: Live count tracker
+ * @param tracker Live count tracker
  */
 static inline void
 SocketLiveCount_increment (struct SocketLiveCount *tracker)
@@ -630,9 +698,9 @@ SocketLiveCount_increment (struct SocketLiveCount *tracker)
 }
 
 /**
- * @brief SocketLiveCount_decrement - Decrement live count (thread-safe)
+ * @brief Decrement live count (thread-safe)
  * @ingroup core_io
- * @tracker: Live count tracker
+ * @param tracker Live count tracker
  */
 static inline void
 SocketLiveCount_decrement (struct SocketLiveCount *tracker)
@@ -644,10 +712,10 @@ SocketLiveCount_decrement (struct SocketLiveCount *tracker)
 }
 
 /**
- * @brief SocketLiveCount_get - Get current live count (thread-safe)
+ * @brief Get current live count (thread-safe)
  * @ingroup core_io
- * @tracker: Live count tracker
- * Returns: Current count value
+ * @param tracker Live count tracker
+ * @return Current count value
  */
 static inline int
 SocketLiveCount_get (struct SocketLiveCount *tracker)
@@ -670,46 +738,47 @@ SocketLiveCount_get (struct SocketLiveCount *tracker)
  */
 
 /* Forward declaration - full type in SocketDNS.h */
+
+/**
+ * @brief Opaque handle for asynchronous DNS resolver.
+ * @ingroup core_io
+ *
+ * Used by global DNS configuration functions for timeout guarantees
+ * in socket operations like bind() and connect().
+ *
+ * Full API documentation in SocketDNS.h.
+ *
+ * @see SocketDNS.h for complete DNS resolution API.
+ * @see SocketCommon_get_dns_resolver() for accessing the global instance.
+ */
 typedef struct SocketDNS_T *SocketDNS_T;
 
 /**
- * @brief SocketCommon_get_dns_resolver - Get global DNS resolver instance
+ * @brief Get global DNS resolver instance
  * @ingroup core_io
- *
- * Returns: Global DNS resolver (lazily initialized on first call)
- *
+ * @return Global DNS resolver (lazily initialized on first call)
  * @note Thread-safe: Yes - uses pthread_once for initialization
- * @ingroup core_io
- *
- * The global DNS resolver is shared across all Socket and SocketDgram
- * operations. It provides timeout guarantees for DNS resolution.
+ * @note The global DNS resolver is shared across all Socket and SocketDgram operations. It provides timeout guarantees for DNS resolution.
  */
 extern SocketDNS_T SocketCommon_get_dns_resolver (void);
 
 /**
- * @brief SocketCommon_set_dns_timeout - Set global DNS resolution timeout
+ * @brief Set global DNS resolution timeout
  * @ingroup core_io
- * @timeout_ms: Timeout in milliseconds (0 = infinite, -1 = use default)
- *
+ * @param timeout_ms Timeout in milliseconds (0 = infinite, -1 = use default)
  * @note Thread-safe: Yes - protected by mutex
- * @ingroup core_io
- *
- * Affects all subsequent hostname resolution via Socket/SocketDgram APIs.
- * Default: SOCKET_DEFAULT_DNS_TIMEOUT_MS (5000ms)
- *
- * Setting timeout_ms to 0 disables timeout (infinite wait).
- * Setting timeout_ms to -1 resets to default.
+ * @note Affects all subsequent hostname resolution via Socket/SocketDgram APIs.
+ * @note Default: SOCKET_DEFAULT_DNS_TIMEOUT_MS (5000ms)
+ * @note Setting timeout_ms to 0 disables timeout (infinite wait).
+ * @note Setting timeout_ms to -1 resets to default.
  */
 extern void SocketCommon_set_dns_timeout (int timeout_ms);
 
 /**
- * @brief SocketCommon_get_dns_timeout - Get current global DNS timeout
+ * @brief Get current global DNS timeout
  * @ingroup core_io
- *
- * Returns: Current timeout in milliseconds (0 = infinite)
- *
+ * @return Current timeout in milliseconds (0 = infinite)
  * @note Thread-safe: Yes
- * @ingroup core_io
  */
 extern int SocketCommon_get_dns_timeout (void);
 

@@ -1,18 +1,18 @@
 <map id="SocketHTTP.h" name="SocketHTTP.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="413,5,519,31"/>
-<area shape="rect" id="Node000002" href="$SocketHTTP1_8h.html" title=" " alt="" coords="5,79,121,104"/>
+<area shape="rect" id="Node000001" title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities." alt="" coords="413,5,519,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112)." alt="" coords="5,79,121,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="400,34,122,82,121,77,399,28"/>
-<area shape="rect" id="Node000003" href="$SocketHTTP2_8h.html" title=" " alt="" coords="145,79,261,104"/>
+<area shape="rect" id="Node000003" href="$SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control." alt="" coords="145,79,261,104"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="411,37,247,81,245,76,410,32"/>
-<area shape="rect" id="Node000004" href="$SocketHTTPClient_8h.html" title=" " alt="" coords="285,79,428,104"/>
+<area shape="rect" id="Node000004" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="285,79,428,104"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="438,40,376,81,373,76,436,36"/>
-<area shape="rect" id="Node000008" href="$SocketHTTPServer_8h.html" title=" " alt="" coords="503,79,650,104"/>
+<area shape="rect" id="Node000008" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="503,79,650,104"/>
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="497,36,560,76,557,81,494,40"/>
 <area shape="rect" id="Node000009" href="$http__server_8c.html" title=" " alt="" coords="496,152,593,177"/>
 <area shape="poly" id="edge13_Node000001_Node000009" title=" " alt="" coords="473,44,481,73,494,103,513,129,533,150,530,154,509,133,489,105,476,75,468,45"/>
 <area shape="rect" id="Node000010" href="$websocket__server_8c.html" title=" " alt="" coords="618,152,757,177"/>
 <area shape="poly" id="edge14_Node000001_Node000010" title=" " alt="" coords="533,21,567,28,602,38,635,54,664,77,677,95,684,115,690,151,685,152,679,117,672,97,660,81,632,59,600,43,566,33,532,26"/>
-<area shape="rect" id="Node000011" href="$SocketWS_8h.html" title=" " alt="" coords="725,79,821,104"/>
+<area shape="rect" id="Node000011" href="$SocketWS_8h.html" title="WebSocket Protocol (RFC 6455) implementation with compression support." alt="" coords="725,79,821,104"/>
 <area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="529,31,725,76,724,82,528,36"/>
 <area shape="rect" id="Node000005" href="$http2__client_8c.html" title=" " alt="" coords="157,152,257,177"/>
 <area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="322,112,233,154,231,149,319,107"/>

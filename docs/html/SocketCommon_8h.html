@@ -116,11 +116,14 @@ $(document).ready(function(){initNavTree('SocketCommon_8h.html',''); initResizab
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketCommon.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketCommon.h File Reference<div class="ingroups"><a class="el" href="group__core__io.html">Core I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><code>#include &lt;stdbool.h&gt;</code><br />
-<code>#include &lt;pthread.h&gt;</code><br />
+
+<p>Common utilities shared between Socket and SocketDgram modules.  
+<a href="#details">More...</a></p>
+<div class="textblock"><code>#include &lt;pthread.h&gt;</code><br />
+<code>#include &lt;stdbool.h&gt;</code><br />
 <code>#include &lt;fcntl.h&gt;</code><br />
 <code>#include &lt;netdb.h&gt;</code><br />
 <code>#include &lt;netinet/in.h&gt;</code><br />
@@ -151,12 +154,14 @@ $(document).ready(function(){initNavTree('SocketCommon_8h.html',''); initResizab
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketLiveCount" id="r_structSocketLiveCount"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a></td></tr>
+<tr class="memdesc:structSocketLiveCount"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketCommon_8h.html#structSocketLiveCount" title="SocketLiveCount - Thread-safe live count tracker for socket instances.">SocketLiveCount</a> - Thread-safe live count tracker for socket instances.  <a href="SocketCommon_8h.html#structSocketLiveCount">More...</a><br /></td></tr>
 <tr class="separator:structSocketLiveCount"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a875ae9df41c30f375802590471923dd1" id="r_a875ae9df41c30f375802590471923dd1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a875ae9df41c30f375802590471923dd1">SocketBase_T</a>&#160;&#160;&#160;<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a></td></tr>
-<tr class="separator:a875ae9df41c30f375802590471923dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga875ae9df41c30f375802590471923dd1" id="r_ga875ae9df41c30f375802590471923dd1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga875ae9df41c30f375802590471923dd1">SocketBase_T</a>&#160;&#160;&#160;<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a></td></tr>
+<tr class="memdesc:ga875ae9df41c30f375802590471923dd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque base structure for shared socket functionality.  <br /></td></tr>
+<tr class="separator:ga875ae9df41c30f375802590471923dd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdd7aa5138146bb99a2360fface85b12" id="r_afdd7aa5138146bb99a2360fface85b12"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#afdd7aa5138146bb99a2360fface85b12">SOCKETLIVECOUNT_STATIC_INIT</a></td></tr>
 <tr class="separator:afdd7aa5138146bb99a2360fface85b12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -164,120 +169,179 @@ Macros</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:ac716bcecf8b2060038ad6ede113539a2" id="r_ac716bcecf8b2060038ad6ede113539a2"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a></td></tr>
 <tr class="separator:ac716bcecf8b2060038ad6ede113539a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac9190fe07142a017f86dae46145cb2fd" id="r_ac9190fe07142a017f86dae46145cb2fd"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></td></tr>
-<tr class="separator:ac9190fe07142a017f86dae46145cb2fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac9190fe07142a017f86dae46145cb2fd" id="r_gac9190fe07142a017f86dae46145cb2fd"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__dns.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></td></tr>
+<tr class="memdesc:gac9190fe07142a017f86dae46145cb2fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for asynchronous DNS resolver.  <br /></td></tr>
+<tr class="separator:gac9190fe07142a017f86dae46145cb2fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a47abb5d32959260cc8251419d652de1b" id="r_a47abb5d32959260cc8251419d652de1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a47abb5d32959260cc8251419d652de1b">SocketCommon_setup_hints</a> (struct addrinfo *hints, int socktype, int flags)</td></tr>
-<tr class="separator:a47abb5d32959260cc8251419d652de1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7fc66958f42deef2824a80188baf4534" id="r_a7fc66958f42deef2824a80188baf4534"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a7fc66958f42deef2824a80188baf4534">SocketCommon_resolve_address</a> (const char *host, int port, const struct addrinfo *hints, struct addrinfo **res, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type, int socket_family, int use_exceptions)</td></tr>
-<tr class="separator:a7fc66958f42deef2824a80188baf4534"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac849aa92d4bd728b61c37b6e63e2a804" id="r_ac849aa92d4bd728b61c37b6e63e2a804"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ac849aa92d4bd728b61c37b6e63e2a804">SocketCommon_validate_port</a> (int port, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:ac849aa92d4bd728b61c37b6e63e2a804"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab782ed7ac027b9d3c92cb4bef1b20b4a" id="r_ab782ed7ac027b9d3c92cb4bef1b20b4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ab782ed7ac027b9d3c92cb4bef1b20b4a">SocketCommon_validate_hostname</a> (const char *host, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:ab782ed7ac027b9d3c92cb4bef1b20b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68b10ea8fcfd5f154b54d81a8000c827" id="r_a68b10ea8fcfd5f154b54d81a8000c827"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a68b10ea8fcfd5f154b54d81a8000c827">SocketCommon_normalize_wildcard_host</a> (const char *host)</td></tr>
-<tr class="separator:a68b10ea8fcfd5f154b54d81a8000c827"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adfc31bff834af43e2a6ee2facd9951d4" id="r_adfc31bff834af43e2a6ee2facd9951d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#adfc31bff834af43e2a6ee2facd9951d4">SocketCommon_cache_endpoint</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, const struct sockaddr *addr, socklen_t addrlen, char **addr_out, int *port_out)</td></tr>
-<tr class="separator:adfc31bff834af43e2a6ee2facd9951d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3eb3f6fe09b2b58693a7044631916d8" id="r_ad3eb3f6fe09b2b58693a7044631916d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ad3eb3f6fe09b2b58693a7044631916d8">SocketCommon_setcloexec</a> (int fd, int enable)</td></tr>
-<tr class="separator:ad3eb3f6fe09b2b58693a7044631916d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5641340520942ec7ba2412f3d50f3f12" id="r_a5641340520942ec7ba2412f3d50f3f12"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a5641340520942ec7ba2412f3d50f3f12">SocketCommon_has_cloexec</a> (int fd)</td></tr>
-<tr class="separator:a5641340520942ec7ba2412f3d50f3f12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a229de2f12f6169d6817195fb6490267d" id="r_a229de2f12f6169d6817195fb6490267d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a229de2f12f6169d6817195fb6490267d">SocketCommon_getoption_int</a> (int fd, int level, int optname, int *value, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:a229de2f12f6169d6817195fb6490267d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c81dabc2c964625f56fd02b0a4f9c93" id="r_a5c81dabc2c964625f56fd02b0a4f9c93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a5c81dabc2c964625f56fd02b0a4f9c93">SocketCommon_getoption_timeval</a> (int fd, int level, int optname, struct timeval *tv, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:a5c81dabc2c964625f56fd02b0a4f9c93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a19eb14b9730f57df54eb5db71e1f5489" id="r_a19eb14b9730f57df54eb5db71e1f5489"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a19eb14b9730f57df54eb5db71e1f5489">SocketCommon_reverse_lookup</a> (const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:a19eb14b9730f57df54eb5db71e1f5489"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af8d4b6a3c291b6ebbb73c13743304b42" id="r_af8d4b6a3c291b6ebbb73c13743304b42"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#af8d4b6a3c291b6ebbb73c13743304b42">SocketCommon_parse_ip</a> (const char *ip_str, int *family)</td></tr>
-<tr class="separator:af8d4b6a3c291b6ebbb73c13743304b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5584b123bcf71749129a64c8312d0023" id="r_a5584b123bcf71749129a64c8312d0023"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a5584b123bcf71749129a64c8312d0023">SocketCommon_cidr_match</a> (const char *ip_str, const char *cidr_str)</td></tr>
-<tr class="separator:a5584b123bcf71749129a64c8312d0023"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9498d7bdb363435a4efce0f32011914" id="r_ae9498d7bdb363435a4efce0f32011914"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ae9498d7bdb363435a4efce0f32011914">SocketCommon_new_base</a> (int domain, int type, int protocol)</td></tr>
-<tr class="separator:ae9498d7bdb363435a4efce0f32011914"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaeb641ee1edaa618b8680babae9a98c6" id="r_aaeb641ee1edaa618b8680babae9a98c6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#aaeb641ee1edaa618b8680babae9a98c6">SocketCommon_free_base</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> *base_ptr)</td></tr>
-<tr class="separator:aaeb641ee1edaa618b8680babae9a98c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0a2e7917d36f5e23eab8c1238433dfba" id="r_a0a2e7917d36f5e23eab8c1238433dfba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a0a2e7917d36f5e23eab8c1238433dfba">SocketCommon_set_option_int</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, int level, int optname, int value, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:a0a2e7917d36f5e23eab8c1238433dfba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1eab30cecc7dae2a4c02efd95c5feae5" id="r_a1eab30cecc7dae2a4c02efd95c5feae5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a1eab30cecc7dae2a4c02efd95c5feae5">SocketCommon_set_ttl</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, int family, int ttl, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:a1eab30cecc7dae2a4c02efd95c5feae5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59068eaf0e0e017bb7492f2804a342b5" id="r_a59068eaf0e0e017bb7492f2804a342b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a59068eaf0e0e017bb7492f2804a342b5">SocketCommon_join_multicast</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *group, const char *interface, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:a59068eaf0e0e017bb7492f2804a342b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c4923693d222515c078f6bcfbf9d0f5" id="r_a1c4923693d222515c078f6bcfbf9d0f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a1c4923693d222515c078f6bcfbf9d0f5">SocketCommon_leave_multicast</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *group, const char *interface, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:a1c4923693d222515c078f6bcfbf9d0f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff179c5fc64896d364008582e755a8c4" id="r_aff179c5fc64896d364008582e755a8c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#aff179c5fc64896d364008582e755a8c4">SocketCommon_set_nonblock</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, bool enable, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:aff179c5fc64896d364008582e755a8c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb36ce89ba4091b0a1bee148506d586b" id="r_abb36ce89ba4091b0a1bee148506d586b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#abb36ce89ba4091b0a1bee148506d586b">SocketCommon_calculate_total_iov_len</a> (const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="separator:abb36ce89ba4091b0a1bee148506d586b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33af6b6698782c490ff383bb37c197e7" id="r_a33af6b6698782c490ff383bb37c197e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a33af6b6698782c490ff383bb37c197e7">SocketCommon_advance_iov</a> (struct iovec *iov, int iovcnt, size_t bytes)</td></tr>
-<tr class="separator:a33af6b6698782c490ff383bb37c197e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b9037b75f684ba9a4fda235b0bf0ca0" id="r_a0b9037b75f684ba9a4fda235b0bf0ca0"><td class="memItemLeft" align="right" valign="top">struct iovec *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a0b9037b75f684ba9a4fda235b0bf0ca0">SocketCommon_find_active_iov</a> (struct iovec *iov, int iovcnt, int *active_iovcnt)</td></tr>
-<tr class="separator:a0b9037b75f684ba9a4fda235b0bf0ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad5b4b92ce57c8168a7cb4462ee73d99" id="r_aad5b4b92ce57c8168a7cb4462ee73d99"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#aad5b4b92ce57c8168a7cb4462ee73d99">SocketCommon_sync_iov_progress</a> (struct iovec *original, const struct iovec *copy, int iovcnt)</td></tr>
-<tr class="separator:aad5b4b92ce57c8168a7cb4462ee73d99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ccd95f99962c7a6631b93bf9adfea4d" id="r_a0ccd95f99962c7a6631b93bf9adfea4d"><td class="memItemLeft" align="right" valign="top">struct iovec *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a0ccd95f99962c7a6631b93bf9adfea4d">SocketCommon_alloc_iov_copy</a> (const struct iovec *iov, int iovcnt, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:a0ccd95f99962c7a6631b93bf9adfea4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac32f45a0216c1be50d0a411459bc426c" id="r_ac32f45a0216c1be50d0a411459bc426c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ac32f45a0216c1be50d0a411459bc426c">SocketCommon_set_cloexec_fd</a> (int fd, bool enable, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:ac32f45a0216c1be50d0a411459bc426c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aecff13e4edc3230da4141714e2e9297f" id="r_aecff13e4edc3230da4141714e2e9297f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#aecff13e4edc3230da4141714e2e9297f">SocketCommon_try_bind_address</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const struct sockaddr *addr, socklen_t addrlen, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:aecff13e4edc3230da4141714e2e9297f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae257e8500385dffd243e9be383ade862" id="r_ae257e8500385dffd243e9be383ade862"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ae257e8500385dffd243e9be383ade862">SocketCommon_try_bind_resolved_addresses</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, struct addrinfo *res, int family, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:ae257e8500385dffd243e9be383ade862"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab28feafa0784876f732f4b79e03dcc8b" id="r_ab28feafa0784876f732f4b79e03dcc8b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ab28feafa0784876f732f4b79e03dcc8b">SocketCommon_handle_bind_error</a> (int err, const char *addr_str, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="separator:ab28feafa0784876f732f4b79e03dcc8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1c533bda5b245453885e07e2a7b4e83" id="r_ae1c533bda5b245453885e07e2a7b4e83"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ae1c533bda5b245453885e07e2a7b4e83">SocketCommon_format_bind_error</a> (const char *host, int port)</td></tr>
-<tr class="separator:ae1c533bda5b245453885e07e2a7b4e83"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2e1b3e6d9c494062a97bcc88a0e6a97" id="r_ae2e1b3e6d9c494062a97bcc88a0e6a97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ae2e1b3e6d9c494062a97bcc88a0e6a97">SocketCommon_update_local_endpoint</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base)</td></tr>
-<tr class="separator:ae2e1b3e6d9c494062a97bcc88a0e6a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab555c6739c1f1582b1d1aebfb008897e" id="r_ab555c6739c1f1582b1d1aebfb008897e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ab555c6739c1f1582b1d1aebfb008897e">SocketCommon_get_socket_family</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base)</td></tr>
-<tr class="separator:ab555c6739c1f1582b1d1aebfb008897e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a552530543d655ce8871dcfe96a6675fb" id="r_a552530543d655ce8871dcfe96a6675fb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a552530543d655ce8871dcfe96a6675fb">SocketCommon_validate_host_not_null</a> (const char *host, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exception_type)</td></tr>
-<tr class="separator:a552530543d655ce8871dcfe96a6675fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d98c31897344c8c2e6e6cde65045f09" id="r_a1d98c31897344c8c2e6e6cde65045f09"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a1d98c31897344c8c2e6e6cde65045f09">SocketCommon_copy_addrinfo</a> (const struct addrinfo *src)</td></tr>
-<tr class="separator:a1d98c31897344c8c2e6e6cde65045f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c73595d93eeee7b21ad12b980770f5a" id="r_a6c73595d93eeee7b21ad12b980770f5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a6c73595d93eeee7b21ad12b980770f5a">SocketCommon_free_addrinfo</a> (struct addrinfo *ai)</td></tr>
-<tr class="separator:a6c73595d93eeee7b21ad12b980770f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2318fb3606f6a71c2a11e247ff876d5" id="r_ad2318fb3606f6a71c2a11e247ff876d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#ad2318fb3606f6a71c2a11e247ff876d5">SocketCommon_timeouts_getdefaults</a> (<a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="separator:ad2318fb3606f6a71c2a11e247ff876d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98a87ba229cdf264bec87129ce8918f5" id="r_a98a87ba229cdf264bec87129ce8918f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a98a87ba229cdf264bec87129ce8918f5">SocketCommon_timeouts_setdefaults</a> (const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="separator:a98a87ba229cdf264bec87129ce8918f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37fb698963ebcc4f8f1d86d03b2ba3b7" id="r_a37fb698963ebcc4f8f1d86d03b2ba3b7"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a37fb698963ebcc4f8f1d86d03b2ba3b7">SocketCommon_check_bound_ipv4</a> (const struct sockaddr_storage *addr)</td></tr>
-<tr class="separator:a37fb698963ebcc4f8f1d86d03b2ba3b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a560dfe8bbb25d43c0ade5b295e20e1a7" id="r_a560dfe8bbb25d43c0ade5b295e20e1a7"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a560dfe8bbb25d43c0ade5b295e20e1a7">SocketCommon_check_bound_ipv6</a> (const struct sockaddr_storage *addr)</td></tr>
-<tr class="separator:a560dfe8bbb25d43c0ade5b295e20e1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06bdea854665ec5ea7e4578b316092a4" id="r_a06bdea854665ec5ea7e4578b316092a4"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a06bdea854665ec5ea7e4578b316092a4">SocketCommon_check_bound_unix</a> (const struct sockaddr_storage *addr)</td></tr>
-<tr class="separator:a06bdea854665ec5ea7e4578b316092a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7a0c8010b4e1cb65941a1c9be090742c" id="r_a7a0c8010b4e1cb65941a1c9be090742c"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a7a0c8010b4e1cb65941a1c9be090742c">SocketCommon_check_bound_by_family</a> (const struct sockaddr_storage *addr)</td></tr>
-<tr class="separator:a7a0c8010b4e1cb65941a1c9be090742c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a93d46dcf1a875ef525eb96d5f2271fb3" id="r_a93d46dcf1a875ef525eb96d5f2271fb3"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a93d46dcf1a875ef525eb96d5f2271fb3">SocketLiveCount_increment</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
-<tr class="separator:a93d46dcf1a875ef525eb96d5f2271fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a433d928caa9de0b29ab9f2d48e166c5c" id="r_a433d928caa9de0b29ab9f2d48e166c5c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a433d928caa9de0b29ab9f2d48e166c5c">SocketLiveCount_decrement</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
-<tr class="separator:a433d928caa9de0b29ab9f2d48e166c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02b16726c7750c470af8a59ffe041098" id="r_a02b16726c7750c470af8a59ffe041098"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a02b16726c7750c470af8a59ffe041098">SocketLiveCount_get</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
-<tr class="separator:a02b16726c7750c470af8a59ffe041098"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a70954c6e125769d15ffd6c3e31c89b75" id="r_a70954c6e125769d15ffd6c3e31c89b75"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a70954c6e125769d15ffd6c3e31c89b75">SocketCommon_get_dns_resolver</a> (void)</td></tr>
-<tr class="separator:a70954c6e125769d15ffd6c3e31c89b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8df045c4215eb7538ad543cd9368864c" id="r_a8df045c4215eb7538ad543cd9368864c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a8df045c4215eb7538ad543cd9368864c">SocketCommon_set_dns_timeout</a> (int timeout_ms)</td></tr>
-<tr class="separator:a8df045c4215eb7538ad543cd9368864c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4abf1412f29d6cec69326ca2a10e9e21" id="r_a4abf1412f29d6cec69326ca2a10e9e21"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a4abf1412f29d6cec69326ca2a10e9e21">SocketCommon_get_dns_timeout</a> (void)</td></tr>
-<tr class="separator:a4abf1412f29d6cec69326ca2a10e9e21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga47abb5d32959260cc8251419d652de1b" id="r_ga47abb5d32959260cc8251419d652de1b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga47abb5d32959260cc8251419d652de1b">SocketCommon_setup_hints</a> (struct addrinfo *hints, int socktype, int flags)</td></tr>
+<tr class="memdesc:ga47abb5d32959260cc8251419d652de1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize addrinfo hints structure for resolution.  <br /></td></tr>
+<tr class="separator:ga47abb5d32959260cc8251419d652de1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7fc66958f42deef2824a80188baf4534" id="r_ga7fc66958f42deef2824a80188baf4534"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7fc66958f42deef2824a80188baf4534">SocketCommon_resolve_address</a> (const char *host, int port, const struct addrinfo *hints, struct addrinfo **res, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type, int socket_family, int use_exceptions)</td></tr>
+<tr class="memdesc:ga7fc66958f42deef2824a80188baf4534"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resolve hostname/port to addrinfo structure using getaddrinfo wrapper.  <br /></td></tr>
+<tr class="separator:ga7fc66958f42deef2824a80188baf4534"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac849aa92d4bd728b61c37b6e63e2a804" id="r_gac849aa92d4bd728b61c37b6e63e2a804"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac849aa92d4bd728b61c37b6e63e2a804">SocketCommon_validate_port</a> (int port, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:gac849aa92d4bd728b61c37b6e63e2a804"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate port number is in valid range.  <br /></td></tr>
+<tr class="separator:gac849aa92d4bd728b61c37b6e63e2a804"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab782ed7ac027b9d3c92cb4bef1b20b4a" id="r_gab782ed7ac027b9d3c92cb4bef1b20b4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab782ed7ac027b9d3c92cb4bef1b20b4a">SocketCommon_validate_hostname</a> (const char *host, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:gab782ed7ac027b9d3c92cb4bef1b20b4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate hostname length.  <br /></td></tr>
+<tr class="separator:gab782ed7ac027b9d3c92cb4bef1b20b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68b10ea8fcfd5f154b54d81a8000c827" id="r_ga68b10ea8fcfd5f154b54d81a8000c827"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga68b10ea8fcfd5f154b54d81a8000c827">SocketCommon_normalize_wildcard_host</a> (const char *host)</td></tr>
+<tr class="memdesc:ga68b10ea8fcfd5f154b54d81a8000c827"><td class="mdescLeft">&#160;</td><td class="mdescRight">Normalize wildcard host addresses to NULL.  <br /></td></tr>
+<tr class="separator:ga68b10ea8fcfd5f154b54d81a8000c827"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadfc31bff834af43e2a6ee2facd9951d4" id="r_gadfc31bff834af43e2a6ee2facd9951d4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gadfc31bff834af43e2a6ee2facd9951d4">SocketCommon_cache_endpoint</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, const struct sockaddr *addr, socklen_t addrlen, char **addr_out, int *port_out)</td></tr>
+<tr class="memdesc:gadfc31bff834af43e2a6ee2facd9951d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache numeric address/port from sockaddr.  <br /></td></tr>
+<tr class="separator:gadfc31bff834af43e2a6ee2facd9951d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad3eb3f6fe09b2b58693a7044631916d8" id="r_gad3eb3f6fe09b2b58693a7044631916d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad3eb3f6fe09b2b58693a7044631916d8">SocketCommon_setcloexec</a> (int fd, int enable)</td></tr>
+<tr class="memdesc:gad3eb3f6fe09b2b58693a7044631916d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set close-on-exec flag on file descriptor.  <br /></td></tr>
+<tr class="separator:gad3eb3f6fe09b2b58693a7044631916d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5641340520942ec7ba2412f3d50f3f12" id="r_ga5641340520942ec7ba2412f3d50f3f12"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga5641340520942ec7ba2412f3d50f3f12">SocketCommon_has_cloexec</a> (int fd)</td></tr>
+<tr class="memdesc:ga5641340520942ec7ba2412f3d50f3f12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if close-on-exec flag is set.  <br /></td></tr>
+<tr class="separator:ga5641340520942ec7ba2412f3d50f3f12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga229de2f12f6169d6817195fb6490267d" id="r_ga229de2f12f6169d6817195fb6490267d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga229de2f12f6169d6817195fb6490267d">SocketCommon_getoption_int</a> (int fd, int level, int optname, int *value, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:ga229de2f12f6169d6817195fb6490267d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get integer socket option.  <br /></td></tr>
+<tr class="separator:ga229de2f12f6169d6817195fb6490267d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5c81dabc2c964625f56fd02b0a4f9c93" id="r_ga5c81dabc2c964625f56fd02b0a4f9c93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga5c81dabc2c964625f56fd02b0a4f9c93">SocketCommon_getoption_timeval</a> (int fd, int level, int optname, struct timeval *tv, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:ga5c81dabc2c964625f56fd02b0a4f9c93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get timeval socket option.  <br /></td></tr>
+<tr class="separator:ga5c81dabc2c964625f56fd02b0a4f9c93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga19eb14b9730f57df54eb5db71e1f5489" id="r_ga19eb14b9730f57df54eb5db71e1f5489"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga19eb14b9730f57df54eb5db71e1f5489">SocketCommon_reverse_lookup</a> (const struct sockaddr *addr, socklen_t addrlen, char *host, socklen_t hostlen, char *serv, socklen_t servlen, int flags, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:ga19eb14b9730f57df54eb5db71e1f5489"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform reverse DNS lookup (getnameinfo wrapper)  <br /></td></tr>
+<tr class="separator:ga19eb14b9730f57df54eb5db71e1f5489"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf8d4b6a3c291b6ebbb73c13743304b42" id="r_gaf8d4b6a3c291b6ebbb73c13743304b42"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf8d4b6a3c291b6ebbb73c13743304b42">SocketCommon_parse_ip</a> (const char *ip_str, int *family)</td></tr>
+<tr class="memdesc:gaf8d4b6a3c291b6ebbb73c13743304b42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate and parse IP address string.  <br /></td></tr>
+<tr class="separator:gaf8d4b6a3c291b6ebbb73c13743304b42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5584b123bcf71749129a64c8312d0023" id="r_ga5584b123bcf71749129a64c8312d0023"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga5584b123bcf71749129a64c8312d0023">SocketCommon_cidr_match</a> (const char *ip_str, const char *cidr_str)</td></tr>
+<tr class="memdesc:ga5584b123bcf71749129a64c8312d0023"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if IP address matches CIDR range.  <br /></td></tr>
+<tr class="separator:ga5584b123bcf71749129a64c8312d0023"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae9498d7bdb363435a4efce0f32011914" id="r_gae9498d7bdb363435a4efce0f32011914"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae9498d7bdb363435a4efce0f32011914">SocketCommon_new_base</a> (int domain, int type, int protocol)</td></tr>
+<tr class="memdesc:gae9498d7bdb363435a4efce0f32011914"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket base structure.  <br /></td></tr>
+<tr class="separator:gae9498d7bdb363435a4efce0f32011914"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaeb641ee1edaa618b8680babae9a98c6" id="r_gaaeb641ee1edaa618b8680babae9a98c6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaaeb641ee1edaa618b8680babae9a98c6">SocketCommon_free_base</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> *base_ptr)</td></tr>
+<tr class="memdesc:gaaeb641ee1edaa618b8680babae9a98c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a socket base structure.  <br /></td></tr>
+<tr class="separator:gaaeb641ee1edaa618b8680babae9a98c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0a2e7917d36f5e23eab8c1238433dfba" id="r_ga0a2e7917d36f5e23eab8c1238433dfba"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0a2e7917d36f5e23eab8c1238433dfba">SocketCommon_set_option_int</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, int level, int optname, int value, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga0a2e7917d36f5e23eab8c1238433dfba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set integer socket option.  <br /></td></tr>
+<tr class="separator:ga0a2e7917d36f5e23eab8c1238433dfba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1eab30cecc7dae2a4c02efd95c5feae5" id="r_ga1eab30cecc7dae2a4c02efd95c5feae5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1eab30cecc7dae2a4c02efd95c5feae5">SocketCommon_set_ttl</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, int family, int ttl, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga1eab30cecc7dae2a4c02efd95c5feae5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set TTL or hop limit based on family.  <br /></td></tr>
+<tr class="separator:ga1eab30cecc7dae2a4c02efd95c5feae5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga59068eaf0e0e017bb7492f2804a342b5" id="r_ga59068eaf0e0e017bb7492f2804a342b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga59068eaf0e0e017bb7492f2804a342b5">SocketCommon_join_multicast</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *group, const char *interface, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga59068eaf0e0e017bb7492f2804a342b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Join multicast group.  <br /></td></tr>
+<tr class="separator:ga59068eaf0e0e017bb7492f2804a342b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1c4923693d222515c078f6bcfbf9d0f5" id="r_ga1c4923693d222515c078f6bcfbf9d0f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1c4923693d222515c078f6bcfbf9d0f5">SocketCommon_leave_multicast</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *group, const char *interface, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga1c4923693d222515c078f6bcfbf9d0f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Leave multicast group.  <br /></td></tr>
+<tr class="separator:ga1c4923693d222515c078f6bcfbf9d0f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaff179c5fc64896d364008582e755a8c4" id="r_gaff179c5fc64896d364008582e755a8c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaff179c5fc64896d364008582e755a8c4">SocketCommon_set_nonblock</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, bool enable, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:gaff179c5fc64896d364008582e755a8c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set non-blocking mode.  <br /></td></tr>
+<tr class="separator:gaff179c5fc64896d364008582e755a8c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabb36ce89ba4091b0a1bee148506d586b" id="r_gabb36ce89ba4091b0a1bee148506d586b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gabb36ce89ba4091b0a1bee148506d586b">SocketCommon_calculate_total_iov_len</a> (const struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:gabb36ce89ba4091b0a1bee148506d586b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate total length of iovec array with overflow protection.  <br /></td></tr>
+<tr class="separator:gabb36ce89ba4091b0a1bee148506d586b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga33af6b6698782c490ff383bb37c197e7" id="r_ga33af6b6698782c490ff383bb37c197e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga33af6b6698782c490ff383bb37c197e7">SocketCommon_advance_iov</a> (struct iovec *iov, int iovcnt, size_t bytes)</td></tr>
+<tr class="memdesc:ga33af6b6698782c490ff383bb37c197e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advance iovec array past sent/received bytes (modifies in place)  <br /></td></tr>
+<tr class="separator:ga33af6b6698782c490ff383bb37c197e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0b9037b75f684ba9a4fda235b0bf0ca0" id="r_ga0b9037b75f684ba9a4fda235b0bf0ca0"><td class="memItemLeft" align="right" valign="top">struct iovec *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0b9037b75f684ba9a4fda235b0bf0ca0">SocketCommon_find_active_iov</a> (struct iovec *iov, int iovcnt, int *active_iovcnt)</td></tr>
+<tr class="memdesc:ga0b9037b75f684ba9a4fda235b0bf0ca0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find first non-empty iovec in array.  <br /></td></tr>
+<tr class="separator:ga0b9037b75f684ba9a4fda235b0bf0ca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaad5b4b92ce57c8168a7cb4462ee73d99" id="r_gaad5b4b92ce57c8168a7cb4462ee73d99"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaad5b4b92ce57c8168a7cb4462ee73d99">SocketCommon_sync_iov_progress</a> (struct iovec *original, const struct iovec *copy, int iovcnt)</td></tr>
+<tr class="memdesc:gaad5b4b92ce57c8168a7cb4462ee73d99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sync original iovec with working copy progress.  <br /></td></tr>
+<tr class="separator:gaad5b4b92ce57c8168a7cb4462ee73d99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0ccd95f99962c7a6631b93bf9adfea4d" id="r_ga0ccd95f99962c7a6631b93bf9adfea4d"><td class="memItemLeft" align="right" valign="top">struct iovec *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0ccd95f99962c7a6631b93bf9adfea4d">SocketCommon_alloc_iov_copy</a> (const struct iovec *iov, int iovcnt, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga0ccd95f99962c7a6631b93bf9adfea4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and copy iovec array.  <br /></td></tr>
+<tr class="separator:ga0ccd95f99962c7a6631b93bf9adfea4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac32f45a0216c1be50d0a411459bc426c" id="r_gac32f45a0216c1be50d0a411459bc426c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac32f45a0216c1be50d0a411459bc426c">SocketCommon_set_cloexec_fd</a> (int fd, bool enable, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:gac32f45a0216c1be50d0a411459bc426c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set close-on-exec flag on fd (unifies dups)  <br /></td></tr>
+<tr class="separator:gac32f45a0216c1be50d0a411459bc426c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecff13e4edc3230da4141714e2e9297f" id="r_gaecff13e4edc3230da4141714e2e9297f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaecff13e4edc3230da4141714e2e9297f">SocketCommon_try_bind_address</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const struct sockaddr *addr, socklen_t addrlen, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:gaecff13e4edc3230da4141714e2e9297f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try bind fd to address (extracted from Socket.c)  <br /></td></tr>
+<tr class="separator:gaecff13e4edc3230da4141714e2e9297f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae257e8500385dffd243e9be383ade862" id="r_gae257e8500385dffd243e9be383ade862"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae257e8500385dffd243e9be383ade862">SocketCommon_try_bind_resolved_addresses</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, struct addrinfo *res, int family, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:gae257e8500385dffd243e9be383ade862"><td class="mdescLeft">&#160;</td><td class="mdescRight">Try bind to resolved addrinfo list.  <br /></td></tr>
+<tr class="separator:gae257e8500385dffd243e9be383ade862"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab28feafa0784876f732f4b79e03dcc8b" id="r_gab28feafa0784876f732f4b79e03dcc8b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab28feafa0784876f732f4b79e03dcc8b">SocketCommon_handle_bind_error</a> (int err, const char *addr_str, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:gab28feafa0784876f732f4b79e03dcc8b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Log and raise bind error.  <br /></td></tr>
+<tr class="separator:gab28feafa0784876f732f4b79e03dcc8b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae1c533bda5b245453885e07e2a7b4e83" id="r_gae1c533bda5b245453885e07e2a7b4e83"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae1c533bda5b245453885e07e2a7b4e83">SocketCommon_format_bind_error</a> (const char *host, int port)</td></tr>
+<tr class="memdesc:gae1c533bda5b245453885e07e2a7b4e83"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format descriptive bind error message.  <br /></td></tr>
+<tr class="separator:gae1c533bda5b245453885e07e2a7b4e83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae2e1b3e6d9c494062a97bcc88a0e6a97" id="r_gae2e1b3e6d9c494062a97bcc88a0e6a97"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae2e1b3e6d9c494062a97bcc88a0e6a97">SocketCommon_update_local_endpoint</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base)</td></tr>
+<tr class="memdesc:gae2e1b3e6d9c494062a97bcc88a0e6a97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update local endpoint information from getsockname.  <br /></td></tr>
+<tr class="separator:gae2e1b3e6d9c494062a97bcc88a0e6a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab555c6739c1f1582b1d1aebfb008897e" id="r_gab555c6739c1f1582b1d1aebfb008897e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab555c6739c1f1582b1d1aebfb008897e">SocketCommon_get_socket_family</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base)</td></tr>
+<tr class="memdesc:gab555c6739c1f1582b1d1aebfb008897e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get socket's address family.  <br /></td></tr>
+<tr class="separator:gab555c6739c1f1582b1d1aebfb008897e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga552530543d655ce8871dcfe96a6675fb" id="r_ga552530543d655ce8871dcfe96a6675fb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga552530543d655ce8871dcfe96a6675fb">SocketCommon_validate_host_not_null</a> (const char *host, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exception_type)</td></tr>
+<tr class="memdesc:ga552530543d655ce8871dcfe96a6675fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate host is not NULL.  <br /></td></tr>
+<tr class="separator:ga552530543d655ce8871dcfe96a6675fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1d98c31897344c8c2e6e6cde65045f09" id="r_ga1d98c31897344c8c2e6e6cde65045f09"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1d98c31897344c8c2e6e6cde65045f09">SocketCommon_copy_addrinfo</a> (const struct addrinfo *src)</td></tr>
+<tr class="memdesc:ga1d98c31897344c8c2e6e6cde65045f09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deep copy of addrinfo linked list.  <br /></td></tr>
+<tr class="separator:ga1d98c31897344c8c2e6e6cde65045f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6c73595d93eeee7b21ad12b980770f5a" id="r_ga6c73595d93eeee7b21ad12b980770f5a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga6c73595d93eeee7b21ad12b980770f5a">SocketCommon_free_addrinfo</a> (struct addrinfo *ai)</td></tr>
+<tr class="memdesc:ga6c73595d93eeee7b21ad12b980770f5a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free addrinfo chain created by copy_addrinfo.  <br /></td></tr>
+<tr class="separator:ga6c73595d93eeee7b21ad12b980770f5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2318fb3606f6a71c2a11e247ff876d5" id="r_gad2318fb3606f6a71c2a11e247ff876d5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad2318fb3606f6a71c2a11e247ff876d5">SocketCommon_timeouts_getdefaults</a> (<a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
+<tr class="memdesc:gad2318fb3606f6a71c2a11e247ff876d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get global default timeouts.  <br /></td></tr>
+<tr class="separator:gad2318fb3606f6a71c2a11e247ff876d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga98a87ba229cdf264bec87129ce8918f5" id="r_ga98a87ba229cdf264bec87129ce8918f5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga98a87ba229cdf264bec87129ce8918f5">SocketCommon_timeouts_setdefaults</a> (const <a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
+<tr class="memdesc:ga98a87ba229cdf264bec87129ce8918f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set global default timeouts.  <br /></td></tr>
+<tr class="separator:ga98a87ba229cdf264bec87129ce8918f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga37fb698963ebcc4f8f1d86d03b2ba3b7" id="r_ga37fb698963ebcc4f8f1d86d03b2ba3b7"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga37fb698963ebcc4f8f1d86d03b2ba3b7">SocketCommon_check_bound_ipv4</a> (const struct sockaddr_storage *addr)</td></tr>
+<tr class="memdesc:ga37fb698963ebcc4f8f1d86d03b2ba3b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if IPv4 socket is bound.  <br /></td></tr>
+<tr class="separator:ga37fb698963ebcc4f8f1d86d03b2ba3b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga560dfe8bbb25d43c0ade5b295e20e1a7" id="r_ga560dfe8bbb25d43c0ade5b295e20e1a7"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga560dfe8bbb25d43c0ade5b295e20e1a7">SocketCommon_check_bound_ipv6</a> (const struct sockaddr_storage *addr)</td></tr>
+<tr class="memdesc:ga560dfe8bbb25d43c0ade5b295e20e1a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if IPv6 socket is bound.  <br /></td></tr>
+<tr class="separator:ga560dfe8bbb25d43c0ade5b295e20e1a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga06bdea854665ec5ea7e4578b316092a4" id="r_ga06bdea854665ec5ea7e4578b316092a4"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga06bdea854665ec5ea7e4578b316092a4">SocketCommon_check_bound_unix</a> (const struct sockaddr_storage *addr)</td></tr>
+<tr class="memdesc:ga06bdea854665ec5ea7e4578b316092a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if Unix socket is bound.  <br /></td></tr>
+<tr class="separator:ga06bdea854665ec5ea7e4578b316092a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7a0c8010b4e1cb65941a1c9be090742c" id="r_ga7a0c8010b4e1cb65941a1c9be090742c"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7a0c8010b4e1cb65941a1c9be090742c">SocketCommon_check_bound_by_family</a> (const struct sockaddr_storage *addr)</td></tr>
+<tr class="memdesc:ga7a0c8010b4e1cb65941a1c9be090742c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if socket is bound based on family.  <br /></td></tr>
+<tr class="separator:ga7a0c8010b4e1cb65941a1c9be090742c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga93d46dcf1a875ef525eb96d5f2271fb3" id="r_ga93d46dcf1a875ef525eb96d5f2271fb3"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga93d46dcf1a875ef525eb96d5f2271fb3">SocketLiveCount_increment</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
+<tr class="memdesc:ga93d46dcf1a875ef525eb96d5f2271fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Increment live count (thread-safe)  <br /></td></tr>
+<tr class="separator:ga93d46dcf1a875ef525eb96d5f2271fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga433d928caa9de0b29ab9f2d48e166c5c" id="r_ga433d928caa9de0b29ab9f2d48e166c5c"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga433d928caa9de0b29ab9f2d48e166c5c">SocketLiveCount_decrement</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
+<tr class="memdesc:ga433d928caa9de0b29ab9f2d48e166c5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrement live count (thread-safe)  <br /></td></tr>
+<tr class="separator:ga433d928caa9de0b29ab9f2d48e166c5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga02b16726c7750c470af8a59ffe041098" id="r_ga02b16726c7750c470af8a59ffe041098"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga02b16726c7750c470af8a59ffe041098">SocketLiveCount_get</a> (struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *tracker)</td></tr>
+<tr class="memdesc:ga02b16726c7750c470af8a59ffe041098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current live count (thread-safe)  <br /></td></tr>
+<tr class="separator:ga02b16726c7750c470af8a59ffe041098"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga70954c6e125769d15ffd6c3e31c89b75" id="r_ga70954c6e125769d15ffd6c3e31c89b75"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__dns.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga70954c6e125769d15ffd6c3e31c89b75">SocketCommon_get_dns_resolver</a> (void)</td></tr>
+<tr class="memdesc:ga70954c6e125769d15ffd6c3e31c89b75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get global DNS resolver instance.  <br /></td></tr>
+<tr class="separator:ga70954c6e125769d15ffd6c3e31c89b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8df045c4215eb7538ad543cd9368864c" id="r_ga8df045c4215eb7538ad543cd9368864c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8df045c4215eb7538ad543cd9368864c">SocketCommon_set_dns_timeout</a> (int timeout_ms)</td></tr>
+<tr class="memdesc:ga8df045c4215eb7538ad543cd9368864c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set global DNS resolution timeout.  <br /></td></tr>
+<tr class="separator:ga8df045c4215eb7538ad543cd9368864c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4abf1412f29d6cec69326ca2a10e9e21" id="r_ga4abf1412f29d6cec69326ca2a10e9e21"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4abf1412f29d6cec69326ca2a10e9e21">SocketCommon_get_dns_timeout</a> (void)</td></tr>
+<tr class="memdesc:ga4abf1412f29d6cec69326ca2a10e9e21"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current global DNS timeout.  <br /></td></tr>
+<tr class="separator:ga4abf1412f29d6cec69326ca2a10e9e21"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a225f4a8fd657fd52a05146c6fc4f58b0" id="r_a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></td></tr>
-<tr class="separator:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28354c49d1726c674932f420a57bb21d" id="r_a28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
-<tr class="separator:a28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4218ae116e8def59908f76fd1e9dbe3e" id="r_a4218ae116e8def59908f76fd1e9dbe3e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a4218ae116e8def59908f76fd1e9dbe3e">SocketCommon_Failed</a></td></tr>
-<tr class="separator:a4218ae116e8def59908f76fd1e9dbe3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a34162df185e6971334bb98c3c00a2ad0" id="r_a34162df185e6971334bb98c3c00a2ad0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a34162df185e6971334bb98c3c00a2ad0">socket_default_timeouts</a></td></tr>
+<tr class="memitem:ga225f4a8fd657fd52a05146c6fc4f58b0" id="r_ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></td></tr>
+<tr class="memdesc:ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">General TCP socket operation failure exception.  <br /></td></tr>
+<tr class="separator:ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga28354c49d1726c674932f420a57bb21d" id="r_ga28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
+<tr class="memdesc:ga28354c49d1726c674932f420a57bb21d"><td class="mdescLeft">&#160;</td><td class="mdescRight">General UDP/datagram socket operation failure exception.  <br /></td></tr>
+<tr class="separator:ga28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4218ae116e8def59908f76fd1e9dbe3e" id="r_ga4218ae116e8def59908f76fd1e9dbe3e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4218ae116e8def59908f76fd1e9dbe3e">SocketCommon_Failed</a></td></tr>
+<tr class="memdesc:ga4218ae116e8def59908f76fd1e9dbe3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">General failure in shared socket common utilities.  <br /></td></tr>
+<tr class="separator:ga4218ae116e8def59908f76fd1e9dbe3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34162df185e6971334bb98c3c00a2ad0" id="r_a34162df185e6971334bb98c3c00a2ad0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a34162df185e6971334bb98c3c00a2ad0">socket_default_timeouts</a></td></tr>
 <tr class="separator:a34162df185e6971334bb98c3c00a2ad0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9c962297b30fb9c609c3170d508a8c12" id="r_a9c962297b30fb9c609c3170d508a8c12"><td class="memItemLeft" align="right" valign="top">pthread_mutex_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon_8h.html#a9c962297b30fb9c609c3170d508a8c12">socket_default_timeouts_mutex</a></td></tr>
 <tr class="separator:a9c962297b30fb9c609c3170d508a8c12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Common utilities shared between Socket and SocketDgram modules. </p>
+<p>Provides shared functionality for both TCP and UDP socket implementations, including address resolution, timeout management, and socket configuration.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14" title="Opaque handle for TCP/IP and Unix domain sockets.">Socket_T</a> for TCP socket operations. </dd>
+<dd>
+<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a> for UDP socket operations. </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
+</div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
 <a name="structSocketLiveCount" id="structSocketLiveCount"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structSocketLiveCount">&#9670;&#160;</a></span>SocketLiveCount</h2>
 
@@ -289,10 +353,10 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="textblock"><p><a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> - Thread-safe live count tracker for socket instances</p>
+<div class="textblock"><p><a class="el" href="SocketCommon_8h.html#structSocketLiveCount" title="SocketLiveCount - Thread-safe live count tracker for socket instances.">SocketLiveCount</a> - Thread-safe live count tracker for socket instances. </p>
 <p>Provides thread-safe increment/decrement operations for tracking live socket instances. Used by both Socket_T and SocketDgram_T for debugging and leak detection. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00510">510</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00676">676</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -312,33 +376,6 @@ mutex</td>
 </div>
 </div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a875ae9df41c30f375802590471923dd1" name="a875ae9df41c30f375802590471923dd1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a875ae9df41c30f375802590471923dd1">&#9670;&#160;</a></span>SocketBase_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define <a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;&#160;&#160;<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketBase_T - Opaque base structure for shared socket functionality</p>
-<p>Contains common fields shared across socket subtypes (Socket_T, SocketDgram_T, etc.):</p><ul>
-<li>File descriptor (fd)</li>
-<li>Memory arena for lifecycle management</li>
-<li>Local and remote endpoint information (addresses, ports)</li>
-<li>Timeouts configuration</li>
-<li>Metrics snapshot</li>
-<li>Domain, type, protocol</li>
-</ul>
-<p>Subtypes embed a pointer to SocketBase_T for shared resource management. Allocation: Use <a class="el" href="SocketCommon_8h.html#ae9498d7bdb363435a4efce0f32011914">SocketCommon_new_base()</a> which creates arena and initializes. Deallocation: Use <a class="el" href="SocketCommon_8h.html#aaeb641ee1edaa618b8680babae9a98c6">SocketCommon_free_base()</a> in reverse order. Thread Safety: Individual fields not thread-safe; protect with external mutexes if shared.</p>
-<p>Rationale: Reduces code duplication in creation, initialization, cleanup across modules. Ensures consistent resource acquisition/cleanup order per layered architecture rules. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00203">203</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-</div>
-</div>
 <a id="afdd7aa5138146bb99a2360fface85b12" name="afdd7aa5138146bb99a2360fface85b12"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afdd7aa5138146bb99a2360fface85b12">&#9670;&#160;</a></span>SOCKETLIVECOUNT_STATIC_INIT</h2>
 
@@ -350,11 +387,11 @@ mutex</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  {                                                                            \</div>
-<div class="line">    0, PTHREAD_MUTEX_INITIALIZER                                               \</div>
+<b>Value:</b><div class="fragment"><div class="line">  {                                                                           \</div>
+<div class="line">    0, PTHREAD_MUTEX_INITIALIZER                                              \</div>
 <div class="line">  }</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00516">516</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00682">682</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
 
 </div>
 </div>
@@ -371,1760 +408,7 @@ mutex</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00204">204</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-</div>
-</div>
-<a id="ac9190fe07142a017f86dae46145cb2fd" name="ac9190fe07142a017f86dae46145cb2fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac9190fe07142a017f86dae46145cb2fd">&#9670;&#160;</a></span>SocketDNS_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a>* <a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00572">572</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a33af6b6698782c490ff383bb37c197e7" name="a33af6b6698782c490ff383bb37c197e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33af6b6698782c490ff383bb37c197e7">&#9670;&#160;</a></span>SocketCommon_advance_iov()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_advance_iov </td>
-          <td>(</td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>bytes</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_advance_iov - Advance iovec array past sent/received bytes (modifies in place) @iov: Array of iovec structures to advance @iovcnt: Number of iovec structures @bytes: Bytes to advance (must &lt;= total iov len) Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len reduced Raises: SocketCommon_Failed if bytes &gt; total iov len or invalid params Thread-safe: Yes (local ops) Unifies duplicated advance logic for sendvall/recvvall </p>
-
-</div>
-</div>
-<a id="a0ccd95f99962c7a6631b93bf9adfea4d" name="a0ccd95f99962c7a6631b93bf9adfea4d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ccd95f99962c7a6631b93bf9adfea4d">&#9670;&#160;</a></span>SocketCommon_alloc_iov_copy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct iovec * SocketCommon_alloc_iov_copy </td>
-          <td>(</td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_alloc_iov_copy - Allocate and copy iovec array @iov: Source iovec array to copy @iovcnt: Number of iovec structures (&gt;0, &lt;=IOV_MAX) @exc_type: Exception type to raise on allocation failure</p>
-<p>Returns: Newly allocated copy of iovec array (caller must free) Raises: exc_type on allocation failure Thread-safe: Yes</p>
-<p>Common helper for sendvall/recvvall implementations. Consolidates duplicate calloc+memcpy patterns across Socket and SocketDgram modules. </p>
-
-</div>
-</div>
-<a id="adfc31bff834af43e2a6ee2facd9951d4" name="adfc31bff834af43e2a6ee2facd9951d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adfc31bff834af43e2a6ee2facd9951d4">&#9670;&#160;</a></span>SocketCommon_cache_endpoint()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_cache_endpoint </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct sockaddr *&#160;</td>
-          <td class="paramname"><em>addr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">socklen_t&#160;</td>
-          <td class="paramname"><em>addrlen</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char **&#160;</td>
-          <td class="paramname"><em>addr_out</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>port_out</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_cache_endpoint - Cache numeric address/port from sockaddr @arena: Arena to allocate cached address string @addr: Socket address to format @addrlen: Length of socket address @addr_out: Output pointer updated to arena-allocated address string @port_out: Output integer updated with numeric port (0 if unavailable) Returns: 0 on success, -1 on failure (addr_out unchanged on failure) </p>
-
-</div>
-</div>
-<a id="abb36ce89ba4091b0a1bee148506d586b" name="abb36ce89ba4091b0a1bee148506d586b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb36ce89ba4091b0a1bee148506d586b">&#9670;&#160;</a></span>SocketCommon_calculate_total_iov_len()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketCommon_calculate_total_iov_len </td>
-          <td>(</td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_calculate_total_iov_len - Calculate total length of iovec array with overflow protection @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt;0, &lt;=IOV_MAX) </p><dl class="section return"><dt>Returns</dt><dd>: Total bytes across all iov_len Raises: SocketCommon_Failed on integer overflow during summation Thread-safe: Yes Unifies duplicated calculation loops across modules </dd></dl>
-
-</div>
-</div>
-<a id="a7a0c8010b4e1cb65941a1c9be090742c" name="a7a0c8010b4e1cb65941a1c9be090742c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a0c8010b4e1cb65941a1c9be090742c">&#9670;&#160;</a></span>SocketCommon_check_bound_by_family()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int SocketCommon_check_bound_by_family </td>
-          <td>(</td>
-          <td class="paramtype">const struct sockaddr_storage *&#160;</td>
-          <td class="paramname"><em>addr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_check_bound_by_family - Check if socket is bound based on family @addr: sockaddr_storage containing address Returns: 1 if bound, 0 otherwise </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00488">488</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketCommon_8h_source.html#l00452">SocketCommon_check_bound_ipv4()</a>, <a class="el" href="SocketCommon_8h_source.html#l00464">SocketCommon_check_bound_ipv6()</a>, and <a class="el" href="SocketCommon_8h_source.html#l00476">SocketCommon_check_bound_unix()</a>.</p>
-
-</div>
-</div>
-<a id="a37fb698963ebcc4f8f1d86d03b2ba3b7" name="a37fb698963ebcc4f8f1d86d03b2ba3b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37fb698963ebcc4f8f1d86d03b2ba3b7">&#9670;&#160;</a></span>SocketCommon_check_bound_ipv4()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int SocketCommon_check_bound_ipv4 </td>
-          <td>(</td>
-          <td class="paramtype">const struct sockaddr_storage *&#160;</td>
-          <td class="paramname"><em>addr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_check_bound_ipv4 - Check if IPv4 socket is bound @addr: sockaddr_storage containing address Returns: 1 if bound (port != 0), 0 otherwise </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00452">452</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="SocketCommon_8h_source.html#l00488">SocketCommon_check_bound_by_family()</a>.</p>
-
-</div>
-</div>
-<a id="a560dfe8bbb25d43c0ade5b295e20e1a7" name="a560dfe8bbb25d43c0ade5b295e20e1a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a560dfe8bbb25d43c0ade5b295e20e1a7">&#9670;&#160;</a></span>SocketCommon_check_bound_ipv6()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int SocketCommon_check_bound_ipv6 </td>
-          <td>(</td>
-          <td class="paramtype">const struct sockaddr_storage *&#160;</td>
-          <td class="paramname"><em>addr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_check_bound_ipv6 - Check if IPv6 socket is bound @addr: sockaddr_storage containing address Returns: 1 if bound (port != 0), 0 otherwise </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00464">464</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="SocketCommon_8h_source.html#l00488">SocketCommon_check_bound_by_family()</a>.</p>
-
-</div>
-</div>
-<a id="a06bdea854665ec5ea7e4578b316092a4" name="a06bdea854665ec5ea7e4578b316092a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06bdea854665ec5ea7e4578b316092a4">&#9670;&#160;</a></span>SocketCommon_check_bound_unix()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int SocketCommon_check_bound_unix </td>
-          <td>(</td>
-          <td class="paramtype">const struct sockaddr_storage *&#160;</td>
-          <td class="paramname"><em>addr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_check_bound_unix - Check if Unix socket is bound @addr: sockaddr_storage containing address (unused) Returns: 1 (Unix domain sockets are bound if getsockname succeeds) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00476">476</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="SocketCommon_8h_source.html#l00488">SocketCommon_check_bound_by_family()</a>.</p>
-
-</div>
-</div>
-<a id="a5584b123bcf71749129a64c8312d0023" name="a5584b123bcf71749129a64c8312d0023"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5584b123bcf71749129a64c8312d0023">&#9670;&#160;</a></span>SocketCommon_cidr_match()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_cidr_match </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ip_str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>cidr_str</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_cidr_match - Check if IP address matches CIDR range @ip_str: IP address string to check @cidr_str: CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32") Returns: 1 if IP matches CIDR range, 0 if not, -1 on error Thread-safe: Yes Note: Supports both IPv4 and IPv6 CIDR notation. Returns -1 if IP or CIDR string is invalid. </p>
-
-</div>
-</div>
-<a id="a1d98c31897344c8c2e6e6cde65045f09" name="a1d98c31897344c8c2e6e6cde65045f09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d98c31897344c8c2e6e6cde65045f09">&#9670;&#160;</a></span>SocketCommon_copy_addrinfo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct addrinfo * SocketCommon_copy_addrinfo </td>
-          <td>(</td>
-          <td class="paramtype">const struct addrinfo *&#160;</td>
-          <td class="paramname"><em>src</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_copy_addrinfo - Deep copy of addrinfo linked list @src: Source chain to copy (may be NULL) </p><dl class="section return"><dt>Returns</dt><dd>: malloc-allocated deep copy, or NULL on error</dd></dl>
-<p>Deep copies the entire chain including ai_addr and ai_canonname fields. Caller takes ownership and MUST free with <a class="el" href="SocketCommon_8h.html#a6c73595d93eeee7b21ad12b980770f5a">SocketCommon_free_addrinfo()</a>. Do NOT use freeaddrinfo() on the result - it's undefined behavior. No exceptions raised; returns NULL on malloc failure or src==NULL. Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a0b9037b75f684ba9a4fda235b0bf0ca0" name="a0b9037b75f684ba9a4fda235b0bf0ca0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b9037b75f684ba9a4fda235b0bf0ca0">&#9670;&#160;</a></span>SocketCommon_find_active_iov()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct iovec * SocketCommon_find_active_iov </td>
-          <td>(</td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>active_iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_find_active_iov - Find first non-empty iovec in array @iov: Array of iovec structures to search @iovcnt: Number of iovec structures @active_iovcnt: Output for count of remaining iovecs from active position</p>
-<p>Returns: Pointer to first iovec with iov_len &gt; 0, or NULL if all empty Thread-safe: Yes (read-only operation)</p>
-<p>Used by sendvall/recvvall to find the next active buffer segment after partial I/O operations have consumed some of the iovec array. </p>
-
-</div>
-</div>
-<a id="ae1c533bda5b245453885e07e2a7b4e83" name="ae1c533bda5b245453885e07e2a7b4e83"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1c533bda5b245453885e07e2a7b4e83">&#9670;&#160;</a></span>SocketCommon_format_bind_error()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_format_bind_error </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_format_bind_error - Format descriptive bind error message @host: Host string (NULL defaults to "any") @port: Port number</p>
-<p>Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES, etc.) Consolidated helper for Socket and SocketDgram bind error handling. Does not raise - caller should raise after calling this. </p>
-
-</div>
-</div>
-<a id="a6c73595d93eeee7b21ad12b980770f5a" name="a6c73595d93eeee7b21ad12b980770f5a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c73595d93eeee7b21ad12b980770f5a">&#9670;&#160;</a></span>SocketCommon_free_addrinfo()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_free_addrinfo </td>
-          <td>(</td>
-          <td class="paramtype">struct addrinfo *&#160;</td>
-          <td class="paramname"><em>ai</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_free_addrinfo - Free addrinfo chain created by copy_addrinfo @ai: Chain to free (may be NULL, safe no-op)</p>
-<p>Frees all nodes in the chain including ai_addr and ai_canonname fields. Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo. Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="aaeb641ee1edaa618b8680babae9a98c6" name="aaeb641ee1edaa618b8680babae9a98c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaeb641ee1edaa618b8680babae9a98c6">&#9670;&#160;</a></span>SocketCommon_free_base()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_free_base </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> *&#160;</td>
-          <td class="paramname"><em>base_ptr</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a70954c6e125769d15ffd6c3e31c89b75" name="a70954c6e125769d15ffd6c3e31c89b75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70954c6e125769d15ffd6c3e31c89b75">&#9670;&#160;</a></span>SocketCommon_get_dns_resolver()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> SocketCommon_get_dns_resolver </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_get_dns_resolver - Get global DNS resolver instance</p>
-<p>Returns: Global DNS resolver (lazily initialized on first call)</p>
-<p>Thread-safe: Yes - uses pthread_once for initialization</p>
-<p>The global DNS resolver is shared across all Socket and SocketDgram operations. It provides timeout guarantees for DNS resolution. </p>
-
-</div>
-</div>
-<a id="a4abf1412f29d6cec69326ca2a10e9e21" name="a4abf1412f29d6cec69326ca2a10e9e21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4abf1412f29d6cec69326ca2a10e9e21">&#9670;&#160;</a></span>SocketCommon_get_dns_timeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_get_dns_timeout </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_get_dns_timeout - Get current global DNS timeout</p>
-<p>Returns: Current timeout in milliseconds (0 = infinite)</p>
-<p>Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ab555c6739c1f1582b1d1aebfb008897e" name="ab555c6739c1f1582b1d1aebfb008897e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab555c6739c1f1582b1d1aebfb008897e">&#9670;&#160;</a></span>SocketCommon_get_socket_family()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_get_socket_family </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_get_socket_family - Get socket's address family @base: Socket base to query Returns: Socket family or AF_UNSPEC on error Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms. </p>
-
-</div>
-</div>
-<a id="a229de2f12f6169d6817195fb6490267d" name="a229de2f12f6169d6817195fb6490267d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a229de2f12f6169d6817195fb6490267d">&#9670;&#160;</a></span>SocketCommon_getoption_int()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_getoption_int </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>level</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>optname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_getoption_int - Get integer socket option @fd: File descriptor @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.) @optname: Option name (SO_KEEPALIVE, TCP_NODELAY, etc.) @value: Output pointer for option value @exception_type: Exception type to raise on failure Returns: 0 on success, -1 on failure Raises: Specified exception type on failure Thread-safe: Yes (operates on single fd) </p>
-
-</div>
-</div>
-<a id="a5c81dabc2c964625f56fd02b0a4f9c93" name="a5c81dabc2c964625f56fd02b0a4f9c93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c81dabc2c964625f56fd02b0a4f9c93">&#9670;&#160;</a></span>SocketCommon_getoption_timeval()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_getoption_timeval </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>level</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>optname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct timeval *&#160;</td>
-          <td class="paramname"><em>tv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_getoption_timeval - Get timeval socket option @fd: File descriptor @level: Option level (SOL_SOCKET) @optname: Option name (SO_RCVTIMEO, SO_SNDTIMEO) @tv: Output pointer for timeval structure @exception_type: Exception type to raise on failure Returns: 0 on success, -1 on failure Raises: Specified exception type on failure Thread-safe: Yes (operates on single fd) </p>
-
-</div>
-</div>
-<a id="ab28feafa0784876f732f4b79e03dcc8b" name="ab28feafa0784876f732f4b79e03dcc8b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab28feafa0784876f732f4b79e03dcc8b">&#9670;&#160;</a></span>SocketCommon_handle_bind_error()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_handle_bind_error </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>err</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>addr_str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_handle_bind_error - Log and raise bind error @err: errno from bind @addr_str: Addr string for log @exc_type: Type to raise Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal raise </p>
-
-</div>
-</div>
-<a id="a5641340520942ec7ba2412f3d50f3f12" name="a5641340520942ec7ba2412f3d50f3f12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5641340520942ec7ba2412f3d50f3f12">&#9670;&#160;</a></span>SocketCommon_has_cloexec()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_has_cloexec </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_has_cloexec - Check if close-on-exec flag is set @fd: File descriptor to check Returns: 1 if CLOEXEC is set, 0 if not set, -1 on error Thread-safe: Yes (operates on single fd) </p>
-
-</div>
-</div>
-<a id="a59068eaf0e0e017bb7492f2804a342b5" name="a59068eaf0e0e017bb7492f2804a342b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59068eaf0e0e017bb7492f2804a342b5">&#9670;&#160;</a></span>SocketCommon_join_multicast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_join_multicast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>group</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>interface</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a1c4923693d222515c078f6bcfbf9d0f5" name="a1c4923693d222515c078f6bcfbf9d0f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c4923693d222515c078f6bcfbf9d0f5">&#9670;&#160;</a></span>SocketCommon_leave_multicast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_leave_multicast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>group</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>interface</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ae9498d7bdb363435a4efce0f32011914" name="ae9498d7bdb363435a4efce0f32011914"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9498d7bdb363435a4efce0f32011914">&#9670;&#160;</a></span>SocketCommon_new_base()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> SocketCommon_new_base </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>domain</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>protocol</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a68b10ea8fcfd5f154b54d81a8000c827" name="a68b10ea8fcfd5f154b54d81a8000c827"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68b10ea8fcfd5f154b54d81a8000c827">&#9670;&#160;</a></span>SocketCommon_normalize_wildcard_host()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketCommon_normalize_wildcard_host </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_normalize_wildcard_host - Normalize wildcard host addresses to NULL @host: Host string to normalize Returns: NULL if wildcard ("0.0.0.0" or "::"), original host otherwise </p>
-
-</div>
-</div>
-<a id="af8d4b6a3c291b6ebbb73c13743304b42" name="af8d4b6a3c291b6ebbb73c13743304b42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8d4b6a3c291b6ebbb73c13743304b42">&#9670;&#160;</a></span>SocketCommon_parse_ip()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_parse_ip </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ip_str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>family</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_parse_ip - Validate and parse IP address string @ip_str: IP address string to validate @family: Output pointer for address family (AF_INET or AF_INET6), can be NULL Returns: 1 if valid IP address, 0 if invalid Thread-safe: Yes Note: Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid. </p>
-
-</div>
-</div>
-<a id="a7fc66958f42deef2824a80188baf4534" name="a7fc66958f42deef2824a80188baf4534"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fc66958f42deef2824a80188baf4534">&#9670;&#160;</a></span>SocketCommon_resolve_address()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_resolve_address </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct addrinfo *&#160;</td>
-          <td class="paramname"><em>hints</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct addrinfo **&#160;</td>
-          <td class="paramname"><em>res</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>socket_family</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>use_exceptions</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_resolve_address - Resolve hostname/port to addrinfo structure @host: Hostname or IP address (NULL for wildcard) @port: Port number (1 to SOCKET_MAX_PORT) @hints: Addrinfo hints structure @res: Output pointer to resolved addrinfo @exception_type: Exception type to raise on failure @socket_family: Socket family to match (AF_UNSPEC if none) @use_exceptions: If true, raise exceptions; if false, return error codes Returns: 0 on success, -1 on failure (if not using exceptions) Raises: Specified exception type on failure (if using exceptions) </p>
-
-</div>
-</div>
-<a id="a19eb14b9730f57df54eb5db71e1f5489" name="a19eb14b9730f57df54eb5db71e1f5489"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a19eb14b9730f57df54eb5db71e1f5489">&#9670;&#160;</a></span>SocketCommon_reverse_lookup()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_reverse_lookup </td>
-          <td>(</td>
-          <td class="paramtype">const struct sockaddr *&#160;</td>
-          <td class="paramname"><em>addr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">socklen_t&#160;</td>
-          <td class="paramname"><em>addrlen</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">socklen_t&#160;</td>
-          <td class="paramname"><em>hostlen</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>serv</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">socklen_t&#160;</td>
-          <td class="paramname"><em>servlen</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_reverse_lookup - Perform reverse DNS lookup (getnameinfo wrapper) @addr: Socket address to look up @addrlen: Length of socket address @host: Output buffer for hostname (NULL to skip) @hostlen: Size of host buffer @serv: Output buffer for service/port (NULL to skip) @servlen: Size of service buffer @flags: getnameinfo flags (NI_NUMERICHOST, NI_NAMEREQD, etc.) @exception_type: Exception type to raise on failure Returns: 0 on success, -1 on failure Raises: Specified exception type on failure Thread-safe: Yes Note: Wrapper around getnameinfo() for reverse DNS lookups. Use NI_NUMERICHOST flag to get numeric IP address instead of hostname. </p>
-
-</div>
-</div>
-<a id="ac32f45a0216c1be50d0a411459bc426c" name="ac32f45a0216c1be50d0a411459bc426c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac32f45a0216c1be50d0a411459bc426c">&#9670;&#160;</a></span>SocketCommon_set_cloexec_fd()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_set_cloexec_fd </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enable</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_set_cloexec_fd - Set close-on-exec flag on fd (unifies dups) @fd: File descriptor @enable: True to enable FD_CLOEXEC @exc_type: Raise on fail Uses fcntl F_SETFD; called after socket()/socketpair()/accept() fallback </p>
-
-</div>
-</div>
-<a id="a8df045c4215eb7538ad543cd9368864c" name="a8df045c4215eb7538ad543cd9368864c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8df045c4215eb7538ad543cd9368864c">&#9670;&#160;</a></span>SocketCommon_set_dns_timeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_set_dns_timeout </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_ms</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_set_dns_timeout - Set global DNS resolution timeout @timeout_ms: Timeout in milliseconds (0 = infinite, -1 = use default)</p>
-<p>Thread-safe: Yes - protected by mutex</p>
-<p>Affects all subsequent hostname resolution via Socket/SocketDgram APIs. Default: SOCKET_DEFAULT_DNS_TIMEOUT_MS (5000ms)</p>
-<p>Setting timeout_ms to 0 disables timeout (infinite wait). Setting timeout_ms to -1 resets to default. </p>
-
-</div>
-</div>
-<a id="aff179c5fc64896d364008582e755a8c4" name="aff179c5fc64896d364008582e755a8c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff179c5fc64896d364008582e755a8c4">&#9670;&#160;</a></span>SocketCommon_set_nonblock()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_set_nonblock </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>enable</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_set_nonblock - Set non-blocking mode @base: Base with fd @enable: True to enable non-block @exc_type: Raise on fail Unifies duplicated fcntl calls for O_NONBLOCK </p>
-
-</div>
-</div>
-<a id="a0a2e7917d36f5e23eab8c1238433dfba" name="a0a2e7917d36f5e23eab8c1238433dfba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0a2e7917d36f5e23eab8c1238433dfba">&#9670;&#160;</a></span>SocketCommon_set_option_int()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_set_option_int </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>level</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>optname</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_set_option_int - Set integer socket option @base: Base with fd @level: Option level (SOL_SOCKET, IPPROTO_TCP, etc.) @optname: Option name (SO_REUSEADDR, TCP_NODELAY, etc.) @value: Value to set @exc_type: Exception to raise on failure Generic setter for standard socket options, unifies duplicated setsockopt calls Thread-safe: Yes for own resources </p>
-
-</div>
-</div>
-<a id="a1eab30cecc7dae2a4c02efd95c5feae5" name="a1eab30cecc7dae2a4c02efd95c5feae5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1eab30cecc7dae2a4c02efd95c5feae5">&#9670;&#160;</a></span>SocketCommon_set_ttl()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_set_ttl </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>family</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>ttl</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_set_ttl - Set TTL or hop limit based on family @base: Base with fd @family: AF_INET or AF_INET6 @ttl: TTL value @exc_type: Raise on fail Unifies set_ipv4_ttl and set_ipv6_hop_limit </p>
-
-</div>
-</div>
-<a id="ad3eb3f6fe09b2b58693a7044631916d8" name="ad3eb3f6fe09b2b58693a7044631916d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3eb3f6fe09b2b58693a7044631916d8">&#9670;&#160;</a></span>SocketCommon_setcloexec()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_setcloexec </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>enable</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_setcloexec - Set close-on-exec flag on file descriptor @fd: File descriptor to modify @enable: 1 to enable CLOEXEC, 0 to disable Returns: 0 on success, -1 on failure Thread-safe: Yes (operates on single fd) </p>
-
-</div>
-</div>
-<a id="a47abb5d32959260cc8251419d652de1b" name="a47abb5d32959260cc8251419d652de1b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47abb5d32959260cc8251419d652de1b">&#9670;&#160;</a></span>SocketCommon_setup_hints()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_setup_hints </td>
-          <td>(</td>
-          <td class="paramtype">struct addrinfo *&#160;</td>
-          <td class="paramname"><em>hints</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>socktype</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_setup_hints - Initialize addrinfo hints structure @hints: Hints structure to initialize @socktype: Socket type (SOCK_STREAM or SOCK_DGRAM) @flags: Additional flags (0 for connect/sendto, AI_PASSIVE for bind) </p>
-
-</div>
-</div>
-<a id="aad5b4b92ce57c8168a7cb4462ee73d99" name="aad5b4b92ce57c8168a7cb4462ee73d99"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad5b4b92ce57c8168a7cb4462ee73d99">&#9670;&#160;</a></span>SocketCommon_sync_iov_progress()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_sync_iov_progress </td>
-          <td>(</td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>original</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>copy</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_sync_iov_progress - Sync original iovec with working copy progress @original: Original iovec array to update @copy: Working copy that has been advanced @iovcnt: Number of iovec structures</p>
-<p>Updates the original iovec array to reflect progress made in the copy. Used when recvvall needs to update caller's iovec on partial completion. Thread-safe: Yes (local ops) </p>
-
-</div>
-</div>
-<a id="ad2318fb3606f6a71c2a11e247ff876d5" name="ad2318fb3606f6a71c2a11e247ff876d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2318fb3606f6a71c2a11e247ff876d5">&#9670;&#160;</a></span>SocketCommon_timeouts_getdefaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_timeouts_getdefaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *&#160;</td>
-          <td class="paramname"><em>timeouts</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_timeouts_getdefaults - Get global default timeouts @timeouts: Output pointer for timeout structure Thread-safe: Yes (uses mutex protection) </p>
-
-</div>
-</div>
-<a id="a98a87ba229cdf264bec87129ce8918f5" name="a98a87ba229cdf264bec87129ce8918f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98a87ba229cdf264bec87129ce8918f5">&#9670;&#160;</a></span>SocketCommon_timeouts_setdefaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_timeouts_setdefaults </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *&#160;</td>
-          <td class="paramname"><em>timeouts</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_timeouts_setdefaults - Set global default timeouts @timeouts: Timeout values to set as defaults Thread-safe: Yes (uses mutex protection) </p>
-
-</div>
-</div>
-<a id="aecff13e4edc3230da4141714e2e9297f" name="aecff13e4edc3230da4141714e2e9297f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aecff13e4edc3230da4141714e2e9297f">&#9670;&#160;</a></span>SocketCommon_try_bind_address()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_try_bind_address </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct sockaddr *&#160;</td>
-          <td class="paramname"><em>addr</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">socklen_t&#160;</td>
-          <td class="paramname"><em>addrlen</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_try_bind_address - Try bind fd to address (extracted from Socket.c) @base: Socket base with fd @addr: Address to bind @addrlen: Addr length @exc_type: Raise on fail Returns: 0 success, -1 fail (raises on error) Integrates with base endpoints if success (caller handles) </p>
-
-</div>
-</div>
-<a id="ae257e8500385dffd243e9be383ade862" name="ae257e8500385dffd243e9be383ade862"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae257e8500385dffd243e9be383ade862">&#9670;&#160;</a></span>SocketCommon_try_bind_resolved_addresses()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketCommon_try_bind_resolved_addresses </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct addrinfo *&#160;</td>
-          <td class="paramname"><em>res</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>family</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_try_bind_resolved_addresses - Try bind to resolved addrinfo list @base: Socket base with fd @res: addrinfo list from resolve @family: Preferred family (AF_INET etc) @exc_type: Raise on all fails Returns: 0 success (bound to first successful), -1 fail Loops addresses, calls try_bind_address, sets base local endpoint on success Handles dual-stack, reuseaddr hints via set_option_int </p>
-
-</div>
-</div>
-<a id="ae2e1b3e6d9c494062a97bcc88a0e6a97" name="ae2e1b3e6d9c494062a97bcc88a0e6a97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2e1b3e6d9c494062a97bcc88a0e6a97">&#9670;&#160;</a></span>SocketCommon_update_local_endpoint()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_update_local_endpoint </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a552530543d655ce8871dcfe96a6675fb" name="a552530543d655ce8871dcfe96a6675fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a552530543d655ce8871dcfe96a6675fb">&#9670;&#160;</a></span>SocketCommon_validate_host_not_null()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_validate_host_not_null </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketCommon_validate_host_not_null - Validate host is not NULL @host: Host string to validate @exception_type: Exception type to raise on NULL host Raises: Specified exception type if host is NULL Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ab782ed7ac027b9d3c92cb4bef1b20b4a" name="ab782ed7ac027b9d3c92cb4bef1b20b4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab782ed7ac027b9d3c92cb4bef1b20b4a">&#9670;&#160;</a></span>SocketCommon_validate_hostname()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_validate_hostname </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_validate_hostname - Validate hostname length @host: Hostname to validate @exception_type: Exception type to raise on invalid hostname Raises: Specified exception type if hostname is too long </p>
-
-</div>
-</div>
-<a id="ac849aa92d4bd728b61c37b6e63e2a804" name="ac849aa92d4bd728b61c37b6e63e2a804"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac849aa92d4bd728b61c37b6e63e2a804">&#9670;&#160;</a></span>SocketCommon_validate_port()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_validate_port </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exception_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketCommon_validate_port - Validate port number is in valid range @port: Port number to validate @exception_type: Exception type to raise on invalid port Raises: Specified exception type if port is invalid </p>
-
-</div>
-</div>
-<a id="a433d928caa9de0b29ab9f2d48e166c5c" name="a433d928caa9de0b29ab9f2d48e166c5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a433d928caa9de0b29ab9f2d48e166c5c">&#9670;&#160;</a></span>SocketLiveCount_decrement()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void SocketLiveCount_decrement </td>
-          <td>(</td>
-          <td class="paramtype">struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketLiveCount_decrement - Decrement live count (thread-safe) @tracker: Live count tracker </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00538">538</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketCommon_8h_source.html#l00512">SocketLiveCount::count</a>, and <a class="el" href="SocketCommon_8h_source.html#l00513">SocketLiveCount::mutex</a>.</p>
-
-</div>
-</div>
-<a id="a02b16726c7750c470af8a59ffe041098" name="a02b16726c7750c470af8a59ffe041098"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a02b16726c7750c470af8a59ffe041098">&#9670;&#160;</a></span>SocketLiveCount_get()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int SocketLiveCount_get </td>
-          <td>(</td>
-          <td class="paramtype">struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketLiveCount_get - Get current live count (thread-safe) @tracker: Live count tracker Returns: Current count value </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00552">552</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketCommon_8h_source.html#l00512">SocketLiveCount::count</a>, and <a class="el" href="SocketCommon_8h_source.html#l00513">SocketLiveCount::mutex</a>.</p>
-
-</div>
-</div>
-<a id="a93d46dcf1a875ef525eb96d5f2271fb3" name="a93d46dcf1a875ef525eb96d5f2271fb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a93d46dcf1a875ef525eb96d5f2271fb3">&#9670;&#160;</a></span>SocketLiveCount_increment()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static void SocketLiveCount_increment </td>
-          <td>(</td>
-          <td class="paramtype">struct <a class="el" href="SocketCommon_8h.html#structSocketLiveCount">SocketLiveCount</a> *&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketLiveCount_increment - Increment live count (thread-safe) @tracker: Live count tracker </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00526">526</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketCommon_8h_source.html#l00512">SocketLiveCount::count</a>, and <a class="el" href="SocketCommon_8h_source.html#l00513">SocketLiveCount::mutex</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon_8h_source.html#l00288">288</a> of file <a class="el" href="SocketCommon_8h_source.html">SocketCommon.h</a>.</p>
 
 </div>
 </div>
@@ -2139,7 +423,7 @@ mutex</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> socket_default_timeouts</td>
+          <td class="memname"><a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> socket_default_timeouts</td>
         </tr>
       </table>
   </td>
@@ -2162,73 +446,6 @@ mutex</td>
       <table class="memname">
         <tr>
           <td class="memname">pthread_mutex_t socket_default_timeouts_mutex</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a225f4a8fd657fd52a05146c6fc4f58b0" name="a225f4a8fd657fd52a05146c6fc4f58b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a225f4a8fd657fd52a05146c6fc4f58b0">&#9670;&#160;</a></span>Socket_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> Socket_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketCommon_8h.html">SocketCommon.h</a> - Common utilities shared between Socket and SocketDgram modules </p>
-
-</div>
-</div>
-<a id="a4218ae116e8def59908f76fd1e9dbe3e" name="a4218ae116e8def59908f76fd1e9dbe3e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4218ae116e8def59908f76fd1e9dbe3e">&#9670;&#160;</a></span>SocketCommon_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketCommon_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a28354c49d1726c674932f420a57bb21d" name="a28354c49d1726c674932f420a57bb21d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28354c49d1726c674932f420a57bb21d">&#9670;&#160;</a></span>SocketDgram_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketDgram_Failed</td>
         </tr>
       </table>
   </td>

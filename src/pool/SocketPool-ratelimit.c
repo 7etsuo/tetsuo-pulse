@@ -56,12 +56,15 @@
  */
 
 /**
- * is_valid_ip_for_tracking - Check if IP is valid for tracking
- * @ip: IP address string (may be NULL)
- *
- * Returns: 1 if IP is valid (non-NULL and non-empty), 0 otherwise
+ * @brief Check if IP is valid for tracking.
+ * @ingroup connection_mgmt
+ * @param ip IP address string (may be NULL).
+ * @return 1 if IP is valid (non-NULL and non-empty), 0 otherwise.
  *
  * Centralizes the IP validation pattern used throughout this module.
+ *
+ * @see SocketPool_track_ip() for usage.
+ * @see SocketPool_release_ip() for releasing tracked IPs.
  */
 static int
 is_valid_ip_for_tracking (const char *ip)
@@ -75,14 +78,18 @@ is_valid_ip_for_tracking (const char *ip)
  */
 
 /**
- * locked_ip_op_void - Perform void operation on IP tracker under lock
- * @pool: Connection pool
- * @ip: IP address
- * @op: Operation to perform if tracker exists and IP valid
+ * @brief Perform void operation on IP tracker under lock.
+ * @ingroup connection_mgmt
+ * @param pool Connection pool.
+ * @param ip IP address.
+ * @param op Operation to perform if tracker exists and IP valid.
  *
  * Performs the operation atomically under pool mutex.
  * Skips if IP invalid or no tracker.
- * Thread-safe: Yes
+ * @threadsafe Yes.
+ *
+ * @see SocketPool_track_ip() for track operation.
+ * @see SocketPool_release_ip() for release operation.
  */
 static void
 locked_ip_op_void (T pool, const char *ip,

@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">
 <polygon fill="#999999" stroke="#666666" points="202.6,-239 115.6,-239 115.6,-220 202.6,-220 202.6,-239"/>
 <text text-anchor="middle" x="159.1" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTP1.h</text>
 </a>
@@ -84,7 +84,7 @@
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000005"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="382.1,-129 310.1,-129 310.1,-110 382.1,-110 382.1,-129"/>
 <text text-anchor="middle" x="346.1" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -102,7 +102,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="384.6,-74 307.6,-74 307.6,-55 384.6,-55 384.6,-74"/>
 <text text-anchor="middle" x="346.1" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -120,7 +120,7 @@
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHTTP_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketHTTP_8h.html" target="_top" xlink:title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities.">
 <polygon fill="white" stroke="#666666" points="248.1,-184 148.1,-184 148.1,-165 248.1,-165 248.1,-184"/>
 <text text-anchor="middle" x="198.1" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHTTP.h</text>
 </a>

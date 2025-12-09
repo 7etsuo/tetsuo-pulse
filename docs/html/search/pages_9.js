@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['websocket_20guide_0',['WebSocket Guide',['../websocket_guide.html',1,'']]]
+  ['security_20guide_0',['Security Guide',['../security_guide.html',1,'']]],
+  ['socket_20library_1',['Socket Library',['../index.html',1,'']]]
 ];

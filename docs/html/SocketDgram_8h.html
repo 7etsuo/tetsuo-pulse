@@ -115,13 +115,16 @@ $(document).ready(function(){initNavTree('SocketDgram_8h.html',''); initResizabl
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketDgram.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketDgram.h File Reference<div class="ingroups"><a class="el" href="group__core__io.html">Core I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>High-level UDP/datagram socket interface with multicast and broadcast support.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketCommon_8h_source.html">socket/SocketCommon.h</a>&quot;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;sys/socket.h&gt;</code><br />
-<code>#include &quot;<a class="el" href="SocketCommon_8h_source.html">socket/SocketCommon.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketDgram.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -141,91 +144,162 @@ $(document).ready(function(){initNavTree('SocketDgram_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td></tr>
+<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a178c1e09efbfdacb14740d3a0265721f" id="r_a178c1e09efbfdacb14740d3a0265721f"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td></tr>
-<tr class="separator:a178c1e09efbfdacb14740d3a0265721f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga178c1e09efbfdacb14740d3a0265721f" id="r_ga178c1e09efbfdacb14740d3a0265721f"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td></tr>
+<tr class="memdesc:ga178c1e09efbfdacb14740d3a0265721f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for UDP/datagram sockets.  <br /></td></tr>
+<tr class="separator:ga178c1e09efbfdacb14740d3a0265721f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ad6902c87ab5883f155dab2adfa950c52" id="r_ad6902c87ab5883f155dab2adfa950c52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a> (int domain, int protocol)</td></tr>
-<tr class="separator:ad6902c87ab5883f155dab2adfa950c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a020169c79640786afa4c36fd1dc965e4" id="r_a020169c79640786afa4c36fd1dc965e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *socket)</td></tr>
-<tr class="separator:a020169c79640786afa4c36fd1dc965e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c81d9ef1d90e7ab34dd7286f13878ee" id="r_a0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0c81d9ef1d90e7ab34dd7286f13878ee">SocketDgram_bind</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
-<tr class="separator:a0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcb18c16142d3b5ef49bee08a96e15fa" id="r_abcb18c16142d3b5ef49bee08a96e15fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
-<tr class="separator:abcb18c16142d3b5ef49bee08a96e15fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08371cbf32cb15528b42e189f8267923" id="r_a08371cbf32cb15528b42e189f8267923"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a08371cbf32cb15528b42e189f8267923">SocketDgram_sendto</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
-<tr class="separator:a08371cbf32cb15528b42e189f8267923"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada4b76edaec59a44eb5bc959e6948d3f" id="r_ada4b76edaec59a44eb5bc959e6948d3f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len, char *host, size_t host_len, int *port)</td></tr>
-<tr class="separator:ada4b76edaec59a44eb5bc959e6948d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08b2ab199a5c50a654683ba1ddb4d004" id="r_a08b2ab199a5c50a654683ba1ddb4d004"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a08b2ab199a5c50a654683ba1ddb4d004">SocketDgram_send</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="separator:a08b2ab199a5c50a654683ba1ddb4d004"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af832ef8734ab4dfb43ad639470461bda" id="r_af832ef8734ab4dfb43ad639470461bda"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af832ef8734ab4dfb43ad639470461bda">SocketDgram_recv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="separator:af832ef8734ab4dfb43ad639470461bda"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc08ada68a6f9a6922d4e2b0b8f4c081" id="r_adc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#adc08ada68a6f9a6922d4e2b0b8f4c081">SocketDgram_sendall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="separator:adc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af96de127ecced1b5d8166e6a039e664c" id="r_af96de127ecced1b5d8166e6a039e664c"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af96de127ecced1b5d8166e6a039e664c">SocketDgram_recvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="separator:af96de127ecced1b5d8166e6a039e664c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2527bddec3459405a6a989de06727a2f" id="r_a2527bddec3459405a6a989de06727a2f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a2527bddec3459405a6a989de06727a2f">SocketDgram_sendv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="separator:a2527bddec3459405a6a989de06727a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a485908b4ff4a79f514f8e86ec6030107" id="r_a485908b4ff4a79f514f8e86ec6030107"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a485908b4ff4a79f514f8e86ec6030107">SocketDgram_recvv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="separator:a485908b4ff4a79f514f8e86ec6030107"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa208c4a07e76579c3e924ee31ea02777" id="r_aa208c4a07e76579c3e924ee31ea02777"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#aa208c4a07e76579c3e924ee31ea02777">SocketDgram_sendvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="separator:aa208c4a07e76579c3e924ee31ea02777"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31fd826092fb6b9c1a3b11953568f2d6" id="r_a31fd826092fb6b9c1a3b11953568f2d6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a31fd826092fb6b9c1a3b11953568f2d6">SocketDgram_recvvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="separator:a31fd826092fb6b9c1a3b11953568f2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1817a8561af1801a9baa7630bc277ce6" id="r_a1817a8561af1801a9baa7630bc277ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a1817a8561af1801a9baa7630bc277ce6">SocketDgram_setnonblocking</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a1817a8561af1801a9baa7630bc277ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74995a7164d93c4e958da6642e0f317d" id="r_a74995a7164d93c4e958da6642e0f317d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a74995a7164d93c4e958da6642e0f317d">SocketDgram_setreuseaddr</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a74995a7164d93c4e958da6642e0f317d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9770b3c571ac6a900071db266a632816" id="r_a9770b3c571ac6a900071db266a632816"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a9770b3c571ac6a900071db266a632816">SocketDgram_setreuseport</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a9770b3c571ac6a900071db266a632816"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a637a1a778f293e4843f2355a9299d381" id="r_a637a1a778f293e4843f2355a9299d381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a637a1a778f293e4843f2355a9299d381">SocketDgram_setbroadcast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
-<tr class="separator:a637a1a778f293e4843f2355a9299d381"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae25dbfe6a79cb46494ec438accb53db0" id="r_ae25dbfe6a79cb46494ec438accb53db0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ae25dbfe6a79cb46494ec438accb53db0">SocketDgram_joinmulticast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
-<tr class="separator:ae25dbfe6a79cb46494ec438accb53db0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a53cb8e627cf35e3d0c6db85e3bc33bab" id="r_a53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a53cb8e627cf35e3d0c6db85e3bc33bab">SocketDgram_leavemulticast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
-<tr class="separator:a53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a22d94185a6ccf28eceb98d69240ba3d2" id="r_a22d94185a6ccf28eceb98d69240ba3d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a22d94185a6ccf28eceb98d69240ba3d2">SocketDgram_setttl</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int ttl)</td></tr>
-<tr class="separator:a22d94185a6ccf28eceb98d69240ba3d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afe579d108c83517ff9ceeac750139bc4" id="r_afe579d108c83517ff9ceeac750139bc4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#afe579d108c83517ff9ceeac750139bc4">SocketDgram_settimeout</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int timeout_sec)</td></tr>
-<tr class="separator:afe579d108c83517ff9ceeac750139bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a99243c75f546aab2534b529611b647f8" id="r_a99243c75f546aab2534b529611b647f8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a99243c75f546aab2534b529611b647f8">SocketDgram_gettimeout</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a99243c75f546aab2534b529611b647f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6c2bde38c3a7addb7cfffe98a253f60" id="r_ae6c2bde38c3a7addb7cfffe98a253f60"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ae6c2bde38c3a7addb7cfffe98a253f60">SocketDgram_getbroadcast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:ae6c2bde38c3a7addb7cfffe98a253f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b91970d4ffe2a7162c4104b0b6de78f" id="r_a6b91970d4ffe2a7162c4104b0b6de78f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a6b91970d4ffe2a7162c4104b0b6de78f">SocketDgram_getttl</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a6b91970d4ffe2a7162c4104b0b6de78f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0dd532f19eef5d8220480e06cc3a7db" id="r_ab0dd532f19eef5d8220480e06cc3a7db"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ab0dd532f19eef5d8220480e06cc3a7db">SocketDgram_getrcvbuf</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:ab0dd532f19eef5d8220480e06cc3a7db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af54f02197f8c0dc53fbdf333d476aae2" id="r_af54f02197f8c0dc53fbdf333d476aae2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af54f02197f8c0dc53fbdf333d476aae2">SocketDgram_getsndbuf</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:af54f02197f8c0dc53fbdf333d476aae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a73455982ede6d44649f85adb25c4bda2" id="r_a73455982ede6d44649f85adb25c4bda2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a73455982ede6d44649f85adb25c4bda2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06d3085b3b7287330e8cb49d6d9a4da1" id="r_a06d3085b3b7287330e8cb49d6d9a4da1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a06d3085b3b7287330e8cb49d6d9a4da1">SocketDgram_isbound</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a06d3085b3b7287330e8cb49d6d9a4da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a54e91e6824df0c114a5e6a4d79e5c6fb" id="r_a54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a54e91e6824df0c114a5e6a4d79e5c6fb">SocketDgram_fd</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9822234959be9508363bb3c0f2bd47b7" id="r_a9822234959be9508363bb3c0f2bd47b7"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a9822234959be9508363bb3c0f2bd47b7">SocketDgram_getlocaladdr</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a9822234959be9508363bb3c0f2bd47b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b2685e6ad39d1c2fc16df7234f7a87a" id="r_a8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a8b2685e6ad39d1c2fc16df7234f7a87a">SocketDgram_getlocalport</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="separator:a8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc7a0ae08dfe973bee1067aa4a6869d2" id="r_acc7a0ae08dfe973bee1067aa4a6869d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#acc7a0ae08dfe973bee1067aa4a6869d2">SocketDgram_setcloexec</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
-<tr class="separator:acc7a0ae08dfe973bee1067aa4a6869d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e8f0a454d58b2ff87878e39960c9187" id="r_a0e8f0a454d58b2ff87878e39960c9187"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0e8f0a454d58b2ff87878e39960c9187">SocketDgram_debug_live_count</a> (void)</td></tr>
-<tr class="separator:a0e8f0a454d58b2ff87878e39960c9187"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad6902c87ab5883f155dab2adfa950c52" id="r_gad6902c87ab5883f155dab2adfa950c52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a> (int domain, int protocol)</td></tr>
+<tr class="memdesc:gad6902c87ab5883f155dab2adfa950c52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new UDP socket.  <br /></td></tr>
+<tr class="separator:gad6902c87ab5883f155dab2adfa950c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga020169c79640786afa4c36fd1dc965e4" id="r_ga020169c79640786afa4c36fd1dc965e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *socket)</td></tr>
+<tr class="memdesc:ga020169c79640786afa4c36fd1dc965e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a socket and close the connection.  <br /></td></tr>
+<tr class="separator:ga020169c79640786afa4c36fd1dc965e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0c81d9ef1d90e7ab34dd7286f13878ee" id="r_ga0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0c81d9ef1d90e7ab34dd7286f13878ee">SocketDgram_bind</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
+<tr class="memdesc:ga0c81d9ef1d90e7ab34dd7286f13878ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bind socket to address and port.  <br /></td></tr>
+<tr class="separator:ga0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabcb18c16142d3b5ef49bee08a96e15fa" id="r_gabcb18c16142d3b5ef49bee08a96e15fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gabcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
+<tr class="memdesc:gabcb18c16142d3b5ef49bee08a96e15fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default destination for socket.  <br /></td></tr>
+<tr class="separator:gabcb18c16142d3b5ef49bee08a96e15fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga08371cbf32cb15528b42e189f8267923" id="r_ga08371cbf32cb15528b42e189f8267923"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga08371cbf32cb15528b42e189f8267923">SocketDgram_sendto</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
+<tr class="memdesc:ga08371cbf32cb15528b42e189f8267923"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send datagram to specific address.  <br /></td></tr>
+<tr class="separator:ga08371cbf32cb15528b42e189f8267923"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gada4b76edaec59a44eb5bc959e6948d3f" id="r_gada4b76edaec59a44eb5bc959e6948d3f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len, char *host, size_t host_len, int *port)</td></tr>
+<tr class="memdesc:gada4b76edaec59a44eb5bc959e6948d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive datagram and get sender address.  <br /></td></tr>
+<tr class="separator:gada4b76edaec59a44eb5bc959e6948d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga08b2ab199a5c50a654683ba1ddb4d004" id="r_ga08b2ab199a5c50a654683ba1ddb4d004"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga08b2ab199a5c50a654683ba1ddb4d004">SocketDgram_send</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
+<tr class="memdesc:ga08b2ab199a5c50a654683ba1ddb4d004"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send to default destination (connected socket).  <br /></td></tr>
+<tr class="separator:ga08b2ab199a5c50a654683ba1ddb4d004"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf832ef8734ab4dfb43ad639470461bda" id="r_gaf832ef8734ab4dfb43ad639470461bda"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf832ef8734ab4dfb43ad639470461bda">SocketDgram_recv</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
+<tr class="memdesc:gaf832ef8734ab4dfb43ad639470461bda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive from default source (connected socket).  <br /></td></tr>
+<tr class="separator:gaf832ef8734ab4dfb43ad639470461bda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadc08ada68a6f9a6922d4e2b0b8f4c081" id="r_gadc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gadc08ada68a6f9a6922d4e2b0b8f4c081">SocketDgram_sendall</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
+<tr class="memdesc:gadc08ada68a6f9a6922d4e2b0b8f4c081"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send all data (handles partial sends).  <br /></td></tr>
+<tr class="separator:gadc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf96de127ecced1b5d8166e6a039e664c" id="r_gaf96de127ecced1b5d8166e6a039e664c"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf96de127ecced1b5d8166e6a039e664c">SocketDgram_recvall</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
+<tr class="memdesc:gaf96de127ecced1b5d8166e6a039e664c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive all requested data (handles partial receives).  <br /></td></tr>
+<tr class="separator:gaf96de127ecced1b5d8166e6a039e664c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2527bddec3459405a6a989de06727a2f" id="r_ga2527bddec3459405a6a989de06727a2f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2527bddec3459405a6a989de06727a2f">SocketDgram_sendv</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:ga2527bddec3459405a6a989de06727a2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather send (writev wrapper).  <br /></td></tr>
+<tr class="separator:ga2527bddec3459405a6a989de06727a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga485908b4ff4a79f514f8e86ec6030107" id="r_ga485908b4ff4a79f514f8e86ec6030107"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga485908b4ff4a79f514f8e86ec6030107">SocketDgram_recvv</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:ga485908b4ff4a79f514f8e86ec6030107"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather receive (readv wrapper).  <br /></td></tr>
+<tr class="separator:ga485908b4ff4a79f514f8e86ec6030107"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa208c4a07e76579c3e924ee31ea02777" id="r_gaa208c4a07e76579c3e924ee31ea02777"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa208c4a07e76579c3e924ee31ea02777">SocketDgram_sendvall</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:gaa208c4a07e76579c3e924ee31ea02777"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather send all (handles partial sends).  <br /></td></tr>
+<tr class="separator:gaa208c4a07e76579c3e924ee31ea02777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga31fd826092fb6b9c1a3b11953568f2d6" id="r_ga31fd826092fb6b9c1a3b11953568f2d6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga31fd826092fb6b9c1a3b11953568f2d6">SocketDgram_recvvall</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:ga31fd826092fb6b9c1a3b11953568f2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather receive all (handles partial receives).  <br /></td></tr>
+<tr class="separator:ga31fd826092fb6b9c1a3b11953568f2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1817a8561af1801a9baa7630bc277ce6" id="r_ga1817a8561af1801a9baa7630bc277ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1817a8561af1801a9baa7630bc277ce6">SocketDgram_setnonblocking</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga1817a8561af1801a9baa7630bc277ce6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable non-blocking mode.  <br /></td></tr>
+<tr class="separator:ga1817a8561af1801a9baa7630bc277ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga74995a7164d93c4e958da6642e0f317d" id="r_ga74995a7164d93c4e958da6642e0f317d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga74995a7164d93c4e958da6642e0f317d">SocketDgram_setreuseaddr</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga74995a7164d93c4e958da6642e0f317d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable address reuse.  <br /></td></tr>
+<tr class="separator:ga74995a7164d93c4e958da6642e0f317d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9770b3c571ac6a900071db266a632816" id="r_ga9770b3c571ac6a900071db266a632816"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga9770b3c571ac6a900071db266a632816">SocketDgram_setreuseport</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga9770b3c571ac6a900071db266a632816"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable port reuse across sockets.  <br /></td></tr>
+<tr class="separator:ga9770b3c571ac6a900071db266a632816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga637a1a778f293e4843f2355a9299d381" id="r_ga637a1a778f293e4843f2355a9299d381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga637a1a778f293e4843f2355a9299d381">SocketDgram_setbroadcast</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
+<tr class="memdesc:ga637a1a778f293e4843f2355a9299d381"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable broadcast.  <br /></td></tr>
+<tr class="separator:ga637a1a778f293e4843f2355a9299d381"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae25dbfe6a79cb46494ec438accb53db0" id="r_gae25dbfe6a79cb46494ec438accb53db0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae25dbfe6a79cb46494ec438accb53db0">SocketDgram_joinmulticast</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
+<tr class="memdesc:gae25dbfe6a79cb46494ec438accb53db0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Join multicast group.  <br /></td></tr>
+<tr class="separator:gae25dbfe6a79cb46494ec438accb53db0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga53cb8e627cf35e3d0c6db85e3bc33bab" id="r_ga53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga53cb8e627cf35e3d0c6db85e3bc33bab">SocketDgram_leavemulticast</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
+<tr class="memdesc:ga53cb8e627cf35e3d0c6db85e3bc33bab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Leave multicast group.  <br /></td></tr>
+<tr class="separator:ga53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga22d94185a6ccf28eceb98d69240ba3d2" id="r_ga22d94185a6ccf28eceb98d69240ba3d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga22d94185a6ccf28eceb98d69240ba3d2">SocketDgram_setttl</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int ttl)</td></tr>
+<tr class="memdesc:ga22d94185a6ccf28eceb98d69240ba3d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set time-to-live (hop limit).  <br /></td></tr>
+<tr class="separator:ga22d94185a6ccf28eceb98d69240ba3d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafe579d108c83517ff9ceeac750139bc4" id="r_gafe579d108c83517ff9ceeac750139bc4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafe579d108c83517ff9ceeac750139bc4">SocketDgram_settimeout</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int timeout_sec)</td></tr>
+<tr class="memdesc:gafe579d108c83517ff9ceeac750139bc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set socket timeout.  <br /></td></tr>
+<tr class="separator:gafe579d108c83517ff9ceeac750139bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga99243c75f546aab2534b529611b647f8" id="r_ga99243c75f546aab2534b529611b647f8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga99243c75f546aab2534b529611b647f8">SocketDgram_gettimeout</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga99243c75f546aab2534b529611b647f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get socket timeout.  <br /></td></tr>
+<tr class="separator:ga99243c75f546aab2534b529611b647f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae6c2bde38c3a7addb7cfffe98a253f60" id="r_gae6c2bde38c3a7addb7cfffe98a253f60"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae6c2bde38c3a7addb7cfffe98a253f60">SocketDgram_getbroadcast</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gae6c2bde38c3a7addb7cfffe98a253f60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get broadcast setting.  <br /></td></tr>
+<tr class="separator:gae6c2bde38c3a7addb7cfffe98a253f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6b91970d4ffe2a7162c4104b0b6de78f" id="r_ga6b91970d4ffe2a7162c4104b0b6de78f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga6b91970d4ffe2a7162c4104b0b6de78f">SocketDgram_getttl</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga6b91970d4ffe2a7162c4104b0b6de78f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get time-to-live (hop limit).  <br /></td></tr>
+<tr class="separator:ga6b91970d4ffe2a7162c4104b0b6de78f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab0dd532f19eef5d8220480e06cc3a7db" id="r_gab0dd532f19eef5d8220480e06cc3a7db"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab0dd532f19eef5d8220480e06cc3a7db">SocketDgram_getrcvbuf</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gab0dd532f19eef5d8220480e06cc3a7db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get receive buffer size.  <br /></td></tr>
+<tr class="separator:gab0dd532f19eef5d8220480e06cc3a7db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf54f02197f8c0dc53fbdf333d476aae2" id="r_gaf54f02197f8c0dc53fbdf333d476aae2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf54f02197f8c0dc53fbdf333d476aae2">SocketDgram_getsndbuf</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:gaf54f02197f8c0dc53fbdf333d476aae2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get send buffer size.  <br /></td></tr>
+<tr class="separator:gaf54f02197f8c0dc53fbdf333d476aae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga73455982ede6d44649f85adb25c4bda2" id="r_ga73455982ede6d44649f85adb25c4bda2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga73455982ede6d44649f85adb25c4bda2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if datagram socket is connected.  <br /></td></tr>
+<tr class="separator:ga73455982ede6d44649f85adb25c4bda2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga06d3085b3b7287330e8cb49d6d9a4da1" id="r_ga06d3085b3b7287330e8cb49d6d9a4da1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga06d3085b3b7287330e8cb49d6d9a4da1">SocketDgram_isbound</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga06d3085b3b7287330e8cb49d6d9a4da1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if datagram socket is bound to an address.  <br /></td></tr>
+<tr class="separator:ga06d3085b3b7287330e8cb49d6d9a4da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga54e91e6824df0c114a5e6a4d79e5c6fb" id="r_ga54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga54e91e6824df0c114a5e6a4d79e5c6fb">SocketDgram_fd</a> (const <a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga54e91e6824df0c114a5e6a4d79e5c6fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying file descriptor.  <br /></td></tr>
+<tr class="separator:ga54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9822234959be9508363bb3c0f2bd47b7" id="r_ga9822234959be9508363bb3c0f2bd47b7"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga9822234959be9508363bb3c0f2bd47b7">SocketDgram_getlocaladdr</a> (const <a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga9822234959be9508363bb3c0f2bd47b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get local IP address.  <br /></td></tr>
+<tr class="separator:ga9822234959be9508363bb3c0f2bd47b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8b2685e6ad39d1c2fc16df7234f7a87a" id="r_ga8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8b2685e6ad39d1c2fc16df7234f7a87a">SocketDgram_getlocalport</a> (const <a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
+<tr class="memdesc:ga8b2685e6ad39d1c2fc16df7234f7a87a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get local port number.  <br /></td></tr>
+<tr class="separator:ga8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacc7a0ae08dfe973bee1067aa4a6869d2" id="r_gacc7a0ae08dfe973bee1067aa4a6869d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gacc7a0ae08dfe973bee1067aa4a6869d2">SocketDgram_setcloexec</a> (<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
+<tr class="memdesc:gacc7a0ae08dfe973bee1067aa4a6869d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Control close-on-exec flag.  <br /></td></tr>
+<tr class="separator:gacc7a0ae08dfe973bee1067aa4a6869d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e8f0a454d58b2ff87878e39960c9187" id="r_ga0e8f0a454d58b2ff87878e39960c9187"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0e8f0a454d58b2ff87878e39960c9187">SocketDgram_debug_live_count</a> (void)</td></tr>
+<tr class="memdesc:ga0e8f0a454d58b2ff87878e39960c9187"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of live datagram socket instances.  <br /></td></tr>
+<tr class="separator:ga0e8f0a454d58b2ff87878e39960c9187"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a28354c49d1726c674932f420a57bb21d" id="r_a28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
-<tr class="separator:a28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga28354c49d1726c674932f420a57bb21d" id="r_ga28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
+<tr class="memdesc:ga28354c49d1726c674932f420a57bb21d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on general datagram socket operation failures.  <br /></td></tr>
+<tr class="separator:ga28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>High-level UDP/datagram socket interface with multicast and broadcast support. </p>
+<p>Provides a high-level, exception-based interface for UDP/datagram sockets. All functions use exceptions for error handling, making code cleaner and more robust than traditional error code checking.</p>
+<p>Platform Requirements:</p><ul>
+<li>POSIX-compliant system (Linux, BSD, macOS, etc.)</li>
+<li>IPv6 support in kernel (for dual-stack sockets)</li>
+<li>POSIX threads (pthread) for thread-safe error reporting</li>
+<li>NOT portable to Windows without Winsock adaptation layer</li>
+</ul>
+<p>Features:</p><ul>
+<li>Connectionless (sendto/recvfrom) and connected (send/recv) modes</li>
+<li>Non-blocking I/O support</li>
+<li>Thread-safe error reporting</li>
+<li>IPv4 and IPv6 dual-stack support</li>
+<li>Broadcast and multicast support</li>
+</ul>
+<p>UDP vs TCP:</p><ul>
+<li>Connectionless: No three-way handshake required</li>
+<li>Unreliable: Packets may be lost, duplicated, or reordered</li>
+<li>Message-oriented: Preserves message boundaries</li>
+<li>Lower latency: No connection setup or ACK delays</li>
+<li>Use cases: DNS, gaming, streaming, service discovery</li>
+</ul>
+<p>Error Handling:</p><ul>
+<li>Most functions raise SocketDgram_Failed on errors</li>
+<li>Some functions (recvfrom, sendto) may return 0 for would-block (EAGAIN)</li>
+<li>Check individual function documentation for specific behavior</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14" title="Opaque handle for TCP/IP and Unix domain sockets.">Socket_T</a> for TCP and Unix domain sockets. </dd>
+<dd>
+<a class="el" href="group__core__io.html#gad6902c87ab5883f155dab2adfa950c52" title="Create a new UDP socket.">SocketDgram_new()</a> for socket creation. </dd>
+<dd>
+<a class="el" href="group__core__io.html#ga08371cbf32cb15528b42e189f8267923" title="Send datagram to specific address.">SocketDgram_sendto()</a> for connectionless sending. </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketDgram_8h_source.html">SocketDgram.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
 
@@ -233,1295 +307,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>UDP/Datagram Socket Abstraction Layer</p>
-<p>Provides a high-level, exception-based interface for UDP/datagram sockets. All functions use exceptions for error handling, making code cleaner and more robust than traditional error code checking.</p>
-<p>PLATFORM REQUIREMENTS:</p><ul>
-<li>POSIX-compliant system (Linux, BSD, macOS, etc.)</li>
-<li>IPv6 support in kernel (for dual-stack sockets)</li>
-<li>POSIX threads (pthread) for thread-safe error reporting</li>
-<li>NOT portable to Windows without Winsock adaptation layer Features:</li>
-<li>Connectionless (sendto/recvfrom) and connected (send/recv) modes</li>
-<li>Non-blocking I/O support</li>
-<li>Thread-safe error reporting</li>
-<li>IPv4 and IPv6 dual-stack support</li>
-<li>Broadcast and multicast support UDP vs TCP:</li>
-<li>Connectionless: No three-way handshake required</li>
-<li>Unreliable: Packets may be lost, duplicated, or reordered</li>
-<li>Message-oriented: Preserves message boundaries</li>
-<li>Unix domain sockets: Not supported for datagram (UDP Unix possible but omitted per architectural focus on IP networks and TCP/Unix in Socket module). Use Socket module for Unix stream sockets.</li>
-<li>Lower latency: No connection setup or ACK delays</li>
-<li>Use cases: DNS, gaming, streaming, service discovery Error Handling:</li>
-<li>Most functions raise SocketDgram_Failed on errors</li>
-<li>Some functions (recvfrom, sendto) may return 0 for would-block (EAGAIN)</li>
-<li>Check individual function documentation for specific behavior </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="SocketDgram_8h_source.html#l00040">40</a> of file <a class="el" href="SocketDgram_8h_source.html">SocketDgram.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="a178c1e09efbfdacb14740d3a0265721f" name="a178c1e09efbfdacb14740d3a0265721f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a178c1e09efbfdacb14740d3a0265721f">&#9670;&#160;</a></span>SocketDgram_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>* <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__core__io.html#ga178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDgram_8h_source.html#l00041">41</a> of file <a class="el" href="SocketDgram_8h_source.html">SocketDgram.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a0c81d9ef1d90e7ab34dd7286f13878ee" name="a0c81d9ef1d90e7ab34dd7286f13878ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c81d9ef1d90e7ab34dd7286f13878ee">&#9670;&#160;</a></span>SocketDgram_bind()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_bind </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. For non-blocking operation, use IP addresses directly. All parameters are validated at runtime for safety with user input. </p>
-
-</div>
-</div>
-<a id="abcb18c16142d3b5ef49bee08a96e15fa" name="abcb18c16142d3b5ef49bee08a96e15fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abcb18c16142d3b5ef49bee08a96e15fa">&#9670;&#160;</a></span>SocketDgram_connect()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_connect </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. Note: "Connect" for UDP means setting a default destination. After connecting, you can use send/recv instead of sendto/recvfrom. The socket only accepts packets from the connected address. You can still use sendto/recvfrom to override the default destination. </p>
-
-</div>
-</div>
-<a id="a0e8f0a454d58b2ff87878e39960c9187" name="a0e8f0a454d58b2ff87878e39960c9187"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e8f0a454d58b2ff87878e39960c9187">&#9670;&#160;</a></span>SocketDgram_debug_live_count()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_debug_live_count </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_debug_live_count - Get number of live datagram socket instances Returns: Number of currently allocated SocketDgram instances Thread-safe: Yes Note: Test/debug function for leak detection. Returns count of sockets that have been created but not yet freed. </p>
-
-</div>
-</div>
-<a id="a54e91e6824df0c114a5e6a4d79e5c6fb" name="a54e91e6824df0c114a5e6a4d79e5c6fb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a54e91e6824df0c114a5e6a4d79e5c6fb">&#9670;&#160;</a></span>SocketDgram_fd()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_fd </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor </p>
-
-</div>
-</div>
-<a id="a020169c79640786afa4c36fd1dc965e4" name="a020169c79640786afa4c36fd1dc965e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a020169c79640786afa4c36fd1dc965e4">&#9670;&#160;</a></span>SocketDgram_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL) </p>
-
-</div>
-</div>
-<a id="ae6c2bde38c3a7addb7cfffe98a253f60" name="ae6c2bde38c3a7addb7cfffe98a253f60"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6c2bde38c3a7addb7cfffe98a253f60">&#9670;&#160;</a></span>SocketDgram_getbroadcast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_getbroadcast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getbroadcast - Get broadcast setting @socket: Socket to query Returns: 1 if broadcast is enabled, 0 if disabled Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="a9822234959be9508363bb3c0f2bd47b7" name="a9822234959be9508363bb3c0f2bd47b7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9822234959be9508363bb3c0f2bd47b7">&#9670;&#160;</a></span>SocketDgram_getlocaladdr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketDgram_getlocaladdr </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: Returns "(unknown)" if address info unavailable. String is owned by socket, must not be freed/modified. Valid until socket freed. </p>
-
-</div>
-</div>
-<a id="a8b2685e6ad39d1c2fc16df7234f7a87a" name="a8b2685e6ad39d1c2fc16df7234f7a87a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b2685e6ad39d1c2fc16df7234f7a87a">&#9670;&#160;</a></span>SocketDgram_getlocalport()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_getlocalport </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable </p>
-
-</div>
-</div>
-<a id="ab0dd532f19eef5d8220480e06cc3a7db" name="ab0dd532f19eef5d8220480e06cc3a7db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0dd532f19eef5d8220480e06cc3a7db">&#9670;&#160;</a></span>SocketDgram_getrcvbuf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_getrcvbuf </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="af54f02197f8c0dc53fbdf333d476aae2" name="af54f02197f8c0dc53fbdf333d476aae2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af54f02197f8c0dc53fbdf333d476aae2">&#9670;&#160;</a></span>SocketDgram_getsndbuf()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_getsndbuf </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="a99243c75f546aab2534b529611b647f8" name="a99243c75f546aab2534b529611b647f8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a99243c75f546aab2534b529611b647f8">&#9670;&#160;</a></span>SocketDgram_gettimeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_gettimeout </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: SocketDgram_Failed on error Note: Returns receive timeout (send timeout may differ) </p>
-
-</div>
-</div>
-<a id="a6b91970d4ffe2a7162c4104b0b6de78f" name="a6b91970d4ffe2a7162c4104b0b6de78f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b91970d4ffe2a7162c4104b0b6de78f">&#9670;&#160;</a></span>SocketDgram_getttl()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_getttl </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_getttl - Get time-to-live (hop limit) @socket: Socket to query Returns: TTL value (1-255) Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="a06d3085b3b7287330e8cb49d6d9a4da1" name="a06d3085b3b7287330e8cb49d6d9a4da1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06d3085b3b7287330e8cb49d6d9a4da1">&#9670;&#160;</a></span>SocketDgram_isbound()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_isbound </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_isbound - Check if datagram socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes (operates on single socket) Note: Uses getsockname() to determine binding state. A socket is bound if getsockname() succeeds and returns a valid address. Wildcard addresses (0.0.0.0 or ::) still count as bound. </p>
-
-</div>
-</div>
-<a id="a73455982ede6d44649f85adb25c4bda2" name="a73455982ede6d44649f85adb25c4bda2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a73455982ede6d44649f85adb25c4bda2">&#9670;&#160;</a></span>SocketDgram_isconnected()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketDgram_isconnected </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes (operates on single socket) Note: Uses getpeername() to determine connection state. For UDP sockets, "connected" means a default destination is set. </p>
-
-</div>
-</div>
-<a id="ae25dbfe6a79cb46494ec438accb53db0" name="ae25dbfe6a79cb46494ec438accb53db0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae25dbfe6a79cb46494ec438accb53db0">&#9670;&#160;</a></span>SocketDgram_joinmulticast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_joinmulticast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>group</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>interface</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a53cb8e627cf35e3d0c6db85e3bc33bab" name="a53cb8e627cf35e3d0c6db85e3bc33bab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a53cb8e627cf35e3d0c6db85e3bc33bab">&#9670;&#160;</a></span>SocketDgram_leavemulticast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_leavemulticast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>group</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>interface</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ad6902c87ab5883f155dab2adfa950c52" name="ad6902c87ab5883f155dab2adfa950c52"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6902c87ab5883f155dab2adfa950c52">&#9670;&#160;</a></span>SocketDgram_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> SocketDgram_new </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>domain</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>protocol</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="af832ef8734ab4dfb43ad639470461bda" name="af832ef8734ab4dfb43ad639470461bda"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af832ef8734ab4dfb43ad639470461bda">&#9670;&#160;</a></span>SocketDgram_recv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_recv </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_recv - Receive from default source (connected socket) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (must be &gt; 0) Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect()</a> first. Only accepts packets from the connected address. </p>
-
-</div>
-</div>
-<a id="af96de127ecced1b5d8166e6a039e664c" name="af96de127ecced1b5d8166e6a039e664c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af96de127ecced1b5d8166e6a039e664c">&#9670;&#160;</a></span>SocketDgram_recvall()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_recvall </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until len bytes are received or an error occurs. For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
-
-</div>
-</div>
-<a id="ada4b76edaec59a44eb5bc959e6948d3f" name="ada4b76edaec59a44eb5bc959e6948d3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada4b76edaec59a44eb5bc959e6948d3f">&#9670;&#160;</a></span>SocketDgram_recvfrom()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_recvfrom </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>host_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int *&#160;</td>
-          <td class="paramname"><em>port</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_recvfrom - Receive datagram and get sender address @socket: Socket to receive from @buf: Buffer for received data @len: Buffer size (must be &gt; 0) @host: Output - sender IP address (buffer must be &gt;= 46 bytes for IPv6) @host_len: Size of host buffer @port: Output - sender port number Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: UDP is message-oriented. If buffer is too small, data is truncated. Recommended buffer size &gt;= 65507 bytes (max UDP payload) to avoid truncation. Common buffer sizes: 8192 (8KB), 65536 (64KB). The host parameter receives the sender's IP address as a string. The port parameter receives the sender's port number. </p>
-
-</div>
-</div>
-<a id="a485908b4ff4a79f514f8e86ec6030107" name="a485908b4ff4a79f514f8e86ec6030107"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a485908b4ff4a79f514f8e86ec6030107">&#9670;&#160;</a></span>SocketDgram_recvv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_recvv </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Receives data into multiple buffers in a single system call. May receive less than requested. Use <a class="el" href="SocketDgram_8h.html#a31fd826092fb6b9c1a3b11953568f2d6">SocketDgram_recvvall()</a> for guaranteed complete receive. </p>
-
-</div>
-</div>
-<a id="a31fd826092fb6b9c1a3b11953568f2d6" name="a31fd826092fb6b9c1a3b11953568f2d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31fd826092fb6b9c1a3b11953568f2d6">&#9670;&#160;</a></span>SocketDgram_recvvall()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_recvvall </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all requested data is received into all buffers or an error occurs. For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
-
-</div>
-</div>
-<a id="a08b2ab199a5c50a654683ba1ddb4d004" name="a08b2ab199a5c50a654683ba1ddb4d004"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08b2ab199a5c50a654683ba1ddb4d004">&#9670;&#160;</a></span>SocketDgram_send()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_send </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_send - Send to default destination (connected socket) @socket: Connected socket @buf: Data to send @len: Length of data (must be &gt; 0) Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect()</a> first. </p>
-
-</div>
-</div>
-<a id="adc08ada68a6f9a6922d4e2b0b8f4c081" name="adc08ada68a6f9a6922d4e2b0b8f4c081"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc08ada68a6f9a6922d4e2b0b8f4c081">&#9670;&#160;</a></span>SocketDgram_sendall()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_sendall </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data is sent or an error occurs. For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
-
-</div>
-</div>
-<a id="a08371cbf32cb15528b42e189f8267923" name="a08371cbf32cb15528b42e189f8267923"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08371cbf32cb15528b42e189f8267923">&#9670;&#160;</a></span>SocketDgram_sendto()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_sendto </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_sendto - Send datagram to specific address @socket: Socket to send from @buf: Data to send @len: Length of data (must be &gt; 0) @host: Destination IP address or hostname @port: Destination port Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. Note: UDP sends complete datagrams. If len &gt; MTU, fragmentation may occur. Recommended to keep len &lt;= 1472 bytes to avoid fragmentation (1500 MTU - headers). Unlike TCP, send may return less than len only on would-block, not partial sends. </p>
-
-</div>
-</div>
-<a id="a2527bddec3459405a6a989de06727a2f" name="a2527bddec3459405a6a989de06727a2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2527bddec3459405a6a989de06727a2f">&#9670;&#160;</a></span>SocketDgram_sendv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_sendv </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Sends data from multiple buffers in a single system call. May send less than requested. Use <a class="el" href="SocketDgram_8h.html#aa208c4a07e76579c3e924ee31ea02777">SocketDgram_sendvall()</a> for guaranteed complete send. </p>
-
-</div>
-</div>
-<a id="aa208c4a07e76579c3e924ee31ea02777" name="aa208c4a07e76579c3e924ee31ea02777"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa208c4a07e76579c3e924ee31ea02777">&#9670;&#160;</a></span>SocketDgram_sendvall()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketDgram_sendvall </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data from all buffers is sent or an error occurs. For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
-
-</div>
-</div>
-<a id="a637a1a778f293e4843f2355a9299d381" name="a637a1a778f293e4843f2355a9299d381"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a637a1a778f293e4843f2355a9299d381">&#9670;&#160;</a></span>SocketDgram_setbroadcast()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setbroadcast </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>enable</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setbroadcast - Enable broadcast @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: SocketDgram_Failed on error Note: Required to send broadcast datagrams to 255.255.255.255 or subnet broadcast addresses. </p>
-
-</div>
-</div>
-<a id="acc7a0ae08dfe973bee1067aa4a6869d2" name="acc7a0ae08dfe973bee1067aa4a6869d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc7a0ae08dfe973bee1067aa4a6869d2">&#9670;&#160;</a></span>SocketDgram_setcloexec()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setcloexec </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>enable</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: By default, all sockets have CLOEXEC enabled. This function allows disabling it if you need to pass the socket to a child process. </p>
-
-</div>
-</div>
-<a id="a1817a8561af1801a9baa7630bc277ce6" name="a1817a8561af1801a9baa7630bc277ce6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1817a8561af1801a9baa7630bc277ce6">&#9670;&#160;</a></span>SocketDgram_setnonblocking()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setnonblocking </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="a74995a7164d93c4e958da6642e0f317d" name="a74995a7164d93c4e958da6642e0f317d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74995a7164d93c4e958da6642e0f317d">&#9670;&#160;</a></span>SocketDgram_setreuseaddr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setreuseaddr </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: SocketDgram_Failed on error </p>
-
-</div>
-</div>
-<a id="a9770b3c571ac6a900071db266a632816" name="a9770b3c571ac6a900071db266a632816"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9770b3c571ac6a900071db266a632816">&#9670;&#160;</a></span>SocketDgram_setreuseport()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setreuseport </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setreuseport - Enable port reuse across sockets @socket: Socket to modify Raises: SocketDgram_Failed on error (or if SO_REUSEPORT unsupported) </p>
-
-</div>
-</div>
-<a id="afe579d108c83517ff9ceeac750139bc4" name="afe579d108c83517ff9ceeac750139bc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afe579d108c83517ff9ceeac750139bc4">&#9670;&#160;</a></span>SocketDgram_settimeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_settimeout </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_sec</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets receive timeout to prevent blocking indefinitely Raises: SocketDgram_Failed on error Note: Useful for signal-responsive servers. With timeout, recvfrom returns 0 (would-block) after timeout, allowing the event loop to check for shutdown signals. </p>
-
-</div>
-</div>
-<a id="a22d94185a6ccf28eceb98d69240ba3d2" name="a22d94185a6ccf28eceb98d69240ba3d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22d94185a6ccf28eceb98d69240ba3d2">&#9670;&#160;</a></span>SocketDgram_setttl()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketDgram_setttl </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>ttl</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketDgram_setttl - Set time-to-live (hop limit) @socket: Socket to modify @ttl: TTL value (1-255) Raises: SocketDgram_Failed on error Note: TTL controls how many network hops a packet can traverse Default is usually 64. Use 1 for link-local only. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a28354c49d1726c674932f420a57bb21d" name="a28354c49d1726c674932f420a57bb21d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28354c49d1726c674932f420a57bb21d">&#9670;&#160;</a></span>SocketDgram_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketDgram_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>General datagram socket operation failure </p>
+<p class="definition">Definition at line <a class="el" href="SocketDgram_8h_source.html#l00049">49</a> of file <a class="el" href="SocketDgram_8h_source.html">SocketDgram.h</a>.</p>
 
 </div>
 </div>

@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="High&#45;level TCP/IP and Unix domain socket interface.">
 <polygon fill="#999999" stroke="#666666" points="841.5,-239 785.5,-239 785.5,-220 841.5,-220 841.5,-239"/>
 <text text-anchor="middle" x="813.5" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">Socket.h</text>
 </a>
@@ -66,7 +66,7 @@ var sectionId = 'dynsection-0';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="1110,-74 1033,-74 1033,-55 1110,-55 1110,-74"/>
 <text text-anchor="middle" x="1071.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -84,7 +84,7 @@ var sectionId = 'dynsection-0';
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="331.5,-129 225.5,-129 225.5,-110 331.5,-110 331.5,-129"/>
 <text text-anchor="middle" x="278.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -102,7 +102,7 @@ var sectionId = 'dynsection-0';
 <!-- Node14 -->
 <g id="Node000014" class="node">
 <title>Node14</title>
-<g id="a_Node000014"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000014"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
 <polygon fill="white" stroke="#666666" points="985.5,-129 889.5,-129 889.5,-110 985.5,-110 985.5,-129"/>
 <text text-anchor="middle" x="937.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -120,7 +120,7 @@ var sectionId = 'dynsection-0';
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000016"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title="Common utilities shared between Socket and SocketDgram modules.">
 <polygon fill="white" stroke="#666666" points="753.5,-184 625.5,-184 625.5,-165 753.5,-165 753.5,-184"/>
 <text text-anchor="middle" x="689.5" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon.h</text>
 </a>
@@ -418,8 +418,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000017" class="node">
 <title>Node17</title>
 <g id="a_Node000017"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="481.5,-129 425.5,-129 425.5,-110 481.5,-110 481.5,-129"/>
-<text text-anchor="middle" x="453.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="483,-129 426,-129 426,-110 483,-110 483,-129"/>
+<text text-anchor="middle" x="454.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
 </a>
 </g>
 </g>
@@ -427,8 +427,8 @@ var sectionId = 'dynsection-0';
 <g id="edge19_Node000016_Node000017" class="edge">
 <title>Node16&#45;&gt;Node17</title>
 <g id="a_edge19_Node000016_Node000017"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M650.96,-164.95C612.9,-156.49 552.76,-143.09 491.6,-129.24"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="492.3,-125.81 481.78,-127.01 490.76,-132.64 492.3,-125.81"/>
+<path fill="none" stroke="#63b8ff" d="M651.74,-164.98C608.26,-155.18 537.19,-139.15 493.28,-129.25"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="493.8,-125.78 483.28,-126.99 492.26,-132.6 493.8,-125.78"/>
 </a>
 </g>
 </g>
@@ -436,8 +436,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000018" class="node">
 <title>Node18</title>
 <g id="a_Node000018"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="557,-129 500,-129 500,-110 557,-110 557,-129"/>
-<text text-anchor="middle" x="528.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="557.5,-129 501.5,-129 501.5,-110 557.5,-110 557.5,-129"/>
+<text text-anchor="middle" x="529.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
 </a>
 </g>
 </g>
@@ -445,8 +445,8 @@ var sectionId = 'dynsection-0';
 <g id="edge20_Node000016_Node000018" class="edge">
 <title>Node16&#45;&gt;Node18</title>
 <g id="a_edge20_Node000016_Node000018"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M663.63,-164.98C636.72,-156.13 594.38,-142.19 564.27,-132.28"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="565.16,-128.88 554.57,-129.08 562.97,-135.53 565.16,-128.88"/>
+<path fill="none" stroke="#63b8ff" d="M663.79,-164.98C637.05,-156.13 594.97,-142.19 565.05,-132.28"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="566,-128.9 555.41,-129.08 563.8,-135.55 566,-128.9"/>
 </a>
 </g>
 </g>
@@ -507,7 +507,7 @@ var sectionId = 'dynsection-0';
 <!-- Node22 -->
 <g id="Node000022" class="node">
 <title>Node22</title>
-<g id="a_Node000022"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000022"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="1075.5,-129 1003.5,-129 1003.5,-110 1075.5,-110 1075.5,-129"/>
 <text text-anchor="middle" x="1039.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>

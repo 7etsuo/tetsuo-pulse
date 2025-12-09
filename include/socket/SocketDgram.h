@@ -9,8 +9,8 @@
 /**
  * @file SocketDgram.h
  * @ingroup core_io
- * @brief High-level UDP/datagram socket interface with multicast and broadcast
- * support.
+ * @ingroup core_io
+* @brief High-level UDP/datagram socket interface with multicast and broadcast support.
  *
  * Provides a high-level, exception-based interface for UDP/datagram sockets.
  * All functions use exceptions for error handling, making code cleaner
@@ -47,15 +47,40 @@
  */
 
 #define T SocketDgram_T
+/**
+ * @ingroup core_io
+ * @ingroup core_io
+* @brief Opaque handle for UDP/datagram sockets.
+ *
+ * Provides connectionless messaging capabilities for IPv4 and IPv6,
+ * including support for broadcast, multicast, and standard socket options.
+ * Builds on SocketBase_T for common functionality.
+ *
+ * @see Socket_T for connection-oriented (TCP) sockets.
+ * @see SocketDgram_new() for creation.
+ * @see SocketDgram_free() for destruction.
+ * @see @ref core_io "Core I/O module" for related primitives.
+ */
 typedef struct T *T;
 
 /* Exception types */
-extern const Except_T
-    SocketDgram_Failed; /**< General datagram socket operation failure */
+/**
+ * @ingroup core_io
+ * @ingroup core_io
+* @brief Exception raised on general datagram socket operation failures.
+ *
+ * Covers system call errors (e.g., bind, connect, send, recv failures),
+ * invalid parameters, and resource exhaustion.
+ *
+ * @see docs/ERROR_HANDLING.md for exception handling guidelines.
+ * @see Except_T for the base exception type.
+ * @see SocketDgram_Failed usage in function @throws tags.
+ */
+extern const Except_T SocketDgram_Failed;
 
 /**
- * @brief Create a new UDP socket.
  * @ingroup core_io
+* @brief Create a new UDP socket.
  * @param domain Address family (AF_INET, AF_INET6, etc.).
  * @param protocol Protocol (usually 0 for default UDP).
  * @return New datagram socket instance.
@@ -63,20 +88,22 @@ extern const Except_T
  * @note domain is typically AF_INET (IPv4) or AF_INET6 (IPv6).
  * @see SocketDgram_free() for cleanup.
  * @see SocketDgram_bind() for binding to an address.
+ * @see @ref Socket_T for TCP socket operations.
+ * @see @ref SocketDNS_T for DNS resolution integration.
  */
 extern T SocketDgram_new (int domain, int protocol);
 
 /**
- * @brief Free a socket and close the connection.
  * @ingroup core_io
+* @brief Free a socket and close the connection.
  * @param socket Pointer to socket (will be set to NULL).
  * @see SocketDgram_new() for socket creation.
  */
 extern void SocketDgram_free (T *socket);
 
 /**
- * @brief Bind socket to address and port.
  * @ingroup core_io
+* @brief Bind socket to address and port.
  * @param socket Socket to bind.
  * @param host IP address or NULL/"0.0.0.0" for any.
  * @param port Port number (1 to SOCKET_MAX_PORT).
@@ -89,8 +116,8 @@ extern void SocketDgram_free (T *socket);
 extern void SocketDgram_bind (T socket, const char *host, int port);
 
 /**
- * @brief Set default destination for socket.
  * @ingroup core_io
+* @brief Set default destination for socket.
  * @param socket Socket to connect.
  * @param host Remote IP address or hostname.
  * @param port Remote port.
@@ -104,8 +131,8 @@ extern void SocketDgram_bind (T socket, const char *host, int port);
 extern void SocketDgram_connect (T socket, const char *host, int port);
 
 /**
- * @brief Send datagram to specific address.
  * @ingroup core_io
+* @brief Send datagram to specific address.
  * @param socket Socket to send from.
  * @param buf Data to send.
  * @param len Length of data (must be > 0).
@@ -124,8 +151,8 @@ extern ssize_t SocketDgram_sendto (T socket, const void *buf, size_t len,
                                    const char *host, int port);
 
 /**
- * @brief Receive datagram and get sender address.
  * @ingroup core_io
+* @brief Receive datagram and get sender address.
  * @param socket Socket to receive from.
  * @param buf Buffer for received data.
  * @param len Buffer size (must be > 0).
@@ -146,8 +173,8 @@ extern ssize_t SocketDgram_recvfrom (T socket, void *buf, size_t len,
                                      char *host, size_t host_len, int *port);
 
 /**
- * @brief Send to default destination (connected socket).
  * @ingroup core_io
+* @brief Send to default destination (connected socket).
  * @param socket Connected socket.
  * @param buf Data to send.
  * @param len Length of data (must be > 0).
@@ -160,8 +187,8 @@ extern ssize_t SocketDgram_recvfrom (T socket, void *buf, size_t len,
 extern ssize_t SocketDgram_send (T socket, const void *buf, size_t len);
 
 /**
- * @brief Receive from default source (connected socket).
  * @ingroup core_io
+* @brief Receive from default source (connected socket).
  * @param socket Connected socket.
  * @param buf Buffer for received data.
  * @param len Buffer size (must be > 0).
@@ -174,8 +201,8 @@ extern ssize_t SocketDgram_send (T socket, const void *buf, size_t len);
 extern ssize_t SocketDgram_recv (T socket, void *buf, size_t len);
 
 /**
- * @brief Send all data (handles partial sends).
  * @ingroup core_io
+* @brief Send all data (handles partial sends).
  * @param socket Connected socket.
  * @param buf Data to send.
  * @param len Length of data (> 0).
@@ -191,8 +218,8 @@ extern ssize_t SocketDgram_recv (T socket, void *buf, size_t len);
 extern ssize_t SocketDgram_sendall (T socket, const void *buf, size_t len);
 
 /**
- * @brief Receive all requested data (handles partial receives).
  * @ingroup core_io
+* @brief Receive all requested data (handles partial receives).
  * @param socket Connected socket.
  * @param buf Buffer for received data.
  * @param len Buffer size (> 0).
@@ -208,8 +235,8 @@ extern ssize_t SocketDgram_sendall (T socket, const void *buf, size_t len);
 extern ssize_t SocketDgram_recvall (T socket, void *buf, size_t len);
 
 /**
- * @brief Scatter/gather send (writev wrapper).
  * @ingroup core_io
+* @brief Scatter/gather send (writev wrapper).
  * @param socket Connected socket.
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
@@ -225,8 +252,8 @@ extern ssize_t SocketDgram_sendv (T socket, const struct iovec *iov,
                                   int iovcnt);
 
 /**
- * @brief Scatter/gather receive (readv wrapper).
  * @ingroup core_io
+* @brief Scatter/gather receive (readv wrapper).
  * @param socket Connected socket.
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
@@ -241,8 +268,8 @@ extern ssize_t SocketDgram_sendv (T socket, const struct iovec *iov,
 extern ssize_t SocketDgram_recvv (T socket, struct iovec *iov, int iovcnt);
 
 /**
- * @brief Scatter/gather send all (handles partial sends).
  * @ingroup core_io
+* @brief Scatter/gather send all (handles partial sends).
  * @param socket Connected socket.
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
@@ -259,8 +286,8 @@ extern ssize_t SocketDgram_sendvall (T socket, const struct iovec *iov,
                                      int iovcnt);
 
 /**
- * @brief Scatter/gather receive all (handles partial receives).
  * @ingroup core_io
+* @brief Scatter/gather receive all (handles partial receives).
  * @param socket Connected socket.
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
@@ -276,8 +303,8 @@ extern ssize_t SocketDgram_sendvall (T socket, const struct iovec *iov,
 extern ssize_t SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt);
 
 /**
- * @brief Enable non-blocking mode.
  * @ingroup core_io
+* @brief Enable non-blocking mode.
  * @param socket Socket to modify.
  * @throws SocketDgram_Failed on error.
  * @see SocketDgram_setreuseaddr() for address reuse.
@@ -286,8 +313,8 @@ extern ssize_t SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt);
 extern void SocketDgram_setnonblocking (T socket);
 
 /**
- * @brief Enable address reuse.
  * @ingroup core_io
+* @brief Enable address reuse.
  * @param socket Socket to modify.
  * @throws SocketDgram_Failed on error.
  * @see SocketDgram_setreuseport() for port reuse.
@@ -296,8 +323,8 @@ extern void SocketDgram_setnonblocking (T socket);
 extern void SocketDgram_setreuseaddr (T socket);
 
 /**
- * @brief Enable port reuse across sockets.
  * @ingroup core_io
+* @brief Enable port reuse across sockets.
  * @param socket Socket to modify.
  * @throws SocketDgram_Failed on error (or if SO_REUSEPORT unsupported).
  * @see SocketDgram_setreuseaddr() for address reuse.
@@ -306,8 +333,8 @@ extern void SocketDgram_setreuseaddr (T socket);
 extern void SocketDgram_setreuseport (T socket);
 
 /**
- * @brief Enable broadcast.
  * @ingroup core_io
+* @brief Enable broadcast.
  * @param socket Socket to modify.
  * @param enable 1 to enable, 0 to disable.
  * @throws SocketDgram_Failed on error.
@@ -318,8 +345,8 @@ extern void SocketDgram_setreuseport (T socket);
 extern void SocketDgram_setbroadcast (T socket, int enable);
 
 /**
- * @brief Join multicast group.
  * @ingroup core_io
+* @brief Join multicast group.
  * @param socket Socket to modify.
  * @param group Multicast group address (e.g., "224.0.0.1" for IPv4).
  * @param interface Interface address or NULL for default.
@@ -333,8 +360,8 @@ extern void SocketDgram_joinmulticast (T socket, const char *group,
                                        const char *interface);
 
 /**
- * @brief Leave multicast group.
  * @ingroup core_io
+* @brief Leave multicast group.
  * @param socket Socket to modify.
  * @param group Multicast group address.
  * @param interface Interface address or NULL for default.
@@ -345,8 +372,8 @@ extern void SocketDgram_leavemulticast (T socket, const char *group,
                                         const char *interface);
 
 /**
- * @brief Set time-to-live (hop limit).
  * @ingroup core_io
+* @brief Set time-to-live (hop limit).
  * @param socket Socket to modify.
  * @param ttl TTL value (1-255).
  * @throws SocketDgram_Failed on error.
@@ -358,8 +385,8 @@ extern void SocketDgram_leavemulticast (T socket, const char *group,
 extern void SocketDgram_setttl (T socket, int ttl);
 
 /**
- * @brief Set socket timeout.
  * @ingroup core_io
+* @brief Set socket timeout.
  * @param socket Socket to modify.
  * @param timeout_sec Timeout in seconds (0 to disable).
  * @throws SocketDgram_Failed on error.
@@ -372,8 +399,8 @@ extern void SocketDgram_setttl (T socket, int ttl);
 extern void SocketDgram_settimeout (T socket, int timeout_sec);
 
 /**
- * @brief Get socket timeout.
  * @ingroup core_io
+* @brief Get socket timeout.
  * @param socket Socket to query.
  * @return Timeout in seconds (0 if disabled).
  * @throws SocketDgram_Failed on error.
@@ -383,8 +410,8 @@ extern void SocketDgram_settimeout (T socket, int timeout_sec);
 extern int SocketDgram_gettimeout (T socket);
 
 /**
- * @brief Get broadcast setting.
  * @ingroup core_io
+* @brief Get broadcast setting.
  * @param socket Socket to query.
  * @return 1 if broadcast is enabled, 0 if disabled.
  * @throws SocketDgram_Failed on error.
@@ -393,8 +420,8 @@ extern int SocketDgram_gettimeout (T socket);
 extern int SocketDgram_getbroadcast (T socket);
 
 /**
- * @brief Get time-to-live (hop limit).
  * @ingroup core_io
+* @brief Get time-to-live (hop limit).
  * @param socket Socket to query.
  * @return TTL value (1-255).
  * @throws SocketDgram_Failed on error.
@@ -403,8 +430,8 @@ extern int SocketDgram_getbroadcast (T socket);
 extern int SocketDgram_getttl (T socket);
 
 /**
- * @brief Get receive buffer size.
  * @ingroup core_io
+* @brief Get receive buffer size.
  * @param socket Socket to query.
  * @return Receive buffer size in bytes.
  * @throws SocketDgram_Failed on error.
@@ -413,8 +440,8 @@ extern int SocketDgram_getttl (T socket);
 extern int SocketDgram_getrcvbuf (T socket);
 
 /**
- * @brief Get send buffer size.
  * @ingroup core_io
+* @brief Get send buffer size.
  * @param socket Socket to query.
  * @return Send buffer size in bytes.
  * @throws SocketDgram_Failed on error.
@@ -423,8 +450,8 @@ extern int SocketDgram_getrcvbuf (T socket);
 extern int SocketDgram_getsndbuf (T socket);
 
 /**
- * @brief Check if datagram socket is connected.
  * @ingroup core_io
+* @brief Check if datagram socket is connected.
  * @param socket Socket to check.
  * @return 1 if connected, 0 if not connected.
  * @threadsafe Yes (operates on single socket).
@@ -436,8 +463,8 @@ extern int SocketDgram_getsndbuf (T socket);
 extern int SocketDgram_isconnected (T socket);
 
 /**
- * @brief Check if datagram socket is bound to an address.
  * @ingroup core_io
+* @brief Check if datagram socket is bound to an address.
  * @param socket Socket to check.
  * @return 1 if bound, 0 if not bound.
  * @threadsafe Yes (operates on single socket).
@@ -450,8 +477,8 @@ extern int SocketDgram_isconnected (T socket);
 extern int SocketDgram_isbound (T socket);
 
 /**
- * @brief Get underlying file descriptor.
  * @ingroup core_io
+* @brief Get underlying file descriptor.
  * @param socket Socket instance.
  * @return File descriptor.
  * @see Socket_fd() for TCP socket file descriptors.
@@ -459,8 +486,8 @@ extern int SocketDgram_isbound (T socket);
 extern int SocketDgram_fd (const T socket);
 
 /**
- * @brief Get local IP address.
  * @ingroup core_io
+* @brief Get local IP address.
  * @param socket Socket instance.
  * @return IP address string (IPv4/IPv6) or "(unknown)" if unavailable.
  * @note Returns "(unknown)" if address info unavailable. String is owned by socket, must not be freed/modified.
@@ -471,8 +498,8 @@ extern int SocketDgram_fd (const T socket);
 extern const char *SocketDgram_getlocaladdr (const T socket);
 
 /**
- * @brief Get local port number.
  * @ingroup core_io
+* @brief Get local port number.
  * @param socket Socket instance.
  * @return Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable.
  * @see SocketDgram_getlocaladdr() for local address.
@@ -481,8 +508,8 @@ extern const char *SocketDgram_getlocaladdr (const T socket);
 extern int SocketDgram_getlocalport (const T socket);
 
 /**
- * @brief Control close-on-exec flag.
  * @ingroup core_io
+* @brief Control close-on-exec flag.
  * @param socket Socket to modify.
  * @param enable 1 to enable CLOEXEC, 0 to disable.
  * @throws SocketDgram_Failed on error.
@@ -493,8 +520,8 @@ extern int SocketDgram_getlocalport (const T socket);
 extern void SocketDgram_setcloexec (T socket, int enable);
 
 /**
- * @brief Get number of live datagram socket instances.
  * @ingroup core_io
+* @brief Get number of live datagram socket instances.
  * @return Number of currently allocated SocketDgram instances.
  * @threadsafe Yes.
  * @note Test/debug function for leak detection. Returns count of sockets that have been created but not yet freed.

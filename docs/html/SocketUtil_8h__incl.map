@@ -1,5 +1,5 @@
 <map id="SocketUtil.h" name="SocketUtil.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="381,5,475,31"/>
+<area shape="rect" id="Node000001" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="381,5,475,31"/>
 <area shape="rect" id="Node000002" title=" " alt="" coords="226,152,289,177"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="407,33,371,54,334,81,302,112,276,143,272,140,298,108,330,77,368,49,404,29"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="523,79,587,104"/>
@@ -16,11 +16,11 @@
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="476,23,610,44,781,76,780,81,609,49,475,29"/>
 <area shape="rect" id="Node000009" title=" " alt="" coords="884,79,943,104"/>
 <area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="476,21,647,40,757,56,871,76,870,81,756,61,646,45,475,26"/>
-<area shape="rect" id="Node000010" href="$Arena_8h.html" title=" " alt="" coords="85,79,181,104"/>
+<area shape="rect" id="Node000010" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="85,79,181,104"/>
 <area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="381,33,195,78,194,73,380,28"/>
-<area shape="rect" id="Node000011" href="$Except_8h.html" title=" " alt="" coords="99,152,202,177"/>
+<area shape="rect" id="Node000011" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="99,152,202,177"/>
 <area shape="poly" id="edge13_Node000001_Node000011" title=" " alt="" coords="403,33,303,81,183,147,180,143,300,76,401,28"/>
-<area shape="rect" id="Node000013" href="$SocketConfig_8h.html" title=" " alt="" coords="357,79,499,104"/>
+<area shape="rect" id="Node000013" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="357,79,499,104"/>
 <area shape="poly" id="edge14_Node000001_Node000013" title=" " alt="" coords="431,31,431,65,425,65,425,31"/>
 <area shape="poly" id="edge10_Node000010_Node000005" title=" " alt="" coords="120,106,68,146,64,141,117,102"/>
 <area shape="poly" id="edge11_Node000010_Node000011" title=" " alt="" coords="139,104,147,138,142,140,134,105"/>

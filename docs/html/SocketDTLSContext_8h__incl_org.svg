@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="DTLS context management with cookie protection and secure defaults.">
 <polygon fill="#999999" stroke="#666666" points="1082.85,-349 966.85,-349 966.85,-330 1082.85,-330 1082.85,-349"/>
 <text text-anchor="middle" x="1024.85" y="-337" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLSContext.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="901.85,-129 829.85,-129 829.85,-110 901.85,-110 901.85,-129"/>
 <text text-anchor="middle" x="865.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="936.35,-74 859.35,-74 859.35,-55 936.35,-55 936.35,-74"/>
 <text text-anchor="middle" x="897.85" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
 <polygon fill="white" stroke="#666666" points="735.35,-294 648.35,-294 648.35,-275 735.35,-275 735.35,-294"/>
 <text text-anchor="middle" x="691.85" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLS.h</text>
 </a>
@@ -173,7 +173,7 @@
 <!-- Node7 -->
 <g id="Node000007" class="node">
 <title>Node7</title>
-<g id="a_Node000007"><a xlink:href="Socket_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000007"><a xlink:href="Socket_8h.html" target="_top" xlink:title="High&#45;level TCP/IP and Unix domain socket interface.">
 <polygon fill="white" stroke="#666666" points="731.85,-239 643.85,-239 643.85,-220 731.85,-220 731.85,-239"/>
 <text text-anchor="middle" x="687.85" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">socket/Socket.h</text>
 </a>
@@ -200,7 +200,7 @@
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="545.85,-129 439.85,-129 439.85,-110 545.85,-110 545.85,-129"/>
 <text text-anchor="middle" x="492.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -218,7 +218,7 @@
 <!-- Node17 -->
 <g id="Node000017" class="node">
 <title>Node17</title>
-<g id="a_Node000017"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000017"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
 <polygon fill="white" stroke="#666666" points="735.85,-129 639.85,-129 639.85,-110 735.85,-110 735.85,-129"/>
 <text text-anchor="middle" x="687.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -236,7 +236,7 @@
 <!-- Node19 -->
 <g id="Node000019" class="node">
 <title>Node19</title>
-<g id="a_Node000019"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000019"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title="Common utilities shared between Socket and SocketDgram modules.">
 <polygon fill="white" stroke="#666666" points="458.85,-184 330.85,-184 330.85,-165 458.85,-165 458.85,-184"/>
 <text text-anchor="middle" x="394.85" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon.h</text>
 </a>
@@ -516,8 +516,8 @@
 <g id="Node000020" class="node">
 <title>Node20</title>
 <g id="a_Node000020"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="69.85,-129 13.85,-129 13.85,-110 69.85,-110 69.85,-129"/>
-<text text-anchor="middle" x="41.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="71.35,-129 14.35,-129 14.35,-110 71.35,-110 71.35,-129"/>
+<text text-anchor="middle" x="42.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
 </a>
 </g>
 </g>
@@ -525,8 +525,8 @@
 <g id="edge26_Node000019_Node000020" class="edge">
 <title>Node19&#45;&gt;Node20</title>
 <g id="a_edge26_Node000019_Node000020"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M330.73,-166.11C268.96,-158.62 172.67,-145.97 80.17,-129.11"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="80.54,-125.62 70.08,-127.25 79.28,-132.5 80.54,-125.62"/>
+<path fill="none" stroke="#63b8ff" d="M330.56,-165.9C269.16,-158.31 173.83,-145.62 81.51,-128.98"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="81.9,-125.5 71.43,-127.15 80.64,-132.38 81.9,-125.5"/>
 </a>
 </g>
 </g>
@@ -534,8 +534,8 @@
 <g id="Node000021" class="node">
 <title>Node21</title>
 <g id="a_Node000021"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="145.35,-129 88.35,-129 88.35,-110 145.35,-110 145.35,-129"/>
-<text text-anchor="middle" x="116.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="145.85,-129 89.85,-129 89.85,-110 145.85,-110 145.85,-129"/>
+<text text-anchor="middle" x="117.85" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
 </a>
 </g>
 </g>
@@ -543,8 +543,8 @@
 <g id="edge27_Node000019_Node000021" class="edge">
 <title>Node19&#45;&gt;Node21</title>
 <g id="a_edge27_Node000019_Node000021"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M349.34,-164.99C301.98,-156.12 225.69,-141.74 159.85,-129 158.4,-128.72 156.92,-128.43 155.43,-128.14"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="156.01,-124.69 145.52,-126.2 154.66,-131.56 156.01,-124.69"/>
+<path fill="none" stroke="#63b8ff" d="M348.88,-164.97C301.49,-156.14 225.45,-141.85 159.85,-129 158.57,-128.75 157.28,-128.5 155.97,-128.24"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="156.34,-124.74 145.85,-126.22 154.97,-131.61 156.34,-124.74"/>
 </a>
 </g>
 </g>

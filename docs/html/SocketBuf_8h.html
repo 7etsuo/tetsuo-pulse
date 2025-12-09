@@ -115,12 +115,15 @@ $(document).ready(function(){initNavTree('SocketBuf_8h.html',''); initResizable(
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketBuf.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketBuf.h File Reference<div class="ingroups"><a class="el" href="group__core__io.html">Core I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Circular buffer for efficient socket I/O operations.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
-<code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdbool.h&gt;</code><br />
+<code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketBuf.h:</div>
@@ -141,57 +144,91 @@ $(document).ready(function(){initNavTree('SocketBuf_8h.html',''); initResizable(
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td></tr>
+<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ad4b3ec10874282833e1b15760efa1b6c" id="r_ad4b3ec10874282833e1b15760efa1b6c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td></tr>
-<tr class="separator:ad4b3ec10874282833e1b15760efa1b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad4b3ec10874282833e1b15760efa1b6c" id="r_gad4b3ec10874282833e1b15760efa1b6c"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td></tr>
+<tr class="memdesc:gad4b3ec10874282833e1b15760efa1b6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle to a circular buffer instance.  <br /></td></tr>
+<tr class="separator:gad4b3ec10874282833e1b15760efa1b6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac82b13f33ba79d9fa97582a64654e8ef" id="r_ac82b13f33ba79d9fa97582a64654e8ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#ac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t capacity)</td></tr>
-<tr class="separator:ac82b13f33ba79d9fa97582a64654e8ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e38c8dbadd8bd771d70ec98eda9f448" id="r_a7e38c8dbadd8bd771d70ec98eda9f448"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a7e38c8dbadd8bd771d70ec98eda9f448">SocketBuf_release</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *buf)</td></tr>
-<tr class="separator:a7e38c8dbadd8bd771d70ec98eda9f448"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abad296e666bf8d65669ab7c71d6b8d97" id="r_abad296e666bf8d65669ab7c71d6b8d97"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#abad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, const void *data, size_t len)</td></tr>
-<tr class="separator:abad296e666bf8d65669ab7c71d6b8d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4aacfb9008833f24abec18b1d65d0d42" id="r_a4aacfb9008833f24abec18b1d65d0d42"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, void *data, size_t len)</td></tr>
-<tr class="separator:a4aacfb9008833f24abec18b1d65d0d42"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55cfa577b17ee4e2ea965a841deccab0" id="r_a55cfa577b17ee4e2ea965a841deccab0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a55cfa577b17ee4e2ea965a841deccab0">SocketBuf_peek</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, void *data, size_t len)</td></tr>
-<tr class="separator:a55cfa577b17ee4e2ea965a841deccab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad11c3dede8563afbb1a3e9b9f4e936e6" id="r_ad11c3dede8563afbb1a3e9b9f4e936e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#ad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
-<tr class="separator:ad11c3dede8563afbb1a3e9b9f4e936e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f350e096708c438bc2002909325b143" id="r_a4f350e096708c438bc2002909325b143"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a4f350e096708c438bc2002909325b143">SocketBuf_available</a> (const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a4f350e096708c438bc2002909325b143"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f511809edb33ba3ff3a051544bff0d1" id="r_a4f511809edb33ba3ff3a051544bff0d1"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a4f511809edb33ba3ff3a051544bff0d1">SocketBuf_space</a> (const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a4f511809edb33ba3ff3a051544bff0d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a886e91e5cdff04cbc06b2d99eb887808" id="r_a886e91e5cdff04cbc06b2d99eb887808"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a886e91e5cdff04cbc06b2d99eb887808">SocketBuf_empty</a> (const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a886e91e5cdff04cbc06b2d99eb887808"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ae7a3d2576f6d28c91511e10790e99a" id="r_a8ae7a3d2576f6d28c91511e10790e99a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a8ae7a3d2576f6d28c91511e10790e99a">SocketBuf_full</a> (const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a8ae7a3d2576f6d28c91511e10790e99a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61b062261e8e954240edf8d3a6a01fb8" id="r_a61b062261e8e954240edf8d3a6a01fb8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a61b062261e8e954240edf8d3a6a01fb8">SocketBuf_clear</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a61b062261e8e954240edf8d3a6a01fb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af0f12ab9bbed33398141c41561c1fcb7" id="r_af0f12ab9bbed33398141c41561c1fcb7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#af0f12ab9bbed33398141c41561c1fcb7">SocketBuf_secureclear</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:af0f12ab9bbed33398141c41561c1fcb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77d70e899c26ac30bad4aac232505f1e" id="r_a77d70e899c26ac30bad4aac232505f1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a77d70e899c26ac30bad4aac232505f1e">SocketBuf_reserve</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t min_space)</td></tr>
-<tr class="separator:a77d70e899c26ac30bad4aac232505f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a884735923c2cf7dbe7def9d9062ac512" id="r_a884735923c2cf7dbe7def9d9062ac512"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a884735923c2cf7dbe7def9d9062ac512">SocketBuf_check_invariants</a> (const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
-<tr class="separator:a884735923c2cf7dbe7def9d9062ac512"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4d5d95ed126030f6414b7f607cd555e" id="r_ae4d5d95ed126030f6414b7f607cd555e"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#ae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t *len)</td></tr>
-<tr class="separator:ae4d5d95ed126030f6414b7f607cd555e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d845ceca49625b8c317310a757ad9dc" id="r_a0d845ceca49625b8c317310a757ad9dc"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a0d845ceca49625b8c317310a757ad9dc">SocketBuf_writeptr</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t *len)</td></tr>
-<tr class="separator:a0d845ceca49625b8c317310a757ad9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2e4e93aa0feab70464515b0ef3a57186" id="r_a2e4e93aa0feab70464515b0ef3a57186"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a2e4e93aa0feab70464515b0ef3a57186">SocketBuf_written</a> (<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
-<tr class="separator:a2e4e93aa0feab70464515b0ef3a57186"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac82b13f33ba79d9fa97582a64654e8ef" id="r_gac82b13f33ba79d9fa97582a64654e8ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t capacity)</td></tr>
+<tr class="memdesc:gac82b13f33ba79d9fa97582a64654e8ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new circular buffer.  <br /></td></tr>
+<tr class="separator:gac82b13f33ba79d9fa97582a64654e8ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7e38c8dbadd8bd771d70ec98eda9f448" id="r_ga7e38c8dbadd8bd771d70ec98eda9f448"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7e38c8dbadd8bd771d70ec98eda9f448">SocketBuf_release</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *buf)</td></tr>
+<tr class="memdesc:ga7e38c8dbadd8bd771d70ec98eda9f448"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release the buffer handle and invalidate the pointer.  <br /></td></tr>
+<tr class="separator:ga7e38c8dbadd8bd771d70ec98eda9f448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabad296e666bf8d65669ab7c71d6b8d97" id="r_gabad296e666bf8d65669ab7c71d6b8d97"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, const void *data, size_t len)</td></tr>
+<tr class="memdesc:gabad296e666bf8d65669ab7c71d6b8d97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write data into the buffer.  <br /></td></tr>
+<tr class="separator:gabad296e666bf8d65669ab7c71d6b8d97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4aacfb9008833f24abec18b1d65d0d42" id="r_ga4aacfb9008833f24abec18b1d65d0d42"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, void *data, size_t len)</td></tr>
+<tr class="memdesc:ga4aacfb9008833f24abec18b1d65d0d42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read and remove data from the buffer.  <br /></td></tr>
+<tr class="separator:ga4aacfb9008833f24abec18b1d65d0d42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga55cfa577b17ee4e2ea965a841deccab0" id="r_ga55cfa577b17ee4e2ea965a841deccab0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga55cfa577b17ee4e2ea965a841deccab0">SocketBuf_peek</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, void *data, size_t len)</td></tr>
+<tr class="memdesc:ga55cfa577b17ee4e2ea965a841deccab0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Peek at data without removing it from the buffer.  <br /></td></tr>
+<tr class="separator:ga55cfa577b17ee4e2ea965a841deccab0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad11c3dede8563afbb1a3e9b9f4e936e6" id="r_gad11c3dede8563afbb1a3e9b9f4e936e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
+<tr class="memdesc:gad11c3dede8563afbb1a3e9b9f4e936e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Discard data from the front of the buffer without reading it.  <br /></td></tr>
+<tr class="separator:gad11c3dede8563afbb1a3e9b9f4e936e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f350e096708c438bc2002909325b143" id="r_ga4f350e096708c438bc2002909325b143"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4f350e096708c438bc2002909325b143">SocketBuf_available</a> (const <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga4f350e096708c438bc2002909325b143"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the number of bytes available for reading.  <br /></td></tr>
+<tr class="separator:ga4f350e096708c438bc2002909325b143"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f511809edb33ba3ff3a051544bff0d1" id="r_ga4f511809edb33ba3ff3a051544bff0d1"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4f511809edb33ba3ff3a051544bff0d1">SocketBuf_space</a> (const <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga4f511809edb33ba3ff3a051544bff0d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the number of bytes available for writing.  <br /></td></tr>
+<tr class="separator:ga4f511809edb33ba3ff3a051544bff0d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga886e91e5cdff04cbc06b2d99eb887808" id="r_ga886e91e5cdff04cbc06b2d99eb887808"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga886e91e5cdff04cbc06b2d99eb887808">SocketBuf_empty</a> (const <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga886e91e5cdff04cbc06b2d99eb887808"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the buffer contains no data.  <br /></td></tr>
+<tr class="separator:ga886e91e5cdff04cbc06b2d99eb887808"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8ae7a3d2576f6d28c91511e10790e99a" id="r_ga8ae7a3d2576f6d28c91511e10790e99a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8ae7a3d2576f6d28c91511e10790e99a">SocketBuf_full</a> (const <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga8ae7a3d2576f6d28c91511e10790e99a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the buffer has no space for writing.  <br /></td></tr>
+<tr class="separator:ga8ae7a3d2576f6d28c91511e10790e99a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga61b062261e8e954240edf8d3a6a01fb8" id="r_ga61b062261e8e954240edf8d3a6a01fb8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga61b062261e8e954240edf8d3a6a01fb8">SocketBuf_clear</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga61b062261e8e954240edf8d3a6a01fb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset buffer to empty state without zeroing memory.  <br /></td></tr>
+<tr class="separator:ga61b062261e8e954240edf8d3a6a01fb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf0f12ab9bbed33398141c41561c1fcb7" id="r_gaf0f12ab9bbed33398141c41561c1fcb7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7">SocketBuf_secureclear</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:gaf0f12ab9bbed33398141c41561c1fcb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Securely erase all data by zeroing memory contents.  <br /></td></tr>
+<tr class="separator:gaf0f12ab9bbed33398141c41561c1fcb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga77d70e899c26ac30bad4aac232505f1e" id="r_ga77d70e899c26ac30bad4aac232505f1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga77d70e899c26ac30bad4aac232505f1e">SocketBuf_reserve</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t min_space)</td></tr>
+<tr class="memdesc:ga77d70e899c26ac30bad4aac232505f1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamically resize buffer to ensure at least min_space available.  <br /></td></tr>
+<tr class="separator:ga77d70e899c26ac30bad4aac232505f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga884735923c2cf7dbe7def9d9062ac512" id="r_ga884735923c2cf7dbe7def9d9062ac512"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga884735923c2cf7dbe7def9d9062ac512">SocketBuf_check_invariants</a> (const <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga884735923c2cf7dbe7def9d9062ac512"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate internal buffer consistency without assertions.  <br /></td></tr>
+<tr class="separator:ga884735923c2cf7dbe7def9d9062ac512"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae4d5d95ed126030f6414b7f607cd555e" id="r_gae4d5d95ed126030f6414b7f607cd555e"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t *len)</td></tr>
+<tr class="memdesc:gae4d5d95ed126030f6414b7f607cd555e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain a direct pointer to readable data for zero-copy access.  <br /></td></tr>
+<tr class="separator:gae4d5d95ed126030f6414b7f607cd555e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d845ceca49625b8c317310a757ad9dc" id="r_ga0d845ceca49625b8c317310a757ad9dc"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0d845ceca49625b8c317310a757ad9dc">SocketBuf_writeptr</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t *len)</td></tr>
+<tr class="memdesc:ga0d845ceca49625b8c317310a757ad9dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Obtain a direct pointer for zero-copy writing into the buffer.  <br /></td></tr>
+<tr class="separator:ga0d845ceca49625b8c317310a757ad9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2e4e93aa0feab70464515b0ef3a57186" id="r_ga2e4e93aa0feab70464515b0ef3a57186"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2e4e93aa0feab70464515b0ef3a57186">SocketBuf_written</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
+<tr class="memdesc:ga2e4e93aa0feab70464515b0ef3a57186"><td class="mdescLeft">&#160;</td><td class="mdescRight">Commit bytes written via direct write pointer.  <br /></td></tr>
+<tr class="separator:ga2e4e93aa0feab70464515b0ef3a57186"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a246f86a3226316f3922ee9eba0436777" id="r_a246f86a3226316f3922ee9eba0436777"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketBuf_8h.html#a246f86a3226316f3922ee9eba0436777">SocketBuf_Failed</a></td></tr>
-<tr class="separator:a246f86a3226316f3922ee9eba0436777"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga246f86a3226316f3922ee9eba0436777" id="r_ga246f86a3226316f3922ee9eba0436777"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga246f86a3226316f3922ee9eba0436777">SocketBuf_Failed</a></td></tr>
+<tr class="memdesc:ga246f86a3226316f3922ee9eba0436777"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception indicating failure in buffer operations such as allocation or resize errors.  <br /></td></tr>
+<tr class="separator:ga246f86a3226316f3922ee9eba0436777"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Circular buffer for efficient socket I/O operations. </p>
+<p>Provides efficient buffering for network I/O operations using a circular buffer implementation. This minimizes memory copies and provides O(1) operations for all buffer operations.</p>
+<p>Features:</p><ul>
+<li>Zero-copy read/write operations where possible</li>
+<li>Thread-safe design (when used with proper synchronization)</li>
+<li>Automatic wraparound handling</li>
+<li>Memory managed by Arena allocator</li>
+</ul>
+<p>The buffer automatically handles wraparound, so users don't need to worry about circular buffer complexities.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef" title="Create a new circular buffer.">SocketBuf_new()</a> for buffer creation. </dd>
+<dd>
+<a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97" title="Write data into the buffer.">SocketBuf_write()</a> and <a class="el" href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42" title="Read and remove data from the buffer.">SocketBuf_read()</a> for I/O operations. </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
 
@@ -199,627 +236,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Circular Buffer for Socket I/O Provides efficient buffering for network I/O operations using a circular buffer implementation. This minimizes memory copies and provides O(1) operations for all buffer operations. Features:</p><ul>
-<li>Zero-copy read/write operations where possible</li>
-<li>Thread-safe design (when used with proper synchronization)</li>
-<li>Automatic wraparound handling</li>
-<li>Memory managed by Arena allocator The buffer automatically handles wraparound, so users don't need to worry about circular buffer complexities. </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00024">24</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ad4b3ec10874282833e1b15760efa1b6c" name="ad4b3ec10874282833e1b15760efa1b6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4b3ec10874282833e1b15760efa1b6c">&#9670;&#160;</a></span>SocketBuf_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>* <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00025">25</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a4f350e096708c438bc2002909325b143" name="a4f350e096708c438bc2002909325b143"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f350e096708c438bc2002909325b143">&#9670;&#160;</a></span>SocketBuf_available()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketBuf_available </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_available - Get available data size @buf: Buffer instance Returns: Bytes available for reading Performance: O(1) </p>
-
-</div>
-</div>
-<a id="a884735923c2cf7dbe7def9d9062ac512" name="a884735923c2cf7dbe7def9d9062ac512"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a884735923c2cf7dbe7def9d9062ac512">&#9670;&#160;</a></span>SocketBuf_check_invariants()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">bool SocketBuf_check_invariants </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_check_invariants - Runtime validation (no asserts) @buf: Buffer to check (read-only) Returns: true if valid invariants hold Used for runtime security checks in production (rules preference) </p>
-
-</div>
-</div>
-<a id="a61b062261e8e954240edf8d3a6a01fb8" name="a61b062261e8e954240edf8d3a6a01fb8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61b062261e8e954240edf8d3a6a01fb8">&#9670;&#160;</a></span>SocketBuf_clear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_clear - Clear all data @buf: Buffer instance Resets buffer pointers without clearing memory contents. Fast operation suitable for non-sensitive data. For security-sensitive data, use <a class="el" href="SocketBuf_8h.html#af0f12ab9bbed33398141c41561c1fcb7">SocketBuf_secureclear()</a> instead. Performance: O(1) </p>
-
-</div>
-</div>
-<a id="ad11c3dede8563afbb1a3e9b9f4e936e6" name="ad11c3dede8563afbb1a3e9b9f4e936e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad11c3dede8563afbb1a3e9b9f4e936e6">&#9670;&#160;</a></span>SocketBuf_consume()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_consume </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_consume - Remove data without reading @buf: Buffer instance @len: Bytes to remove Asserts if len &gt; available data Performance: O(1) </p>
-
-</div>
-</div>
-<a id="a886e91e5cdff04cbc06b2d99eb887808" name="a886e91e5cdff04cbc06b2d99eb887808"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a886e91e5cdff04cbc06b2d99eb887808">&#9670;&#160;</a></span>SocketBuf_empty()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketBuf_empty </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_empty - Check if buffer is empty @buf: Buffer instance Returns: Non-zero if empty </p>
-
-</div>
-</div>
-<a id="a8ae7a3d2576f6d28c91511e10790e99a" name="a8ae7a3d2576f6d28c91511e10790e99a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ae7a3d2576f6d28c91511e10790e99a">&#9670;&#160;</a></span>SocketBuf_full()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketBuf_full </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_full - Check if buffer is full @buf: Buffer instance Returns: Non-zero if full </p>
-
-</div>
-</div>
-<a id="ac82b13f33ba79d9fa97582a64654e8ef" name="ac82b13f33ba79d9fa97582a64654e8ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac82b13f33ba79d9fa97582a64654e8ef">&#9670;&#160;</a></span>SocketBuf_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> SocketBuf_new </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>capacity</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_new - Create a new circular buffer @arena: Arena for memory allocation @capacity: Buffer capacity in bytes Returns: New buffer instance </p>
-
-</div>
-</div>
-<a id="a55cfa577b17ee4e2ea965a841deccab0" name="a55cfa577b17ee4e2ea965a841deccab0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55cfa577b17ee4e2ea965a841deccab0">&#9670;&#160;</a></span>SocketBuf_peek()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketBuf_peek </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_peek - Read data without removing it @buf: Buffer instance @data: Destination buffer @len: Maximum bytes to peek Returns: Bytes actually read Performance: O(n) where n is bytes peeked </p>
-
-</div>
-</div>
-<a id="a4aacfb9008833f24abec18b1d65d0d42" name="a4aacfb9008833f24abec18b1d65d0d42"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4aacfb9008833f24abec18b1d65d0d42">&#9670;&#160;</a></span>SocketBuf_read()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketBuf_read </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_read - Read and remove data from buffer @buf: Buffer instance @data: Destination buffer @len: Maximum bytes to read Returns: Bytes actually read Performance: O(n) where n is bytes read </p>
-
-</div>
-</div>
-<a id="ae4d5d95ed126030f6414b7f607cd555e" name="ae4d5d95ed126030f6414b7f607cd555e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4d5d95ed126030f6414b7f607cd555e">&#9670;&#160;</a></span>SocketBuf_readptr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const void * SocketBuf_readptr </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_readptr - Get direct read pointer @buf: Buffer instance @len: Output - contiguous bytes available Returns: Pointer to data or NULL if empty Performance: O(1) For zero-copy reads. Data remains in buffer until consumed. </p>
-
-</div>
-</div>
-<a id="a7e38c8dbadd8bd771d70ec98eda9f448" name="a7e38c8dbadd8bd771d70ec98eda9f448"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e38c8dbadd8bd771d70ec98eda9f448">&#9670;&#160;</a></span>SocketBuf_release()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_release </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_release - Release a buffer reference @buf: Pointer to buffer (will be set to NULL) Arena-based allocation means buffer memory persists until the arena is disposed - individual buffers cannot be freed separately. This function invalidates the buffer pointer to prevent accidental access through stale pointers. The buffer memory will be automatically freed when the arena is disposed. This is the fundamental arena allocation pattern, not a limitation to work around. </p>
-
-</div>
-</div>
-<a id="a77d70e899c26ac30bad4aac232505f1e" name="a77d70e899c26ac30bad4aac232505f1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77d70e899c26ac30bad4aac232505f1e">&#9670;&#160;</a></span>SocketBuf_reserve()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_reserve </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>min_space</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_reserve - Ensure minimum available space (dynamic resize) @buf: Buffer to resize @min_space: Minimum space needed after resize Raises: SocketBuf_Failed on realloc fail or overflow Doubles capacity or sets to min_space, rebase circular data if needed Runtime invariants checked before/after </p>
-
-</div>
-</div>
-<a id="af0f12ab9bbed33398141c41561c1fcb7" name="af0f12ab9bbed33398141c41561c1fcb7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af0f12ab9bbed33398141c41561c1fcb7">&#9670;&#160;</a></span>SocketBuf_secureclear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_secureclear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_secureclear - Securely clear all data @buf: Buffer instance Zeros memory contents before resetting buffer pointers. Use this for buffers containing sensitive data (passwords, keys, etc.) Performance: O(n) where n is buffer capacity Note: Always use secureclear when removing connections that may have handled sensitive data to prevent information disclosure. </p>
-
-</div>
-</div>
-<a id="a4f511809edb33ba3ff3a051544bff0d1" name="a4f511809edb33ba3ff3a051544bff0d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f511809edb33ba3ff3a051544bff0d1">&#9670;&#160;</a></span>SocketBuf_space()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketBuf_space </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_space - Get available space @buf: Buffer instance Returns: Bytes available for writing Performance: O(1) </p>
-
-</div>
-</div>
-<a id="abad296e666bf8d65669ab7c71d6b8d97" name="abad296e666bf8d65669ab7c71d6b8d97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abad296e666bf8d65669ab7c71d6b8d97">&#9670;&#160;</a></span>SocketBuf_write()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketBuf_write </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_write - Write data to buffer @buf: Buffer instance @data: Data to write @len: Length of data Returns: Bytes actually written (may be less if buffer fills) Performance: O(n) where n is bytes written </p>
-
-</div>
-</div>
-<a id="a0d845ceca49625b8c317310a757ad9dc" name="a0d845ceca49625b8c317310a757ad9dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d845ceca49625b8c317310a757ad9dc">&#9670;&#160;</a></span>SocketBuf_writeptr()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void * SocketBuf_writeptr </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_writeptr - Get direct write pointer @buf: Buffer instance @len: Output - contiguous space available Returns: Pointer to write location or NULL if full Performance: O(1) For zero-copy writes. Call <a class="el" href="SocketBuf_8h.html#a2e4e93aa0feab70464515b0ef3a57186">SocketBuf_written()</a> after writing. </p>
-
-</div>
-</div>
-<a id="a2e4e93aa0feab70464515b0ef3a57186" name="a2e4e93aa0feab70464515b0ef3a57186"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2e4e93aa0feab70464515b0ef3a57186">&#9670;&#160;</a></span>SocketBuf_written()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketBuf_written </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketBuf_written - Commit written data @buf: Buffer instance @len: Bytes written to writeptr Asserts if len &gt; space available Performance: O(1) </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a246f86a3226316f3922ee9eba0436777" name="a246f86a3226316f3922ee9eba0436777"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a246f86a3226316f3922ee9eba0436777">&#9670;&#160;</a></span>SocketBuf_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketBuf_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Exception thrown on buffer operation failure </p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00032">32</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>

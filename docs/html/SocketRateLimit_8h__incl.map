@@ -1,10 +1,10 @@
 <map id="SocketRateLimit.h" name="SocketRateLimit.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="73,5,204,31"/>
-<area shape="rect" id="Node000002" href="$Arena_8h.html" title=" " alt="" coords="48,79,144,104"/>
+<area shape="rect" id="Node000001" title="Token bucket rate limiter for controlling operation rates." alt="" coords="73,5,204,31"/>
+<area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="48,79,144,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="134,32,112,68,108,66,129,30"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="5,152,75,177"/>
 <area shape="poly" id="edge6_Node000001_Node000003" title=" " alt="" coords="101,33,66,51,50,64,38,80,33,94,31,108,35,138,29,138,26,108,28,92,34,77,47,61,63,47,99,28"/>
-<area shape="rect" id="Node000004" href="$Except_8h.html" title=" " alt="" coords="114,152,217,177"/>
+<area shape="rect" id="Node000004" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="114,152,217,177"/>
 <area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="145,30,159,78,166,138,161,138,153,79,140,32"/>
 <area shape="rect" id="Node000006" title=" " alt="" coords="219,79,285,104"/>
 <area shape="poly" id="edge7_Node000001_Node000006" title=" " alt="" coords="158,28,224,69,221,74,155,33"/>

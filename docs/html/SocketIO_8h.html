@@ -113,9 +113,12 @@ $(document).ready(function(){initNavTree('SocketIO_8h.html',''); initResizable()
   <div class="summary">
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">SocketIO.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketIO.h File Reference<div class="ingroups"><a class="el" href="group__core__io.html">Core I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Internal I/O abstraction layer for socket operations with TLS support.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 <code>#include &lt;errno.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
@@ -133,39 +136,66 @@ $(document).ready(function(){initNavTree('SocketIO_8h.html',''); initResizable()
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td></tr>
+<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ad65971e86ea8dcbaa79e4e457612d3a6" id="r_ad65971e86ea8dcbaa79e4e457612d3a6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#ad65971e86ea8dcbaa79e4e457612d3a6">socket_send_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len, int flags)</td></tr>
-<tr class="separator:ad65971e86ea8dcbaa79e4e457612d3a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12c16a6d184c96f82dd1185d315f29e2" id="r_a12c16a6d184c96f82dd1185d315f29e2"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a12c16a6d184c96f82dd1185d315f29e2">socket_recv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len, int flags)</td></tr>
-<tr class="separator:a12c16a6d184c96f82dd1185d315f29e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a714a501a951663d0248972ef6cc75818" id="r_a714a501a951663d0248972ef6cc75818"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a714a501a951663d0248972ef6cc75818">socket_sendv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct iovec *iov, int iovcnt, int flags)</td></tr>
-<tr class="separator:a714a501a951663d0248972ef6cc75818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7fc21bc639d4077480b1d2b7c2bef7e" id="r_aa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#aa7fc21bc639d4077480b1d2b7c2bef7e">socket_recvv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct iovec *iov, int iovcnt, int flags)</td></tr>
-<tr class="separator:aa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc70395a3d965153d4502752c496544e" id="r_abc70395a3d965153d4502752c496544e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#abc70395a3d965153d4502752c496544e">socket_is_tls_enabled</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:abc70395a3d965153d4502752c496544e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a665b41107ebf850f631386135fa58791" id="r_a665b41107ebf850f631386135fa58791"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a665b41107ebf850f631386135fa58791">socket_tls_want_read</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:a665b41107ebf850f631386135fa58791"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae7a7fe487c65b17fdea95a118bc98a97" id="r_ae7a7fe487c65b17fdea95a118bc98a97"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#ae7a7fe487c65b17fdea95a118bc98a97">socket_tls_want_write</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:ae7a7fe487c65b17fdea95a118bc98a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92f7b61974c6adb4ac454b4fb671c6b8" id="r_a92f7b61974c6adb4ac454b4fb671c6b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a92f7b61974c6adb4ac454b4fb671c6b8">socket_handle_ssl_error</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, SSL *ssl, int ssl_result)</td></tr>
-<tr class="separator:a92f7b61974c6adb4ac454b4fb671c6b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a326db6a48e839e56bd1599fc3a651723" id="r_a326db6a48e839e56bd1599fc3a651723"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a326db6a48e839e56bd1599fc3a651723">socket_get_ssl</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:a326db6a48e839e56bd1599fc3a651723"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10ddc2a7b61b559013a79f7d1297d409" id="r_a10ddc2a7b61b559013a79f7d1297d409"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a10ddc2a7b61b559013a79f7d1297d409">socket_validate_tls_ready</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:a10ddc2a7b61b559013a79f7d1297d409"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc6b10100f449aef91c884fcebc9f9a5" id="r_acc6b10100f449aef91c884fcebc9f9a5"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#acc6b10100f449aef91c884fcebc9f9a5">socketio_is_wouldblock</a> (void)</td></tr>
-<tr class="separator:acc6b10100f449aef91c884fcebc9f9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a74bde3935e0a14d633eb374dada531d1" id="r_a74bde3935e0a14d633eb374dada531d1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a74bde3935e0a14d633eb374dada531d1">socketio_is_connection_closed_send</a> (void)</td></tr>
-<tr class="separator:a74bde3935e0a14d633eb374dada531d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ed3e966870af6d524f8956253594ef4" id="r_a9ed3e966870af6d524f8956253594ef4"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a9ed3e966870af6d524f8956253594ef4">socketio_is_connection_closed_recv</a> (void)</td></tr>
-<tr class="separator:a9ed3e966870af6d524f8956253594ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad65971e86ea8dcbaa79e4e457612d3a6" id="r_gad65971e86ea8dcbaa79e4e457612d3a6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad65971e86ea8dcbaa79e4e457612d3a6">socket_send_internal</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len, int flags)</td></tr>
+<tr class="memdesc:gad65971e86ea8dcbaa79e4e457612d3a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal send operation (TLS-aware)  <br /></td></tr>
+<tr class="separator:gad65971e86ea8dcbaa79e4e457612d3a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga12c16a6d184c96f82dd1185d315f29e2" id="r_ga12c16a6d184c96f82dd1185d315f29e2"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga12c16a6d184c96f82dd1185d315f29e2">socket_recv_internal</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len, int flags)</td></tr>
+<tr class="memdesc:ga12c16a6d184c96f82dd1185d315f29e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal receive operation (TLS-aware)  <br /></td></tr>
+<tr class="separator:ga12c16a6d184c96f82dd1185d315f29e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga714a501a951663d0248972ef6cc75818" id="r_ga714a501a951663d0248972ef6cc75818"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga714a501a951663d0248972ef6cc75818">socket_sendv_internal</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct iovec *iov, int iovcnt, int flags)</td></tr>
+<tr class="memdesc:ga714a501a951663d0248972ef6cc75818"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal scatter/gather send (TLS-aware)  <br /></td></tr>
+<tr class="separator:ga714a501a951663d0248972ef6cc75818"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa7fc21bc639d4077480b1d2b7c2bef7e" id="r_gaa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa7fc21bc639d4077480b1d2b7c2bef7e">socket_recvv_internal</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct iovec *iov, int iovcnt, int flags)</td></tr>
+<tr class="memdesc:gaa7fc21bc639d4077480b1d2b7c2bef7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal scatter/gather receive (TLS-aware)  <br /></td></tr>
+<tr class="separator:gaa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabc70395a3d965153d4502752c496544e" id="r_gabc70395a3d965153d4502752c496544e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabc70395a3d965153d4502752c496544e">socket_is_tls_enabled</a> (const <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:gabc70395a3d965153d4502752c496544e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if socket has TLS enabled.  <br /></td></tr>
+<tr class="separator:gabc70395a3d965153d4502752c496544e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga665b41107ebf850f631386135fa58791" id="r_ga665b41107ebf850f631386135fa58791"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga665b41107ebf850f631386135fa58791">socket_tls_want_read</a> (const <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:ga665b41107ebf850f631386135fa58791"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if TLS wants to read more data.  <br /></td></tr>
+<tr class="separator:ga665b41107ebf850f631386135fa58791"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae7a7fe487c65b17fdea95a118bc98a97" id="r_gae7a7fe487c65b17fdea95a118bc98a97"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae7a7fe487c65b17fdea95a118bc98a97">socket_tls_want_write</a> (const <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:gae7a7fe487c65b17fdea95a118bc98a97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if TLS wants to write more data.  <br /></td></tr>
+<tr class="separator:gae7a7fe487c65b17fdea95a118bc98a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga92f7b61974c6adb4ac454b4fb671c6b8" id="r_ga92f7b61974c6adb4ac454b4fb671c6b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga92f7b61974c6adb4ac454b4fb671c6b8">socket_handle_ssl_error</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, SSL *ssl, int ssl_result)</td></tr>
+<tr class="memdesc:ga92f7b61974c6adb4ac454b4fb671c6b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper to handle SSL error codes.  <br /></td></tr>
+<tr class="separator:ga92f7b61974c6adb4ac454b4fb671c6b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga326db6a48e839e56bd1599fc3a651723" id="r_ga326db6a48e839e56bd1599fc3a651723"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga326db6a48e839e56bd1599fc3a651723">socket_get_ssl</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:ga326db6a48e839e56bd1599fc3a651723"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get SSL object from socket.  <br /></td></tr>
+<tr class="separator:ga326db6a48e839e56bd1599fc3a651723"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga10ddc2a7b61b559013a79f7d1297d409" id="r_ga10ddc2a7b61b559013a79f7d1297d409"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga10ddc2a7b61b559013a79f7d1297d409">socket_validate_tls_ready</a> (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:ga10ddc2a7b61b559013a79f7d1297d409"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate TLS is ready for I/O.  <br /></td></tr>
+<tr class="separator:ga10ddc2a7b61b559013a79f7d1297d409"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacc6b10100f449aef91c884fcebc9f9a5" id="r_gacc6b10100f449aef91c884fcebc9f9a5"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gacc6b10100f449aef91c884fcebc9f9a5">socketio_is_wouldblock</a> (void)</td></tr>
+<tr class="memdesc:gacc6b10100f449aef91c884fcebc9f9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if errno indicates operation would block.  <br /></td></tr>
+<tr class="separator:gacc6b10100f449aef91c884fcebc9f9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga74bde3935e0a14d633eb374dada531d1" id="r_ga74bde3935e0a14d633eb374dada531d1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga74bde3935e0a14d633eb374dada531d1">socketio_is_connection_closed_send</a> (void)</td></tr>
+<tr class="memdesc:ga74bde3935e0a14d633eb374dada531d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if send error indicates closed connection.  <br /></td></tr>
+<tr class="separator:ga74bde3935e0a14d633eb374dada531d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9ed3e966870af6d524f8956253594ef4" id="r_ga9ed3e966870af6d524f8956253594ef4"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga9ed3e966870af6d524f8956253594ef4">socketio_is_connection_closed_recv</a> (void)</td></tr>
+<tr class="memdesc:ga9ed3e966870af6d524f8956253594ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if recv error indicates closed connection.  <br /></td></tr>
+<tr class="separator:ga9ed3e966870af6d524f8956253594ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Internal I/O abstraction layer for socket operations with TLS support. </p>
+<p>Provides internal I/O operations that automatically route through TLS when enabled, or use raw socket operations otherwise. This abstraction layer handles the complexity of TLS/non-TLS operation selection.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b" title="Send data.">Socket_send()</a> for public send operations. </dd>
+<dd>
+<a class="el" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9" title="Receive data.">Socket_recv()</a> for public receive operations. </dd>
+<dd>
+<a class="el" href="group__security.html#ga63e73c93350813167a68162c5cb3d819">SocketTLS_T</a> for enabling TLS on sockets. </dd>
+<dd>
+<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> for async I/O integration. </dd>
+<dd>
+<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> for event-driven I/O. </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
 
@@ -173,474 +203,12 @@ Functions</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00013">13</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a326db6a48e839e56bd1599fc3a651723" name="a326db6a48e839e56bd1599fc3a651723"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a326db6a48e839e56bd1599fc3a651723">&#9670;&#160;</a></span>socket_get_ssl()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">SSL * socket_get_ssl </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_get_ssl - Get SSL object from socket @socket: Socket instance Returns: SSL object or NULL if TLS not enabled Thread-safe: Yes (read-only access) </p>
-
-</div>
-</div>
-<a id="a92f7b61974c6adb4ac454b4fb671c6b8" name="a92f7b61974c6adb4ac454b4fb671c6b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92f7b61974c6adb4ac454b4fb671c6b8">&#9670;&#160;</a></span>socket_handle_ssl_error()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int socket_handle_ssl_error </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">SSL *&#160;</td>
-          <td class="paramname"><em>ssl</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>ssl_result</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_handle_ssl_error - Helper to handle SSL error codes @socket: Socket instance @ssl: SSL object @ssl_result: Result from SSL operation </p><dl class="section return"><dt>Returns</dt><dd>: 0 on success, -1 on error (sets errno) Thread-safe: Yes (operates on single socket) Maps SSL error codes to errno values and updates socket state. Used by TLS-aware I/O functions for consistent error handling. </dd></dl>
-
-</div>
-</div>
-<a id="abc70395a3d965153d4502752c496544e" name="abc70395a3d965153d4502752c496544e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc70395a3d965153d4502752c496544e">&#9670;&#160;</a></span>socket_is_tls_enabled()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int socket_is_tls_enabled </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_is_tls_enabled - Check if TLS is enabled on socket @socket: Socket instance (read-only) Returns: 1 if TLS is enabled, 0 otherwise Thread-safe: Yes (read-only flag) </p>
-
-</div>
-</div>
-<a id="a12c16a6d184c96f82dd1185d315f29e2" name="a12c16a6d184c96f82dd1185d315f29e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a12c16a6d184c96f82dd1185d315f29e2">&#9670;&#160;</a></span>socket_recv_internal()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t socket_recv_internal </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_recv_internal - Internal receive operation (TLS-aware) @socket: Socket instance @buf: Buffer for received data @len: Buffer size @flags: Receive flags Returns: Bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) Routes through SSL_read() if TLS is enabled, otherwise uses recv(). Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE). </p>
-
-</div>
-</div>
-<a id="aa7fc21bc639d4077480b1d2b7c2bef7e" name="aa7fc21bc639d4077480b1d2b7c2bef7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7fc21bc639d4077480b1d2b7c2bef7e">&#9670;&#160;</a></span>socket_recvv_internal()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t socket_recvv_internal </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_recvv_internal - Internal scatter/gather receive (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Receive flags Returns: Total bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) For TLS: Calls SSL_read() into first iov, advances manually. For non-TLS: Uses readv() directly. </p>
-
-</div>
-</div>
-<a id="ad65971e86ea8dcbaa79e4e457612d3a6" name="ad65971e86ea8dcbaa79e4e457612d3a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad65971e86ea8dcbaa79e4e457612d3a6">&#9670;&#160;</a></span>socket_send_internal()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t socket_send_internal </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_send_internal - Internal send operation (TLS-aware) @socket: Socket instance @buf: Data to send @len: Length of data @flags: Send flags (MSG_NOSIGNAL, etc.) Returns: Bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) Routes through SSL_write() if TLS is enabled, otherwise uses send(). Handles partial sends and EAGAIN mapping. </p>
-
-</div>
-</div>
-<a id="a714a501a951663d0248972ef6cc75818" name="a714a501a951663d0248972ef6cc75818"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a714a501a951663d0248972ef6cc75818">&#9670;&#160;</a></span>socket_sendv_internal()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t socket_sendv_internal </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const struct iovec *&#160;</td>
-          <td class="paramname"><em>iov</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>iovcnt</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_sendv_internal - Internal scatter/gather send (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Send flags Returns: Total bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) For TLS: Copies iov to temp buffer, calls SSL_write(). For non-TLS: Uses writev() directly. Allocates temp buffer via socket-&gt;arena if needed. </p>
-
-</div>
-</div>
-<a id="a665b41107ebf850f631386135fa58791" name="a665b41107ebf850f631386135fa58791"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a665b41107ebf850f631386135fa58791">&#9670;&#160;</a></span>socket_tls_want_read()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int socket_tls_want_read </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_tls_want_read - Check if TLS operation wants read @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_READ pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake. </p>
-
-</div>
-</div>
-<a id="ae7a7fe487c65b17fdea95a118bc98a97" name="ae7a7fe487c65b17fdea95a118bc98a97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7a7fe487c65b17fdea95a118bc98a97">&#9670;&#160;</a></span>socket_tls_want_write()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int socket_tls_want_write </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_tls_want_write - Check if TLS operation wants write @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_WRITE pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake. </p>
-
-</div>
-</div>
-<a id="a10ddc2a7b61b559013a79f7d1297d409" name="a10ddc2a7b61b559013a79f7d1297d409"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10ddc2a7b61b559013a79f7d1297d409">&#9670;&#160;</a></span>socket_validate_tls_ready()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">SSL * socket_validate_tls_ready </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socket_validate_tls_ready - Validate TLS is ready for I/O @socket: Socket instance Returns: SSL pointer if ready Raises: Socket_Failed or SocketTLS_HandshakeFailed if not ready Thread-safe: Yes (operates on single socket) Shared helper for TLS I/O functions. </p>
-
-</div>
-</div>
-<a id="a9ed3e966870af6d524f8956253594ef4" name="a9ed3e966870af6d524f8956253594ef4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ed3e966870af6d524f8956253594ef4">&#9670;&#160;</a></span>socketio_is_connection_closed_recv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int socketio_is_connection_closed_recv </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socketio_is_connection_closed_recv - Check if recv error indicates closed Returns: 1 if ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after recv() failure to check for connection close. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00169">169</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
-
-</div>
-</div>
-<a id="a74bde3935e0a14d633eb374dada531d1" name="a74bde3935e0a14d633eb374dada531d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74bde3935e0a14d633eb374dada531d1">&#9670;&#160;</a></span>socketio_is_connection_closed_send()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int socketio_is_connection_closed_send </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socketio_is_connection_closed_send - Check if send error indicates closed Returns: 1 if EPIPE/ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after send() failure to check for connection close. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00157">157</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
-
-</div>
-</div>
-<a id="acc6b10100f449aef91c884fcebc9f9a5" name="acc6b10100f449aef91c884fcebc9f9a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc6b10100f449aef91c884fcebc9f9a5">&#9670;&#160;</a></span>socketio_is_wouldblock()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int socketio_is_wouldblock </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>socketio_is_wouldblock - Check if errno indicates operation would block Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise Thread-safe: Yes (reads errno) Use this instead of inline errno checks for consistency. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00145">145</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00029">29</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
 
 </div>
 </div>

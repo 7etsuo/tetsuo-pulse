@@ -1,8 +1,7 @@
 /**
  * @defgroup foundation Core Foundation Modules
- * @brief Base infrastructure for memory management, exception handling, and
- * core utilities.
- *
+ * @brief Base infrastructure for memory management, exception handling, and core utilities.
+ * @{
  * The Foundation group provides the fundamental building blocks used by all
  * other modules in the socket library. Key components include:
  * - Arena (memory): Region-based memory allocation with fast
@@ -12,10 +11,10 @@
  * logging
  * - SocketConfig (configuration): Global configuration management
  *
- * @see core_io for socket primitives built on foundation modules.
- * @see Arena_T for memory management
- * @see Except_T for exception handling
- * @{
+ * @see @ref core_io for socket primitives built on foundation.
+ * @see @ref Arena_T for memory management
+ * @see @ref Except_T for exception handling
+ * @see @ref event_system for modules using foundation components
  */
 
 #ifndef ARENA_INCLUDED
@@ -54,14 +53,41 @@
  *   Arena_clear(arena);      // Clear all allocations but keep arena
  *   // OR
  *   Arena_dispose(&arena);  // Free everything including arena itself
+ *
+ * @see @ref Arena_T for the opaque arena type.
+ * @see @ref Arena_new() for arena creation.
+ * @see @ref Arena_dispose() for cleanup.
+ * @see @ref memory-management.mdc for detailed memory management patterns.
  */
 
 #include "core/Except.h"
 
+/**
+ * @brief Opaque arena type for memory management.
+ * @ingroup foundation
+ *
+ * Arena_T is an opaque pointer to a memory arena structure. Arenas provide
+ * fast, thread-safe memory allocation with bulk deallocation. All related
+ * objects should use the same arena for their lifecycle management.
+ *
+ * @see Arena_new() for creation.
+ * @see Arena_dispose() for cleanup.
+ * @see @ref memory-management.mdc for usage patterns.
+ */
 #define T Arena_T
 typedef struct T *T;
 
-/* Arena exception types */
+/**
+ * @brief Exception raised when arena allocation fails.
+ * @ingroup foundation
+ *
+ * This exception is raised when:
+ * - Memory allocation (malloc) fails
+ * - Mutex initialization fails
+ * - Arena expansion fails due to system limits
+ *
+ * @see @ref error-handling.mdc for exception handling patterns.
+ */
 extern const Except_T Arena_Failed;
 
 /**
@@ -72,6 +98,8 @@ extern const Except_T Arena_Failed;
  * @threadsafe Yes
  * @see Arena_dispose() for cleanup.
  * @see ALLOC() macro for convenience.
+ * @see Arena_clear() for selective cleanup.
+ * @see @ref memory-management.mdc for arena usage patterns.
  */
 extern T Arena_new (void);
 
@@ -98,6 +126,8 @@ extern void Arena_dispose (T *ap);
  * @note Memory is aligned appropriately for any data type.
  * @see ALLOC() macro for convenience.
  * @see Arena_calloc() for zero-initialized allocation.
+ * @see Arena_new() for arena creation.
+ * @see @ref memory-management.mdc for allocation patterns.
  */
 extern void *Arena_alloc (T arena, size_t nbytes, const char *file, int line);
 
@@ -125,12 +155,39 @@ extern void *Arena_calloc (T arena, size_t count, size_t nbytes,
  * @threadsafe Yes
  * @see Arena_dispose() for full cleanup.
  * @see Arena_new() for creation.
+ * @see Arena_alloc() for allocation after clearing.
+ * @see @ref memory-management.mdc for arena lifecycle management.
  */
 extern void Arena_clear (T arena);
 
-/* Allocation macros - automatically pass file/line info */
+/**
+ * @brief Allocate memory from arena with automatic debug info.
+ * @ingroup foundation
+ * @param arena Arena to allocate from.
+ * @param nbytes Number of bytes to allocate.
+ * @return Pointer to allocated memory, or NULL on failure.
+ * @throws Arena_Failed if allocation fails.
+ * @threadsafe Yes
+ * @note Automatically passes __FILE__ and __LINE__ for debugging.
+ * @see Arena_alloc() for the underlying function.
+ * @see CALLOC() for zero-initialized allocation.
+ */
 #define ALLOC(arena, nbytes)                                                  \
   (Arena_alloc ((arena), (nbytes), __FILE__, __LINE__))
+
+/**
+ * @brief Allocate and zero-initialize memory from arena with automatic debug info.
+ * @ingroup foundation
+ * @param arena Arena to allocate from.
+ * @param count Number of elements.
+ * @param nbytes Size of each element.
+ * @return Pointer to zeroed memory, or NULL on failure.
+ * @throws Arena_Failed if allocation fails.
+ * @threadsafe Yes
+ * @note Automatically passes __FILE__ and __LINE__ for debugging.
+ * @see Arena_calloc() for the underlying function.
+ * @see ALLOC() for non-zeroed allocation.
+ */
 #define CALLOC(arena, count, nbytes)                                          \
   (Arena_calloc ((arena), (count), (nbytes), __FILE__, __LINE__))
 

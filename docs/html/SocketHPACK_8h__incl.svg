@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="HPACK header compression (RFC 7541) for HTTP/2.">
 <polygon fill="#999999" stroke="#666666" points="159.67,-184 70.67,-184 70.67,-165 159.67,-165 159.67,-184"/>
 <text text-anchor="middle" x="115.17" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHPACK.h</text>
 </a>
@@ -84,7 +84,7 @@
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000005"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="239.17,-129 167.17,-129 167.17,-110 239.17,-110 239.17,-129"/>
 <text text-anchor="middle" x="203.17" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -102,7 +102,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="273.67,-74 196.67,-74 196.67,-55 273.67,-55 273.67,-74"/>
 <text text-anchor="middle" x="235.17" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>

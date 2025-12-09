@@ -42,6 +42,7 @@
 #include "core/SocketConfig.h"
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"
+#include "socket/SocketAsync-private.h"
 #include "socket/SocketIO.h"
 #define SOCKET_LOG_COMPONENT "SocketAsync"
 #include "core/SocketUtil.h"
@@ -57,51 +58,15 @@
 #define SOCKET_IO_URING_TEST_ENTRIES 32
 #endif
 
-/* Request type enumeration */
-enum AsyncRequestType
-{
-  REQ_SEND,
-  REQ_RECV
-};
+/* Request structures defined in SocketAsync-private.h */
 
-/* Request tracking structure */
-struct AsyncRequest
-{
-  unsigned request_id;
-  Socket_T socket;
-  SocketAsync_Callback cb;
-  void *user_data;
-  enum AsyncRequestType type;
-  const void *send_buf;
-  void *recv_buf;
-  size_t len;
-  SocketAsync_Flags flags;
-  struct AsyncRequest *next;
-};
-
-/* Async context structure */
-struct T
-{
-  Arena_T arena;
-
-  /* Request tracking */
-  struct AsyncRequest *requests[SOCKET_HASH_TABLE_SIZE];
-  unsigned next_request_id;
-  pthread_mutex_t mutex;
-
-  /* Platform-specific async context */
-#ifdef SOCKET_HAS_IO_URING
-  struct io_uring *ring;
-  int io_uring_fd;
-#elif defined(__APPLE__) || defined(__FreeBSD__)
-  int kqueue_fd;
-#else
-  int fallback_mode;
-#endif
-
-  int available;
-  const char *backend_name;
-};
+/* Async context structure defined in SocketAsync-private.h 
+ *
+ * Includes additional fields for future partial completion and timeout support:
+ * - size_t completed in AsyncRequest
+ * - time_t submitted_at in AsyncRequest
+ * Code will be updated to utilize them in subsequent commits.
+ */
 
 /* Exception */
 const Except_T SocketAsync_Failed

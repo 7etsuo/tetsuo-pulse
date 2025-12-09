@@ -1,12 +1,12 @@
 <map id="SocketTLSConfig.h" name="SocketTLSConfig.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="454,5,590,31"/>
-<area shape="rect" id="Node000002" href="$SocketTLSContext_8h.html" title=" " alt="" coords="450,79,594,104"/>
+<area shape="rect" id="Node000001" title="TLS configuration constants, structure, and secure defaults." alt="" coords="454,5,590,31"/>
+<area shape="rect" id="Node000002" href="$SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling." alt="" coords="450,79,594,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="525,44,525,79,519,79,519,44"/>
-<area shape="rect" id="Node000003" href="$SocketHTTPClient_8h.html" title=" " alt="" coords="152,152,295,177"/>
+<area shape="rect" id="Node000003" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="152,152,295,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="461,110,272,154,271,149,460,105"/>
-<area shape="rect" id="Node000007" href="$SocketHTTPServer_8h.html" title=" " alt="" coords="374,152,521,177"/>
+<area shape="rect" id="Node000007" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="374,152,521,177"/>
 <area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="502,115,461,154,458,150,498,111"/>
-<area shape="rect" id="Node000010" href="$SocketProxy_8h.html" title=" " alt="" coords="545,152,651,177"/>
+<area shape="rect" id="Node000010" href="$SocketProxy_8h.html" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="545,152,651,177"/>
 <area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="546,111,587,150,584,154,542,115"/>
 <area shape="rect" id="Node000011" href="$proxy__connect_8c.html" title=" " alt="" coords="629,225,748,251"/>
 <area shape="poly" id="edge11_Node000002_Node000011" title=" " alt="" coords="592,106,631,123,665,150,677,169,685,189,691,225,686,226,680,191,673,171,661,154,628,128,590,111"/>

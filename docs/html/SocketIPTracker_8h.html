@@ -115,9 +115,12 @@ $(document).ready(function(){initNavTree('SocketIPTracker_8h.html',''); initResi
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketIPTracker.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketIPTracker.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Per-IP connection tracking for rate limiting and DoS protection.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
@@ -133,8 +136,9 @@ $(document).ready(function(){initNavTree('SocketIPTracker_8h.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque IP connection tracker type.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -143,50 +147,50 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ab87cad57ddf1ed19226cf8535456bbde" id="r_ab87cad57ddf1ed19226cf8535456bbde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#ab87cad57ddf1ed19226cf8535456bbde">SocketIPTracker_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int max_per_ip)</td></tr>
-<tr class="separator:ab87cad57ddf1ed19226cf8535456bbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a9850f5f3c08335dd18e2a8dbfaed39" id="r_a1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a1a9850f5f3c08335dd18e2a8dbfaed39">SocketIPTracker_free</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> *tracker)</td></tr>
-<tr class="separator:a1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a796a06e82e58c6fea3deaf767101dea3" id="r_a796a06e82e58c6fea3deaf767101dea3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a796a06e82e58c6fea3deaf767101dea3">SocketIPTracker_track</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="separator:a796a06e82e58c6fea3deaf767101dea3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a340ee75715f9dd3a6446dc3ec2c528dc" id="r_a340ee75715f9dd3a6446dc3ec2c528dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a340ee75715f9dd3a6446dc3ec2c528dc">SocketIPTracker_release</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="separator:a340ee75715f9dd3a6446dc3ec2c528dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01a74a09256ae28c23c79244f6b832c0" id="r_a01a74a09256ae28c23c79244f6b832c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a01a74a09256ae28c23c79244f6b832c0">SocketIPTracker_count</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="separator:a01a74a09256ae28c23c79244f6b832c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ae1930faa05574038978e46612e5385" id="r_a3ae1930faa05574038978e46612e5385"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a3ae1930faa05574038978e46612e5385">SocketIPTracker_setmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, int max_per_ip)</td></tr>
-<tr class="separator:a3ae1930faa05574038978e46612e5385"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2633ef22c045d2a4ab7f260b508bd5fc" id="r_a2633ef22c045d2a4ab7f260b508bd5fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a2633ef22c045d2a4ab7f260b508bd5fc">SocketIPTracker_getmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="separator:a2633ef22c045d2a4ab7f260b508bd5fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f416e973e3f32b1c9cf2a2b620214f4" id="r_a9f416e973e3f32b1c9cf2a2b620214f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a9f416e973e3f32b1c9cf2a2b620214f4">SocketIPTracker_setmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, size_t max_unique)</td></tr>
-<tr class="separator:a9f416e973e3f32b1c9cf2a2b620214f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e4510d8147198039726bd8250b95afb" id="r_a0e4510d8147198039726bd8250b95afb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a0e4510d8147198039726bd8250b95afb">SocketIPTracker_getmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="separator:a0e4510d8147198039726bd8250b95afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e69b52a3b64cbba1b17711c9961095f" id="r_a3e69b52a3b64cbba1b17711c9961095f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a3e69b52a3b64cbba1b17711c9961095f">SocketIPTracker_total</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="separator:a3e69b52a3b64cbba1b17711c9961095f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad8639fe1f640949b820cd1496a67ca56" id="r_ad8639fe1f640949b820cd1496a67ca56"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#ad8639fe1f640949b820cd1496a67ca56">SocketIPTracker_unique_ips</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="separator:ad8639fe1f640949b820cd1496a67ca56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47055e396eb7fa4f633bb19ec7720620" id="r_a47055e396eb7fa4f633bb19ec7720620"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a47055e396eb7fa4f633bb19ec7720620">SocketIPTracker_clear</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="separator:a47055e396eb7fa4f633bb19ec7720620"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab87cad57ddf1ed19226cf8535456bbde" id="r_gab87cad57ddf1ed19226cf8535456bbde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab87cad57ddf1ed19226cf8535456bbde">SocketIPTracker_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int max_per_ip)</td></tr>
+<tr class="memdesc:gab87cad57ddf1ed19226cf8535456bbde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new IP connection tracker.  <br /></td></tr>
+<tr class="separator:gab87cad57ddf1ed19226cf8535456bbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1a9850f5f3c08335dd18e2a8dbfaed39" id="r_ga1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga1a9850f5f3c08335dd18e2a8dbfaed39">SocketIPTracker_free</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> *tracker)</td></tr>
+<tr class="memdesc:ga1a9850f5f3c08335dd18e2a8dbfaed39"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free an IP tracker.  <br /></td></tr>
+<tr class="separator:ga1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga796a06e82e58c6fea3deaf767101dea3" id="r_ga796a06e82e58c6fea3deaf767101dea3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga796a06e82e58c6fea3deaf767101dea3">SocketIPTracker_track</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
+<tr class="memdesc:ga796a06e82e58c6fea3deaf767101dea3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Track a new connection from an IP address.  <br /></td></tr>
+<tr class="separator:ga796a06e82e58c6fea3deaf767101dea3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga340ee75715f9dd3a6446dc3ec2c528dc" id="r_ga340ee75715f9dd3a6446dc3ec2c528dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga340ee75715f9dd3a6446dc3ec2c528dc">SocketIPTracker_release</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
+<tr class="memdesc:ga340ee75715f9dd3a6446dc3ec2c528dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release a connection from an IP address.  <br /></td></tr>
+<tr class="separator:ga340ee75715f9dd3a6446dc3ec2c528dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga01a74a09256ae28c23c79244f6b832c0" id="r_ga01a74a09256ae28c23c79244f6b832c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga01a74a09256ae28c23c79244f6b832c0">SocketIPTracker_count</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
+<tr class="memdesc:ga01a74a09256ae28c23c79244f6b832c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current connection count for an IP address.  <br /></td></tr>
+<tr class="separator:ga01a74a09256ae28c23c79244f6b832c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ae1930faa05574038978e46612e5385" id="r_ga3ae1930faa05574038978e46612e5385"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga3ae1930faa05574038978e46612e5385">SocketIPTracker_setmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, int max_per_ip)</td></tr>
+<tr class="memdesc:ga3ae1930faa05574038978e46612e5385"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set maximum connections per IP address.  <br /></td></tr>
+<tr class="separator:ga3ae1930faa05574038978e46612e5385"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2633ef22c045d2a4ab7f260b508bd5fc" id="r_ga2633ef22c045d2a4ab7f260b508bd5fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga2633ef22c045d2a4ab7f260b508bd5fc">SocketIPTracker_getmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
+<tr class="memdesc:ga2633ef22c045d2a4ab7f260b508bd5fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get maximum connections per IP address.  <br /></td></tr>
+<tr class="separator:ga2633ef22c045d2a4ab7f260b508bd5fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9f416e973e3f32b1c9cf2a2b620214f4" id="r_ga9f416e973e3f32b1c9cf2a2b620214f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga9f416e973e3f32b1c9cf2a2b620214f4">SocketIPTracker_setmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, size_t max_unique)</td></tr>
+<tr class="memdesc:ga9f416e973e3f32b1c9cf2a2b620214f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set maximum unique IPs to track.  <br /></td></tr>
+<tr class="separator:ga9f416e973e3f32b1c9cf2a2b620214f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e4510d8147198039726bd8250b95afb" id="r_ga0e4510d8147198039726bd8250b95afb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0e4510d8147198039726bd8250b95afb">SocketIPTracker_getmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
+<tr class="memdesc:ga0e4510d8147198039726bd8250b95afb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get maximum unique IPs limit.  <br /></td></tr>
+<tr class="separator:ga0e4510d8147198039726bd8250b95afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e69b52a3b64cbba1b17711c9961095f" id="r_ga3e69b52a3b64cbba1b17711c9961095f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga3e69b52a3b64cbba1b17711c9961095f">SocketIPTracker_total</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
+<tr class="memdesc:ga3e69b52a3b64cbba1b17711c9961095f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get total tracked connections across all IPs.  <br /></td></tr>
+<tr class="separator:ga3e69b52a3b64cbba1b17711c9961095f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8639fe1f640949b820cd1496a67ca56" id="r_gad8639fe1f640949b820cd1496a67ca56"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad8639fe1f640949b820cd1496a67ca56">SocketIPTracker_unique_ips</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
+<tr class="memdesc:gad8639fe1f640949b820cd1496a67ca56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of unique IPs being tracked.  <br /></td></tr>
+<tr class="separator:gad8639fe1f640949b820cd1496a67ca56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga47055e396eb7fa4f633bb19ec7720620" id="r_ga47055e396eb7fa4f633bb19ec7720620"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga47055e396eb7fa4f633bb19ec7720620">SocketIPTracker_clear</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
+<tr class="memdesc:ga47055e396eb7fa4f633bb19ec7720620"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all tracked connections.  <br /></td></tr>
+<tr class="separator:ga47055e396eb7fa4f633bb19ec7720620"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a4692098ecf52e6929c8763f0fa9fe222" id="r_a4692098ecf52e6929c8763f0fa9fe222"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a4692098ecf52e6929c8763f0fa9fe222">SocketIPTracker_Failed</a></td></tr>
+<tr class="memitem:a4692098ecf52e6929c8763f0fa9fe222" id="r_a4692098ecf52e6929c8763f0fa9fe222"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a4692098ecf52e6929c8763f0fa9fe222">SocketIPTracker_Failed</a></td></tr>
 <tr class="separator:a4692098ecf52e6929c8763f0fa9fe222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketIPTracker_8h.html">SocketIPTracker.h</a> - Per-IP Connection Tracking</p>
-<p>Part of the Socket Library</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Per-IP connection tracking for rate limiting and DoS protection. </p>
 <p>Tracks the number of concurrent connections from each IP address. Used to enforce per-IP connection limits to prevent single-source denial of service attacks.</p>
 <p>Features:</p><ul>
 <li>O(1) average lookup/insert/delete via hash table</li>
@@ -194,6 +198,11 @@ Variables</h2></td></tr>
 <li>Thread-safe implementation</li>
 <li>IPv4 and IPv6 address support</li>
 </ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> for bandwidth rate limiting. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> for connection pool integration. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> for connection management modules.</dd></dl>
 <p>PLATFORM REQUIREMENTS:</p><ul>
 <li>POSIX-compliant system (Linux, BSD, macOS)</li>
 <li>POSIX threads (pthread) for thread safety</li>
@@ -202,15 +211,12 @@ Variables</h2></td></tr>
 <li>All operations are thread-safe via internal mutex</li>
 <li>Safe to share a single tracker across threads</li>
 </ul>
-<p>Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>; SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10); // Max 10 connections per IP SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000</p>
+<p>Usage: Arena_T arena = <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Create a new memory arena.">Arena_new()</a>; SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10); // Max 10 connections per IP SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000</p>
 <p>const char *client_ip = Socket_getpeeraddr(client); if (SocketIPTracker_track(tracker, client_ip)) { // Allowed - connection tracked } else { // Limit reached - reject connection }</p>
 <p>// When connection closes: SocketIPTracker_release(tracker, client_ip); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketIPTracker_8h_source.html#l00048">48</a> of file <a class="el" href="SocketIPTracker_8h_source.html">SocketIPTracker.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="SocketIPTracker_8h_source.html">SocketIPTracker.h</a>.</p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a763b573474982e2761d5b7fbdf9155fc" name="a763b573474982e2761d5b7fbdf9155fc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a763b573474982e2761d5b7fbdf9155fc">&#9670;&#160;</a></span>SocketIPTracker_T</h2>
 
@@ -223,410 +229,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketIPTracker_8h_source.html#l00049">49</a> of file <a class="el" href="SocketIPTracker_8h_source.html">SocketIPTracker.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a47055e396eb7fa4f633bb19ec7720620" name="a47055e396eb7fa4f633bb19ec7720620"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47055e396eb7fa4f633bb19ec7720620">&#9670;&#160;</a></span>SocketIPTracker_clear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketIPTracker_clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_clear - Clear all tracked connections @tracker: IP tracker instance</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Removes all entries from the tracker. Useful for testing or administrative reset. </p>
-
-</div>
-</div>
-<a id="a01a74a09256ae28c23c79244f6b832c0" name="a01a74a09256ae28c23c79244f6b832c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01a74a09256ae28c23c79244f6b832c0">&#9670;&#160;</a></span>SocketIPTracker_count()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketIPTracker_count </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ip</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_count - Get current connection count for IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
-<p>Returns: Current connection count (0 if not tracked) Thread-safe: Yes - uses internal mutex </p>
-
-</div>
-</div>
-<a id="a1a9850f5f3c08335dd18e2a8dbfaed39" name="a1a9850f5f3c08335dd18e2a8dbfaed39"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1a9850f5f3c08335dd18e2a8dbfaed39">&#9670;&#160;</a></span>SocketIPTracker_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketIPTracker_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> *&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_free - Free an IP tracker @tracker: Pointer to tracker (will be set to NULL)</p>
-<p>Thread-safe: Yes</p>
-<p>Note: Only frees if allocated with malloc (arena == NULL). Arena-allocated trackers are freed when arena is disposed. </p>
-
-</div>
-</div>
-<a id="a2633ef22c045d2a4ab7f260b508bd5fc" name="a2633ef22c045d2a4ab7f260b508bd5fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2633ef22c045d2a4ab7f260b508bd5fc">&#9670;&#160;</a></span>SocketIPTracker_getmax()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketIPTracker_getmax </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_getmax - Get maximum connections per IP @tracker: IP tracker instance</p>
-<p>Returns: Maximum connections per IP (0 = unlimited) Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a0e4510d8147198039726bd8250b95afb" name="a0e4510d8147198039726bd8250b95afb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e4510d8147198039726bd8250b95afb">&#9670;&#160;</a></span>SocketIPTracker_getmaxunique()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketIPTracker_getmaxunique </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_getmaxunique - Get maximum unique IPs limit @tracker: IP tracker instance</p>
-<p>Returns: Current maximum unique IPs (0 = unlimited) Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ab87cad57ddf1ed19226cf8535456bbde" name="ab87cad57ddf1ed19226cf8535456bbde"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab87cad57ddf1ed19226cf8535456bbde">&#9670;&#160;</a></span>SocketIPTracker_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> SocketIPTracker_new </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>max_per_ip</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_new - Create a new IP connection tracker @arena: Arena for memory allocation (NULL to use malloc) @max_per_ip: Maximum connections allowed per IP (0 = unlimited) Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion. Adjustable via <a class="el" href="SocketIPTracker_8h.html#a9f416e973e3f32b1c9cf2a2b620214f4">SocketIPTracker_setmaxunique()</a>.</p>
-<p>Returns: New IP tracker instance Raises: SocketIPTracker_Failed on allocation failure Thread-safe: Yes - returns new instance </p>
-
-</div>
-</div>
-<a id="a340ee75715f9dd3a6446dc3ec2c528dc" name="a340ee75715f9dd3a6446dc3ec2c528dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a340ee75715f9dd3a6446dc3ec2c528dc">&#9670;&#160;</a></span>SocketIPTracker_release()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketIPTracker_release </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ip</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_release - Release a connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Decrements the connection count for the IP address. Automatically removes entry when count reaches zero. Safe to call with NULL or empty IP (no-op). </p>
-
-</div>
-</div>
-<a id="a3ae1930faa05574038978e46612e5385" name="a3ae1930faa05574038978e46612e5385"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ae1930faa05574038978e46612e5385">&#9670;&#160;</a></span>SocketIPTracker_setmax()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketIPTracker_setmax </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>max_per_ip</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_setmax - Set maximum connections per IP @tracker: IP tracker instance @max_per_ip: New maximum (0 = unlimited)</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Note: Does not affect existing connections over the new limit. New connections will be rejected until count drops below limit. </p>
-
-</div>
-</div>
-<a id="a9f416e973e3f32b1c9cf2a2b620214f4" name="a9f416e973e3f32b1c9cf2a2b620214f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f416e973e3f32b1c9cf2a2b620214f4">&#9670;&#160;</a></span>SocketIPTracker_setmaxunique()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketIPTracker_setmaxunique </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_unique</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_setmaxunique - Set maximum unique IPs tracked @tracker: IP tracker instance @max_unique: New maximum (0 = unlimited)</p>
-<p>Thread-safe: Yes</p>
-<p>Limits memory usage by rejecting new unique IPs when limit reached. Does not evict existing entries. </p>
-
-</div>
-</div>
-<a id="a3e69b52a3b64cbba1b17711c9961095f" name="a3e69b52a3b64cbba1b17711c9961095f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e69b52a3b64cbba1b17711c9961095f">&#9670;&#160;</a></span>SocketIPTracker_total()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketIPTracker_total </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_total - Get total tracked connections @tracker: IP tracker instance</p>
-<p>Returns: Total number of tracked connections across all IPs Thread-safe: Yes - uses internal mutex </p>
-
-</div>
-</div>
-<a id="a796a06e82e58c6fea3deaf767101dea3" name="a796a06e82e58c6fea3deaf767101dea3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a796a06e82e58c6fea3deaf767101dea3">&#9670;&#160;</a></span>SocketIPTracker_track()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketIPTracker_track </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>ip</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_track - Track a new connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
-<p>Returns: 1 if allowed (under limit), 0 if limit reached Thread-safe: Yes - uses internal mutex</p>
-<p>Increments the connection count for the IP address. If max_per_ip is 0 (unlimited), always returns 1. If IP is NULL or empty, always returns 1 (no tracking). </p>
-
-</div>
-</div>
-<a id="ad8639fe1f640949b820cd1496a67ca56" name="ad8639fe1f640949b820cd1496a67ca56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8639fe1f640949b820cd1496a67ca56">&#9670;&#160;</a></span>SocketIPTracker_unique_ips()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketIPTracker_unique_ips </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td>
-          <td class="paramname"><em>tracker</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketIPTracker_unique_ips - Get number of unique IPs being tracked @tracker: IP tracker instance</p>
-<p>Returns: Number of unique IP addresses with at least one connection Thread-safe: Yes - uses internal mutex </p>
+<p class="definition">Definition at line <a class="el" href="SocketIPTracker_8h_source.html#l00064">64</a> of file <a class="el" href="SocketIPTracker_8h_source.html">SocketIPTracker.h</a>.</p>
 
 </div>
 </div>
@@ -641,7 +244,7 @@ Variables</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketIPTracker_Failed</td>
+          <td class="memname">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> SocketIPTracker_Failed</td>
         </tr>
       </table>
   </td>

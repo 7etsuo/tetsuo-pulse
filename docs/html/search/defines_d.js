@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['udp_5fmax_5fpayload_0',['UDP_MAX_PAYLOAD',['../SocketConfig_8h.html#a7b0cb8d09882f145ebd41ad5a5932a30',1,'SocketConfig.h']]]
+  ['validate_5fmaxevents_0',['VALIDATE_MAXEVENTS',['../SocketPoll__backend_8h.html#ad5c973c74b3941d078d573439e92c65b',1,'SocketPoll_backend.h']]]
 ];

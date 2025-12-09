@@ -1,15 +1,15 @@
 /**
- * SocketDNS-internal.c - Internal implementation for async DNS resolution
+ * @file SocketDNS-internal.c
+ * @ingroup dns
+ * @brief Internal implementation for async DNS resolution.
  *
- * Part of the Socket Library
+ * Core implementation details for the DNS resolver module.
+ * Contains thread pool management, request processing, synchronization,
+ * and cleanup operations.
  *
- * Contains:
- * - Initialization and allocation functions
- * - Synchronization primitives (mutex, condition variables, pipe)
- * - Cleanup and shutdown functions
- * - Request allocation and queue management
- * - Timeout handling
- * - Worker thread implementation
+ * @see SocketDNS.c for public API implementation.
+ * @see SocketDNS.h for public API declarations.
+ * @see SocketDNS-private.h for internal structures.
  */
 
 /* All includes before T macro definition to avoid redefinition warnings */

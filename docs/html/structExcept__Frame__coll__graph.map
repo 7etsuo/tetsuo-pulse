@@ -1,7 +1,7 @@
 <map id="Except_Frame" name="Except_Frame">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,112,119"/>
+<area shape="rect" id="Node000001" title="Exception frame for TRY/EXCEPT/FINALLY blocks." alt="" coords="5,93,112,119"/>
 <area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="127,97,139,106,130,114,113,117,112,111,128,109,133,106,124,102"/>
-<area shape="rect" id="Node000002" href="$Except_8h.html#structExcept__T" title=" " alt="" coords="19,5,98,31"/>
+<area shape="rect" id="Node000002" href="$group__foundation.html#structExcept__T" title="Exception structure for structured error handling." alt="" coords="19,5,98,31"/>
 <area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="61,45,61,93,56,93,56,45"/>
 <area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="112,9,121,12,125,18,116,26,99,29,98,23,114,22,119,18,118,16,111,14"/>
 </map>

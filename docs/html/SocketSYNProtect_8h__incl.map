@@ -1,12 +1,12 @@
 <map id="SocketSYNProtect.h" name="SocketSYNProtect.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="794,5,938,31"/>
-<area shape="rect" id="Node000002" href="$Arena_8h.html" title=" " alt="" coords="818,79,914,104"/>
+<area shape="rect" id="Node000001" title="SYN flood protection using IP reputation and adaptive rate limiting." alt="" coords="794,5,938,31"/>
+<area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="818,79,914,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="869,31,869,65,863,65,863,31"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="806,152,875,177"/>
 <area shape="poly" id="edge16_Node000001_Node000003" title=" " alt="" coords="850,33,827,53,808,80,806,95,808,111,824,140,819,142,803,112,800,95,804,78,823,49,846,29"/>
-<area shape="rect" id="Node000004" href="$Except_8h.html" title=" " alt="" coords="900,152,1003,177"/>
+<area shape="rect" id="Node000004" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="900,152,1003,177"/>
 <area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="883,29,906,50,928,77,942,108,950,138,945,139,937,110,924,80,903,53,880,33"/>
-<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title=" " alt="" coords="418,79,559,104"/>
+<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="418,79,559,104"/>
 <area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="806,33,564,79,563,73,805,28"/>
 <area shape="rect" id="Node000015" title=" " alt="" coords="989,79,1055,104"/>
 <area shape="poly" id="edge17_Node000001_Node000015" title=" " alt="" coords="892,28,985,70,983,75,890,33"/>

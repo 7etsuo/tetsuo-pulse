@@ -1,12 +1,12 @@
 <map id="SocketSecurity.h" name="SocketSecurity.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="139,5,259,31"/>
+<area shape="rect" id="Node000001" title="Centralized security configuration, limits, and validation utilities." alt="" coords="139,5,259,31"/>
 <area shape="rect" id="Node000002" title=" " alt="" coords="158,152,227,177"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="205,30,211,64,211,104,203,139,198,138,206,104,206,64,200,31"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="132,79,197,104"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="196,32,179,67,174,65,191,30"/>
-<area shape="rect" id="Node000004" href="$Except_8h.html" title=" " alt="" coords="5,79,108,104"/>
+<area shape="rect" id="Node000004" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="5,79,108,104"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="178,33,93,75,91,70,175,28"/>
-<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title=" " alt="" coords="494,79,635,104"/>
+<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="494,79,635,104"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="259,28,493,73,492,79,258,33"/>
 <area shape="rect" id="Node000005" title=" " alt="" coords="21,152,93,177"/>
 <area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="59,104,59,138,54,138,54,104"/>

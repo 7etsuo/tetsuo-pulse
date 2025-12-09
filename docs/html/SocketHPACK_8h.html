@@ -117,9 +117,12 @@ $(document).ready(function(){initNavTree('SocketHPACK_8h.html',''); initResizabl
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketHPACK.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketHPACK.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>HPACK header compression (RFC 7541) for HTTP/2.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/types.h&gt;</code><br />
@@ -144,296 +147,174 @@ $(document).ready(function(){initNavTree('SocketHPACK_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketHPACK__Header" id="r_structSocketHPACK__Header"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a></td></tr>
+<tr class="memitem:structSocketHPACK__Header" id="r_structSocketHPACK__Header"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Header">SocketHPACK_Header</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Header"><td class="mdescLeft">&#160;</td><td class="mdescRight">HPACK header field representation.  <a href="group__http.html#structSocketHPACK__Header">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Header"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__EncoderConfig" id="r_structSocketHPACK__EncoderConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a></td></tr>
+<tr class="memitem:structSocketHPACK__EncoderConfig" id="r_structSocketHPACK__EncoderConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a></td></tr>
+<tr class="memdesc:structSocketHPACK__EncoderConfig"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration for HPACK encoder instance.  <a href="group__http.html#structSocketHPACK__EncoderConfig">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__EncoderConfig"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__DecoderConfig" id="r_structSocketHPACK__DecoderConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a></td></tr>
+<tr class="memitem:structSocketHPACK__DecoderConfig" id="r_structSocketHPACK__DecoderConfig"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a></td></tr>
+<tr class="memdesc:structSocketHPACK__DecoderConfig"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration for HPACK decoder instance.  <a href="group__http.html#structSocketHPACK__DecoderConfig">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__DecoderConfig"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:af6f02b4c16e51b058621e83fbfb1293a" id="r_af6f02b4c16e51b058621e83fbfb1293a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#af6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a>&#160;&#160;&#160;4096</td></tr>
-<tr class="separator:af6f02b4c16e51b058621e83fbfb1293a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0e75d44640cb3681b7fdbc8c49cb10b9" id="r_a0e75d44640cb3681b7fdbc8c49cb10b9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a0e75d44640cb3681b7fdbc8c49cb10b9">SOCKETHPACK_MAX_TABLE_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
-<tr class="separator:a0e75d44640cb3681b7fdbc8c49cb10b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a36d782a874a13b4da38f86fea6e40244" id="r_a36d782a874a13b4da38f86fea6e40244"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a36d782a874a13b4da38f86fea6e40244">SOCKETHPACK_MAX_HEADER_SIZE</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
-<tr class="separator:a36d782a874a13b4da38f86fea6e40244"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab598ca8ec96369a45b756a956d248dd0" id="r_ab598ca8ec96369a45b756a956d248dd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ab598ca8ec96369a45b756a956d248dd0">SOCKETHPACK_MAX_HEADER_LIST_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
-<tr class="separator:ab598ca8ec96369a45b756a956d248dd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac25417892f0002db253f31bb5bab7be2" id="r_ac25417892f0002db253f31bb5bab7be2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ac25417892f0002db253f31bb5bab7be2">SOCKETHPACK_MAX_TABLE_UPDATES</a>&#160;&#160;&#160;2</td></tr>
-<tr class="separator:ac25417892f0002db253f31bb5bab7be2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09450c50e4284b2cdc1613f7f8062752" id="r_a09450c50e4284b2cdc1613f7f8062752"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a09450c50e4284b2cdc1613f7f8062752">SOCKETHPACK_STATIC_TABLE_SIZE</a>&#160;&#160;&#160;61</td></tr>
-<tr class="separator:a09450c50e4284b2cdc1613f7f8062752"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08c1b9076dbeb65dd345874ce9b51824" id="r_a08c1b9076dbeb65dd345874ce9b51824"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a08c1b9076dbeb65dd345874ce9b51824">SOCKETHPACK_ENTRY_OVERHEAD</a>&#160;&#160;&#160;32</td></tr>
-<tr class="separator:a08c1b9076dbeb65dd345874ce9b51824"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf6f02b4c16e51b058621e83fbfb1293a" id="r_gaf6f02b4c16e51b058621e83fbfb1293a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:gaf6f02b4c16e51b058621e83fbfb1293a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default dynamic table size in bytes (RFC 7541 default).  <br /></td></tr>
+<tr class="separator:gaf6f02b4c16e51b058621e83fbfb1293a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e75d44640cb3681b7fdbc8c49cb10b9" id="r_ga0e75d44640cb3681b7fdbc8c49cb10b9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0e75d44640cb3681b7fdbc8c49cb10b9">SOCKETHPACK_MAX_TABLE_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
+<tr class="memdesc:ga0e75d44640cb3681b7fdbc8c49cb10b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowable dynamic table size in bytes.  <br /></td></tr>
+<tr class="separator:ga0e75d44640cb3681b7fdbc8c49cb10b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga36d782a874a13b4da38f86fea6e40244" id="r_ga36d782a874a13b4da38f86fea6e40244"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga36d782a874a13b4da38f86fea6e40244">SOCKETHPACK_MAX_HEADER_SIZE</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
+<tr class="memdesc:ga36d782a874a13b4da38f86fea6e40244"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum size for individual header (name + value) in bytes.  <br /></td></tr>
+<tr class="separator:ga36d782a874a13b4da38f86fea6e40244"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab598ca8ec96369a45b756a956d248dd0" id="r_gab598ca8ec96369a45b756a956d248dd0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab598ca8ec96369a45b756a956d248dd0">SOCKETHPACK_MAX_HEADER_LIST_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
+<tr class="memdesc:gab598ca8ec96369a45b756a956d248dd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum total size for decoded header list in bytes.  <br /></td></tr>
+<tr class="separator:gab598ca8ec96369a45b756a956d248dd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac25417892f0002db253f31bb5bab7be2" id="r_gac25417892f0002db253f31bb5bab7be2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac25417892f0002db253f31bb5bab7be2">SOCKETHPACK_MAX_TABLE_UPDATES</a>&#160;&#160;&#160;2</td></tr>
+<tr class="memdesc:gac25417892f0002db253f31bb5bab7be2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed dynamic table size updates per header block.  <br /></td></tr>
+<tr class="separator:gac25417892f0002db253f31bb5bab7be2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga09450c50e4284b2cdc1613f7f8062752" id="r_ga09450c50e4284b2cdc1613f7f8062752"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga09450c50e4284b2cdc1613f7f8062752">SOCKETHPACK_STATIC_TABLE_SIZE</a>&#160;&#160;&#160;61</td></tr>
+<tr class="memdesc:ga09450c50e4284b2cdc1613f7f8062752"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of the static table (RFC 7541 Appendix A).  <br /></td></tr>
+<tr class="separator:ga09450c50e4284b2cdc1613f7f8062752"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga08c1b9076dbeb65dd345874ce9b51824" id="r_ga08c1b9076dbeb65dd345874ce9b51824"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga08c1b9076dbeb65dd345874ce9b51824">SOCKETHPACK_ENTRY_OVERHEAD</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:ga08c1b9076dbeb65dd345874ce9b51824"><td class="mdescLeft">&#160;</td><td class="mdescRight">Overhead bytes per dynamic table entry (RFC 7541 Section 4.1).  <br /></td></tr>
+<tr class="separator:ga08c1b9076dbeb65dd345874ce9b51824"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a689301e4de369172c0566705afe33156" id="r_a689301e4de369172c0566705afe33156"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Table *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a></td></tr>
-<tr class="separator:a689301e4de369172c0566705afe33156"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga689301e4de369172c0566705afe33156" id="r_ga689301e4de369172c0566705afe33156"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Table *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a></td></tr>
+<tr class="memdesc:ga689301e4de369172c0566705afe33156"><td class="mdescLeft">&#160;</td><td class="mdescRight">HPACK dynamic table (opaque type)  <br /></td></tr>
+<tr class="separator:ga689301e4de369172c0566705afe33156"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab3d2fec45b36d20aff38b5b5f8ccc317" id="r_gab3d2fec45b36d20aff38b5b5f8ccc317"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Encoder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a></td></tr>
+<tr class="memdesc:gab3d2fec45b36d20aff38b5b5f8ccc317"><td class="mdescLeft">&#160;</td><td class="mdescRight">HPACK encoder (opaque type)  <br /></td></tr>
+<tr class="separator:gab3d2fec45b36d20aff38b5b5f8ccc317"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga47e194052251cf94ee0a17ab490ed56d" id="r_ga47e194052251cf94ee0a17ab490ed56d"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Decoder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a></td></tr>
+<tr class="memdesc:ga47e194052251cf94ee0a17ab490ed56d"><td class="mdescLeft">&#160;</td><td class="mdescRight">HPACK decoder (opaque type)  <br /></td></tr>
+<tr class="separator:ga47e194052251cf94ee0a17ab490ed56d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a623ed321b4ede47b3ac642a001c57ef4" id="r_a623ed321b4ede47b3ac642a001c57ef4"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> { <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a> = 0
+<tr class="memitem:ga623ed321b4ede47b3ac642a001c57ef4" id="r_ga623ed321b4ede47b3ac642a001c57ef4"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35">HPACK_INCOMPLETE</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35">HPACK_INCOMPLETE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff">HPACK_ERROR</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff">HPACK_ERROR</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c">HPACK_ERROR_INVALID_INDEX</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c">HPACK_ERROR_INVALID_INDEX</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded">HPACK_ERROR_HUFFMAN</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded">HPACK_ERROR_HUFFMAN</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88">HPACK_ERROR_INTEGER</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88">HPACK_ERROR_INTEGER</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97">HPACK_ERROR_TABLE_SIZE</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97">HPACK_ERROR_TABLE_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080">HPACK_ERROR_HEADER_SIZE</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080">HPACK_ERROR_HEADER_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532">HPACK_ERROR_LIST_SIZE</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532">HPACK_ERROR_LIST_SIZE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6">HPACK_ERROR_BOMB</a>
+&#160;&#160;<a class="el" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6">HPACK_ERROR_BOMB</a>
 <br />
  }</td></tr>
-<tr class="separator:a623ed321b4ede47b3ac642a001c57ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga623ed321b4ede47b3ac642a001c57ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">HPACK operation result codes.  <a href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">More...</a><br /></td></tr>
+<tr class="separator:ga623ed321b4ede47b3ac642a001c57ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ad2e8414c30906d4f093a213b088edf03" id="r_ad2e8414c30906d4f093a213b088edf03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a> (size_t max_size, <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:ad2e8414c30906d4f093a213b088edf03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a821f51d4c73a41cfb01e75068c83e29e" id="r_a821f51d4c73a41cfb01e75068c83e29e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> *table)</td></tr>
-<tr class="separator:a821f51d4c73a41cfb01e75068c83e29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6f9521e46c52adbe47ecb48c2abc307" id="r_aa6f9521e46c52adbe47ecb48c2abc307"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#aa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, size_t max_size)</td></tr>
-<tr class="separator:aa6f9521e46c52adbe47ecb48c2abc307"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a43f69e69234e33e6fba377e1eeb53d89" id="r_a43f69e69234e33e6fba377e1eeb53d89"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
-<tr class="separator:a43f69e69234e33e6fba377e1eeb53d89"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:add54bf8828aec9d319682da54106537b" id="r_add54bf8828aec9d319682da54106537b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#add54bf8828aec9d319682da54106537b">SocketHPACK_Table_count</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
-<tr class="separator:add54bf8828aec9d319682da54106537b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2e92ca751d06de523bc2667fd958010" id="r_aa2e92ca751d06de523bc2667fd958010"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#aa2e92ca751d06de523bc2667fd958010">SocketHPACK_Table_max_size</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
-<tr class="separator:aa2e92ca751d06de523bc2667fd958010"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac85e6b622a9cb7a19ce3bd0fdb2be551" id="r_ac85e6b622a9cb7a19ce3bd0fdb2be551"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ac85e6b622a9cb7a19ce3bd0fdb2be551">SocketHPACK_Table_get</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, size_t index, <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *header)</td></tr>
-<tr class="separator:ac85e6b622a9cb7a19ce3bd0fdb2be551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2e8414c30906d4f093a213b088edf03" id="r_gad2e8414c30906d4f093a213b088edf03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a> (size_t max_size, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:gad2e8414c30906d4f093a213b088edf03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create dynamic table.  <br /></td></tr>
+<tr class="separator:gad2e8414c30906d4f093a213b088edf03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga821f51d4c73a41cfb01e75068c83e29e" id="r_ga821f51d4c73a41cfb01e75068c83e29e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> *table)</td></tr>
+<tr class="memdesc:ga821f51d4c73a41cfb01e75068c83e29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free dynamic table.  <br /></td></tr>
+<tr class="separator:ga821f51d4c73a41cfb01e75068c83e29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa6f9521e46c52adbe47ecb48c2abc307" id="r_gaa6f9521e46c52adbe47ecb48c2abc307"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, size_t max_size)</td></tr>
+<tr class="memdesc:gaa6f9521e46c52adbe47ecb48c2abc307"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update maximum table size.  <br /></td></tr>
+<tr class="separator:gaa6f9521e46c52adbe47ecb48c2abc307"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga43f69e69234e33e6fba377e1eeb53d89" id="r_ga43f69e69234e33e6fba377e1eeb53d89"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
+<tr class="memdesc:ga43f69e69234e33e6fba377e1eeb53d89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current table size in bytes.  <br /></td></tr>
+<tr class="separator:ga43f69e69234e33e6fba377e1eeb53d89"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadd54bf8828aec9d319682da54106537b" id="r_gadd54bf8828aec9d319682da54106537b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gadd54bf8828aec9d319682da54106537b">SocketHPACK_Table_count</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
+<tr class="memdesc:gadd54bf8828aec9d319682da54106537b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of entries.  <br /></td></tr>
+<tr class="separator:gadd54bf8828aec9d319682da54106537b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa2e92ca751d06de523bc2667fd958010" id="r_gaa2e92ca751d06de523bc2667fd958010"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa2e92ca751d06de523bc2667fd958010">SocketHPACK_Table_max_size</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table)</td></tr>
+<tr class="memdesc:gaa2e92ca751d06de523bc2667fd958010"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get maximum table size.  <br /></td></tr>
+<tr class="separator:gaa2e92ca751d06de523bc2667fd958010"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac85e6b622a9cb7a19ce3bd0fdb2be551" id="r_gac85e6b622a9cb7a19ce3bd0fdb2be551"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac85e6b622a9cb7a19ce3bd0fdb2be551">SocketHPACK_Table_get</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, size_t index, <a class="el" href="group__http.html#structSocketHPACK__Header">SocketHPACK_Header</a> *header)</td></tr>
+<tr class="memdesc:gac85e6b622a9cb7a19ce3bd0fdb2be551"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get entry by index.  <br /></td></tr>
+<tr class="separator:gac85e6b622a9cb7a19ce3bd0fdb2be551"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad46ef6fbf9994cc55c982d507ce473eb" id="r_gad46ef6fbf9994cc55c982d507ce473eb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb">SocketHPACK_Table_add</a> (<a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, const char *name, size_t name_len, const char *value, size_t value_len)</td></tr>
+<tr class="memdesc:gad46ef6fbf9994cc55c982d507ce473eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add entry to dynamic table.  <br /></td></tr>
+<tr class="separator:gad46ef6fbf9994cc55c982d507ce473eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2c85a114ea3e6b15fed7ca4714b6f367" id="r_ga2c85a114ea3e6b15fed7ca4714b6f367"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2c85a114ea3e6b15fed7ca4714b6f367">SocketHPACK_encoder_config_defaults</a> (<a class="el" href="group__http.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *config)</td></tr>
+<tr class="memdesc:ga2c85a114ea3e6b15fed7ca4714b6f367"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize encoder config with defaults.  <br /></td></tr>
+<tr class="separator:ga2c85a114ea3e6b15fed7ca4714b6f367"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5f3f8543f2a9e0c48ca33d30019f8b87" id="r_ga5f3f8543f2a9e0c48ca33d30019f8b87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5f3f8543f2a9e0c48ca33d30019f8b87">SocketHPACK_Encoder_new</a> (const <a class="el" href="group__http.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga5f3f8543f2a9e0c48ca33d30019f8b87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create HPACK encoder instance.  <br /></td></tr>
+<tr class="separator:ga5f3f8543f2a9e0c48ca33d30019f8b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga944a4c3304e03e56cbf30ad689cc9074" id="r_ga944a4c3304e03e56cbf30ad689cc9074"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga944a4c3304e03e56cbf30ad689cc9074">SocketHPACK_Encoder_free</a> (<a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> *encoder)</td></tr>
+<tr class="memdesc:ga944a4c3304e03e56cbf30ad689cc9074"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free encoder.  <br /></td></tr>
+<tr class="separator:ga944a4c3304e03e56cbf30ad689cc9074"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa40bb459b0df6cf69d3fd41c03deb872" id="r_gaa40bb459b0df6cf69d3fd41c03deb872"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa40bb459b0df6cf69d3fd41c03deb872">SocketHPACK_Encoder_encode</a> (<a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder, const <a class="el" href="group__http.html#structSocketHPACK__Header">SocketHPACK_Header</a> *headers, size_t count, unsigned char *output, size_t output_size)</td></tr>
+<tr class="memdesc:gaa40bb459b0df6cf69d3fd41c03deb872"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encode header block.  <br /></td></tr>
+<tr class="separator:gaa40bb459b0df6cf69d3fd41c03deb872"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga702c12cdda50ff1c09ef2d2f086eda45" id="r_ga702c12cdda50ff1c09ef2d2f086eda45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga702c12cdda50ff1c09ef2d2f086eda45">SocketHPACK_Encoder_set_table_size</a> (<a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder, size_t max_size)</td></tr>
+<tr class="memdesc:ga702c12cdda50ff1c09ef2d2f086eda45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signal table size change.  <br /></td></tr>
+<tr class="separator:ga702c12cdda50ff1c09ef2d2f086eda45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab2be704f8ac8301d890421bbc2a8140c" id="r_gab2be704f8ac8301d890421bbc2a8140c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab2be704f8ac8301d890421bbc2a8140c">SocketHPACK_Encoder_get_table</a> (<a class="el" href="group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder)</td></tr>
+<tr class="memdesc:gab2be704f8ac8301d890421bbc2a8140c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get encoder's dynamic table.  <br /></td></tr>
+<tr class="separator:gab2be704f8ac8301d890421bbc2a8140c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga945f44e73f0a313402745875d9102d1f" id="r_ga945f44e73f0a313402745875d9102d1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga945f44e73f0a313402745875d9102d1f">SocketHPACK_decoder_config_defaults</a> (<a class="el" href="group__http.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *config)</td></tr>
+<tr class="memdesc:ga945f44e73f0a313402745875d9102d1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize decoder config with defaults.  <br /></td></tr>
+<tr class="separator:ga945f44e73f0a313402745875d9102d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4208e13edf5343f21c566a146ff8d5e0" id="r_ga4208e13edf5343f21c566a146ff8d5e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0">SocketHPACK_Decoder_new</a> (const <a class="el" href="group__http.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga4208e13edf5343f21c566a146ff8d5e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create HPACK decoder instance.  <br /></td></tr>
+<tr class="separator:ga4208e13edf5343f21c566a146ff8d5e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga780b420084cdeebd327cf2f2cdcdc94b" id="r_ga780b420084cdeebd327cf2f2cdcdc94b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga780b420084cdeebd327cf2f2cdcdc94b">SocketHPACK_Decoder_free</a> (<a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> *decoder)</td></tr>
+<tr class="memdesc:ga780b420084cdeebd327cf2f2cdcdc94b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free decoder.  <br /></td></tr>
+<tr class="separator:ga780b420084cdeebd327cf2f2cdcdc94b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga80929db456c087b62dd8f59935bbd359" id="r_ga80929db456c087b62dd8f59935bbd359"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a> (<a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder, const unsigned char *input, size_t input_len, <a class="el" href="group__http.html#structSocketHPACK__Header">SocketHPACK_Header</a> *headers, size_t max_headers, size_t *header_count, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga80929db456c087b62dd8f59935bbd359"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode header block.  <br /></td></tr>
+<tr class="separator:ga80929db456c087b62dd8f59935bbd359"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga71187fb60d8bbf1a6494b0b7f4566d4d" id="r_ga71187fb60d8bbf1a6494b0b7f4566d4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga71187fb60d8bbf1a6494b0b7f4566d4d">SocketHPACK_Decoder_set_table_size</a> (<a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder, size_t max_size)</td></tr>
+<tr class="memdesc:ga71187fb60d8bbf1a6494b0b7f4566d4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle SETTINGS table size update.  <br /></td></tr>
+<tr class="separator:ga71187fb60d8bbf1a6494b0b7f4566d4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0afe40cbbca1731a702e44ec87052f6a" id="r_ga0afe40cbbca1731a702e44ec87052f6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0afe40cbbca1731a702e44ec87052f6a">SocketHPACK_Decoder_get_table</a> (<a class="el" href="group__http.html#ga47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder)</td></tr>
+<tr class="memdesc:ga0afe40cbbca1731a702e44ec87052f6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get decoder's dynamic table.  <br /></td></tr>
+<tr class="separator:ga0afe40cbbca1731a702e44ec87052f6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga87187d3bcd990229f2366e09f4d0c0a0" id="r_ga87187d3bcd990229f2366e09f4d0c0a0"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga87187d3bcd990229f2366e09f4d0c0a0">SocketHPACK_huffman_encode</a> (const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size)</td></tr>
+<tr class="memdesc:ga87187d3bcd990229f2366e09f4d0c0a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Huffman encode string.  <br /></td></tr>
+<tr class="separator:ga87187d3bcd990229f2366e09f4d0c0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad444bc6faa547e95f0b7ed31dc886e11" id="r_gad444bc6faa547e95f0b7ed31dc886e11"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad444bc6faa547e95f0b7ed31dc886e11">SocketHPACK_huffman_decode</a> (const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size)</td></tr>
+<tr class="memdesc:gad444bc6faa547e95f0b7ed31dc886e11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Huffman decode string.  <br /></td></tr>
+<tr class="separator:gad444bc6faa547e95f0b7ed31dc886e11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa8e54f3347574c82323260b229279756" id="r_gaa8e54f3347574c82323260b229279756"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa8e54f3347574c82323260b229279756">SocketHPACK_huffman_encoded_size</a> (const unsigned char *input, size_t input_len)</td></tr>
+<tr class="memdesc:gaa8e54f3347574c82323260b229279756"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate encoded size.  <br /></td></tr>
+<tr class="separator:gaa8e54f3347574c82323260b229279756"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga62d88dd2fa0079b167701d14a6e584db" id="r_ga62d88dd2fa0079b167701d14a6e584db"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga62d88dd2fa0079b167701d14a6e584db">SocketHPACK_int_encode</a> (uint64_t value, int prefix_bits, unsigned char *output, size_t output_size)</td></tr>
+<tr class="memdesc:ga62d88dd2fa0079b167701d14a6e584db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encode integer with prefix.  <br /></td></tr>
+<tr class="separator:ga62d88dd2fa0079b167701d14a6e584db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad77418b9eae24b504a03e6d1021e46fe" id="r_gad77418b9eae24b504a03e6d1021e46fe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad77418b9eae24b504a03e6d1021e46fe">SocketHPACK_int_decode</a> (const unsigned char *input, size_t input_len, int prefix_bits, uint64_t *value, size_t *consumed)</td></tr>
+<tr class="memdesc:gad77418b9eae24b504a03e6d1021e46fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode integer with prefix.  <br /></td></tr>
+<tr class="separator:gad77418b9eae24b504a03e6d1021e46fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2134dc86dd6393df244bfeeaf1ab5c69" id="r_ga2134dc86dd6393df244bfeeaf1ab5c69"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2134dc86dd6393df244bfeeaf1ab5c69">SocketHPACK_static_get</a> (size_t index, <a class="el" href="group__http.html#structSocketHPACK__Header">SocketHPACK_Header</a> *header)</td></tr>
+<tr class="memdesc:ga2134dc86dd6393df244bfeeaf1ab5c69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get entry from static table.  <br /></td></tr>
+<tr class="separator:ga2134dc86dd6393df244bfeeaf1ab5c69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga201240b0d9259e2a9da91530a86d8ed1" id="r_ga201240b0d9259e2a9da91530a86d8ed1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga201240b0d9259e2a9da91530a86d8ed1">SocketHPACK_static_find</a> (const char *name, size_t name_len, const char *value, size_t value_len)</td></tr>
+<tr class="memdesc:ga201240b0d9259e2a9da91530a86d8ed1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find entry in static table.  <br /></td></tr>
+<tr class="separator:ga201240b0d9259e2a9da91530a86d8ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga09650dc7a68806989192e4cd31b4393b" id="r_ga09650dc7a68806989192e4cd31b4393b"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a> (<a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> result)</td></tr>
+<tr class="memdesc:ga09650dc7a68806989192e4cd31b4393b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
+<tr class="separator:ga09650dc7a68806989192e4cd31b4393b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:aaf99a02bd5f3dd4baedcbde590cc5d09" id="r_aaf99a02bd5f3dd4baedcbde590cc5d09"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#aaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a></td></tr>
-<tr class="separator:aaf99a02bd5f3dd4baedcbde590cc5d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader">: Header name</h2></td></tr>
-<tr><td class="ititle" colspan="2"><p>SocketHPACK_static_find - Find entry in static table</p>
-<p>@name_len: Name length @value: Header value (NULL to match name only) @value_len: Value length</p>
-<p>Searches for an entry in the static table.</p>
-<p>Returns: Index (1-61) on exact match, negative index if only name matches, 0 if not found Thread-safe: Yes </p>
-</td></tr>
-<tr class="memitem:ab3d2fec45b36d20aff38b5b5f8ccc317" id="r_ab3d2fec45b36d20aff38b5b5f8ccc317"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Encoder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a></td></tr>
-<tr class="separator:ab3d2fec45b36d20aff38b5b5f8ccc317"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47e194052251cf94ee0a17ab490ed56d" id="r_a47e194052251cf94ee0a17ab490ed56d"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHPACK_Decoder *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a></td></tr>
-<tr class="separator:a47e194052251cf94ee0a17ab490ed56d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad46ef6fbf9994cc55c982d507ce473eb" id="r_ad46ef6fbf9994cc55c982d507ce473eb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ad46ef6fbf9994cc55c982d507ce473eb">SocketHPACK_Table_add</a> (<a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> table, const char *name, size_t name_len, const char *value, size_t value_len)</td></tr>
-<tr class="separator:ad46ef6fbf9994cc55c982d507ce473eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c85a114ea3e6b15fed7ca4714b6f367" id="r_a2c85a114ea3e6b15fed7ca4714b6f367"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a2c85a114ea3e6b15fed7ca4714b6f367">SocketHPACK_encoder_config_defaults</a> (<a class="el" href="SocketHPACK_8h.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *config)</td></tr>
-<tr class="separator:a2c85a114ea3e6b15fed7ca4714b6f367"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f3f8543f2a9e0c48ca33d30019f8b87" id="r_a5f3f8543f2a9e0c48ca33d30019f8b87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a5f3f8543f2a9e0c48ca33d30019f8b87">SocketHPACK_Encoder_new</a> (const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *config, <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:a5f3f8543f2a9e0c48ca33d30019f8b87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a944a4c3304e03e56cbf30ad689cc9074" id="r_a944a4c3304e03e56cbf30ad689cc9074"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a944a4c3304e03e56cbf30ad689cc9074">SocketHPACK_Encoder_free</a> (<a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> *encoder)</td></tr>
-<tr class="separator:a944a4c3304e03e56cbf30ad689cc9074"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa40bb459b0df6cf69d3fd41c03deb872" id="r_aa40bb459b0df6cf69d3fd41c03deb872"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#aa40bb459b0df6cf69d3fd41c03deb872">SocketHPACK_Encoder_encode</a> (<a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder, const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *headers, size_t count, unsigned char *output, size_t output_size)</td></tr>
-<tr class="separator:aa40bb459b0df6cf69d3fd41c03deb872"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a702c12cdda50ff1c09ef2d2f086eda45" id="r_a702c12cdda50ff1c09ef2d2f086eda45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a702c12cdda50ff1c09ef2d2f086eda45">SocketHPACK_Encoder_set_table_size</a> (<a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder, size_t max_size)</td></tr>
-<tr class="separator:a702c12cdda50ff1c09ef2d2f086eda45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2be704f8ac8301d890421bbc2a8140c" id="r_ab2be704f8ac8301d890421bbc2a8140c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ab2be704f8ac8301d890421bbc2a8140c">SocketHPACK_Encoder_get_table</a> (<a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> encoder)</td></tr>
-<tr class="separator:ab2be704f8ac8301d890421bbc2a8140c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a945f44e73f0a313402745875d9102d1f" id="r_a945f44e73f0a313402745875d9102d1f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a945f44e73f0a313402745875d9102d1f">SocketHPACK_decoder_config_defaults</a> (<a class="el" href="SocketHPACK_8h.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *config)</td></tr>
-<tr class="separator:a945f44e73f0a313402745875d9102d1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4208e13edf5343f21c566a146ff8d5e0" id="r_a4208e13edf5343f21c566a146ff8d5e0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a4208e13edf5343f21c566a146ff8d5e0">SocketHPACK_Decoder_new</a> (const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *config, <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:a4208e13edf5343f21c566a146ff8d5e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a780b420084cdeebd327cf2f2cdcdc94b" id="r_a780b420084cdeebd327cf2f2cdcdc94b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a780b420084cdeebd327cf2f2cdcdc94b">SocketHPACK_Decoder_free</a> (<a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> *decoder)</td></tr>
-<tr class="separator:a780b420084cdeebd327cf2f2cdcdc94b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80929db456c087b62dd8f59935bbd359" id="r_a80929db456c087b62dd8f59935bbd359"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a> (<a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder, const unsigned char *input, size_t input_len, <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *headers, size_t max_headers, size_t *header_count, <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:a80929db456c087b62dd8f59935bbd359"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71187fb60d8bbf1a6494b0b7f4566d4d" id="r_a71187fb60d8bbf1a6494b0b7f4566d4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a71187fb60d8bbf1a6494b0b7f4566d4d">SocketHPACK_Decoder_set_table_size</a> (<a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder, size_t max_size)</td></tr>
-<tr class="separator:a71187fb60d8bbf1a6494b0b7f4566d4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0afe40cbbca1731a702e44ec87052f6a" id="r_a0afe40cbbca1731a702e44ec87052f6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a0afe40cbbca1731a702e44ec87052f6a">SocketHPACK_Decoder_get_table</a> (<a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> decoder)</td></tr>
-<tr class="separator:a0afe40cbbca1731a702e44ec87052f6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87187d3bcd990229f2366e09f4d0c0a0" id="r_a87187d3bcd990229f2366e09f4d0c0a0"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a87187d3bcd990229f2366e09f4d0c0a0">SocketHPACK_huffman_encode</a> (const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size)</td></tr>
-<tr class="separator:a87187d3bcd990229f2366e09f4d0c0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad444bc6faa547e95f0b7ed31dc886e11" id="r_ad444bc6faa547e95f0b7ed31dc886e11"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ad444bc6faa547e95f0b7ed31dc886e11">SocketHPACK_huffman_decode</a> (const unsigned char *input, size_t input_len, unsigned char *output, size_t output_size)</td></tr>
-<tr class="separator:ad444bc6faa547e95f0b7ed31dc886e11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8e54f3347574c82323260b229279756" id="r_aa8e54f3347574c82323260b229279756"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#aa8e54f3347574c82323260b229279756">SocketHPACK_huffman_encoded_size</a> (const unsigned char *input, size_t input_len)</td></tr>
-<tr class="separator:aa8e54f3347574c82323260b229279756"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62d88dd2fa0079b167701d14a6e584db" id="r_a62d88dd2fa0079b167701d14a6e584db"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a62d88dd2fa0079b167701d14a6e584db">SocketHPACK_int_encode</a> (uint64_t value, int prefix_bits, unsigned char *output, size_t output_size)</td></tr>
-<tr class="separator:a62d88dd2fa0079b167701d14a6e584db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad77418b9eae24b504a03e6d1021e46fe" id="r_ad77418b9eae24b504a03e6d1021e46fe"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#ad77418b9eae24b504a03e6d1021e46fe">SocketHPACK_int_decode</a> (const unsigned char *input, size_t input_len, int prefix_bits, uint64_t *value, size_t *consumed)</td></tr>
-<tr class="separator:ad77418b9eae24b504a03e6d1021e46fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2134dc86dd6393df244bfeeaf1ab5c69" id="r_a2134dc86dd6393df244bfeeaf1ab5c69"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a2134dc86dd6393df244bfeeaf1ab5c69">SocketHPACK_static_get</a> (size_t index, <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *header)</td></tr>
-<tr class="separator:a2134dc86dd6393df244bfeeaf1ab5c69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a201240b0d9259e2a9da91530a86d8ed1" id="r_a201240b0d9259e2a9da91530a86d8ed1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a201240b0d9259e2a9da91530a86d8ed1">SocketHPACK_static_find</a> (const char *name, size_t name_len, const char *value, size_t value_len)</td></tr>
-<tr class="separator:a201240b0d9259e2a9da91530a86d8ed1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a09650dc7a68806989192e4cd31b4393b" id="r_a09650dc7a68806989192e4cd31b4393b"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK_8h.html#a09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a> (<a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> result)</td></tr>
-<tr class="separator:a09650dc7a68806989192e4cd31b4393b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaf99a02bd5f3dd4baedcbde590cc5d09" id="r_gaaf99a02bd5f3dd4baedcbde590cc5d09"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a></td></tr>
+<tr class="memdesc:gaaf99a02bd5f3dd4baedcbde590cc5d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHPACK_Error - General HPACK operation failure.  <br /></td></tr>
+<tr class="separator:gaaf99a02bd5f3dd4baedcbde590cc5d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketHPACK__Header" id="structSocketHPACK__Header"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHPACK__Header">&#9670;&#160;</a></span>SocketHPACK_Header</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHPACK_Header</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>HPACK header field</p>
-<p>Represents a single header with optional never_index flag. The never_index flag indicates sensitive data that should never be added to the dynamic table. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00126">126</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a46d227219a888ba2170521fbce3467c1" name="a46d227219a888ba2170521fbce3467c1"></a>const char *</td>
-<td class="fieldname">
-name</td>
-<td class="fielddoc">
-<p>Header name </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a97bac7e84874c5e753a10a8ecb44e3a5" name="a97bac7e84874c5e753a10a8ecb44e3a5"></a>size_t</td>
-<td class="fieldname">
-name_len</td>
-<td class="fielddoc">
-<p>Name length in bytes </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aa6aaa27657ef2d2ea3f24e629b1af16b" name="aa6aaa27657ef2d2ea3f24e629b1af16b"></a>int</td>
-<td class="fieldname">
-never_index</td>
-<td class="fielddoc">
-<p>Sensitive - never add to dynamic table </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="acce8321d450efabcb974f62beb953b27" name="acce8321d450efabcb974f62beb953b27"></a>const char *</td>
-<td class="fieldname">
-value</td>
-<td class="fielddoc">
-<p>Header value </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a7903ffe078d8355010272c36a0ee5413" name="a7903ffe078d8355010272c36a0ee5413"></a>size_t</td>
-<td class="fieldname">
-value_len</td>
-<td class="fielddoc">
-<p>Value length in bytes </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHPACK__EncoderConfig" id="structSocketHPACK__EncoderConfig"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHPACK__EncoderConfig">&#9670;&#160;</a></span>SocketHPACK_EncoderConfig</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHPACK_EncoderConfig</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Encoder configuration </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00256">256</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="aba9258c14594154c007f55e14213cf2f" name="aba9258c14594154c007f55e14213cf2f"></a>int</td>
-<td class="fieldname">
-huffman_encode</td>
-<td class="fielddoc">
-<p>Use Huffman encoding (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a80995982f5e4bc991bb7549ee70dbb59" name="a80995982f5e4bc991bb7549ee70dbb59"></a>size_t</td>
-<td class="fieldname">
-max_table_size</td>
-<td class="fielddoc">
-<p>Maximum dynamic table size </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="af2abf6915fc7c46c2205371def976d39" name="af2abf6915fc7c46c2205371def976d39"></a>int</td>
-<td class="fieldname">
-use_indexing</td>
-<td class="fielddoc">
-<p>Add headers to dynamic table (default: 1) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHPACK__DecoderConfig" id="structSocketHPACK__DecoderConfig"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHPACK__DecoderConfig">&#9670;&#160;</a></span>SocketHPACK_DecoderConfig</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHPACK_DecoderConfig</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Decoder configuration </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00348">348</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="ae99d9de2b1051470c65d2d8c893eef42" name="ae99d9de2b1051470c65d2d8c893eef42"></a>double</td>
-<td class="fieldname">
-max_expansion_ratio</td>
-<td class="fielddoc">
-<p>Max decoded/encoded ratio to prevent decompression bombs (default: 10.0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a1acbffb311a85436e98b0d2e0a723d1d" name="a1acbffb311a85436e98b0d2e0a723d1d"></a>size_t</td>
-<td class="fieldname">
-max_header_list_size</td>
-<td class="fielddoc">
-<p>Maximum total decoded size </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aed7143ab948850cc88b622d69b96e6f1" name="aed7143ab948850cc88b622d69b96e6f1"></a>size_t</td>
-<td class="fieldname">
-max_header_size</td>
-<td class="fielddoc">
-<p>Maximum individual header size </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a375555fac1dd16cf11832600c367108c" name="a375555fac1dd16cf11832600c367108c"></a>size_t</td>
-<td class="fieldname">
-max_table_size</td>
-<td class="fielddoc">
-<p>Maximum dynamic table size </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="af6f02b4c16e51b058621e83fbfb1293a" name="af6f02b4c16e51b058621e83fbfb1293a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6f02b4c16e51b058621e83fbfb1293a">&#9670;&#160;</a></span>SOCKETHPACK_DEFAULT_TABLE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_DEFAULT_TABLE_SIZE&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketHPACK_8h.html">SocketHPACK.h</a> - HPACK Header Compression (RFC 7541)</p>
-<p>Part of the Socket Library</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>HPACK header compression (RFC 7541) for HTTP/2. </p>
 <p>Provides HPACK header compression for HTTP/2, including:</p><ul>
 <li>Static table (61 common headers per RFC 7541 Appendix A)</li>
 <li>Dynamic table with FIFO eviction</li>
@@ -451,1345 +332,18 @@ max_table_size</td>
 <li>Enforces maximum header size limits</li>
 <li>Validates Huffman padding (max 7 bits of 1s)</li>
 <li>Limits dynamic table size updates per header block</li>
-<li>Never indexes sensitive headers marked with never_index Default dynamic table size (RFC 7541 default) </li>
+<li>Never indexes sensitive headers marked with never_index</li>
 </ul>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00044">44</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="a08c1b9076dbeb65dd345874ce9b51824" name="a08c1b9076dbeb65dd345874ce9b51824"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08c1b9076dbeb65dd345874ce9b51824">&#9670;&#160;</a></span>SOCKETHPACK_ENTRY_OVERHEAD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_ENTRY_OVERHEAD&#160;&#160;&#160;32</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HPACK entry overhead per RFC 7541 Section 4.1 </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00076">76</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="ab598ca8ec96369a45b756a956d248dd0" name="ab598ca8ec96369a45b756a956d248dd0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab598ca8ec96369a45b756a956d248dd0">&#9670;&#160;</a></span>SOCKETHPACK_MAX_HEADER_LIST_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_MAX_HEADER_LIST_SIZE&#160;&#160;&#160;(64 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum total decoded header list size </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00064">64</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="a36d782a874a13b4da38f86fea6e40244" name="a36d782a874a13b4da38f86fea6e40244"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36d782a874a13b4da38f86fea6e40244">&#9670;&#160;</a></span>SOCKETHPACK_MAX_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_MAX_HEADER_SIZE&#160;&#160;&#160;(8 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum individual header size (name + value) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00059">59</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="a0e75d44640cb3681b7fdbc8c49cb10b9" name="a0e75d44640cb3681b7fdbc8c49cb10b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0e75d44640cb3681b7fdbc8c49cb10b9">&#9670;&#160;</a></span>SOCKETHPACK_MAX_TABLE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_MAX_TABLE_SIZE&#160;&#160;&#160;(64 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum dynamic table size</p>
-<p>ENFORCEMENT: Table size updates are validated in <a class="el" href="SocketHPACK_8h.html#a80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode()</a>. Rejects updates exceeding settings_max_table_size. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00054">54</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="ac25417892f0002db253f31bb5bab7be2" name="ac25417892f0002db253f31bb5bab7be2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac25417892f0002db253f31bb5bab7be2">&#9670;&#160;</a></span>SOCKETHPACK_MAX_TABLE_UPDATES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_MAX_TABLE_UPDATES&#160;&#160;&#160;2</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum dynamic table size updates per header block </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00069">69</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="a09450c50e4284b2cdc1613f7f8062752" name="a09450c50e4284b2cdc1613f7f8062752"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09450c50e4284b2cdc1613f7f8062752">&#9670;&#160;</a></span>SOCKETHPACK_STATIC_TABLE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHPACK_STATIC_TABLE_SIZE&#160;&#160;&#160;61</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Static table size (RFC 7541 Appendix A) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00073">73</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="a47e194052251cf94ee0a17ab490ed56d" name="a47e194052251cf94ee0a17ab490ed56d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47e194052251cf94ee0a17ab490ed56d">&#9670;&#160;</a></span>SocketHPACK_Decoder_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHPACK_Decoder* <a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HPACK decoder (opaque type) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00343">343</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="ab3d2fec45b36d20aff38b5b5f8ccc317" name="ab3d2fec45b36d20aff38b5b5f8ccc317"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab3d2fec45b36d20aff38b5b5f8ccc317">&#9670;&#160;</a></span>SocketHPACK_Encoder_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHPACK_Encoder* <a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HPACK encoder (opaque type) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00251">251</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<a id="a689301e4de369172c0566705afe33156" name="a689301e4de369172c0566705afe33156"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a689301e4de369172c0566705afe33156">&#9670;&#160;</a></span>SocketHPACK_Table_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHPACK_Table* <a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HPACK dynamic table (opaque type) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00142">142</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a623ed321b4ede47b3ac642a001c57ef4" name="a623ed321b4ede47b3ac642a001c57ef4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a623ed321b4ede47b3ac642a001c57ef4">&#9670;&#160;</a></span>SocketHPACK_Result</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HPACK operation result codes </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a" name="a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a"></a>HPACK_OK&#160;</td><td class="fielddoc"><p>Success </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35" name="a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35"></a>HPACK_INCOMPLETE&#160;</td><td class="fielddoc"><p>Need more data </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff" name="a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff"></a>HPACK_ERROR&#160;</td><td class="fielddoc"><p>Generic error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c" name="a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c"></a>HPACK_ERROR_INVALID_INDEX&#160;</td><td class="fielddoc"><p>Index out of range </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded" name="a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded"></a>HPACK_ERROR_HUFFMAN&#160;</td><td class="fielddoc"><p>Huffman decoding error </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88" name="a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88"></a>HPACK_ERROR_INTEGER&#160;</td><td class="fielddoc"><p>Integer overflow </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97" name="a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97"></a>HPACK_ERROR_TABLE_SIZE&#160;</td><td class="fielddoc"><p>Dynamic table size update invalid </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080" name="a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080"></a>HPACK_ERROR_HEADER_SIZE&#160;</td><td class="fielddoc"><p>Individual header too large </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532" name="a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532"></a>HPACK_ERROR_LIST_SIZE&#160;</td><td class="fielddoc"><p>Total header list too large </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6" name="a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6"></a>HPACK_ERROR_BOMB&#160;</td><td class="fielddoc"><p>HPACK bomb detected </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00101">101</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a945f44e73f0a313402745875d9102d1f" name="a945f44e73f0a313402745875d9102d1f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a945f44e73f0a313402745875d9102d1f">&#9670;&#160;</a></span>SocketHPACK_decoder_config_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_decoder_config_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_decoder_config_defaults - Initialize decoder config with defaults @config: Configuration structure to initialize</p>
-<p>Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a80929db456c087b62dd8f59935bbd359" name="a80929db456c087b62dd8f59935bbd359"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80929db456c087b62dd8f59935bbd359">&#9670;&#160;</a></span>SocketHPACK_Decoder_decode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> SocketHPACK_Decoder_decode </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a>&#160;</td>
-          <td class="paramname"><em>decoder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const unsigned char *&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>input_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *&#160;</td>
-          <td class="paramname"><em>headers</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_headers</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>header_count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Decoder_decode - Decode header block @decoder: Decoder instance @input: Encoded header block @input_len: Block length @headers: Output array for decoded headers @max_headers: Maximum headers to decode @header_count: Output - number of headers decoded @arena: Arena for header string allocation</p>
-<p>Decodes a complete HPACK header block in one call. Header strings are allocated from the provided arena.</p>
-<p>Returns: Result code Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a780b420084cdeebd327cf2f2cdcdc94b" name="a780b420084cdeebd327cf2f2cdcdc94b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a780b420084cdeebd327cf2f2cdcdc94b">&#9670;&#160;</a></span>SocketHPACK_Decoder_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Decoder_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> *&#160;</td>
-          <td class="paramname"><em>decoder</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Decoder_free - Free decoder @decoder: Pointer to decoder pointer (will be set to NULL)</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a0afe40cbbca1731a702e44ec87052f6a" name="a0afe40cbbca1731a702e44ec87052f6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0afe40cbbca1731a702e44ec87052f6a">&#9670;&#160;</a></span>SocketHPACK_Decoder_get_table()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> SocketHPACK_Decoder_get_table </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a>&#160;</td>
-          <td class="paramname"><em>decoder</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Decoder_get_table - Get decoder's dynamic table @decoder: Decoder</p>
-<p>Returns: Dynamic table (for inspection/debugging) Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a4208e13edf5343f21c566a146ff8d5e0" name="a4208e13edf5343f21c566a146ff8d5e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4208e13edf5343f21c566a146ff8d5e0">&#9670;&#160;</a></span>SocketHPACK_Decoder_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a> SocketHPACK_Decoder_new </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__DecoderConfig">SocketHPACK_DecoderConfig</a> *&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Decoder_new - Create decoder @config: Configuration (NULL for defaults) @arena: Memory arena for allocations</p>
-<p>Creates a new HPACK decoder with the specified configuration.</p>
-<p>Returns: New decoder instance Raises: SocketHPACK_Error on allocation failure Thread-safe: Yes (arena must be thread-safe or thread-local) </p>
-
-</div>
-</div>
-<a id="a71187fb60d8bbf1a6494b0b7f4566d4d" name="a71187fb60d8bbf1a6494b0b7f4566d4d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a71187fb60d8bbf1a6494b0b7f4566d4d">&#9670;&#160;</a></span>SocketHPACK_Decoder_set_table_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Decoder_set_table_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a47e194052251cf94ee0a17ab490ed56d">SocketHPACK_Decoder_T</a>&#160;</td>
-          <td class="paramname"><em>decoder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Decoder_set_table_size - Handle SETTINGS table size update @decoder: Decoder @max_size: New maximum size from SETTINGS frame</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a2c85a114ea3e6b15fed7ca4714b6f367" name="a2c85a114ea3e6b15fed7ca4714b6f367"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c85a114ea3e6b15fed7ca4714b6f367">&#9670;&#160;</a></span>SocketHPACK_encoder_config_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_encoder_config_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_encoder_config_defaults - Initialize encoder config with defaults @config: Configuration structure to initialize</p>
-<p>Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="aa40bb459b0df6cf69d3fd41c03deb872" name="aa40bb459b0df6cf69d3fd41c03deb872"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa40bb459b0df6cf69d3fd41c03deb872">&#9670;&#160;</a></span>SocketHPACK_Encoder_encode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketHPACK_Encoder_encode </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a>&#160;</td>
-          <td class="paramname"><em>encoder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *&#160;</td>
-          <td class="paramname"><em>headers</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned char *&#160;</td>
-          <td class="paramname"><em>output</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>output_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Encoder_encode - Encode header block @encoder: Encoder instance @headers: Array of headers to encode @count: Number of headers @output: Output buffer @output_size: Buffer size</p>
-<p>Encodes a header block using HPACK compression.</p>
-<p>Returns: Bytes written, or -1 on error Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a944a4c3304e03e56cbf30ad689cc9074" name="a944a4c3304e03e56cbf30ad689cc9074"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a944a4c3304e03e56cbf30ad689cc9074">&#9670;&#160;</a></span>SocketHPACK_Encoder_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Encoder_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> *&#160;</td>
-          <td class="paramname"><em>encoder</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Encoder_free - Free encoder @encoder: Pointer to encoder pointer (will be set to NULL)</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="ab2be704f8ac8301d890421bbc2a8140c" name="ab2be704f8ac8301d890421bbc2a8140c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2be704f8ac8301d890421bbc2a8140c">&#9670;&#160;</a></span>SocketHPACK_Encoder_get_table()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> SocketHPACK_Encoder_get_table </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a>&#160;</td>
-          <td class="paramname"><em>encoder</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Encoder_get_table - Get encoder's dynamic table @encoder: Encoder</p>
-<p>Returns: Dynamic table (for inspection/debugging) Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a5f3f8543f2a9e0c48ca33d30019f8b87" name="a5f3f8543f2a9e0c48ca33d30019f8b87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f3f8543f2a9e0c48ca33d30019f8b87">&#9670;&#160;</a></span>SocketHPACK_Encoder_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a> SocketHPACK_Encoder_new </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketHPACK_8h.html#structSocketHPACK__EncoderConfig">SocketHPACK_EncoderConfig</a> *&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Encoder_new - Create encoder @config: Configuration (NULL for defaults) @arena: Memory arena for allocations</p>
-<p>Creates a new HPACK encoder with the specified configuration.</p>
-<p>Returns: New encoder instance Raises: SocketHPACK_Error on allocation failure Thread-safe: Yes (arena must be thread-safe or thread-local) </p>
-
-</div>
-</div>
-<a id="a702c12cdda50ff1c09ef2d2f086eda45" name="a702c12cdda50ff1c09ef2d2f086eda45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a702c12cdda50ff1c09ef2d2f086eda45">&#9670;&#160;</a></span>SocketHPACK_Encoder_set_table_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Encoder_set_table_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#ab3d2fec45b36d20aff38b5b5f8ccc317">SocketHPACK_Encoder_T</a>&#160;</td>
-          <td class="paramname"><em>encoder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Encoder_set_table_size - Signal table size change @encoder: Encoder @max_size: New maximum size</p>
-<p>Signals that a dynamic table size update should be emitted at the start of the next header block.</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="ad444bc6faa547e95f0b7ed31dc886e11" name="ad444bc6faa547e95f0b7ed31dc886e11"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad444bc6faa547e95f0b7ed31dc886e11">&#9670;&#160;</a></span>SocketHPACK_huffman_decode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketHPACK_huffman_decode </td>
-          <td>(</td>
-          <td class="paramtype">const unsigned char *&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>input_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned char *&#160;</td>
-          <td class="paramname"><em>output</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>output_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_huffman_decode - Huffman decode string @input: Encoded input @input_len: Input length @output: Output buffer @output_size: Buffer size</p>
-<p>Decodes a Huffman-encoded string using DFA-based decoding. Validates padding (max 7 bits, all 1s).</p>
-<p>Returns: Decoded length, or -1 on error Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a87187d3bcd990229f2366e09f4d0c0a0" name="a87187d3bcd990229f2366e09f4d0c0a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87187d3bcd990229f2366e09f4d0c0a0">&#9670;&#160;</a></span>SocketHPACK_huffman_encode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketHPACK_huffman_encode </td>
-          <td>(</td>
-          <td class="paramtype">const unsigned char *&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>input_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned char *&#160;</td>
-          <td class="paramname"><em>output</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>output_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_huffman_encode - Huffman encode string @input: Input string @input_len: Input length @output: Output buffer @output_size: Buffer size</p>
-<p>Encodes a string using the HPACK Huffman table (RFC 7541 Appendix B).</p>
-<p>Returns: Encoded length, or -1 on error (buffer too small) Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="aa8e54f3347574c82323260b229279756" name="aa8e54f3347574c82323260b229279756"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa8e54f3347574c82323260b229279756">&#9670;&#160;</a></span>SocketHPACK_huffman_encoded_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketHPACK_huffman_encoded_size </td>
-          <td>(</td>
-          <td class="paramtype">const unsigned char *&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>input_len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_huffman_encoded_size - Calculate encoded size @input: Input string @input_len: Input length</p>
-<p>Calculates the size of the Huffman-encoded output in bytes.</p>
-<p>Returns: Encoded size in bytes Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ad77418b9eae24b504a03e6d1021e46fe" name="ad77418b9eae24b504a03e6d1021e46fe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad77418b9eae24b504a03e6d1021e46fe">&#9670;&#160;</a></span>SocketHPACK_int_decode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> SocketHPACK_int_decode </td>
-          <td>(</td>
-          <td class="paramtype">const unsigned char *&#160;</td>
-          <td class="paramname"><em>input</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>input_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>prefix_bits</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">uint64_t *&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t *&#160;</td>
-          <td class="paramname"><em>consumed</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_int_decode - Decode integer with prefix @input: Input buffer @input_len: Input length @prefix_bits: Number of prefix bits (1-8) @value: Output value @consumed: Output bytes consumed</p>
-<p>Decodes an HPACK-encoded integer.</p>
-<p>Returns: Result code Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a62d88dd2fa0079b167701d14a6e584db" name="a62d88dd2fa0079b167701d14a6e584db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62d88dd2fa0079b167701d14a6e584db">&#9670;&#160;</a></span>SocketHPACK_int_encode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketHPACK_int_encode </td>
-          <td>(</td>
-          <td class="paramtype">uint64_t&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>prefix_bits</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned char *&#160;</td>
-          <td class="paramname"><em>output</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>output_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_int_encode - Encode integer with prefix @value: Integer value to encode @prefix_bits: Number of prefix bits (1-8) @output: Output buffer @output_size: Buffer size</p>
-<p>Encodes an integer using HPACK's variable-length encoding.</p>
-<p>Returns: Bytes written Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a09650dc7a68806989192e4cd31b4393b" name="a09650dc7a68806989192e4cd31b4393b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a09650dc7a68806989192e4cd31b4393b">&#9670;&#160;</a></span>SocketHPACK_result_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketHPACK_result_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td>
-          <td class="paramname"><em>result</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_result_string - Get error description </p><dl class="section return"><dt>Returns</dt><dd>: Result code</dd></dl>
-<p>Returns: Static string describing the result Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a201240b0d9259e2a9da91530a86d8ed1" name="a201240b0d9259e2a9da91530a86d8ed1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a201240b0d9259e2a9da91530a86d8ed1">&#9670;&#160;</a></span>SocketHPACK_static_find()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHPACK_static_find </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>name_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>value_len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>HPACK encoder (opaque type) </p>
-
-</div>
-</div>
-<a id="a2134dc86dd6393df244bfeeaf1ab5c69" name="a2134dc86dd6393df244bfeeaf1ab5c69"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2134dc86dd6393df244bfeeaf1ab5c69">&#9670;&#160;</a></span>SocketHPACK_static_get()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> SocketHPACK_static_get </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *&#160;</td>
-          <td class="paramname"><em>header</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_static_get - Get entry from static table @index: Entry index (1-61) @header: Output header structure</p>
-<p>Retrieves an entry from the static table by index.</p>
-<p>Returns: HPACK_OK on success, HPACK_ERROR_INVALID_INDEX if out of range Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ad46ef6fbf9994cc55c982d507ce473eb" name="ad46ef6fbf9994cc55c982d507ce473eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad46ef6fbf9994cc55c982d507ce473eb">&#9670;&#160;</a></span>SocketHPACK_Table_add()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> SocketHPACK_Table_add </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>name_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>value</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>value_len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>HPACK encoder (opaque type) </p>
-
-</div>
-</div>
-<a id="add54bf8828aec9d319682da54106537b" name="add54bf8828aec9d319682da54106537b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#add54bf8828aec9d319682da54106537b">&#9670;&#160;</a></span>SocketHPACK_Table_count()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketHPACK_Table_count </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_count - Get number of entries @table: Dynamic table</p>
-<p>Returns: Number of entries in the table Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a821f51d4c73a41cfb01e75068c83e29e" name="a821f51d4c73a41cfb01e75068c83e29e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a821f51d4c73a41cfb01e75068c83e29e">&#9670;&#160;</a></span>SocketHPACK_Table_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Table_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> *&#160;</td>
-          <td class="paramname"><em>table</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_free - Free dynamic table @table: Pointer to table pointer (will be set to NULL)</p>
-<p>Frees the dynamic table. Memory is returned to the arena. Thread-safe: No </p>
-
-</div>
-</div>
-<a id="ac85e6b622a9cb7a19ce3bd0fdb2be551" name="ac85e6b622a9cb7a19ce3bd0fdb2be551"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac85e6b622a9cb7a19ce3bd0fdb2be551">&#9670;&#160;</a></span>SocketHPACK_Table_get()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> SocketHPACK_Table_get </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#structSocketHPACK__Header">SocketHPACK_Header</a> *&#160;</td>
-          <td class="paramname"><em>header</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_get - Get entry by index @table: Dynamic table @index: Entry index (1-based, relative to dynamic table start) @header: Output header structure</p>
-<p>Retrieves an entry from the dynamic table by index. Index 1 is the most recently added entry.</p>
-<p>Returns: HPACK_OK on success, HPACK_ERROR_INVALID_INDEX if out of range Thread-safe: No </p>
-
-</div>
-</div>
-<a id="aa2e92ca751d06de523bc2667fd958010" name="aa2e92ca751d06de523bc2667fd958010"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2e92ca751d06de523bc2667fd958010">&#9670;&#160;</a></span>SocketHPACK_Table_max_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketHPACK_Table_max_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_max_size - Get maximum table size @table: Dynamic table</p>
-<p>Returns: Maximum size in bytes Thread-safe: No </p>
-
-</div>
-</div>
-<a id="ad2e8414c30906d4f093a213b088edf03" name="ad2e8414c30906d4f093a213b088edf03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2e8414c30906d4f093a213b088edf03">&#9670;&#160;</a></span>SocketHPACK_Table_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a> SocketHPACK_Table_new </td>
-          <td>(</td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_size</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_new - Create dynamic table @max_size: Maximum table size in bytes (includes 32-byte overhead per entry) @arena: Memory arena for allocations</p>
-<p>Creates a new dynamic table with the specified maximum size. The table uses a circular buffer for O(1) FIFO operations.</p>
-<p>Returns: New table instance Raises: SocketHPACK_Error on allocation failure Thread-safe: Yes (arena must be thread-safe or thread-local) </p>
-
-</div>
-</div>
-<a id="aa6f9521e46c52adbe47ecb48c2abc307" name="aa6f9521e46c52adbe47ecb48c2abc307"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6f9521e46c52adbe47ecb48c2abc307">&#9670;&#160;</a></span>SocketHPACK_Table_set_max_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHPACK_Table_set_max_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>max_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_set_max_size - Update maximum table size @table: Dynamic table @max_size: New maximum size in bytes</p>
-<p>Updates the maximum table size, evicting entries as needed. This corresponds to a SETTINGS_HEADER_TABLE_SIZE update.</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a43f69e69234e33e6fba377e1eeb53d89" name="a43f69e69234e33e6fba377e1eeb53d89"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a43f69e69234e33e6fba377e1eeb53d89">&#9670;&#160;</a></span>SocketHPACK_Table_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketHPACK_Table_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHPACK_8h.html#a689301e4de369172c0566705afe33156">SocketHPACK_Table_T</a>&#160;</td>
-          <td class="paramname"><em>table</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Table_size - Get current table size in bytes @table: Dynamic table</p>
-<p>Returns: Current size (sum of all entry sizes including overhead) Thread-safe: No </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="aaf99a02bd5f3dd4baedcbde590cc5d09" name="aaf99a02bd5f3dd4baedcbde590cc5d09"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf99a02bd5f3dd4baedcbde590cc5d09">&#9670;&#160;</a></span>SocketHPACK_Error</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHPACK_Error</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHPACK_Error - General HPACK operation failure</p>
-<p>Raised when:</p><ul>
-<li>Invalid header block encoding</li>
-<li>Huffman decoding error</li>
-<li>Integer overflow</li>
-<li>Size limits exceeded</li>
-<li>HPACK bomb detected </li>
-</ul>
-
-</div>
-</div>
-</div><!-- contents -->
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">SocketHTTP2.h</a> for HTTP/2 integration. </dd>
+<dd>
+<a class="el" href="group__http.html#ga5f3f8543f2a9e0c48ca33d30019f8b87" title="Create HPACK encoder instance.">SocketHPACK_Encoder_new()</a> for creating encoders. </dd>
+<dd>
+<a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0" title="Create HPACK decoder instance.">SocketHPACK_Decoder_new()</a> for creating decoders. </dd>
+<dd>
+SocketHTTP_T for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

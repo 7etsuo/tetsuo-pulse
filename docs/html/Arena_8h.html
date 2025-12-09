@@ -115,9 +115,12 @@ $(document).ready(function(){initNavTree('Arena_8h.html',''); initResizable(); }
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">Arena.h File Reference</div></div>
+  <div class="headertitle"><div class="title">Arena.h File Reference<div class="ingroups"><a class="el" href="group__foundation.html">Core Foundation Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Arena-based memory allocator for efficient bulk memory management.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -139,363 +142,72 @@ $(document).ready(function(){initNavTree('Arena_8h.html',''); initResizable(); }
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7897b95c53808a539b0f7a18587a9b54" id="r_a7897b95c53808a539b0f7a18587a9b54"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a7897b95c53808a539b0f7a18587a9b54">ALLOC</a>(arena,  nbytes)&#160;&#160;&#160;  (<a class="el" href="Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> ((arena), (nbytes), __FILE__, __LINE__))</td></tr>
-<tr class="separator:a7897b95c53808a539b0f7a18587a9b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5249a1778cd6cf5db0e2e410b292934" id="r_af5249a1778cd6cf5db0e2e410b292934"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#af5249a1778cd6cf5db0e2e410b292934">CALLOC</a>(arena,  count,  nbytes)&#160;&#160;&#160;  (<a class="el" href="Arena_8h.html#a3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> ((arena), (count), (nbytes), __FILE__, __LINE__))</td></tr>
-<tr class="separator:af5249a1778cd6cf5db0e2e410b292934"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque arena type for memory management.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7897b95c53808a539b0f7a18587a9b54" id="r_ga7897b95c53808a539b0f7a18587a9b54"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga7897b95c53808a539b0f7a18587a9b54">ALLOC</a>(arena,  nbytes)&#160;&#160;&#160;  (<a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> ((arena), (nbytes), __FILE__, __LINE__))</td></tr>
+<tr class="memdesc:ga7897b95c53808a539b0f7a18587a9b54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate memory from arena with automatic debug info.  <br /></td></tr>
+<tr class="separator:ga7897b95c53808a539b0f7a18587a9b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf5249a1778cd6cf5db0e2e410b292934" id="r_gaf5249a1778cd6cf5db0e2e410b292934"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaf5249a1778cd6cf5db0e2e410b292934">CALLOC</a>(arena,  count,  nbytes)&#160;&#160;&#160;  (<a class="el" href="group__foundation.html#ga3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> ((arena), (count), (nbytes), __FILE__, __LINE__))</td></tr>
+<tr class="memdesc:gaf5249a1778cd6cf5db0e2e410b292934"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize memory from arena with automatic debug info.  <br /></td></tr>
+<tr class="separator:gaf5249a1778cd6cf5db0e2e410b292934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ac1ed22b9df4eff7a3398cac608c090cc" id="r_ac1ed22b9df4eff7a3398cac608c090cc"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td></tr>
-<tr class="separator:ac1ed22b9df4eff7a3398cac608c090cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac1ed22b9df4eff7a3398cac608c090cc" id="r_gac1ed22b9df4eff7a3398cac608c090cc"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td></tr>
+<tr class="separator:gac1ed22b9df4eff7a3398cac608c090cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a6a6d6890eb6ed1248ae1a5f0c677c7a4" id="r_a6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a> (void)</td></tr>
-<tr class="separator:a6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6842e66018614df08139e67826cf3e0d" id="r_a6842e66018614df08139e67826cf3e0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a6842e66018614df08139e67826cf3e0d">Arena_dispose</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *ap)</td></tr>
-<tr class="separator:a6842e66018614df08139e67826cf3e0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad93b1dd7d771cbed846dcc3c5c836917" id="r_ad93b1dd7d771cbed846dcc3c5c836917"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t nbytes, const char *file, int line)</td></tr>
-<tr class="separator:ad93b1dd7d771cbed846dcc3c5c836917"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b920b3eed0306dc5afb36934955f6a2" id="r_a3b920b3eed0306dc5afb36934955f6a2"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t count, size_t nbytes, const char *file, int line)</td></tr>
-<tr class="separator:a3b920b3eed0306dc5afb36934955f6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0af0c54c1c64ff88ad43aadd48ce3ebe" id="r_a0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a0af0c54c1c64ff88ad43aadd48ce3ebe">Arena_clear</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:a0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6a6d6890eb6ed1248ae1a5f0c677c7a4" id="r_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a> (void)</td></tr>
+<tr class="memdesc:ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new memory arena.  <br /></td></tr>
+<tr class="separator:ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6842e66018614df08139e67826cf3e0d" id="r_ga6842e66018614df08139e67826cf3e0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *ap)</td></tr>
+<tr class="memdesc:ga6842e66018614df08139e67826cf3e0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of an arena and all its allocations.  <br /></td></tr>
+<tr class="separator:ga6842e66018614df08139e67826cf3e0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad93b1dd7d771cbed846dcc3c5c836917" id="r_gad93b1dd7d771cbed846dcc3c5c836917"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t nbytes, const char *file, int line)</td></tr>
+<tr class="memdesc:gad93b1dd7d771cbed846dcc3c5c836917"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate memory from arena.  <br /></td></tr>
+<tr class="separator:gad93b1dd7d771cbed846dcc3c5c836917"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3b920b3eed0306dc5afb36934955f6a2" id="r_ga3b920b3eed0306dc5afb36934955f6a2"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t count, size_t nbytes, const char *file, int line)</td></tr>
+<tr class="memdesc:ga3b920b3eed0306dc5afb36934955f6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize memory from arena.  <br /></td></tr>
+<tr class="separator:ga3b920b3eed0306dc5afb36934955f6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0af0c54c1c64ff88ad43aadd48ce3ebe" id="r_ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga0af0c54c1c64ff88ad43aadd48ce3ebe">Arena_clear</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all allocations in arena but keep arena active.  <br /></td></tr>
+<tr class="separator:ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a6053a34c90a976ac971313bd5f201fb3" id="r_a6053a34c90a976ac971313bd5f201fb3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Arena_8h.html#a6053a34c90a976ac971313bd5f201fb3">Arena_Failed</a></td></tr>
-<tr class="separator:a6053a34c90a976ac971313bd5f201fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6053a34c90a976ac971313bd5f201fb3" id="r_ga6053a34c90a976ac971313bd5f201fb3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6053a34c90a976ac971313bd5f201fb3">Arena_Failed</a></td></tr>
+<tr class="memdesc:ga6053a34c90a976ac971313bd5f201fb3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised when arena allocation fails.  <br /></td></tr>
+<tr class="separator:ga6053a34c90a976ac971313bd5f201fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a7897b95c53808a539b0f7a18587a9b54" name="a7897b95c53808a539b0f7a18587a9b54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7897b95c53808a539b0f7a18587a9b54">&#9670;&#160;</a></span>ALLOC</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define ALLOC</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">arena, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">nbytes&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td>&#160;&#160;&#160;  (<a class="el" href="Arena_8h.html#ad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> ((arena), (nbytes), __FILE__, __LINE__))</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Arena_8h_source.html#l00094">94</a> of file <a class="el" href="Arena_8h_source.html">Arena.h</a>.</p>
-
-</div>
-</div>
-<a id="af5249a1778cd6cf5db0e2e410b292934" name="af5249a1778cd6cf5db0e2e410b292934"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5249a1778cd6cf5db0e2e410b292934">&#9670;&#160;</a></span>CALLOC</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define CALLOC</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">arena, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">count, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">nbytes&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td>&#160;&#160;&#160;  (<a class="el" href="Arena_8h.html#a3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> ((arena), (count), (nbytes), __FILE__, __LINE__))</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Arena_8h_source.html#l00096">96</a> of file <a class="el" href="Arena_8h_source.html">Arena.h</a>.</p>
-
-</div>
-</div>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Arena Memory Allocator</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Arena-based memory allocator for efficient bulk memory management. </p>
 <p>An arena (also called a memory pool or region) is a memory management technique where allocations are made from a large chunk of memory. All allocations in an arena can be freed at once by disposing the arena.</p>
 <p>Benefits:</p><ul>
 <li>Fast allocation (no per-allocation overhead)</li>
 <li>No memory fragmentation within the arena</li>
 <li>Simple cleanup - dispose entire arena at once</li>
-<li>Thread-safe chunk management with mutex protection Thread Safety:</li>
+<li>Thread-safe chunk management with mutex protection</li>
+</ul>
+<p>Thread Safety:</p><ul>
 <li>All operations fully thread-safe with per-arena and global mutex protection</li>
 <li>Multiple threads can safely allocate from the same arena concurrently</li>
 <li>Each arena has its own mutex protecting allocation state (avail, limit, prev)</li>
 <li>Global free chunk cache protected by separate mutex</li>
-<li>Safe to use same arena from multiple threads or one arena per thread Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>; void *ptr = <a class="el" href="Arena_8h.html#a7897b95c53808a539b0f7a18587a9b54">ALLOC(arena, 100)</a>; // Allocate 100 bytes // ... use memory ... Arena_clear(arena); // Clear all allocations but keep arena // OR Arena_dispose(&amp;arena); // Free everything including arena itself </li>
+<li>Safe to use same arena from multiple threads or one arena per thread</li>
 </ul>
+<p>Usage: Arena_T arena = <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Create a new memory arena.">Arena_new()</a>; void *ptr = <a class="el" href="group__foundation.html#ga7897b95c53808a539b0f7a18587a9b54" title="Allocate memory from arena with automatic debug info.">ALLOC(arena, 100)</a>; // Allocate 100 bytes // ... use memory ... Arena_clear(arena); // Clear all allocations but keep arena // OR Arena_dispose(&amp;arena); // Free everything including arena itself</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> for the opaque arena type. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a> for arena creation. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose()</a> for cleanup. </dd>
+<dd>
+memory-management.mdc for detailed memory management patterns. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Arena_8h_source.html#l00037">37</a> of file <a class="el" href="Arena_8h_source.html">Arena.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ac1ed22b9df4eff7a3398cac608c090cc" name="ac1ed22b9df4eff7a3398cac608c090cc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1ed22b9df4eff7a3398cac608c090cc">&#9670;&#160;</a></span>Arena_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>* <a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="Arena_8h_source.html#l00038">38</a> of file <a class="el" href="Arena_8h_source.html">Arena.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ad93b1dd7d771cbed846dcc3c5c836917" name="ad93b1dd7d771cbed846dcc3c5c836917"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad93b1dd7d771cbed846dcc3c5c836917">&#9670;&#160;</a></span>Arena_alloc()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void * Arena_alloc </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>nbytes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>file</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>line</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="reference">Referenced by <a class="el" href="SocketUtil_8h_source.html#l01086">socket_util_arena_strdup()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01114">socket_util_arena_strndup()</a>.</p>
-
-</div>
-</div>
-<a id="a3b920b3eed0306dc5afb36934955f6a2" name="a3b920b3eed0306dc5afb36934955f6a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b920b3eed0306dc5afb36934955f6a2">&#9670;&#160;</a></span>Arena_calloc()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void * Arena_calloc </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>count</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>nbytes</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>file</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>line</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a0af0c54c1c64ff88ad43aadd48ce3ebe" name="a0af0c54c1c64ff88ad43aadd48ce3ebe"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0af0c54c1c64ff88ad43aadd48ce3ebe">&#9670;&#160;</a></span>Arena_clear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Arena_clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Arena_clear - Clear all allocations in arena but keep arena active @arena: Arena to clear Frees all memory allocated from this arena but keeps the arena itself active for future allocations. Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a6842e66018614df08139e67826cf3e0d" name="a6842e66018614df08139e67826cf3e0d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6842e66018614df08139e67826cf3e0d">&#9670;&#160;</a></span>Arena_dispose()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Arena_dispose </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *&#160;</td>
-          <td class="paramname"><em>ap</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Arena_dispose - Dispose of an arena and all its allocations @ap: Pointer to arena pointer (will be set to NULL) Frees all memory allocated from this arena. Thread-safe: Yes </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<a id="a6a6d6890eb6ed1248ae1a5f0c677c7a4" name="a6a6d6890eb6ed1248ae1a5f0c677c7a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a6d6890eb6ed1248ae1a5f0c677c7a4">&#9670;&#160;</a></span>Arena_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> Arena_new </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Arena_new - Create a new memory arena Returns: New arena instance, or NULL on allocation failure Note: Returns NULL if malloc fails or mutex initialization fails Thread-safe: Yes </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a6053a34c90a976ac971313bd5f201fb3" name="a6053a34c90a976ac971313bd5f201fb3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6053a34c90a976ac971313bd5f201fb3">&#9670;&#160;</a></span>Arena_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> Arena_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-</div>
-</div>
-</div><!-- contents -->
+<p class="definition">Definition in file <a class="el" href="Arena_8h_source.html">Arena.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

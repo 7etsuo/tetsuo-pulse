@@ -1,7 +1,7 @@
 /**
- * SocketDTLS-private.h - DTLS Internal Shared Definitions
- *
- * Part of the Socket Library
+ * @file SocketDTLS-private.h
+ * @ingroup security
+ * @brief DTLS internal shared definitions and helper functions.
  *
  * Internal header for all DTLS module implementation files. Contains shared
  * helper function declarations, error handling macros, internal types,
@@ -9,6 +9,9 @@
  * NOT part of public API - do not include from application code.
  *
  * Thread safety: Internal functions are not thread-safe unless noted.
+ *
+ * @see SocketDTLS.h for public DTLS API.
+ * @see SocketDTLSContext.h for public DTLS context API.
  */
 
 #ifndef SOCKETDTLS_PRIVATE_INCLUDED
@@ -40,18 +43,36 @@
  */
 
 /**
- * RAISE_DTLS_ERROR - Raise DTLS exception with detailed error message
- * @exception: Exception type to raise
+ * @brief RAISE_DTLS_ERROR - Raise DTLS exception with detailed error message
+ * @ingroup security
+ * @param exception Exception type to raise
  *
- * Uses centralized socket_error_buf and SocketDTLS_DetailedException.
+ * Wrapper around SOCKET_RAISE_MODULE_ERROR(SocketDTLS, exception) that creates
+ * thread-local copy of exception with reason from socket_error_buf.
+ *
+ * Uses the detailed exception pattern to prevent race conditions in multi-threaded
+ * environments. SocketDTLS_DetailedException is declared in SocketDTLS.c via
+ * SOCKET_DECLARE_MODULE_EXCEPTION(SocketDTLS).
+ *
+ * @see SocketUtil.h#SOCKET_RAISE_MODULE_ERROR for base macro implementation
+ * @see socket_error_buf in SocketUtil.h for thread-local error buffer
+ * @see SocketDTLS_DetailedException declared in SocketDTLS.c
  */
 #define RAISE_DTLS_ERROR(exception)                                           \
   SOCKET_RAISE_MODULE_ERROR (SocketDTLS, exception)
 
 /**
- * RAISE_DTLS_ERROR_MSG - Raise DTLS exception with specific message
- * @exception: Exception type to raise
- * @msg: Error message string
+ * @brief RAISE_DTLS_ERROR_MSG - Raise DTLS exception with formatted message
+ * @ingroup security
+ * @param exception Exception type to raise
+ * @param msg Error message format string
+ * @param ... Format arguments
+ *
+ * Formats message using SOCKET_ERROR_MSG (populates socket_error_buf) then
+ * raises via RAISE_DTLS_ERROR. Thread-safe via per-thread storage.
+ *
+ * @see SOCKET_ERROR_MSG in SocketUtil.h for formatting
+ * @see RAISE_DTLS_ERROR for raising logic
  */
 #define RAISE_DTLS_ERROR_MSG(exception, msg)                                  \
   do                                                                          \
@@ -62,9 +83,16 @@
   while (0)
 
 /**
- * REQUIRE_DTLS_ENABLED - Validate DTLS is enabled on socket
- * @socket: Socket to validate
- * @exception: Exception to raise on failure
+ * @brief REQUIRE_DTLS_ENABLED - Validate DTLS is enabled on socket
+ * @ingroup security
+ * @param socket Socket to validate
+ * @param exception Exception to raise on failure
+ *
+ * Validates that DTLS has been enabled on the specified socket. Raises
+ * the provided exception with a descriptive message if DTLS is not enabled.
+ * Used throughout DTLS operations to ensure proper initialization order.
+ *
+ * @see SocketDTLS_enable() for enabling DTLS on sockets
  */
 #define REQUIRE_DTLS_ENABLED(socket, exception)                               \
   do                                                                          \
@@ -75,29 +103,41 @@
   while (0)
 
 /**
- * DTLS_ERROR_MSG - Format simple error message
- * @msg: Message string
+ * @brief DTLS_ERROR_MSG - Format simple error message
+ * @ingroup security
+ * @param msg Message string
  *
- * Uses centralized socket_error_buf.
+ * Formats a simple error message into the thread-local error buffer.
+ * Used for consistent error reporting across DTLS operations.
  */
 #define DTLS_ERROR_MSG(msg) SOCKET_ERROR_MSG (msg)
 
 /**
- * DTLS_ERROR_FMT - Format error message with arguments
- * @fmt: Format string
- * @...: Format arguments
+ * @brief DTLS_ERROR_FMT - Format error message with arguments
+ * @ingroup security
+ * @param fmt Format string
+ * @param ... Format arguments
  *
- * Uses centralized socket_error_buf with errno if set.
+ * Formats an error message with arguments into the thread-local error buffer.
+ * Includes errno information when available for system call diagnostics.
  */
 #define DTLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
 
 /**
- * VALIDATE_DTLS_IO_READY - Validate socket is ready for DTLS I/O
- * @socket: Socket to validate
- * @exception: Exception to raise on failure
+ * @brief VALIDATE_DTLS_IO_READY - Validate socket is ready for DTLS I/O
+ * @ingroup security
+ * @param socket Socket to validate
+ * @param exception Exception to raise on failure
  *
- * Checks dtls_enabled, handshake_done, and SSL object availability.
- * Returns SSL* on success, raises exception on failure.
+ * Performs comprehensive validation before DTLS I/O operations:
+ * - Checks that DTLS is enabled on the socket
+ * - Verifies handshake is complete
+ * - Ensures SSL object is available
+ *
+ * Returns SSL* pointer on success for immediate use, raises exception on failure.
+ * Used by all DTLS send/receive operations to ensure proper state.
+ *
+ * @return SSL* pointer for immediate use in DTLS operations
  */
 #define VALIDATE_DTLS_IO_READY(socket, exception)                             \
   ({                                                                          \
@@ -126,10 +166,17 @@
  */
 
 /**
- * dtls_socket_get_ssl - Get SSL* from socket
- * @socket: Socket instance
+ * @brief dtls_socket_get_ssl - Get SSL* from socket
+ * @ingroup security
+ * @param socket Socket instance
+ * @return SSL* pointer or NULL if DTLS not enabled/available
  *
- * Returns: SSL* pointer or NULL if DTLS not enabled/available
+ * Safely extracts the SSL object from a DTLS-enabled socket. Performs
+ * null checks and DTLS enablement validation before returning the SSL pointer.
+ * Returns NULL if socket is invalid, DTLS is not enabled, or SSL object
+ * is not available.
+ *
+ * @threadsafe Yes - read-only operation on socket state
  */
 static inline SSL *
 dtls_socket_get_ssl (SocketDgram_T socket)
@@ -145,14 +192,25 @@ dtls_socket_get_ssl (SocketDgram_T socket)
  */
 
 /**
- * dtls_handle_ssl_error - Map OpenSSL errors to DTLSHandshakeState
- * @socket: Socket instance
- * @ssl: SSL object
- * @ssl_result: Result from SSL operation
+ * @brief dtls_handle_ssl_error - Map OpenSSL errors to DTLSHandshakeState
+ * @ingroup security
+ * @param socket Socket instance
+ * @param ssl SSL object
+ * @param ssl_result Result from SSL operation
+ * @return DTLSHandshakeState based on error type
  *
- * Returns: DTLSHandshakeState based on error type
+ * Maps OpenSSL error codes to DTLS handshake states for event-driven I/O.
+ * Handles the complex mapping between OpenSSL's error model and the socket
+ * library's state machine. Critical for non-blocking DTLS operations.
  *
- * Sets errno to EAGAIN for WANT_READ/WRITE cases.
+ * Error handling:
+ * - SSL_ERROR_NONE: Complete - handshake finished successfully
+ * - SSL_ERROR_WANT_READ/WRITE: Non-blocking - need I/O, errno=EAGAIN
+ * - SSL_ERROR_SYSCALL: System error - errno preserved for diagnostics
+ * - SSL_ERROR_SSL: Protocol error - detailed in OpenSSL error queue
+ * - SSL_ERROR_ZERO_RETURN: Clean peer shutdown
+ *
+ * @threadsafe Yes - operates on per-connection SSL state
  */
 static inline DTLSHandshakeState
 dtls_handle_ssl_error (SocketDgram_T socket, SSL *ssl, int ssl_result)
@@ -182,10 +240,13 @@ dtls_handle_ssl_error (SocketDgram_T socket, SSL *ssl, int ssl_result)
 }
 
 /**
- * dtls_format_openssl_error - Format OpenSSL error into buffer
- * @context: Context string for error message
+ * @brief dtls_format_openssl_error - Format OpenSSL error into buffer
+ * @ingroup security
+ * @param context Context string for error message
  *
  * Formats current OpenSSL error into socket_error_buf with context.
+ * Clears the entire error queue to prevent stale errors from affecting
+ * subsequent operations or leaking information.
  */
 static inline void
 dtls_format_openssl_error (const char *context)
@@ -211,10 +272,22 @@ dtls_format_openssl_error (const char *context)
  */
 
 /**
- * dtls_validate_file_path - Validate certificate/key/CA file path
- * @path: File path string to validate
+ * @brief dtls_validate_file_path - Validate certificate/key/CA file path
+ * @ingroup security
+ * @param path File path string to validate
+ * @return 1 if valid, 0 if invalid
  *
- * Returns: 1 if valid, 0 if invalid
+ * Performs comprehensive security validation on file paths to prevent
+ * directory traversal attacks and other path-based exploits:
+ * - Non-empty and within configured length limits
+ * - Rejects path traversal sequences (..) in any form
+ * - Rejects control characters (except forward slash for paths)
+ * - Validates against symlink attacks by checking file type
+ * - Prevents embedded null bytes that could cause truncation
+ *
+ * Critical for preventing attacks where untrusted input could access
+ * sensitive files outside intended directories, especially important
+ * for DTLS due to UDP transport security considerations.
  */
 static inline int
 dtls_validate_file_path (const char *path)
@@ -257,7 +330,19 @@ dtls_validate_file_path (const char *path)
 #define T SocketDTLSContext_T
 
 /**
- * Cookie State - Server-side cookie exchange state
+ * @brief Cookie state structure for server-side DTLS cookie exchange.
+ * @ingroup security
+ *
+ * Manages HMAC secrets for generating and verifying stateless cookies during
+ * DTLS handshake to prevent DoS attacks (RFC 6347 Section 4.2.1). Supports
+ * secret rotation for replay protection and forward secrecy.
+ *
+ * @threadsafe Conditional - mutex protects secret updates; read access thread-safe.
+ *
+ * @see dtls_cookie_generate_cb()
+ * @see dtls_cookie_verify_cb()
+ * @see SocketDTLSContext_enable_cookie_exchange()
+ * @see RFC 6347 for cookie exchange protocol.
  */
 typedef struct
 {
@@ -270,20 +355,33 @@ typedef struct
 } DTLSContextCookie;
 
 /**
- * ALPN Configuration - Application-Layer Protocol Negotiation settings
+ * @brief ALPN configuration structure for DTLS contexts.
+ * @ingroup security
+ *
+ * Stores supported application protocols for negotiation during handshake
+ * (RFC 7301). Enables protocol selection for HTTP/2 over DTLS or other services.
+ *
+ * @see SocketDTLSContext_set_alpn_protos()
+ * @see SSL_get0_alpn_selected() for retrieval
  */
 typedef struct
 {
   const char **protocols; /**< Array of protocol strings */
   size_t count;           /**< Number of protocols */
-  const char *selected;   /**< Negotiated protocol (for clients) */
+  const char *selected;   /**< Negotiated protocol (set by server, read by client) */
 } DTLSContextALPN;
 
 /**
- * SocketDTLSContext_T - DTLS Context Structure
+ * @brief SocketDTLSContext_T - DTLS Context Structure
+ * @ingroup security
  *
  * Manages OpenSSL SSL_CTX for DTLS with secure defaults, certificates,
- * cookie exchange, and session caching.
+ * cookie exchange, and session caching. Provides DTLS 1.2+ support with
+ * cookie-based DoS protection and session resumption for performance.
+ *
+ * Thread safety: Contexts are not thread-safe for modification after creation.
+ * Share read-only after full setup, or use per-thread contexts.
+ * SSL objects created from context are per-connection and thread-safe.
  */
 struct T
 {
@@ -310,21 +408,54 @@ struct T
 };
 
 /* ============================================================================
- * Thread-Local Error Handling for SocketDTLSContext
+ * Thread-Local Error Storage for SocketDTLSContext
  * ============================================================================
  */
 
+/**
+ * @brief Thread-local error buffer for SocketDTLSContext operations.
+ * @ingroup security
+ * @var dtls_context_error_buf
+ *
+ * Used by RAISE_DTLS_CTX_ERROR macros to store formatted error messages
+ * with context. Thread-local to support concurrent operations without
+ * contention or corruption.
+ *
+ * @see RAISE_DTLS_CTX_ERROR*
+ * @see SOCKET_DTLS_ERROR_BUFSIZE for size constant
+ */
 #ifdef _WIN32
-extern
-    __declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
-extern __declspec (thread) Except_T SocketDTLSContext_DetailedException;
+extern __declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
 #else
 extern __thread char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
+#endif
+
+/**
+ * @brief Thread-local detailed exception for SocketDTLSContext errors.
+ * @ingroup security
+ * @var SocketDTLSContext_DetailedException
+ *
+ * Exception instance used by module macros to attach .reason pointing to
+ * dtls_context_error_buf. Enables race-free detailed exception raising in
+ * multi-threaded contexts.
+ *
+ * @see RAISE_DTLS_CTX_ERROR*
+ * @see Except_T base structure
+ */
+#ifdef _WIN32
+extern __declspec (thread) Except_T SocketDTLSContext_DetailedException;
+#else
 extern __thread Except_T SocketDTLSContext_DetailedException;
 #endif
 
 /**
- * RAISE_DTLS_CTX_ERROR - Raise context exception with current error buffer
+ * @brief RAISE_DTLS_CTX_ERROR - Raise context exception with current error buffer
+ * @ingroup security
+ * @param exception Exception type to raise
+ *
+ * Creates thread-local copy of exception with reason from dtls_context_error_buf.
+ * Uses the detailed exception pattern to prevent race conditions when multiple
+ * threads raise the same exception type.
  */
 #define RAISE_DTLS_CTX_ERROR(exception)                                       \
   do                                                                          \
@@ -336,7 +467,14 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
   while (0)
 
 /**
- * RAISE_DTLS_CTX_ERROR_MSG - Raise context exception with specific message
+ * @brief RAISE_DTLS_CTX_ERROR_MSG - Raise context exception with formatted message
+ * @ingroup security
+ * @param exception Exception type to raise
+ * @param msg Error message format string
+ * @param ... Format arguments
+ *
+ * Raises DTLS context exception with formatted error message. Uses thread-local
+ * exception storage to prevent race conditions.
  */
 #define RAISE_DTLS_CTX_ERROR_MSG(exception, msg)                              \
   do                                                                          \
@@ -365,12 +503,74 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
  */
 
 /**
+ * @brief OpenSSL DTLS cookie generation callback
+ * @ingroup security
+ * @param ssl SSL object for the DTLS connection
+ * @param cookie Output buffer for generated cookie (SOCKET_DTLS_COOKIE_LEN bytes)
+ * @param cookie_len Output parameter set to actual cookie length
+ * @return 1 on success, 0 on failure
+ *
+ * Generates stateless cookies for DTLS cookie exchange (RFC 6347 Section 4.2.1).
+ * Cookies prevent DoS attacks by requiring clients to prove address ownership
+ * before servers allocate per-connection state. Uses HMAC-SHA256 with server
+ * secret key over client address, port, and timestamp.
+ *
+ * Called automatically by OpenSSL during DTLS handshake when cookie exchange
+ * is enabled. Server must have called SocketDTLSContext_enable_cookie_exchange().
+ */
+
+/**
+ * @brief OpenSSL DTLS cookie verification callback
+ * @ingroup security
+ * @param ssl SSL object for the DTLS connection
+ * @param cookie Cookie bytes provided by client
+ * @param cookie_len Length of cookie data
+ * @return 1 if cookie is valid and client address is verified, 0 if invalid
+ *
+ * Verifies cookies generated by dtls_cookie_generate_cb(). Ensures the cookie
+ * was generated for this specific client address/port combination and hasn't
+ * expired. Uses constant-time comparison to prevent timing attacks that could
+ * leak information about valid cookies.
+ *
+ * If verification fails, the client must retry with a new cookie obtained
+ * via HelloVerifyRequest. This stateless verification prevents memory
+ * exhaustion attacks on DTLS servers.
+ */
+
+/**
+ * @brief Generate HMAC-SHA256 based DTLS cookie for address verification
+ * @ingroup security
+ * @param secret Server secret key for HMAC (SOCKET_DTLS_COOKIE_SECRET_LEN bytes)
+ * @param peer_addr Client socket address (struct sockaddr)
+ * @param peer_len Length of peer address structure
+ * @param out_cookie Output buffer for cookie (SOCKET_DTLS_COOKIE_LEN bytes)
+ * @return 0 on success, -1 on failure
+ *
+ * Creates a cryptographically secure cookie using HMAC-SHA256:
+ * HMAC-SHA256(secret, client_addr || client_port || timestamp)
+ *
+ * The cookie proves client address ownership and prevents spoofing attacks.
+ * Truncated to SOCKET_DTLS_COOKIE_LEN bytes for efficiency while maintaining
+ * security. Cookies have limited lifetime to prevent replay attacks.
+ *
+ * Used internally by dtls_cookie_generate_cb() and exposed for testing.
+ * @see RFC 6347 Section 4.2.1 for cookie exchange specification
+ */
+
+/**
+ * @brief Get SocketDTLSContext from SSL object.
+ * @ingroup security
+ * @param ssl SSL object
+ * @return Context pointer or NULL
+ */
+
+/**
  * dtls_cookie_generate_cb - OpenSSL cookie generation callback
  * @ssl: SSL object
  * @cookie: Output buffer for cookie
  * @cookie_len: Output for cookie length
  *
- * Returns: 1 on success, 0 on failure
+ * @return 1 on success, 0 on failure
  */
 extern int dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
                                     unsigned int *cookie_len);
@@ -381,7 +581,7 @@ extern int dtls_cookie_generate_cb (SSL *ssl, unsigned char *cookie,
  * @cookie: Cookie to verify
  * @cookie_len: Cookie length
  *
- * Returns: 1 if valid, 0 if invalid
+ * @return 1 if valid, 0 if invalid
  */
 extern int dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                                   unsigned int cookie_len);
@@ -393,7 +593,7 @@ extern int dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
  * @peer_len: Peer address length
  * @out_cookie: Output buffer (SOCKET_DTLS_COOKIE_LEN bytes)
  *
- * Returns: 0 on success, -1 on failure
+ * @return 0 on success, -1 on failure
  */
 extern int dtls_generate_cookie_hmac (const unsigned char *secret,
                                       const struct sockaddr *peer_addr,
@@ -401,10 +601,13 @@ extern int dtls_generate_cookie_hmac (const unsigned char *secret,
                                       unsigned char *out_cookie);
 
 /**
- * dtls_context_get_from_ssl - Get SocketDTLSContext from SSL object
- * @ssl: SSL object
+ * @brief dtls_context_get_from_ssl - Get SocketDTLSContext from SSL object
+ * @ingroup security
+ * @param ssl SSL object
+ * @return Context pointer or NULL
  *
- * Returns: Context pointer or NULL
+ * Retrieves the SocketDTLSContext associated with an SSL object.
+ * Used internally by DTLS callbacks to access context-specific data.
  */
 extern SocketDTLSContext_T dtls_context_get_from_ssl (const SSL *ssl);
 

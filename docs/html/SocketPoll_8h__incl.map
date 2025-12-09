@@ -1,10 +1,10 @@
 <map id="SocketPoll.h" name="SocketPoll.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="130,5,226,31"/>
-<area shape="rect" id="Node000002" href="$Except_8h.html" title=" " alt="" coords="203,299,305,324"/>
+<area shape="rect" id="Node000001" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="130,5,226,31"/>
+<area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="203,299,305,324"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="184,30,250,285,245,286,178,31"/>
-<area shape="rect" id="Node000004" href="$SocketTimer_8h.html" title=" " alt="" coords="5,79,140,104"/>
+<area shape="rect" id="Node000004" href="$SocketTimer_8h.html" title="High&#45;performance timer subsystem integrated with the event loop." alt="" coords="5,79,140,104"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="163,33,102,73,100,69,160,28"/>
-<area shape="rect" id="Node000006" href="$Socket_8h.html" title=" " alt="" coords="655,79,773,104"/>
+<area shape="rect" id="Node000006" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="655,79,773,104"/>
 <area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="226,23,642,78,641,83,226,28"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="218,372,290,397"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="257,324,257,358,251,358,251,324"/>
@@ -12,11 +12,11 @@
 <area shape="rect" id="Node000005" title=" " alt="" coords="24,152,89,177"/>
 <area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="73,105,65,139,60,138,67,104"/>
 <area shape="poly" id="edge7_Node000006_Node000002" title=" " alt="" coords="656,106,586,122,503,147,414,182,332,228,297,257,271,289,267,286,294,254,328,223,412,177,501,142,585,117,655,101"/>
-<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title=" " alt="" coords="1309,225,1450,251"/>
+<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1309,225,1450,251"/>
 <area shape="poly" id="edge8_Node000006_Node000007" title=" " alt="" coords="767,101,1314,220,1313,225,766,107"/>
-<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title=" " alt="" coords="1055,225,1183,251"/>
+<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1055,225,1183,251"/>
 <area shape="poly" id="edge18_Node000006_Node000017" title=" " alt="" coords="747,102,1075,218,1073,223,745,107"/>
-<area shape="rect" id="Node000019" href="$SocketCommon_8h.html" title=" " alt="" coords="629,152,799,177"/>
+<area shape="rect" id="Node000019" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="629,152,799,177"/>
 <area shape="poly" id="edge23_Node000006_Node000019" title=" " alt="" coords="717,104,717,138,711,138,711,104"/>
 <area shape="rect" id="Node000008" title=" " alt="" coords="1616,299,1679,324"/>
 <area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="1423,248,1603,296,1602,301,1422,253"/>
@@ -47,17 +47,17 @@
 <area shape="poly" id="edge28_Node000019_Node000010" title=" " alt="" coords="800,165,908,169,1030,179,1141,196,1185,208,1218,223,1234,236,1247,252,1265,284,1260,287,1242,255,1230,240,1215,228,1184,213,1140,202,1029,185,908,175,800,170"/>
 <area shape="poly" id="edge29_Node000019_Node000014" title=" " alt="" coords="800,168,1037,187,1142,203,1177,212,1197,224,1205,240,1201,258,1180,290,1176,287,1197,256,1199,241,1193,227,1175,217,1141,208,1037,193,799,173"/>
 <area shape="poly" id="edge27_Node000019_Node000018" title=" " alt="" coords="629,173,561,179,492,189,433,205,412,215,397,227,392,236,392,244,402,261,423,277,448,291,446,295,420,282,398,265,387,245,387,234,393,224,409,211,431,200,491,184,560,174,628,167"/>
-<area shape="rect" id="Node000020" title=" " alt="" coords="418,225,493,251"/>
-<area shape="poly" id="edge24_Node000019_Node000020" title=" " alt="" coords="673,180,507,225,505,220,672,175"/>
-<area shape="rect" id="Node000021" title=" " alt="" coords="517,225,593,251"/>
-<area shape="poly" id="edge25_Node000019_Node000021" title=" " alt="" coords="690,180,595,222,593,217,687,175"/>
+<area shape="rect" id="Node000020" title=" " alt="" coords="419,225,495,251"/>
+<area shape="poly" id="edge24_Node000019_Node000020" title=" " alt="" coords="673,180,509,225,507,220,672,175"/>
+<area shape="rect" id="Node000021" title=" " alt="" coords="519,225,594,251"/>
+<area shape="poly" id="edge25_Node000019_Node000021" title=" " alt="" coords="690,180,596,222,594,217,688,175"/>
 <area shape="rect" id="Node000022" title=" " alt="" coords="618,225,701,251"/>
 <area shape="poly" id="edge30_Node000019_Node000022" title=" " alt="" coords="707,179,679,216,674,213,703,176"/>
 <area shape="rect" id="Node000023" title=" " alt="" coords="725,225,815,251"/>
 <area shape="poly" id="edge31_Node000019_Node000023" title=" " alt="" coords="725,176,755,213,750,216,721,179"/>
 <area shape="rect" id="Node000024" title=" " alt="" coords="839,225,911,251"/>
 <area shape="poly" id="edge32_Node000019_Node000024" title=" " alt="" coords="741,175,838,217,835,222,739,180"/>
-<area shape="rect" id="Node000025" href="$Arena_8h.html" title=" " alt="" coords="935,225,1031,251"/>
+<area shape="rect" id="Node000025" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="935,225,1031,251"/>
 <area shape="poly" id="edge33_Node000019_Node000025" title=" " alt="" coords="758,175,927,219,926,224,757,180"/>
 <area shape="poly" id="edge35_Node000025_Node000002" title=" " alt="" coords="935,252,924,253,753,274,584,290,319,309,319,304,583,285,752,269,923,248,935,246"/>
 <area shape="poly" id="edge34_Node000025_Node000012" title=" " alt="" coords="996,249,1030,287,1026,290,992,253"/>

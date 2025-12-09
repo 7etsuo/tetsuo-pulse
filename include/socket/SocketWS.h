@@ -1,6 +1,6 @@
 /**
  * @file SocketWS.h
- * @ingroup core_io
+ * @ingroup websocket
  * @brief WebSocket Protocol (RFC 6455) implementation with compression
  * support.
  *
@@ -43,9 +43,53 @@
  * - zlib for permessage-deflate compression (optional)
  *
  * @see SocketWS_client_new() for client WebSocket creation.
- * @see SocketWS_server_new() for server WebSocket creation.
+ * @see SocketWS_server_accept() for server WebSocket creation.
  * @see SocketWS_send_text() for sending text messages.
  * @see SocketWS_recv_message() for receiving messages.
+ * @see @ref SocketHTTP_Request for HTTP upgrade parsing.
+ * @see @ref SocketPoll_T for event loop integration.
+ * @see @ref SocketTimer_T for auto-ping timer integration.
+ * @see @ref http for HTTP upgrade details.
+ * @see docs/WEBSOCKET.md for detailed usage guide.
+ */
+
+/**
+ * @defgroup websocket WebSocket Modules
+ * @brief WebSocket protocol support for client and server, with framing, compression, and integration.
+ * @ingroup websocket
+ * @{
+ *
+ * The WebSocket module provides full support for the WebSocket protocol (RFC 6455),
+ * including client and server roles, message framing, control frames (ping/pong/close),
+ * fragmentation, UTF-8 validation, and optional permessage-deflate compression (RFC 7692).
+ *
+ * Key Features:
+ * - Non-blocking I/O compatible with SocketPoll.
+ * - Automatic handling of control frames.
+ * - Subprotocol negotiation during handshake.
+ * - Integration with SocketTLS for secure WebSocket (wss://).
+ * - Configurable limits for frame/message sizes.
+ *
+ * Dependencies:
+ * - @ref http (SocketHTTP, SocketHTTP1 for upgrade handshake)
+ * - @ref core_io (Socket, SocketBuf for I/O)
+ * - @ref foundation (Arena, Except for memory/errors)
+ * - @ref utilities (SocketUTF8 for text validation, SocketCrypto for masking)
+ * - @ref event_system (SocketPoll, SocketTimer for events and keepalive)
+ *
+ * Usage:
+ * - Server: Detect upgrade in HTTP request, accept with SocketWS_server_accept(), handshake.
+ * - Client: Connect socket, create with SocketWS_client_new(), handshake.
+ * - Send/Recv: Use send_text/binary, recv_message in OPEN state.
+ * - Event Loop: Poll with SocketWS_pollfd/events, process events.
+ *
+ * Error Handling:
+ * - Uses SocketWS_* exceptions for failures.
+ * - SocketWS_Error enum for detailed codes.
+ *
+ * @see SocketWS_Config for configuration options.
+ * @see SocketWS_Message for received messages.
+ * @see SocketWS_State for connection states.
  */
 
 #ifndef SOCKETWS_INCLUDED
@@ -76,20 +120,33 @@ typedef struct SocketWS *T;
  */
 
 /**
- * @brief SocketWS_Failed - General WebSocket operation failure
- * @ingroup core_io
+ * @brief Exception raised for general WebSocket operation failures.
+ * @ingroup http
+ *
+ * Thrown on allocation failures, invalid states, or unrecoverable errors.
+ *
+ * @see SocketWS_Error for specific error codes.
  */
 extern const Except_T SocketWS_Failed;
 
 /**
- * @brief SocketWS_ProtocolError - WebSocket protocol violation
- * @ingroup core_io
+ * @brief Exception for WebSocket protocol violations (RFC 6455 non-compliance).
+ * @ingroup http
+ *
+ * Raised on invalid opcodes, malformed frames, missing masks (server), etc.
+ *
+ * @see WS_ERROR_PROTOCOL for related non-exception errors.
  */
 extern const Except_T SocketWS_ProtocolError;
 
 /**
- * @brief SocketWS_Closed - WebSocket connection closed
- * @ingroup core_io
+ * @brief Exception indicating the WebSocket connection has been closed.
+ * @ingroup http
+ *
+ * Raised when attempting operations on a CLOSED connection or after clean close.
+ *
+ * @see SocketWS_state() == WS_STATE_CLOSED.
+ * @see SocketWS_close() to initiate close.
  */
 extern const Except_T SocketWS_Closed;
 
@@ -98,14 +155,24 @@ extern const Except_T SocketWS_Closed;
  * ============================================================================
  */
 
+/**
+ * @brief WebSocket frame opcodes as defined in RFC 6455 section 5.2.
+ * @ingroup http
+ *
+ * Opcodes determine frame type: data (text/binary), control (close/ping/pong),
+ * or continuation for fragmented messages.
+ *
+ * @see SocketWS_Frame.opcode for frame parsing.
+ * @see RFC 6455 for full opcode semantics and reserved values.
+ */
 typedef enum
 {
-  WS_OPCODE_CONTINUATION = 0x0, /**< Continuation frame */
-  WS_OPCODE_TEXT = 0x1,         /**< Text frame (UTF-8) */
-  WS_OPCODE_BINARY = 0x2,       /**< Binary frame */
-  WS_OPCODE_CLOSE = 0x8,        /**< Close frame */
-  WS_OPCODE_PING = 0x9,         /**< Ping frame */
-  WS_OPCODE_PONG = 0xA          /**< Pong frame */
+  WS_OPCODE_CONTINUATION = 0x0, /**< Continuation frame for fragmented data. */
+  WS_OPCODE_TEXT = 0x1,         /**< Text data frame (UTF-8 encoded). */
+  WS_OPCODE_BINARY = 0x2,       /**< Binary data frame. */
+  WS_OPCODE_CLOSE = 0x8,        /**< Connection close control frame. */
+  WS_OPCODE_PING = 0x9,         /**< Ping control frame (keepalive). */
+  WS_OPCODE_PONG = 0xA          /**< Pong control frame (response to ping). */
 } SocketWS_Opcode;
 
 /* ============================================================================
@@ -113,24 +180,37 @@ typedef enum
  * ============================================================================
  */
 
+/**
+ * @brief Status codes for WebSocket CLOSE frames (RFC 6455 section 7.4).
+ * @ingroup http
+ *
+ * Sent in CLOSE frame payload (2-byte code + optional UTF-8 reason).
+ * Codes 0-999 reserved, 1000-1015+ defined, 1016-2999 for libraries,
+ * 3000-3999 for apps, 4000+ for private.
+ *
+ * Internal codes (1002-1006,1015) not sent on wire.
+ *
+ * @see SocketWS_close() to send close with code.
+ * @see SocketWS_close_code() to retrieve received code.
+ * @see RFC 6455 section 7.4 for full list and semantics.
+ */
 typedef enum
 {
-  WS_CLOSE_NORMAL = 1000,           /**< Normal closure */
-  WS_CLOSE_GOING_AWAY = 1001,       /**< Endpoint going away */
-  WS_CLOSE_PROTOCOL_ERROR = 1002,   /**< Protocol error */
-  WS_CLOSE_UNSUPPORTED_DATA = 1003, /**< Unsupported data type */
-  WS_CLOSE_NO_STATUS = 1005,        /**< No status received (internal) */
-  WS_CLOSE_ABNORMAL = 1006,         /**< Abnormal closure (internal) */
-  WS_CLOSE_INVALID_PAYLOAD
-  = 1007, /**< Invalid frame payload (e.g., bad UTF-8) */
-  WS_CLOSE_POLICY_VIOLATION = 1008, /**< Policy violation */
-  WS_CLOSE_MESSAGE_TOO_BIG = 1009,  /**< Message too big */
-  WS_CLOSE_MANDATORY_EXT = 1010,    /**< Mandatory extension missing */
-  WS_CLOSE_INTERNAL_ERROR = 1011,   /**< Internal server error */
-  WS_CLOSE_SERVICE_RESTART = 1012,  /**< Service restart */
-  WS_CLOSE_TRY_AGAIN_LATER = 1013,  /**< Try again later */
-  WS_CLOSE_BAD_GATEWAY = 1014,      /**< Bad gateway */
-  WS_CLOSE_TLS_HANDSHAKE = 1015     /**< TLS handshake failure (internal) */
+  WS_CLOSE_NORMAL = 1000,           /**< Normal closure, no error. */
+  WS_CLOSE_GOING_AWAY = 1001,       /**< Endpoint shutting down. */
+  WS_CLOSE_PROTOCOL_ERROR = 1002,   /**< Generic protocol violation. */
+  WS_CLOSE_UNSUPPORTED_DATA = 1003, /**< Received unsupported frame type. */
+  WS_CLOSE_NO_STATUS = 1005,        /**< No status rcvd (internal use only). */
+  WS_CLOSE_ABNORMAL = 1006,         /**< Closed without CLOSE frame. */
+  WS_CLOSE_INVALID_PAYLOAD = 1007,  /**< Invalid UTF-8 or other payload error. */
+  WS_CLOSE_POLICY_VIOLATION = 1008, /**< Message violates policy. */
+  WS_CLOSE_MESSAGE_TOO_BIG = 1009,  /**< Message exceeds size limits. */
+  WS_CLOSE_MANDATORY_EXT = 1010,    /**< Required extension not offered. */
+  WS_CLOSE_INTERNAL_ERROR = 1011,   /**< Server internal error. */
+  WS_CLOSE_SERVICE_RESTART = 1012,  /**< Server restarting. */
+  WS_CLOSE_TRY_AGAIN_LATER = 1013,  /**< Temporary server condition. */
+  WS_CLOSE_BAD_GATEWAY = 1014,      /**< Bad gateway or tunnel error. */
+  WS_CLOSE_TLS_HANDSHAKE = 1015     /**< Failed TLS handshake (internal). */
 } SocketWS_CloseCode;
 
 /* ============================================================================
@@ -138,18 +218,38 @@ typedef enum
  * ============================================================================
  */
 
+/**
+ * @brief WebSocket connection lifecycle states.
+ * @ingroup http
+ *
+ * Tracks progression from handshake to closure.
+ *
+ * @see SocketWS_state() to query current state.
+ * @see SocketWS_handshake() transitions CONNECTING -> OPEN.
+ * @see SocketWS_close() transitions OPEN -> CLOSING.
+ */
 typedef enum
 {
-  WS_STATE_CONNECTING, /**< Handshake in progress */
-  WS_STATE_OPEN,       /**< Ready for messages */
-  WS_STATE_CLOSING,    /**< Close handshake in progress */
-  WS_STATE_CLOSED      /**< Connection terminated */
+  WS_STATE_CONNECTING, /**< Handshake (HTTP upgrade) in progress. */
+  WS_STATE_OPEN,       /**< Connection established, ready for read/write. */
+  WS_STATE_CLOSING,    /**< Close frame sent/received, awaiting ack. */
+  WS_STATE_CLOSED      /**< Connection terminated, resources freed on free(). */
 } SocketWS_State;
 
+/**
+ * @brief WebSocket endpoint roles per RFC 6455.
+ * @ingroup http
+ *
+ * Clients mask outgoing frames; servers validate masks on incoming.
+ * Set in SocketWS_Config.role.
+ *
+ * @see SocketWS_Config.role for configuration.
+ * @see RFC 6455 section 5.3 for masking requirements.
+ */
 typedef enum
 {
-  WS_ROLE_CLIENT, /**< Client role (masks frames) */
-  WS_ROLE_SERVER  /**< Server role (doesn't mask) */
+  WS_ROLE_CLIENT, /**< Client: must mask all outgoing data frames. */
+  WS_ROLE_SERVER  /**< Server: rejects unmasked incoming data frames. */
 } SocketWS_Role;
 
 /* ============================================================================
@@ -157,19 +257,28 @@ typedef enum
  * ============================================================================
  */
 
+/**
+ * @brief WebSocket-specific error codes for SocketWS_last_error().
+ * @ingroup http
+ *
+ * Returned by API functions; 0 indicates success.
+ *
+ * @see SocketWS_last_error() to retrieve after error.
+ * @see SocketWS_error_string() for descriptions.
+ */
 typedef enum
 {
-  WS_OK = 0,                  /**< Success */
-  WS_ERROR,                   /**< General error */
-  WS_ERROR_HANDSHAKE,         /**< Handshake failed */
-  WS_ERROR_PROTOCOL,          /**< Protocol violation */
-  WS_ERROR_FRAME_TOO_LARGE,   /**< Frame exceeds limit */
-  WS_ERROR_MESSAGE_TOO_LARGE, /**< Message exceeds limit */
-  WS_ERROR_INVALID_UTF8,      /**< Invalid UTF-8 in text */
-  WS_ERROR_COMPRESSION,       /**< Compression error */
-  WS_ERROR_CLOSED,            /**< Connection closed */
-  WS_ERROR_WOULD_BLOCK,       /**< Would block (non-blocking) */
-  WS_ERROR_TIMEOUT            /**< Operation timed out */
+  WS_OK = 0,                  /**< Operation succeeded. */
+  WS_ERROR,                   /**< Generic WebSocket error. */
+  WS_ERROR_HANDSHAKE,         /**< Handshake failure (invalid response/key). */
+  WS_ERROR_PROTOCOL,          /**< Protocol violation (bad opcode, etc.). */
+  WS_ERROR_FRAME_TOO_LARGE,   /**< Frame size exceeds config.max_frame_size. */
+  WS_ERROR_MESSAGE_TOO_LARGE, /**< Reassembled message exceeds config.max_message_size. */
+  WS_ERROR_INVALID_UTF8,      /**< Text frame contains invalid UTF-8. */
+  WS_ERROR_COMPRESSION,       /**< permessage-deflate compression/decompression error. */
+  WS_ERROR_CLOSED,            /**< Connection closed during operation. */
+  WS_ERROR_WOULD_BLOCK,       /**< Non-blocking I/O would block. */
+  WS_ERROR_TIMEOUT            /**< Operation timed out (ping or I/O). */
 } SocketWS_Error;
 
 /* ============================================================================
@@ -177,29 +286,39 @@ typedef enum
  * ============================================================================
  */
 
+/**
+ * @brief Configuration parameters for WebSocket instances.
+ * @ingroup http
+ *
+ * Passed to SocketWS_client_new() or SocketWS_server_accept().
+ * Defaults set by SocketWS_config_defaults().
+ *
+ * @see SocketWS_config_defaults() to initialize.
+ * @see RFC 6455 for protocol requirements on limits, etc.
+ */
 typedef struct
 {
-  SocketWS_Role role; /**< Client or server role */
+  SocketWS_Role role; /**< Role: client masks frames, server validates masks. */
 
   /* Limits */
-  size_t max_frame_size;   /**< Max single frame (default: 16MB) */
-  size_t max_message_size; /**< Max reassembled message (default: 64MB) */
-  size_t max_fragments;    /**< Max fragments per message (default: 1000) */
+  size_t max_frame_size;   /**< Maximum single frame payload size (default: 16MB). */
+  size_t max_message_size; /**< Maximum reassembled message size (default: 64MB). */
+  size_t max_fragments;    /**< Maximum fragments per message (default: 1000). */
 
   /* Validation */
-  int validate_utf8; /**< Validate UTF-8 in text frames (default: yes) */
+  int validate_utf8; /**< Enable UTF-8 validation for text frames (default: 1). */
 
   /* Extensions */
-  int enable_permessage_deflate;   /**< Enable compression (default: no) */
-  int deflate_no_context_takeover; /**< Don't reuse compression context */
-  int deflate_max_window_bits;     /**< LZ77 window size (8-15, default: 15) */
+  int enable_permessage_deflate;   /**< Offer permessage-deflate (RFC 7692, default: 0). */
+  int deflate_no_context_takeover; /**< No context takeover for deflate (default: 0). */
+  int deflate_max_window_bits;     /**< Deflate window bits (8-15, default: 15). */
 
   /* Subprotocols */
-  const char **subprotocols; /**< NULL-terminated list of subprotocols */
+  const char **subprotocols; /**< NULL-terminated array of supported subprotocols. */
 
   /* Keepalive */
-  int ping_interval_ms; /**< Auto-ping interval (0 = disabled) */
-  int ping_timeout_ms;  /**< Pong timeout */
+  int ping_interval_ms; /**< Auto-ping interval in ms (0=disabled, default: 0). */
+  int ping_timeout_ms;  /**< Timeout for pong response in ms (default: 5000). */
 } SocketWS_Config;
 
 /* ============================================================================
@@ -207,13 +326,22 @@ typedef struct
  * ============================================================================
  */
 
+/**
+ * @brief Structure representing a parsed WebSocket frame.
+ * @ingroup http
+ *
+ * Filled by internal parsing; not directly filled by user APIs.
+ * Payload points to internal buffer; do not free.
+ *
+ * @see SocketWS-private.h for internal frame parsing details.
+ */
 typedef struct
 {
-  SocketWS_Opcode opcode;       /**< Frame opcode */
-  int fin;                      /**< Final fragment flag */
-  int rsv1;                     /**< Reserved bit 1 (compression) */
-  const unsigned char *payload; /**< Payload data */
-  size_t payload_len;           /**< Payload length */
+  SocketWS_Opcode opcode;       /**< Opcode of the frame (data or control). */
+  int fin;                      /**< 1 if final fragment of message, 0 otherwise. */
+  int rsv1;                     /**< RSV1 bit: 1 if compressed (permessage-deflate). */
+  const unsigned char *payload; /**< Pointer to frame payload data (unmasked). */
+  size_t payload_len;           /**< Length of payload in bytes. */
 } SocketWS_Frame;
 
 /* ============================================================================
@@ -221,11 +349,21 @@ typedef struct
  * ============================================================================
  */
 
+/**
+ * @brief Complete reassembled WebSocket message from recv_message().
+ * @ingroup http
+ *
+ * Aggregates potentially fragmented data frames into single buffer.
+ * type is from first frame's opcode (TEXT or BINARY).
+ * Caller owns data; free with free() or arena equivalent when done.
+ *
+ * @see SocketWS_recv_message() populates this structure.
+ */
 typedef struct
 {
-  SocketWS_Opcode type; /**< TEXT or BINARY */
-  unsigned char *data;  /**< Message data (caller must free) */
-  size_t len;           /**< Message length */
+  SocketWS_Opcode type; /**< Message type: WS_OPCODE_TEXT or WS_OPCODE_BINARY. */
+  unsigned char *data;  /**< Allocated message payload (caller frees). */
+  size_t len;           /**< Total message length in bytes. */
 } SocketWS_Message;
 
 /* ============================================================================
@@ -233,13 +371,20 @@ typedef struct
  * ============================================================================
  */
 
+
 /**
- * @brief SocketWS_config_defaults - Initialize configuration with defaults
- * @ingroup core_io
- * @config: Configuration to initialize
+ * @brief Initialize WebSocket configuration with default values.
+ * @ingroup websocket
+ * @param config [out] Pointer to the configuration structure to initialize.
  *
- * @note Thread-safe: Yes
- * @ingroup core_io
+ * Sets reasonable defaults such as 16MB max frame size, UTF-8 validation enabled,
+ * compression disabled, and ping interval disabled.
+ *
+ * @return void
+ * @threadsafe Yes - pure function with no side effects.
+ * @see SocketWS_client_new() for creating client WebSockets.
+ * @see SocketWS_server_accept() for accepting server WebSockets.
+ * @see SocketWS_Config for individual field descriptions and customization.
  */
 extern void SocketWS_config_defaults (SocketWS_Config *config);
 
@@ -249,20 +394,26 @@ extern void SocketWS_config_defaults (SocketWS_Config *config);
  */
 
 /**
- * @brief SocketWS_client_new - Create client WebSocket from connected socket
- * @ingroup core_io
- * @socket: Connected TCP socket
- * @host: Host header value (required)
- * @path: Request path (e.g., "/ws", default: "/")
- * @config: Configuration (NULL for defaults)
+ * @brief Create a new client WebSocket instance from a connected TCP socket.
+ * @ingroup websocket
+ * @param socket Connected TCP socket (transferred to WebSocket; do not close externally).
+ * @param host Value for the Host header in upgrade request (required).
+ * @param path Resource path for the WebSocket endpoint (e.g., "/chat", defaults to "/").
+ * @param config Optional SocketWS_Config; NULL applies defaults via SocketWS_config_defaults().
  *
- * Creates a WebSocket in CONNECTING state. Call SocketWS_handshake() to
- * complete the HTTP upgrade.
+ * The returned instance starts in WS_STATE_CONNECTING. Call SocketWS_handshake()
+ * to send the HTTP/1.1 Upgrade request and receive the server's response.
  *
- * Returns: WebSocket instance
- * Raises: SocketWS_Failed on error
- * @note Thread-safe: Yes
- * @ingroup core_io
+ * Supports both blocking and non-blocking sockets, but non-blocking is recommended
+ * for production to avoid head-of-line blocking during handshake.
+ *
+ * @return New SocketWS_T instance, or NULL on failure (except frame raised).
+ * @throws SocketWS_Failed on invalid parameters, allocation failure, or socket issues.
+ * @threadsafe Yes - creates independent instance.
+ * @see SocketWS_config_defaults() for default configuration values.
+ * @see SocketWS_handshake() to perform the upgrade handshake.
+ * @see SocketWS_server_accept() for server-side equivalent.
+ * @see @ref SocketHTTP_Request for underlying HTTP upgrade details.
  */
 extern T SocketWS_client_new (Socket_T socket, const char *host,
                               const char *path, const SocketWS_Config *config);
@@ -273,44 +424,61 @@ extern T SocketWS_client_new (Socket_T socket, const char *host,
  */
 
 /**
- * @brief SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
- * @ingroup core_io
- * @request: Parsed HTTP request
+ * @brief Check if an HTTP request is a valid WebSocket upgrade request.
+ * @ingroup websocket
+ * @param request Pointer to parsed SocketHTTP_Request from HTTP/1.1 parser.
  *
- * Returns: 1 if WebSocket upgrade request, 0 otherwise
- * @note Thread-safe: Yes
- * @ingroup core_io
+ * Validates presence of required headers: Upgrade: websocket, Connection: Upgrade,
+ * Sec-WebSocket-Key, Sec-WebSocket-Version: 13. Optionally checks Sec-WebSocket-Protocol
+ * against configured subprotocols.
+ *
+ * @return 1 if valid WebSocket upgrade, 0 if not (missing/invalid headers).
+ * @threadsafe Yes - pure function, reads const request.
+ * @see SocketWS_server_accept() to accept the upgrade.
+ * @see SocketWS_server_reject() to reject with error response.
+ * @see SocketHTTP_Request for HTTP request structure.
  */
 extern int SocketWS_is_upgrade (const SocketHTTP_Request *request);
 
 /**
- * @brief SocketWS_server_accept - Accept WebSocket upgrade
- * @ingroup core_io
- * @socket: TCP socket with pending upgrade request
- * @request: Parsed HTTP upgrade request
- * @config: Configuration (NULL for defaults)
+ * @brief Accept a WebSocket upgrade from a parsed HTTP request on a server socket.
+ * @ingroup websocket
+ * @param socket Accepted TCP socket from Socket_accept() (transferred ownership).
+ * @param request Parsed SocketHTTP_Request confirming WebSocket upgrade via SocketWS_is_upgrade().
+ * @param config Optional SocketWS_Config; NULL uses defaults.
  *
- * Creates a WebSocket in CONNECTING state. Call SocketWS_handshake() to
- * send the HTTP 101 response.
+ * Validates request, computes Sec-WebSocket-Accept key, prepares 101 Switching Protocols
+ * response with negotiated subprotocol and extensions. Instance starts in WS_STATE_CONNECTING.
+ * Call SocketWS_handshake() to send response and transition to OPEN.
  *
- * Returns: WebSocket instance
- * Raises: SocketWS_Failed on error
- * @note Thread-safe: Yes
- * @ingroup core_io
+ * @return New SocketWS_T instance, or NULL on failure.
+ * @throws SocketWS_Failed on validation failure, allocation error, or invalid request.
+ * @throws SocketWS_ProtocolError if request headers invalid for WebSocket.
+ * @threadsafe Yes - creates independent instance.
+ * @see SocketWS_is_upgrade() to validate request first.
+ * @see SocketWS_handshake() to send the acceptance response.
+ * @see SocketWS_server_reject() for rejection cases.
+ * @see SocketHTTP_Response for response structure used internally.
  */
 extern T SocketWS_server_accept (Socket_T socket,
                                  const SocketHTTP_Request *request,
                                  const SocketWS_Config *config);
 
 /**
- * @brief SocketWS_server_reject - Reject upgrade with HTTP response
- * @ingroup core_io
- * @socket: TCP socket
- * @status_code: HTTP status (e.g., 400, 403)
- * @reason: Rejection reason
+ * @brief Reject a WebSocket upgrade request with an HTTP error response.
+ * @ingroup websocket
+ * @param socket TCP socket from accepted connection.
+ * @param status_code HTTP status code (e.g., 400 Bad Request, 403 Forbidden).
+ * @param reason Optional human-readable reason phrase for the response body.
  *
- * @note Thread-safe: Yes
- * @ingroup core_io
+ * Sends HTTP response with given status and reason in body (if provided).
+ * Closes the socket after sending. Use before SocketWS_server_accept() if upgrade invalid.
+ *
+ * @return void
+ * @throws Socket_Failed if send fails (e.g., socket closed).
+ * @threadsafe Conditional - socket must not be in use by other threads.
+ * @see SocketWS_is_upgrade() to check validity before accepting/rejecting.
+ * @see SocketHTTPServer for full HTTP server handling including upgrades.
  */
 extern void SocketWS_server_reject (Socket_T socket, int status_code,
                                     const char *reason);
@@ -321,70 +489,108 @@ extern void SocketWS_server_reject (Socket_T socket, int status_code,
  */
 
 /**
- * @brief SocketWS_free - Free WebSocket connection
- * @ingroup core_io
- * @ws: Pointer to WebSocket (set to NULL after free)
+ * @brief Dispose of a WebSocket instance, closing connection if open.
+ * @ingroup websocket
+ * @param ws [in,out] Pointer to SocketWS_T; set to NULL after disposal.
  *
- * @note Thread-safe: No
- * @ingroup core_io
+ * Performs graceful close if in OPEN or CLOSING state (sends CLOSE frame if needed).
+ * Releases all resources including underlying socket, buffers, compression context,
+ * and timers. Arena-allocated memory returned to owning arena.
+ *
+ * Safe to call on already-freed or NULL pointers.
+ *
+ * @return void
+ * @throws None - errors during close logged but not raised.
+ * @threadsafe No - instance-specific resources.
+ * @see SocketWS_close() for explicit close before free.
+ * @see SocketWS_client_new(), SocketWS_server_accept() for creation.
  */
 extern void SocketWS_free (T *ws);
 
 /**
- * @brief SocketWS_handshake - Perform/continue handshake
- * @ingroup core_io
- * @ws: WebSocket instance
+ * @brief Perform or continue the WebSocket handshake process.
+ * @ingroup websocket
+ * @param ws SocketWS_T instance in CONNECTING state.
  *
- * For clients: Sends HTTP upgrade request, receives and validates response.
- * For servers: Sends HTTP 101 response.
+ * Client mode: Sends HTTP Upgrade request with Sec-WebSocket-Key and extensions,
+ * reads response, validates 101 status, Sec-WebSocket-Accept, subprotocols, extensions.
  *
- * Returns: 0 if complete, 1 if in progress (call again), -1 on error
- * @note Thread-safe: No
- * @ingroup core_io
+ * Server mode: Sends HTTP 101 response with computed Sec-WebSocket-Accept,
+ * negotiated parameters. Validates client key if not pre-validated.
+ *
+ * Non-blocking compatible: returns 1 if more I/O needed (poll and call again).
+ * Blocks if socket is blocking.
+ *
+ * On success, transitions to WS_STATE_OPEN.
+ *
+ * @return 0 on complete success (now OPEN), 1 if pending (call again after poll),
+ *         -1 on error (check SocketWS_last_error()).
+ * @throws SocketWS_ProtocolError on invalid handshake response/request.
+ * @throws SocketWS_Failed on I/O or allocation errors.
+ * @threadsafe No - modifies instance state.
+ * @see SocketWS_state() to check current state post-call.
+ * @see SocketWS_process() for ongoing I/O after handshake.
+ * @see Socket_geterrorcode() for underlying socket errors.
  */
 extern int SocketWS_handshake (T ws);
 
 /**
- * @brief SocketWS_state - Get current state
- * @ingroup core_io
- * @ws: WebSocket instance
+ * @brief Retrieve the current state of the WebSocket connection.
+ * @ingroup websocket
+ * @param ws SocketWS_T instance.
  *
- * Returns: Current state (CONNECTING, OPEN, CLOSING, CLOSED)
- * @note Thread-safe: No (read-only, safe for status checks)
- * @ingroup core_io
+ * Possible states: WS_STATE_CONNECTING (handshake), WS_STATE_OPEN (ready),
+ * WS_STATE_CLOSING (closing handshake), WS_STATE_CLOSED (terminated).
+ *
+ * @return SocketWS_State enum value.
+ * @threadsafe Yes - atomic read of state variable.
+ * @see SocketWS_State enum for state details.
+ * @see SocketWS_handshake() which transitions from CONNECTING to OPEN.
+ * @see SocketWS_close() which initiates CLOSING.
  */
 extern SocketWS_State SocketWS_state (T ws);
 
 /**
- * @brief SocketWS_socket - Get underlying socket
- * @ingroup core_io
- * @ws: WebSocket instance
+ * @brief Access the underlying TCP socket for the WebSocket.
+ * @ingroup websocket
+ * @param ws SocketWS_T instance.
  *
- * Returns: TCP socket (do not close directly)
- * @note Thread-safe: No
- * @ingroup core_io
+ * Allows integration with external pollers or custom I/O handling.
+ * Do NOT close or modify the socket directly; use WebSocket APIs for lifecycle.
+ *
+ * @return Borrowed reference to Socket_T; valid until SocketWS_free().
+ * @threadsafe No - concurrent access may race with internal I/O.
+ * @see SocketWS_pollfd() for poll integration.
+ * @see SocketWS_process() for processing events on this socket.
+ * @see Socket_T for socket operations (use cautiously).
  */
 extern Socket_T SocketWS_socket (T ws);
 
 /**
- * @brief SocketWS_selected_subprotocol - Get negotiated subprotocol
- * @ingroup core_io
- * @ws: WebSocket instance
+ * @brief Get the negotiated WebSocket subprotocol.
+ * @ingroup http
+ * @param ws SocketWS_T instance (must be post-handshake).
  *
- * Returns: Selected subprotocol string, or NULL if none
- * @note Thread-safe: No
- * @ingroup core_io
+ * Returns the subprotocol selected from client's Sec-WebSocket-Protocol header
+ * matching one in server's config.subprotocols (server) or vice versa (client).
+ * NULL if none negotiated.
+ *
+ * String is owned by WebSocket, valid until free or re-handshake.
+ *
+ * @return Const char* to subprotocol name, or NULL.
+ * @threadsafe No - reads internal state.
+ * @see SocketWS_Config.subprotocols for configuration.
+ * @see RFC 6455 section 1.9 for subprotocol negotiation.
  */
 extern const char *SocketWS_selected_subprotocol (T ws);
 
 /**
- * @brief SocketWS_compression_enabled - Check if compression active
- * @ingroup core_io
- * @ws: WebSocket instance
- *
- * Returns: 1 if permessage-deflate enabled, 0 otherwise
- * @note Thread-safe: No
- * @ingroup core_io
+ * @brief Check if compression is enabled.
+ * @ingroup websocket
+ * @param ws WebSocket instance.
+ * @return 1 if permessage-deflate enabled, 0 otherwise.
+ * @note Thread-safe: No.
+ * @see SocketWS_Config for compression configuration.
  */
 extern int SocketWS_compression_enabled (T ws);
 
@@ -394,72 +600,81 @@ extern int SocketWS_compression_enabled (T ws);
  */
 
 /**
- * @brief SocketWS_send_text - Send text message
- * @ingroup core_io
- * @ws: WebSocket instance
- * @data: UTF-8 text data
- * @len: Length in bytes
+ * @brief Send a text message over the WebSocket (opcode TEXT).
+ * @ingroup http
+ * @param ws SocketWS_T in OPEN state.
+ * @param data Pointer to UTF-8 encoded text.
+ * @param len Length of data in bytes (may include embedded NUL).
  *
- * Data is validated for UTF-8 if validate_utf8 enabled.
- * Large messages are automatically fragmented.
+ * Validates UTF-8 if config.validate_utf8 enabled (raises on invalid).
+ * Applies masking (client) or not (server).
+ * Compresses if enabled and negotiated.
+ * Fragments if exceeds max_frame_size, using continuation frames.
+ * Queues for sending; call SocketWS_process() or poll to flush.
  *
- * Returns: 0 on success, -1 on error
- * @note Thread-safe: No
- * @ingroup core_io
+ * @return 0 on success (queued), -1 on error (check last_error).
+ * @throws SocketWS_Closed if not open.
+ * @throws SocketWS_Invalid_UTF8 if validation fails.
+ * @throws SocketWS_Failed on queue full or other issues.
+ * @threadsafe No - modifies send buffer/state.
+ * @see SocketWS_send_binary() for binary data.
+ * @see SocketWS_Config.validate_utf8 for control.
  */
 extern int SocketWS_send_text (T ws, const char *data, size_t len);
 
 /**
- * @brief SocketWS_send_binary - Send binary message
- * @ingroup core_io
- * @ws: WebSocket instance
- * @data: Binary data
- * @len: Length in bytes
+ * @brief Send a binary message over the WebSocket (opcode BINARY).
+ * @ingroup http
+ * @param ws SocketWS_T in OPEN state.
+ * @param data Pointer to arbitrary binary data.
+ * @param len Length of data in bytes.
  *
- * Returns: 0 on success, -1 on error
- * @note Thread-safe: No
- * @ingroup core_io
+ * No UTF-8 validation (binary).
+ * Applies masking/compression/fragmentation same as text.
+ * Queues for sending.
+ *
+ * @return 0 on success (queued), -1 on error.
+ * @throws SocketWS_Closed if not open.
+ * @throws SocketWS_Failed on queue or state issues.
+ * @threadsafe No.
+ * @see SocketWS_send_text() for text (with UTF-8 validation).
+ * @see SocketWS_Config.max_frame_size for fragmentation threshold.
  */
 extern int SocketWS_send_binary (T ws, const void *data, size_t len);
 
 /**
  * @brief SocketWS_ping - Send PING control frame
- * @ingroup core_io
  * @ws: WebSocket instance
  * @data: Optional payload (max 125 bytes, may be NULL)
  * @len: Payload length
  *
  * Returns: 0 on success, -1 on error
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern int SocketWS_ping (T ws, const void *data, size_t len);
 
 /**
  * @brief SocketWS_pong - Send unsolicited PONG
- * @ingroup core_io
  * @ws: WebSocket instance
  * @data: Payload (max 125 bytes, may be NULL)
  * @len: Payload length
  *
  * Returns: 0 on success, -1 on error
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern int SocketWS_pong (T ws, const void *data, size_t len);
 
 /**
- * @brief SocketWS_close - Initiate close handshake
- * @ingroup core_io
- * @ws: WebSocket instance
- * @code: Close status code (use WS_CLOSE_NORMAL for normal close)
- * @reason: Optional UTF-8 reason (max 123 bytes, may be NULL)
+ * @brief Initiate close handshake.
+ * @ingroup websocket
+ * @param ws WebSocket instance.
+ * @param code Close status code (use WS_CLOSE_NORMAL for normal close).
+ * @param reason Optional UTF-8 reason (max 123 bytes, may be NULL).
  *
  * Transitions to CLOSING state and sends CLOSE frame.
  *
- * Returns: 0 on success, -1 on error
- * @note Thread-safe: No
- * @ingroup core_io
+ * @return 0 on success, -1 on error.
+ * @note Thread-safe: No.
  */
 extern int SocketWS_close (T ws, int code, const char *reason);
 
@@ -469,31 +684,45 @@ extern int SocketWS_close (T ws, int code, const char *reason);
  */
 
 /**
- * @brief SocketWS_recv_message - Receive complete message
- * @ingroup core_io
- * @ws: WebSocket instance
- * @msg: Output message structure
+ * @brief Receive and reassemble a complete WebSocket message.
+ * @ingroup http
+ * @param ws SocketWS_T in OPEN state.
+ * @param msg [out] SocketWS_Message to populate with received data.
  *
- * Blocks until a complete message is received. Control frames
- * (PING/PONG/CLOSE) are handled automatically. Fragmented messages are
- * reassembled.
+ * Handles control frames automatically (pings ponged, closes processed).
+ * Reassembles fragmented messages up to max_message_size.
+ * Validates UTF-8 for text messages if enabled.
+ * Decompresses if negotiated.
+ * Blocks until complete message or close/error.
+ * For non-blocking: use SocketWS_process() + SocketWS_recv_available().
  *
- * Caller must free msg->data when done.
+ * Caller must free(msg->data) after use.
  *
- * Returns: 1 if message received, 0 if closed, -1 on error
- * @note Thread-safe: No
- * @ingroup core_io
+ * @return 1 on success (msg populated), 0 on clean close, -1 on error.
+ * @throws SocketWS_Closed on peer close.
+ * @throws SocketWS_ProtocolError on invalid frames.
+ * @throws SocketWS_Invalid_UTF8 on text validation failure.
+ * @threadsafe No - modifies recv state and msg.
+ * @see SocketWS_Message for structure details.
+ * @see SocketWS_recv_available() for non-blocking check.
  */
 extern int SocketWS_recv_message (T ws, SocketWS_Message *msg);
 
+
 /**
- * @brief SocketWS_recv_available - Check if data available
- * @ingroup core_io
- * @ws: WebSocket instance
+ * @brief Check for complete messages ready to receive without blocking.
+ * @ingroup http
+ * @param ws SocketWS_T instance.
  *
- * Returns: 1 if data available, 0 otherwise
- * @note Thread-safe: No
- * @ingroup core_io
+ * Useful for non-blocking event loops: poll until >0, then recv_message().
+ * Returns count of fully reassembled messages in internal queue.
+ * Handles control frames internally but doesn't return them.
+ *
+ * @return >=0 number of messages available, -1 on error (check last_error).
+ * @threadsafe Conditional - safe if no concurrent recv/process.
+ * @see SocketWS_recv_message() to consume messages.
+ * @see SocketWS_process() to advance parsing after poll events.
+ * @see SocketWS_last_error() for error details.
  */
 extern int SocketWS_recv_available (T ws);
 
@@ -504,29 +733,24 @@ extern int SocketWS_recv_available (T ws);
 
 /**
  * @brief SocketWS_pollfd - Get file descriptor for polling
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Socket file descriptor
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern int SocketWS_pollfd (T ws);
 
 /**
  * @brief SocketWS_poll_events - Get events to poll for
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Bitmask of POLL_READ, POLL_WRITE
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern unsigned SocketWS_poll_events (T ws);
 
 /**
  * @brief SocketWS_process - Process poll events
- * @ingroup core_io
  * @ws: WebSocket instance
  * @events: Events from poll
  *
@@ -535,13 +759,11 @@ extern unsigned SocketWS_poll_events (T ws);
  *
  * Returns: 0 on success, -1 on error
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern int SocketWS_process (T ws, unsigned events);
 
 /**
  * @brief SocketWS_enable_auto_ping - Enable automatic ping/pong
- * @ingroup core_io
  * @ws: WebSocket instance
  * @poll: SocketPoll instance for timer
  *
@@ -550,17 +772,14 @@ extern int SocketWS_process (T ws, unsigned events);
  *
  * Returns: 0 on success, -1 on error
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern int SocketWS_enable_auto_ping (T ws, SocketPoll_T poll);
 
 /**
  * @brief SocketWS_disable_auto_ping - Disable automatic ping/pong
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern void SocketWS_disable_auto_ping (T ws);
 
@@ -571,23 +790,36 @@ extern void SocketWS_disable_auto_ping (T ws);
 
 /**
  * @brief SocketWS_close_code - Get peer's close code
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Close code, or 0 if not received
  * @note Thread-safe: No
- * @ingroup core_io
+ */
+/**
+ * @brief Get close code from close frame.
+ * @ingroup websocket
+ * @param ws WebSocket instance.
+ * @return Close code, or -1 if not closed or no close frame received.
+ * @note Thread-safe: No.
+ * @see SocketWS_close_reason() for close reason text.
  */
 extern int SocketWS_close_code (T ws);
 
 /**
  * @brief SocketWS_close_reason - Get peer's close reason
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Close reason string, or NULL if none
  * @note Thread-safe: No
- * @ingroup core_io
+ */
+/**
+ * @brief Get close reason text from close frame.
+ * @ingroup websocket
+ * @param ws WebSocket instance.
+ * @return Close reason text, or NULL if not available.
+ * @note String is valid until WebSocket is freed.
+ * @note Thread-safe: No.
+ * @see SocketWS_close_code() for close code.
  */
 extern const char *SocketWS_close_reason (T ws);
 
@@ -598,25 +830,27 @@ extern const char *SocketWS_close_reason (T ws);
 
 /**
  * @brief SocketWS_last_error - Get last error code
- * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Last error code
  * @note Thread-safe: No
- * @ingroup core_io
  */
 extern SocketWS_Error SocketWS_last_error (T ws);
 
 /**
  * @brief SocketWS_error_string - Get human-readable error description
- * @ingroup core_io
  * @error: Error code
  *
  * Returns: Static string describing error
  * @note Thread-safe: Yes
- * @ingroup core_io
  */
 extern const char *SocketWS_error_string (SocketWS_Error error);
 
 #undef T
+/** @} */ /* websocket group */
+
+/** @} foundation */
+
+/* ... other closes if needed */
+
 #endif /* SOCKETWS_INCLUDED */

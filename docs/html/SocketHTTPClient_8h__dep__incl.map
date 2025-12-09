@@ -1,5 +1,5 @@
 <map id="SocketHTTPClient.h" name="SocketHTTPClient.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="97,5,240,31"/>
+<area shape="rect" id="Node000001" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="97,5,240,31"/>
 <area shape="rect" id="Node000002" href="$http2__client_8c.html" title=" " alt="" coords="5,79,105,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="140,40,75,81,72,76,137,36"/>
 <area shape="rect" id="Node000003" href="$http__get_8c.html" title=" " alt="" coords="129,79,209,104"/>

@@ -18,31 +18,31 @@
   <circle id="rim" cx="0" cy="0" r="7"/>
   <circle id="rim2" cx="0" cy="0" r="3.5"/>
   <g id="zoomPlus">
-    <use xlink:href="#rim" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomplus.mouseover" end="zoomplus.mouseout"/></use>
+    <use xlink:href="#rim" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomplus.mouseover" end="zoomplus.mouseout"/></use>
     <path d="M-4,0h8M0,-4v8" fill="none" stroke="white" stroke-width="1.5" pointer-events="none"/>
   </g>
   <g id="zoomMin">
-    <use xlink:href="#rim" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomminus.mouseover" end="zoomminus.mouseout"/></use>
+    <use xlink:href="#rim" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomminus.mouseover" end="zoomminus.mouseout"/></use>
     <path d="M-4,0h8" fill="none" stroke="white" stroke-width="1.5" pointer-events="none"/>
   </g>
   <g id="arrowUp" transform="translate(30 24)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowRight" transform="rotate(90) translate(36 -43)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowDown" transform="rotate(180) translate(-30 -48)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowLeft" transform="rotate(270) translate(-36 17)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="resetDef">
-    <use xlink:href="#rim2" fill="#404040"><set attributeName="fill" to="#808080" begin="reset.mouseover" end="reset.mouseout"/></use>
+    <use xlink:href="#rim2" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="reset.mouseover" end="reset.mouseout"/></use>
   </g>
 </defs>
 <script type="application/ecmascript">
@@ -50,14 +50,14 @@ var viewWidth = 1361;
 var viewHeight = 302;
 var sectionId = 'dynsection-1';
 </script>
-<script type="application/ecmascript" xlink:href="svg.min.js"/>
+<script type="application/ecmascript" xlink:href="svg.min.js" target="_top"/>
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>SocketCommon.h</title>
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Common utilities shared between Socket and SocketDgram modules.">
 <polygon fill="#999999" stroke="#666666" points="808.83,-294 713.83,-294 713.83,-275 808.83,-275 808.83,-294"/>
 <text text-anchor="middle" x="761.33" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">SocketCommon.h</text>
 </a>
@@ -66,7 +66,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Socket_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="Socket_8h.html" target="_top" xlink:title="High&#45;level TCP/IP and Unix domain socket interface.">
 <polygon fill="white" stroke="#666666" points="745.33,-239 689.33,-239 689.33,-220 745.33,-220 745.33,-239"/>
 <text text-anchor="middle" x="717.33" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">Socket.h</text>
 </a>
@@ -84,7 +84,7 @@ var sectionId = 'dynsection-1';
 <!-- Node26 -->
 <g id="Node000026" class="node">
 <title>Node26</title>
-<g id="a_Node000026"><a xlink:href="SocketDgram_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000026"><a xlink:href="SocketDgram_8h.html" target="_top" xlink:title="High&#45;level UDP/datagram socket interface with multicast and broadcast support.">
 <polygon fill="white" stroke="#666666" points="1101.83,-239 1016.83,-239 1016.83,-220 1101.83,-220 1101.83,-239"/>
 <text text-anchor="middle" x="1059.33" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDgram.h</text>
 </a>
@@ -102,7 +102,7 @@ var sectionId = 'dynsection-1';
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Asynchronous I/O operations using platform&#45;optimized mechanisms.">
 <polygon fill="white" stroke="#666666" points="988.83,-184 905.83,-184 905.83,-165 988.83,-165 988.83,-184"/>
 <text text-anchor="middle" x="947.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketAsync.h</text>
 </a>
@@ -120,7 +120,7 @@ var sectionId = 'dynsection-1';
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="SocketHTTP2_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="SocketHTTP2_8h.html" target="_top" xlink:title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">
 <polygon fill="white" stroke="#666666" points="1093.83,-184 1006.83,-184 1006.83,-165 1093.83,-165 1093.83,-184"/>
 <text text-anchor="middle" x="1050.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTP2.h</text>
 </a>
@@ -138,7 +138,7 @@ var sectionId = 'dynsection-1';
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000005"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">
 <polygon fill="white" stroke="#666666" points="549.33,-74 439.33,-74 439.33,-55 549.33,-55 549.33,-74"/>
 <text text-anchor="middle" x="494.33" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPServer.h</text>
 </a>
@@ -174,7 +174,7 @@ var sectionId = 'dynsection-1';
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHappyEyeballs_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketHappyEyeballs_8h.html" target="_top" xlink:title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections.">
 <polygon fill="white" stroke="#666666" points="727.33,-74 605.33,-74 605.33,-55 727.33,-55 727.33,-74"/>
 <text text-anchor="middle" x="666.33" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHappyEyeballs.h</text>
 </a>
@@ -192,7 +192,7 @@ var sectionId = 'dynsection-1';
 <!-- Node9 -->
 <g id="Node000009" class="node">
 <title>Node9</title>
-<g id="a_Node000009"><a xlink:href="SocketIO_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000009"><a xlink:href="SocketIO_8h.html" target="_top" xlink:title="Internal I/O abstraction layer for socket operations with TLS support.">
 <polygon fill="white" stroke="#666666" points="887.33,-184 821.33,-184 821.33,-165 887.33,-165 887.33,-184"/>
 <text text-anchor="middle" x="854.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketIO.h</text>
 </a>
@@ -210,7 +210,7 @@ var sectionId = 'dynsection-1';
 <!-- Node10 -->
 <g id="Node000010" class="node">
 <title>Node10</title>
-<g id="a_Node000010"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000010"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events.">
 <polygon fill="white" stroke="#666666" points="715.33,-129 643.33,-129 643.33,-110 715.33,-110 715.33,-129"/>
 <text text-anchor="middle" x="679.33" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll.h</text>
 </a>
@@ -228,7 +228,7 @@ var sectionId = 'dynsection-1';
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000011"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Abstract interface for platform&#45;specific polling implementations.">
 <polygon fill="white" stroke="#666666" points="897.33,-74 783.33,-74 783.33,-55 897.33,-55 897.33,-74"/>
 <text text-anchor="middle" x="840.33" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll_backend.h</text>
 </a>
@@ -246,7 +246,7 @@ var sectionId = 'dynsection-1';
 <!-- Node12 -->
 <g id="Node000012" class="node">
 <title>Node12</title>
-<g id="a_Node000012"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000012"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols.">
 <polygon fill="white" stroke="#666666" points="295.33,-74 215.33,-74 215.33,-55 295.33,-55 295.33,-74"/>
 <text text-anchor="middle" x="255.33" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketProxy.h</text>
 </a>
@@ -300,7 +300,7 @@ var sectionId = 'dynsection-1';
 <!-- Node15 -->
 <g id="Node000015" class="node">
 <title>Node15</title>
-<g id="a_Node000015"><a xlink:href="SocketPool_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000015"><a xlink:href="SocketPool_8h.html" target="_top" xlink:title="Connection pooling with automatic lifecycle management.">
 <polygon fill="white" stroke="#666666" points="1006.83,-129 931.83,-129 931.83,-110 1006.83,-110 1006.83,-129"/>
 <text text-anchor="middle" x="969.33" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPool.h</text>
 </a>
@@ -318,7 +318,7 @@ var sectionId = 'dynsection-1';
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000016"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
 <polygon fill="white" stroke="#666666" points="1214.83,-184 1111.83,-184 1111.83,-165 1214.83,-165 1214.83,-184"/>
 <text text-anchor="middle" x="1163.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect.h</text>
 </a>
@@ -336,7 +336,7 @@ var sectionId = 'dynsection-1';
 <!-- Node17 -->
 <g id="Node000017" class="node">
 <title>Node17</title>
-<g id="a_Node000017"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000017"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
 <polygon fill="white" stroke="#666666" points="245.33,-184 171.33,-184 171.33,-165 245.33,-165 245.33,-184"/>
 <text text-anchor="middle" x="208.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS.h</text>
 </a>
@@ -354,7 +354,7 @@ var sectionId = 'dynsection-1';
 <!-- Node24 -->
 <g id="Node000024" class="node">
 <title>Node24</title>
-<g id="a_Node000024"><a xlink:href="SocketWS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000024"><a xlink:href="SocketWS_8h.html" target="_top" xlink:title="WebSocket Protocol (RFC 6455) implementation with compression support.">
 <polygon fill="white" stroke="#666666" points="592.33,-184 520.33,-184 520.33,-165 592.33,-165 592.33,-184"/>
 <text text-anchor="middle" x="556.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketWS.h</text>
 </a>
@@ -507,7 +507,7 @@ var sectionId = 'dynsection-1';
 <!-- Node18 -->
 <g id="Node000018" class="node">
 <title>Node18</title>
-<g id="a_Node000018"><a xlink:href="SocketDTLSContext_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000018"><a xlink:href="SocketDTLSContext_8h.html" target="_top" xlink:title="DTLS context management with cookie protection and secure defaults.">
 <polygon fill="white" stroke="#666666" points="133.33,-129 17.33,-129 17.33,-110 133.33,-110 133.33,-129"/>
 <text text-anchor="middle" x="75.33" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLSContext.h</text>
 </a>
@@ -525,7 +525,7 @@ var sectionId = 'dynsection-1';
 <!-- Node19 -->
 <g id="Node000019" class="node">
 <title>Node19</title>
-<g id="a_Node000019"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000019"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title="TLS context management with secure defaults and certificate handling.">
 <polygon fill="white" stroke="#666666" points="309.33,-129 201.33,-129 201.33,-110 309.33,-110 309.33,-129"/>
 <text text-anchor="middle" x="255.33" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLSContext.h</text>
 </a>
@@ -570,7 +570,7 @@ var sectionId = 'dynsection-1';
 <!-- Node20 -->
 <g id="Node000020" class="node">
 <title>Node20</title>
-<g id="a_Node000020"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000020"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation.">
 <polygon fill="white" stroke="#666666" points="420.83,-74 313.83,-74 313.83,-55 420.83,-55 420.83,-74"/>
 <text text-anchor="middle" x="367.33" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPClient.h</text>
 </a>
@@ -660,7 +660,7 @@ var sectionId = 'dynsection-1';
 <!-- Node27 -->
 <g id="Node000027" class="node">
 <title>Node27</title>
-<g id="a_Node000027"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000027"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title="Datagram TLS (DTLS) protocol implementation for UDP sockets.">
 <polygon fill="white" stroke="#666666" points="1352.83,-184 1271.83,-184 1271.83,-165 1352.83,-165 1352.83,-184"/>
 <text text-anchor="middle" x="1312.33" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLS.h</text>
 </a>
@@ -680,13 +680,13 @@ var sectionId = 'dynsection-1';
 
 <g id="navigator" transform="translate(0 0)" fill="#404254">
   <rect fill="#f2f5e9" fill-opacity="0.5" stroke="#606060" stroke-width=".5" x="0" y="0" width="60" height="60"/>
-  <use id="zoomplus" xlink:href="#zoomPlus" x="17" y="9" onmousedown="handleZoom(evt,'in')"/>
-  <use id="zoomminus" xlink:href="#zoomMin" x="42" y="9" onmousedown="handleZoom(evt,'out')"/>
-  <use id="reset" xlink:href="#resetDef" x="30" y="36" onmousedown="handleReset()"/>
-   <use id="arrowup" xlink:href="#arrowUp" x="0" y="0" onmousedown="handlePan(0,-1)"/>
-  <use id="arrowright" xlink:href="#arrowRight" x="0" y="0" onmousedown="handlePan(1,0)"/>
-  <use id="arrowdown" xlink:href="#arrowDown" x="0" y="0" onmousedown="handlePan(0,1)"/>
-  <use id="arrowleft" xlink:href="#arrowLeft" x="0" y="0" onmousedown="handlePan(-1,0)"/>
+  <use id="zoomplus" xlink:href="#zoomPlus" target="_top" x="17" y="9" onmousedown="handleZoom(evt,'in')"/>
+  <use id="zoomminus" xlink:href="#zoomMin" target="_top" x="42" y="9" onmousedown="handleZoom(evt,'out')"/>
+  <use id="reset" xlink:href="#resetDef" target="_top" x="30" y="36" onmousedown="handleReset()"/>
+   <use id="arrowup" xlink:href="#arrowUp" target="_top" x="0" y="0" onmousedown="handlePan(0,-1)"/>
+  <use id="arrowright" xlink:href="#arrowRight" target="_top" x="0" y="0" onmousedown="handlePan(1,0)"/>
+  <use id="arrowdown" xlink:href="#arrowDown" target="_top" x="0" y="0" onmousedown="handlePan(0,1)"/>
+  <use id="arrowleft" xlink:href="#arrowLeft" target="_top" x="0" y="0" onmousedown="handlePan(-1,0)"/>
 </g>
 <svg viewBox="0 0 15 15" width="100%" height="30px" preserveAspectRatio="xMaxYMin meet">
  <g id="arrow_out" transform="scale(0.3 0.3)">
@@ -712,4 +712,5 @@ document.addEventListener('DOMContentLoaded', (event) => {
   highlightAdjacentNodes();
 });
 ]]></script>
+</svg>
 </svg>

@@ -117,9 +117,12 @@ $(document).ready(function(){initNavTree('SocketReconnect_8h.html',''); initResi
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketReconnect.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketReconnect.h File Reference<div class="ingroups"><a class="el" href="group__connection__mgmt.html">Connection Management Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Automatic reconnection framework with exponential backoff and circuit breaker.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
@@ -143,7 +146,8 @@ $(document).ready(function(){initNavTree('SocketReconnect_8h.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketReconnect__Policy__T" id="r_structSocketReconnect__Policy__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></td></tr>
+<tr class="memitem:structSocketReconnect__Policy__T" id="r_structSocketReconnect__Policy__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></td></tr>
+<tr class="memdesc:structSocketReconnect__Policy__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration structure for reconnection backoff and circuit breaker policy.  <a href="group__connection__mgmt.html#structSocketReconnect__Policy__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketReconnect__Policy__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -173,159 +177,130 @@ Macros</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:a58c9f07cd1532f285c63cb039c548eed" id="r_a58c9f07cd1532f285c63cb039c548eed"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a></td></tr>
 <tr class="separator:a58c9f07cd1532f285c63cb039c548eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d4cc030dc9989344d20a170b6410220" id="r_a0d4cc030dc9989344d20a170b6410220"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td></tr>
-<tr class="separator:a0d4cc030dc9989344d20a170b6410220"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae24b576ed367f734f434ef30ad8386c3" id="r_ae24b576ed367f734f434ef30ad8386c3"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td></tr>
-<tr class="separator:ae24b576ed367f734f434ef30ad8386c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d4cc030dc9989344d20a170b6410220" id="r_ga0d4cc030dc9989344d20a170b6410220"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td></tr>
+<tr class="memdesc:ga0d4cc030dc9989344d20a170b6410220"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type for state change notification callback.  <br /></td></tr>
+<tr class="separator:ga0d4cc030dc9989344d20a170b6410220"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae24b576ed367f734f434ef30ad8386c3" id="r_gae24b576ed367f734f434ef30ad8386c3"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td></tr>
+<tr class="memdesc:gae24b576ed367f734f434ef30ad8386c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type for custom health check callback.  <br /></td></tr>
+<tr class="separator:gae24b576ed367f734f434ef30ad8386c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ab0f7f9254ebc5d681f058d6b2c26f548" id="r_ab0f7f9254ebc5d681f058d6b2c26f548"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> { <br />
-&#160;&#160;<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611">RECONNECT_DISCONNECTED</a> = 0
+<tr class="memitem:gab0f7f9254ebc5d681f058d6b2c26f548" id="r_gab0f7f9254ebc5d681f058d6b2c26f548"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> { <br />
+&#160;&#160;<a class="el" href="group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611">RECONNECT_DISCONNECTED</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548aa8ce7a5b74cbcbbaf91d733e39ec0c07">RECONNECT_CONNECTING</a>
+&#160;&#160;<a class="el" href="group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548aa8ce7a5b74cbcbbaf91d733e39ec0c07">RECONNECT_CONNECTING</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548adb2277c5ef340a4d2f2e3ed98525ebe1">RECONNECT_CONNECTED</a>
+&#160;&#160;<a class="el" href="group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548adb2277c5ef340a4d2f2e3ed98525ebe1">RECONNECT_CONNECTED</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548a32ae482a193f2b27c73f934837a458a6">RECONNECT_BACKOFF</a>
+&#160;&#160;<a class="el" href="group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548a32ae482a193f2b27c73f934837a458a6">RECONNECT_BACKOFF</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548a2bf78e833dbbbf5bc17e6098ba8d55db">RECONNECT_CIRCUIT_OPEN</a>
+&#160;&#160;<a class="el" href="group__connection__mgmt.html#ggab0f7f9254ebc5d681f058d6b2c26f548a2bf78e833dbbbf5bc17e6098ba8d55db">RECONNECT_CIRCUIT_OPEN</a>
 <br />
  }</td></tr>
-<tr class="separator:ab0f7f9254ebc5d681f058d6b2c26f548"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:gab0f7f9254ebc5d681f058d6b2c26f548"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of possible states in the reconnection state machine.  <a href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">More...</a><br /></td></tr>
+<tr class="separator:gab0f7f9254ebc5d681f058d6b2c26f548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a2064741bf60283ac3315823128fa2082" id="r_a2064741bf60283ac3315823128fa2082"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new</a> (const char *host, int port, const <a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy, <a class="el" href="SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a> callback, void *userdata)</td></tr>
-<tr class="separator:a2064741bf60283ac3315823128fa2082"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d8b4dd4a693ba7acb20ff8e78defe91" id="r_a9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *conn)</td></tr>
-<tr class="separator:a9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2669844f3ad8a19649f2bc204eee8401" id="r_a2669844f3ad8a19649f2bc204eee8401"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a2669844f3ad8a19649f2bc204eee8401"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3794b861d4dad021064bae97ea12e78" id="r_aa3794b861d4dad021064bae97ea12e78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#aa3794b861d4dad021064bae97ea12e78">SocketReconnect_disconnect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:aa3794b861d4dad021064bae97ea12e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace6fc797f7fe9c6cd3319f540db4b672" id="r_ace6fc797f7fe9c6cd3319f540db4b672"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ace6fc797f7fe9c6cd3319f540db4b672">SocketReconnect_reset</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:ace6fc797f7fe9c6cd3319f540db4b672"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c91b5c376059d9c35d2623cbc6bd7b5" id="r_a4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac2a144f4c67fde49d88d0a53aa528c14" id="r_ac2a144f4c67fde49d88d0a53aa528c14"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect_state</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:ac2a144f4c67fde49d88d0a53aa528c14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a490043a4bfaba8214f5d10a3c7b956de" id="r_a490043a4bfaba8214f5d10a3c7b956de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a490043a4bfaba8214f5d10a3c7b956de"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae798b2ae7451bbc7247fe71481190ee6" id="r_ae798b2ae7451bbc7247fe71481190ee6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ae798b2ae7451bbc7247fe71481190ee6">SocketReconnect_attempts</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:ae798b2ae7451bbc7247fe71481190ee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f80ff5ac565edacc7b5c08a263ec73d" id="r_a9f80ff5ac565edacc7b5c08a263ec73d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a9f80ff5ac565edacc7b5c08a263ec73d">SocketReconnect_failures</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a9f80ff5ac565edacc7b5c08a263ec73d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2db0dea41db5bb5a7efeec947323da8" id="r_aa2db0dea41db5bb5a7efeec947323da8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#aa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:aa2db0dea41db5bb5a7efeec947323da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ca4375d521b1eddcc4cf3f75fe3b538" id="r_a4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5bf725fe34ae1de58a3ee05fbe270fd" id="r_af5bf725fe34ae1de58a3ee05fbe270fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#af5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:af5bf725fe34ae1de58a3ee05fbe270fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8dd2c1fe7147188da2be29f7623d2822" id="r_a8dd2c1fe7147188da2be29f7623d2822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
-<tr class="separator:a8dd2c1fe7147188da2be29f7623d2822"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf257c08816a36a97c02b32e034c0ea0" id="r_acf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#acf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a> check)</td></tr>
-<tr class="separator:acf257c08816a36a97c02b32e034c0ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4bc781f13408c70bfe9d28148ac87212" id="r_a4bc781f13408c70bfe9d28148ac87212"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a> (<a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy)</td></tr>
-<tr class="separator:a4bc781f13408c70bfe9d28148ac87212"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1f6cbe69ac37f9bae1efccfe98538ee" id="r_ae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#ae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, const void *buf, size_t len)</td></tr>
-<tr class="separator:ae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92485113993efb3a1302bbcb8f57a908" id="r_a92485113993efb3a1302bbcb8f57a908"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, void *buf, size_t len)</td></tr>
-<tr class="separator:a92485113993efb3a1302bbcb8f57a908"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0678924e4ecd0f43e1385d2e0b5354d4" id="r_a0678924e4ecd0f43e1385d2e0b5354d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect_state_name</a> (<a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> state)</td></tr>
-<tr class="separator:a0678924e4ecd0f43e1385d2e0b5354d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2064741bf60283ac3315823128fa2082" id="r_ga2064741bf60283ac3315823128fa2082"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a> (const char *host, int port, const <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy, <a class="el" href="group__connection__mgmt.html#ga0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga2064741bf60283ac3315823128fa2082"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new reconnecting connection.  <br /></td></tr>
+<tr class="separator:ga2064741bf60283ac3315823128fa2082"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9d8b4dd4a693ba7acb20ff8e78defe91" id="r_ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *conn)</td></tr>
+<tr class="memdesc:ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a reconnecting connection.  <br /></td></tr>
+<tr class="separator:ga9d8b4dd4a693ba7acb20ff8e78defe91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2669844f3ad8a19649f2bc204eee8401" id="r_ga2669844f3ad8a19649f2bc204eee8401"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga2669844f3ad8a19649f2bc204eee8401"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start connection process or queue for retry.  <br /></td></tr>
+<tr class="separator:ga2669844f3ad8a19649f2bc204eee8401"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa3794b861d4dad021064bae97ea12e78" id="r_gaa3794b861d4dad021064bae97ea12e78"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa3794b861d4dad021064bae97ea12e78">SocketReconnect_disconnect</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gaa3794b861d4dad021064bae97ea12e78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gracefully disconnect without triggering reconnect.  <br /></td></tr>
+<tr class="separator:gaa3794b861d4dad021064bae97ea12e78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gace6fc797f7fe9c6cd3319f540db4b672" id="r_gace6fc797f7fe9c6cd3319f540db4b672"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gace6fc797f7fe9c6cd3319f540db4b672">SocketReconnect_reset</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gace6fc797f7fe9c6cd3319f540db4b672"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset reconnection statistics and state machine.  <br /></td></tr>
+<tr class="separator:gace6fc797f7fe9c6cd3319f540db4b672"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4c91b5c376059d9c35d2623cbc6bd7b5" id="r_ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the underlying Socket_T when connected.  <br /></td></tr>
+<tr class="separator:ga4c91b5c376059d9c35d2623cbc6bd7b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac2a144f4c67fde49d88d0a53aa528c14" id="r_gac2a144f4c67fde49d88d0a53aa528c14"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect_state</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gac2a144f4c67fde49d88d0a53aa528c14"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current reconnection state.  <br /></td></tr>
+<tr class="separator:gac2a144f4c67fde49d88d0a53aa528c14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga490043a4bfaba8214f5d10a3c7b956de" id="r_ga490043a4bfaba8214f5d10a3c7b956de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga490043a4bfaba8214f5d10a3c7b956de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if reconnection is currently in connected state.  <br /></td></tr>
+<tr class="separator:ga490043a4bfaba8214f5d10a3c7b956de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae798b2ae7451bbc7247fe71481190ee6" id="r_gae798b2ae7451bbc7247fe71481190ee6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae798b2ae7451bbc7247fe71481190ee6">SocketReconnect_attempts</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gae798b2ae7451bbc7247fe71481190ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of connection attempts since last success or reset.  <br /></td></tr>
+<tr class="separator:gae798b2ae7451bbc7247fe71481190ee6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9f80ff5ac565edacc7b5c08a263ec73d" id="r_ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9f80ff5ac565edacc7b5c08a263ec73d">SocketReconnect_failures</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get count of consecutive connection failures.  <br /></td></tr>
+<tr class="separator:ga9f80ff5ac565edacc7b5c08a263ec73d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa2db0dea41db5bb5a7efeec947323da8" id="r_gaa2db0dea41db5bb5a7efeec947323da8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gaa2db0dea41db5bb5a7efeec947323da8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get file descriptor for integration with poll/epoll/kqueue.  <br /></td></tr>
+<tr class="separator:gaa2db0dea41db5bb5a7efeec947323da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ca4375d521b1eddcc4cf3f75fe3b538" id="r_ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process I/O events from poll loop.  <br /></td></tr>
+<tr class="separator:ga4ca4375d521b1eddcc4cf3f75fe3b538"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf5bf725fe34ae1de58a3ee05fbe270fd" id="r_gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate milliseconds until next timer event or action.  <br /></td></tr>
+<tr class="separator:gaf5bf725fe34ae1de58a3ee05fbe270fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8dd2c1fe7147188da2be29f7623d2822" id="r_ga8dd2c1fe7147188da2be29f7623d2822"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn)</td></tr>
+<tr class="memdesc:ga8dd2c1fe7147188da2be29f7623d2822"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advance internal timers and check for state transitions.  <br /></td></tr>
+<tr class="separator:ga8dd2c1fe7147188da2be29f7623d2822"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf257c08816a36a97c02b32e034c0ea0" id="r_gacf257c08816a36a97c02b32e034c0ea0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gacf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a> check)</td></tr>
+<tr class="memdesc:gacf257c08816a36a97c02b32e034c0ea0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure custom health check callback.  <br /></td></tr>
+<tr class="separator:gacf257c08816a36a97c02b32e034c0ea0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4bc781f13408c70bfe9d28148ac87212" id="r_ga4bc781f13408c70bfe9d28148ac87212"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a> (<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *policy)</td></tr>
+<tr class="memdesc:ga4bc781f13408c70bfe9d28148ac87212"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure for reconnection backoff and circuit breaker policy.">SocketReconnect_Policy_T</a> with default values.  <br /></td></tr>
+<tr class="separator:ga4bc781f13408c70bfe9d28148ac87212"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae1f6cbe69ac37f9bae1efccfe98538ee" id="r_gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, const void *buf, size_t len)</td></tr>
+<tr class="memdesc:gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send data, automatically reconnecting on connection loss.  <br /></td></tr>
+<tr class="separator:gae1f6cbe69ac37f9bae1efccfe98538ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga92485113993efb3a1302bbcb8f57a908" id="r_ga92485113993efb3a1302bbcb8f57a908"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a> (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, void *buf, size_t len)</td></tr>
+<tr class="memdesc:ga92485113993efb3a1302bbcb8f57a908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive data, triggering reconnect on EOF or error.  <br /></td></tr>
+<tr class="separator:ga92485113993efb3a1302bbcb8f57a908"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0678924e4ecd0f43e1385d2e0b5354d4" id="r_ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect_state_name</a> (<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> state)</td></tr>
+<tr class="memdesc:ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get human-readable name for a reconnection state.  <br /></td></tr>
+<tr class="separator:ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a3dc308919d4ccef64b7674cae246d9c0" id="r_a3dc308919d4ccef64b7674cae246d9c0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketReconnect_8h.html#a3dc308919d4ccef64b7674cae246d9c0">SocketReconnect_Failed</a></td></tr>
-<tr class="separator:a3dc308919d4ccef64b7674cae246d9c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3dc308919d4ccef64b7674cae246d9c0" id="r_ga3dc308919d4ccef64b7674cae246d9c0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga3dc308919d4ccef64b7674cae246d9c0">SocketReconnect_Failed</a></td></tr>
+<tr class="memdesc:ga3dc308919d4ccef64b7674cae246d9c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised for reconnection module failures.  <br /></td></tr>
+<tr class="separator:ga3dc308919d4ccef64b7674cae246d9c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketReconnect__Policy__T" id="structSocketReconnect__Policy__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketReconnect__Policy__T">&#9670;&#160;</a></span>SocketReconnect_Policy_T</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Automatic reconnection framework with exponential backoff and circuit breaker. </p>
+<p>Provides automatic reconnection with exponential backoff, circuit breaker pattern, and health monitoring for resilient network connections.</p>
+<p>Features:</p><ul>
+<li>Exponential backoff with configurable jitter</li>
+<li>Circuit breaker pattern to prevent connection storms</li>
+<li>Health monitoring with configurable checks</li>
+<li>State machine with event callbacks</li>
+<li>Transparent I/O passthrough with auto-reconnect on error</li>
+<li>Event loop integration via poll fd and timers</li>
+</ul>
+<p>State Machine:</p>
+<p>DISCONNECTED -&gt; CONNECTING -&gt; CONNECTED -&gt; DISCONNECTED</p>
+<p>| | v v BACKOFF &lt;--&mdash;&gt; CIRCUIT_OPEN</p>
+<p>Thread Safety:</p><ul>
+<li>SocketReconnect_T instances are NOT thread-safe</li>
+<li>Multiple instances can be used from different threads</li>
+<li>Callbacks are invoked from the same thread that calls process/tick</li>
+</ul>
+<p>Usage (I/O Passthrough): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL); SocketReconnect_connect(conn); // Use SocketReconnect_send/recv - auto-reconnects on error ssize_t n = SocketReconnect_send(conn, data, len);</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082" title="Create a new reconnecting connection.">SocketReconnect_new()</a> for creating reconnection instances. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401" title="Start connection process or queue for retry.">SocketReconnect_connect()</a> for initiating connection. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee" title="Send data, automatically reconnecting on connection loss.">SocketReconnect_send()</a> for transparent I/O operations. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga9b894da8ce452934ac1e3ab806060ae9">SocketPool_T</a> for integration with connection pools. </dd>
+<dd>
+<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> for HTTP client reconnection. </dd>
+<dd>
+SocketProxy_T for proxy reconnection scenarios. </dd></dl>
 
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketReconnect_Policy_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p><a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> - Reconnection policy configuration</p>
-<p>Controls backoff timing, circuit breaker behavior, and health monitoring. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00085">85</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="af4176c02c394de525164d44893fd5c5a" name="af4176c02c394de525164d44893fd5c5a"></a>int</td>
-<td class="fieldname">
-circuit_failure_threshold</td>
-<td class="fielddoc">
-<p>Consecutive failures before opening (default: 5) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae99b002f9e873e6b101c1356f5a7df02" name="ae99b002f9e873e6b101c1356f5a7df02"></a>int</td>
-<td class="fieldname">
-circuit_reset_timeout_ms</td>
-<td class="fielddoc">
-<p>Time before half-open probe (default: 60000ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aaa80956d1e58e84adfab7063e1936f95" name="aaa80956d1e58e84adfab7063e1936f95"></a>int</td>
-<td class="fieldname">
-health_check_interval_ms</td>
-<td class="fielddoc">
-<p>Interval between health checks, 0=disabled (default: 30000ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ade4054b2276dfc3c6b06a4b759241208" name="ade4054b2276dfc3c6b06a4b759241208"></a>int</td>
-<td class="fieldname">
-health_check_timeout_ms</td>
-<td class="fielddoc">
-<p>Timeout for health check (default: 5000ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="abf740738ffd922747329556ebd6052ca" name="abf740738ffd922747329556ebd6052ca"></a>int</td>
-<td class="fieldname">
-initial_delay_ms</td>
-<td class="fielddoc">
-<p>First retry delay (default: 100ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a803e0eaa631385205819346d33db4974" name="a803e0eaa631385205819346d33db4974"></a>double</td>
-<td class="fieldname">
-jitter</td>
-<td class="fielddoc">
-<p>Jitter factor 0.0-1.0 (default: 0.25) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="abd49613f2c70d36afe1822ca33ec1a0e" name="abd49613f2c70d36afe1822ca33ec1a0e"></a>int</td>
-<td class="fieldname">
-max_attempts</td>
-<td class="fielddoc">
-<p>Max attempts before giving up, 0=unlimited (default: 10) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aea494798fa2b191e8a0cc3b7c64ca0a2" name="aea494798fa2b191e8a0cc3b7c64ca0a2"></a>int</td>
-<td class="fieldname">
-max_delay_ms</td>
-<td class="fielddoc">
-<p>Maximum backoff cap (default: 30000ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae9bbefd1a50c5e291395ca3af920a22d" name="ae9bbefd1a50c5e291395ca3af920a22d"></a>double</td>
-<td class="fieldname">
-multiplier</td>
-<td class="fielddoc">
-<p>Backoff multiplier (default: 2.0) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a854271c42b01950918a698c6360f997c" name="a854271c42b01950918a698c6360f997c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a854271c42b01950918a698c6360f997c">&#9670;&#160;</a></span>SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS</h2>
 
@@ -338,7 +313,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00129">129</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00146">146</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -354,7 +329,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00125">125</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00142">142</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -370,7 +345,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00133">133</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00150">150</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -386,7 +361,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00137">137</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00154">154</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -402,7 +377,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00105">105</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00122">122</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -418,7 +393,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00117">117</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00134">134</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -434,7 +409,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00121">121</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00138">138</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -450,7 +425,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00109">109</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00126">126</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -466,7 +441,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00113">113</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00130">130</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -481,69 +456,12 @@ multiplier</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p><a class="el" href="SocketReconnect_8h.html">SocketReconnect.h</a> - Automatic Reconnection Framework</p>
-<p>Part of the Socket Library</p>
-<p>Provides automatic reconnection with exponential backoff, circuit breaker pattern, and health monitoring for resilient network connections.</p>
-<p>Features:</p><ul>
-<li>Exponential backoff with configurable jitter</li>
-<li>Circuit breaker pattern to prevent connection storms</li>
-<li>Health monitoring with configurable checks</li>
-<li>State machine with event callbacks</li>
-<li>Transparent I/O passthrough with auto-reconnect on error</li>
-<li>Event loop integration via poll fd and timers</li>
-</ul>
-<p>State Machine: DISCONNECTED -&gt; CONNECTING -&gt; CONNECTED -&gt; DISCONNECTED | | v v BACKOFF &lt;--&mdash;&gt; CIRCUIT_OPEN</p>
-<p>Thread Safety:</p><ul>
-<li>SocketReconnect_T instances are NOT thread-safe</li>
-<li>Multiple instances can be used from different threads</li>
-<li>Callbacks are invoked from the same thread that calls process/tick</li>
-</ul>
-<p>Usage (Event-driven): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, callback, data); SocketReconnect_connect(conn); while (running) { int timeout = SocketReconnect_next_timeout_ms(conn); SocketPoll_wait(poll, &amp;events, timeout); SocketReconnect_process(conn); // On poll events SocketReconnect_tick(conn); // Process timers } SocketReconnect_free(&amp;conn);</p>
-<p>Usage (I/O Passthrough): SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL); SocketReconnect_connect(conn); // Use SocketReconnect_send/recv - auto-reconnects on error ssize_t n = SocketReconnect_send(conn, data, len); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00054">54</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00052">52</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="a0d4cc030dc9989344d20a170b6410220" name="a0d4cc030dc9989344d20a170b6410220"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d4cc030dc9989344d20a170b6410220">&#9670;&#160;</a></span>SocketReconnect_Callback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef void(* SocketReconnect_Callback) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old_state, <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> new_state, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketReconnect_Callback - State change callback function @conn: Reconnection context @old_state: Previous state @new_state: New state @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new()</a></p>
-<p>Called when the reconnection state changes. Can be used for logging, metrics, or custom reconnection logic.</p>
-<p>NOTE: Do not call <a class="el" href="SocketReconnect_8h.html#a9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free()</a> from within the callback. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00156">156</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-
-</div>
-</div>
-<a id="ae24b576ed367f734f434ef30ad8386c3" name="ae24b576ed367f734f434ef30ad8386c3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae24b576ed367f734f434ef30ad8386c3">&#9670;&#160;</a></span>SocketReconnect_HealthCheck</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int(* SocketReconnect_HealthCheck) (<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> conn, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_ms, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketReconnect_HealthCheck - Custom health check function @conn: Reconnection context @socket: Current connected socket @timeout_ms: Maximum block time in ms (0=non-blocking check) @userdata: User data passed to <a class="el" href="SocketReconnect_8h.html#a2064741bf60283ac3315823128fa2082">SocketReconnect_new()</a></p>
-<p>Returns: 1 if healthy, 0 if unhealthy (triggers reconnect)</p>
-<p>Optional custom health check. Must respect timeout_ms to prevent DoS. Default check uses poll with timeout_ms or 100ms min. If not provided, default is used. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00174">174</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-
-</div>
-</div>
 <a id="a58c9f07cd1532f285c63cb039c548eed" name="a58c9f07cd1532f285c63cb039c548eed"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a58c9f07cd1532f285c63cb039c548eed">&#9670;&#160;</a></span>SocketReconnect_T</h2>
 
@@ -556,695 +474,7 @@ multiplier</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00055">55</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="ab0f7f9254ebc5d681f058d6b2c26f548" name="ab0f7f9254ebc5d681f058d6b2c26f548"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0f7f9254ebc5d681f058d6b2c26f548">&#9670;&#160;</a></span>SocketReconnect_State</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketReconnect_State - State of reconnection connection </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611" name="ab0f7f9254ebc5d681f058d6b2c26f548aad8113419cbfb25276d1139df9831611"></a>RECONNECT_DISCONNECTED&#160;</td><td class="fielddoc"><p>Not connected, not attempting </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ab0f7f9254ebc5d681f058d6b2c26f548aa8ce7a5b74cbcbbaf91d733e39ec0c07" name="ab0f7f9254ebc5d681f058d6b2c26f548aa8ce7a5b74cbcbbaf91d733e39ec0c07"></a>RECONNECT_CONNECTING&#160;</td><td class="fielddoc"><p>Connection attempt in progress </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ab0f7f9254ebc5d681f058d6b2c26f548adb2277c5ef340a4d2f2e3ed98525ebe1" name="ab0f7f9254ebc5d681f058d6b2c26f548adb2277c5ef340a4d2f2e3ed98525ebe1"></a>RECONNECT_CONNECTED&#160;</td><td class="fielddoc"><p>Successfully connected </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ab0f7f9254ebc5d681f058d6b2c26f548a32ae482a193f2b27c73f934837a458a6" name="ab0f7f9254ebc5d681f058d6b2c26f548a32ae482a193f2b27c73f934837a458a6"></a>RECONNECT_BACKOFF&#160;</td><td class="fielddoc"><p>Waiting before retry (exponential backoff) </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ab0f7f9254ebc5d681f058d6b2c26f548a2bf78e833dbbbf5bc17e6098ba8d55db" name="ab0f7f9254ebc5d681f058d6b2c26f548a2bf78e833dbbbf5bc17e6098ba8d55db"></a>RECONNECT_CIRCUIT_OPEN&#160;</td><td class="fielddoc"><p>Circuit breaker open, blocking attempts </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00067">67</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="ae798b2ae7451bbc7247fe71481190ee6" name="ae798b2ae7451bbc7247fe71481190ee6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae798b2ae7451bbc7247fe71481190ee6">&#9670;&#160;</a></span>SocketReconnect_attempts()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketReconnect_attempts </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_attempts - Get current attempt count @conn: Reconnection context</p>
-<p>Returns: Number of connection attempts since last success or reset Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a2669844f3ad8a19649f2bc204eee8401" name="a2669844f3ad8a19649f2bc204eee8401"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2669844f3ad8a19649f2bc204eee8401">&#9670;&#160;</a></span>SocketReconnect_connect()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_connect </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_connect - Start connecting @conn: Reconnection context</p>
-<p>Thread-safe: No</p>
-<p>Initiates connection. If already connected or connecting, this is a no-op. If in backoff or circuit-open state, respects those constraints. </p>
-
-</div>
-</div>
-<a id="aa3794b861d4dad021064bae97ea12e78" name="aa3794b861d4dad021064bae97ea12e78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa3794b861d4dad021064bae97ea12e78">&#9670;&#160;</a></span>SocketReconnect_disconnect()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_disconnect </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_disconnect - Gracefully disconnect @conn: Reconnection context</p>
-<p>Thread-safe: No</p>
-<p>Disconnects without triggering reconnection logic. Resets attempt counter. Use this for intentional disconnection (e.g., shutdown). </p>
-
-</div>
-</div>
-<a id="a9f80ff5ac565edacc7b5c08a263ec73d" name="a9f80ff5ac565edacc7b5c08a263ec73d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f80ff5ac565edacc7b5c08a263ec73d">&#9670;&#160;</a></span>SocketReconnect_failures()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketReconnect_failures </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_failures - Get consecutive failure count @conn: Reconnection context</p>
-<p>Returns: Number of consecutive failures (for circuit breaker) Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a9d8b4dd4a693ba7acb20ff8e78defe91" name="a9d8b4dd4a693ba7acb20ff8e78defe91"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9d8b4dd4a693ba7acb20ff8e78defe91">&#9670;&#160;</a></span>SocketReconnect_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> *&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_free - Free a reconnecting connection @conn: Pointer to context (will be set to NULL)</p>
-<p>Thread-safe: No</p>
-<p>Disconnects if connected and frees all resources. </p>
-
-</div>
-</div>
-<a id="a490043a4bfaba8214f5d10a3c7b956de" name="a490043a4bfaba8214f5d10a3c7b956de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a490043a4bfaba8214f5d10a3c7b956de">&#9670;&#160;</a></span>SocketReconnect_isconnected()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketReconnect_isconnected </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_isconnected - Check if currently connected @conn: Reconnection context</p>
-<p>Returns: 1 if connected, 0 otherwise Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a2064741bf60283ac3315823128fa2082" name="a2064741bf60283ac3315823128fa2082"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2064741bf60283ac3315823128fa2082">&#9670;&#160;</a></span>SocketReconnect_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> SocketReconnect_new </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>host</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>port</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *&#160;</td>
-          <td class="paramname"><em>policy</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a0d4cc030dc9989344d20a170b6410220">SocketReconnect_Callback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>@timeout_ms: Maximum time to block in ms, 0=no timeout (use with caution)</p>
-<p>New in v1.1: timeout_ms parameter for DoS protection. Custom checks should respect this limit to prevent blocking. SocketReconnect_new - Create a new reconnecting connection @host: Hostname or IP address to connect to @port: Port number (1-65535) @policy: Reconnection policy (NULL for defaults) @callback: State change callback (NULL for no callbacks) @userdata: User data passed to callbacks</p>
-<p>Returns: New reconnection context Raises: SocketReconnect_Failed on initialization failure Thread-safe: Yes (creates new instance)</p>
-<p>Creates a reconnecting connection context. The connection is not started automatically - call <a class="el" href="SocketReconnect_8h.html#a2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect()</a> to begin. </p>
-
-</div>
-</div>
-<a id="af5bf725fe34ae1de58a3ee05fbe270fd" name="af5bf725fe34ae1de58a3ee05fbe270fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5bf725fe34ae1de58a3ee05fbe270fd">&#9670;&#160;</a></span>SocketReconnect_next_timeout_ms()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketReconnect_next_timeout_ms </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_next_timeout_ms - Get time until next action @conn: Reconnection context</p>
-<p>Returns: Milliseconds until next timeout, or -1 if none pending Thread-safe: No</p>
-<p>Returns the time until:</p><ul>
-<li>Next backoff retry</li>
-<li>Circuit breaker probe</li>
-<li>Health check</li>
-</ul>
-<p>Use as timeout for poll/select. </p>
-
-</div>
-</div>
-<a id="a4bc781f13408c70bfe9d28148ac87212" name="a4bc781f13408c70bfe9d28148ac87212"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4bc781f13408c70bfe9d28148ac87212">&#9670;&#160;</a></span>SocketReconnect_policy_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_policy_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> *&#160;</td>
-          <td class="paramname"><em>policy</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_policy_defaults - Initialize policy with defaults @policy: Policy structure to initialize</p>
-<p>Thread-safe: Yes</p>
-<p>Fills policy with recommended defaults:</p><ul>
-<li>initial_delay_ms: 100ms</li>
-<li>max_delay_ms: 30000ms (30s)</li>
-<li>multiplier: 2.0</li>
-<li>jitter: 0.25 (25%)</li>
-<li>max_attempts: 10</li>
-<li>circuit_failure_threshold: 5</li>
-<li>circuit_reset_timeout_ms: 60000ms (60s)</li>
-<li>health_check_interval_ms: 30000ms (30s)</li>
-<li>health_check_timeout_ms: 5000ms (5s) </li>
-</ul>
-
-</div>
-</div>
-<a id="aa2db0dea41db5bb5a7efeec947323da8" name="aa2db0dea41db5bb5a7efeec947323da8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2db0dea41db5bb5a7efeec947323da8">&#9670;&#160;</a></span>SocketReconnect_pollfd()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketReconnect_pollfd </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_pollfd - Get file descriptor for poll integration @conn: Reconnection context</p>
-<p>Returns: File descriptor to poll for read/write events, or -1 if none Thread-safe: No</p>
-<p>Returns the underlying socket fd when connecting or connected. Add this to your poll set and call <a class="el" href="SocketReconnect_8h.html#a4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process()</a> on events. </p>
-
-</div>
-</div>
-<a id="a4ca4375d521b1eddcc4cf3f75fe3b538" name="a4ca4375d521b1eddcc4cf3f75fe3b538"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ca4375d521b1eddcc4cf3f75fe3b538">&#9670;&#160;</a></span>SocketReconnect_process()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_process </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_process - Process poll events @conn: Reconnection context</p>
-<p>Thread-safe: No</p>
-<p>Call when <a class="el" href="SocketReconnect_8h.html#aa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd()</a> becomes readable/writable. Handles connection completion, detects disconnection, etc. </p>
-
-</div>
-</div>
-<a id="a92485113993efb3a1302bbcb8f57a908" name="a92485113993efb3a1302bbcb8f57a908"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a92485113993efb3a1302bbcb8f57a908">&#9670;&#160;</a></span>SocketReconnect_recv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketReconnect_recv </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_recv - Receive data with auto-reconnect on error @conn: Reconnection context @buf: Buffer to receive data into @len: Maximum bytes to receive</p>
-<p>Returns: Bytes received (&gt;0), 0 if EOF/disconnected, -1 on error Thread-safe: No</p>
-<p>Receives data if connected. On connection error or EOF, triggers reconnection and returns 0.</p>
-<p>NOTE: This is a convenience wrapper. For more control, get the socket with <a class="el" href="SocketReconnect_8h.html#a4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket()</a> and use <a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv()</a> directly. </p>
-
-</div>
-</div>
-<a id="ace6fc797f7fe9c6cd3319f540db4b672" name="ace6fc797f7fe9c6cd3319f540db4b672"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace6fc797f7fe9c6cd3319f540db4b672">&#9670;&#160;</a></span>SocketReconnect_reset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_reset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_reset - Reset backoff and circuit breaker state @conn: Reconnection context</p>
-<p>Thread-safe: No</p>
-<p>Clears attempt counter, consecutive failures, and circuit breaker state. Does not disconnect if connected. Use after external recovery. </p>
-
-</div>
-</div>
-<a id="ae1f6cbe69ac37f9bae1efccfe98538ee" name="ae1f6cbe69ac37f9bae1efccfe98538ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1f6cbe69ac37f9bae1efccfe98538ee">&#9670;&#160;</a></span>SocketReconnect_send()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t SocketReconnect_send </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_send - Send data with auto-reconnect on error @conn: Reconnection context @buf: Data buffer to send @len: Number of bytes to send</p>
-<p>Returns: Bytes sent (&gt;0), 0 if not connected, -1 on error Thread-safe: No</p>
-<p>Sends data if connected. On connection error, triggers reconnection and returns -1 with errno set to ENOTCONN.</p>
-<p>NOTE: This is a convenience wrapper. For more control, get the socket with <a class="el" href="SocketReconnect_8h.html#a4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect_socket()</a> and use <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send()</a> directly. </p>
-
-</div>
-</div>
-<a id="acf257c08816a36a97c02b32e034c0ea0" name="acf257c08816a36a97c02b32e034c0ea0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf257c08816a36a97c02b32e034c0ea0">&#9670;&#160;</a></span>SocketReconnect_set_health_check()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_set_health_check </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#ae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a>&#160;</td>
-          <td class="paramname"><em>check</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_set_health_check - Set custom health check function @conn: Reconnection context @check: Health check function (NULL to use default)</p>
-<p>Thread-safe: No</p>
-<p>Sets a custom health check function. Custom checks must respect policy.health_check_timeout_ms to avoid blocking the calling thread. Default health check polls socket with configurable timeout. </p>
-
-</div>
-</div>
-<a id="a4c91b5c376059d9c35d2623cbc6bd7b5" name="a4c91b5c376059d9c35d2623cbc6bd7b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c91b5c376059d9c35d2623cbc6bd7b5">&#9670;&#160;</a></span>SocketReconnect_socket()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> SocketReconnect_socket </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_socket - Get underlying socket @conn: Reconnection context</p>
-<p>Returns: Connected socket, or NULL if not connected Thread-safe: No</p>
-<p>Returns the underlying socket only when in RECONNECT_CONNECTED state. Do not close or free the returned socket directly. </p>
-
-</div>
-</div>
-<a id="ac2a144f4c67fde49d88d0a53aa528c14" name="ac2a144f4c67fde49d88d0a53aa528c14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2a144f4c67fde49d88d0a53aa528c14">&#9670;&#160;</a></span>SocketReconnect_state()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> SocketReconnect_state </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_state - Get current state @conn: Reconnection context</p>
-<p>Returns: Current reconnection state Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a0678924e4ecd0f43e1385d2e0b5354d4" name="a0678924e4ecd0f43e1385d2e0b5354d4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0678924e4ecd0f43e1385d2e0b5354d4">&#9670;&#160;</a></span>SocketReconnect_state_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketReconnect_state_name </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#ab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a>&#160;</td>
-          <td class="paramname"><em>state</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_state_name - Get string name for state @state: Reconnection state</p>
-<p>Returns: Static string with state name Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a8dd2c1fe7147188da2be29f7623d2822" name="a8dd2c1fe7147188da2be29f7623d2822"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8dd2c1fe7147188da2be29f7623d2822">&#9670;&#160;</a></span>SocketReconnect_tick()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketReconnect_tick </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a>&#160;</td>
-          <td class="paramname"><em>conn</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketReconnect_tick - Process timers @conn: Reconnection context</p>
-<p>Thread-safe: No</p>
-<p>Call periodically or when <a class="el" href="SocketReconnect_8h.html#af5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms()</a> expires. Handles backoff retry, circuit breaker state transitions, health checks. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a3dc308919d4ccef64b7674cae246d9c0" name="a3dc308919d4ccef64b7674cae246d9c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3dc308919d4ccef64b7674cae246d9c0">&#9670;&#160;</a></span>SocketReconnect_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketReconnect_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00053">53</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>

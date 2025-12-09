@@ -5,61 +5,106 @@
 #include <stddef.h>
 
 /**
+ * @defgroup test_framework Test Framework
+ * @brief Exception-based testing framework for unit and integration testing.
+ * @{
+ * Provides automatic test registration, comprehensive assertion macros, and detailed
+ * failure reporting. Designed specifically for the socket library's testing needs.
+ * @see @ref utilities for other helper modules.
+ * @see @ref foundation for core infrastructure this framework builds upon.
+ */
+
+/**
  * @file Test.h
- * @ingroup foundation
  * @brief Exception-based test framework for unit and integration testing.
+ * @ingroup test_framework
  *
- * Features:
- * - Exception-based test assertions
- * - Automatic test registration
- * - Test result reporting (pass/fail counts)
- * - File/line tracking for failures
- * - Minimal API surface
- *
- * Usage:
- *   TEST(test_name)
- *   {
- *       ASSERT(condition);
- *       ASSERT_EQ(expected, actual);
- *       ASSERT_NULL(ptr);
- *   }
- *   int main(void)
- *   {
- *       Test_run_all();
- *       return Test_get_failures() > 0 ? 1 : 0;
- *   }
+ * Provides a minimal, exception-based testing framework designed for the socket library.
+ * Features automatic test registration, comprehensive assertion macros, and detailed
+ * failure reporting with file/line information.
  *
  * @see TEST() macro for test registration.
  * @see ASSERT() macros for test assertions.
- * @see Test_run_all() for running all tests.
+ * @see Test_run_all() for executing test suites.
+ * @see @ref foundation for core infrastructure components.
  */
 
+/**
+ * @brief Opaque test framework type.
+ * @ingroup test_framework
+ *
+ * Internal test framework state - use the provided macros and functions
+ * for all test operations.
+ *
+ * @see TEST() macro for creating test functions.
+ * @see Test_run_all() for executing tests.
+ */
 #define T Test_T
 typedef struct T *T;
 
-/* Exception type for test failures */
+/**
+ * @brief Exception raised when test assertions fail.
+ * @ingroup test_framework
+ *
+ * This exception is raised by ASSERT() macros when test conditions are not met.
+ * Test functions should be wrapped in TRY/EXCEPT blocks to handle failures gracefully,
+ * allowing FINALLY blocks to execute for proper resource cleanup.
+ *
+ * @see ASSERT() macros for assertion functions that raise this exception.
+ * @see Except_T for exception handling patterns.
+ * @see TRY/EXCEPT constructs for handling test failures.
+ */
 extern const Except_T Test_Failed;
 
 /**
- * Test_run_all - Run all registered tests
- * Executes all tests registered via TEST() macro and prints summary.
- * Tests are executed in registration order.
+ * @brief Execute all registered tests and display results.
+ * @ingroup test_framework
+ *
+ * Runs all tests that have been registered using the TEST() macro in registration order.
+ * Prints detailed results including pass/fail counts, test names, and failure details.
+ * Tests are executed sequentially - if one test fails, subsequent tests still run.
+ *
+ * @see TEST() macro for registering tests.
+ * @see Test_get_failures() for checking results programmatically.
+ * @see Test_Failed for the exception raised by failed assertions.
  */
 extern void Test_run_all (void);
 
 /**
- * Test_get_failures - Get number of failed tests
- * Returns: Number of tests that failed (0 if all passed)
+ * @brief Get the number of failed tests from the last test run.
+ * @ingroup test_framework
+ *
+ * Returns the count of tests that failed during the most recent execution of Test_run_all().
+ * Returns 0 if all tests passed or if no tests have been run yet.
+ *
+ * @return Number of failed tests (0 indicates success).
+ * @see Test_run_all() for executing the test suite.
  */
 extern int Test_get_failures (void);
 
 /**
- * Test registration macro - declares and registers a test function
- * Usage:
- *   TEST(test_arena_allocation)
- *   {
- *       // test code
- *   }
+ * @brief Macro for declaring and registering test functions.
+ * @ingroup test_framework
+ *
+ * Automatically registers a test function with the test framework using GCC constructor
+ * attributes. Tests are executed in registration order when Test_run_all() is called.
+ *
+ * Example usage:
+ * @code
+ * TEST(test_memory_allocation)
+ * {
+ *     Arena_T arena = Arena_new();
+ *     ASSERT_NOT_NULL(arena);
+ *     void *ptr = Arena_alloc(arena, 1024, __FILE__, __LINE__);
+ *     ASSERT_NOT_NULL(ptr);
+ *     Arena_free(&arena);
+ * }
+ * @endcode
+ *
+ * @param name Test function name (without quotes).
+ * @see Test_run_all() for executing registered tests.
+ * @see ASSERT() macros for test assertions.
+ * @see Test_register() for internal registration mechanism.
  */
 #define TEST(name)                                                            \
   static void test_##name (void);                                             \
@@ -69,16 +114,33 @@ extern int Test_get_failures (void);
   }                                                                           \
   static void test_##name (void)
 
-/* Internal registration function - do not call directly */
+/**
+ * @brief Internal function for registering test functions.
+ * @ingroup test_framework
+ *
+ * This function is called automatically by the TEST() macro and should not be
+ * invoked directly by user code. It maintains the internal registry of test functions.
+ *
+ * @param name Test name string.
+ * @param func Test function pointer.
+ * @internal This is an internal implementation detail.
+ * @see TEST() macro for the public registration interface.
+ */
 extern void Test_register (const char *name, void (*func) (void));
 
 /**
- * ASSERT - Basic assertion macro
- * @condition: Condition that must be true
- * Raises Test_Failed if condition is false and aborts the current test.
+ * @brief Assert that a condition evaluates to true.
+ * @ingroup test_framework
  *
- * Uses RAISE(Test_Failed) instead of return to ensure FINALLY blocks
- * execute for proper resource cleanup when used inside TRY blocks.
+ * Evaluates the given condition and raises Test_Failed if it is false (0).
+ * The test function is aborted immediately, but FINALLY blocks in TRY/EXCEPT
+ * constructs will still execute for proper resource cleanup.
+ *
+ * @param condition Boolean expression that must evaluate to true.
+ * @throws Test_Failed if condition is false.
+ * @see ASSERT_EQ() for equality assertions.
+ * @see ASSERT_NULL() for NULL pointer assertions.
+ * @see Test_Failed for the exception type raised.
  */
 #define ASSERT(condition)                                                     \
   do                                                                          \
@@ -92,13 +154,18 @@ extern void Test_register (const char *name, void (*func) (void));
   while (0)
 
 /**
- * ASSERT_EQ - Equality assertion macro
- * @expected: Expected value
- * @actual: Actual value
- * Raises Test_Failed if values are not equal and aborts the current test.
- * Works with any comparable types.
+ * @brief Assert that two values are equal.
+ * @ingroup test_framework
  *
- * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
+ * Compares expected and actual values using != operator. Raises Test_Failed
+ * if they are not equal, aborting the current test but ensuring FINALLY blocks
+ * execute for proper resource cleanup.
+ *
+ * @param expected The expected value.
+ * @param actual The actual value to compare against expected.
+ * @throws Test_Failed if values are not equal.
+ * @see ASSERT_NE() for inequality assertions.
+ * @see ASSERT() for general boolean assertions.
  */
 #define ASSERT_EQ(expected, actual)                                           \
   do                                                                          \
@@ -112,12 +179,18 @@ extern void Test_register (const char *name, void (*func) (void));
   while (0)
 
 /**
- * ASSERT_NE - Inequality assertion macro
- * @expected: Value that should not equal actual
- * @actual: Actual value
- * Raises Test_Failed if values are equal and aborts the current test.
+ * @brief Assert that two values are not equal.
+ * @ingroup test_framework
  *
- * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
+ * Compares expected and actual values using == operator. Raises Test_Failed
+ * if they are equal (when they should not be), aborting the current test but
+ * ensuring FINALLY blocks execute for proper resource cleanup.
+ *
+ * @param expected The value that should not equal actual.
+ * @param actual The actual value to compare against expected.
+ * @throws Test_Failed if values are equal.
+ * @see ASSERT_EQ() for equality assertions.
+ * @see ASSERT() for general boolean assertions.
  */
 #define ASSERT_NE(expected, actual)                                           \
   do                                                                          \
@@ -131,11 +204,17 @@ extern void Test_register (const char *name, void (*func) (void));
   while (0)
 
 /**
- * ASSERT_NULL - NULL pointer assertion macro
- * @ptr: Pointer that must be NULL
- * Raises Test_Failed if pointer is not NULL and aborts the current test.
+ * @brief Assert that a pointer is NULL.
+ * @ingroup test_framework
  *
- * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
+ * Verifies that the given pointer is NULL. Raises Test_Failed if the pointer
+ * is not NULL, aborting the current test but ensuring FINALLY blocks execute
+ * for proper resource cleanup.
+ *
+ * @param ptr Pointer that must be NULL.
+ * @throws Test_Failed if pointer is not NULL.
+ * @see ASSERT_NOT_NULL() for non-NULL assertions.
+ * @see ASSERT() for general boolean assertions.
  */
 #define ASSERT_NULL(ptr)                                                      \
   do                                                                          \
@@ -150,11 +229,17 @@ extern void Test_register (const char *name, void (*func) (void));
   while (0)
 
 /**
- * ASSERT_NOT_NULL - Non-NULL pointer assertion macro
- * @ptr: Pointer that must not be NULL
- * Raises Test_Failed if pointer is NULL and aborts the current test.
+ * @brief Assert that a pointer is not NULL.
+ * @ingroup test_framework
  *
- * Uses RAISE(Test_Failed) to ensure FINALLY blocks execute.
+ * Verifies that the given pointer is not NULL. Raises Test_Failed if the pointer
+ * is NULL, aborting the current test but ensuring FINALLY blocks execute
+ * for proper resource cleanup.
+ *
+ * @param ptr Pointer that must not be NULL.
+ * @throws Test_Failed if pointer is NULL.
+ * @see ASSERT_NULL() for NULL assertions.
+ * @see ASSERT() for general boolean assertions.
  */
 #define ASSERT_NOT_NULL(ptr)                                                  \
   do                                                                          \
@@ -168,12 +253,53 @@ extern void Test_register (const char *name, void (*func) (void));
     }                                                                         \
   while (0)
 
-/* Internal failure reporting functions - do not call directly */
+/**
+ * @brief Internal function for reporting test failures.
+ * @ingroup test_framework
+ *
+ * Called by ASSERT() macros to report failure details. Should not be called directly.
+ *
+ * @param message Failure message.
+ * @param file Source file where failure occurred.
+ * @param line Line number where failure occurred.
+ * @internal Implementation detail of assertion macros.
+ * @see ASSERT() macro for public assertion interface.
+ */
 extern void Test_fail (const char *message, const char *file, int line);
+
+/**
+ * @brief Internal function for reporting equality assertion failures.
+ * @ingroup test_framework
+ *
+ * Called by ASSERT_EQ() macro to report detailed equality failure information.
+ *
+ * @param expected_str String representation of expected value.
+ * @param actual_str String representation of actual value.
+ * @param file Source file where failure occurred.
+ * @param line Line number where failure occurred.
+ * @internal Implementation detail of assertion macros.
+ * @see ASSERT_EQ() macro for public assertion interface.
+ */
 extern void Test_fail_eq (const char *expected_str, const char *actual_str,
                           const char *file, int line);
+
+/**
+ * @brief Internal function for reporting inequality assertion failures.
+ * @ingroup test_framework
+ *
+ * Called by ASSERT_NE() macro to report detailed inequality failure information.
+ *
+ * @param expected_str String representation of expected value.
+ * @param actual_str String representation of actual value.
+ * @param file Source file where failure occurred.
+ * @param line Line number where failure occurred.
+ * @internal Implementation detail of assertion macros.
+ * @see ASSERT_NE() macro for public assertion interface.
+ */
 extern void Test_fail_ne (const char *expected_str, const char *actual_str,
                           const char *file, int line);
 
 #undef T
+
+/** @} */ // Close test_framework group
 #endif

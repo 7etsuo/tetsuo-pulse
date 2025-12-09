@@ -112,9 +112,12 @@ $(document).ready(function(){initNavTree('SocketDTLSConfig_8h.html',''); initRes
 <div class="header">
   <div class="summary">
 <a href="#define-members">Macros</a>  </div>
-  <div class="headertitle"><div class="title">SocketDTLSConfig.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketDTLSConfig.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>DTLS configuration constants and secure defaults.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;openssl/ssl.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketDTLSConfig.h:</div>
@@ -128,557 +131,92 @@ $(document).ready(function(){initNavTree('SocketDTLSConfig_8h.html',''); initRes
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:abc3e53580ef4039e6bd2b0453f1dec35" id="r_abc3e53580ef4039e6bd2b0453f1dec35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#abc3e53580ef4039e6bd2b0453f1dec35">SOCKET_DTLS_MIN_VERSION</a>&#160;&#160;&#160;DTLS1_2_VERSION</td></tr>
-<tr class="separator:abc3e53580ef4039e6bd2b0453f1dec35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a30edede1360b062e9c399fd7bb73daeb" id="r_a30edede1360b062e9c399fd7bb73daeb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a30edede1360b062e9c399fd7bb73daeb">SOCKET_DTLS_MAX_VERSION</a>&#160;&#160;&#160;DTLS1_2_VERSION</td></tr>
-<tr class="separator:a30edede1360b062e9c399fd7bb73daeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a26d2482e8ab9e3023996ea54a1e2b93a" id="r_a26d2482e8ab9e3023996ea54a1e2b93a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a26d2482e8ab9e3023996ea54a1e2b93a">SOCKET_DTLS_CIPHERSUITES</a></td></tr>
-<tr class="separator:a26d2482e8ab9e3023996ea54a1e2b93a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3752ff3ec87ae648dca7a04ec26ac7ad" id="r_a3752ff3ec87ae648dca7a04ec26ac7ad"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a3752ff3ec87ae648dca7a04ec26ac7ad">SOCKET_DTLS_DEFAULT_MTU</a>&#160;&#160;&#160;1400</td></tr>
-<tr class="separator:a3752ff3ec87ae648dca7a04ec26ac7ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4e20e95db1f3cb5f21c2d10649ac36da" id="r_a4e20e95db1f3cb5f21c2d10649ac36da"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a>&#160;&#160;&#160;576</td></tr>
-<tr class="separator:a4e20e95db1f3cb5f21c2d10649ac36da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3ac75939ec0806b6b2bbcc594aa16c55" id="r_a3ac75939ec0806b6b2bbcc594aa16c55"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a>&#160;&#160;&#160;9000</td></tr>
-<tr class="separator:a3ac75939ec0806b6b2bbcc594aa16c55"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f08bebbfcba5b41f95024251becb4bd" id="r_a7f08bebbfcba5b41f95024251becb4bd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a7f08bebbfcba5b41f95024251becb4bd">SOCKET_DTLS_MAX_RECORD_SIZE</a>&#160;&#160;&#160;16384</td></tr>
-<tr class="separator:a7f08bebbfcba5b41f95024251becb4bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adc0eac3a553975d605f281a788d3a884" id="r_adc0eac3a553975d605f281a788d3a884"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#adc0eac3a553975d605f281a788d3a884">SOCKET_DTLS_RECORD_OVERHEAD</a>&#160;&#160;&#160;64</td></tr>
-<tr class="separator:adc0eac3a553975d605f281a788d3a884"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5514d14a0a82cfae0d503315e3eee143" id="r_a5514d14a0a82cfae0d503315e3eee143"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a5514d14a0a82cfae0d503315e3eee143">SOCKET_DTLS_MAX_PAYLOAD</a>&#160;&#160;&#160;  (<a class="el" href="SocketDTLSConfig_8h.html#a3752ff3ec87ae648dca7a04ec26ac7ad">SOCKET_DTLS_DEFAULT_MTU</a> - <a class="el" href="SocketDTLSConfig_8h.html#adc0eac3a553975d605f281a788d3a884">SOCKET_DTLS_RECORD_OVERHEAD</a> - 28)</td></tr>
-<tr class="separator:a5514d14a0a82cfae0d503315e3eee143"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a89aefff932cc08acb034d8c67cdb6bed" id="r_a89aefff932cc08acb034d8c67cdb6bed"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a89aefff932cc08acb034d8c67cdb6bed">SOCKET_DTLS_COOKIE_LEN</a>&#160;&#160;&#160;32</td></tr>
-<tr class="separator:a89aefff932cc08acb034d8c67cdb6bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9e9f01674c7cbf477f77366cc88c5790" id="r_a9e9f01674c7cbf477f77366cc88c5790"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a9e9f01674c7cbf477f77366cc88c5790">SOCKET_DTLS_COOKIE_SECRET_LEN</a>&#160;&#160;&#160;32</td></tr>
-<tr class="separator:a9e9f01674c7cbf477f77366cc88c5790"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a975d2fe81acd04965feb450aa7bf28c5" id="r_a975d2fe81acd04965feb450aa7bf28c5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a975d2fe81acd04965feb450aa7bf28c5">SOCKET_DTLS_COOKIE_LIFETIME_SEC</a>&#160;&#160;&#160;60</td></tr>
-<tr class="separator:a975d2fe81acd04965feb450aa7bf28c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a66094f34cc81cc40b65329dc209d6096" id="r_a66094f34cc81cc40b65329dc209d6096"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a66094f34cc81cc40b65329dc209d6096">SOCKET_DTLS_MAX_PENDING_COOKIES</a>&#160;&#160;&#160;1000</td></tr>
-<tr class="separator:a66094f34cc81cc40b65329dc209d6096"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b3017975dec54b0743d7d23ed6667b5" id="r_a2b3017975dec54b0743d7d23ed6667b5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a2b3017975dec54b0743d7d23ed6667b5">SOCKET_DTLS_INITIAL_TIMEOUT_MS</a>&#160;&#160;&#160;1000</td></tr>
-<tr class="separator:a2b3017975dec54b0743d7d23ed6667b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab68a21771cbdedd0e891ba7e9784c668" id="r_ab68a21771cbdedd0e891ba7e9784c668"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
-<tr class="separator:ab68a21771cbdedd0e891ba7e9784c668"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeac9f29b196910c31f0ca88253dc7265" id="r_aeac9f29b196910c31f0ca88253dc7265"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#aeac9f29b196910c31f0ca88253dc7265">SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
-<tr class="separator:aeac9f29b196910c31f0ca88253dc7265"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a68b8c2dba420bccf1c37a01884a1408a" id="r_a68b8c2dba420bccf1c37a01884a1408a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a68b8c2dba420bccf1c37a01884a1408a">SOCKET_DTLS_MAX_RETRANSMITS</a>&#160;&#160;&#160;12</td></tr>
-<tr class="separator:a68b8c2dba420bccf1c37a01884a1408a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5752ace7cf4781e4dad0786bd493af2e" id="r_a5752ace7cf4781e4dad0786bd493af2e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a5752ace7cf4781e4dad0786bd493af2e">SOCKET_DTLS_SESSION_CACHE_SIZE</a>&#160;&#160;&#160;1000</td></tr>
-<tr class="separator:a5752ace7cf4781e4dad0786bd493af2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b97166b3033d92fb8fb9dca5c70ea4f" id="r_a2b97166b3033d92fb8fb9dca5c70ea4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a2b97166b3033d92fb8fb9dca5c70ea4f">SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT</a>&#160;&#160;&#160;300L</td></tr>
-<tr class="separator:a2b97166b3033d92fb8fb9dca5c70ea4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d22e3b756e5a6f1c5df5d05a94e8de9" id="r_a6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a6d22e3b756e5a6f1c5df5d05a94e8de9">SOCKET_DTLS_ERROR_BUFSIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:a6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83416fe8d965d7133943298dcd693bd3" id="r_a83416fe8d965d7133943298dcd693bd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a83416fe8d965d7133943298dcd693bd3">SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
-<tr class="separator:a83416fe8d965d7133943298dcd693bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ce437be6ce966c60ba60e165485bb4a" id="r_a0ce437be6ce966c60ba60e165485bb4a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a0ce437be6ce966c60ba60e165485bb4a">SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH</a>&#160;&#160;&#160;10</td></tr>
-<tr class="separator:a0ce437be6ce966c60ba60e165485bb4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae00f82ec2c7d49c2aa2ecdaa98754371" id="r_ae00f82ec2c7d49c2aa2ecdaa98754371"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ae00f82ec2c7d49c2aa2ecdaa98754371">SOCKET_DTLS_MAX_SNI_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:ae00f82ec2c7d49c2aa2ecdaa98754371"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab718fe1ccbb2793374a74bdd3fad5902" id="r_ab718fe1ccbb2793374a74bdd3fad5902"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ab718fe1ccbb2793374a74bdd3fad5902">SOCKET_DTLS_MAX_ALPN_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:ab718fe1ccbb2793374a74bdd3fad5902"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afcde6945b87c4def2497c74bf3115e87" id="r_afcde6945b87c4def2497c74bf3115e87"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#afcde6945b87c4def2497c74bf3115e87">SOCKET_DTLS_MAX_ALPN_PROTOCOLS</a>&#160;&#160;&#160;16</td></tr>
-<tr class="separator:afcde6945b87c4def2497c74bf3115e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c4f3d639af33633c811568f89124e6d" id="r_a8c4f3d639af33633c811568f89124e6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a8c4f3d639af33633c811568f89124e6d">SOCKET_DTLS_MAX_PATH_LEN</a>&#160;&#160;&#160;4096</td></tr>
-<tr class="separator:a8c4f3d639af33633c811568f89124e6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab42fd5a40a391bb5d2e3c5f44a1b24fa" id="r_ab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#ab42fd5a40a391bb5d2e3c5f44a1b24fa">SOCKET_DTLS_MAX_FILE_SIZE</a>&#160;&#160;&#160;((size_t)(1ULL &lt;&lt; 20))  /* 1MB */</td></tr>
-<tr class="separator:ab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a187a9aeb5d1836c6756595bde48e659e" id="r_a187a9aeb5d1836c6756595bde48e659e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#a187a9aeb5d1836c6756595bde48e659e">SOCKET_DTLS_VALID_MTU</a>(mtu)</td></tr>
-<tr class="separator:a187a9aeb5d1836c6756595bde48e659e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac963ab68af70b569e6ee98ae7062887" id="r_aac963ab68af70b569e6ee98ae7062887"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSConfig_8h.html#aac963ab68af70b569e6ee98ae7062887">SOCKET_DTLS_VALID_TIMEOUT</a>(ms)&#160;&#160;&#160;  ((int) (ms) &gt;= 0 &amp;&amp; (int) (ms) &lt;= <a class="el" href="SocketDTLSConfig_8h.html#ab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>)</td></tr>
-<tr class="separator:aac963ab68af70b569e6ee98ae7062887"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabc3e53580ef4039e6bd2b0453f1dec35" id="r_gabc3e53580ef4039e6bd2b0453f1dec35"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gabc3e53580ef4039e6bd2b0453f1dec35">SOCKET_DTLS_MIN_VERSION</a>&#160;&#160;&#160;DTLS1_2_VERSION</td></tr>
+<tr class="memdesc:gabc3e53580ef4039e6bd2b0453f1dec35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum supported DTLS protocol version.  <br /></td></tr>
+<tr class="separator:gabc3e53580ef4039e6bd2b0453f1dec35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga30edede1360b062e9c399fd7bb73daeb" id="r_ga30edede1360b062e9c399fd7bb73daeb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga30edede1360b062e9c399fd7bb73daeb">SOCKET_DTLS_MAX_VERSION</a>&#160;&#160;&#160;DTLS1_2_VERSION</td></tr>
+<tr class="memdesc:ga30edede1360b062e9c399fd7bb73daeb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum supported DTLS protocol version.  <br /></td></tr>
+<tr class="separator:ga30edede1360b062e9c399fd7bb73daeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga26d2482e8ab9e3023996ea54a1e2b93a" id="r_ga26d2482e8ab9e3023996ea54a1e2b93a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga26d2482e8ab9e3023996ea54a1e2b93a">SOCKET_DTLS_CIPHERSUITES</a></td></tr>
+<tr class="memdesc:ga26d2482e8ab9e3023996ea54a1e2b93a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Preferred DTLS ciphersuites string for secure configuration.  <br /></td></tr>
+<tr class="separator:ga26d2482e8ab9e3023996ea54a1e2b93a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3752ff3ec87ae648dca7a04ec26ac7ad" id="r_ga3752ff3ec87ae648dca7a04ec26ac7ad"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga3752ff3ec87ae648dca7a04ec26ac7ad">SOCKET_DTLS_DEFAULT_MTU</a>&#160;&#160;&#160;1400</td></tr>
+<tr class="memdesc:ga3752ff3ec87ae648dca7a04ec26ac7ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default MTU for DTLS path.  <br /></td></tr>
+<tr class="separator:ga3752ff3ec87ae648dca7a04ec26ac7ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4e20e95db1f3cb5f21c2d10649ac36da" id="r_ga4e20e95db1f3cb5f21c2d10649ac36da"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a>&#160;&#160;&#160;576</td></tr>
+<tr class="memdesc:ga4e20e95db1f3cb5f21c2d10649ac36da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum allowable MTU value.  <br /></td></tr>
+<tr class="separator:ga4e20e95db1f3cb5f21c2d10649ac36da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ac75939ec0806b6b2bbcc594aa16c55" id="r_ga3ac75939ec0806b6b2bbcc594aa16c55"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a>&#160;&#160;&#160;9000</td></tr>
+<tr class="memdesc:ga3ac75939ec0806b6b2bbcc594aa16c55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowable MTU value.  <br /></td></tr>
+<tr class="separator:ga3ac75939ec0806b6b2bbcc594aa16c55"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7f08bebbfcba5b41f95024251becb4bd" id="r_ga7f08bebbfcba5b41f95024251becb4bd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga7f08bebbfcba5b41f95024251becb4bd">SOCKET_DTLS_MAX_RECORD_SIZE</a>&#160;&#160;&#160;16384</td></tr>
+<tr class="separator:ga7f08bebbfcba5b41f95024251becb4bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadc0eac3a553975d605f281a788d3a884" id="r_gadc0eac3a553975d605f281a788d3a884"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gadc0eac3a553975d605f281a788d3a884">SOCKET_DTLS_RECORD_OVERHEAD</a>&#160;&#160;&#160;64</td></tr>
+<tr class="separator:gadc0eac3a553975d605f281a788d3a884"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5514d14a0a82cfae0d503315e3eee143" id="r_ga5514d14a0a82cfae0d503315e3eee143"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga5514d14a0a82cfae0d503315e3eee143">SOCKET_DTLS_MAX_PAYLOAD</a>&#160;&#160;&#160;  (<a class="el" href="group__dtls__config.html#ga3752ff3ec87ae648dca7a04ec26ac7ad">SOCKET_DTLS_DEFAULT_MTU</a> - <a class="el" href="group__dtls__config.html#gadc0eac3a553975d605f281a788d3a884">SOCKET_DTLS_RECORD_OVERHEAD</a> - 28)</td></tr>
+<tr class="separator:ga5514d14a0a82cfae0d503315e3eee143"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89aefff932cc08acb034d8c67cdb6bed" id="r_ga89aefff932cc08acb034d8c67cdb6bed"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga89aefff932cc08acb034d8c67cdb6bed">SOCKET_DTLS_COOKIE_LEN</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:ga89aefff932cc08acb034d8c67cdb6bed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Length of DTLS hello cookie in bytes.  <br /></td></tr>
+<tr class="separator:ga89aefff932cc08acb034d8c67cdb6bed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9e9f01674c7cbf477f77366cc88c5790" id="r_ga9e9f01674c7cbf477f77366cc88c5790"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga9e9f01674c7cbf477f77366cc88c5790">SOCKET_DTLS_COOKIE_SECRET_LEN</a>&#160;&#160;&#160;32</td></tr>
+<tr class="separator:ga9e9f01674c7cbf477f77366cc88c5790"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga975d2fe81acd04965feb450aa7bf28c5" id="r_ga975d2fe81acd04965feb450aa7bf28c5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga975d2fe81acd04965feb450aa7bf28c5">SOCKET_DTLS_COOKIE_LIFETIME_SEC</a>&#160;&#160;&#160;60</td></tr>
+<tr class="separator:ga975d2fe81acd04965feb450aa7bf28c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga66094f34cc81cc40b65329dc209d6096" id="r_ga66094f34cc81cc40b65329dc209d6096"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga66094f34cc81cc40b65329dc209d6096">SOCKET_DTLS_MAX_PENDING_COOKIES</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="separator:ga66094f34cc81cc40b65329dc209d6096"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2b3017975dec54b0743d7d23ed6667b5" id="r_ga2b3017975dec54b0743d7d23ed6667b5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga2b3017975dec54b0743d7d23ed6667b5">SOCKET_DTLS_INITIAL_TIMEOUT_MS</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="memdesc:ga2b3017975dec54b0743d7d23ed6667b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial retransmission timeout for DTLS handshake packets (ms).  <br /></td></tr>
+<tr class="separator:ga2b3017975dec54b0743d7d23ed6667b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab68a21771cbdedd0e891ba7e9784c668" id="r_gab68a21771cbdedd0e891ba7e9784c668"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
+<tr class="separator:gab68a21771cbdedd0e891ba7e9784c668"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaeac9f29b196910c31f0ca88253dc7265" id="r_gaeac9f29b196910c31f0ca88253dc7265"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gaeac9f29b196910c31f0ca88253dc7265">SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
+<tr class="separator:gaeac9f29b196910c31f0ca88253dc7265"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68b8c2dba420bccf1c37a01884a1408a" id="r_ga68b8c2dba420bccf1c37a01884a1408a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga68b8c2dba420bccf1c37a01884a1408a">SOCKET_DTLS_MAX_RETRANSMITS</a>&#160;&#160;&#160;12</td></tr>
+<tr class="separator:ga68b8c2dba420bccf1c37a01884a1408a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5752ace7cf4781e4dad0786bd493af2e" id="r_ga5752ace7cf4781e4dad0786bd493af2e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga5752ace7cf4781e4dad0786bd493af2e">SOCKET_DTLS_SESSION_CACHE_SIZE</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="separator:ga5752ace7cf4781e4dad0786bd493af2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2b97166b3033d92fb8fb9dca5c70ea4f" id="r_ga2b97166b3033d92fb8fb9dca5c70ea4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga2b97166b3033d92fb8fb9dca5c70ea4f">SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT</a>&#160;&#160;&#160;300L</td></tr>
+<tr class="separator:ga2b97166b3033d92fb8fb9dca5c70ea4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6d22e3b756e5a6f1c5df5d05a94e8de9" id="r_ga6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga6d22e3b756e5a6f1c5df5d05a94e8de9">SOCKET_DTLS_ERROR_BUFSIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="separator:ga6d22e3b756e5a6f1c5df5d05a94e8de9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga83416fe8d965d7133943298dcd693bd3" id="r_ga83416fe8d965d7133943298dcd693bd3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga83416fe8d965d7133943298dcd693bd3">SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="separator:ga83416fe8d965d7133943298dcd693bd3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0ce437be6ce966c60ba60e165485bb4a" id="r_ga0ce437be6ce966c60ba60e165485bb4a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga0ce437be6ce966c60ba60e165485bb4a">SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH</a>&#160;&#160;&#160;10</td></tr>
+<tr class="separator:ga0ce437be6ce966c60ba60e165485bb4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae00f82ec2c7d49c2aa2ecdaa98754371" id="r_gae00f82ec2c7d49c2aa2ecdaa98754371"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gae00f82ec2c7d49c2aa2ecdaa98754371">SOCKET_DTLS_MAX_SNI_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="separator:gae00f82ec2c7d49c2aa2ecdaa98754371"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab718fe1ccbb2793374a74bdd3fad5902" id="r_gab718fe1ccbb2793374a74bdd3fad5902"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gab718fe1ccbb2793374a74bdd3fad5902">SOCKET_DTLS_MAX_ALPN_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="separator:gab718fe1ccbb2793374a74bdd3fad5902"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafcde6945b87c4def2497c74bf3115e87" id="r_gafcde6945b87c4def2497c74bf3115e87"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gafcde6945b87c4def2497c74bf3115e87">SOCKET_DTLS_MAX_ALPN_PROTOCOLS</a>&#160;&#160;&#160;16</td></tr>
+<tr class="separator:gafcde6945b87c4def2497c74bf3115e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8c4f3d639af33633c811568f89124e6d" id="r_ga8c4f3d639af33633c811568f89124e6d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga8c4f3d639af33633c811568f89124e6d">SOCKET_DTLS_MAX_PATH_LEN</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="separator:ga8c4f3d639af33633c811568f89124e6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab42fd5a40a391bb5d2e3c5f44a1b24fa" id="r_gab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gab42fd5a40a391bb5d2e3c5f44a1b24fa">SOCKET_DTLS_MAX_FILE_SIZE</a>&#160;&#160;&#160;((size_t)(1ULL &lt;&lt; 20)) /* 1MB */</td></tr>
+<tr class="separator:gab42fd5a40a391bb5d2e3c5f44a1b24fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga187a9aeb5d1836c6756595bde48e659e" id="r_ga187a9aeb5d1836c6756595bde48e659e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#ga187a9aeb5d1836c6756595bde48e659e">SOCKET_DTLS_VALID_MTU</a>(mtu)</td></tr>
+<tr class="memdesc:ga187a9aeb5d1836c6756595bde48e659e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate if given MTU value is within acceptable range.  <br /></td></tr>
+<tr class="separator:ga187a9aeb5d1836c6756595bde48e659e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaac963ab68af70b569e6ee98ae7062887" id="r_gaac963ab68af70b569e6ee98ae7062887"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__config.html#gaac963ab68af70b569e6ee98ae7062887">SOCKET_DTLS_VALID_TIMEOUT</a>(ms)&#160;&#160;&#160;  ((int)(ms) &gt;= 0 &amp;&amp; (int)(ms) &lt;= <a class="el" href="group__dtls__config.html#gab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>)</td></tr>
+<tr class="memdesc:gaac963ab68af70b569e6ee98ae7062887"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate if given timeout value is reasonable.  <br /></td></tr>
+<tr class="separator:gaac963ab68af70b569e6ee98ae7062887"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a26d2482e8ab9e3023996ea54a1e2b93a" name="a26d2482e8ab9e3023996ea54a1e2b93a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26d2482e8ab9e3023996ea54a1e2b93a">&#9670;&#160;</a></span>SOCKET_DTLS_CIPHERSUITES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_CIPHERSUITES</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="stringliteral">&quot;ECDHE-ECDSA-AES256-GCM-SHA384:&quot;</span>                                             \</div>
-<div class="line">  <span class="stringliteral">&quot;ECDHE-RSA-AES256-GCM-SHA384:&quot;</span>                                               \</div>
-<div class="line">  <span class="stringliteral">&quot;ECDHE-ECDSA-CHACHA20-POLY1305:&quot;</span>                                             \</div>
-<div class="line">  <span class="stringliteral">&quot;ECDHE-RSA-CHACHA20-POLY1305:&quot;</span>                                               \</div>
-<div class="line">  <span class="stringliteral">&quot;ECDHE-ECDSA-AES128-GCM-SHA256:&quot;</span>                                             \</div>
-<div class="line">  <span class="stringliteral">&quot;ECDHE-RSA-AES128-GCM-SHA256&quot;</span></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00052">52</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a89aefff932cc08acb034d8c67cdb6bed" name="a89aefff932cc08acb034d8c67cdb6bed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a89aefff932cc08acb034d8c67cdb6bed">&#9670;&#160;</a></span>SOCKET_DTLS_COOKIE_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_COOKIE_LEN&#160;&#160;&#160;32</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00114">114</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a975d2fe81acd04965feb450aa7bf28c5" name="a975d2fe81acd04965feb450aa7bf28c5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a975d2fe81acd04965feb450aa7bf28c5">&#9670;&#160;</a></span>SOCKET_DTLS_COOKIE_LIFETIME_SEC</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_COOKIE_LIFETIME_SEC&#160;&#160;&#160;60</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00125">125</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a9e9f01674c7cbf477f77366cc88c5790" name="a9e9f01674c7cbf477f77366cc88c5790"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e9f01674c7cbf477f77366cc88c5790">&#9670;&#160;</a></span>SOCKET_DTLS_COOKIE_SECRET_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_COOKIE_SECRET_LEN&#160;&#160;&#160;32</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00119">119</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="aeac9f29b196910c31f0ca88253dc7265" name="aeac9f29b196910c31f0ca88253dc7265"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeac9f29b196910c31f0ca88253dc7265">&#9670;&#160;</a></span>SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS&#160;&#160;&#160;30000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00153">153</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a3752ff3ec87ae648dca7a04ec26ac7ad" name="a3752ff3ec87ae648dca7a04ec26ac7ad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3752ff3ec87ae648dca7a04ec26ac7ad">&#9670;&#160;</a></span>SOCKET_DTLS_DEFAULT_MTU</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_DEFAULT_MTU&#160;&#160;&#160;1400</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00073">73</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a6d22e3b756e5a6f1c5df5d05a94e8de9" name="a6d22e3b756e5a6f1c5df5d05a94e8de9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d22e3b756e5a6f1c5df5d05a94e8de9">&#9670;&#160;</a></span>SOCKET_DTLS_ERROR_BUFSIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_ERROR_BUFSIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00185">185</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a2b3017975dec54b0743d7d23ed6667b5" name="a2b3017975dec54b0743d7d23ed6667b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b3017975dec54b0743d7d23ed6667b5">&#9670;&#160;</a></span>SOCKET_DTLS_INITIAL_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_INITIAL_TIMEOUT_MS&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00143">143</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ab718fe1ccbb2793374a74bdd3fad5902" name="ab718fe1ccbb2793374a74bdd3fad5902"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab718fe1ccbb2793374a74bdd3fad5902">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_ALPN_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_ALPN_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00205">205</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="afcde6945b87c4def2497c74bf3115e87" name="afcde6945b87c4def2497c74bf3115e87"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afcde6945b87c4def2497c74bf3115e87">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_ALPN_PROTOCOLS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_ALPN_PROTOCOLS&#160;&#160;&#160;16</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00210">210</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a0ce437be6ce966c60ba60e165485bb4a" name="a0ce437be6ce966c60ba60e165485bb4a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ce437be6ce966c60ba60e165485bb4a">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH&#160;&#160;&#160;10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00195">195</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ab42fd5a40a391bb5d2e3c5f44a1b24fa" name="ab42fd5a40a391bb5d2e3c5f44a1b24fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab42fd5a40a391bb5d2e3c5f44a1b24fa">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_FILE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_FILE_SIZE&#160;&#160;&#160;((size_t)(1ULL &lt;&lt; 20))  /* 1MB */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00224">224</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a3ac75939ec0806b6b2bbcc594aa16c55" name="a3ac75939ec0806b6b2bbcc594aa16c55"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ac75939ec0806b6b2bbcc594aa16c55">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_MTU</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_MTU&#160;&#160;&#160;9000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00083">83</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a8c4f3d639af33633c811568f89124e6d" name="a8c4f3d639af33633c811568f89124e6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c4f3d639af33633c811568f89124e6d">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_PATH_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_PATH_LEN&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00215">215</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a5514d14a0a82cfae0d503315e3eee143" name="a5514d14a0a82cfae0d503315e3eee143"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5514d14a0a82cfae0d503315e3eee143">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_PAYLOAD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_PAYLOAD&#160;&#160;&#160;  (<a class="el" href="SocketDTLSConfig_8h.html#a3752ff3ec87ae648dca7a04ec26ac7ad">SOCKET_DTLS_DEFAULT_MTU</a> - <a class="el" href="SocketDTLSConfig_8h.html#adc0eac3a553975d605f281a788d3a884">SOCKET_DTLS_RECORD_OVERHEAD</a> - 28)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00098">98</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a66094f34cc81cc40b65329dc209d6096" name="a66094f34cc81cc40b65329dc209d6096"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a66094f34cc81cc40b65329dc209d6096">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_PENDING_COOKIES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_PENDING_COOKIES&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00130">130</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a7f08bebbfcba5b41f95024251becb4bd" name="a7f08bebbfcba5b41f95024251becb4bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f08bebbfcba5b41f95024251becb4bd">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_RECORD_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_RECORD_SIZE&#160;&#160;&#160;16384</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00088">88</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a68b8c2dba420bccf1c37a01884a1408a" name="a68b8c2dba420bccf1c37a01884a1408a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a68b8c2dba420bccf1c37a01884a1408a">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_RETRANSMITS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_RETRANSMITS&#160;&#160;&#160;12</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00158">158</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ae00f82ec2c7d49c2aa2ecdaa98754371" name="ae00f82ec2c7d49c2aa2ecdaa98754371"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae00f82ec2c7d49c2aa2ecdaa98754371">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_SNI_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_SNI_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00200">200</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ab68a21771cbdedd0e891ba7e9784c668" name="ab68a21771cbdedd0e891ba7e9784c668"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab68a21771cbdedd0e891ba7e9784c668">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00148">148</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a30edede1360b062e9c399fd7bb73daeb" name="a30edede1360b062e9c399fd7bb73daeb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a30edede1360b062e9c399fd7bb73daeb">&#9670;&#160;</a></span>SOCKET_DTLS_MAX_VERSION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MAX_VERSION&#160;&#160;&#160;DTLS1_2_VERSION</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00040">40</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a4e20e95db1f3cb5f21c2d10649ac36da" name="a4e20e95db1f3cb5f21c2d10649ac36da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4e20e95db1f3cb5f21c2d10649ac36da">&#9670;&#160;</a></span>SOCKET_DTLS_MIN_MTU</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MIN_MTU&#160;&#160;&#160;576</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00078">78</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="abc3e53580ef4039e6bd2b0453f1dec35" name="abc3e53580ef4039e6bd2b0453f1dec35"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc3e53580ef4039e6bd2b0453f1dec35">&#9670;&#160;</a></span>SOCKET_DTLS_MIN_VERSION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_MIN_VERSION&#160;&#160;&#160;DTLS1_2_VERSION</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketDTLSConfig_8h.html">SocketDTLSConfig.h</a> - DTLS Configuration Constants</p>
-<p>Defines secure defaults for DTLS operations: protocol versions, MTU settings, cookie protection parameters, timeouts, and limits. Provides stub typedefs when TLS disabled for compilation without OpenSSL.</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>DTLS configuration constants and secure defaults. </p>
+<p>Defines secure defaults for DTLS operations: protocol versions, MTU settings, cookie protection parameters, timeouts, and limits. Provides stub definitions when TLS disabled for compilation without OpenSSL.</p>
 <p>All constants can be overridden before including this header. Enforces DTLS 1.2 minimum for security (DTLS 1.3 when OpenSSL 3.2+ widely available).</p>
-<p>Thread-safe: Yes - compile-time constants</p>
+<dl class="section user"><dt>Thread Safety\n Yes - compile-time constants</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> for DTLS context management. </dd>
+<dd>
+SocketDTLS_T for DTLS socket operations. </dd>
+<dd>
+<a class="el" href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a> for TLS configuration constants.</dd></dl>
 <p>References:</p><ul>
 <li>RFC 6347: Datagram Transport Layer Security Version 1.2</li>
-<li>RFC 9147: The Datagram Transport Layer Security (DTLS) <a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> Version 1.3 </li>
+<li>RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3 </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00033">33</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a83416fe8d965d7133943298dcd693bd3" name="a83416fe8d965d7133943298dcd693bd3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83416fe8d965d7133943298dcd693bd3">&#9670;&#160;</a></span>SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE&#160;&#160;&#160;256</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00190">190</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="adc0eac3a553975d605f281a788d3a884" name="adc0eac3a553975d605f281a788d3a884"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc0eac3a553975d605f281a788d3a884">&#9670;&#160;</a></span>SOCKET_DTLS_RECORD_OVERHEAD</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_RECORD_OVERHEAD&#160;&#160;&#160;64</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00093">93</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a5752ace7cf4781e4dad0786bd493af2e" name="a5752ace7cf4781e4dad0786bd493af2e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5752ace7cf4781e4dad0786bd493af2e">&#9670;&#160;</a></span>SOCKET_DTLS_SESSION_CACHE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_SESSION_CACHE_SIZE&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00170">170</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a2b97166b3033d92fb8fb9dca5c70ea4f" name="a2b97166b3033d92fb8fb9dca5c70ea4f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b97166b3033d92fb8fb9dca5c70ea4f">&#9670;&#160;</a></span>SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT&#160;&#160;&#160;300L</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00175">175</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a187a9aeb5d1836c6756595bde48e659e" name="a187a9aeb5d1836c6756595bde48e659e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a187a9aeb5d1836c6756595bde48e659e">&#9670;&#160;</a></span>SOCKET_DTLS_VALID_MTU</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_VALID_MTU</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">mtu</td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  ((size_t) (mtu) &gt;= <a class="code hl_define" href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a>                                       \</div>
-<div class="line">   &amp;&amp; (size_t) (mtu) &lt;= <a class="code hl_define" href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a>)</div>
-<div class="ttc" id="aSocketDTLSConfig_8h_html_a3ac75939ec0806b6b2bbcc594aa16c55"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a3ac75939ec0806b6b2bbcc594aa16c55">SOCKET_DTLS_MAX_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MAX_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00083">SocketDTLSConfig.h:83</a></div></div>
-<div class="ttc" id="aSocketDTLSConfig_8h_html_a4e20e95db1f3cb5f21c2d10649ac36da"><div class="ttname"><a href="SocketDTLSConfig_8h.html#a4e20e95db1f3cb5f21c2d10649ac36da">SOCKET_DTLS_MIN_MTU</a></div><div class="ttdeci">#define SOCKET_DTLS_MIN_MTU</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLSConfig_8h_source.html#l00078">SocketDTLSConfig.h:78</a></div></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00232">232</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="aac963ab68af70b569e6ee98ae7062887" name="aac963ab68af70b569e6ee98ae7062887"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac963ab68af70b569e6ee98ae7062887">&#9670;&#160;</a></span>SOCKET_DTLS_VALID_TIMEOUT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_DTLS_VALID_TIMEOUT</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">ms</td><td>)</td>
-          <td>&#160;&#160;&#160;  ((int) (ms) &gt;= 0 &amp;&amp; (int) (ms) &lt;= <a class="el" href="SocketDTLSConfig_8h.html#ab68a21771cbdedd0e891ba7e9784c668">SOCKET_DTLS_MAX_TIMEOUT_MS</a>)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00236">236</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
-
-</div>
-</div>
-</div><!-- contents -->
+<p class="definition">Definition in file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

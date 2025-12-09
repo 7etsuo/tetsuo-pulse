@@ -2,13 +2,25 @@
 #define SOCKETRATELIMIT_PRIVATE_INCLUDED
 
 /**
- * SocketRateLimit-private.h - Private declarations for SocketRateLimit module
+ * @file SocketRateLimit-private.h
+ * @brief Private implementation details for the token bucket rate limiter module.
+ * @ingroup utilities
+ * @internal
  *
- * Part of the Socket Library
+ * Contains internal structures, constants, and flags used by SocketRateLimit.c.
+ * Not part of the public API - do not include directly from user code.
  *
- * Internal structure definitions for the token bucket rate limiter.
- * Include only from SocketRateLimit.c and related implementation files.
- * Do NOT include from public headers or user code.
+ * Key sections:
+ * - @ref ratelimit_consts "Rate Limiter Constants"
+ * - @ref ratelimit_struct "Rate Limiter Structure"
+ * - @ref internal_helpers "Internal Helper Functions"
+ *
+ * PLATFORM REQUIREMENTS: POSIX threads (pthread) and CLOCK_MONOTONIC.
+ *
+ * @note Include only from SocketRateLimit.c and related files.
+ * @warning Do NOT use in public headers or application code.
+ * @see SocketRateLimit.h for the public API.
+ * @see @ref utilities "Utilities Group" for related modules.
  */
 
 #include "core/Arena.h"
@@ -18,62 +30,93 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* ============================================================================
- * Rate Limiter Constants
- * ============================================================================
+/**
+ * @section ratelimit_consts Rate Limiter Constants
+ * @ingroup utilities
+ * @internal
+ *
+ * Defines internal constants used by the token bucket algorithm,
+ * including wait values, state flags, and mutex states.
  */
 
 /**
- * SOCKET_RATELIMIT_MIN_WAIT_MS - Minimum wait time in milliseconds
+ * @brief Minimum wait time in milliseconds for rate limiting operations.
+ * @ingroup utilities
  *
  * When tokens are needed but calculated wait is zero, return this minimum
  * to ensure callers always wait at least a small amount.
+ * @see SocketRateLimit_wait_time_ms() in SocketRateLimit.h
  */
 #ifndef SOCKET_RATELIMIT_MIN_WAIT_MS
 #define SOCKET_RATELIMIT_MIN_WAIT_MS 1
 #endif
 
 /**
- * SOCKET_RATELIMIT_IMPOSSIBLE_WAIT - Return value for impossible token
- * requests
+ * @brief Return value indicating impossible token requests.
+ * @ingroup utilities
  *
  * Returned by SocketRateLimit_wait_time_ms() when requested tokens exceed
  * bucket_size, making the request impossible to fulfill.
+ * @see SocketRateLimit_wait_time_ms()
+ * @see SocketRateLimit_get_bucket_size()
  */
 #ifndef SOCKET_RATELIMIT_IMPOSSIBLE_WAIT
 #define SOCKET_RATELIMIT_IMPOSSIBLE_WAIT (-1)
 #endif
 
 /**
- * SOCKET_RATELIMIT_SHUTDOWN - Flag indicating instance is shutdown (being
- * freed)
+ * @brief Internal flag indicating rate limiter instance is shutdown.
+ * @ingroup utilities
+ * @internal
+ *
+ * Used in initialized field: -1 means being freed, do not use after this.
+ * @see SocketRateLimit_free()
  */
 #define SOCKET_RATELIMIT_SHUTDOWN (-1)
 
 /**
- * SOCKET_RATELIMIT_MUTEX_UNINITIALIZED - Flag indicating mutex not initialized
+ * @brief Internal flag indicating mutex is not yet initialized.
+ * @ingroup utilities
+ * @internal
+ *
+ * Value 0 in initialized field before mutex creation.
  */
 #define SOCKET_RATELIMIT_MUTEX_UNINITIALIZED 0
 
 /**
- * SOCKET_RATELIMIT_MUTEX_INITIALIZED - Flag indicating mutex is initialized
- * and ready
+ * @brief Internal flag indicating mutex is initialized and ready.
+ * @ingroup utilities
+ * @internal
+ *
+ * Value 1 in initialized field after successful mutex_init().
  */
 #define SOCKET_RATELIMIT_MUTEX_INITIALIZED 1
 
-/* ============================================================================
- * Rate Limiter Structure
- * ============================================================================
+/**
+ * @section ratelimit_struct Rate Limiter Structure
+ * @ingroup utilities
+ * @internal
+ *
+ * Definition of the internal SocketRateLimit_T structure.
+ * Opaque to public users; access via public API functions only.
+ *
+ * @see SocketRateLimit_T
  */
 
 #define T SocketRateLimit_T
 
 /**
- * struct T - Token bucket rate limiter internal structure
+ * @brief Internal structure implementing the token bucket rate limiter.
+ * @ingroup utilities
+ * @internal
  *
- * Implements the token bucket algorithm with thread-safe operations.
- * All time values use monotonic clock to avoid issues with system time
- * changes.
+ * Supports thread-safe operations via mutex protection.
+ * Uses monotonic time (CLOCK_MONOTONIC) for refill calculations to handle
+ * system clock adjustments gracefully.
+ *
+ * @see SocketRateLimit_T public opaque type.
+ * @see SocketRateLimit_new() for creation and initialization.
+ * @see SocketRateLimit_private.h for private details.
  */
 struct T
 {
@@ -84,14 +127,18 @@ struct T
       last_refill_ms;    /**< Last refill timestamp (monotonic milliseconds) */
   pthread_mutex_t mutex; /**< Thread safety mutex for all operations */
   Arena_T arena;         /**< Arena used for allocation (NULL if malloc) */
-  int initialized; /**< -1 shutdown (being freed), 0 uninitialized, 1 mutex
-                      initialized and ready */
+  int initialized; /**< State flag: -1=shutdown (freeing), 0=uninitialized, 1=ready.
+                      *   Protects against concurrent access during init/destroy.
+                      * @internal
+                      */
 };
 
 #undef T
 
-/* ============================================================================
- * Internal Helper Functions
+/**
+ * @section internal_helpers Internal Helper Functions
+ * @ingroup utilities
+ * @internal
  *
  * NOTE: All internal helper functions are declared static in SocketRateLimit.c
  * and are not exposed through this private header. This header only exposes:
@@ -101,7 +148,8 @@ struct T
  *
  * This design keeps the implementation details hidden while allowing the
  * structure to be accessed for direct field access where needed (e.g., tests).
- * ============================================================================
+ *
+ * @see SocketRateLimit.c for static function implementations.
  */
 
 #endif /* SOCKETRATELIMIT_PRIVATE_INCLUDED */

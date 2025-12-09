@@ -113,10 +113,10 @@ $(document).ready(function(){initNavTree('async_io_guide.html',''); initResizabl
   <div class="headertitle"><div class="title">Asynchronous I/O Guide</div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md50"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md51"></a>
 Overview</h1>
 <p>The Socket Library provides asynchronous I/O operations using platform-optimized mechanisms for maximum performance. Async I/O allows non-blocking send/receive operations that complete via callbacks, eliminating CPU waste from blocking system calls.</p>
-<h1><a class="anchor" id="autotoc_md51"></a>
+<h1><a class="anchor" id="autotoc_md52"></a>
 Platform Support</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -129,7 +129,7 @@ Platform Support</h1>
 <td class="markdownTableBodyNone">Other POSIX   </td><td class="markdownTableBodyNone">Edge-triggered polling   </td><td class="markdownTableBodyNone">✅ Fallback mode   </td></tr>
 </table>
 <p><b>Note:</b> On Linux, install <code>liburing-dev</code> for full async I/O support. Without it, the library falls back to edge-triggered polling.</p>
-<h1><a class="anchor" id="autotoc_md52"></a>
+<h1><a class="anchor" id="autotoc_md53"></a>
 Key Benefits</h1>
 <ol type="1">
 <li><b>10x Throughput</b>: Async I/O can achieve 100K+ requests/second vs 10K for synchronous operations</li>
@@ -137,30 +137,30 @@ Key Benefits</h1>
 <li><b>Non-Blocking</b>: Operations complete via callbacks, never block the event loop</li>
 <li><b>Zero-Copy</b>: Where supported (io_uring), data is transferred directly without kernel copies</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md53"></a>
+<h1><a class="anchor" id="autotoc_md54"></a>
 Basic Usage</h1>
-<h2><a class="anchor" id="autotoc_md54"></a>
+<h2><a class="anchor" id="autotoc_md55"></a>
 Getting Async Context</h2>
 <p>Async I/O is integrated with <code>SocketPoll</code>. Get the async context from your poll instance:</p>
-<div class="fragment"><div class="line"><a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(4096);</div>
-<div class="line"><a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(4096);</div>
+<div class="line"><a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">if</span> (!async || !<a class="code hl_function" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {</div>
+<div class="line"><span class="keywordflow">if</span> (!async || !<a class="code hl_function" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {</div>
 <div class="line">    printf(<span class="stringliteral">&quot;Async I/O not available - using fallback mode\n&quot;</span>);</div>
 <div class="line">    <span class="keywordflow">return</span>;</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *backend = <a class="code hl_function" href="SocketAsync_8h.html#afae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a>(async);</div>
+<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *backend = <a class="code hl_function" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a>(async);</div>
 <div class="line">printf(<span class="stringliteral">&quot;Using async backend: %s\n&quot;</span>, backend);</div>
-<div class="ttc" id="aSocketAsync_8h_html_a0f304bcb93351c8555f9afa74fa9e665"><div class="ttname"><a href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a></div><div class="ttdeci">int SocketAsync_is_available(const SocketAsync_T async)</div></div>
-<div class="ttc" id="aSocketAsync_8h_html_afae22c23e82d55f6fa3eaf74c0c37f5d"><div class="ttname"><a href="SocketAsync_8h.html#afae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a></div><div class="ttdeci">const char * SocketAsync_backend_name(const SocketAsync_T async)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a665b3363d16ab859ec60e69a792d1ff0"><div class="ttname"><a href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a></div><div class="ttdeci">SocketAsync_T SocketPoll_get_async(SocketPoll_T poll)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a733615fa159421d6c73d01f6bb34bac8"><div class="ttname"><a href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></div><div class="ttdeci">struct SocketAsync_T * SocketAsync_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00010">SocketPoll.h:10</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html_ac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div></div>
-<div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00041">SocketTimer.h:41</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md55"></a>
+<div class="ttc" id="aSocketPoll_8h_html_a733615fa159421d6c73d01f6bb34bac8"><div class="ttname"><a href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></div><div class="ttdeci">struct SocketAsync_T * SocketAsync_T</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00021">SocketPoll.h:21</a></div></div>
+<div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00069">SocketTimer.h:69</a></div></div>
+<div class="ttc" id="agroup__async__io_html_ga0f304bcb93351c8555f9afa74fa9e665"><div class="ttname"><a href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a></div><div class="ttdeci">int SocketAsync_is_available(const SocketAsync_T async)</div><div class="ttdoc">Check if async I/O is available on this platform.</div></div>
+<div class="ttc" id="agroup__async__io_html_gafae22c23e82d55f6fa3eaf74c0c37f5d"><div class="ttname"><a href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a></div><div class="ttdeci">const char * SocketAsync_backend_name(const SocketAsync_T async)</div><div class="ttdoc">Get name of async backend in use.</div></div>
+<div class="ttc" id="agroup__event__system_html_ga665b3363d16ab859ec60e69a792d1ff0"><div class="ttname"><a href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a></div><div class="ttdeci">SocketAsync_T SocketPoll_get_async(SocketPoll_T poll)</div><div class="ttdoc">Get async I/O context associated with poll instance.</div></div>
+<div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md56"></a>
 Async Send</h2>
-<div class="fragment"><div class="line"><span class="keywordtype">void</span> send_complete(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> send_complete(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
 <div class="line">        printf(<span class="stringliteral">&quot;Send failed: %s\n&quot;</span>, strerror(err));</div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
@@ -171,14 +171,14 @@ Async Send</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Submit async send */</span></div>
 <div class="line"><span class="keywordtype">char</span> data[] = <span class="stringliteral">&quot;Hello, async I/O!&quot;</span>;</div>
-<div class="line"><span class="keywordtype">unsigned</span> req_id = <a class="code hl_function" href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, data, <span class="keyword">sizeof</span>(data) - 1,</div>
-<div class="line">                                   send_complete, NULL, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
-<div class="ttc" id="aSocketAsync_8h_html_ae0ecf4f023555d16b855d39841521f2b"><div class="ttname"><a href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a></div><div class="ttdeci">unsigned SocketAsync_send(SocketAsync_T async, Socket_T socket, const void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</div></div>
-<div class="ttc" id="aSocketAsync_8h_html_ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c"><div class="ttname"><a href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a></div><div class="ttdeci">@ ASYNC_FLAG_NONE</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00073">SocketAsync.h:73</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md56"></a>
+<div class="line"><span class="keywordtype">unsigned</span> req_id = <a class="code hl_function" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, data, <span class="keyword">sizeof</span>(data) - 1,</div>
+<div class="line">                                   send_complete, NULL, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+<div class="ttc" id="agroup__async__io_html_gae0ecf4f023555d16b855d39841521f2b"><div class="ttname"><a href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a></div><div class="ttdeci">unsigned SocketAsync_send(SocketAsync_T async, Socket_T socket, const void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</div><div class="ttdoc">Submit asynchronous send operation.</div></div>
+<div class="ttc" id="agroup__async__io_html_ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c"><div class="ttname"><a href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a></div><div class="ttdeci">@ ASYNC_FLAG_NONE</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00136">SocketAsync.h:136</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ga1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdoc">Opaque handle for TCP/IP and Unix domain sockets.</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00092">Socket.h:92</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md57"></a>
 Async Receive</h2>
-<div class="fragment"><div class="line"><span class="keywordtype">void</span> recv_complete(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> recv_complete(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
 <div class="line">        printf(<span class="stringliteral">&quot;Recv failed: %s\n&quot;</span>, strerror(err));</div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
@@ -193,161 +193,161 @@ Async Receive</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Submit async receive */</span></div>
 <div class="line"><span class="keywordtype">char</span> buffer[4096];</div>
-<div class="line"><span class="keywordtype">unsigned</span> req_id = <a class="code hl_function" href="SocketAsync_8h.html#a46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, socket, buffer, <span class="keyword">sizeof</span>(buffer),</div>
-<div class="line">                                   recv_complete, NULL, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
-<div class="ttc" id="aSocketAsync_8h_html_a46adb5a1db31901afa5d1d6514e41b64"><div class="ttname"><a href="SocketAsync_8h.html#a46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a></div><div class="ttdeci">unsigned SocketAsync_recv(SocketAsync_T async, Socket_T socket, void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md57"></a>
-Processing Completions</h2>
-<p>Completions are automatically processed by <code><a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a></code>. You can also process them manually:</p>
-<div class="fragment"><div class="line"><span class="comment">/* Process completions (non-blocking) */</span></div>
-<div class="line"><span class="keywordtype">int</span> count = <a class="code hl_function" href="SocketAsync_8h.html#a1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a>(async, 0);</div>
-<div class="line">printf(<span class="stringliteral">&quot;Processed %d completions\n&quot;</span>, count);</div>
-<div class="ttc" id="aSocketAsync_8h_html_a1cc05d5d1dd032943b57a03da3061da7"><div class="ttname"><a href="SocketAsync_8h.html#a1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a></div><div class="ttdeci">int SocketAsync_process_completions(SocketAsync_T async, int timeout_ms)</div></div>
+<div class="line"><span class="keywordtype">unsigned</span> req_id = <a class="code hl_function" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, socket, buffer, <span class="keyword">sizeof</span>(buffer),</div>
+<div class="line">                                   recv_complete, NULL, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+<div class="ttc" id="agroup__async__io_html_ga46adb5a1db31901afa5d1d6514e41b64"><div class="ttname"><a href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a></div><div class="ttdeci">unsigned SocketAsync_recv(SocketAsync_T async, Socket_T socket, void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</div><div class="ttdoc">Submit asynchronous receive operation.</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md58"></a>
+Processing Completions</h2>
+<p>Completions are automatically processed by <code><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Wait for I/O events on registered sockets.">SocketPoll_wait()</a></code>. You can also process them manually:</p>
+<div class="fragment"><div class="line"><span class="comment">/* Process completions (non-blocking) */</span></div>
+<div class="line"><span class="keywordtype">int</span> count = <a class="code hl_function" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a>(async, 0);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Processed %d completions\n&quot;</span>, count);</div>
+<div class="ttc" id="agroup__async__io_html_ga1cc05d5d1dd032943b57a03da3061da7"><div class="ttname"><a href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a></div><div class="ttdeci">int SocketAsync_process_completions(SocketAsync_T async, int timeout_ms)</div><div class="ttdoc">Process pending async completions.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md59"></a>
 Cancellation</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Cancel pending operation */</span></div>
-<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="SocketAsync_8h.html#a275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a>(async, req_id);</div>
+<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a>(async, req_id);</div>
 <div class="line"><span class="keywordflow">if</span> (result == 0) {</div>
 <div class="line">    printf(<span class="stringliteral">&quot;Request cancelled\n&quot;</span>);</div>
 <div class="line">} <span class="keywordflow">else</span> {</div>
 <div class="line">    printf(<span class="stringliteral">&quot;Request not found or already completed\n&quot;</span>);</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketAsync_8h_html_a275aefb76cdeb48b9b9330a777a2bb8c"><div class="ttname"><a href="SocketAsync_8h.html#a275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a></div><div class="ttdeci">int SocketAsync_cancel(SocketAsync_T async, unsigned request_id)</div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md59"></a>
+<div class="ttc" id="agroup__async__io_html_ga275aefb76cdeb48b9b9330a777a2bb8c"><div class="ttname"><a href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a></div><div class="ttdeci">int SocketAsync_cancel(SocketAsync_T async, unsigned request_id)</div><div class="ttdoc">Cancel pending async operation.</div></div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md60"></a>
 Complete Example: Echo Server</h1>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketPoll_8h.html">poll/SocketPoll.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketAsync_8h.html">socket/SocketAsync.h</a>&quot;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">void</span> echo_recv_complete(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
+<div class="line"><span class="keywordtype">void</span> echo_recv_complete(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
 <div class="line">    <span class="keywordtype">char</span> *buffer = (<span class="keywordtype">char</span> *)user_data;</div>
 <div class="line">    </div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
-<div class="line">        <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
+<div class="line">        <a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
 <div class="line">    }</div>
 <div class="line">    </div>
 <div class="line">    <span class="keywordflow">if</span> (bytes == 0) {</div>
 <div class="line">        <span class="comment">/* Connection closed */</span></div>
-<div class="line">        <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
+<div class="line">        <a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
 <div class="line">    }</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Echo back what we received */</span></div>
-<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
-<div class="line">    <a class="code hl_function" href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buffer, bytes, echo_send_complete, NULL, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
+<div class="line">    <a class="code hl_function" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buffer, bytes, echo_send_complete, NULL, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">void</span> echo_send_complete(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
-<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
+<div class="line"><span class="keywordtype">void</span> echo_send_complete(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
+<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
 <div class="line">    <span class="keywordtype">char</span> *buffer = malloc(4096);</div>
 <div class="line">    </div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
-<div class="line">        <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
+<div class="line">        <a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;socket);</div>
 <div class="line">        free(buffer);</div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
 <div class="line">    }</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Read next message */</span></div>
-<div class="line">    <a class="code hl_function" href="SocketAsync_8h.html#a46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, socket, buffer, 4096, echo_recv_complete, buffer, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+<div class="line">    <a class="code hl_function" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, socket, buffer, 4096, echo_recv_complete, buffer, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
 <div class="line">}</div>
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>(<span class="keywordtype">void</span>) {</div>
 <div class="line">    signal(SIGPIPE, SIG_IGN);</div>
 <div class="line">    </div>
-<div class="line">    <a class="code hl_typedef" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
-<div class="line">    <a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(4096);</div>
-<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
+<div class="line">    <a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
+<div class="line">    <a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(4096);</div>
+<div class="line">    <a class="code hl_typedef" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll);</div>
 <div class="line">    </div>
-<div class="line">    <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> server = <a class="code hl_function" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a>(server);</div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a>(server, <span class="stringliteral">&quot;127.0.0.1&quot;</span>, 8080);</div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#ab24b026bc4c69e6f766211f44675e189">Socket_listen</a>(server, 100);</div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a>(server);</div>
+<div class="line">    <a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> server = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a>(server);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a>(server, <span class="stringliteral">&quot;127.0.0.1&quot;</span>, 8080);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen</a>(server, 100);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a>(server);</div>
 <div class="line">    </div>
-<div class="line">    <a class="code hl_function" href="SocketPoll_8h.html#a6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, server, <a class="code hl_enumvalue" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, NULL);</div>
+<div class="line">    <a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, server, <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, NULL);</div>
 <div class="line">    </div>
 <div class="line">    <span class="keywordflow">while</span> (1) {</div>
-<div class="line">        <a class="code hl_struct" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a> *events;</div>
-<div class="line">        <span class="keywordtype">int</span> n = <a class="code hl_function" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;events, 1000);</div>
+<div class="line">        <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *events;</div>
+<div class="line">        <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;events, 1000);</div>
 <div class="line">        </div>
 <div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; n; i++) {</div>
 <div class="line">            <span class="keywordflow">if</span> (events[i].socket == server) {</div>
 <div class="line">                <span class="comment">/* Accept new connection */</span></div>
-<div class="line">                <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> client = <a class="code hl_function" href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15">Socket_accept</a>(server);</div>
+<div class="line">                <a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> client = <a class="code hl_function" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a>(server);</div>
 <div class="line">                <span class="keywordflow">if</span> (client) {</div>
-<div class="line">                    <a class="code hl_function" href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a>(client);</div>
+<div class="line">                    <a class="code hl_function" href="group__core__io.html#ga35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a>(client);</div>
 <div class="line">                    <span class="keywordtype">char</span> *buffer = malloc(4096);</div>
-<div class="line">                    <a class="code hl_function" href="SocketAsync_8h.html#a46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, client, buffer, 4096, echo_recv_complete, buffer, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+<div class="line">                    <a class="code hl_function" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a>(async, client, buffer, 4096, echo_recv_complete, buffer, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
 <div class="line">                }</div>
 <div class="line">            }</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
 <div class="line">    </div>
-<div class="line">    <a class="code hl_function" href="SocketPoll_8h.html#aca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a>(&amp;poll);</div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;server);</div>
-<div class="line">    <a class="code hl_function" href="Arena_8h.html#a6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
+<div class="line">    <a class="code hl_function" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a>(&amp;poll);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;server);</div>
+<div class="line">    <a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="aArena_8h_html_a6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="Arena_8h.html#a6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div></div>
-<div class="ttc" id="aArena_8h_html_a6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div></div>
-<div class="ttc" id="aArena_8h_html_ac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00038">Arena.h:38</a></div></div>
-<div class="ttc" id="aSocketAsync_8h_html"><div class="ttname"><a href="SocketAsync_8h.html">SocketAsync.h</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html"><div class="ttname"><a href="SocketPoll_8h.html">SocketPoll.h</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="SocketPoll_8h.html#a6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00060">SocketPoll.h:60</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html_aa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_aca744c50badbdb869c52088b9f32f8d2"><div class="ttname"><a href="SocketPoll_8h.html#aca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a></div><div class="ttdeci">void SocketPoll_free(SocketPoll_T *poll)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_structSocketEvent__T"><div class="ttname"><a href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00069">SocketPoll.h:70</a></div></div>
-<div class="ttc" id="aSocket_8h_html"><div class="ttname"><a href="Socket_8h.html">Socket.h</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div></div>
-<div class="ttc" id="aSocket_8h_html_a32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div></div>
-<div class="ttc" id="aSocket_8h_html_a35309677a1760480783d5f0c294d0db4"><div class="ttname"><a href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a></div><div class="ttdeci">void Socket_setnonblocking(Socket_T socket)</div></div>
-<div class="ttc" id="aSocket_8h_html_a6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div></div>
-<div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div></div>
-<div class="ttc" id="aSocket_8h_html_ab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="Socket_8h.html#ab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div></div>
-<div class="ttc" id="aSocket_8h_html_acb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div></div>
+<div class="ttc" id="aSocketAsync_8h_html"><div class="ttname"><a href="SocketAsync_8h.html">SocketAsync.h</a></div><div class="ttdoc">Asynchronous I/O operations using platform-optimized mechanisms.</div></div>
+<div class="ttc" id="aSocketPoll_8h_html"><div class="ttname"><a href="SocketPoll_8h.html">SocketPoll.h</a></div><div class="ttdoc">Cross-platform high-level interface for monitoring multiple sockets for I/O events.</div></div>
+<div class="ttc" id="aSocket_8h_html"><div class="ttname"><a href="Socket_8h.html">Socket.h</a></div><div class="ttdoc">High-level TCP/IP and Unix domain socket interface.</div></div>
 <div class="ttc" id="agraceful__shutdown_8c_html_a0ddf1224851353fc92bfbff6f499fa97"><div class="ttname"><a href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a></div><div class="ttdeci">int main(int argc, char *argv[])</div><div class="ttdef"><b>Definition</b> <a href="graceful__shutdown_8c_source.html#l00235">graceful_shutdown.c:235</a></div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md60"></a>
+<div class="ttc" id="agroup__core__io_html_ga2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div><div class="ttdoc">Enable address reuse.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Accept incoming connection.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga35309677a1760480783d5f0c294d0db4"><div class="ttname"><a href="group__core__io.html#ga35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a></div><div class="ttdeci">void Socket_setnonblocking(Socket_T socket)</div><div class="ttdoc">Enable non-blocking mode.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Free a socket and close the connection.</div></div>
+<div class="ttc" id="agroup__core__io_html_gab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div><div class="ttdoc">Listen for incoming connections.</div></div>
+<div class="ttc" id="agroup__core__io_html_gacb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Bind socket to address and port.</div></div>
+<div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for event monitoring in the poll set.</div></div>
+<div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Wait for I/O events on registered sockets.</div></div>
+<div class="ttc" id="agroup__event__system_html_gaca744c50badbdb869c52088b9f32f8d2"><div class="ttname"><a href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a></div><div class="ttdeci">void SocketPoll_free(SocketPoll_T *poll)</div><div class="ttdoc">Dispose of an event poll instance and release resources.</div></div>
+<div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00164">SocketPoll.h:164</a></div></div>
+<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00188">SocketPoll.h:189</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena.</div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md61"></a>
 Performance Tuning</h1>
-<h2><a class="anchor" id="autotoc_md61"></a>
+<h2><a class="anchor" id="autotoc_md62"></a>
 io_uring (Linux)</h2>
 <ul>
 <li><b>Ring Size</b>: Default is 1024 entries. Increase for high-throughput scenarios: <div class="fragment"><div class="line"><span class="comment">/* Modify SocketAsync.c: io_uring_queue_init(4096, async-&gt;ring, 0) */</span></div>
 </div><!-- fragment --></li>
-<li><b>Batch Processing</b>: Process multiple completions per call: <div class="fragment"><div class="line"><a class="code hl_function" href="SocketAsync_8h.html#a1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a>(async, 0); <span class="comment">/* Processes up to 100 */</span></div>
+<li><b>Batch Processing</b>: Process multiple completions per call: <div class="fragment"><div class="line"><a class="code hl_function" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a>(async, 0); <span class="comment">/* Processes up to 100 */</span></div>
 </div><!-- fragment --></li>
-<li><b>Zero-Copy</b>: Use <code>ASYNC_FLAG_ZERO_COPY</code> for large transfers: <div class="fragment"><div class="line"><a class="code hl_function" href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buf, len, cb, data, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a>);</div>
-<div class="ttc" id="aSocketAsync_8h_html_ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d"><div class="ttname"><a href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a></div><div class="ttdeci">@ ASYNC_FLAG_ZERO_COPY</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00075">SocketAsync.h:74</a></div></div>
+<li><b>Zero-Copy</b>: Use <code>ASYNC_FLAG_ZERO_COPY</code> for large transfers: <div class="fragment"><div class="line"><a class="code hl_function" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buf, len, cb, data, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a>);</div>
+<div class="ttc" id="agroup__async__io_html_ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d"><div class="ttname"><a href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a></div><div class="ttdeci">@ ASYNC_FLAG_ZERO_COPY</div><div class="ttdoc">Request zero-copy I/O to minimize data copying.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00150">SocketAsync.h:150</a></div></div>
 </div><!-- fragment --></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md62"></a>
+<h2><a class="anchor" id="autotoc_md63"></a>
 kqueue (macOS/BSD)</h2>
 <ul>
 <li><b>Edge-Triggered</b>: Uses edge-triggered mode automatically</li>
 <li><b>Event Batching</b>: Process multiple events per <code>kevent()</code> call</li>
 <li><b>Limitation</b>: Not true async I/O - performs I/O when event fires</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md63"></a>
+<h1><a class="anchor" id="autotoc_md64"></a>
 Fallback Mode</h1>
 <p>When async I/O is unavailable, operations are queued but not submitted to the kernel. Applications must complete operations manually:</p>
-<div class="fragment"><div class="line"><span class="keywordflow">if</span> (!<a class="code hl_function" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {</div>
+<div class="fragment"><div class="line"><span class="keywordflow">if</span> (!<a class="code hl_function" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {</div>
 <div class="line">    <span class="comment">/* Fallback: Use regular Socket_send()/Socket_recv() */</span></div>
-<div class="line">    ssize_t n = <a class="code hl_function" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(socket, buf, len);</div>
+<div class="line">    ssize_t n = <a class="code hl_function" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(socket, buf, len);</div>
 <div class="line">    <span class="comment">/* Manually invoke callback if needed */</span></div>
 <div class="line">}</div>
-<div class="ttc" id="aSocket_8h_html_a23ace6e065fe4b9a01db8caa6513515b"><div class="ttname"><a href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send</a></div><div class="ttdeci">ssize_t Socket_send(Socket_T socket, const void *buf, size_t len)</div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md64"></a>
+<div class="ttc" id="agroup__core__io_html_ga23ace6e065fe4b9a01db8caa6513515b"><div class="ttname"><a href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a></div><div class="ttdeci">ssize_t Socket_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send data.</div></div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md65"></a>
 Thread Safety</h1>
 <ul>
 <li><b>Request Tracking</b>: Thread-safe via internal mutex</li>
-<li><b>Completion Processing</b>: Thread-safe, but callbacks are invoked from <code><a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a></code> context. Socket library assumes single-threaded access per socket (e.g., no concurrent TLS I/O on same socket without external locking).</li>
+<li><b>Completion Processing</b>: Thread-safe, but callbacks are invoked from <code><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Wait for I/O events on registered sockets.">SocketPoll_wait()</a></code> context. Socket library assumes single-threaded access per socket (e.g., no concurrent TLS I/O on same socket without external locking).</li>
 <li><b>Callback Execution</b>: Keep callbacks fast - they run in the event loop thread</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md65"></a>
+<h1><a class="anchor" id="autotoc_md66"></a>
 Error Handling</h1>
 <p>Callbacks receive error codes (not exceptions):</p>
-<div class="fragment"><div class="line"><span class="keywordtype">void</span> my_callback(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> my_callback(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data) {</div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
 <div class="line">        <span class="comment">/* Handle error */</span></div>
 <div class="line">        <span class="keywordflow">if</span> (err == ECONNRESET) {</div>
@@ -365,15 +365,15 @@ Error Handling</h1>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Success */</span></div>
 <div class="line">}</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md66"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md67"></a>
 Migration Guide</h1>
-<h2><a class="anchor" id="autotoc_md67"></a>
+<h2><a class="anchor" id="autotoc_md68"></a>
 From Synchronous to Async</h2>
-<p><b>Before:</b> </p><div class="fragment"><div class="line">ssize_t n = <a class="code hl_function" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(socket, buf, len);</div>
+<p><b>Before:</b> </p><div class="fragment"><div class="line">ssize_t n = <a class="code hl_function" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(socket, buf, len);</div>
 <div class="line"><span class="keywordflow">if</span> (n &lt; 0) {</div>
 <div class="line">    <span class="comment">/* Handle error */</span></div>
 <div class="line">}</div>
-</div><!-- fragment --><p><b>After:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">void</span> send_done(<a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *data) {</div>
+</div><!-- fragment --><p><b>After:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">void</span> send_done(<a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *data) {</div>
 <div class="line">    <span class="keywordflow">if</span> (err != 0) {</div>
 <div class="line">        <span class="comment">/* Handle error */</span></div>
 <div class="line">        <span class="keywordflow">return</span>;</div>
@@ -381,35 +381,35 @@ From Synchronous to Async</h2>
 <div class="line">    <span class="comment">/* Process completion */</span></div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_function" href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buf, len, send_done, NULL, <a class="code hl_enumvalue" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md68"></a>
+<div class="line"><a class="code hl_function" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a>(async, socket, buf, len, send_done, NULL, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>);</div>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md69"></a>
 Best Practices</h1>
 <ol type="1">
-<li><b>Check Availability</b>: Always check <code><a class="el" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available()</a></code> before using async APIs</li>
+<li><b>Check Availability</b>: Always check <code><a class="el" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665" title="Check if async I/O is available on this platform.">SocketAsync_is_available()</a></code> before using async APIs</li>
 <li><b>Fast Callbacks</b>: Keep callbacks short - they block the event loop</li>
 <li><b>Buffer Lifetime</b>: Ensure buffers remain valid until callback is invoked</li>
 <li><b>Error Handling</b>: Always check <code>err</code> parameter in callbacks</li>
 <li><b>Resource Cleanup</b>: Free sockets/resources in callbacks, not in main loop</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md69"></a>
+<h1><a class="anchor" id="autotoc_md70"></a>
 Limitations</h1>
 <ol type="1">
 <li><b>macOS/BSD</b>: Not true async I/O - uses edge-triggered events with synchronous I/O</li>
 <li><b>Buffer Requirements</b>: Buffers must remain valid until callback is invoked</li>
-<li><b>Callback Context</b>: Callbacks run in <code><a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a></code> context - keep them fast</li>
+<li><b>Callback Context</b>: Callbacks run in <code><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Wait for I/O events on registered sockets.">SocketPoll_wait()</a></code> context - keep them fast</li>
 <li><b>Partial Transfers</b>: Handle partial sends/receives in callbacks</li>
 </ol>
-<h1><a class="anchor" id="autotoc_md70"></a>
+<h1><a class="anchor" id="autotoc_md71"></a>
 Troubleshooting</h1>
-<h2><a class="anchor" id="autotoc_md71"></a>
+<h2><a class="anchor" id="autotoc_md72"></a>
 Async Not Available</h2>
-<p><b>Problem:</b> <code><a class="el" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available()</a></code> returns 0</p>
+<p><b>Problem:</b> <code><a class="el" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665" title="Check if async I/O is available on this platform.">SocketAsync_is_available()</a></code> returns 0</p>
 <p><b>Solutions:</b></p><ul>
 <li>Linux: Install <code>liburing-dev</code> package</li>
 <li>Check kernel version (Linux 5.1+ required for io_uring)</li>
 <li>Use fallback mode or upgrade platform</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md72"></a>
+<h2><a class="anchor" id="autotoc_md73"></a>
 High CPU Usage</h2>
 <p><b>Problem:</b> CPU usage is still high with async I/O</p>
 <p><b>Solutions:</b></p><ul>
@@ -418,7 +418,7 @@ High CPU Usage</h2>
 <li>Batch process completions</li>
 <li>Profile callback execution time</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md73"></a>
+<h2><a class="anchor" id="autotoc_md74"></a>
 Memory Leaks</h2>
 <p><b>Problem:</b> Memory leaks in async operations</p>
 <p><b>Solutions:</b></p><ul>
@@ -426,10 +426,10 @@ Memory Leaks</h2>
 <li>Check for cancelled requests that weren't cleaned up</li>
 <li>Use Valgrind to track allocations</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md74"></a>
-API Reference</h1>
-<p>See <code><a class="el" href="SocketAsync_8h.html">include/socket/SocketAsync.h</a></code> for complete API documentation.</p>
 <h1><a class="anchor" id="autotoc_md75"></a>
+API Reference</h1>
+<p>See <code><a class="el" href="SocketAsync_8h.html" title="Asynchronous I/O operations using platform-optimized mechanisms.">include/socket/SocketAsync.h</a></code> for complete API documentation.</p>
+<h1><a class="anchor" id="autotoc_md76"></a>
 Performance Benchmarks</h1>
 <p>Expected performance improvements:</p>
 <ul>

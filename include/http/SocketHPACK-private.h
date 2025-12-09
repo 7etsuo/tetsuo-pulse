@@ -1,9 +1,26 @@
 /**
- * SocketHPACK-private.h - HPACK Internal Structures and Constants
+ * @file SocketHPACK-private.h
+ * @brief Internal HPACK header compression structures and constants.
+ * @ingroup http
+ * @internal
  *
- * Part of the Socket Library
+ * This header contains internal structures for the HPACK header compression implementation.
+ * NOT for public consumption - use SocketHPACK.h instead.
  *
- * Internal header for HPACK implementation. Do not include directly.
+ * Contains:
+ * - Dynamic table circular buffer implementation
+ * - Huffman encoding/decoding DFA tables and state machines
+ * - Encoder/decoder internal structures
+ * - HPACK integer encoding/decoding primitives
+ * - Static table access functions
+ * - Compression bomb prevention limits
+ *
+ * The implementation uses DFA-based Huffman decoding for O(n) single-pass
+ * decompression with security hardening against compression bombs.
+ *
+ * @see SocketHPACK.h for public HPACK API.
+ * @see SocketHTTP2.h for HTTP/2 integration.
+ * @see SocketHTTP-private.h for core HTTP internal structures.
  */
 
 #ifndef SOCKETHPACK_PRIVATE_INCLUDED
@@ -19,29 +36,62 @@
  * ============================================================================
  */
 
-/** Estimated average dynamic entry size for initial capacity calculation
- * (bytes) */
+/**
+ * @brief Estimated average size of a dynamic HPACK table entry in bytes.
+ * @ingroup http
+ * @internal
+ *
+ * Used for initial capacity calculation to minimize resizes.
+ */
 #define HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE 50
 
-/** Minimum dynamic table capacity (power-of-2 for efficient modulo) */
+/**
+ * @brief Minimum capacity for dynamic table (power-of-2 for efficient modulo operations).
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_MIN_DYNAMIC_TABLE_CAPACITY 16
 
-/** Number of symbols in Huffman table (0-255 + EOS) */
+/**
+ * @brief Total number of symbols in the HPACK Huffman table (ASCII 0-255 + End-of-String).
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_SYMBOLS 257
 
-/** EOS symbol code */
+/**
+ * @brief End-of-String (EOS) symbol code in Huffman table.
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_EOS 256
 
-/** Maximum Huffman code length in bits */
+/**
+ * @brief Maximum length of a Huffman code in bits (per RFC 7541).
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_MAX_BITS 30
 
-/** Number of states in Huffman DFA decode table */
+/**
+ * @brief Number of states in the Huffman DFA decoder table.
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_NUM_STATES 256
 
-/** Invalid DFA state (error) */
+/**
+ * @brief Special value indicating an invalid or error state in Huffman DFA.
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_STATE_ERROR 0xFF
 
-/** Accept state marker */
+/**
+ * @brief Special value marking an accept state in Huffman DFA transitions.
+ * @ingroup http
+ * @internal
+ */
 #define HPACK_HUFFMAN_STATE_ACCEPT 0xFE
 
 /* ============================================================================
@@ -50,9 +100,14 @@
  */
 
 /**
- * Dynamic table entry
+ * @brief Entry in the HPACK dynamic table storing a header field name-value pair.
+ * @ingroup http
+ * @internal
  *
- * Stored in circular buffer. Strings are allocated from arena.
+ * Stored in circular buffer. Strings are allocated from arena and managed by SocketHPACK_Table_T.
+ *
+ * @see SocketHPACK_Table_T
+ * @see RFC 7541 Section 4.1
  */
 typedef struct
 {
@@ -68,22 +123,28 @@ typedef struct
  */
 
 /**
- * Dynamic table implementation
+ * @brief Dynamic table for storing header fields in HPACK compression (RFC 7541).
+ * @ingroup http
+ * @internal
  *
- * Uses circular buffer for O(1) FIFO operations.
- * Index 1 = most recently added (tail-1)
- * Higher indices = older entries toward head
+ * Implements a circular buffer (ring buffer) for efficient eviction of oldest entries.
+ * Indices follow HPACK convention: index 1 is most recent, increasing indices are older.
+ * Supports dynamic resizing based on SETTINGS_HEADER_TABLE_SIZE.
+ *
+ * @see HPACK_DynamicEntry for individual entries.
+ * @see hpack_table_evict() for eviction mechanism.
+ * @see SocketHPACK_Encoder::table and SocketHPACK_Decoder::table for usage.
  */
 struct SocketHPACK_Table
 {
-  HPACK_DynamicEntry *entries; /**< Ring buffer of entries */
-  size_t capacity;             /**< Max entries (power of 2) */
-  size_t head;                 /**< Oldest entry index */
-  size_t tail;                 /**< Next insertion index */
-  size_t count;                /**< Current entry count */
-  size_t size;                 /**< Current size in bytes */
-  size_t max_size;             /**< Maximum size from settings */
-  Arena_T arena;               /**< Memory arena */
+  HPACK_DynamicEntry *entries; /**< Ring buffer of dynamic entries */
+  size_t capacity;             /**< Maximum number of entries (power-of-2) */
+  size_t head;                 /**< Index of oldest entry */
+  size_t tail;                 /**< Index for next insertion (one past newest) */
+  size_t count;                /**< Current number of entries */
+  size_t size;                 /**< Current total size in bytes (sum of entry sizes) */
+  size_t max_size;             /**< Maximum allowed size in bytes (from settings) */
+  Arena_T arena;               /**< Arena for allocating entries and strings */
 };
 
 /* ============================================================================
@@ -92,16 +153,24 @@ struct SocketHPACK_Table
  */
 
 /**
- * HPACK encoder implementation
+ * @brief Internal structure for HPACK header encoder.
+ * @ingroup http
+ * @internal
+ *
+ * Manages dynamic table updates, Huffman encoding decisions, and indexing strategy.
+ * Used by SocketHTTP2 for compressing outgoing headers.
+ *
+ * @see SocketHPACK_EncoderConfig for configuration options.
+ * @see SocketHPACK_Table_T for dynamic table details.
  */
 struct SocketHPACK_Encoder
 {
-  SocketHPACK_Table_T table;     /**< Dynamic table */
-  size_t pending_table_size;     /**< Pending size update (0 = none) */
-  int pending_table_size_update; /**< Flag for pending update */
-  int huffman_encode;            /**< Use Huffman encoding */
-  int use_indexing;              /**< Add to dynamic table */
-  Arena_T arena;                 /**< Memory arena */
+  SocketHPACK_Table_T table;     /**< Dynamic table shared with decoder if symmetric */
+  size_t pending_table_size;     /**< Pending dynamic table size update (0 if none) */
+  int pending_table_size_update; /**< Flag indicating a table size update is queued */
+  int huffman_encode;            /**< Flag to enable Huffman coding for strings */
+  int use_indexing;              /**< Flag to enable dynamic table indexing */
+  Arena_T arena;                 /**< Arena for temporary allocations during encoding */
 };
 
 /* ============================================================================
@@ -110,23 +179,30 @@ struct SocketHPACK_Encoder
  */
 
 /**
- * HPACK decoder implementation
+ * @brief Internal structure for HPACK header decoder.
+ * @ingroup http
+ * @internal
+ *
+ * Handles decompression of HPACK-encoded headers with security checks against
+ * decompression bombs (excessive expansion).
+ * Used by SocketHTTP2 for processing incoming headers.
+ *
+ * @see SocketHPACK_DecoderConfig for configuration.
+ * @see SocketHPACK_Table_T for dynamic table.
+ * @warning Decompression bomb protection limits ratio of output to input bytes.
  */
 struct SocketHPACK_Decoder
 {
-  SocketHPACK_Table_T table;      /**< Dynamic table */
-  size_t max_header_size;         /**< Max individual header size */
-  size_t max_header_list_size;    /**< Max total decoded size */
-  size_t settings_max_table_size; /**< Max size from SETTINGS */
-  Arena_T arena;                  /**< Memory arena */
+  SocketHPACK_Table_T table;      /**< Dynamic table for header field references */
+  size_t max_header_size;         /**< Maximum size for a single decoded header field */
+  size_t max_header_list_size;    /**< Maximum size for the entire header list */
+  size_t settings_max_table_size; /**< Maximum dynamic table size from peer SETTINGS */
+  Arena_T arena;                  /**< Arena for decoded header allocations */
 
   /* Decompression bomb protection */
-  uint64_t decode_input_bytes;  /**< Cumulative input bytes in current decode
-                                   session */
-  uint64_t decode_output_bytes; /**< Cumulative output bytes in current decode
-                                   session */
-  double max_expansion_ratio;   /**< Max allowed output/input ratio
-                                   (default 10.0) */
+  uint64_t decode_input_bytes;  /**< Cumulative input bytes processed in current session */
+  uint64_t decode_output_bytes; /**< Cumulative output bytes produced in current session */
+  double max_expansion_ratio;   /**< Maximum allowed output/input expansion ratio (default 10.0) */
 };
 
 /* ============================================================================
@@ -135,15 +211,22 @@ struct SocketHPACK_Decoder
  */
 
 /**
- * Static table entry structure
- * Field order optimized to minimize padding (pointers first, then integers)
+ * @brief Structure for entries in the HPACK static table (RFC 7541 Table 2).
+ * @ingroup http
+ * @internal
+ *
+ * Contains 61 predefined HTTP header fields. Field order minimizes padding.
+ * Strings are compile-time constants, no allocation needed.
+ *
+ * @see hpack_static_table for the full array of entries.
+ * @see SocketHPACK_StaticEntry for public typedef (if exposed).
  */
 typedef struct
 {
-  const char *name;  /**< Header name (compile-time string) */
-  const char *value; /**< Header value (compile-time string) */
-  uint8_t name_len;  /**< Name length */
-  uint8_t value_len; /**< Value length */
+  const char *name;  /**< Header field name (compile-time constant string) */
+  const char *value; /**< Header field value (compile-time constant string) */
+  uint8_t name_len;  /**< Length of name in bytes */
+  uint8_t value_len; /**< Length of value in bytes */
 } HPACK_StaticEntry;
 
 /* ============================================================================
@@ -152,38 +235,88 @@ typedef struct
  */
 
 /**
- * Huffman encode table entry
+ * @brief Entry in the HPACK Huffman encoding table for a specific symbol.
+ * @ingroup http
+ * @internal
+ *
+ * Maps a symbol (0-256) to its variable-length Huffman code.
+ * Code is left-aligned in 32-bit field for easy bit manipulation.
+ *
+ * @see hpack_huffman_encode for the full table.
+ * @see RFC 7541 Appendix B for Huffman code assignment.
  */
 typedef struct
 {
-  uint32_t code; /**< Huffman code (left-aligned in 32 bits) */
-  uint8_t bits;  /**< Number of bits in code */
+  uint32_t code; /**< Huffman code bits (left-aligned in 32-bit integer) */
+  uint8_t bits;  /**< Number of valid bits in the code (1-30) */
 } HPACK_HuffmanSymbol;
 
 /**
- * Huffman DFA transition entry
+ * @brief Transition entry in the Huffman decoding DFA table.
+ * @ingroup http
+ * @internal
  *
- * For each input byte, provides next state and output.
+ * Defines state transition and output for a given input byte (nibble-indexed).
+ * Supports efficient single-pass decoding with minimal branching.
+ *
+ * @see hpack_huffman_decode for the DFA table.
+ * @see HPACK_DFA_* flags for behavior indicators.
  */
 typedef struct
 {
-  uint8_t next_state; /**< Next DFA state */
-  uint8_t flags;      /**< HPACK_DFA_* flags */
-  uint8_t sym;        /**< Output symbol (if accepting) */
+  uint8_t next_state; /**< Next state in DFA (or special values like error/accept) */
+  uint8_t flags;      /**< Bit flags controlling output and error handling (HPACK_DFA_*) */
+  uint8_t sym;        /**< Primary output symbol if accepting state reached */
 } HPACK_HuffmanTransition;
 
-/** DFA flags */
-#define HPACK_DFA_ACCEPT 0x01 /**< State produces output */
-#define HPACK_DFA_EOS 0x02    /**< EOS symbol encountered */
-#define HPACK_DFA_ERROR 0x04  /**< Invalid sequence */
-#define HPACK_DFA_SYM2 0x08   /**< Second symbol available */
+/**
+ * @brief Bit flags for Huffman DFA transition behavior.
+ * @ingroup http
+ * @internal
+ *
+ * Used in HPACK_HuffmanTransition::flags to indicate state outcomes.
+ */
+#define HPACK_DFA_ACCEPT 0x01 /**< Accepting state: one or more symbols emitted */
+#define HPACK_DFA_EOS    0x02 /**< End-of-string symbol (256) emitted */
+#define HPACK_DFA_ERROR  0x04 /**< Invalid transition: decoding error */
+#define HPACK_DFA_SYM2   0x08 /**< Additional secondary symbol available in this transition */
 
 /* External declarations for Huffman tables */
+/**
+ * @brief Precomputed Huffman encoding table for all 257 symbols.
+ * @ingroup http
+ * @internal
+ *
+ * Allows O(1) lookup of codes for fast encoding.
+ * Defined in SocketHPACK-huffman.c.
+ */
 extern const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS];
+/**
+ * @brief DFA table for Huffman decoding (state-machine transitions).
+ * @ingroup http
+ * @internal
+ *
+ * 256 states x 16 nibbles = 4096 entries for byte-wise decoding.
+ * Enables deterministic, branch-free decoding.
+ * Defined in SocketHPACK-huffman.c.
+ *
+ * @see HPACK_HuffmanTransition for entry format.
+ */
 extern const HPACK_HuffmanTransition
     hpack_huffman_decode[HPACK_HUFFMAN_NUM_STATES][16];
 
-/* External declaration for static table */
+/**
+ * @brief Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A).
+ * @ingroup http
+ * @internal
+ *
+ * Used for literal header representation without dynamic table indexing.
+ * Entries indexed from 1 to 61; index 0 reserved.
+ * Defined in SocketHPACK-table.c.
+ *
+ * @see HPACK_StaticEntry for structure.
+ * @see SocketHPACK_get_static_entry() if public accessor exists.
+ */
 extern const HPACK_StaticEntry
     hpack_static_table[SOCKETHPACK_STATIC_TABLE_SIZE];
 
@@ -193,21 +326,40 @@ extern const HPACK_StaticEntry
  */
 
 /**
- * hpack_table_evict - Evict oldest entries until size fits
- * @table: Dynamic table
- * @required_space: Space needed for new entry
+ * @brief Evict oldest entries from dynamic table to free up required space.
+ * @ingroup http
+ * @internal
+ * @param table The dynamic table instance.
+ * @param required_space Minimum bytes needed for new entry insertion.
+ * @return Number of entries evicted (may be 0).
+ * @note Continues evicting until table->size + required_space <= table->max_size.
+ * @note Calls SocketSecurity_check_add internally to prevent overflow.
  *
- * Returns: Number of entries evicted
+ * Used during encoder insertion when table exceeds capacity.
+ *
+ * @see SocketHPACK_Table_T::size
+ * @see SocketHPACK_Table_T::max_size
+ * @see hpack_entry_size() for entry sizing.
  */
 extern size_t hpack_table_evict (SocketHPACK_Table_T table,
                                  size_t required_space);
 
 /**
- * hpack_entry_size - Calculate entry size per RFC 7541
- * @name_len: Header name length
- * @value_len: Header value length
+ * @brief Compute the size of a dynamic table entry per RFC 7541 Section 4.1.
+ * @ingroup http
+ * @internal
+ * @param name_len Length of the header name in bytes.
+ * @param value_len Length of the header value in bytes.
+ * @return Total entry size = name_len + value_len + SOCKETHPACK_ENTRY_OVERHEAD (32 bytes),
+ *         or SIZE_MAX if arithmetic overflow detected.
+ * @note Uses SocketSecurity_check_add() to safely compute sum and prevent integer overflow.
+ * @note Overhead accounts for indexing and management structures.
  *
- * Returns: Entry size including 32-byte overhead
+ * Essential for table eviction and capacity checks.
+ *
+ * @see SocketSecurity_check_add()
+ * @see hpack_table_evict()
+ * @see SOCKETHPACK_ENTRY_OVERHEAD constant.
  */
 static inline size_t
 hpack_entry_size (size_t name_len, size_t value_len)

@@ -57,7 +57,7 @@ var sectionId = 'dynsection-1';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
 <polygon fill="#999999" stroke="#666666" points="462.5,-184 388.5,-184 388.5,-165 462.5,-165 462.5,-184"/>
 <text text-anchor="middle" x="425.5" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS.h</text>
 </a>
@@ -66,7 +66,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketDTLSContext_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketDTLSContext_8h.html" target="_top" xlink:title="DTLS context management with cookie protection and secure defaults.">
 <polygon fill="white" stroke="#666666" points="353.5,-129 237.5,-129 237.5,-110 353.5,-110 353.5,-129"/>
 <text text-anchor="middle" x="295.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLSContext.h</text>
 </a>
@@ -84,7 +84,7 @@ var sectionId = 'dynsection-1';
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title="TLS context management with secure defaults and certificate handling.">
 <polygon fill="white" stroke="#666666" points="479.5,-129 371.5,-129 371.5,-110 479.5,-110 479.5,-129"/>
 <text text-anchor="middle" x="425.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLSContext.h</text>
 </a>
@@ -120,7 +120,7 @@ var sectionId = 'dynsection-1';
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation.">
 <polygon fill="white" stroke="#666666" points="217,-74 110,-74 110,-55 217,-55 217,-74"/>
 <text text-anchor="middle" x="163.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPClient.h</text>
 </a>
@@ -138,7 +138,7 @@ var sectionId = 'dynsection-1';
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">
 <polygon fill="white" stroke="#666666" points="367.5,-74 257.5,-74 257.5,-55 367.5,-55 367.5,-74"/>
 <text text-anchor="middle" x="312.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPServer.h</text>
 </a>
@@ -156,7 +156,7 @@ var sectionId = 'dynsection-1';
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000011"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols.">
 <polygon fill="white" stroke="#666666" points="465.5,-74 385.5,-74 385.5,-55 465.5,-55 465.5,-74"/>
 <text text-anchor="middle" x="425.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketProxy.h</text>
 </a>

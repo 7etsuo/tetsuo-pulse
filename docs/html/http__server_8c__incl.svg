@@ -18,31 +18,31 @@
   <circle id="rim" cx="0" cy="0" r="7"/>
   <circle id="rim2" cx="0" cy="0" r="3.5"/>
   <g id="zoomPlus">
-    <use xlink:href="#rim" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomplus.mouseover" end="zoomplus.mouseout"/></use>
+    <use xlink:href="#rim" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomplus.mouseover" end="zoomplus.mouseout"/></use>
     <path d="M-4,0h8M0,-4v8" fill="none" stroke="white" stroke-width="1.5" pointer-events="none"/>
   </g>
   <g id="zoomMin">
-    <use xlink:href="#rim" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomminus.mouseover" end="zoomminus.mouseout"/></use>
+    <use xlink:href="#rim" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="zoomminus.mouseover" end="zoomminus.mouseout"/></use>
     <path d="M-4,0h8" fill="none" stroke="white" stroke-width="1.5" pointer-events="none"/>
   </g>
   <g id="arrowUp" transform="translate(30 24)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowRight" transform="rotate(90) translate(36 -43)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowDown" transform="rotate(180) translate(-30 -48)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="arrowLeft" transform="rotate(270) translate(-36 17)">
-    <use xlink:href="#rim"/>
+    <use xlink:href="#rim" target="_top"/>
     <path pointer-events="none" fill="none" stroke="white" stroke-width="1.5" d="M0,-3.0v7 M-2.5,-0.5L0,-3.0L2.5,-0.5"/>
   </g>
   <g id="resetDef">
-    <use xlink:href="#rim2" fill="#404040"><set attributeName="fill" to="#808080" begin="reset.mouseover" end="reset.mouseout"/></use>
+    <use xlink:href="#rim2" target="_top" fill="#404040"><set attributeName="fill" to="#808080" begin="reset.mouseover" end="reset.mouseout"/></use>
   </g>
 </defs>
 <script type="application/ecmascript">
@@ -50,7 +50,7 @@ var viewWidth = 1918;
 var viewHeight = 467;
 var sectionId = 'dynsection-0';
 </script>
-<script type="application/ecmascript" xlink:href="svg.min.js"/>
+<script type="application/ecmascript" xlink:href="svg.min.js" target="_top"/>
 <svg id="graph" class="graph">
 <g id="viewport">
 <title>http_server.c</title>
@@ -138,7 +138,7 @@ var sectionId = 'dynsection-0';
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="1330.5,-74 1253.5,-74 1253.5,-55 1330.5,-55 1330.5,-74"/>
 <text text-anchor="middle" x="1292" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -156,7 +156,7 @@ var sectionId = 'dynsection-0';
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHTTP_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketHTTP_8h.html" target="_top" xlink:title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities.">
 <polygon fill="white" stroke="#666666" points="1542,-184 1442,-184 1442,-165 1542,-165 1542,-184"/>
 <text text-anchor="middle" x="1492" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHTTP.h</text>
 </a>
@@ -174,7 +174,7 @@ var sectionId = 'dynsection-0';
 <!-- Node14 -->
 <g id="Node000014" class="node">
 <title>Node14</title>
-<g id="a_Node000014"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000014"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">
 <polygon fill="white" stroke="#666666" points="1390.5,-404 1261.5,-404 1261.5,-385 1390.5,-385 1390.5,-404"/>
 <text text-anchor="middle" x="1326" y="-392" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHTTPServer.h</text>
 </a>
@@ -291,7 +291,7 @@ var sectionId = 'dynsection-0';
 <!-- Node13 -->
 <g id="Node000013" class="node">
 <title>Node13</title>
-<g id="a_Node000013"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000013"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="1215,-129 1143,-129 1143,-110 1215,-110 1215,-129"/>
 <text text-anchor="middle" x="1179" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -381,7 +381,7 @@ var sectionId = 'dynsection-0';
 <!-- Node15 -->
 <g id="Node000015" class="node">
 <title>Node15</title>
-<g id="a_Node000015"><a xlink:href="SocketRateLimit_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000015"><a xlink:href="SocketRateLimit_8h.html" target="_top" xlink:title="Token bucket rate limiter for controlling operation rates.">
 <polygon fill="white" stroke="#666666" points="1385.5,-184 1266.5,-184 1266.5,-165 1385.5,-165 1385.5,-184"/>
 <text text-anchor="middle" x="1326" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketRateLimit.h</text>
 </a>
@@ -399,7 +399,7 @@ var sectionId = 'dynsection-0';
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000016"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events.">
 <polygon fill="white" stroke="#666666" points="1690,-294 1600,-294 1600,-275 1690,-275 1690,-294"/>
 <text text-anchor="middle" x="1645" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">poll/SocketPoll.h</text>
 </a>
@@ -417,7 +417,7 @@ var sectionId = 'dynsection-0';
 <!-- Node18 -->
 <g id="Node000018" class="node">
 <title>Node18</title>
-<g id="a_Node000018"><a xlink:href="Socket_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000018"><a xlink:href="Socket_8h.html" target="_top" xlink:title="High&#45;level TCP/IP and Unix domain socket interface.">
 <polygon fill="white" stroke="#666666" points="958,-239 870,-239 870,-220 958,-220 958,-239"/>
 <text text-anchor="middle" x="914" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">socket/Socket.h</text>
 </a>
@@ -435,7 +435,7 @@ var sectionId = 'dynsection-0';
 <!-- Node34 -->
 <g id="Node000034" class="node">
 <title>Node34</title>
-<g id="a_Node000034"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000034"><a xlink:href="SocketTLSContext_8h.html" target="_top" xlink:title="TLS context management with secure defaults and certificate handling.">
 <polygon fill="white" stroke="#666666" points="1075,-349 953,-349 953,-330 1075,-330 1075,-349"/>
 <text text-anchor="middle" x="1014" y="-337" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLSContext.h</text>
 </a>
@@ -498,7 +498,7 @@ var sectionId = 'dynsection-0';
 <!-- Node17 -->
 <g id="Node000017" class="node">
 <title>Node17</title>
-<g id="a_Node000017"><a xlink:href="SocketTimer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000017"><a xlink:href="SocketTimer_8h.html" target="_top" xlink:title="High&#45;performance timer subsystem integrated with the event loop.">
 <polygon fill="white" stroke="#666666" points="1699.5,-184 1598.5,-184 1598.5,-165 1699.5,-165 1699.5,-184"/>
 <text text-anchor="middle" x="1649" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketTimer.h</text>
 </a>
@@ -552,7 +552,7 @@ var sectionId = 'dynsection-0';
 <!-- Node19 -->
 <g id="Node000019" class="node">
 <title>Node19</title>
-<g id="a_Node000019"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000019"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="367,-129 261,-129 261,-110 367,-110 367,-129"/>
 <text text-anchor="middle" x="314" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -562,15 +562,15 @@ var sectionId = 'dynsection-0';
 <g id="edge35_Node000018_Node000019" class="edge">
 <title>Node18&#45;&gt;Node19</title>
 <g id="a_edge35_Node000018_Node000019"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M869.77,-221.29C866.8,-220.84 863.86,-220.41 861,-220 732.42,-201.71 698.71,-207.62 571,-184 493.2,-169.61 403.83,-145.86 353.62,-131.85"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="354.39,-128.43 343.82,-129.09 352.5,-135.17 354.39,-128.43"/>
+<path fill="none" stroke="#63b8ff" d="M869.77,-221.28C866.81,-220.84 863.86,-220.41 861,-220 731.53,-201.64 697.57,-207.84 569,-184 491.57,-169.64 402.63,-145.78 352.9,-131.75"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="353.77,-128.36 343.2,-129 351.86,-135.1 353.77,-128.36"/>
 </a>
 </g>
 </g>
 <!-- Node27 -->
 <g id="Node000027" class="node">
 <title>Node27</title>
-<g id="a_Node000027"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000027"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
 <polygon fill="white" stroke="#666666" points="935,-129 839,-129 839,-110 935,-110 935,-129"/>
 <text text-anchor="middle" x="887" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -588,9 +588,9 @@ var sectionId = 'dynsection-0';
 <!-- Node29 -->
 <g id="Node000029" class="node">
 <title>Node29</title>
-<g id="a_Node000029"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title=" ">
-<polygon fill="white" stroke="#666666" points="708,-184 580,-184 580,-165 708,-165 708,-184"/>
-<text text-anchor="middle" x="644" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon.h</text>
+<g id="a_Node000029"><a xlink:href="SocketCommon_8h.html" target="_top" xlink:title="Common utilities shared between Socket and SocketDgram modules.">
+<polygon fill="white" stroke="#666666" points="706,-184 578,-184 578,-165 706,-165 706,-184"/>
+<text text-anchor="middle" x="642" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon.h</text>
 </a>
 </g>
 </g>
@@ -598,8 +598,8 @@ var sectionId = 'dynsection-0';
 <g id="edge50_Node000018_Node000029" class="edge">
 <title>Node18&#45;&gt;Node29</title>
 <g id="a_edge50_Node000018_Node000029"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M870.62,-219.98C823.62,-210.76 748.57,-196.03 697.84,-186.07"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="698.21,-182.57 687.72,-184.08 696.86,-189.44 698.21,-182.57"/>
+<path fill="none" stroke="#63b8ff" d="M870.3,-219.98C822.85,-210.74 747.03,-195.97 695.92,-186.01"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="696.53,-182.56 686.04,-184.08 695.19,-189.43 696.53,-182.56"/>
 </a>
 </g>
 </g>
@@ -796,7 +796,7 @@ var sectionId = 'dynsection-0';
 <g id="edge61_Node000029_Node000006" class="edge">
 <title>Node29&#45;&gt;Node6</title>
 <g id="a_edge61_Node000029_Node000006"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M708.05,-165.57C768.97,-157.65 863.06,-144.47 944,-129 980.32,-122.06 988.74,-117.27 1025,-110 1100.97,-94.78 1189.83,-80.7 1243.47,-72.61"/>
+<path fill="none" stroke="#63b8ff" d="M706.18,-165.63C767.5,-157.74 862.4,-144.55 944,-129 980.32,-122.08 988.74,-117.27 1025,-110 1100.97,-94.78 1189.83,-80.7 1243.47,-72.61"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="1244.02,-76.07 1253.39,-71.13 1242.98,-69.15 1244.02,-76.07"/>
 </a>
 </g>
@@ -805,7 +805,7 @@ var sectionId = 'dynsection-0';
 <g id="edge58_Node000029_Node000011" class="edge">
 <title>Node29&#45;&gt;Node11</title>
 <g id="a_edge58_Node000029_Node000011"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M708.2,-171.06C813.61,-166.52 1030.08,-154.88 1222.77,-129"/>
+<path fill="none" stroke="#63b8ff" d="M706.42,-171.08C812.2,-166.55 1029.41,-154.95 1222.73,-129.01"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="1223.36,-132.46 1232.79,-127.64 1222.41,-125.52 1223.36,-132.46"/>
 </a>
 </g>
@@ -814,8 +814,8 @@ var sectionId = 'dynsection-0';
 <g id="edge60_Node000029_Node000013" class="edge">
 <title>Node29&#45;&gt;Node13</title>
 <g id="a_edge60_Node000029_Node000013"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M708,-167.16C817.21,-156.34 1037,-134.57 1132.7,-125.09"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="1133.32,-128.54 1142.93,-124.07 1132.63,-121.58 1133.32,-128.54"/>
+<path fill="none" stroke="#63b8ff" d="M706.24,-167.16C815.97,-156.33 1036.91,-134.52 1132.82,-125.06"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="1133.19,-128.54 1142.8,-124.07 1132.5,-121.57 1133.19,-128.54"/>
 </a>
 </g>
 </g>
@@ -823,8 +823,8 @@ var sectionId = 'dynsection-0';
 <g id="edge62_Node000029_Node000019" class="edge">
 <title>Node29&#45;&gt;Node19</title>
 <g id="a_edge62_Node000029_Node000019"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M590.98,-164.98C532.73,-155.63 439.23,-140.61 377.22,-130.65"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="377.59,-127.17 367.16,-129.04 376.48,-134.08 377.59,-127.17"/>
+<path fill="none" stroke="#63b8ff" d="M589.3,-164.98C531.41,-155.63 438.47,-140.61 376.83,-130.65"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="377.27,-127.18 366.84,-129.04 376.15,-134.09 377.27,-127.18"/>
 </a>
 </g>
 </g>
@@ -832,8 +832,8 @@ var sectionId = 'dynsection-0';
 <g id="edge53_Node000029_Node000021" class="edge">
 <title>Node29&#45;&gt;Node21</title>
 <g id="a_edge53_Node000029_Node000021"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M579.83,-169.57C548.13,-164.41 511.52,-153.16 487,-129 475.1,-117.27 470.59,-98.42 468.91,-84.3"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="472.39,-83.9 468.08,-74.22 465.41,-84.47 472.39,-83.9"/>
+<path fill="none" stroke="#63b8ff" d="M577.64,-168.85C546.93,-163.47 511.79,-152.23 488,-129 475.99,-117.28 471.17,-98.43 469.25,-84.3"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="472.72,-83.82 468.25,-74.22 465.75,-84.52 472.72,-83.82"/>
 </a>
 </g>
 </g>
@@ -841,8 +841,8 @@ var sectionId = 'dynsection-0';
 <g id="edge55_Node000029_Node000022" class="edge">
 <title>Node29&#45;&gt;Node22</title>
 <g id="a_edge55_Node000029_Node000022"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M585.58,-164.93C551.18,-158.31 507.59,-147.14 472,-129 448.03,-116.78 424.82,-96.03 410.25,-81.59"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="412.61,-78.99 403.11,-74.31 407.61,-83.89 412.61,-78.99"/>
+<path fill="none" stroke="#63b8ff" d="M586.2,-164.99C552.18,-158.33 508.56,-147.08 473,-129 448.83,-116.71 425.29,-95.98 410.51,-81.56"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="412.79,-78.89 403.24,-74.29 407.84,-83.84 412.79,-78.89"/>
 </a>
 </g>
 </g>
@@ -850,8 +850,8 @@ var sectionId = 'dynsection-0';
 <g id="edge56_Node000029_Node000024" class="edge">
 <title>Node29&#45;&gt;Node24</title>
 <g id="a_edge56_Node000029_Node000024"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M579.68,-171.28C548.87,-166.57 514.52,-155.2 495,-129 482.12,-111.71 502.72,-92.3 521.24,-79.54"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="523.27,-82.4 529.75,-74.01 519.46,-76.53 523.27,-82.4"/>
+<path fill="none" stroke="#63b8ff" d="M577.76,-170.92C547.56,-166.08 514.07,-154.7 495,-129 482.15,-111.69 502.74,-92.28 521.26,-79.53"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="523.28,-82.39 529.76,-74.01 519.47,-76.52 523.28,-82.39"/>
 </a>
 </g>
 </g>
@@ -859,7 +859,7 @@ var sectionId = 'dynsection-0';
 <g id="edge54_Node000029_Node000028" class="edge">
 <title>Node29&#45;&gt;Node28</title>
 <g id="a_edge54_Node000029_Node000028"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M595.49,-164.93C554.22,-155.51 505.01,-137.91 528,-110 552.08,-80.77 663.54,-70.48 721.21,-67.07"/>
+<path fill="none" stroke="#63b8ff" d="M595.05,-164.94C554.31,-155.45 505.17,-137.72 528,-110 552.08,-80.77 663.54,-70.48 721.21,-67.07"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="721.53,-70.56 731.32,-66.51 721.14,-63.57 721.53,-70.56"/>
 </a>
 </g>
@@ -868,8 +868,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000030" class="node">
 <title>Node30</title>
 <g id="a_Node000030"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="821,-129 765,-129 765,-110 821,-110 821,-129"/>
-<text text-anchor="middle" x="793" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="820.5,-129 763.5,-129 763.5,-110 820.5,-110 820.5,-129"/>
+<text text-anchor="middle" x="792" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
 </a>
 </g>
 </g>
@@ -877,8 +877,8 @@ var sectionId = 'dynsection-0';
 <g id="edge51_Node000029_Node000030" class="edge">
 <title>Node29&#45;&gt;Node30</title>
 <g id="a_edge51_Node000029_Node000030"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M667.94,-164.98C692.56,-156.23 731.12,-142.51 758.92,-132.62"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="760.38,-135.82 768.62,-129.17 758.03,-129.22 760.38,-135.82"/>
+<path fill="none" stroke="#63b8ff" d="M666.1,-164.98C690.88,-156.23 729.7,-142.51 757.69,-132.62"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="759.2,-135.8 767.46,-129.17 756.87,-129.2 759.2,-135.8"/>
 </a>
 </g>
 </g>
@@ -886,8 +886,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000031" class="node">
 <title>Node31</title>
 <g id="a_Node000031"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="594.5,-129 537.5,-129 537.5,-110 594.5,-110 594.5,-129"/>
-<text text-anchor="middle" x="566" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">pthread.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="593,-129 537,-129 537,-110 593,-110 593,-129"/>
+<text text-anchor="middle" x="565" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">stdbool.h</text>
 </a>
 </g>
 </g>
@@ -895,8 +895,8 @@ var sectionId = 'dynsection-0';
 <g id="edge52_Node000029_Node000031" class="edge">
 <title>Node29&#45;&gt;Node31</title>
 <g id="a_edge52_Node000029_Node000031"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M631.47,-164.98C619.6,-156.92 601.54,-144.65 587.39,-135.03"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="589,-131.9 578.76,-129.17 585.06,-137.69 589,-131.9"/>
+<path fill="none" stroke="#63b8ff" d="M629.63,-164.98C617.91,-156.92 600.08,-144.65 586.11,-135.03"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="587.82,-131.96 577.6,-129.17 583.85,-137.72 587.82,-131.96"/>
 </a>
 </g>
 </g>
@@ -904,8 +904,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000032" class="node">
 <title>Node32</title>
 <g id="a_Node000032"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="675,-129 613,-129 613,-110 675,-110 675,-129"/>
-<text text-anchor="middle" x="644" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">sys/time.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="673,-129 611,-129 611,-110 673,-110 673,-129"/>
+<text text-anchor="middle" x="642" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">sys/time.h</text>
 </a>
 </g>
 </g>
@@ -913,8 +913,8 @@ var sectionId = 'dynsection-0';
 <g id="edge57_Node000029_Node000032" class="edge">
 <title>Node29&#45;&gt;Node32</title>
 <g id="a_edge57_Node000029_Node000032"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M644,-164.75C644,-157.8 644,-147.85 644,-139.13"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="647.5,-139.09 644,-129.09 640.5,-139.09 647.5,-139.09"/>
+<path fill="none" stroke="#63b8ff" d="M642,-164.75C642,-157.8 642,-147.85 642,-139.13"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="645.5,-139.09 642,-129.09 638.5,-139.09 645.5,-139.09"/>
 </a>
 </g>
 </g>
@@ -922,8 +922,8 @@ var sectionId = 'dynsection-0';
 <g id="Node000033" class="node">
 <title>Node33</title>
 <g id="a_Node000033"><a xlink:title=" ">
-<polygon fill="#e0e0e0" stroke="#999999" points="747,-129 693,-129 693,-110 747,-110 747,-129"/>
-<text text-anchor="middle" x="720" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">sys/un.h</text>
+<polygon fill="#e0e0e0" stroke="#999999" points="745,-129 691,-129 691,-110 745,-110 745,-129"/>
+<text text-anchor="middle" x="718" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">sys/un.h</text>
 </a>
 </g>
 </g>
@@ -931,8 +931,8 @@ var sectionId = 'dynsection-0';
 <g id="edge59_Node000029_Node000033" class="edge">
 <title>Node29&#45;&gt;Node33</title>
 <g id="a_edge59_Node000029_Node000033"><a xlink:title=" ">
-<path fill="none" stroke="#63b8ff" d="M656.21,-164.98C667.78,-156.92 685.38,-144.65 699.16,-135.03"/>
-<polygon fill="#63b8ff" stroke="#63b8ff" points="701.37,-137.76 707.57,-129.17 697.36,-132.02 701.37,-137.76"/>
+<path fill="none" stroke="#63b8ff" d="M654.21,-164.98C665.78,-156.92 683.38,-144.65 697.16,-135.03"/>
+<polygon fill="#63b8ff" stroke="#63b8ff" points="699.37,-137.76 705.57,-129.17 695.36,-132.02 699.37,-137.76"/>
 </a>
 </g>
 </g>
@@ -957,7 +957,7 @@ var sectionId = 'dynsection-0';
 <!-- Node35 -->
 <g id="Node000035" class="node">
 <title>Node35</title>
-<g id="a_Node000035"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000035"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
 <polygon fill="white" stroke="#666666" points="1057.5,-294 970.5,-294 970.5,-275 1057.5,-275 1057.5,-294"/>
 <text text-anchor="middle" x="1014" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLS.h</text>
 </a>
@@ -975,7 +975,7 @@ var sectionId = 'dynsection-0';
 <!-- Node36 -->
 <g id="Node000036" class="node">
 <title>Node36</title>
-<g id="a_Node000036"><a xlink:href="SocketTLSConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000036"><a xlink:href="SocketTLSConfig_8h.html" target="_top" xlink:title="TLS configuration constants, structure, and secure defaults.">
 <polygon fill="white" stroke="#666666" points="758,-294 642,-294 642,-275 758,-275 758,-294"/>
 <text text-anchor="middle" x="700" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLSConfig.h</text>
 </a>
@@ -1112,13 +1112,13 @@ var sectionId = 'dynsection-0';
 
 <g id="navigator" transform="translate(0 0)" fill="#404254">
   <rect fill="#f2f5e9" fill-opacity="0.5" stroke="#606060" stroke-width=".5" x="0" y="0" width="60" height="60"/>
-  <use id="zoomplus" xlink:href="#zoomPlus" x="17" y="9" onmousedown="handleZoom(evt,'in')"/>
-  <use id="zoomminus" xlink:href="#zoomMin" x="42" y="9" onmousedown="handleZoom(evt,'out')"/>
-  <use id="reset" xlink:href="#resetDef" x="30" y="36" onmousedown="handleReset()"/>
-   <use id="arrowup" xlink:href="#arrowUp" x="0" y="0" onmousedown="handlePan(0,-1)"/>
-  <use id="arrowright" xlink:href="#arrowRight" x="0" y="0" onmousedown="handlePan(1,0)"/>
-  <use id="arrowdown" xlink:href="#arrowDown" x="0" y="0" onmousedown="handlePan(0,1)"/>
-  <use id="arrowleft" xlink:href="#arrowLeft" x="0" y="0" onmousedown="handlePan(-1,0)"/>
+  <use id="zoomplus" xlink:href="#zoomPlus" target="_top" x="17" y="9" onmousedown="handleZoom(evt,'in')"/>
+  <use id="zoomminus" xlink:href="#zoomMin" target="_top" x="42" y="9" onmousedown="handleZoom(evt,'out')"/>
+  <use id="reset" xlink:href="#resetDef" target="_top" x="30" y="36" onmousedown="handleReset()"/>
+   <use id="arrowup" xlink:href="#arrowUp" target="_top" x="0" y="0" onmousedown="handlePan(0,-1)"/>
+  <use id="arrowright" xlink:href="#arrowRight" target="_top" x="0" y="0" onmousedown="handlePan(1,0)"/>
+  <use id="arrowdown" xlink:href="#arrowDown" target="_top" x="0" y="0" onmousedown="handlePan(0,1)"/>
+  <use id="arrowleft" xlink:href="#arrowLeft" target="_top" x="0" y="0" onmousedown="handlePan(-1,0)"/>
 </g>
 <svg viewBox="0 0 15 15" width="100%" height="30px" preserveAspectRatio="xMaxYMin meet">
  <g id="arrow_out" transform="scale(0.3 0.3)">
@@ -1144,4 +1144,5 @@ document.addEventListener('DOMContentLoaded', (event) => {
   highlightAdjacentNodes();
 });
 ]]></script>
+</svg>
 </svg>

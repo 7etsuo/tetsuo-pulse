@@ -40,15 +40,17 @@ typedef struct T *T; /* Opaque pointer to TLS context */
  * @see SocketTLSContext_new_server() for server context creation.
  * @see SocketTLSContext_new_client() for client context creation.
  * @see SocketTLS_enable() for applying TLS to sockets.
+ * @see @ref SocketDTLSContext_T for DTLS context management on UDP sockets.
+ * @see @ref SocketTLSConfig.h for TLS configuration constants.
  */
 
 /* TLS context creation */
 /**
- * SocketTLSContext_new_server - Create server TLS context with cert/key
- * loading
- * @cert_file: Path to server certificate file (PEM format)
- * @key_file: Path to private key file (PEM format)
- * @ca_file: Optional path to CA file/directory for client auth (NULL to
+ * @brief Create server TLS context with cert/key.
+ * @ingroup security
+ * @param cert_file Path to server certificate file (PEM format)
+ * @param key_file Path to private key file (PEM format)
+ * @param ca_file Optional path to CA file/directory for client auth (NULL to
  * disable)
  *
  * Creates a server-side TLS context, loads server cert/key, sets TLS1.3-only,
@@ -58,17 +60,24 @@ typedef struct T *T; /* Opaque pointer to TLS context */
  * preference; peer verification configurable; securely clears sensitive
  * keys/material on free.
  *
- * Returns: New opaque SocketTLSContext_T instance
- * Raises: SocketTLS_Failed on OpenSSL errors, file I/O, or invalid cert/key
- * Thread-safe: Yes - each call creates independent context
+ * @return New opaque SocketTLSContext_T instance
+ * @throws SocketTLS_Failed on OpenSSL errors, file I/O, or invalid cert/key
+ * @see SocketTLSContext_free() for disposing the context.
+ * @see SocketTLSContext_new_client() for client-side context.
+ * @see SocketTLSContext_load_ca() for additional CA configuration.
+ * @see SocketTLS_enable() to apply context to a socket.
+ * @see @ref foundation for Arena-based memory management used internally.
+ * @see @ref core_io "Socket" for base socket operations secured by TLS.
+ * @threadsafe Yes - each call creates independent context
  */
 extern T SocketTLSContext_new_server (const char *cert_file,
                                       const char *key_file,
                                       const char *ca_file);
 
 /**
- * SocketTLSContext_new_client - Create client TLS context
- * @ca_file: Optional path to CA file/directory for server verification (NULL
+ * @brief Create client TLS context.
+ * @ingroup security
+ * @param ca_file Optional path to CA file/directory for server verification (NULL
  * to disable)
  *
  * Creates a client-side TLS context with TLS1.3-only and modern ciphers (ECDHE
@@ -77,56 +86,63 @@ extern T SocketTLSContext_new_server (const char *cert_file,
  * renegotiation and compression; warns on missing CA (MITM risk); peer
  * verification required; securely clears sensitive data on free.
  *
- * Returns: New opaque SocketTLSContext_T instance
- * Raises: SocketTLS_Failed on OpenSSL errors or invalid CA
- * Thread-safe: Yes
+ * @return New opaque SocketTLSContext_T instance
+ * @throws SocketTLS_Failed on OpenSSL errors or invalid CA
+ * @see SocketTLSContext_free() for disposal.
+ * @see SocketTLSContext_new_server() for server context.
+ * @see SocketTLSContext_set_verify_mode() to adjust verification.
+ * @see @ref security for other TLS security features like pinning and OCSP.
+ * @threadsafe Yes
  */
 extern T SocketTLSContext_new_client (const char *ca_file);
 
 /**
- * SocketTLSContext_new - Create client TLS context with custom config
- * @config: Custom TLS configuration (or NULL for defaults)
+ * @brief Create client TLS context with custom config.
+ * @ingroup security
+ * @param config Custom TLS configuration (or NULL for defaults)
  *
  * Creates a client-side TLS context with provided configuration.
  * If config NULL, uses secure defaults.
  *
- * Returns: New opaque SocketTLSContext_T instance
- * Raises: SocketTLS_Failed on OpenSSL errors
- * Thread-safe: Yes
+ * @return New opaque SocketTLSContext_T instance
+ * @throws SocketTLS_Failed on OpenSSL errors
+ * @threadsafe Yes
  */
 extern T SocketTLSContext_new (const SocketTLSConfig_T *config);
 
 /* Certificate management */
 /**
- * SocketTLSContext_load_certificate - Load server certificate and private key
- * @ctx: The TLS context instance
- * @cert_file: Path to certificate file (PEM)
- * @key_file: Path to private key file (PEM)
+ * @brief Load server certificate and private key.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param cert_file Path to certificate file (PEM)
+ * @param key_file Path to private key file (PEM)
  *
  * Loads and validates server certificate/private key pair. Verifies key
  * matches cert.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on file errors, format issues, or mismatch
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed on file errors, format issues, or mismatch
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_load_certificate (T ctx, const char *cert_file,
                                                const char *key_file);
 
 /**
- * SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual
+ * @brief Add certificate mapping for SNI virtual.
+ * @ingroup security
  * hosting
- * @ctx: The TLS context instance
- * @hostname: Hostname this certificate is for (NULL for default certificate)
- * @cert_file: Certificate file path (PEM format)
- * @key_file: Private key file path (PEM format)
+ * @param ctx The TLS context instance
+ * @param hostname Hostname this certificate is for (NULL for default certificate)
+ * @param cert_file Certificate file path (PEM format)
+ * @param key_file Private key file path (PEM format)
  *
  * Adds a certificate/key pair for SNI-based virtual hosting. Multiple
  * certificates can be loaded for different hostnames. The first certificate
  * loaded becomes the default if no hostname match is found.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on error (file not found, invalid cert/key,
+ * @return void
+ * @throws SocketTLS_Failed on error (file not found, invalid cert/key,
  * allocation) Thread-safe: No (modifies shared context)
  */
 extern void SocketTLSContext_add_certificate (T ctx, const char *hostname,
@@ -134,42 +150,45 @@ extern void SocketTLSContext_add_certificate (T ctx, const char *hostname,
                                               const char *key_file);
 
 /**
- * SocketTLSContext_load_ca - Load trusted CA certificates
- * @ctx: The TLS context instance
- * @ca_file: Path to CA file or directory containing PEM CA certs
+ * @brief Load trusted CA certificates.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param ca_file Path to CA file or directory containing PEM CA certs
  *
  * Loads CA certs for peer verification. Tries as file then directory.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on load errors
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed on load errors
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_load_ca (T ctx, const char *ca_file);
 
 /**
- * SocketTLSContext_set_verify_mode - Set certificate verification policy
- * @ctx: The TLS context instance
- * @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)
+ * @brief Set certificate verification policy.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param mode Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)
  *
  * Configures peer cert verification behavior, mapping to OpenSSL SSL_VERIFY_*
  * flags.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on invalid mode
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed on invalid mode
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
 
 /* Custom Verification Support */
 
 /**
- * SocketTLSVerifyCallback - User-defined certificate verification callback
- * @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail)
- * @x509_ctx: OpenSSL certificate store context (access cert chain via
+ * @brief User-defined certificate verification callback.
+ * @ingroup security
+ * @param preverify_ok OpenSSL pre-verification result (1=OK, 0=fail)
+ * @param x509_ctx OpenSSL certificate store context (access cert chain via
  * X509_STORE_CTX_get_current_cert())
- * @tls_ctx: TLS context for shared configuration/data
- * @socket: Associated socket for connection-specific info (e.g., hostname)
- * @user_data: Opaque user data from SocketTLSContext_set_verify_callback
+ * @param tls_ctx TLS context for shared configuration/data
+ * @param socket Associated socket for connection-specific info (e.g., hostname)
+ * @param user_data Opaque user data from SocketTLSContext_set_verify_callback
  *
  * Called during TLS verification to allow custom logic (e.g., pinning, policy
  * checks). Return 1 to accept/continue verification, 0 to fail (aborts
@@ -180,24 +199,26 @@ typedef int (*SocketTLSVerifyCallback) (int preverify_ok,
                                         Socket_T socket, void *user_data);
 
 /**
- * SocketTLSContext_set_verify_callback - Register custom verification callback
- * @ctx: The TLS context instance
- * @callback: User callback function (NULL to disable custom and use default)
- * @user_data: Opaque data passed to callback (lifetime managed by caller)
+ * @brief Register custom verification callback.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param callback User callback function (NULL to disable custom and use default)
+ * @param user_data Opaque data passed to callback (lifetime managed by caller)
  *
  * Sets a custom verification callback, overriding default OpenSSL behavior
  * while respecting current verify_mode. The wrapper ensures thread-safety and
  * error propagation via exceptions.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if OpenSSL configuration fails
- * Thread-safe: Yes (mutex protected) (modifies shared context; call before
+ * @return void
+ * @throws SocketTLS_Failed if OpenSSL configuration fails
+ * @threadsafe Yes (mutex protected) (modifies shared context; call before
  * sharing)
  */
 
 /**
- * SocketTLSContext_free - Dispose of TLS context and resources
- * @ctx_p: Pointer to context pointer (set to NULL on success)
+ * @brief Dispose of TLS context and resources.
+ * @ingroup security
+ * @param ctx_p Pointer to context pointer (set to NULL on success)
  *
  * Frees the SSL_CTX, Arena (internal allocations), SNI arrays/certs/keys, ALPN
  * data, and securely wipes sensitive material (e.g., session ticket keys via
@@ -206,9 +227,11 @@ typedef int (*SocketTLSVerifyCallback) (int preverify_ok,
  * no residual sensitive data in memory; thread-safe but avoid concurrent
  * access.
  *
- * Returns: void
- * Raises: None (safe for NULL)
- * Thread-safe: Yes (but avoid concurrent use)
+ * @return void
+ * @throws None (safe for NULL)
+ * @see SocketTLSContext_new_server(), SocketTLSContext_new_client(), SocketTLSContext_new() for context creation.
+ * @see @ref foundation "Except_T" and Arena for exception and memory handling integrated here.
+ * @threadsafe Yes (but avoid concurrent use)
  */
 extern void SocketTLSContext_free (T *ctx_p);
 extern void
@@ -216,10 +239,11 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
                                       void *user_data);
 
 /**
- * SocketTLSContext_load_crl - Load CRL file or directory into verification
+ * @brief Load CRL file or directory into verification.
+ * @ingroup security
  * store
- * @ctx: TLS context instance
- * @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed
+ * @param ctx TLS context instance
+ * @param crl_path Path to CRL file (PEM/DER) or directory of CRL files (hashed
  * names)
  *
  * Loads CRL data into the context's X509_STORE for revocation checking during
@@ -227,37 +251,39 @@ SocketTLSContext_set_verify_callback (T ctx, SocketTLSVerifyCallback callback,
  * Multiple calls append additional CRLs. Enables CRL_CHECK flags
  * automatically. CRL refresh not implemented (manual reload via re-call).
  *
- * Returns: void
- * Raises: SocketTLS_Failed if load/path invalid or OpenSSL error
- * Thread-safe: Yes (mutex protected) - modifies shared store; call during
+ * @return void
+ * @throws SocketTLS_Failed if load/path invalid or OpenSSL error
+ * @threadsafe Yes (mutex protected) - modifies shared store; call during
  * setup Note: Effective only if verify_mode requires peer cert check
  * (PEER/FAIL_IF_NO_PEER)
  */
 extern void SocketTLSContext_load_crl (T ctx, const char *crl_path);
 
 /**
- * SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load)
- * @ctx: TLS context
- * @crl_path: Path to refresh
+ * @brief Refresh a specific CRL (re-load).
+ * @ingroup security
+ * @param ctx TLS context
+ * @param crl_path Path to refresh
  *
- * Re-loads the CRL from path (appends to store). Use for periodic refresh.
+ * @brief Re-loads the CRL from path (appends to store). Use for periodic refresh.
  * For full store refresh, recreate context (CRLs accumulate).
- * Thread-safe: Yes (mutex protected)
- * Raises: SocketTLS_Failed on load error
+ * @threadsafe Yes (mutex protected)
+ * @throws SocketTLS_Failed on load error
  */
 extern void SocketTLSContext_refresh_crl (T ctx, const char *crl_path);
 
 /**
- * SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl)
- * @ctx: TLS context
- * @crl_path: Path to CRL file or directory
+ * @brief Reload CRL from path (alias for refresh_crl).
+ * @ingroup security
+ * @param ctx TLS context
+ * @param crl_path Path to CRL file or directory
  *
  * Reloads the CRL from the specified path. This is an alias for
  * SocketTLSContext_refresh_crl() provided for semantic clarity.
  * Use when you have downloaded an updated CRL and want to reload it.
  *
- * Thread-safe: Yes (mutex protected)
- * Raises: SocketTLS_Failed on load error
+ * @threadsafe Yes (mutex protected)
+ * @throws SocketTLS_Failed on load error
  */
 extern void SocketTLSContext_reload_crl (T ctx, const char *crl_path);
 
@@ -281,11 +307,12 @@ extern void SocketTLSContext_reload_crl (T ctx, const char *crl_path);
  */
 
 /**
- * SocketTLSCrlCallback - CRL refresh notification callback
- * @ctx: TLS context that was refreshed
- * @path: Path to CRL file
- * @success: 1 if refresh succeeded, 0 if failed
- * @user_data: User data from set_crl_auto_refresh
+ * @brief CRL refresh notification callback.
+ * @ingroup security
+ * @param ctx TLS context that was refreshed
+ * @param path Path to CRL file
+ * @param success 1 if refresh succeeded, 0 if failed
+ * @param user_data User data from set_crl_auto_refresh
  *
  * Called after each refresh attempt. On failure, the old CRL remains
  * in effect. Application should log failures and potentially alert.
@@ -294,77 +321,82 @@ typedef void (*SocketTLSCrlCallback) (T ctx, const char *path, int success,
                                       void *user_data);
 
 /**
- * SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh
- * @ctx: TLS context instance
- * @crl_path: Path to CRL file (copied to context)
- * @interval_seconds: Refresh interval (minimum 60, 0 to disable)
- * @callback: Optional callback for refresh notifications (may be NULL)
- * @user_data: User data passed to callback
+ * @brief Enable automatic CRL refresh.
+ * @ingroup security
+ * @param ctx TLS context instance
+ * @param crl_path Path to CRL file (copied to context)
+ * @param interval_seconds Refresh interval (minimum 60, 0 to disable)
+ * @param callback Optional callback for refresh notifications (may be NULL)
+ * @param user_data User data passed to callback
  *
  * Configures automatic CRL refresh. The CRL will be reloaded every
  * interval_seconds. Call SocketTLSContext_crl_check_refresh() from
  * your event loop to trigger scheduled refreshes.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on invalid parameters
- * Thread-safe: Yes (mutex protected) - configure before sharing context
+ * @return void
+ * @throws SocketTLS_Failed on invalid parameters
+ * @threadsafe Yes (mutex protected) - configure before sharing context
  */
 extern void SocketTLSContext_set_crl_auto_refresh (
     T ctx, const char *crl_path, long interval_seconds,
     SocketTLSCrlCallback callback, void *user_data);
 
 /**
- * SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh
- * @ctx: TLS context instance
+ * @brief Disable automatic CRL refresh.
+ * @ingroup security
+ * @param ctx TLS context instance
  *
  * Cancels any configured automatic refresh. The current CRL remains loaded.
  *
- * Returns: void
- * Raises: None
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws None
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_cancel_crl_auto_refresh (T ctx);
 
 /**
- * SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due
- * @ctx: TLS context instance
+ * @brief Check and perform CRL refresh if due.
+ * @ingroup security
+ * @param ctx TLS context instance
  *
  * Call this periodically from your event loop. If a refresh is scheduled
  * and due, it will reload the CRL and invoke the callback.
  *
- * Returns: 1 if refresh was performed, 0 if not due or not configured
- * Raises: None (errors reported via callback)
- * Thread-safe: Yes (mutex protected)
+ * @return 1 if refresh was performed, 0 if not due or not configured
+ * @throws None (errors reported via callback)
+ * @threadsafe Yes (mutex protected)
  */
 extern int SocketTLSContext_crl_check_refresh (T ctx);
 
 /**
- * SocketTLSContext_crl_next_refresh_ms - Get milliseconds until next refresh
- * @ctx: TLS context instance
+ * @brief Get milliseconds until next refresh.
+ * @ingroup security
+ * @param ctx TLS context instance
  *
  * Returns time until next scheduled CRL refresh. Useful for setting
  * poll/select timeouts in event loops.
  *
- * Returns: -1 if disabled, 0 if due now/past, positive ms until next, LONG_MAX
- * if far future (overflow prot.) Raises: None Thread-safe: Yes (read-only)
+ * @return -1 if disabled, 0 if due now/past, positive ms until next, LONG_MAX
+ * if far future (overflow prot.) @throws None Thread-safe: Yes (read-only)
  */
 extern long SocketTLSContext_crl_next_refresh_ms (T ctx);
 
 /* OCSP Stapling Support */
 
 /**
- * SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling
+ * @brief Set static OCSP response for stapling.
+ * @ingroup security
  * (server)
- * @ctx: TLS context instance
- * @response: OCSP response bytes (DER encoded)
- * @len: Length of response
+ * @param ctx TLS context instance
+ * @param response OCSP response bytes (DER encoded)
+ * @param len Length of response
  *
  * Sets a static OCSP response to staple in server handshakes. Multiple calls
  * override. Validates basic response format.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if invalid response (len=0 or parse fail)
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if invalid response (len=0 or parse fail)
+ * @threadsafe Yes (mutex protected)
  * Note: For dynamic, use set_ocsp_callback.
  */
 extern void SocketTLSContext_set_ocsp_response (T ctx,
@@ -375,39 +407,42 @@ extern void SocketTLSContext_set_ocsp_response (T ctx,
 typedef OCSP_RESPONSE *(*SocketTLSOcspGenCallback) (SSL *ssl, void *arg);
 
 /**
- * SocketTLSContext_set_ocsp_gen_callback - Register dynamic OCSP response
+ * @brief Register dynamic OCSP response.
+ * @ingroup security
  * generator
- * @ctx: TLS context (server)
- * @cb: Callback to generate OCSP response during handshake
- * @arg: User data passed to cb
+ * @param ctx TLS context (server)
+ * @param cb Callback to generate OCSP response during handshake
+ * @param arg User data passed to cb
  *
  * Enables dynamic OCSP stapling. Called during handshake to generate response.
  * Wrapper handles serialization and SSL_set_tlsext_status_ocsp_resp.
- * Thread-safe: cb must be; called in handshake thread.
- * Raises: SocketTLS_Failed if OpenSSL cb set fails
+ * @threadsafe cb must be; called in handshake thread.
+ * @throws SocketTLS_Failed if OpenSSL cb set fails
  */
 extern void
 SocketTLSContext_set_ocsp_gen_callback (T ctx, SocketTLSOcspGenCallback cb,
                                         void *arg);
 
 /**
- * SocketTLS_get_ocsp_status - Get OCSP status after handshake (client)
- * @socket: TLS socket with completed handshake
+ * @brief Get OCSP status after handshake (client).
+ * @ingroup security
+ * @param socket TLS socket with completed handshake
  *
  * Parses stapled OCSP response from server, validates, returns status.
  * Returns OCSP_STATUS_GOOD=1, REVOKED=2, UNKNOWN=3, NONE=0 if no response.
  * Caller can check for revocation.
  *
- * Returns: int (OCSP status code)
- * Raises: None (returns error code on parse fail)
- * Thread-safe: Yes (post-handshake)
+ * @return int (OCSP status code)
+ * @throws None (returns error code on parse fail)
+ * @threadsafe Yes (post-handshake)
  */
 extern int SocketTLS_get_ocsp_status (Socket_T socket);
 
 /**
- * SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request
+ * @brief Enable OCSP stapling request.
+ * @ingroup security
  * (client)
- * @ctx: TLS context instance (client only)
+ * @param ctx TLS context instance (client only)
  *
  * Configures client context to request OCSP stapled responses from servers
  * during TLS handshake. After handshake, use SocketTLS_get_ocsp_status()
@@ -416,19 +451,20 @@ extern int SocketTLS_get_ocsp_status (Socket_T socket);
  * Note: This enables the STATUS_REQUEST TLS extension. The server must
  * support OCSP stapling and have a valid OCSP response configured.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if server context or OpenSSL error
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if server context or OpenSSL error
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_enable_ocsp_stapling (T ctx);
 
 /**
- * SocketTLSContext_ocsp_stapling_enabled - Check if OCSP stapling is enabled
- * @ctx: TLS context instance
+ * @brief Check if OCSP stapling is enabled.
+ * @ingroup security
+ * @param ctx TLS context instance
  *
- * Returns: 1 if OCSP stapling request enabled, 0 otherwise
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if OCSP stapling request enabled, 0 otherwise
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_ocsp_stapling_enabled (T ctx);
 
@@ -448,23 +484,25 @@ extern int SocketTLSContext_ocsp_stapling_enabled (T ctx);
  */
 
 /**
- * SocketTLSCertLookupCallback - Custom certificate lookup function
- * @store_ctx: OpenSSL store context for current verification
- * @name: Subject name being looked up
- * @user_data: User data from set_cert_lookup_callback
+ * @brief Custom certificate lookup function.
+ * @ingroup security
+ * @param store_ctx OpenSSL store context for current verification
+ * @param name Subject name being looked up
+ * @param user_data User data from set_cert_lookup_callback
  *
- * Returns: X509 certificate if found (caller takes ownership), NULL otherwise
- * Thread-safe: Must be thread-safe if context is shared
+ * @return X509 certificate if found (caller takes ownership), NULL otherwise
+ * @threadsafe Must be thread-safe if context is shared
  */
 typedef X509 *(*SocketTLSCertLookupCallback) (X509_STORE_CTX *store_ctx,
                                               X509_NAME *name,
                                               void *user_data);
 
 /**
- * SocketTLSContext_set_cert_lookup_callback - Register custom cert lookup
- * @ctx: TLS context instance
- * @callback: Lookup function (NULL to disable)
- * @user_data: User data passed to callback
+ * @brief Register custom cert lookup.
+ * @ingroup security
+ * @param ctx TLS context instance
+ * @param callback Lookup function (NULL to disable)
+ * @param user_data User data passed to callback
  *
  * Sets a custom callback for certificate lookup during verification.
  * This allows loading certificates from databases, HSMs, or other sources
@@ -472,59 +510,63 @@ typedef X509 *(*SocketTLSCertLookupCallback) (X509_STORE_CTX *store_ctx,
  *
  * Note: Requires OpenSSL 1.1.0+ for X509_STORE_set_lookup_certs_cb.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if not supported or OpenSSL error
- * Thread-safe: Yes (mutex protected) - configure before sharing context
+ * @return void
+ * @throws SocketTLS_Failed if not supported or OpenSSL error
+ * @threadsafe Yes (mutex protected) - configure before sharing context
  */
 extern void SocketTLSContext_set_cert_lookup_callback (
     T ctx, SocketTLSCertLookupCallback callback, void *user_data);
 
 /* Protocol configuration */
 /**
- * SocketTLSContext_set_min_protocol - Set minimum supported TLS version
- * @ctx: The TLS context instance
- * @version: OpenSSL version constant (e.g., TLS1_3_VERSION)
+ * @brief Set minimum supported TLS version.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param version OpenSSL version constant (e.g., TLS1_3_VERSION)
  *
  * Sets min TLS version using set_min_proto_version() with fallback to options.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if cannot set
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if cannot set
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_set_min_protocol (T ctx, int version);
 
 /**
- * SocketTLSContext_set_max_protocol - Set maximum supported TLS version
- * @ctx: The TLS context instance
- * @version: OpenSSL version constant (e.g., TLS1_3_VERSION)
+ * @brief Set maximum supported TLS version.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param version OpenSSL version constant (e.g., TLS1_3_VERSION)
  *
  * Sets max TLS version using set_max_proto_version().
  *
- * Returns: void
- * Raises: SocketTLS_Failed if cannot set
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if cannot set
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_set_max_protocol (T ctx, int version);
 
 /**
- * SocketTLSContext_set_cipher_list - Set allowed cipher suites
- * @ctx: The TLS context instance
- * @ciphers: Cipher list string in OpenSSL format, or NULL for defaults
+ * @brief Set allowed cipher suites.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param ciphers Cipher list string in OpenSSL format, or NULL for defaults
  *
  * Configures allowed ciphers. Defaults to secure modern list if NULL.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if invalid list
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if invalid list
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_set_cipher_list (T ctx, const char *ciphers);
 
 /* ALPN support */
 /**
- * SocketTLSContext_set_alpn_protos - Advertise ALPN protocols
- * @ctx: The TLS context instance
- * @protos: Array of null-terminated protocol strings (e.g., "h2", "http/1.1")
- * @count: Number of protocols
+ * @brief Advertise ALPN protocols.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param protos Array of null-terminated protocol strings (e.g., "h2", "http/1.1")
+ * @param count Number of protocols
  *
  * Sets list of supported ALPN protocols in wire format, allocated from context
  * arena. Validates lengths (1-255 bytes per protocol, max
@@ -532,9 +574,9 @@ extern void SocketTLSContext_set_cipher_list (T ctx, const char *ciphers);
  * printable ASCII 0x21-0x7E only, rejects invalid lists/entries). Invalid
  * names raise SocketTLS_Failed. Uses SocketSecurity limits at runtime.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on invalid protos or allocation error
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed on invalid protos or allocation error
+ * @threadsafe Yes (mutex protected)
  *
  * Note: Protocols advertised in preference order (first preferred).
  */
@@ -547,11 +589,12 @@ typedef const char *(*SocketTLSAlpnCallback) (const char **client_protos,
                                               void *user_data);
 
 /**
- * SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection
+ * @brief Set custom ALPN protocol selection.
+ * @ingroup security
  * callback
- * @ctx: The TLS context instance
- * @callback: Function to call for ALPN protocol selection
- * @user_data: User data passed to callback function
+ * @param ctx The TLS context instance
+ * @param callback Function to call for ALPN protocol selection
+ * @param user_data User data passed to callback function
  *
  * Sets a custom callback for ALPN protocol selection instead of using default
  * priority order. The callback receives parsed and validated client-offered
@@ -561,9 +604,9 @@ typedef const char *(*SocketTLSAlpnCallback) (const char **client_protos,
  * internally allocates a copy for OpenSSL (avoids UAF if returning temporary
  * ptr), and uses it during handshake.
  *
- * Returns: void
- * Raises: SocketTLS_Failed on invalid parameters
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed on invalid parameters
+ * @threadsafe Yes (mutex protected)
  *
  * Note: Callback is called during TLS handshake, must be thread-safe if
  * context is shared.
@@ -574,62 +617,66 @@ extern void SocketTLSContext_set_alpn_callback (T ctx,
 
 /* Session management */
 /**
- * SocketTLSContext_enable_session_cache - Enable session caching
+ * @brief Enable session caching.
+ * @ingroup security
  * infrastructure
- * @ctx: The TLS context instance
- * @max_sessions: Maximum number of sessions to cache (>0), 0 for default
- * @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)
+ * @param ctx The TLS context instance
+ * @param max_sessions Maximum number of sessions to cache (>0), 0 for default
+ * @param timeout_seconds Session timeout in seconds, 0 for OpenSSL default (300s)
  *
  * Extends `SocketTLSContext_T` with session cache configuration.
  * Implements session cache using OpenSSL's built-in caching with thread-safe
  * storage. Adds cache size and timeout configuration. Enables statistics
  * tracking.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if cannot enable or configure
- * Thread-safe: Yes (mutex protected) - modifies shared context during setup
+ * @return void
+ * @throws SocketTLS_Failed if cannot enable or configure
+ * @threadsafe Yes (mutex protected) - modifies shared context during setup
  */
 extern void SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                                    long timeout_seconds);
 
 /**
- * SocketTLSContext_set_session_cache_size - Limit cached sessions
- * @ctx: The TLS context instance
- * @size: Max number of sessions to cache (>0)
+ * @brief Limit cached sessions.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param size Max number of sessions to cache (>0)
  *
  * Controls memory usage of session cache.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if invalid size or cannot set
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if invalid size or cannot set
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_set_session_cache_size (T ctx, size_t size);
 
 /**
- * SocketTLSContext_get_cache_stats - Get session cache statistics
- * @ctx: The TLS context instance
- * @hits: Output: number of cache hits
- * @misses: Output: number of cache misses
- * @stores: Output: number of sessions stored
+ * @brief Get session cache statistics.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param hits Output: number of cache hits
+ * @param misses Output: number of cache misses
+ * @param stores Output: number of sessions stored
  *
  * Fills provided pointers with current session cache statistics.
  * Statistics are thread-safe and cumulative since cache enable.
  * If pointers NULL, skipped.
  *
- * Returns: void
- * Raises: None
- * Thread-safe: Yes
+ * @return void
+ * @throws None
+ * @threadsafe Yes
  */
 extern void SocketTLSContext_get_cache_stats (T ctx, size_t *hits,
                                               size_t *misses, size_t *stores);
 
 /**
- * SocketTLSContext_enable_session_tickets - Enable stateless session
+ * @brief Enable stateless session.
+ * @ingroup security
  * resumption using tickets
- * @ctx: The TLS context instance
- * @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes
+ * @param ctx The TLS context instance
+ * @param key Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes
  * required)
- * @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)
+ * @param key_len Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)
  *
  * Implements stateless session resumption using encrypted session tickets.
  * OpenSSL requires 80 bytes: 16 (name) + 32 (AES) + 32 (HMAC).
@@ -637,9 +684,9 @@ extern void SocketTLSContext_get_cache_stats (T ctx, size_t *hits,
  * Supports ticket lifetime matching session timeout, and basic rotation.
  * Requires cache enabled for full effect.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if invalid key length or OpenSSL config fails
- * Thread-safe: Yes (mutex protected)
+ * @return void
+ * @throws SocketTLS_Failed if invalid key length or OpenSSL config fails
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketTLSContext_enable_session_tickets (T ctx,
                                                      const unsigned char *key,
@@ -678,151 +725,178 @@ extern void SocketTLSContext_enable_session_tickets (T ctx,
  */
 
 /**
- * SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format)
- * @ctx: The TLS context instance
- * @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding
+ * @brief Add SPKI SHA256 pin (binary format).
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param sha256_hash 32-byte SHA256 hash of the SPKI DER encoding
  *
  * Adds a certificate pin using raw binary hash. The hash is copied to
  * context-owned storage. Duplicate pins are silently ignored.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if hash is NULL or max pins exceeded
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if hash is NULL or max pins exceeded
+ * @see SocketTLS_PinVerifyFailed for the exception raised on mismatch.
+ * @see SocketTLSContext_add_pin_hex() for hex-encoded input.
+ * @see SocketTLSContext_add_pin_from_cert() to generate from file.
+ * @see SocketTLSContext_set_pin_enforcement() to control failure behavior.
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash);
 
 /**
- * SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string)
- * @ctx: The TLS context instance
- * @hex_hash: 64-character hex string (optionally prefixed with "sha256//")
+ * @brief Add SPKI SHA256 pin (hex string).
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param hex_hash 64-character hex string (optionally prefixed with "sha256//")
  *
  * Adds a certificate pin using hex-encoded hash. Accepts both uppercase
  * and lowercase hex. Optional "sha256//" prefix is stripped for HPKP
  * compatibility.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if format invalid or max pins exceeded
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if format invalid or max pins exceeded
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash);
 
 /**
- * SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate
- * @ctx: The TLS context instance
- * @cert_file: Path to PEM-encoded certificate file
+ * @brief Extract and add pin from certificate.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param cert_file Path to PEM-encoded certificate file
  *
  * Loads certificate, extracts SPKI, computes SHA256, and adds as pin.
  * Useful for pinning leaf certificates or intermediate CAs.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if file invalid, parse error, or max pins exceeded
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if file invalid, parse error, or max pins exceeded
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file);
 
 /**
- * SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object
- * @ctx: The TLS context instance
- * @cert: OpenSSL X509 certificate object
+ * @brief Add pin from X509 certificate object.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param cert OpenSSL X509 certificate object
  *
  * Extracts SPKI hash from provided X509 and adds as pin. The certificate
  * is not freed by this function; caller retains ownership.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if cert NULL, extraction fails, or max exceeded
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if cert NULL, extraction fails, or max exceeded
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert);
 
 /**
- * SocketTLSContext_clear_pins - Remove all certificate pins
- * @ctx: The TLS context instance
+ * @brief Remove all certificate pins.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
  * Securely clears all configured pins. Memory is zeroed before release.
  * Pin enforcement mode is preserved.
  *
- * Returns: void
- * Raises: None
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws None
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_clear_pins (T ctx);
 
 /**
- * SocketTLSContext_set_pin_enforcement - Set pin enforcement mode
- * @ctx: The TLS context instance
- * @enforce: 1 = strict (fail on mismatch), 0 = warn only
+ * @brief Set pin enforcement mode.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param enforce 1 = strict (fail on mismatch), 0 = warn only
  *
  * Controls behavior when no pin matches during verification:
  * - enforce=1 (default): Handshake fails with
  * X509_V_ERR_APPLICATION_VERIFICATION
  * - enforce=0: Verification continues, mismatch is logged
  *
- * Returns: void
- * Raises: None
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws None
+ * @threadsafe Yes (mutex protected) - modifies shared context
  */
 extern void SocketTLSContext_set_pin_enforcement (T ctx, int enforce);
 
 /**
- * SocketTLSContext_get_pin_enforcement - Get current enforcement mode
- * @ctx: The TLS context instance
+ * @brief Get current enforcement mode.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
- * Returns: 1 if strict enforcement, 0 if warn-only
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if strict enforcement, 0 if warn-only
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_get_pin_enforcement (T ctx);
 
 /**
- * SocketTLSContext_get_pin_count - Get number of configured pins
- * @ctx: The TLS context instance
+ * @brief Get number of configured pins.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
- * Returns: Number of pins currently configured
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return Number of pins currently configured
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern size_t SocketTLSContext_get_pin_count (T ctx);
 
 /**
- * SocketTLSContext_has_pins - Check if any pins are configured
- * @ctx: The TLS context instance
+ * @brief Check if any pins are configured.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
- * Returns: 1 if pins configured, 0 if none
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if pins configured, 0 if none
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_has_pins (T ctx);
 
 /**
- * SocketTLSContext_verify_pin - Check if hash matches any pin
- * @ctx: The TLS context instance
- * @sha256_hash: 32-byte hash to check
+ * @brief Check if hash matches any pin.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param sha256_hash 32-byte hash to check
  *
  * Manual verification without full handshake. Useful for testing
  * or custom verification logic.
  *
- * Returns: 1 if match found, 0 if no match
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if match found, 0 if no match
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_verify_pin (T ctx,
                                         const unsigned char *sha256_hash);
 
 /**
- * SocketTLSContext_verify_cert_pin - Check if certificate matches any pin
- * @ctx: The TLS context instance
- * @cert: X509 certificate to verify
+ * @brief Check if certificate matches any pin.
+ * @ingroup security
+ * @param ctx The TLS context instance
+ * @param cert X509 certificate to verify
  *
  * Extracts SPKI hash from certificate and checks against pins.
  * Useful for manual chain verification.
  *
- * Returns: 1 if match found, 0 if no match
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if match found, 0 if no match
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert);
 
 /* Pinning exception type */
+/**
+ * @brief Exception raised when certificate pin verification fails during TLS handshake or manual check.
+ * @ingroup security
+ *
+ * Thrown by pin verification functions when no configured SPKI hash matches the peer certificate's public key.
+ * Indicates potential man-in-the-middle attack or misconfiguration.
+ *
+ * @see SocketTLSContext_add_pin() for adding pins.
+ * @see SocketTLSContext_set_pin_enforcement() for enforcement mode.
+ * @see SocketTLSContext_verify_pin() for manual checks.
+ * @see @ref foundation for exception handling with Except_T.
+ */
 extern const Except_T SocketTLS_PinVerifyFailed;
 
 /* ============================================================================
@@ -844,85 +918,96 @@ extern const Except_T SocketTLS_PinVerifyFailed;
  */
 
 /**
- * CTValidationMode - Certificate Transparency validation mode
+ * @brief Certificate Transparency validation mode enumeration.
+ * @ingroup security
+ *
+ * Controls how Certificate Transparency (RFC 6962) Signed Certificate
+ * Timestamps (SCTs) are validated during TLS handshake.
  */
 typedef enum
 {
-  CT_VALIDATION_PERMISSIVE = 0, /**< Log but don't fail on missing SCTs */
-  CT_VALIDATION_STRICT = 1      /**< Require valid SCTs, fail otherwise */
+  CT_VALIDATION_PERMISSIVE = 0, /**< Log missing SCTs but don't fail handshake */
+  CT_VALIDATION_STRICT = 1      /**< Require valid SCTs, fail handshake otherwise */
 } CTValidationMode;
 
 /**
- * SocketTLSContext_enable_ct - Enable Certificate Transparency verification
- * @ctx: The TLS context instance (client only)
- * @mode: Validation mode (strict or permissive)
+ * @brief Enable Certificate Transparency verification.
+ * @ingroup security
+ * @param ctx The TLS context instance (client only)
+ * @param mode Validation mode (strict or permissive)
  *
  * Enables CT verification for client connections. In strict mode,
  * connections fail if no valid SCTs are present. In permissive mode,
  * missing SCTs are logged but don't cause failure.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if CT not supported or server context
- * Thread-safe: Yes (mutex protected) - modifies shared context
+ * @return void
+ * @throws SocketTLS_Failed if CT not supported or server context
+ * @threadsafe Yes (mutex protected) - modifies shared context
+ * @ingroup security
  */
 extern void SocketTLSContext_enable_ct (T ctx, CTValidationMode mode);
 
 /**
- * SocketTLSContext_ct_enabled - Check if CT verification is enabled
- * @ctx: The TLS context instance
+ * @brief Check if CT verification is enabled.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
- * Returns: 1 if CT enabled, 0 if disabled
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if CT enabled, 0 if disabled
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketTLSContext_ct_enabled (T ctx);
 
 /**
- * SocketTLSContext_get_ct_mode - Get current CT validation mode
- * @ctx: The TLS context instance
+ * @brief Get current CT validation mode.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
- * Returns: CT validation mode (strict or permissive) if enabled, or
- * CT_VALIDATION_PERMISSIVE if disabled Raises: None Thread-safe: Yes
+ * @return CT validation mode (strict or permissive) if enabled, or
+ * CT_VALIDATION_PERMISSIVE if disabled @throws None Thread-safe: Yes
  * (read-only)
  */
 extern CTValidationMode SocketTLSContext_get_ct_mode (T ctx);
 
 /**
- * SocketTLSContext_set_ctlog_list_file - Load custom CT log list
- * @ctx: The TLS context instance (client only)
- * @log_file: Path to CT log list file (OpenSSL format)
+ * @brief Load custom CT log list.
+ * @ingroup security
+ * @param ctx The TLS context instance (client only)
+ * @param log_file Path to CT log list file (OpenSSL format)
  *
  * Loads a custom list of trusted CT logs from file, overriding OpenSSL
  * defaults. Validates file path and format. Call before enable_ct for effect.
  *
- * Returns: void
- * Raises: SocketTLS_Failed if file invalid, load fails, or server context
- * Thread-safe: No (config phase only)
+ * @return void
+ * @throws SocketTLS_Failed if file invalid, load fails, or server context
+ * @threadsafe No (config phase only)
  */
 extern void SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file);
 
 /* Internal functions (not part of public API) */
 /**
- * SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX*
- * @ctx: The TLS context instance
+ * @brief Get underlying OpenSSL SSL_CTX*.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
  * Internal access to raw SSL_CTX for SocketTLS_enable() etc.
  *
- * Returns: void* to SSL_CTX (cast as needed)
- * Raises: None
- * Thread-safe: Yes
+ * @return void* to SSL_CTX (cast as needed)
+ * @throws None
+ * @threadsafe Yes
  */
 extern void *SocketTLSContext_get_ssl_ctx (T ctx);
 
 /**
- * SocketTLSContext_is_server - Check if context is server-mode
- * @ctx: The TLS context instance
+ * @brief Check if context is server-mode.
+ * @ingroup security
+ * @param ctx The TLS context instance
  *
  * Internal helper to determine client vs server configuration.
  *
- * Returns: 1 if server, 0 if client
- * Raises: None
- * Thread-safe: Yes
+ * @return 1 if server, 0 if client
+ * @throws None
+ * @threadsafe Yes
  */
 extern int SocketTLSContext_is_server (T ctx);
 

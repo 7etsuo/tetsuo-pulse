@@ -117,9 +117,12 @@ $(document).ready(function(){initNavTree('SocketHTTPServer_8h.html',''); initRes
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketHTTPServer.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketHTTPServer.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>High-level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/types.h&gt;</code><br />
@@ -149,8 +152,12 @@ $(document).ready(function(){initNavTree('SocketHTTPServer_8h.html',''); initRes
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketHTTPServer__Config" id="r_structSocketHTTPServer__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a></td></tr>
+<tr class="memitem:structSocketHTTPServer__Config" id="r_structSocketHTTPServer__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a></td></tr>
+<tr class="memdesc:structSocketHTTPServer__Config"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP server configuration structure.  <a href="group__http.html#structSocketHTTPServer__Config">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPServer__Config"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTPServer__Stats" id="r_structSocketHTTPServer__Stats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPServer__Stats">SocketHTTPServer_Stats</a></td></tr>
+<tr class="memdesc:structSocketHTTPServer__Stats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Comprehensive server statistics structure for monitoring and debugging.  <a href="group__http.html#structSocketHTTPServer__Stats">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTPServer__Stats"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
@@ -213,804 +220,191 @@ Macros</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:a62eac457c36851d5e4a184e1a5602555" id="r_a62eac457c36851d5e4a184e1a5602555"><td class="memItemLeft" align="right" valign="top">typedef struct SocketWS *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a></td></tr>
 <tr class="separator:a62eac457c36851d5e4a184e1a5602555"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad59859e8ae07bfb95f5807590dd034f4" id="r_ad59859e8ae07bfb95f5807590dd034f4"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPServer *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a></td></tr>
-<tr class="separator:ad59859e8ae07bfb95f5807590dd034f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a071a3760545fbd5fca4c2df224af0fad" id="r_a071a3760545fbd5fca4c2df224af0fad"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPServer_Request *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a></td></tr>
-<tr class="separator:a071a3760545fbd5fca4c2df224af0fad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8805b706921b37e2e91e68a861ddc97c" id="r_a8805b706921b37e2e91e68a861ddc97c"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer_Handler</a>) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, void *userdata)</td></tr>
-<tr class="separator:a8805b706921b37e2e91e68a861ddc97c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab347055b7285aedad5fa0f504c3a655e" id="r_ab347055b7285aedad5fa0f504c3a655e"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab347055b7285aedad5fa0f504c3a655e">SocketHTTPServer_BodyCallback</a>) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const void *chunk, size_t len, int is_final, void *userdata)</td></tr>
-<tr class="separator:ab347055b7285aedad5fa0f504c3a655e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab095eb6d03d06f9c1d8041dc3aa56094" id="r_ab095eb6d03d06f9c1d8041dc3aa56094"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab095eb6d03d06f9c1d8041dc3aa56094">SocketHTTPServer_Validator</a>) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, int *reject_status, void *userdata)</td></tr>
-<tr class="separator:ab095eb6d03d06f9c1d8041dc3aa56094"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6eeba038caf0b48d3ae3527155ab8162" id="r_a6eeba038caf0b48d3ae3527155ab8162"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer_DrainCallback</a>) (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timed_out, void *userdata)</td></tr>
-<tr class="separator:a6eeba038caf0b48d3ae3527155ab8162"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad59859e8ae07bfb95f5807590dd034f4" id="r_gad59859e8ae07bfb95f5807590dd034f4"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPServer *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a></td></tr>
+<tr class="memdesc:gad59859e8ae07bfb95f5807590dd034f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque HTTP server instance managing connections, requests, and protocol handling.  <br /></td></tr>
+<tr class="separator:gad59859e8ae07bfb95f5807590dd034f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga071a3760545fbd5fca4c2df224af0fad" id="r_ga071a3760545fbd5fca4c2df224af0fad"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPServer_Request *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a></td></tr>
+<tr class="memdesc:ga071a3760545fbd5fca4c2df224af0fad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque request context for handling individual HTTP requests.  <br /></td></tr>
+<tr class="separator:ga071a3760545fbd5fca4c2df224af0fad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8805b706921b37e2e91e68a861ddc97c" id="r_ga8805b706921b37e2e91e68a861ddc97c"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer_Handler</a>) (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, void *userdata)</td></tr>
+<tr class="memdesc:ga8805b706921b37e2e91e68a861ddc97c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Primary request handler callback invoked for each incoming HTTP request.  <br /></td></tr>
+<tr class="separator:ga8805b706921b37e2e91e68a861ddc97c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab347055b7285aedad5fa0f504c3a655e" id="r_gab347055b7285aedad5fa0f504c3a655e"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab347055b7285aedad5fa0f504c3a655e">SocketHTTPServer_BodyCallback</a>) (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const void *chunk, size_t len, int is_final, void *userdata)</td></tr>
+<tr class="memdesc:gab347055b7285aedad5fa0f504c3a655e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback for streaming request body data incrementally.  <br /></td></tr>
+<tr class="separator:gab347055b7285aedad5fa0f504c3a655e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab095eb6d03d06f9c1d8041dc3aa56094" id="r_gab095eb6d03d06f9c1d8041dc3aa56094"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab095eb6d03d06f9c1d8041dc3aa56094">SocketHTTPServer_Validator</a>) (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, int *reject_status, void *userdata)</td></tr>
+<tr class="memdesc:gab095eb6d03d06f9c1d8041dc3aa56094"><td class="mdescLeft">&#160;</td><td class="mdescRight">Middleware callback for request validation and authentication.  <br /></td></tr>
+<tr class="separator:gab095eb6d03d06f9c1d8041dc3aa56094"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6eeba038caf0b48d3ae3527155ab8162" id="r_ga6eeba038caf0b48d3ae3527155ab8162"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer_DrainCallback</a>) (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timed_out, void *userdata)</td></tr>
+<tr class="memdesc:ga6eeba038caf0b48d3ae3527155ab8162"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback notified when graceful drain (shutdown) completes.  <br /></td></tr>
+<tr class="separator:ga6eeba038caf0b48d3ae3527155ab8162"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a0ac9162aaf92d18d40cf0443909e3e97" id="r_a0ac9162aaf92d18d40cf0443909e3e97"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97">SocketHTTPServer_State</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470">HTTPSERVER_STATE_RUNNING</a>
+<tr class="memitem:ga0ac9162aaf92d18d40cf0443909e3e97" id="r_ga0ac9162aaf92d18d40cf0443909e3e97"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0ac9162aaf92d18d40cf0443909e3e97">SocketHTTPServer_State</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470">HTTPSERVER_STATE_RUNNING</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da">HTTPSERVER_STATE_DRAINING</a>
+&#160;&#160;<a class="el" href="group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da">HTTPSERVER_STATE_DRAINING</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570">HTTPSERVER_STATE_STOPPED</a>
+&#160;&#160;<a class="el" href="group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570">HTTPSERVER_STATE_STOPPED</a>
 <br />
  }</td></tr>
-<tr class="separator:a0ac9162aaf92d18d40cf0443909e3e97"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga0ac9162aaf92d18d40cf0443909e3e97"><td class="mdescLeft">&#160;</td><td class="mdescRight">Server lifecycle states for monitoring server operation and graceful shutdown.  <a href="group__http.html#ga0ac9162aaf92d18d40cf0443909e3e97">More...</a><br /></td></tr>
+<tr class="separator:ga0ac9162aaf92d18d40cf0443909e3e97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a08bbe8e6a3560817cd898a51622bc6ce" id="r_a08bbe8e6a3560817cd898a51622bc6ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a08bbe8e6a3560817cd898a51622bc6ce">SocketHTTPServer_config_defaults</a> (<a class="el" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *config)</td></tr>
-<tr class="separator:a08bbe8e6a3560817cd898a51622bc6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aea4fe38f3115faefc4bbc7f28e6b7362" id="r_aea4fe38f3115faefc4bbc7f28e6b7362"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#aea4fe38f3115faefc4bbc7f28e6b7362">SocketHTTPServer_new</a> (const <a class="el" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *config)</td></tr>
-<tr class="separator:aea4fe38f3115faefc4bbc7f28e6b7362"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf5856e5b1728e44bbb68ef2e4637318" id="r_acf5856e5b1728e44bbb68ef2e4637318"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#acf5856e5b1728e44bbb68ef2e4637318">SocketHTTPServer_free</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> *server)</td></tr>
-<tr class="separator:acf5856e5b1728e44bbb68ef2e4637318"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa06caca93c0fac3e52f7749abe03be9" id="r_afa06caca93c0fac3e52f7749abe03be9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#afa06caca93c0fac3e52f7749abe03be9">SocketHTTPServer_start</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
-<tr class="separator:afa06caca93c0fac3e52f7749abe03be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af332d06f999890e277dc83777d669f00" id="r_af332d06f999890e277dc83777d669f00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#af332d06f999890e277dc83777d669f00">SocketHTTPServer_stop</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
-<tr class="separator:af332d06f999890e277dc83777d669f00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf56db2565e6fdebcebf0bb7df24b959" id="r_aaf56db2565e6fdebcebf0bb7df24b959"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#aaf56db2565e6fdebcebf0bb7df24b959">SocketHTTPServer_set_handler</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, <a class="el" href="SocketHTTPServer_8h.html#a8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer_Handler</a> handler, void *userdata)</td></tr>
-<tr class="separator:aaf56db2565e6fdebcebf0bb7df24b959"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23f97a896233d7ca6259ab43684e784d" id="r_a23f97a896233d7ca6259ab43684e784d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a23f97a896233d7ca6259ab43684e784d">SocketHTTPServer_fd</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
-<tr class="separator:a23f97a896233d7ca6259ab43684e784d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab2ad4e6a795964f1edabf14a71b83985" id="r_ab2ad4e6a795964f1edabf14a71b83985"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab2ad4e6a795964f1edabf14a71b83985">SocketHTTPServer_process</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timeout_ms)</td></tr>
-<tr class="separator:ab2ad4e6a795964f1edabf14a71b83985"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4e5392eaefa9ee259824571a1c5487d" id="r_af4e5392eaefa9ee259824571a1c5487d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#af4e5392eaefa9ee259824571a1c5487d">SocketHTTPServer_poll</a> (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
-<tr class="separator:af4e5392eaefa9ee259824571a1c5487d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62a61206448cffe1710070a6c64b554d" id="r_a62a61206448cffe1710070a6c64b554d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a62a61206448cffe1710070a6c64b554d">SocketHTTPServer_Request_method</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a62a61206448cffe1710070a6c64b554d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a62b0e10b9c135a08852e56eb1eae8ac4" id="r_a62b0e10b9c135a08852e56eb1eae8ac4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a62b0e10b9c135a08852e56eb1eae8ac4">SocketHTTPServer_Request_path</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a62b0e10b9c135a08852e56eb1eae8ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7bb246b4e39b4d74d3821201b6f72456" id="r_a7bb246b4e39b4d74d3821201b6f72456"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a7bb246b4e39b4d74d3821201b6f72456">SocketHTTPServer_Request_query</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a7bb246b4e39b4d74d3821201b6f72456"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a51f26503d221c39a5e867b5d4c683ae7" id="r_a51f26503d221c39a5e867b5d4c683ae7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a51f26503d221c39a5e867b5d4c683ae7">SocketHTTPServer_Request_headers</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a51f26503d221c39a5e867b5d4c683ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e95ae3464cb9cf8c0d0b172db13456e" id="r_a7e95ae3464cb9cf8c0d0b172db13456e"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a7e95ae3464cb9cf8c0d0b172db13456e">SocketHTTPServer_Request_body</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a7e95ae3464cb9cf8c0d0b172db13456e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ac308a85217f94c0fc5ced8525b55e5" id="r_a5ac308a85217f94c0fc5ced8525b55e5"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a5ac308a85217f94c0fc5ced8525b55e5">SocketHTTPServer_Request_body_len</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a5ac308a85217f94c0fc5ced8525b55e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f5234c0311c21a800e1145ff06c88a4" id="r_a2f5234c0311c21a800e1145ff06c88a4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a2f5234c0311c21a800e1145ff06c88a4">SocketHTTPServer_Request_client_addr</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a2f5234c0311c21a800e1145ff06c88a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28be52d1b6393421dd306dc400d443ee" id="r_a28be52d1b6393421dd306dc400d443ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a28be52d1b6393421dd306dc400d443ee">SocketHTTPServer_Request_version</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a28be52d1b6393421dd306dc400d443ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab962af94432e50a19c4a4d09b307cd68" id="r_ab962af94432e50a19c4a4d09b307cd68"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab962af94432e50a19c4a4d09b307cd68">SocketHTTPServer_Request_arena</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:ab962af94432e50a19c4a4d09b307cd68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b44e54c60728c855c3cfad99196dc64" id="r_a9b44e54c60728c855c3cfad99196dc64"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a9b44e54c60728c855c3cfad99196dc64">SocketHTTPServer_Request_memory_used</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
-<tr class="separator:a9b44e54c60728c855c3cfad99196dc64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga08bbe8e6a3560817cd898a51622bc6ce" id="r_ga08bbe8e6a3560817cd898a51622bc6ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga08bbe8e6a3560817cd898a51622bc6ce">SocketHTTPServer_config_defaults</a> (<a class="el" href="group__http.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *config)</td></tr>
+<tr class="memdesc:ga08bbe8e6a3560817cd898a51622bc6ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http.html#structSocketHTTPServer__Config" title="HTTP server configuration structure.">SocketHTTPServer_Config</a> with safe default values.  <br /></td></tr>
+<tr class="separator:ga08bbe8e6a3560817cd898a51622bc6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea4fe38f3115faefc4bbc7f28e6b7362" id="r_gaea4fe38f3115faefc4bbc7f28e6b7362"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaea4fe38f3115faefc4bbc7f28e6b7362">SocketHTTPServer_new</a> (const <a class="el" href="group__http.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *config)</td></tr>
+<tr class="memdesc:gaea4fe38f3115faefc4bbc7f28e6b7362"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and initialize a new HTTP server instance.  <br /></td></tr>
+<tr class="separator:gaea4fe38f3115faefc4bbc7f28e6b7362"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf5856e5b1728e44bbb68ef2e4637318" id="r_gacf5856e5b1728e44bbb68ef2e4637318"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gacf5856e5b1728e44bbb68ef2e4637318">SocketHTTPServer_free</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> *server)</td></tr>
+<tr class="memdesc:gacf5856e5b1728e44bbb68ef2e4637318"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of HTTP server instance and release all resources.  <br /></td></tr>
+<tr class="separator:gacf5856e5b1728e44bbb68ef2e4637318"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafa06caca93c0fac3e52f7749abe03be9" id="r_gafa06caca93c0fac3e52f7749abe03be9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafa06caca93c0fac3e52f7749abe03be9">SocketHTTPServer_start</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:gafa06caca93c0fac3e52f7749abe03be9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bind to address/port and start listening for incoming connections.  <br /></td></tr>
+<tr class="separator:gafa06caca93c0fac3e52f7749abe03be9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf332d06f999890e277dc83777d669f00" id="r_gaf332d06f999890e277dc83777d669f00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf332d06f999890e277dc83777d669f00">SocketHTTPServer_stop</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:gaf332d06f999890e277dc83777d669f00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stop accepting new connections while allowing existing ones to complete.  <br /></td></tr>
+<tr class="separator:gaf332d06f999890e277dc83777d669f00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaf56db2565e6fdebcebf0bb7df24b959" id="r_gaaf56db2565e6fdebcebf0bb7df24b959"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaaf56db2565e6fdebcebf0bb7df24b959">SocketHTTPServer_set_handler</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, <a class="el" href="group__http.html#ga8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer_Handler</a> handler, void *userdata)</td></tr>
+<tr class="memdesc:gaaf56db2565e6fdebcebf0bb7df24b959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register the primary request handler callback and associated user data.  <br /></td></tr>
+<tr class="separator:gaaf56db2565e6fdebcebf0bb7df24b959"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga23f97a896233d7ca6259ab43684e784d" id="r_ga23f97a896233d7ca6259ab43684e784d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga23f97a896233d7ca6259ab43684e784d">SocketHTTPServer_fd</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:ga23f97a896233d7ca6259ab43684e784d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the file descriptor of the listening socket for external polling.  <br /></td></tr>
+<tr class="separator:ga23f97a896233d7ca6259ab43684e784d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab2ad4e6a795964f1edabf14a71b83985" id="r_gab2ad4e6a795964f1edabf14a71b83985"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985">SocketHTTPServer_process</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timeout_ms)</td></tr>
+<tr class="memdesc:gab2ad4e6a795964f1edabf14a71b83985"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main event loop step: poll, accept, parse, handle requests.  <br /></td></tr>
+<tr class="separator:gab2ad4e6a795964f1edabf14a71b83985"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf4e5392eaefa9ee259824571a1c5487d" id="r_gaf4e5392eaefa9ee259824571a1c5487d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf4e5392eaefa9ee259824571a1c5487d">SocketHTTPServer_poll</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:gaf4e5392eaefa9ee259824571a1c5487d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the internal SocketPoll_T instance for custom event handling.  <br /></td></tr>
+<tr class="separator:gaf4e5392eaefa9ee259824571a1c5487d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga62a61206448cffe1710070a6c64b554d" id="r_ga62a61206448cffe1710070a6c64b554d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga62a61206448cffe1710070a6c64b554d">SocketHTTPServer_Request_method</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga62a61206448cffe1710070a6c64b554d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the parsed HTTP method from the request.  <br /></td></tr>
+<tr class="separator:ga62a61206448cffe1710070a6c64b554d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga62b0e10b9c135a08852e56eb1eae8ac4" id="r_ga62b0e10b9c135a08852e56eb1eae8ac4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga62b0e10b9c135a08852e56eb1eae8ac4">SocketHTTPServer_Request_path</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga62b0e10b9c135a08852e56eb1eae8ac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the request path (URI path component).  <br /></td></tr>
+<tr class="separator:ga62b0e10b9c135a08852e56eb1eae8ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7bb246b4e39b4d74d3821201b6f72456" id="r_ga7bb246b4e39b4d74d3821201b6f72456"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga7bb246b4e39b4d74d3821201b6f72456">SocketHTTPServer_Request_query</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga7bb246b4e39b4d74d3821201b6f72456"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the query string portion of the request URI.  <br /></td></tr>
+<tr class="separator:ga7bb246b4e39b4d74d3821201b6f72456"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga51f26503d221c39a5e867b5d4c683ae7" id="r_ga51f26503d221c39a5e867b5d4c683ae7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga51f26503d221c39a5e867b5d4c683ae7">SocketHTTPServer_Request_headers</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga51f26503d221c39a5e867b5d4c683ae7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the parsed request headers as a headers container.  <br /></td></tr>
+<tr class="separator:ga51f26503d221c39a5e867b5d4c683ae7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7e95ae3464cb9cf8c0d0b172db13456e" id="r_ga7e95ae3464cb9cf8c0d0b172db13456e"><td class="memItemLeft" align="right" valign="top">const void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga7e95ae3464cb9cf8c0d0b172db13456e">SocketHTTPServer_Request_body</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga7e95ae3464cb9cf8c0d0b172db13456e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get pointer to fully buffered request body data.  <br /></td></tr>
+<tr class="separator:ga7e95ae3464cb9cf8c0d0b172db13456e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ac308a85217f94c0fc5ced8525b55e5" id="r_ga5ac308a85217f94c0fc5ced8525b55e5"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5ac308a85217f94c0fc5ced8525b55e5">SocketHTTPServer_Request_body_len</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga5ac308a85217f94c0fc5ced8525b55e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the length of the request body in bytes.  <br /></td></tr>
+<tr class="separator:ga5ac308a85217f94c0fc5ced8525b55e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f5234c0311c21a800e1145ff06c88a4" id="r_ga2f5234c0311c21a800e1145ff06c88a4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2f5234c0311c21a800e1145ff06c88a4">SocketHTTPServer_Request_client_addr</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga2f5234c0311c21a800e1145ff06c88a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the client (peer) IP address as string.  <br /></td></tr>
+<tr class="separator:ga2f5234c0311c21a800e1145ff06c88a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga28be52d1b6393421dd306dc400d443ee" id="r_ga28be52d1b6393421dd306dc400d443ee"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga28be52d1b6393421dd306dc400d443ee">SocketHTTPServer_Request_version</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga28be52d1b6393421dd306dc400d443ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine the HTTP protocol version of the request.  <br /></td></tr>
+<tr class="separator:ga28be52d1b6393421dd306dc400d443ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab962af94432e50a19c4a4d09b307cd68" id="r_gab962af94432e50a19c4a4d09b307cd68"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab962af94432e50a19c4a4d09b307cd68">SocketHTTPServer_Request_arena</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:gab962af94432e50a19c4a4d09b307cd68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the Arena_T used for this request's allocations.  <br /></td></tr>
+<tr class="separator:gab962af94432e50a19c4a4d09b307cd68"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9b44e54c60728c855c3cfad99196dc64" id="r_ga9b44e54c60728c855c3cfad99196dc64"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9b44e54c60728c855c3cfad99196dc64">SocketHTTPServer_Request_memory_used</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga9b44e54c60728c855c3cfad99196dc64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query approximate memory usage for the underlying connection.  <br /></td></tr>
+<tr class="separator:ga9b44e54c60728c855c3cfad99196dc64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4d1d923d82851f33216006a798844e99" id="r_ga4d1d923d82851f33216006a798844e99"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4d1d923d82851f33216006a798844e99">SocketHTTPServer_Request_status</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, int code)</td></tr>
+<tr class="memdesc:ga4d1d923d82851f33216006a798844e99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set response status.  <br /></td></tr>
+<tr class="separator:ga4d1d923d82851f33216006a798844e99"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga776474c545e883c3ee264a53bd31bfc7" id="r_ga776474c545e883c3ee264a53bd31bfc7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga776474c545e883c3ee264a53bd31bfc7">SocketHTTPServer_Request_header</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const char *name, const char *value)</td></tr>
+<tr class="memdesc:ga776474c545e883c3ee264a53bd31bfc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add response header.  <br /></td></tr>
+<tr class="separator:ga776474c545e883c3ee264a53bd31bfc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ac214850c3334c5413bcad0c0ae9b5e" id="r_ga5ac214850c3334c5413bcad0c0ae9b5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5ac214850c3334c5413bcad0c0ae9b5e">SocketHTTPServer_Request_body_data</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const void *data, size_t len)</td></tr>
+<tr class="memdesc:ga5ac214850c3334c5413bcad0c0ae9b5e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set response body.  <br /></td></tr>
+<tr class="separator:ga5ac214850c3334c5413bcad0c0ae9b5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga26d33e6cf21f83cbd542b1d5a41e7bca" id="r_ga26d33e6cf21f83cbd542b1d5a41e7bca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga26d33e6cf21f83cbd542b1d5a41e7bca">SocketHTTPServer_Request_body_string</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const char *str)</td></tr>
+<tr class="memdesc:ga26d33e6cf21f83cbd542b1d5a41e7bca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set response body from string.  <br /></td></tr>
+<tr class="separator:ga26d33e6cf21f83cbd542b1d5a41e7bca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga908829abf68bcfe935568fe4f45c0330" id="r_ga908829abf68bcfe935568fe4f45c0330"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga908829abf68bcfe935568fe4f45c0330">SocketHTTPServer_Request_finish</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga908829abf68bcfe935568fe4f45c0330"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finish and send response.  <br /></td></tr>
+<tr class="separator:ga908829abf68bcfe935568fe4f45c0330"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5fe7e9577e2d58033ef13c972e815975" id="r_ga5fe7e9577e2d58033ef13c972e815975"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5fe7e9577e2d58033ef13c972e815975">SocketHTTPServer_Request_body_stream</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, <a class="el" href="group__http.html#gab347055b7285aedad5fa0f504c3a655e">SocketHTTPServer_BodyCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga5fe7e9577e2d58033ef13c972e815975"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable streaming body callback.  <br /></td></tr>
+<tr class="separator:ga5fe7e9577e2d58033ef13c972e815975"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga27b60a6145a8b425f588bc428946450e" id="r_ga27b60a6145a8b425f588bc428946450e"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga27b60a6145a8b425f588bc428946450e">SocketHTTPServer_Request_body_expected</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga27b60a6145a8b425f588bc428946450e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get expected body length.  <br /></td></tr>
+<tr class="separator:ga27b60a6145a8b425f588bc428946450e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9b2fbeda02abcd8385d35f3164e82b8f" id="r_ga9b2fbeda02abcd8385d35f3164e82b8f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9b2fbeda02abcd8385d35f3164e82b8f">SocketHTTPServer_Request_is_chunked</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga9b2fbeda02abcd8385d35f3164e82b8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if request uses chunked encoding.  <br /></td></tr>
+<tr class="separator:ga9b2fbeda02abcd8385d35f3164e82b8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6eadbc6777bdd7c47ec3f3282d66feac" id="r_ga6eadbc6777bdd7c47ec3f3282d66feac"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6eadbc6777bdd7c47ec3f3282d66feac">SocketHTTPServer_Request_begin_stream</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga6eadbc6777bdd7c47ec3f3282d66feac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begin streaming response.  <br /></td></tr>
+<tr class="separator:ga6eadbc6777bdd7c47ec3f3282d66feac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab9d8424580c9f47a870bea001f95176b" id="r_gab9d8424580c9f47a870bea001f95176b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab9d8424580c9f47a870bea001f95176b">SocketHTTPServer_Request_send_chunk</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const void *data, size_t len)</td></tr>
+<tr class="memdesc:gab9d8424580c9f47a870bea001f95176b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send response chunk.  <br /></td></tr>
+<tr class="separator:gab9d8424580c9f47a870bea001f95176b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga36c1dce0b797e1d069b11b5608b06558" id="r_ga36c1dce0b797e1d069b11b5608b06558"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga36c1dce0b797e1d069b11b5608b06558">SocketHTTPServer_Request_end_stream</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga36c1dce0b797e1d069b11b5608b06558"><td class="mdescLeft">&#160;</td><td class="mdescRight">End streaming response.  <br /></td></tr>
+<tr class="separator:ga36c1dce0b797e1d069b11b5608b06558"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadc66dc775243c9466070358778fe7afd" id="r_gadc66dc775243c9466070358778fe7afd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gadc66dc775243c9466070358778fe7afd">SocketHTTPServer_Request_push</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const char *path, <a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers)</td></tr>
+<tr class="memdesc:gadc66dc775243c9466070358778fe7afd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Push a resource (HTTP/2 only)  <br /></td></tr>
+<tr class="separator:gadc66dc775243c9466070358778fe7afd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8eb75c9722d2cc203770295bb2e781b2" id="r_ga8eb75c9722d2cc203770295bb2e781b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8eb75c9722d2cc203770295bb2e781b2">SocketHTTPServer_Request_is_http2</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga8eb75c9722d2cc203770295bb2e781b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if connection is HTTP/2.  <br /></td></tr>
+<tr class="separator:ga8eb75c9722d2cc203770295bb2e781b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadea7c22d784dde56835abffcd57ee516" id="r_gadea7c22d784dde56835abffcd57ee516"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gadea7c22d784dde56835abffcd57ee516">SocketHTTPServer_Request_is_websocket</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:gadea7c22d784dde56835abffcd57ee516"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check WebSocket upgrade.  <br /></td></tr>
+<tr class="separator:gadea7c22d784dde56835abffcd57ee516"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga27bf639b401330e8d40ebbaf0c93e12b" id="r_ga27bf639b401330e8d40ebbaf0c93e12b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga27bf639b401330e8d40ebbaf0c93e12b">SocketHTTPServer_Request_upgrade_websocket</a> (<a class="el" href="group__http.html#ga071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req)</td></tr>
+<tr class="memdesc:ga27bf639b401330e8d40ebbaf0c93e12b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upgrade to WebSocket.  <br /></td></tr>
+<tr class="separator:ga27bf639b401330e8d40ebbaf0c93e12b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d43e263bbd16177f78d4eef9b84ec1d" id="r_ga0d43e263bbd16177f78d4eef9b84ec1d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0d43e263bbd16177f78d4eef9b84ec1d">SocketHTTPServer_set_rate_limit</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, const char *path_prefix, <a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
+<tr class="memdesc:ga0d43e263bbd16177f78d4eef9b84ec1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set rate limiter for endpoint.  <br /></td></tr>
+<tr class="separator:ga0d43e263bbd16177f78d4eef9b84ec1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga44d4d4090830ab41d87e7635cd7468ca" id="r_ga44d4d4090830ab41d87e7635cd7468ca"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga44d4d4090830ab41d87e7635cd7468ca">SocketHTTPServer_set_validator</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, <a class="el" href="group__http.html#gab095eb6d03d06f9c1d8041dc3aa56094">SocketHTTPServer_Validator</a> validator, void *userdata)</td></tr>
+<tr class="memdesc:ga44d4d4090830ab41d87e7635cd7468ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set request validation callback.  <br /></td></tr>
+<tr class="separator:ga44d4d4090830ab41d87e7635cd7468ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga20dcaa755268733bbeae04c26f6ca6bb" id="r_ga20dcaa755268733bbeae04c26f6ca6bb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga20dcaa755268733bbeae04c26f6ca6bb">SocketHTTPServer_drain</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timeout_ms)</td></tr>
+<tr class="memdesc:ga20dcaa755268733bbeae04c26f6ca6bb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Begin graceful shutdown.  <br /></td></tr>
+<tr class="separator:ga20dcaa755268733bbeae04c26f6ca6bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga98d6411c6fcecd153b1f2813ef1115ea" id="r_ga98d6411c6fcecd153b1f2813ef1115ea"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga98d6411c6fcecd153b1f2813ef1115ea">SocketHTTPServer_drain_poll</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:ga98d6411c6fcecd153b1f2813ef1115ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Poll drain progress.  <br /></td></tr>
+<tr class="separator:ga98d6411c6fcecd153b1f2813ef1115ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga16195c5b1094a43bc7ee7531c3674958" id="r_ga16195c5b1094a43bc7ee7531c3674958"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958">SocketHTTPServer_drain_wait</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timeout_ms)</td></tr>
+<tr class="memdesc:ga16195c5b1094a43bc7ee7531c3674958"><td class="mdescLeft">&#160;</td><td class="mdescRight">Blocking wait for drain.  <br /></td></tr>
+<tr class="separator:ga16195c5b1094a43bc7ee7531c3674958"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaecec7fdc3ab750e67925295b736dcef0" id="r_gaecec7fdc3ab750e67925295b736dcef0"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaecec7fdc3ab750e67925295b736dcef0">SocketHTTPServer_drain_remaining_ms</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:gaecec7fdc3ab750e67925295b736dcef0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get time until forced shutdown.  <br /></td></tr>
+<tr class="separator:gaecec7fdc3ab750e67925295b736dcef0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaffa4a9003d4696ab088d906cba07e39e" id="r_gaffa4a9003d4696ab088d906cba07e39e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaffa4a9003d4696ab088d906cba07e39e">SocketHTTPServer_set_drain_callback</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, <a class="el" href="group__http.html#ga6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer_DrainCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:gaffa4a9003d4696ab088d906cba07e39e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set drain completion callback.  <br /></td></tr>
+<tr class="separator:gaffa4a9003d4696ab088d906cba07e39e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f70285ff97bb4a7755c0e14c789c0b0" id="r_ga2f70285ff97bb4a7755c0e14c789c0b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga0ac9162aaf92d18d40cf0443909e3e97">SocketHTTPServer_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0">SocketHTTPServer_state</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:ga2f70285ff97bb4a7755c0e14c789c0b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get server lifecycle state.  <br /></td></tr>
+<tr class="separator:ga2f70285ff97bb4a7755c0e14c789c0b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4695eb50357dd731435f3558bf30d932" id="r_ga4695eb50357dd731435f3558bf30d932"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4695eb50357dd731435f3558bf30d932">SocketHTTPServer_stats</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, <a class="el" href="group__http.html#structSocketHTTPServer__Stats">SocketHTTPServer_Stats</a> *stats)</td></tr>
+<tr class="memdesc:ga4695eb50357dd731435f3558bf30d932"><td class="mdescLeft">&#160;</td><td class="mdescRight">Populate statistics structure with current server metrics snapshot.  <br /></td></tr>
+<tr class="separator:ga4695eb50357dd731435f3558bf30d932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac7bf7e6cb42130716cebdb8fd22b30e6" id="r_gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac7bf7e6cb42130716cebdb8fd22b30e6">SocketHTTPServer_stats_reset</a> (<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server)</td></tr>
+<tr class="memdesc:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset all resettable statistics counters to zero.  <br /></td></tr>
+<tr class="separator:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ab0e17c60a6e02fe69434302760371464" id="r_ab0e17c60a6e02fe69434302760371464"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab0e17c60a6e02fe69434302760371464">SocketHTTPServer_Failed</a></td></tr>
-<tr class="separator:ab0e17c60a6e02fe69434302760371464"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0cf03445c053391004f6234e29812f5" id="r_ab0cf03445c053391004f6234e29812f5"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#ab0cf03445c053391004f6234e29812f5">SocketHTTPServer_BindFailed</a></td></tr>
-<tr class="separator:ab0cf03445c053391004f6234e29812f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46e1179e3239aac920a2afa2fc6711b3" id="r_a46e1179e3239aac920a2afa2fc6711b3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer_8h.html#a46e1179e3239aac920a2afa2fc6711b3">SocketHTTPServer_ProtocolError</a></td></tr>
-<tr class="separator:a46e1179e3239aac920a2afa2fc6711b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab0e17c60a6e02fe69434302760371464" id="r_gab0e17c60a6e02fe69434302760371464"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab0e17c60a6e02fe69434302760371464">SocketHTTPServer_Failed</a></td></tr>
+<tr class="memdesc:gab0e17c60a6e02fe69434302760371464"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on general server failures such as allocation errors or internal state corruption.  <br /></td></tr>
+<tr class="separator:gab0e17c60a6e02fe69434302760371464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab0cf03445c053391004f6234e29812f5" id="r_gab0cf03445c053391004f6234e29812f5"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab0cf03445c053391004f6234e29812f5">SocketHTTPServer_BindFailed</a></td></tr>
+<tr class="memdesc:gab0cf03445c053391004f6234e29812f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised when binding to address/port fails (EADDRINUSE, EADDRNOTAVAIL, etc.).  <br /></td></tr>
+<tr class="separator:gab0cf03445c053391004f6234e29812f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga46e1179e3239aac920a2afa2fc6711b3" id="r_ga46e1179e3239aac920a2afa2fc6711b3"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga46e1179e3239aac920a2afa2fc6711b3">SocketHTTPServer_ProtocolError</a></td></tr>
+<tr class="memdesc:ga46e1179e3239aac920a2afa2fc6711b3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on HTTP protocol violations or parsing errors.  <br /></td></tr>
+<tr class="separator:ga46e1179e3239aac920a2afa2fc6711b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketHTTPServer__Config" id="structSocketHTTPServer__Config"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPServer__Config">&#9670;&#160;</a></span>SocketHTTPServer_Config</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPServer_Config</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>HTTP server configuration </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00268">268</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a92d76f73dd8d83287a36bdd3643022ea" name="a92d76f73dd8d83287a36bdd3643022ea"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-backlog</td>
-<td class="fielddoc">
-<p>Listen backlog </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ab0bf8c280cce766a64efd9064f93bef2" name="ab0bf8c280cce766a64efd9064f93bef2"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">const</a> <a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">char</a> *</td>
-<td class="fieldname">
-bind_address</td>
-<td class="fielddoc">
-<p>Bind address (NULL = all interfaces) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aba94ad7a26eb19a5fa9eb671ac38e39b" name="aba94ad7a26eb19a5fa9eb671ac38e39b"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-enable_h2c_upgrade</td>
-<td class="fielddoc">
-<p>Allow HTTP/2 upgrade (default: 0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a1e78410c99812889132c0977539d170b" name="a1e78410c99812889132c0977539d170b"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-keepalive_timeout_ms</td>
-<td class="fielddoc">
-<p>Keep-alive timeout </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ac1e10ab5e4e74aac02cefdf9c5555bae" name="ac1e10ab5e4e74aac02cefdf9c5555bae"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">size_t</a></td>
-<td class="fieldname">
-max_body_size</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aff8dceb976118d9ad3726cac957f6e97" name="aff8dceb976118d9ad3726cac957f6e97"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">size_t</a></td>
-<td class="fieldname">
-max_concurrent_requests</td>
-<td class="fielddoc">
-<p>Max concurrent requests (HTTP/2) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aba7a435867737c5dda694445481fbc7c" name="aba7a435867737c5dda694445481fbc7c"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">size_t</a></td>
-<td class="fieldname">
-max_connections</td>
-<td class="fielddoc">
-<p>Total max connections </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a5ed0dc426933e2d4fc092685c2f37d3b" name="a5ed0dc426933e2d4fc092685c2f37d3b"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-max_connections_per_client</td>
-<td class="fielddoc">
-<p>Max connections per client IP </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a4e960d114a23d30cead50fdb3189525b" name="a4e960d114a23d30cead50fdb3189525b"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">size_t</a></td>
-<td class="fieldname">
-max_header_size</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a411213143aa7aa44c27de10d645da50c" name="a411213143aa7aa44c27de10d645da50c"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">size_t</a></td>
-<td class="fieldname">
-max_requests_per_connection</td>
-<td class="fielddoc">
-<p>Max requests per connection </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae89b5a0849cde455e84fb2eb41309cb0" name="ae89b5a0849cde455e84fb2eb41309cb0"></a><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
-<td class="fieldname">
-max_version</td>
-<td class="fielddoc">
-<p>Max HTTP version (default: HTTP/2) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aaa846da9282ae7cc08293d9e3ae100c5" name="aaa846da9282ae7cc08293d9e3ae100c5"></a>int</td>
-<td class="fieldname">
-port</td>
-<td class="fielddoc">
-<p>Listen port </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aae5feb01178bcf0f41095d30ec718240" name="aae5feb01178bcf0f41095d30ec718240"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-request_read_timeout_ms</td>
-<td class="fielddoc">
-<p>Max time to read complete request </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="acee81724c46b258607d762187f5b25ac" name="acee81724c46b258607d762187f5b25ac"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-request_timeout_ms</td>
-<td class="fielddoc">
-<p>Idle timeout between requests </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a7c6c518a1861c3ee10b133297d47444c" name="a7c6c518a1861c3ee10b133297d47444c"></a><a class="el" href="SocketHTTPServer_8h.html#aaa846da9282ae7cc08293d9e3ae100c5">int</a></td>
-<td class="fieldname">
-response_write_timeout_ms</td>
-<td class="fielddoc">
-<p>Max time to send complete response </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a2bbd51b98734877f1e4dd9e0176b82b7" name="a2bbd51b98734877f1e4dd9e0176b82b7"></a><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></td>
-<td class="fieldname">
-tls_context</td>
-<td class="fielddoc">
-<p>TLS context (NULL = HTTP only) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a1ebce2db0ae2bba492c06324e38b7370" name="a1ebce2db0ae2bba492c06324e38b7370"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1ebce2db0ae2bba492c06324e38b7370">&#9670;&#160;</a></span>HTTPSERVER_CHUNK_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_CHUNK_BUFFER_SIZE&#160;&#160;&#160;16384</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Chunk buffer size for streaming responses (bytes) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00221">221</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="abe7c219136e39fcb63d1edd1bd029dcd" name="abe7c219136e39fcb63d1edd1bd029dcd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe7c219136e39fcb63d1edd1bd029dcd">&#9670;&#160;</a></span>HTTPSERVER_CHUNK_FINAL_BUF_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_CHUNK_FINAL_BUF_SIZE&#160;&#160;&#160;64</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00121">121</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a04264611026dfbf30d986e60368536f9" name="a04264611026dfbf30d986e60368536f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04264611026dfbf30d986e60368536f9">&#9670;&#160;</a></span>HTTPSERVER_CLIENT_ADDR_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_CLIENT_ADDR_MAX&#160;&#160;&#160;64</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00125">125</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a303e75df1224167a8e5a69e0258c1533" name="a303e75df1224167a8e5a69e0258c1533"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a303e75df1224167a8e5a69e0258c1533">&#9670;&#160;</a></span>HTTPSERVER_CONTENT_LENGTH_BUF_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_CONTENT_LENGTH_BUF_SIZE&#160;&#160;&#160;32</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Buffer sizes for strings and chunks </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00117">117</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a4522c2e543c78b0021fca2f4e4e731e6" name="a4522c2e543c78b0021fca2f4e4e731e6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4522c2e543c78b0021fca2f4e4e731e6">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_BACKLOG</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_BACKLOG&#160;&#160;&#160;128</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default listen backlog </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00097">97</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a0667730c5595188e1bdf991b20180ddf" name="a0667730c5595188e1bdf991b20180ddf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0667730c5595188e1bdf991b20180ddf">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_BIND_ADDR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_BIND_ADDR&#160;&#160;&#160;&quot;0.0.0.0&quot;</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default bind address </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00107">107</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a305cd6f6613872a906cd1bc1150645c7" name="a305cd6f6613872a906cd1bc1150645c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a305cd6f6613872a906cd1bc1150645c7">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE&#160;&#160;&#160;0</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default enable H2C upgrade </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00112">112</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a8d3b7bb7934d1baa38eeac26a28fbf4f" name="a8d3b7bb7934d1baa38eeac26a28fbf4f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d3b7bb7934d1baa38eeac26a28fbf4f">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default keep-alive timeout (ms) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00145">145</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="aa5715a9f50d6f8766088fbafbc7608b3" name="aa5715a9f50d6f8766088fbafbc7608b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5715a9f50d6f8766088fbafbc7608b3">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_BODY_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_BODY_SIZE&#160;&#160;&#160;(10 * 1024 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default maximum body size ENFORCEMENT: Checked before body allocation. Returns 413 Payload Too Large. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00161">161</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="aed3e151f56c9277c3b5b63ab23c3e09a" name="aed3e151f56c9277c3b5b63ab23c3e09a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aed3e151f56c9277c3b5b63ab23c3e09a">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default max concurrent requests per connection (HTTP/2 multiplexing) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00186">186</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a458d6caf223ed54cf1dd9c231954dffc" name="a458d6caf223ed54cf1dd9c231954dffc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a458d6caf223ed54cf1dd9c231954dffc">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONNECTIONS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONNECTIONS&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default maximum connections </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00135">135</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ab341f7aa2e0d398e7fcf27469bc1a62d" name="ab341f7aa2e0d398e7fcf27469bc1a62d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab341f7aa2e0d398e7fcf27469bc1a62d">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default max connections per client IP </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00181">181</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a75c229ac6f33c83ed5b903888f748707" name="a75c229ac6f33c83ed5b903888f748707"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75c229ac6f33c83ed5b903888f748707">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_HEADER_SIZE&#160;&#160;&#160;(64 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default maximum header size ENFORCEMENT: Passed to HTTP/1.1 parser config, enforced during parsing. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00153">153</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a689bbacaca6f6ceff8d330ab6650ed84" name="a689bbacaca6f6ceff8d330ab6650ed84"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a689bbacaca6f6ceff8d330ab6650ed84">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default maximum requests per connection </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00166">166</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="adcd2ff25d89289e51c96fe57c120717f" name="adcd2ff25d89289e51c96fe57c120717f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adcd2ff25d89289e51c96fe57c120717f">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_PORT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_PORT&#160;&#160;&#160;8080</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default listen port </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00102">102</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="aeb21a7a41a54fc1f559a29b3b8ae87c9" name="aeb21a7a41a54fc1f559a29b3b8ae87c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeb21a7a41a54fc1f559a29b3b8ae87c9">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS&#160;&#160;&#160;30000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default request read timeout (ms) - time to read full request </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00171">171</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a0fa61fa2afd1f2d2c57e165ca1c534c4" name="a0fa61fa2afd1f2d2c57e165ca1c534c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fa61fa2afd1f2d2c57e165ca1c534c4">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS&#160;&#160;&#160;30000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default request timeout (ms) - idle timeout between requests </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00140">140</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a45662a88175b71660de7e17d0908de1d" name="a45662a88175b71660de7e17d0908de1d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a45662a88175b71660de7e17d0908de1d">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS&#160;&#160;&#160;60000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default response write timeout (ms) - time to send full response </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00176">176</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a441035c0576c57af0fe9d979b5a42df1" name="a441035c0576c57af0fe9d979b5a42df1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a441035c0576c57af0fe9d979b5a42df1">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_STREAM_CHUNK_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DEFAULT_STREAM_CHUNK_SIZE&#160;&#160;&#160;8192</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Default streaming chunk size for response </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00191">191</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a6828829545fd5f379e44e960700bdc21" name="a6828829545fd5f379e44e960700bdc21"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6828829545fd5f379e44e960700bdc21">&#9670;&#160;</a></span>HTTPSERVER_DRAIN_POLL_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_DRAIN_POLL_MS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00129">129</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a2d15e59f13b41ae609043cef1fe0d02f" name="a2d15e59f13b41ae609043cef1fe0d02f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d15e59f13b41ae609043cef1fe0d02f">&#9670;&#160;</a></span>HTTPSERVER_IO_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_IO_BUFFER_SIZE&#160;&#160;&#160;8192</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>I/O buffer size per connection (bytes) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00201">201</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a3473805e79004874242125148c096a88" name="a3473805e79004874242125148c096a88"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3473805e79004874242125148c096a88">&#9670;&#160;</a></span>HTTPSERVER_LATENCY_SAMPLES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_LATENCY_SAMPLES&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Number of latency samples to track </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00231">231</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ae8e00010a149a907589ccf535454dde8" name="ae8e00010a149a907589ccf535454dde8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8e00010a149a907589ccf535454dde8">&#9670;&#160;</a></span>HTTPSERVER_MAX_CLIENTS_PER_ACCEPT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_MAX_CLIENTS_PER_ACCEPT&#160;&#160;&#160;10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Max clients to accept per event loop iteration </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00216">216</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ad9ded082ab5a397fd3386ca1c63fe114" name="ad9ded082ab5a397fd3386ca1c63fe114"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad9ded082ab5a397fd3386ca1c63fe114">&#9670;&#160;</a></span>HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS&#160;&#160;&#160;64</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Max rate limit endpoints </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00226">226</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ad6df29e2fea722ad22368a2b940b5531" name="ad6df29e2fea722ad22368a2b940b5531"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6df29e2fea722ad22368a2b940b5531">&#9670;&#160;</a></span>HTTPSERVER_RECV_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_RECV_BUFFER_SIZE&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Receive buffer size for reading from sockets (bytes) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00206">206</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="adbc773d7bce0c70ba39358448aa0ace0" name="adbc773d7bce0c70ba39358448aa0ace0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbc773d7bce0c70ba39358448aa0ace0">&#9670;&#160;</a></span>HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE&#160;&#160;&#160;8192</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Response header serialization buffer size (bytes) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00211">211</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="af7a1376f4194e9507953d89b715fa656" name="af7a1376f4194e9507953d89b715fa656"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7a1376f4194e9507953d89b715fa656">&#9670;&#160;</a></span>HTTPSERVER_RPS_WINDOW_SECONDS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTPSERVER_RPS_WINDOW_SECONDS&#160;&#160;&#160;10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Requests per second window (seconds) for RPS calculation </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00196">196</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ab347055b7285aedad5fa0f504c3a655e" name="ab347055b7285aedad5fa0f504c3a655e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab347055b7285aedad5fa0f504c3a655e">&#9670;&#160;</a></span>SocketHTTPServer_BodyCallback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int(* SocketHTTPServer_BodyCallback) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, const void *chunk, size_t len, int is_final, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Request body streaming callback</p>
-<p>Called incrementally as request body data arrives. Enables processing large uploads without buffering the entire body in memory.</p>
-<p>@req: Request context @chunk: Body data chunk @len: Chunk length @is_final: 1 if this is the last chunk, 0 otherwise @userdata: User data from SocketHTTPServer_Request_body_stream()</p>
-<p>Returns: 0 to continue receiving, non-zero to abort and close connection </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00341">341</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a6eeba038caf0b48d3ae3527155ab8162" name="a6eeba038caf0b48d3ae3527155ab8162"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6eeba038caf0b48d3ae3527155ab8162">&#9670;&#160;</a></span>SocketHTTPServer_DrainCallback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef void(* SocketHTTPServer_DrainCallback) (<a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> server, int timed_out, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Drain completion callback</p>
-<p>Called when graceful shutdown completes or times out.</p>
-<p>@server: Server instance @timed_out: 1 if drain timed out (forced shutdown), 0 if graceful @userdata: User data from SocketHTTPServer_set_drain_callback() </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00369">369</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a8805b706921b37e2e91e68a861ddc97c" name="a8805b706921b37e2e91e68a861ddc97c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8805b706921b37e2e91e68a861ddc97c">&#9670;&#160;</a></span>SocketHTTPServer_Handler</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef void(* SocketHTTPServer_Handler) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Request handler callback</p>
-<p>Called for each incoming HTTP request. The handler should:</p><ol type="1">
-<li>Read request details using accessor functions</li>
-<li>Set response status and headers</li>
-<li>Send response body</li>
-<li>Call finish() when done</li>
-</ol>
-<p>The request context is valid only during the callback. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00324">324</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a071a3760545fbd5fca4c2df224af0fad" name="a071a3760545fbd5fca4c2df224af0fad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a071a3760545fbd5fca4c2df224af0fad">&#9670;&#160;</a></span>SocketHTTPServer_Request_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPServer_Request* <a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Server request context </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00307">307</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ad59859e8ae07bfb95f5807590dd034f4" name="ad59859e8ae07bfb95f5807590dd034f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad59859e8ae07bfb95f5807590dd034f4">&#9670;&#160;</a></span>SocketHTTPServer_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPServer* <a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP server instance </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00304">304</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="ab095eb6d03d06f9c1d8041dc3aa56094" name="ab095eb6d03d06f9c1d8041dc3aa56094"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab095eb6d03d06f9c1d8041dc3aa56094">&#9670;&#160;</a></span>SocketHTTPServer_Validator</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int(* SocketHTTPServer_Validator) (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, int *reject_status, void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Request validation callback (middleware)</p>
-<p>Called before the request handler to validate/authenticate requests. Can reject requests before they reach the handler.</p>
-<p>@req: Request context @reject_status: Output - HTTP status code if rejecting (e.g., 401, 403) @userdata: User data from SocketHTTPServer_set_validator()</p>
-<p>Returns: Non-zero to allow request (call handler), 0 to reject </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00357">357</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<a id="a62eac457c36851d5e4a184e1a5602555" name="a62eac457c36851d5e4a184e1a5602555"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62eac457c36851d5e4a184e1a5602555">&#9670;&#160;</a></span>SocketWS_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketWS* <a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketHTTPServer_8h.html">SocketHTTPServer.h</a> - HTTP Server API</p>
-<p>Part of the Socket Library</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>High-level HTTP server supporting HTTP/1.1 and HTTP/2 protocols. </p>
 <p>High-level HTTP server supporting HTTP/1.1 and HTTP/2:</p><ul>
 <li>Event-driven request handling</li>
 <li>Connection management with keep-alive</li>
-<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> negotiation (ALPN for HTTP/2)</li>
+<li>Protocol negotiation (ALPN for HTTP/2)</li>
 <li>WebSocket upgrade support</li>
 <li>Request body streaming for large uploads</li>
 <li>Response body streaming (chunked transfer encoding)</li>
@@ -1030,688 +424,493 @@ tls_context</td>
 <li>SocketIPTracker for per-client limits</li>
 </ul>
 <p>Thread safety: Server instances are NOT thread-safe. Use one server per thread or external synchronization.</p>
-<p>PLATFORM REQUIREMENTS:</p><ul>
+<p>Platform Requirements:</p><ul>
 <li>POSIX-compliant system (Linux, BSD, macOS)</li>
 <li>pthread for mutex synchronization</li>
-<li>OpenSSL for TLS (optional, via SOCKET_HAS_TLS) </li>
+<li>OpenSSL for TLS (optional, via SOCKET_HAS_TLS)</li>
 </ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaea4fe38f3115faefc4bbc7f28e6b7362" title="Allocate and initialize a new HTTP server instance.">SocketHTTPServer_new()</a> for creating HTTP servers. </dd>
+<dd>
+SocketHTTPServer_listen() for starting the server. </dd>
+<dd>
+<a class="el" href="group__http.html#gaf4e5392eaefa9ee259824571a1c5487d" title="Access the internal SocketPoll_T instance for custom event handling.">SocketHTTPServer_poll()</a> for event loop integration. </dd>
+<dd>
+<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f" title="Opaque type for HTTP header collection with efficient operations.">SocketHTTP_Headers_T</a> for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+<dd>
+<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54" title="HTTP client instance.">SocketHTTPClient_T</a> for HTTP client functionality. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00059">59</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a0ac9162aaf92d18d40cf0443909e3e97" name="a0ac9162aaf92d18d40cf0443909e3e97"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ac9162aaf92d18d40cf0443909e3e97">&#9670;&#160;</a></span>SocketHTTPServer_State</h2>
+<p class="definition">Definition in file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="a1ebce2db0ae2bba492c06324e38b7370" name="a1ebce2db0ae2bba492c06324e38b7370"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1ebce2db0ae2bba492c06324e38b7370">&#9670;&#160;</a></span>HTTPSERVER_CHUNK_BUFFER_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97">SocketHTTPServer_State</a></td>
+          <td class="memname">#define HTTPSERVER_CHUNK_BUFFER_SIZE&#160;&#160;&#160;16384</td>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Server lifecycle state for graceful shutdown </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470" name="a0ac9162aaf92d18d40cf0443909e3e97a71eb63ea64bc63130077055f5def4470"></a>HTTPSERVER_STATE_RUNNING&#160;</td><td class="fielddoc"><p>Normal operation </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da" name="a0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da"></a>HTTPSERVER_STATE_DRAINING&#160;</td><td class="fielddoc"><p>Draining - finishing existing requests </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570" name="a0ac9162aaf92d18d40cf0443909e3e97a40470a42c264e62630500ec3e55f5570"></a>HTTPSERVER_STATE_STOPPED&#160;</td><td class="fielddoc"><p>Stopped - all requests complete </p>
-</td></tr>
-</table>
+<p>Chunk buffer size for streaming responses (bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00254">254</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00227">227</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a08bbe8e6a3560817cd898a51622bc6ce" name="a08bbe8e6a3560817cd898a51622bc6ce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a08bbe8e6a3560817cd898a51622bc6ce">&#9670;&#160;</a></span>SocketHTTPServer_config_defaults()</h2>
+<a id="abe7c219136e39fcb63d1edd1bd029dcd" name="abe7c219136e39fcb63d1edd1bd029dcd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe7c219136e39fcb63d1edd1bd029dcd">&#9670;&#160;</a></span>HTTPSERVER_CHUNK_FINAL_BUF_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void SocketHTTPServer_config_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_CHUNK_FINAL_BUF_SIZE&#160;&#160;&#160;64</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_config_defaults - Initialize config with defaults @config: Configuration structure</p>
-<p>Thread-safe: Yes </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00128">128</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a23f97a896233d7ca6259ab43684e784d" name="a23f97a896233d7ca6259ab43684e784d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a23f97a896233d7ca6259ab43684e784d">&#9670;&#160;</a></span>SocketHTTPServer_fd()</h2>
+<a id="a04264611026dfbf30d986e60368536f9" name="a04264611026dfbf30d986e60368536f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04264611026dfbf30d986e60368536f9">&#9670;&#160;</a></span>HTTPSERVER_CLIENT_ADDR_MAX</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int SocketHTTPServer_fd </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_CLIENT_ADDR_MAX&#160;&#160;&#160;64</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_fd - Get server socket for poll @server: Server instance</p>
-<p>Returns: File descriptor for listening socket Thread-safe: Yes </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00132">132</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="acf5856e5b1728e44bbb68ef2e4637318" name="acf5856e5b1728e44bbb68ef2e4637318"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf5856e5b1728e44bbb68ef2e4637318">&#9670;&#160;</a></span>SocketHTTPServer_free()</h2>
+<a id="a303e75df1224167a8e5a69e0258c1533" name="a303e75df1224167a8e5a69e0258c1533"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a303e75df1224167a8e5a69e0258c1533">&#9670;&#160;</a></span>HTTPSERVER_CONTENT_LENGTH_BUF_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void SocketHTTPServer_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> *&#160;</td>
-          <td class="paramname"><em>server</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_CONTENT_LENGTH_BUF_SIZE&#160;&#160;&#160;32</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_free - Free server and resources @server: Pointer to server (set to NULL)</p>
-<p>Thread-safe: No </p>
+<p>Buffer sizes for strings and chunks </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00124">124</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="aea4fe38f3115faefc4bbc7f28e6b7362" name="aea4fe38f3115faefc4bbc7f28e6b7362"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aea4fe38f3115faefc4bbc7f28e6b7362">&#9670;&#160;</a></span>SocketHTTPServer_new()</h2>
+<a id="a4522c2e543c78b0021fca2f4e4e731e6" name="a4522c2e543c78b0021fca2f4e4e731e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4522c2e543c78b0021fca2f4e4e731e6">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_BACKLOG</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a> SocketHTTPServer_new </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketHTTPServer_8h.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_BACKLOG&#160;&#160;&#160;128</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_new - Create HTTP server @config: Configuration</p>
-<p>Returns: New server instance Raises: SocketHTTPServer_Failed on error Thread-safe: Yes </p>
+<p>Default listen backlog </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00104">104</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="af4e5392eaefa9ee259824571a1c5487d" name="af4e5392eaefa9ee259824571a1c5487d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4e5392eaefa9ee259824571a1c5487d">&#9670;&#160;</a></span>SocketHTTPServer_poll()</h2>
+<a id="a0667730c5595188e1bdf991b20180ddf" name="a0667730c5595188e1bdf991b20180ddf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0667730c5595188e1bdf991b20180ddf">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_BIND_ADDR</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> SocketHTTPServer_poll </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_BIND_ADDR&#160;&#160;&#160;&quot;0.0.0.0&quot;</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_poll - Get poll instance @server: Server instance</p>
-<p>Returns: Internal SocketPoll_T for advanced integration Thread-safe: Yes </p>
+<p>Default bind address </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00114">114</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="ab2ad4e6a795964f1edabf14a71b83985" name="ab2ad4e6a795964f1edabf14a71b83985"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab2ad4e6a795964f1edabf14a71b83985">&#9670;&#160;</a></span>SocketHTTPServer_process()</h2>
+<a id="a305cd6f6613872a906cd1bc1150645c7" name="a305cd6f6613872a906cd1bc1150645c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a305cd6f6613872a906cd1bc1150645c7">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int SocketHTTPServer_process </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_ms</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_ENABLE_H2C_UPGRADE&#160;&#160;&#160;0</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_process - Process events @server: Server instance @timeout_ms: Poll timeout in milliseconds</p>
-<p>Accepts new connections, reads requests, and invokes handlers.</p>
-<p>Returns: Number of requests processed Thread-safe: No </p>
+<p>Default enable H2C upgrade </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00119">119</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="ab962af94432e50a19c4a4d09b307cd68" name="ab962af94432e50a19c4a4d09b307cd68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab962af94432e50a19c4a4d09b307cd68">&#9670;&#160;</a></span>SocketHTTPServer_Request_arena()</h2>
+<a id="a8d3b7bb7934d1baa38eeac26a28fbf4f" name="a8d3b7bb7934d1baa38eeac26a28fbf4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d3b7bb7934d1baa38eeac26a28fbf4f">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> SocketHTTPServer_Request_arena </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_KEEPALIVE_TIMEOUT_MS&#160;&#160;&#160;60000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_arena - Get request arena </p>
+<p>Default keep-alive timeout (ms) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00151">151</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a7e95ae3464cb9cf8c0d0b172db13456e" name="a7e95ae3464cb9cf8c0d0b172db13456e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7e95ae3464cb9cf8c0d0b172db13456e">&#9670;&#160;</a></span>SocketHTTPServer_Request_body()</h2>
+<a id="aa5715a9f50d6f8766088fbafbc7608b3" name="aa5715a9f50d6f8766088fbafbc7608b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5715a9f50d6f8766088fbafbc7608b3">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_BODY_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const void * SocketHTTPServer_Request_body </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_BODY_SIZE&#160;&#160;&#160;(10 * 1024 * 1024)</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_body - Get request body </p>
+<p>Default maximum body size ENFORCEMENT: Checked before body allocation. Returns 413 Payload Too Large. </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00167">167</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a5ac308a85217f94c0fc5ced8525b55e5" name="a5ac308a85217f94c0fc5ced8525b55e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ac308a85217f94c0fc5ced8525b55e5">&#9670;&#160;</a></span>SocketHTTPServer_Request_body_len()</h2>
+<a id="aed3e151f56c9277c3b5b63ab23c3e09a" name="aed3e151f56c9277c3b5b63ab23c3e09a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed3e151f56c9277c3b5b63ab23c3e09a">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">size_t SocketHTTPServer_Request_body_len </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS&#160;&#160;&#160;100</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_body_len - Get request body length </p>
+<p>Default max concurrent requests per connection (HTTP/2 multiplexing) </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00192">192</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a2f5234c0311c21a800e1145ff06c88a4" name="a2f5234c0311c21a800e1145ff06c88a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f5234c0311c21a800e1145ff06c88a4">&#9670;&#160;</a></span>SocketHTTPServer_Request_client_addr()</h2>
+<a id="a458d6caf223ed54cf1dd9c231954dffc" name="a458d6caf223ed54cf1dd9c231954dffc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a458d6caf223ed54cf1dd9c231954dffc">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONNECTIONS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const char * SocketHTTPServer_Request_client_addr </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONNECTIONS&#160;&#160;&#160;1000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_client_addr - Get client address </p>
+<p>Default maximum connections </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00141">141</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a51f26503d221c39a5e867b5d4c683ae7" name="a51f26503d221c39a5e867b5d4c683ae7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a51f26503d221c39a5e867b5d4c683ae7">&#9670;&#160;</a></span>SocketHTTPServer_Request_headers()</h2>
+<a id="ab341f7aa2e0d398e7fcf27469bc1a62d" name="ab341f7aa2e0d398e7fcf27469bc1a62d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab341f7aa2e0d398e7fcf27469bc1a62d">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> SocketHTTPServer_Request_headers </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT&#160;&#160;&#160;100</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_headers - Get request headers </p>
+<p>Default max connections per client IP </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00187">187</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a9b44e54c60728c855c3cfad99196dc64" name="a9b44e54c60728c855c3cfad99196dc64"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b44e54c60728c855c3cfad99196dc64">&#9670;&#160;</a></span>SocketHTTPServer_Request_memory_used()</h2>
+<a id="a75c229ac6f33c83ed5b903888f748707" name="a75c229ac6f33c83ed5b903888f748707"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75c229ac6f33c83ed5b903888f748707">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_HEADER_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">size_t SocketHTTPServer_Request_memory_used </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_HEADER_SIZE&#160;&#160;&#160;(64 * 1024)</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_memory_used - Get connection memory usage @req: Request context</p>
-<p>Returns: Total bytes allocated for this connection (including buffers, body) Thread-safe: No </p>
+<p>Default maximum header size ENFORCEMENT: Passed to HTTP/1.1 parser config, enforced during parsing. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00159">159</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a62a61206448cffe1710070a6c64b554d" name="a62a61206448cffe1710070a6c64b554d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62a61206448cffe1710070a6c64b554d">&#9670;&#160;</a></span>SocketHTTPServer_Request_method()</h2>
+<a id="a689bbacaca6f6ceff8d330ab6650ed84" name="a689bbacaca6f6ceff8d330ab6650ed84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a689bbacaca6f6ceff8d330ab6650ed84">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> SocketHTTPServer_Request_method </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN&#160;&#160;&#160;1000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_method - Get request method </p>
+<p>Default maximum requests per connection </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00172">172</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a62b0e10b9c135a08852e56eb1eae8ac4" name="a62b0e10b9c135a08852e56eb1eae8ac4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62b0e10b9c135a08852e56eb1eae8ac4">&#9670;&#160;</a></span>SocketHTTPServer_Request_path()</h2>
+<a id="adcd2ff25d89289e51c96fe57c120717f" name="adcd2ff25d89289e51c96fe57c120717f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adcd2ff25d89289e51c96fe57c120717f">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_PORT</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const char * SocketHTTPServer_Request_path </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_PORT&#160;&#160;&#160;8080</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_path - Get request path </p>
+<p>Default listen port </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00109">109</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a7bb246b4e39b4d74d3821201b6f72456" name="a7bb246b4e39b4d74d3821201b6f72456"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7bb246b4e39b4d74d3821201b6f72456">&#9670;&#160;</a></span>SocketHTTPServer_Request_query()</h2>
+<a id="aeb21a7a41a54fc1f559a29b3b8ae87c9" name="aeb21a7a41a54fc1f559a29b3b8ae87c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb21a7a41a54fc1f559a29b3b8ae87c9">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const char * SocketHTTPServer_Request_query </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_REQUEST_READ_TIMEOUT_MS&#160;&#160;&#160;30000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_query - Get query string </p>
+<p>Default request read timeout (ms) - time to read full request </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00177">177</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a28be52d1b6393421dd306dc400d443ee" name="a28be52d1b6393421dd306dc400d443ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a28be52d1b6393421dd306dc400d443ee">&#9670;&#160;</a></span>SocketHTTPServer_Request_version()</h2>
+<a id="a0fa61fa2afd1f2d2c57e165ca1c534c4" name="a0fa61fa2afd1f2d2c57e165ca1c534c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0fa61fa2afd1f2d2c57e165ca1c534c4">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> SocketHTTPServer_Request_version </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_REQUEST_TIMEOUT_MS&#160;&#160;&#160;30000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_Request_version - Get HTTP version </p>
+<p>Default request timeout (ms) - idle timeout between requests </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00146">146</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="aaf56db2565e6fdebcebf0bb7df24b959" name="aaf56db2565e6fdebcebf0bb7df24b959"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf56db2565e6fdebcebf0bb7df24b959">&#9670;&#160;</a></span>SocketHTTPServer_set_handler()</h2>
+<a id="a45662a88175b71660de7e17d0908de1d" name="a45662a88175b71660de7e17d0908de1d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a45662a88175b71660de7e17d0908de1d">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void SocketHTTPServer_set_handler </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#a8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer_Handler</a>&#160;</td>
-          <td class="paramname"><em>handler</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS&#160;&#160;&#160;60000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_set_handler - Set request handler @server: Server instance @handler: Handler callback @userdata: User data passed to handler</p>
-<p>Thread-safe: No </p>
+<p>Default response write timeout (ms) - time to send full response </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00182">182</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="afa06caca93c0fac3e52f7749abe03be9" name="afa06caca93c0fac3e52f7749abe03be9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa06caca93c0fac3e52f7749abe03be9">&#9670;&#160;</a></span>SocketHTTPServer_start()</h2>
+<a id="a441035c0576c57af0fe9d979b5a42df1" name="a441035c0576c57af0fe9d979b5a42df1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a441035c0576c57af0fe9d979b5a42df1">&#9670;&#160;</a></span>HTTPSERVER_DEFAULT_STREAM_CHUNK_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int SocketHTTPServer_start </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DEFAULT_STREAM_CHUNK_SIZE&#160;&#160;&#160;8192</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_start - Start listening @server: Server instance</p>
-<p>Returns: 0 on success, -1 on error Thread-safe: No </p>
+<p>Default streaming chunk size for response </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00197">197</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="af332d06f999890e277dc83777d669f00" name="af332d06f999890e277dc83777d669f00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af332d06f999890e277dc83777d669f00">&#9670;&#160;</a></span>SocketHTTPServer_stop()</h2>
+<a id="a6828829545fd5f379e44e960700bdc21" name="a6828829545fd5f379e44e960700bdc21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6828829545fd5f379e44e960700bdc21">&#9670;&#160;</a></span>HTTPSERVER_DRAIN_POLL_MS</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void SocketHTTPServer_stop </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPServer_8h.html#ad59859e8ae07bfb95f5807590dd034f4">SocketHTTPServer_T</a>&#160;</td>
-          <td class="paramname"><em>server</em></td><td>)</td>
-          <td></td>
+          <td class="memname">#define HTTPSERVER_DRAIN_POLL_MS&#160;&#160;&#160;100</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>SocketHTTPServer_stop - Stop server @server: Server instance</p>
-<p>Stops accepting new connections. Existing connections continue. Thread-safe: No </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00136">136</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="ab0cf03445c053391004f6234e29812f5" name="ab0cf03445c053391004f6234e29812f5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0cf03445c053391004f6234e29812f5">&#9670;&#160;</a></span>SocketHTTPServer_BindFailed</h2>
+<a id="a2d15e59f13b41ae609043cef1fe0d02f" name="a2d15e59f13b41ae609043cef1fe0d02f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d15e59f13b41ae609043cef1fe0d02f">&#9670;&#160;</a></span>HTTPSERVER_IO_BUFFER_SIZE</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPServer_BindFailed</td>
+          <td class="memname">#define HTTPSERVER_IO_BUFFER_SIZE&#160;&#160;&#160;8192</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>Bind failure </p>
+<p>I/O buffer size per connection (bytes) </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00207">207</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="ab0e17c60a6e02fe69434302760371464" name="ab0e17c60a6e02fe69434302760371464"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab0e17c60a6e02fe69434302760371464">&#9670;&#160;</a></span>SocketHTTPServer_Failed</h2>
+<a id="a3473805e79004874242125148c096a88" name="a3473805e79004874242125148c096a88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3473805e79004874242125148c096a88">&#9670;&#160;</a></span>HTTPSERVER_LATENCY_SAMPLES</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPServer_Failed</td>
+          <td class="memname">#define HTTPSERVER_LATENCY_SAMPLES&#160;&#160;&#160;1000</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p>General server failure </p>
+<p>Number of latency samples to track </p>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00237">237</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
-<a id="a46e1179e3239aac920a2afa2fc6711b3" name="a46e1179e3239aac920a2afa2fc6711b3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46e1179e3239aac920a2afa2fc6711b3">&#9670;&#160;</a></span>SocketHTTPServer_ProtocolError</h2>
+<a id="ae8e00010a149a907589ccf535454dde8" name="ae8e00010a149a907589ccf535454dde8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8e00010a149a907589ccf535454dde8">&#9670;&#160;</a></span>HTTPSERVER_MAX_CLIENTS_PER_ACCEPT</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPServer_ProtocolError</td>
+          <td class="memname">#define HTTPSERVER_MAX_CLIENTS_PER_ACCEPT&#160;&#160;&#160;10</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
-<p><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> error </p>
+<p>Max clients to accept per event loop iteration </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00222">222</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<a id="ad9ded082ab5a397fd3386ca1c63fe114" name="ad9ded082ab5a397fd3386ca1c63fe114"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9ded082ab5a397fd3386ca1c63fe114">&#9670;&#160;</a></span>HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS&#160;&#160;&#160;64</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max rate limit endpoints </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00232">232</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<a id="ad6df29e2fea722ad22368a2b940b5531" name="ad6df29e2fea722ad22368a2b940b5531"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad6df29e2fea722ad22368a2b940b5531">&#9670;&#160;</a></span>HTTPSERVER_RECV_BUFFER_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPSERVER_RECV_BUFFER_SIZE&#160;&#160;&#160;4096</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Receive buffer size for reading from sockets (bytes) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00212">212</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<a id="adbc773d7bce0c70ba39358448aa0ace0" name="adbc773d7bce0c70ba39358448aa0ace0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbc773d7bce0c70ba39358448aa0ace0">&#9670;&#160;</a></span>HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPSERVER_RESPONSE_HEADER_BUFFER_SIZE&#160;&#160;&#160;8192</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Response header serialization buffer size (bytes) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00217">217</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<a id="af7a1376f4194e9507953d89b715fa656" name="af7a1376f4194e9507953d89b715fa656"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7a1376f4194e9507953d89b715fa656">&#9670;&#160;</a></span>HTTPSERVER_RPS_WINDOW_SECONDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HTTPSERVER_RPS_WINDOW_SECONDS&#160;&#160;&#160;10</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Requests per second window (seconds) for RPS calculation </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00202">202</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Typedef Documentation</h2>
+<a id="a62eac457c36851d5e4a184e1a5602555" name="a62eac457c36851d5e4a184e1a5602555"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62eac457c36851d5e4a184e1a5602555">&#9670;&#160;</a></span>SocketWS_T</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef struct SocketWS* <a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00065">65</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>

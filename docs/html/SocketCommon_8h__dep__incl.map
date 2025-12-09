@@ -1,38 +1,38 @@
 <map id="SocketCommon.h" name="SocketCommon.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="957,5,1084,31"/>
-<area shape="rect" id="Node000002" href="$Socket_8h.html" title=" " alt="" coords="924,79,999,104"/>
+<area shape="rect" id="Node000001" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="957,5,1084,31"/>
+<area shape="rect" id="Node000002" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="924,79,999,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1004,43,973,80,969,77,1000,40"/>
-<area shape="rect" id="Node000026" href="$SocketDgram_8h.html" title=" " alt="" coords="1361,79,1474,104"/>
+<area shape="rect" id="Node000026" href="$SocketDgram_8h.html" title="High&#45;level UDP/datagram socket interface with multicast and broadcast support." alt="" coords="1361,79,1474,104"/>
 <area shape="poly" id="edge41_Node000001_Node000026" title=" " alt="" coords="1098,30,1362,77,1361,83,1097,36"/>
-<area shape="rect" id="Node000003" href="$SocketAsync_8h.html" title=" " alt="" coords="1213,152,1324,177"/>
+<area shape="rect" id="Node000003" href="$SocketAsync_8h.html" title="Asynchronous I/O operations using platform&#45;optimized mechanisms." alt="" coords="1213,152,1324,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1013,102,1219,149,1218,155,1012,107"/>
-<area shape="rect" id="Node000004" href="$SocketHTTP2_8h.html" title=" " alt="" coords="1348,152,1464,177"/>
+<area shape="rect" id="Node000004" href="$SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control." alt="" coords="1348,152,1464,177"/>
 <area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="1013,98,1336,149,1348,151,1347,157,1335,155,1012,103"/>
-<area shape="rect" id="Node000005" href="$SocketHTTPServer_8h.html" title=" " alt="" coords="591,299,738,324"/>
+<area shape="rect" id="Node000005" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="591,299,738,324"/>
 <area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="911,97,858,102,797,112,732,129,670,154,633,173,603,194,593,205,587,218,587,233,592,250,602,264,614,277,642,296,639,301,611,281,598,268,587,252,581,233,582,217,589,203,599,190,630,169,667,150,730,124,795,107,858,97,910,92"/>
 <area shape="rect" id="Node000007" href="$websocket__server_8c.html" title=" " alt="" coords="862,372,1000,397"/>
 <area shape="poly" id="edge40_Node000002_Node000007" title=" " alt="" coords="1013,91,1168,94,1366,104,1544,121,1606,134,1627,141,1640,150,1666,187,1675,220,1668,249,1648,275,1616,297,1574,316,1525,332,1469,345,1345,365,1216,377,1001,386,1001,380,1215,372,1344,359,1468,340,1523,327,1573,311,1614,292,1644,271,1664,247,1670,220,1661,189,1636,154,1624,146,1604,139,1543,126,1366,109,1168,100,1013,96"/>
-<area shape="rect" id="Node000008" href="$SocketHappyEyeballs_8h.html" title=" " alt="" coords="812,299,975,324"/>
+<area shape="rect" id="Node000008" href="$SocketHappyEyeballs_8h.html" title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections." alt="" coords="812,299,975,324"/>
 <area shape="poly" id="edge7_Node000002_Node000008" title=" " alt="" coords="939,115,892,162,870,193,854,226,852,246,859,265,883,297,879,300,854,267,847,246,849,225,866,190,888,159,935,111"/>
-<area shape="rect" id="Node000009" href="$SocketIO_8h.html" title=" " alt="" coords="1100,152,1188,177"/>
+<area shape="rect" id="Node000009" href="$SocketIO_8h.html" title="Internal I/O abstraction layer for socket operations with TLS support." alt="" coords="1100,152,1188,177"/>
 <area shape="poly" id="edge8_Node000002_Node000009" title=" " alt="" coords="1005,106,1116,149,1114,154,1003,111"/>
-<area shape="rect" id="Node000010" href="$SocketPoll_8h.html" title=" " alt="" coords="863,225,959,251"/>
+<area shape="rect" id="Node000010" href="$SocketPoll_8h.html" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="863,225,959,251"/>
 <area shape="poly" id="edge9_Node000002_Node000010" title=" " alt="" coords="956,118,918,226,913,224,951,116"/>
-<area shape="rect" id="Node000011" href="$SocketPoll__backend_8h.html" title=" " alt="" coords="1050,299,1202,324"/>
+<area shape="rect" id="Node000011" href="$SocketPoll__backend_8h.html" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="1050,299,1202,324"/>
 <area shape="poly" id="edge17_Node000002_Node000011" title=" " alt="" coords="969,117,990,181,1007,217,1030,249,1064,277,1100,296,1097,301,1061,281,1026,252,1003,219,985,183,964,118"/>
-<area shape="rect" id="Node000012" href="$SocketProxy_8h.html" title=" " alt="" coords="292,299,399,324"/>
+<area shape="rect" id="Node000012" href="$SocketProxy_8h.html" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="292,299,399,324"/>
 <area shape="poly" id="edge20_Node000002_Node000012" title=" " alt="" coords="911,98,776,115,697,131,619,155,540,189,467,231,363,300,360,296,464,226,538,184,617,149,695,126,776,110,910,93"/>
 <area shape="rect" id="Node000013" href="$proxy__connect_8c.html" title=" " alt="" coords="166,372,285,397"/>
 <area shape="poly" id="edge38_Node000002_Node000013" title=" " alt="" coords="911,95,788,96,617,104,420,122,320,136,222,155,158,164,105,169,82,175,60,186,39,202,19,227,9,251,13,274,29,295,54,315,119,347,184,369,182,374,117,352,51,319,25,299,8,276,3,251,14,224,36,198,57,181,80,170,104,164,157,158,221,149,319,131,420,117,616,99,788,91,911,90"/>
 <area shape="rect" id="Node000014" href="$graceful__shutdown_8c.html" title=" " alt="" coords="1226,299,1369,324"/>
 <area shape="poly" id="edge37_Node000002_Node000014" title=" " alt="" coords="981,113,1008,144,1042,175,1102,215,1165,249,1269,296,1267,301,1162,254,1099,220,1039,179,1004,148,977,117"/>
-<area shape="rect" id="Node000015" href="$SocketPool_8h.html" title=" " alt="" coords="1248,225,1348,251"/>
+<area shape="rect" id="Node000015" href="$SocketPool_8h.html" title="Connection pooling with automatic lifecycle management." alt="" coords="1248,225,1348,251"/>
 <area shape="poly" id="edge18_Node000002_Node000015" title=" " alt="" coords="988,110,1034,143,1090,175,1172,205,1248,224,1247,230,1170,210,1087,180,1031,148,985,115"/>
-<area shape="rect" id="Node000016" href="$SocketReconnect_8h.html" title=" " alt="" coords="1488,152,1625,177"/>
+<area shape="rect" id="Node000016" href="$SocketReconnect_8h.html" title="Automatic reconnection framework with exponential backoff and circuit breaker." alt="" coords="1488,152,1625,177"/>
 <area shape="poly" id="edge21_Node000002_Node000016" title=" " alt="" coords="1013,95,1475,149,1488,151,1487,156,1475,155,1012,101"/>
-<area shape="rect" id="Node000017" href="$SocketTLS_8h.html" title=" " alt="" coords="234,152,332,177"/>
+<area shape="rect" id="Node000017" href="$SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support." alt="" coords="234,152,332,177"/>
 <area shape="poly" id="edge23_Node000002_Node000017" title=" " alt="" coords="911,101,333,161,333,155,911,95"/>
-<area shape="rect" id="Node000024" href="$SocketWS_8h.html" title=" " alt="" coords="699,152,795,177"/>
+<area shape="rect" id="Node000024" href="$SocketWS_8h.html" title="WebSocket Protocol (RFC 6455) implementation with compression support." alt="" coords="699,152,795,177"/>
 <area shape="poly" id="edge34_Node000002_Node000024" title=" " alt="" coords="915,111,783,154,781,149,914,106"/>
 <area shape="rect" id="Node000025" href="$websocket__client_8c.html" title=" " alt="" coords="602,225,737,251"/>
 <area shape="poly" id="edge39_Node000002_Node000025" title=" " alt="" coords="911,100,784,118,726,134,704,143,689,154,678,170,673,189,671,225,666,225,667,189,673,168,685,150,701,139,724,129,783,113,910,94"/>
@@ -49,14 +49,14 @@
 <area shape="poly" id="edge19_Node000015_Node000014" title=" " alt="" coords="1300,264,1300,299,1295,299,1295,264"/>
 <area shape="poly" id="edge22_Node000016_Node000015" title=" " alt="" coords="1503,183,1340,228,1339,223,1501,178"/>
 <area shape="poly" id="edge33_Node000017_Node000013" title=" " alt="" coords="276,191,264,226,243,309,231,372,225,371,238,308,259,225,271,189"/>
-<area shape="rect" id="Node000018" href="$SocketDTLSContext_8h.html" title=" " alt="" coords="28,225,183,251"/>
+<area shape="rect" id="Node000018" href="$SocketDTLSContext_8h.html" title="DTLS context management with cookie protection and secure defaults." alt="" coords="28,225,183,251"/>
 <area shape="poly" id="edge24_Node000017_Node000018" title=" " alt="" coords="243,185,136,228,134,223,241,180"/>
-<area shape="rect" id="Node000019" href="$SocketTLSContext_8h.html" title=" " alt="" coords="274,225,418,251"/>
+<area shape="rect" id="Node000019" href="$SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling." alt="" coords="274,225,418,251"/>
 <area shape="poly" id="edge25_Node000017_Node000019" title=" " alt="" coords="304,186,338,223,334,227,300,189"/>
 <area shape="poly" id="edge30_Node000019_Node000005" title=" " alt="" coords="411,251,613,296,612,301,409,256"/>
 <area shape="poly" id="edge31_Node000019_Node000012" title=" " alt="" coords="348,264,348,299,343,299,343,264"/>
 <area shape="poly" id="edge32_Node000019_Node000013" title=" " alt="" coords="322,262,282,300,254,339,234,373,230,370,250,336,278,297,318,258"/>
-<area shape="rect" id="Node000020" href="$SocketHTTPClient_8h.html" title=" " alt="" coords="424,299,566,324"/>
+<area shape="rect" id="Node000020" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="424,299,566,324"/>
 <area shape="poly" id="edge26_Node000019_Node000020" title=" " alt="" coords="383,254,472,296,470,301,381,259"/>
 <area shape="rect" id="Node000021" href="$http2__client_8c.html" title=" " alt="" coords="320,372,420,397"/>
 <area shape="poly" id="edge27_Node000020_Node000021" title=" " alt="" coords="464,333,392,374,389,369,462,328"/>
@@ -66,6 +66,6 @@
 <area shape="poly" id="edge29_Node000020_Node000023" title=" " alt="" coords="523,330,577,370,574,374,520,334"/>
 <area shape="poly" id="edge36_Node000024_Node000007" title=" " alt="" coords="752,190,766,255,781,291,802,322,820,338,841,351,884,369,882,374,838,356,817,342,798,326,776,293,761,257,747,192"/>
 <area shape="poly" id="edge35_Node000024_Node000025" title=" " alt="" coords="726,189,684,227,681,223,723,185"/>
-<area shape="rect" id="Node000027" href="$SocketDTLS_8h.html" title=" " alt="" coords="1701,152,1809,177"/>
+<area shape="rect" id="Node000027" href="$SocketDTLS_8h.html" title="Datagram TLS (DTLS) protocol implementation for UDP sockets." alt="" coords="1701,152,1809,177"/>
 <area shape="poly" id="edge42_Node000026_Node000027" title=" " alt="" coords="1486,104,1702,149,1700,155,1484,109"/>
 </map>

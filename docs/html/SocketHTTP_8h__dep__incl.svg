@@ -57,7 +57,7 @@ var sectionId = 'dynsection-1';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities.">
 <polygon fill="#999999" stroke="#666666" points="385.5,-129 305.5,-129 305.5,-110 385.5,-110 385.5,-129"/>
 <text text-anchor="middle" x="345.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTP.h</text>
 </a>
@@ -66,7 +66,7 @@ var sectionId = 'dynsection-1';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketHTTP1_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketHTTP1_8h.html" target="_top" xlink:title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">
 <polygon fill="white" stroke="#666666" points="87,-74 0,-74 0,-55 87,-55 87,-74"/>
 <text text-anchor="middle" x="43.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTP1.h</text>
 </a>
@@ -84,7 +84,7 @@ var sectionId = 'dynsection-1';
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketHTTP2_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="SocketHTTP2_8h.html" target="_top" xlink:title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">
 <polygon fill="white" stroke="#666666" points="192,-74 105,-74 105,-55 192,-55 192,-74"/>
 <text text-anchor="middle" x="148.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTP2.h</text>
 </a>
@@ -102,7 +102,7 @@ var sectionId = 'dynsection-1';
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="SocketHTTPClient_8h.html" target="_top" xlink:title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation.">
 <polygon fill="white" stroke="#666666" points="317,-74 210,-74 210,-55 317,-55 317,-74"/>
 <text text-anchor="middle" x="263.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPClient.h</text>
 </a>
@@ -120,7 +120,7 @@ var sectionId = 'dynsection-1';
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">
 <polygon fill="white" stroke="#666666" points="483.5,-74 373.5,-74 373.5,-55 483.5,-55 483.5,-74"/>
 <text text-anchor="middle" x="428.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPServer.h</text>
 </a>
@@ -174,7 +174,7 @@ var sectionId = 'dynsection-1';
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="SocketWS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000011"><a xlink:href="SocketWS_8h.html" target="_top" xlink:title="WebSocket Protocol (RFC 6455) implementation with compression support.">
 <polygon fill="white" stroke="#666666" points="611.5,-74 539.5,-74 539.5,-55 611.5,-55 611.5,-74"/>
 <text text-anchor="middle" x="575.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketWS.h</text>
 </a>

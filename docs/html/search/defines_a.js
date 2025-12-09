@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['raise_0',['RAISE',['../Except_8h.html#a45e87c4d7dee50346b15c7761b0b340a',1,'Except.h']]],
-  ['request_5ft_1',['Request_T',['../SocketDNS_8h.html#aa9ba864e1a3353563283aa17b57abd88',1,'SocketDNS.h']]],
-  ['reraise_2',['RERAISE',['../Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16',1,'Except.h']]],
-  ['return_3',['RETURN',['../Except_8h.html#a6a0e6b80dd3d5ca395cf58151749f5e2',1,'Except.h']]]
+  ['t_0',['t',['../SocketIPTracker_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketIPTracker.h'],['../SocketRetry_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketRetry.h'],['../SocketSYNProtect_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketSYNProtect.h'],['../SocketTimer_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTimer.h'],['../Socket_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;Socket.h'],['../SocketAsync_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketAsync.h'],['../SocketBuf_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketBuf.h'],['../SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDgram.h'],['../SocketHappyEyeballs_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketHappyEyeballs.h'],['../SocketIO_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketIO.h'],['../SocketProxy_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketProxy.h'],['../SocketReconnect_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketReconnect.h'],['../SocketWS_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketWS.h'],['../SocketDTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketDTLSContext.h'],['../SocketTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5',1,'T:&#160;SocketTLSContext.h']]],
+  ['try_1',['TRY',['../Except_8h.html#ad2746371528bdf15c3910b7bf217dac0',1,'Except.h']]]
 ];

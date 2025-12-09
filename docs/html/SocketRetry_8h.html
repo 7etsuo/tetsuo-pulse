@@ -116,9 +116,12 @@ $(document).ready(function(){initNavTree('SocketRetry_8h.html',''); initResizabl
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketRetry.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketRetry.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utility Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Generic retry framework with exponential backoff and jitter for transient failures.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
@@ -134,15 +137,18 @@ $(document).ready(function(){initNavTree('SocketRetry_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketRetry__Policy" id="r_structSocketRetry__Policy"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a></td></tr>
+<tr class="memitem:structSocketRetry__Policy" id="r_structSocketRetry__Policy"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a></td></tr>
+<tr class="memdesc:structSocketRetry__Policy"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configuration structure for retry policy.  <a href="group__utilities.html#structSocketRetry__Policy">More...</a><br /></td></tr>
 <tr class="separator:structSocketRetry__Policy"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketRetry__Stats" id="r_structSocketRetry__Stats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#structSocketRetry__Stats">SocketRetry_Stats</a></td></tr>
+<tr class="memitem:structSocketRetry__Stats" id="r_structSocketRetry__Stats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a></td></tr>
+<tr class="memdesc:structSocketRetry__Stats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure holding statistics from a retry execution.  <a href="group__utilities.html#structSocketRetry__Stats">More...</a><br /></td></tr>
 <tr class="separator:structSocketRetry__Stats"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for a retry context.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e4c6bdc5f6ab59683cef18bb3f58211" id="r_a9e4c6bdc5f6ab59683cef18bb3f58211"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a9e4c6bdc5f6ab59683cef18bb3f58211">SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</a>&#160;&#160;&#160;3</td></tr>
 <tr class="separator:a9e4c6bdc5f6ab59683cef18bb3f58211"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1b9f06edcbcdd60e892086a4b8c2b9ba" id="r_a1b9f06edcbcdd60e892086a4b8c2b9ba"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a1b9f06edcbcdd60e892086a4b8c2b9ba">SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
@@ -160,145 +166,83 @@ Macros</h2></td></tr>
 Typedefs</h2></td></tr>
 <tr class="memitem:a419cec86f54612ef9204c059be3ec0a9" id="r_a419cec86f54612ef9204c059be3ec0a9"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td></tr>
 <tr class="separator:a419cec86f54612ef9204c059be3ec0a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a683a32a8d8f572bacd7470f3d386a445" id="r_a683a32a8d8f572bacd7470f3d386a445"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a>) (void *context, int attempt)</td></tr>
-<tr class="separator:a683a32a8d8f572bacd7470f3d386a445"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aebff54019f122cf3c0cb72a8ec2ed1b8" id="r_aebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#aebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a>) (int error, int attempt, void *context)</td></tr>
-<tr class="separator:aebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga683a32a8d8f572bacd7470f3d386a445" id="r_ga683a32a8d8f572bacd7470f3d386a445"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a>) (void *context, int attempt)</td></tr>
+<tr class="memdesc:ga683a32a8d8f572bacd7470f3d386a445"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback type for the operation to be retried.  <br /></td></tr>
+<tr class="separator:ga683a32a8d8f572bacd7470f3d386a445"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaebff54019f122cf3c0cb72a8ec2ed1b8" id="r_gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a>) (int error, int attempt, void *context)</td></tr>
+<tr class="memdesc:gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback type to decide whether to retry after an operation failure.  <br /></td></tr>
+<tr class="separator:gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac4c2c785391a4a69f76ddb4d9d25f19e" id="r_ac4c2c785391a4a69f76ddb4d9d25f19e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a> (const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
-<tr class="separator:ac4c2c785391a4a69f76ddb4d9d25f19e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad758455d31f43b861881522be0982d62" id="r_ad758455d31f43b861881522be0982d62"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> *retry)</td></tr>
-<tr class="separator:ad758455d31f43b861881522be0982d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9cb61aec8d7c8934a7481ed21e3bedf" id="r_ae9cb61aec8d7c8934a7481ed21e3bedf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="SocketRetry_8h.html#a683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a> operation, <a class="el" href="SocketRetry_8h.html#aebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a> should_retry, void *context)</td></tr>
-<tr class="separator:ae9cb61aec8d7c8934a7481ed21e3bedf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3a533ebca7a1e19c736a6a1debc07336" id="r_a3a533ebca7a1e19c736a6a1debc07336"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="SocketRetry_8h.html#a683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a> operation, void *context)</td></tr>
-<tr class="separator:a3a533ebca7a1e19c736a6a1debc07336"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa606e706f22216af24351ee324c0a468" id="r_aa606e706f22216af24351ee324c0a468"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a> (const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="SocketRetry_8h.html#structSocketRetry__Stats">SocketRetry_Stats</a> *stats)</td></tr>
-<tr class="separator:aa606e706f22216af24351ee324c0a468"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aceefc84a75ae5e4ed461d0139ceefaa3" id="r_aceefc84a75ae5e4ed461d0139ceefaa3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry)</td></tr>
-<tr class="separator:aceefc84a75ae5e4ed461d0139ceefaa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16584da7cc4271a025fd7d831446d028" id="r_a16584da7cc4271a025fd7d831446d028"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a16584da7cc4271a025fd7d831446d028">SocketRetry_get_policy</a> (const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
-<tr class="separator:a16584da7cc4271a025fd7d831446d028"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a29d7511f7531f4a23bd88f656df4636e" id="r_a29d7511f7531f4a23bd88f656df4636e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
-<tr class="separator:a29d7511f7531f4a23bd88f656df4636e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae60e4575d034cfe56be8b50e94ad5481" id="r_ae60e4575d034cfe56be8b50e94ad5481"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#ae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a> (<a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
-<tr class="separator:ae60e4575d034cfe56be8b50e94ad5481"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04fda3694b0be59a6427d2188af4e9de" id="r_a04fda3694b0be59a6427d2188af4e9de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay</a> (const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy, int attempt)</td></tr>
-<tr class="separator:a04fda3694b0be59a6427d2188af4e9de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac4c2c785391a4a69f76ddb4d9d25f19e" id="r_gac4c2c785391a4a69f76ddb4d9d25f19e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a> (const <a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
+<tr class="memdesc:gac4c2c785391a4a69f76ddb4d9d25f19e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new retry context instance.  <br /></td></tr>
+<tr class="separator:gac4c2c785391a4a69f76ddb4d9d25f19e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad758455d31f43b861881522be0982d62" id="r_gad758455d31f43b861881522be0982d62"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gad758455d31f43b861881522be0982d62">SocketRetry_free</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> *retry)</td></tr>
+<tr class="memdesc:gad758455d31f43b861881522be0982d62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a retry context instance.  <br /></td></tr>
+<tr class="separator:gad758455d31f43b861881522be0982d62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae9cb61aec8d7c8934a7481ed21e3bedf" id="r_gae9cb61aec8d7c8934a7481ed21e3bedf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a> operation, <a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a> should_retry, void *context)</td></tr>
+<tr class="memdesc:gae9cb61aec8d7c8934a7481ed21e3bedf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Execute a retryable operation with exponential backoff.  <br /></td></tr>
+<tr class="separator:gae9cb61aec8d7c8934a7481ed21e3bedf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3a533ebca7a1e19c736a6a1debc07336" id="r_ga3a533ebca7a1e19c736a6a1debc07336"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a> operation, void *context)</td></tr>
+<tr class="memdesc:ga3a533ebca7a1e19c736a6a1debc07336"><td class="mdescLeft">&#160;</td><td class="mdescRight">Simplified retry execution that retries all operation failures.  <br /></td></tr>
+<tr class="separator:ga3a533ebca7a1e19c736a6a1debc07336"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa606e706f22216af24351ee324c0a468" id="r_gaa606e706f22216af24351ee324c0a468"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a> (const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> *stats)</td></tr>
+<tr class="memdesc:gaa606e706f22216af24351ee324c0a468"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve statistics from the most recent retry execution.  <br /></td></tr>
+<tr class="separator:gaa606e706f22216af24351ee324c0a468"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaceefc84a75ae5e4ed461d0139ceefaa3" id="r_gaceefc84a75ae5e4ed461d0139ceefaa3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry)</td></tr>
+<tr class="memdesc:gaceefc84a75ae5e4ed461d0139ceefaa3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset retry context state for reuse.  <br /></td></tr>
+<tr class="separator:gaceefc84a75ae5e4ed461d0139ceefaa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga16584da7cc4271a025fd7d831446d028" id="r_ga16584da7cc4271a025fd7d831446d028"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga16584da7cc4271a025fd7d831446d028">SocketRetry_get_policy</a> (const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, <a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
+<tr class="memdesc:ga16584da7cc4271a025fd7d831446d028"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the current policy configuration from retry context.  <br /></td></tr>
+<tr class="separator:ga16584da7cc4271a025fd7d831446d028"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga29d7511f7531f4a23bd88f656df4636e" id="r_ga29d7511f7531f4a23bd88f656df4636e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a> (<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry, const <a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
+<tr class="memdesc:ga29d7511f7531f4a23bd88f656df4636e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the policy configuration of an existing retry context.  <br /></td></tr>
+<tr class="separator:ga29d7511f7531f4a23bd88f656df4636e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae60e4575d034cfe56be8b50e94ad5481" id="r_gae60e4575d034cfe56be8b50e94ad5481"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a> (<a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
+<tr class="memdesc:gae60e4575d034cfe56be8b50e94ad5481"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> structure with recommended defaults.  <br /></td></tr>
+<tr class="separator:gae60e4575d034cfe56be8b50e94ad5481"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga04fda3694b0be59a6427d2188af4e9de" id="r_ga04fda3694b0be59a6427d2188af4e9de"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay</a> (const <a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy, int attempt)</td></tr>
+<tr class="memdesc:ga04fda3694b0be59a6427d2188af4e9de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the jittered backoff delay for a specific attempt.  <br /></td></tr>
+<tr class="separator:ga04fda3694b0be59a6427d2188af4e9de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:aee6d3d64f3c5b84ac6bbf38c67834fc4" id="r_aee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRetry_8h.html#aee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a></td></tr>
-<tr class="separator:aee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaee6d3d64f3c5b84ac6bbf38c67834fc4" id="r_gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a></td></tr>
+<tr class="memdesc:gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on critical retry operation failures.  <br /></td></tr>
+<tr class="separator:gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketRetry__Policy" id="structSocketRetry__Policy"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketRetry__Policy">&#9670;&#160;</a></span>SocketRetry_Policy</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Generic retry framework with exponential backoff and jitter for transient failures. </p>
+<p>Standalone utility module providing configurable retry logic for operations prone to temporary failures, such as network I/O, DNS resolution, or resource acquisition.</p>
+<p>Key capabilities:</p><ul>
+<li>Exponential backoff with configurable initial delay, multiplier, max cap.</li>
+<li>Randomized jitter to avoid synchronized retries (thundering herd prevention).</li>
+<li>Optional custom retry decision based on error codes and attempt count.</li>
+<li>Built-in statistics tracking for monitoring and debugging.</li>
+</ul>
+<p>Integrates with <a class="el" href="group__foundation.html">Core Foundation Modules</a> module for exception handling and memory management. Commonly used in conjunction with <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> (e.g., SocketReconnect) and <a class="el" href="group__core__io.html">Core I/O Modules</a> modules for robust I/O operations.</p>
+<p>Thread safety notes:</p><ul>
+<li>SocketRetry_T instances: NOT thread-safe (internal state mutation).</li>
+<li>Multiple instances: Safe across threads.</li>
+<li>Pure functions (e.g., policy helpers, calculate_delay): Thread-safe.</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> opaque context type. </dd>
+<dd>
+<a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> configuration structure. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gae9cb61aec8d7c8934a7481ed21e3bedf" title="Execute a retryable operation with exponential backoff.">SocketRetry_execute()</a> primary execution function. </dd>
+<dd>
+<a class="el" href="group__utilities.html#ga04fda3694b0be59a6427d2188af4e9de" title="Calculate the jittered backoff delay for a specific attempt.">SocketRetry_calculate_delay()</a> for manual backoff computation. </dd>
+<dd>
+<a class="el" href="group__utilities.html">Utility Modules</a> group. </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception patterns. </dd>
+<dd>
+<a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> for common retry decisions. </dd></dl>
 
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketRetry_Policy</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p><a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> - Retry behavior configuration</p>
-<p>Controls retry timing, limits, and backoff behavior. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00053">53</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a3738bc8ccc78b3f879df09d685494714" name="a3738bc8ccc78b3f879df09d685494714"></a>int</td>
-<td class="fieldname">
-initial_delay_ms</td>
-<td class="fielddoc">
-<p>Initial backoff delay (default: 100ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ac44aa265265c65b8c29fd80aa3e0f61d" name="ac44aa265265c65b8c29fd80aa3e0f61d"></a>double</td>
-<td class="fieldname">
-jitter</td>
-<td class="fielddoc">
-<p>Jitter factor 0.0-1.0 (default: 0.25) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae4fc9812297db12344b02e21d638a618" name="ae4fc9812297db12344b02e21d638a618"></a>int</td>
-<td class="fieldname">
-max_attempts</td>
-<td class="fielddoc">
-<p>Maximum retry attempts (default: 3) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aa9acfb8be959ffd198d16e2446a30710" name="aa9acfb8be959ffd198d16e2446a30710"></a>int</td>
-<td class="fieldname">
-max_delay_ms</td>
-<td class="fielddoc">
-<p>Maximum backoff delay cap (default: 30000ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae292a46f8c68e19cb29e72d49b48317e" name="ae292a46f8c68e19cb29e72d49b48317e"></a>double</td>
-<td class="fieldname">
-multiplier</td>
-<td class="fielddoc">
-<p>Backoff multiplier per attempt (default: 2.0) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketRetry__Stats" id="structSocketRetry__Stats"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketRetry__Stats">&#9670;&#160;</a></span>SocketRetry_Stats</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketRetry_Stats</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p><a class="el" href="SocketRetry_8h.html#structSocketRetry__Stats">SocketRetry_Stats</a> - Statistics from retry execution </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00135">135</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a7b978de556278e018fccc199dadd4a7d" name="a7b978de556278e018fccc199dadd4a7d"></a>int</td>
-<td class="fieldname">
-attempts</td>
-<td class="fielddoc">
-<p>Total attempts made </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a560a11b7408ab6b745312cc2552aa387" name="a560a11b7408ab6b745312cc2552aa387"></a>int</td>
-<td class="fieldname">
-last_error</td>
-<td class="fielddoc">
-<p>Last error code (0 if succeeded) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aba725a298fa2b675bcdc8ea77ba8b27e" name="aba725a298fa2b675bcdc8ea77ba8b27e"></a>int64_t</td>
-<td class="fieldname">
-total_delay_ms</td>
-<td class="fielddoc">
-<p>Total time spent in backoff delays </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a939cbbd0e2c2537391a2e970991a1c9d" name="a939cbbd0e2c2537391a2e970991a1c9d"></a>int64_t</td>
-<td class="fieldname">
-total_time_ms</td>
-<td class="fielddoc">
-<p>Total execution time including operations </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a1b9f06edcbcdd60e892086a4b8c2b9ba" name="a1b9f06edcbcdd60e892086a4b8c2b9ba"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a1b9f06edcbcdd60e892086a4b8c2b9ba">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</h2>
 
@@ -311,7 +255,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00068">68</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00106">106</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -327,7 +271,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00080">80</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00118">118</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -343,7 +287,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00064">64</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00102">102</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -359,7 +303,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00072">72</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00110">110</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -375,7 +319,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00076">76</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00114">114</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -391,83 +335,11 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00084">84</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketRetry_8h.html">SocketRetry.h</a> - Generic Retry Framework with Exponential Backoff</p>
-<p>Part of the Socket Library</p>
-<p>Provides a generic retry mechanism with exponential backoff and jitter. Can be used for any operation that may fail transiently.</p>
-<p>Features:</p><ul>
-<li>Configurable exponential backoff (initial delay, max delay, multiplier)</li>
-<li>Jitter to prevent thundering herd</li>
-<li>Pluggable retry decision callback</li>
-<li>Attempt counting and statistics</li>
-</ul>
-<p>Usage: <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> policy; SocketRetry_policy_defaults(&amp;policy); policy.max_attempts = 5;</p>
-<p>SocketRetry_T retry = SocketRetry_new(&amp;policy); int result = SocketRetry_execute(retry, my_operation, should_retry, ctx); SocketRetry_free(&amp;retry);</p>
-<p>Thread Safety:</p><ul>
-<li>SocketRetry_T instances are NOT thread-safe</li>
-<li>Multiple instances can be used from different threads</li>
-<li>Policy configuration functions are thread-safe </li>
-</ul>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00038">38</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00122">122</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Typedef Documentation</h2>
-<a id="a683a32a8d8f572bacd7470f3d386a445" name="a683a32a8d8f572bacd7470f3d386a445"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a683a32a8d8f572bacd7470f3d386a445">&#9670;&#160;</a></span>SocketRetry_Operation</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int(* SocketRetry_Operation) (void *context, int attempt)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketRetry_Operation - Operation to retry @context: User-provided context @attempt: Current attempt number (1-based)</p>
-<p>Returns: 0 on success, non-zero error code on failure</p>
-<p>The operation will be called repeatedly until it succeeds (returns 0), max_attempts is reached, or should_retry returns 0.</p>
-<p>Example: int connect_op(void *ctx, int attempt) { ConnectionCtx *c = ctx; return connect(c-&gt;fd, c-&gt;addr, c-&gt;addrlen) &lt; 0 ? errno : 0; } </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00107">107</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="aebff54019f122cf3c0cb72a8ec2ed1b8" name="aebff54019f122cf3c0cb72a8ec2ed1b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aebff54019f122cf3c0cb72a8ec2ed1b8">&#9670;&#160;</a></span>SocketRetry_ShouldRetry</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef int(* SocketRetry_ShouldRetry) (int error, int attempt, void *context)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketRetry_ShouldRetry - Decide whether to retry after failure @error: Error code returned by operation @attempt: Attempt number that failed (1-based) @context: User-provided context</p>
-<p>Returns: 1 to retry, 0 to stop retrying</p>
-<p>Use to implement custom retry logic based on error type. If NULL is passed to <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a>, all non-zero errors will be retried up to max_attempts.</p>
-<p>Example: int should_retry_connect(int err, int attempt, void *ctx) { return SocketError_is_retryable_errno(err); } </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00126">126</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
 <a id="a419cec86f54612ef9204c059be3ec0a9" name="a419cec86f54612ef9204c059be3ec0a9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a419cec86f54612ef9204c059be3ec0a9">&#9670;&#160;</a></span>SocketRetry_T</h2>
 
@@ -480,406 +352,7 @@ total_time_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00039">39</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a04fda3694b0be59a6427d2188af4e9de" name="a04fda3694b0be59a6427d2188af4e9de"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04fda3694b0be59a6427d2188af4e9de">&#9670;&#160;</a></span>SocketRetry_calculate_delay()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_calculate_delay </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
-          <td class="paramname"><em>policy</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>attempt</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_calculate_delay - Calculate backoff delay for attempt @policy: Policy to use for calculation @attempt: Attempt number (1-based)</p>
-<p>Returns: Delay in milliseconds (with jitter applied) Thread-safe: Yes</p>
-<p>Utility function to calculate delay without executing retries. Useful for logging or external scheduling. </p>
-
-</div>
-</div>
-<a id="ae9cb61aec8d7c8934a7481ed21e3bedf" name="ae9cb61aec8d7c8934a7481ed21e3bedf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9cb61aec8d7c8934a7481ed21e3bedf">&#9670;&#160;</a></span>SocketRetry_execute()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_execute </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a>&#160;</td>
-          <td class="paramname"><em>operation</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#aebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a>&#160;</td>
-          <td class="paramname"><em>should_retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>context</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_execute - Execute operation with retries @retry: Retry context @operation: Operation to execute (must not be NULL) @should_retry: Retry decision callback (NULL = retry all errors) @context: User context passed to callbacks</p>
-<p>Returns: 0 on success, last error code on failure Thread-safe: No</p>
-<p>Executes operation repeatedly with exponential backoff until:</p><ul>
-<li>Operation succeeds (returns 0)</li>
-<li>max_attempts is reached</li>
-<li>should_retry returns 0</li>
-</ul>
-<p>Backoff delay calculation: delay = min(initial * multiplier^attempt, max_delay) jittered_delay = delay * (1 + jitter * (2*random - 1)) </p>
-
-</div>
-</div>
-<a id="a3a533ebca7a1e19c736a6a1debc07336" name="a3a533ebca7a1e19c736a6a1debc07336"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3a533ebca7a1e19c736a6a1debc07336">&#9670;&#160;</a></span>SocketRetry_execute_simple()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_execute_simple </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a>&#160;</td>
-          <td class="paramname"><em>operation</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>context</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_execute_simple - Execute operation with default retry logic @retry: Retry context @operation: Operation to execute @context: User context passed to operation</p>
-<p>Returns: 0 on success, last error code on failure Thread-safe: No</p>
-<p>Convenience function that retries all non-zero returns. Equivalent to SocketRetry_execute(retry, op, NULL, ctx). </p>
-
-</div>
-</div>
-<a id="ad758455d31f43b861881522be0982d62" name="ad758455d31f43b861881522be0982d62"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad758455d31f43b861881522be0982d62">&#9670;&#160;</a></span>SocketRetry_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> *&#160;</td>
-          <td class="paramname"><em>retry</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_free - Free a retry context @retry: Pointer to context (will be set to NULL)</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="a16584da7cc4271a025fd7d831446d028" name="a16584da7cc4271a025fd7d831446d028"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a16584da7cc4271a025fd7d831446d028">&#9670;&#160;</a></span>SocketRetry_get_policy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_get_policy </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
-          <td class="paramname"><em>policy</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_get_policy - Get current policy @retry: Retry context @policy: Output structure for policy</p>
-<p>Thread-safe: No </p>
-
-</div>
-</div>
-<a id="aa606e706f22216af24351ee324c0a468" name="aa606e706f22216af24351ee324c0a468"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa606e706f22216af24351ee324c0a468">&#9670;&#160;</a></span>SocketRetry_get_stats()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_get_stats </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#structSocketRetry__Stats">SocketRetry_Stats</a> *&#160;</td>
-          <td class="paramname"><em>stats</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_get_stats - Get statistics from last execution @retry: Retry context @stats: Output structure for statistics</p>
-<p>Thread-safe: No</p>
-<p>Returns statistics from the most recent <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> call. </p>
-
-</div>
-</div>
-<a id="ac4c2c785391a4a69f76ddb4d9d25f19e" name="ac4c2c785391a4a69f76ddb4d9d25f19e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4c2c785391a4a69f76ddb4d9d25f19e">&#9670;&#160;</a></span>SocketRetry_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> SocketRetry_new </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
-          <td class="paramname"><em>policy</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_new - Create a new retry context @policy: Retry policy (NULL for defaults)</p>
-<p>Returns: New retry context Raises: SocketRetry_Failed on allocation failure or invalid policy parameters Thread-safe: Yes (creates new instance) </p>
-
-</div>
-</div>
-<a id="ae60e4575d034cfe56be8b50e94ad5481" name="ae60e4575d034cfe56be8b50e94ad5481"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae60e4575d034cfe56be8b50e94ad5481">&#9670;&#160;</a></span>SocketRetry_policy_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_policy_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
-          <td class="paramname"><em>policy</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_policy_defaults - Initialize policy with defaults @policy: Policy structure to initialize</p>
-<p>Thread-safe: Yes</p>
-<p>Fills policy with recommended defaults:</p><ul>
-<li>max_attempts: 3</li>
-<li>initial_delay_ms: 100ms</li>
-<li>max_delay_ms: 30000ms (30s)</li>
-<li>multiplier: 2.0</li>
-<li>jitter: 0.25 (25%) </li>
-</ul>
-
-</div>
-</div>
-<a id="aceefc84a75ae5e4ed461d0139ceefaa3" name="aceefc84a75ae5e4ed461d0139ceefaa3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aceefc84a75ae5e4ed461d0139ceefaa3">&#9670;&#160;</a></span>SocketRetry_reset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_reset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_reset - Reset retry context for reuse @retry: Retry context</p>
-<p>Thread-safe: No</p>
-<p>Clears statistics and prepares context for new execution. Policy settings are preserved. </p>
-
-</div>
-</div>
-<a id="a29d7511f7531f4a23bd88f656df4636e" name="a29d7511f7531f4a23bd88f656df4636e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a29d7511f7531f4a23bd88f656df4636e">&#9670;&#160;</a></span>SocketRetry_set_policy()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRetry_set_policy </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRetry_8h.html#a419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>&#160;</td>
-          <td class="paramname"><em>retry</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketRetry_8h.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
-          <td class="paramname"><em>policy</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRetry_set_policy - Update policy @retry: Retry context @policy: New policy settings</p>
-<p>Raises: SocketRetry_Failed on NULL arguments or invalid policy parameters Thread-safe: No </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="aee6d3d64f3c5b84ac6bbf38c67834fc4" name="aee6d3d64f3c5b84ac6bbf38c67834fc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee6d3d64f3c5b84ac6bbf38c67834fc4">&#9670;&#160;</a></span>SocketRetry_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketRetry_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00056">56</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>

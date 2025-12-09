@@ -115,9 +115,12 @@ $(document).ready(function(){initNavTree('SocketRateLimit_8h.html',''); initResi
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketRateLimit.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketRateLimit.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utility Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Token bucket rate limiter for controlling operation rates.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
@@ -141,56 +144,55 @@ $(document).ready(function(){initNavTree('SocketRateLimit_8h.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for a token bucket rate limiter.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a241a48be9b0f1c7f74e0b8edefeb10a5" id="r_a241a48be9b0f1c7f74e0b8edefeb10a5"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td></tr>
-<tr class="separator:a241a48be9b0f1c7f74e0b8edefeb10a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga241a48be9b0f1c7f74e0b8edefeb10a5" id="r_ga241a48be9b0f1c7f74e0b8edefeb10a5"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td></tr>
+<tr class="separator:ga241a48be9b0f1c7f74e0b8edefeb10a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a984414b5ee576c6acb3fbd9e8a96ef0f" id="r_a984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t tokens_per_sec, size_t bucket_size)</td></tr>
-<tr class="separator:a984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac871476460ec6f0eeea5ecea0b9e8747" id="r_ac871476460ec6f0eeea5ecea0b9e8747"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ac871476460ec6f0eeea5ecea0b9e8747">SocketRateLimit_free</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *limiter)</td></tr>
-<tr class="separator:ac871476460ec6f0eeea5ecea0b9e8747"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb5d1321362b759ed688cfc414c4b2a7" id="r_abb5d1321362b759ed688cfc414c4b2a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#abb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
-<tr class="separator:abb5d1321362b759ed688cfc414c4b2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a231dd056cc866fc7652660374e3e3f" id="r_a5a231dd056cc866fc7652660374e3e3f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
-<tr class="separator:a5a231dd056cc866fc7652660374e3e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeccac0acfc81db650718aa84162c51f3" id="r_aeccac0acfc81db650718aa84162c51f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#aeccac0acfc81db650718aa84162c51f3">SocketRateLimit_available</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="separator:aeccac0acfc81db650718aa84162c51f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a32ac5df3f02155bbf440553f7729978b" id="r_a32ac5df3f02155bbf440553f7729978b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a32ac5df3f02155bbf440553f7729978b">SocketRateLimit_reset</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="separator:a32ac5df3f02155bbf440553f7729978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04a0e83dac474ff6a45597eb4e8a37a0" id="r_a04a0e83dac474ff6a45597eb4e8a37a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a04a0e83dac474ff6a45597eb4e8a37a0">SocketRateLimit_configure</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens_per_sec, size_t bucket_size)</td></tr>
-<tr class="separator:a04a0e83dac474ff6a45597eb4e8a37a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a33a8790eeb8ee8f3f2cb7f9c8e7d16c9" id="r_a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a33a8790eeb8ee8f3f2cb7f9c8e7d16c9">SocketRateLimit_get_rate</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="separator:a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab29dadd4e6a32a10eb577cf6f1399994" id="r_ab29dadd4e6a32a10eb577cf6f1399994"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ab29dadd4e6a32a10eb577cf6f1399994">SocketRateLimit_get_bucket_size</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="separator:ab29dadd4e6a32a10eb577cf6f1399994"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae39058e1d9114bc4dc403587d062b2d6" id="r_ae39058e1d9114bc4dc403587d062b2d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count</a> (void)</td></tr>
-<tr class="separator:ae39058e1d9114bc4dc403587d062b2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga984414b5ee576c6acb3fbd9e8a96ef0f" id="r_ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t tokens_per_sec, size_t bucket_size)</td></tr>
+<tr class="memdesc:ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new token bucket rate limiter.  <br /></td></tr>
+<tr class="separator:ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac871476460ec6f0eeea5ecea0b9e8747" id="r_gac871476460ec6f0eeea5ecea0b9e8747"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac871476460ec6f0eeea5ecea0b9e8747">SocketRateLimit_free</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *limiter)</td></tr>
+<tr class="memdesc:gac871476460ec6f0eeea5ecea0b9e8747"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of a rate limiter instance.  <br /></td></tr>
+<tr class="separator:gac871476460ec6f0eeea5ecea0b9e8747"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabb5d1321362b759ed688cfc414c4b2a7" id="r_gabb5d1321362b759ed688cfc414c4b2a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
+<tr class="memdesc:gabb5d1321362b759ed688cfc414c4b2a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Non-blocking attempt to acquire and consume tokens.  <br /></td></tr>
+<tr class="separator:gabb5d1321362b759ed688cfc414c4b2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5a231dd056cc866fc7652660374e3e3f" id="r_ga5a231dd056cc866fc7652660374e3e3f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
+<tr class="separator:ga5a231dd056cc866fc7652660374e3e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaeccac0acfc81db650718aa84162c51f3" id="r_gaeccac0acfc81db650718aa84162c51f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaeccac0acfc81db650718aa84162c51f3">SocketRateLimit_available</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
+<tr class="memdesc:gaeccac0acfc81db650718aa84162c51f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the number of currently available tokens in the bucket.  <br /></td></tr>
+<tr class="separator:gaeccac0acfc81db650718aa84162c51f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga32ac5df3f02155bbf440553f7729978b" id="r_ga32ac5df3f02155bbf440553f7729978b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga32ac5df3f02155bbf440553f7729978b">SocketRateLimit_reset</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
+<tr class="memdesc:ga32ac5df3f02155bbf440553f7729978b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the token bucket to full capacity.  <br /></td></tr>
+<tr class="separator:ga32ac5df3f02155bbf440553f7729978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga04a0e83dac474ff6a45597eb4e8a37a0" id="r_ga04a0e83dac474ff6a45597eb4e8a37a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga04a0e83dac474ff6a45597eb4e8a37a0">SocketRateLimit_configure</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens_per_sec, size_t bucket_size)</td></tr>
+<tr class="memdesc:ga04a0e83dac474ff6a45597eb4e8a37a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamically reconfigure refill rate and bucket capacity.  <br /></td></tr>
+<tr class="separator:ga04a0e83dac474ff6a45597eb4e8a37a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9" id="r_ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9">SocketRateLimit_get_rate</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
+<tr class="memdesc:ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the configured token refill rate in tokens per second.  <br /></td></tr>
+<tr class="separator:ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab29dadd4e6a32a10eb577cf6f1399994" id="r_gab29dadd4e6a32a10eb577cf6f1399994"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gab29dadd4e6a32a10eb577cf6f1399994">SocketRateLimit_get_bucket_size</a> (<a class="el" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
+<tr class="memdesc:gab29dadd4e6a32a10eb577cf6f1399994"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the configured maximum bucket capacity (burst size).  <br /></td></tr>
+<tr class="separator:gab29dadd4e6a32a10eb577cf6f1399994"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae39058e1d9114bc4dc403587d062b2d6" id="r_gae39058e1d9114bc4dc403587d062b2d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count</a> (void)</td></tr>
+<tr class="memdesc:gae39058e1d9114bc4dc403587d062b2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debug utility: count of live (allocated) rate limiter instances.  <br /></td></tr>
+<tr class="separator:gae39058e1d9114bc4dc403587d062b2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:af06f7fa3fe589c3d406f8f12cbc4e59e" id="r_af06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#af06f7fa3fe589c3d406f8f12cbc4e59e">SocketRateLimit_Failed</a></td></tr>
-<tr class="separator:af06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf06f7fa3fe589c3d406f8f12cbc4e59e" id="r_gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaf06f7fa3fe589c3d406f8f12cbc4e59e">SocketRateLimit_Failed</a></td></tr>
+<tr class="memdesc:gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception type for rate limiter operation failures.  <br /></td></tr>
+<tr class="separator:gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketRateLimit_8h.html">SocketRateLimit.h</a> - Token Bucket Rate Limiter</p>
-<p>Part of the Socket Library</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Token bucket rate limiter for controlling operation rates. </p>
 <p>Implements a token bucket rate limiter for controlling connection rates and bandwidth throttling. The token bucket algorithm allows bursting while enforcing average rates over time.</p>
 <p>Algorithm:</p><ul>
 <li>Bucket holds tokens up to bucket_size (burst capacity)</li>
@@ -208,398 +210,46 @@ Variables</h2></td></tr>
 <li>Safe to share a single limiter across threads</li>
 </ul>
 <p>Debugging:</p><ul>
-<li><p class="startli">Live instance count tracking for leak detection Use <a class="el" href="SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count()</a> == 0 after cleanup Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>; SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50); // 100 tokens/sec, burst capacity of 50</p>
-<p class="startli">if (SocketRateLimit_try_acquire(limiter, 1)) { // Allowed - proceed with operation } else { // Rate limited - wait or reject int64_t wait_ms = SocketRateLimit_wait_time_ms(limiter, 1); } </p>
-</li>
+<li>Live instance count tracking for leak detection Use <a class="el" href="group__utilities.html#gae39058e1d9114bc4dc403587d062b2d6" title="Debug utility: count of live (allocated) rate limiter instances.">SocketRateLimit_debug_live_count()</a> == 0 after cleanup</li>
 </ul>
+<p>Usage Example: </p><div class="fragment"><div class="line">  <a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
+<div class="line">  <a class="code hl_typedef" href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter = <a class="code hl_function" href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a>(arena, 100, 50);  <span class="comment">// 100/sec, burst=50</span></div>
+<div class="line">  <a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);  <span class="comment">// Don&#39;t forget cleanup!</span></div>
+<div class="line"> </div>
+<div class="line">  <span class="comment">// In a loop or before operation:</span></div>
+<div class="line">  <span class="keywordflow">if</span> (<a class="code hl_function" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a>(limiter, 1)) {</div>
+<div class="line">      <span class="comment">// Proceed with rate-limited operation (e.g., accept connection)</span></div>
+<div class="line">  } <span class="keywordflow">else</span> {</div>
+<div class="line">      <span class="comment">// Rate limited: compute wait or reject</span></div>
+<div class="line">      int64_t wait_ms = <a class="code hl_function" href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms</a>(limiter, 1);</div>
+<div class="line">      <span class="keywordflow">if</span> (wait_ms &gt; 0 &amp;&amp; wait_ms &lt; 1000) {  <span class="comment">// Avoid long sleeps</span></div>
+<div class="line"><span class="preprocessor">#include &lt;unistd.h&gt;</span>  <span class="comment">// For usleep</span></div>
+<div class="line">          usleep(wait_ms * 1000);  <span class="comment">// Sleep in microseconds</span></div>
+<div class="line">          <span class="comment">// Optionally retry: SocketRateLimit_try_acquire(limiter, 1)</span></div>
+<div class="line">      } <span class="keywordflow">else</span> {</div>
+<div class="line">          <span class="comment">// Reject or use longer backoff strategy</span></div>
+<div class="line">      }</div>
+<div class="line">  }</div>
+<div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena.</div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ga241a48be9b0f1c7f74e0b8edefeb10a5"><div class="ttname"><a href="group__utilities.html#ga241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></div><div class="ttdeci">struct SocketRateLimit_T * SocketRateLimit_T</div><div class="ttdef"><b>Definition</b> <a href="SocketRateLimit_8h_source.html#l00112">SocketRateLimit.h:112</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ga5a231dd056cc866fc7652660374e3e3f"><div class="ttname"><a href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms</a></div><div class="ttdeci">int64_t SocketRateLimit_wait_time_ms(SocketRateLimit_T limiter, size_t tokens)</div></div>
+<div class="ttc" id="agroup__utilities_html_ga984414b5ee576c6acb3fbd9e8a96ef0f"><div class="ttname"><a href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a></div><div class="ttdeci">SocketRateLimit_T SocketRateLimit_new(Arena_T arena, size_t tokens_per_sec, size_t bucket_size)</div><div class="ttdoc">Create a new token bucket rate limiter.</div></div>
+<div class="ttc" id="agroup__utilities_html_gabb5d1321362b759ed688cfc414c4b2a7"><div class="ttname"><a href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a></div><div class="ttdeci">int SocketRateLimit_try_acquire(SocketRateLimit_T limiter, size_t tokens)</div><div class="ttdoc">Non-blocking attempt to acquire and consume tokens.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>This example uses standard POSIX usleep(); integrate with your event loop's sleep. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>SocketTimer in <a class="el" href="group__event__system.html">Event System Modules</a> for timed events instead of sleeping.</dd>
+<dd>
+<a class="el" href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f" title="Create a new token bucket rate limiter.">SocketRateLimit_new()</a> for limiter creation. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7" title="Non-blocking attempt to acquire and consume tokens.">SocketRateLimit_try_acquire()</a> for rate checking. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> for connection pool rate limiting integration. </dd>
+<dd>
+<a class="el" href="group__utilities.html">Utility Modules</a> for other rate limiting <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit_8h_source.html#l00049">49</a> of file <a class="el" href="SocketRateLimit_8h_source.html">SocketRateLimit.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="a241a48be9b0f1c7f74e0b8edefeb10a5" name="a241a48be9b0f1c7f74e0b8edefeb10a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a241a48be9b0f1c7f74e0b8edefeb10a5">&#9670;&#160;</a></span>SocketRateLimit_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>* <a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit_8h_source.html#l00050">50</a> of file <a class="el" href="SocketRateLimit_8h_source.html">SocketRateLimit.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="aeccac0acfc81db650718aa84162c51f3" name="aeccac0acfc81db650718aa84162c51f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeccac0acfc81db650718aa84162c51f3">&#9670;&#160;</a></span>SocketRateLimit_available()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketRateLimit_available </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_available - Get current available tokens @limiter: Rate limiter instance</p>
-<p>Returns: Number of tokens currently available Thread-safe: Yes - uses internal mutex</p>
-<p>Refills bucket based on elapsed time before returning count. </p>
-
-</div>
-</div>
-<a id="a04a0e83dac474ff6a45597eb4e8a37a0" name="a04a0e83dac474ff6a45597eb4e8a37a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04a0e83dac474ff6a45597eb4e8a37a0">&#9670;&#160;</a></span>SocketRateLimit_configure()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRateLimit_configure </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>tokens_per_sec</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>bucket_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_configure - Reconfigure rate limiter @limiter: Rate limiter instance @tokens_per_sec: New token refill rate (0 to keep current) @bucket_size: New bucket capacity (0 to keep current)</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Allows runtime reconfiguration. Current tokens are capped to new bucket_size. </p>
-
-</div>
-</div>
-<a id="ae39058e1d9114bc4dc403587d062b2d6" name="ae39058e1d9114bc4dc403587d062b2d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae39058e1d9114bc4dc403587d062b2d6">&#9670;&#160;</a></span>SocketRateLimit_debug_live_count()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRateLimit_debug_live_count </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_debug_live_count - Debug function to get live instance count</p>
-<p>Returns: Number of currently allocated rate limiter instances Thread-safe: Yes</p>
-<p>Use for leak detection and debugging. Should be 0 after all instances freed. </p>
-
-</div>
-</div>
-<a id="ac871476460ec6f0eeea5ecea0b9e8747" name="ac871476460ec6f0eeea5ecea0b9e8747"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac871476460ec6f0eeea5ecea0b9e8747">&#9670;&#160;</a></span>SocketRateLimit_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRateLimit_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *&#160;</td>
-          <td class="paramname"><em>limiter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_free - Free a rate limiter @limiter: Pointer to limiter (will be set to NULL)</p>
-<p>Thread-safe: Yes (acquires mutex during cleanup)</p>
-<p>Note: Only frees memory if allocated with malloc (arena == NULL). Arena-allocated limiters are freed when arena is disposed. Always destroys the mutex regardless of allocation method. </p>
-
-</div>
-</div>
-<a id="ab29dadd4e6a32a10eb577cf6f1399994" name="ab29dadd4e6a32a10eb577cf6f1399994"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab29dadd4e6a32a10eb577cf6f1399994">&#9670;&#160;</a></span>SocketRateLimit_get_bucket_size()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketRateLimit_get_bucket_size </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_get_bucket_size - Get current bucket size @limiter: Rate limiter instance</p>
-<p>Returns: Maximum bucket capacity (0 if invalid/shutdown) Thread-safe: Yes - uses internal mutex </p>
-
-</div>
-</div>
-<a id="a33a8790eeb8ee8f3f2cb7f9c8e7d16c9" name="a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a33a8790eeb8ee8f3f2cb7f9c8e7d16c9">&#9670;&#160;</a></span>SocketRateLimit_get_rate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">size_t SocketRateLimit_get_rate </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_get_rate - Get current tokens per second rate @limiter: Rate limiter instance</p>
-<p>Returns: Tokens per second rate (0 if invalid/shutdown) Thread-safe: Yes - uses internal mutex </p>
-
-</div>
-</div>
-<a id="a984414b5ee576c6acb3fbd9e8a96ef0f" name="a984414b5ee576c6acb3fbd9e8a96ef0f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a984414b5ee576c6acb3fbd9e8a96ef0f">&#9670;&#160;</a></span>SocketRateLimit_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> SocketRateLimit_new </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>tokens_per_sec</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>bucket_size</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_new - Create a new token bucket rate limiter @arena: Arena for memory allocation (NULL to use malloc) @tokens_per_sec: Token refill rate (tokens added per second) @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec)</p>
-<p>Returns: New rate limiter instance Raises: SocketRateLimit_Failed on allocation failure or invalid parameters Thread-safe: Yes - returns new independent instance</p>
-<p>The bucket starts full (at bucket_size tokens). Use bucket_size &gt;= tokens_per_sec for reasonable burst handling. If bucket_size is 0, defaults to tokens_per_sec (1 second burst). </p>
-
-</div>
-</div>
-<a id="a32ac5df3f02155bbf440553f7729978b" name="a32ac5df3f02155bbf440553f7729978b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a32ac5df3f02155bbf440553f7729978b">&#9670;&#160;</a></span>SocketRateLimit_reset()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketRateLimit_reset </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_reset - Reset limiter to full bucket @limiter: Rate limiter instance</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Resets tokens to bucket_size and updates refill timestamp. Useful after configuration changes or manual intervention. </p>
-
-</div>
-</div>
-<a id="abb5d1321362b759ed688cfc414c4b2a7" name="abb5d1321362b759ed688cfc414c4b2a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb5d1321362b759ed688cfc414c4b2a7">&#9670;&#160;</a></span>SocketRateLimit_try_acquire()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRateLimit_try_acquire </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>tokens</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_try_acquire - Try to consume tokens (non-blocking) @limiter: Rate limiter instance @tokens: Number of tokens to consume</p>
-<p>Returns: 1 if tokens acquired successfully, 0 if rate limited Thread-safe: Yes - uses internal mutex</p>
-<p>Refills bucket based on elapsed time, then attempts to consume tokens. Does not block - returns immediately with result. Requesting 0 tokens always succeeds. </p>
-
-</div>
-</div>
-<a id="a5a231dd056cc866fc7652660374e3e3f" name="a5a231dd056cc866fc7652660374e3e3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a231dd056cc866fc7652660374e3e3f">&#9670;&#160;</a></span>SocketRateLimit_wait_time_ms()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t SocketRateLimit_wait_time_ms </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td>
-          <td class="paramname"><em>limiter</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>tokens</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketRateLimit_wait_time_ms - Calculate wait time for tokens @limiter: Rate limiter instance @tokens: Number of tokens needed</p>
-<p>Returns: Milliseconds to wait before tokens available, or 0 if immediate Returns -1 if tokens &gt; bucket_size (impossible to acquire) Thread-safe: Yes - uses internal mutex</p>
-<p>Does not consume tokens - just calculates wait time. Returns 0 if tokens are already available. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="af06f7fa3fe589c3d406f8f12cbc4e59e" name="af06f7fa3fe589c3d406f8f12cbc4e59e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af06f7fa3fe589c3d406f8f12cbc4e59e">&#9670;&#160;</a></span>SocketRateLimit_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketRateLimit_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Rate limiter operation failure </p>
-
-</div>
-</div>
-</div><!-- contents -->
+<p class="definition">Definition in file <a class="el" href="SocketRateLimit_8h_source.html">SocketRateLimit.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

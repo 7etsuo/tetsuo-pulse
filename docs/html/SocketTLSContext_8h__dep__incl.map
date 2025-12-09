@@ -1,10 +1,10 @@
 <map id="SocketTLSContext.h" name="SocketTLSContext.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="450,5,594,31"/>
-<area shape="rect" id="Node000002" href="$SocketHTTPClient_8h.html" title=" " alt="" coords="152,79,295,104"/>
+<area shape="rect" id="Node000001" title="TLS context management with secure defaults and certificate handling." alt="" coords="450,5,594,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client library with pooling, async support, and protocol negotiation." alt="" coords="152,79,295,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="461,36,272,81,271,76,460,31"/>
-<area shape="rect" id="Node000006" href="$SocketHTTPServer_8h.html" title=" " alt="" coords="374,79,521,104"/>
+<area shape="rect" id="Node000006" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="374,79,521,104"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="502,42,461,80,458,77,498,38"/>
-<area shape="rect" id="Node000009" href="$SocketProxy_8h.html" title=" " alt="" coords="545,79,651,104"/>
+<area shape="rect" id="Node000009" href="$SocketProxy_8h.html" title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols." alt="" coords="545,79,651,104"/>
 <area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="546,38,587,76,584,80,542,42"/>
 <area shape="rect" id="Node000010" href="$proxy__connect_8c.html" title=" " alt="" coords="629,152,748,177"/>
 <area shape="poly" id="edge10_Node000001_Node000010" title=" " alt="" coords="592,32,631,50,665,77,677,95,685,116,691,152,686,152,680,117,673,98,661,80,628,54,590,37"/>

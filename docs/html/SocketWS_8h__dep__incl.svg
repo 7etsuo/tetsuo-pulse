@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="WebSocket Protocol (RFC 6455) implementation with compression support.">
 <polygon fill="#999999" stroke="#666666" points="146.5,-74 74.5,-74 74.5,-55 146.5,-55 146.5,-74"/>
 <text text-anchor="middle" x="110.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketWS.h</text>
 </a>

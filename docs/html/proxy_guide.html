@@ -115,7 +115,7 @@ $(document).ready(function(){initNavTree('proxy_guide.html',''); initResizable()
 <div class="contents">
 <div class="textblock"><p>Complete guide to proxy tunneling support in the Socket Library.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md181"></a>
+<h1><a class="anchor" id="autotoc_md182"></a>
 Overview</h1>
 <p>The <code>SocketProxy</code> module provides transparent proxy tunneling for TCP connections:</p>
 <ul>
@@ -127,139 +127,139 @@ Overview</h1>
 <li><b>SOCKS5H</b> - SOCKS5 with hostname resolution at proxy</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md183"></a>
+<h1><a class="anchor" id="autotoc_md184"></a>
 Quick Start</h1>
-<h2><a class="anchor" id="autotoc_md184"></a>
+<h2><a class="anchor" id="autotoc_md185"></a>
 SOCKS5 Proxy</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketProxy_8h.html">socket/SocketProxy.h</a>&quot;</span></div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#a197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a>(&amp;proxy);</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;proxy.example.com&quot;</span>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;</div>
+<div class="line"><a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#ga197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a>(&amp;proxy);</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;proxy.example.com&quot;</span>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Connect through proxy */</span></div>
-<div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.example.com&quot;</span>, 443);</div>
+<div class="line"><a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.example.com&quot;</span>, 443);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Now tunneled to target - perform TLS if needed */</span></div>
-<div class="ttc" id="aSocketProxy_8h_html"><div class="ttname"><a href="SocketProxy_8h.html">SocketProxy.h</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a197242786615adf218d849747bc0fd67"><div class="ttname"><a href="SocketProxy_8h.html#a197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a></div><div class="ttdeci">void SocketProxy_config_defaults(SocketProxy_Config *config)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a507287d832417162da30794693e16a6e"><div class="ttname"><a href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">SocketProxy_Config::host</a></div><div class="ttdeci">const char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00252">SocketProxy.h:252</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aa04cfa88d52d6c1f889f9f936a141141"><div class="ttname"><a href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">SocketProxy_Config::type</a></div><div class="ttdeci">SocketProxyType type</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00249">SocketProxy.h:249</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00179">SocketProxy.h:179</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aad72c8e58d88ee4bbc975c9163266ef0"><div class="ttname"><a href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a></div><div class="ttdeci">Socket_T SocketProxy_connect(const SocketProxy_Config *proxy, const char *target_host, int target_port)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aff28145ee5466be9d0e12fba3e07dc97"><div class="ttname"><a href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">SocketProxy_Config::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00253">SocketProxy.h:253</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_structSocketProxy__Config"><div class="ttname"><a href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a></div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00247">SocketProxy.h:248</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md185"></a>
-With Authentication</h2>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;secret&quot;</span>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_a579714517d79e28bb9b03190d67158d5"><div class="ttname"><a href="SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5">SocketProxy_Config::username</a></div><div class="ttdeci">const char * username</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00256">SocketProxy.h:256</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae619303ab820c36c920c509d735748f2"><div class="ttname"><a href="SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2">SocketProxy_Config::password</a></div><div class="ttdeci">const char * password</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00257">SocketProxy.h:257</a></div></div>
+<div class="ttc" id="aSocketProxy_8h_html"><div class="ttname"><a href="SocketProxy_8h.html">SocketProxy.h</a></div><div class="ttdoc">Proxy tunneling support for HTTP CONNECT and SOCKS protocols.</div></div>
+<div class="ttc" id="agroup__core__io_html_a507287d832417162da30794693e16a6e"><div class="ttname"><a href="group__core__io.html#a507287d832417162da30794693e16a6e">SocketProxy_Config::host</a></div><div class="ttdeci">const char * host</div><div class="ttdoc">Proxy server details.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00322">SocketProxy.h:322</a></div></div>
+<div class="ttc" id="agroup__core__io_html_aa04cfa88d52d6c1f889f9f936a141141"><div class="ttname"><a href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">SocketProxy_Config::type</a></div><div class="ttdeci">SocketProxyType type</div><div class="ttdoc">Proxy protocol type (e.g., SOCKET_PROXY_SOCKS5).</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00319">SocketProxy.h:319</a></div></div>
+<div class="ttc" id="agroup__core__io_html_aff28145ee5466be9d0e12fba3e07dc97"><div class="ttname"><a href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">SocketProxy_Config::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00323">SocketProxy.h:323</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ga197242786615adf218d849747bc0fd67"><div class="ttname"><a href="group__core__io.html#ga197242786615adf218d849747bc0fd67">SocketProxy_config_defaults</a></div><div class="ttdeci">void SocketProxy_config_defaults(SocketProxy_Config *config)</div><div class="ttdoc">Initialize proxy configuration with safe default values.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdoc">Opaque handle for TCP/IP and Unix domain sockets.</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00092">Socket.h:92</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gaad72c8e58d88ee4bbc975c9163266ef0"><div class="ttname"><a href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a></div><div class="ttdeci">Socket_T SocketProxy_connect(const SocketProxy_Config *proxy, const char *target_host, int target_port)</div><div class="ttdoc">Establish synchronous connection to target via proxy tunnel.</div></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00213">SocketProxy.h:213</a></div></div>
+<div class="ttc" id="agroup__core__io_html_structSocketProxy__Config"><div class="ttname"><a href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a></div><div class="ttdoc">Configuration structure for proxy connections.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00317">SocketProxy.h:318</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md186"></a>
+With Authentication</h2>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;secret&quot;</span>;</div>
+<div class="ttc" id="agroup__core__io_html_a579714517d79e28bb9b03190d67158d5"><div class="ttname"><a href="group__core__io.html#a579714517d79e28bb9b03190d67158d5">SocketProxy_Config::username</a></div><div class="ttdeci">const char * username</div><div class="ttdoc">Optional authentication credentials for SOCKS5 or HTTP Basic auth.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00326">SocketProxy.h:326</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ae619303ab820c36c920c509d735748f2"><div class="ttname"><a href="group__core__io.html#ae619303ab820c36c920c509d735748f2">SocketProxy_Config::password</a></div><div class="ttdeci">const char * password</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00327">SocketProxy.h:327</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md187"></a>
 Using URL Parser</h2>
-<div class="fragment"><div class="line"><a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://user:pass@proxy.example.com:1080&quot;</span>, &amp;proxy, NULL);</div>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://user:pass@proxy.example.com:1080&quot;</span>, &amp;proxy, NULL);</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.example.com&quot;</span>, 443);</div>
-<div class="ttc" id="aSocketProxy_8h_html_ae16c20e1d43f38171ccaad8408598490"><div class="ttname"><a href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a></div><div class="ttdeci">int SocketProxy_parse_url(const char *url, SocketProxy_Config *config, Arena_T arena)</div></div>
+<div class="line"><a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.example.com&quot;</span>, 443);</div>
+<div class="ttc" id="agroup__core__io_html_gae16c20e1d43f38171ccaad8408598490"><div class="ttname"><a href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a></div><div class="ttdeci">int SocketProxy_parse_url(const char *url, SocketProxy_Config *config, Arena_T arena)</div><div class="ttdoc">Parse proxy URL string into configuration structure.</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md188"></a>
+<h1><a class="anchor" id="autotoc_md189"></a>
 Proxy Types</h1>
-<h2><a class="anchor" id="autotoc_md189"></a>
+<h2><a class="anchor" id="autotoc_md190"></a>
 HTTP CONNECT</h2>
 <p>Standard method for HTTP proxies (port 8080 default):</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;proxy.corp.com&quot;</span>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 8080;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;      <span class="comment">/* Optional Basic auth */</span></div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;password&quot;</span>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTP</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00175">SocketProxy.h:175</a></div></div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;proxy.corp.com&quot;</span>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 8080;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;      <span class="comment">/* Optional Basic auth */</span></div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;password&quot;</span>;</div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTP</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00209">SocketProxy.h:209</a></div></div>
 </div><!-- fragment --><p><b>How it works:</b></p><ol type="1">
 <li>Connect to proxy server</li>
 <li>Send <code>CONNECT target:port HTTP/1.1</code></li>
 <li>Receive <code>200 Connection established</code></li>
 <li>Tunnel is ready</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md190"></a>
+<h2><a class="anchor" id="autotoc_md191"></a>
 HTTPS CONNECT</h2>
 <p>Same as HTTP CONNECT, but with TLS to the proxy:</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb">SOCKET_PROXY_HTTPS</a>;</div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb">SOCKET_PROXY_HTTPS</a>;</div>
 <div class="line"><span class="comment">/* Everything else same as HTTP */</span></div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb">SOCKET_PROXY_HTTPS</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTPS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00176">SocketProxy.h:176</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a7b26d4906e2233ed613ea9b00d402abb">SOCKET_PROXY_HTTPS</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTPS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00210">SocketProxy.h:210</a></div></div>
 </div><!-- fragment --><p>Use when proxy requires encrypted connection (corporate proxies).</p>
-<h2><a class="anchor" id="autotoc_md191"></a>
+<h2><a class="anchor" id="autotoc_md192"></a>
 SOCKS4</h2>
 <p>Legacy protocol, IPv4 only:</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;socks.example.com&quot;</span>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;  <span class="comment">/* Default SOCKS port */</span></div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00177">SocketProxy.h:177</a></div></div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;socks.example.com&quot;</span>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;  <span class="comment">/* Default SOCKS port */</span></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00211">SocketProxy.h:211</a></div></div>
 </div><!-- fragment --><p><b>Limitations:</b></p><ul>
 <li>IPv4 addresses only</li>
 <li>No authentication support</li>
 <li>Client must resolve hostname</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md192"></a>
+<h2><a class="anchor" id="autotoc_md193"></a>
 SOCKS4a</h2>
 <p>SOCKS4 with proxy-side DNS:</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6">SOCKET_PROXY_SOCKS4A</a>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6">SOCKET_PROXY_SOCKS4A</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4A</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00178">SocketProxy.h:178</a></div></div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6">SOCKET_PROXY_SOCKS4A</a>;</div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6">SOCKET_PROXY_SOCKS4A</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4A</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00212">SocketProxy.h:212</a></div></div>
 </div><!-- fragment --><p>Useful when target hostname shouldn't be resolved locally.</p>
-<h2><a class="anchor" id="autotoc_md193"></a>
+<h2><a class="anchor" id="autotoc_md194"></a>
 SOCKS5 (RFC 1928)</h2>
 <p>Modern, full-featured protocol:</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;socks.example.com&quot;</span>;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;</div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;      <span class="comment">/* Optional */</span></div>
-<div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;pass&quot;</span>;</div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a> = <span class="stringliteral">&quot;socks.example.com&quot;</span>;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a> = 1080;</div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#a579714517d79e28bb9b03190d67158d5">username</a> = <span class="stringliteral">&quot;user&quot;</span>;      <span class="comment">/* Optional */</span></div>
+<div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#ae619303ab820c36c920c509d735748f2">password</a> = <span class="stringliteral">&quot;pass&quot;</span>;</div>
 </div><!-- fragment --><p><b>Features:</b></p><ul>
 <li>IPv4 and IPv6 support</li>
 <li>Username/password authentication (RFC 1929)</li>
 <li>Client-side DNS resolution</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md194"></a>
+<h2><a class="anchor" id="autotoc_md195"></a>
 SOCKS5H</h2>
 <p>SOCKS5 with proxy-side DNS:</p>
-<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820">SOCKET_PROXY_SOCKS5H</a>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820">SOCKET_PROXY_SOCKS5H</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5H</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00181">SocketProxy.h:180</a></div></div>
+<div class="fragment"><div class="line">proxy.<a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a> = <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820">SOCKET_PROXY_SOCKS5H</a>;</div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820">SOCKET_PROXY_SOCKS5H</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5H</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00215">SocketProxy.h:214</a></div></div>
 </div><!-- fragment --><p>Use when:</p><ul>
 <li>Target hostname is internal to proxy network</li>
 <li>Want to hide DNS queries from local network</li>
 <li>Local DNS is unreliable</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md196"></a>
+<h1><a class="anchor" id="autotoc_md197"></a>
 Configuration</h1>
-<h2><a class="anchor" id="autotoc_md197"></a>
+<h2><a class="anchor" id="autotoc_md198"></a>
 Full Configuration Structure</h2>
-<div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> {</div>
-<div class="line">    <a class="code hl_enumeration" href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a> <a class="code hl_variable" href="SocketProxy_8h.html#aa04cfa88d52d6c1f889f9f936a141141">type</a>;       <span class="comment">/* Proxy protocol type */</span></div>
+<div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> {</div>
+<div class="line">    <a class="code hl_enumeration" href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a> <a class="code hl_variable" href="group__core__io.html#aa04cfa88d52d6c1f889f9f936a141141">type</a>;       <span class="comment">/* Proxy protocol type */</span></div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Proxy server */</span></div>
-<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a>;           <span class="comment">/* Proxy hostname or IP */</span></div>
-<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a>;                   <span class="comment">/* Proxy port (0 = default) */</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a>;           <span class="comment">/* Proxy hostname or IP */</span></div>
+<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a>;                   <span class="comment">/* Proxy port (0 = default) */</span></div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Authentication */</span></div>
-<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="SocketProxy_8h.html#a579714517d79e28bb9b03190d67158d5">username</a>;       <span class="comment">/* For SOCKS5/HTTP auth */</span></div>
-<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="SocketProxy_8h.html#ae619303ab820c36c920c509d735748f2">password</a>;       <span class="comment">/* For SOCKS5/HTTP auth */</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="group__core__io.html#a579714517d79e28bb9b03190d67158d5">username</a>;       <span class="comment">/* For SOCKS5/HTTP auth */</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code hl_variable" href="group__core__io.html#ae619303ab820c36c920c509d735748f2">password</a>;       <span class="comment">/* For SOCKS5/HTTP auth */</span></div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* HTTP CONNECT specific */</span></div>
-<div class="line">    <a class="code hl_typedef" href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> <a class="code hl_variable" href="SocketProxy_8h.html#a1a667bd87d678a4e0cb64c14aa0ffd3d">extra_headers</a>;  <span class="comment">/* Additional headers */</span></div>
+<div class="line">    <a class="code hl_typedef" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> <a class="code hl_variable" href="group__core__io.html#a1a667bd87d678a4e0cb64c14aa0ffd3d">extra_headers</a>;  <span class="comment">/* Additional headers */</span></div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Timeouts */</span></div>
-<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="SocketProxy_8h.html#aa761e79e5c6644f3ccb22a4c0300105a">connect_timeout_ms</a>;     <span class="comment">/* Proxy connection timeout */</span></div>
-<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="SocketProxy_8h.html#aaefad91d7469f34f214a7fac5e1779d6">handshake_timeout_ms</a>;   <span class="comment">/* Protocol handshake timeout */</span></div>
-<div class="line">} <a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_a1a667bd87d678a4e0cb64c14aa0ffd3d"><div class="ttname"><a href="SocketProxy_8h.html#a1a667bd87d678a4e0cb64c14aa0ffd3d">SocketProxy_Config::extra_headers</a></div><div class="ttdeci">SocketHTTP_Headers_T extra_headers</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00260">SocketProxy.h:260</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aa761e79e5c6644f3ccb22a4c0300105a"><div class="ttname"><a href="SocketProxy_8h.html#aa761e79e5c6644f3ccb22a4c0300105a">SocketProxy_Config::connect_timeout_ms</a></div><div class="ttdeci">int connect_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00267">SocketProxy.h:267</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aaa33f7bdae951cc7b53a2fb049e89132"><div class="ttname"><a href="SocketProxy_8h.html#aaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a></div><div class="ttdeci">SocketProxyType</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00172">SocketProxy.h:173</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aaefad91d7469f34f214a7fac5e1779d6"><div class="ttname"><a href="SocketProxy_8h.html#aaefad91d7469f34f214a7fac5e1779d6">SocketProxy_Config::handshake_timeout_ms</a></div><div class="ttdeci">int handshake_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00268">SocketProxy.h:268</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_af1f6772bf122ad6e2e90639b2877754f"><div class="ttname"><a href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></div><div class="ttdeci">struct SocketHTTP_Headers * SocketHTTP_Headers_T</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00095">SocketProxy.h:95</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md198"></a>
+<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="group__core__io.html#aa761e79e5c6644f3ccb22a4c0300105a">connect_timeout_ms</a>;     <span class="comment">/* Proxy connection timeout */</span></div>
+<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="group__core__io.html#aaefad91d7469f34f214a7fac5e1779d6">handshake_timeout_ms</a>;   <span class="comment">/* Protocol handshake timeout */</span></div>
+<div class="line">} <a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a>;</div>
+<div class="ttc" id="agroup__core__io_html_a1a667bd87d678a4e0cb64c14aa0ffd3d"><div class="ttname"><a href="group__core__io.html#a1a667bd87d678a4e0cb64c14aa0ffd3d">SocketProxy_Config::extra_headers</a></div><div class="ttdeci">SocketHTTP_Headers_T extra_headers</div><div class="ttdoc">HTTP CONNECT-specific options.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00330">SocketProxy.h:330</a></div></div>
+<div class="ttc" id="agroup__core__io_html_aa761e79e5c6644f3ccb22a4c0300105a"><div class="ttname"><a href="group__core__io.html#aa761e79e5c6644f3ccb22a4c0300105a">SocketProxy_Config::connect_timeout_ms</a></div><div class="ttdeci">int connect_timeout_ms</div><div class="ttdoc">Timeout configuration (0 = use module defaults).</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00339">SocketProxy.h:339</a></div></div>
+<div class="ttc" id="agroup__core__io_html_aaefad91d7469f34f214a7fac5e1779d6"><div class="ttname"><a href="group__core__io.html#aaefad91d7469f34f214a7fac5e1779d6">SocketProxy_Config::handshake_timeout_ms</a></div><div class="ttdeci">int handshake_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00340">SocketProxy.h:340</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gaaa33f7bdae951cc7b53a2fb049e89132"><div class="ttname"><a href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a></div><div class="ttdeci">SocketProxyType</div><div class="ttdoc">Enumeration of supported proxy protocol types.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00206">SocketProxy.h:207</a></div></div>
+<div class="ttc" id="agroup__http_html_gaf1f6772bf122ad6e2e90639b2877754f"><div class="ttname"><a href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></div><div class="ttdeci">struct SocketHTTP_Headers * SocketHTTP_Headers_T</div><div class="ttdoc">Opaque type for HTTP header collection with efficient operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00449">SocketHTTP.h:449</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md199"></a>
 Default Ports</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -271,11 +271,11 @@ Default Ports</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">HTTPS CONNECT   </td><td class="markdownTableBodyNone">8080   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md199"></a>
+<h2><a class="anchor" id="autotoc_md200"></a>
 URL Parser</h2>
 <p>Parse proxy URLs into configuration:</p>
-<div class="fragment"><div class="line"><a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
-<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(url, &amp;proxy, arena);</div>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
+<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(url, &amp;proxy, arena);</div>
 </div><!-- fragment --><p><b>Supported URL formats:</b> </p><div class="fragment"><div class="line">socks5://host:port</div>
 <div class="line">socks5://user:pass@host:port</div>
 <div class="line">socks5h://host:port</div>
@@ -284,253 +284,253 @@ URL Parser</h2>
 <div class="line">http://host:port</div>
 <div class="line">http://user:pass@host:port</div>
 <div class="line">https://host:port</div>
-</div><!-- fragment --><p><b>Examples:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>, &amp;proxy, NULL);</div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://admin:secret@proxy.local:1080&quot;</span>, &amp;proxy, NULL);</div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;http://proxy.corp.com:8080&quot;</span>, &amp;proxy, NULL);</div>
+</div><!-- fragment --><p><b>Examples:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>, &amp;proxy, NULL);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://admin:secret@proxy.local:1080&quot;</span>, &amp;proxy, NULL);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;http://proxy.corp.com:8080&quot;</span>, &amp;proxy, NULL);</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md201"></a>
+<h1><a class="anchor" id="autotoc_md202"></a>
 Synchronous API</h1>
-<h2><a class="anchor" id="autotoc_md202"></a>
+<h2><a class="anchor" id="autotoc_md203"></a>
 Simple Connection</h2>
-<div class="fragment"><div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
 <div class="line"> </div>
 <div class="line"><span class="keywordflow">if</span> (sock) {</div>
 <div class="line">    <span class="comment">/* Tunnel established */</span></div>
 <div class="line">    <span class="comment">/* Perform TLS handshake if target is HTTPS */</span></div>
 <div class="line">    <span class="comment">/* Use socket normally */</span></div>
-<div class="line">    <a class="code hl_function" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;sock);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;sock);</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md203"></a>
+<div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Free a socket and close the connection.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md204"></a>
 Using Existing Socket</h2>
 <p>If you need control over socket creation:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Create and connect to proxy manually */</span></div>
-<div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
-<div class="line"><a class="code hl_function" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, proxy.<a class="code hl_variable" href="SocketProxy_8h.html#a507287d832417162da30794693e16a6e">host</a>, proxy.<a class="code hl_variable" href="SocketProxy_8h.html#aff28145ee5466be9d0e12fba3e07dc97">port</a>);</div>
+<div class="line"><a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, proxy.<a class="code hl_variable" href="group__core__io.html#a507287d832417162da30794693e16a6e">host</a>, proxy.<a class="code hl_variable" href="group__core__io.html#aff28145ee5466be9d0e12fba3e07dc97">port</a>);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Establish tunnel */</span></div>
-<div class="line"><a class="code hl_enumeration" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="SocketProxy_8h.html#a58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a>(sock, &amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
+<div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="group__core__io.html#ga58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a>(sock, &amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">if</span> (result == <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
+<div class="line"><span class="keywordflow">if</span> (result == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
 <div class="line">    <span class="comment">/* Tunnel ready */</span></div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketProxy_8h_html_a58fac7f1a89c5921c7152e393dd8ad36"><div class="ttname"><a href="SocketProxy_8h.html#a58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a></div><div class="ttdeci">SocketProxy_Result SocketProxy_tunnel(Socket_T socket, const SocketProxy_Config *proxy, const char *target_host, int target_port, Arena_T arena)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595e"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a></div><div class="ttdeci">SocketProxy_Result</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00192">SocketProxy.h:193</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a></div><div class="ttdeci">@ PROXY_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00194">SocketProxy.h:194</a></div></div>
-<div class="ttc" id="aSocket_8h_html_a6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div></div>
-<div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div></div>
+<div class="ttc" id="agroup__core__io_html_ga58fac7f1a89c5921c7152e393dd8ad36"><div class="ttname"><a href="group__core__io.html#ga58fac7f1a89c5921c7152e393dd8ad36">SocketProxy_tunnel</a></div><div class="ttdeci">SocketProxy_Result SocketProxy_tunnel(Socket_T socket, const SocketProxy_Config *proxy, const char *target_host, int target_port, Arena_T arena)</div><div class="ttdoc">Perform proxy handshake on pre-connected socket to establish tunnel.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket.</div></div>
+<div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Connect to remote host.</div></div>
+<div class="ttc" id="agroup__core__io_html_gae980e6a437316380a792464ce32a595e"><div class="ttname"><a href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a></div><div class="ttdeci">SocketProxy_Result</div><div class="ttdoc">Result codes for proxy operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00234">SocketProxy.h:235</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a></div><div class="ttdeci">@ PROXY_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00236">SocketProxy.h:236</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md205"></a>
+<h1><a class="anchor" id="autotoc_md206"></a>
 Asynchronous API</h1>
 <p>For non-blocking operation in event loops, the library provides two async APIs:</p>
-<h2><a class="anchor" id="autotoc_md206"></a>
+<h2><a class="anchor" id="autotoc_md207"></a>
 Fully Async API (Recommended)</h2>
-<p>Use <code><a class="el" href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start()</a></code> for completely non-blocking operation from the start. This is the preferred API for event-driven applications:</p>
+<p>Use <code><a class="el" href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97" title="Initialize and start fully asynchronous proxy tunneling operation.">SocketProxy_Conn_start()</a></code> for completely non-blocking operation from the start. This is the preferred API for event-driven applications:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketProxy_8h.html">socket/SocketProxy.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketDNS_8h.html">dns/SocketDNS.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketPoll_8h.html">poll/SocketPoll.h</a>&quot;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Create external resources (typically owned by your event loop) */</span></div>
-<div class="line"><a class="code hl_typedef" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns = <a class="code hl_function" href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>(4);  <span class="comment">/* 4 worker threads */</span></div>
-<div class="line"><a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(128);</div>
+<div class="line"><a class="code hl_typedef" href="group__dns.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns = <a class="code hl_function" href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>(4);  <span class="comment">/* 4 worker threads */</span></div>
+<div class="line"><a class="code hl_typedef" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(128);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Start fully async proxy connection */</span></div>
-<div class="line"><a class="code hl_typedef" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn = <a class="code hl_function" href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a>(dns, poll, &amp;proxy, </div>
+<div class="line"><a class="code hl_typedef" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn = <a class="code hl_function" href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a>(dns, poll, &amp;proxy, </div>
 <div class="line">                                                  <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Event loop */</span></div>
-<div class="line"><span class="keywordflow">while</span> (!<a class="code hl_function" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
-<div class="line">    <a class="code hl_struct" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a> events[32];</div>
-<div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="SocketProxy_8h.html#af64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a>(conn);</div>
+<div class="line"><span class="keywordflow">while</span> (!<a class="code hl_function" href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
+<div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> events[32];</div>
+<div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="group__core__io.html#gaf64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a>(conn);</div>
 <div class="line">    </div>
-<div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 32, timeout);</div>
+<div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 32, timeout);</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Process the proxy connection */</span></div>
-<div class="line">    <a class="code hl_function" href="SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a>(conn);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#gaf45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a>(conn);</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Handle other events in your application... */</span></div>
 <div class="line">}</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Check result */</span></div>
-<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn) == <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
-<div class="line">    <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a>(conn);</div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn) == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
+<div class="line">    <a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a>(conn);</div>
 <div class="line">    <span class="comment">/* Tunnel established - use socket */</span></div>
 <div class="line">} <span class="keywordflow">else</span> {</div>
-<div class="line">    printf(<span class="stringliteral">&quot;Failed: %s\n&quot;</span>, <a class="code hl_function" href="SocketProxy_8h.html#a93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn));</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Failed: %s\n&quot;</span>, <a class="code hl_function" href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn));</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#afee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a>(&amp;conn);</div>
-<div class="ttc" id="aSocketDNS_8h_html"><div class="ttname"><a href="SocketDNS_8h.html">SocketDNS.h</a></div></div>
-<div class="ttc" id="aSocketDNS_8h_html_a799f4d96c77eef54ecb9be5523b591fd"><div class="ttname"><a href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a></div><div class="ttdeci">SocketDNS_T SocketDNS_new(void)</div></div>
-<div class="ttc" id="aSocketDNS_8h_html_ac9190fe07142a017f86dae46145cb2fd"><div class="ttname"><a href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></div><div class="ttdeci">struct SocketDNS_T * SocketDNS_T</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00047">SocketDNS.h:47</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html"><div class="ttname"><a href="SocketPoll_8h.html">SocketPoll.h</a></div></div>
-<div class="ttc" id="aSocketPoll_8h_html_aa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_ac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div></div>
-<div class="ttc" id="aSocketPoll_8h_html_structSocketEvent__T"><div class="ttname"><a href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00069">SocketPoll.h:70</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a5f6fd1cde0a54b41805862ce002f6f97"><div class="ttname"><a href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a></div><div class="ttdeci">SocketProxy_Conn_T SocketProxy_Conn_start(SocketDNS_T dns, SocketPoll_T poll, const SocketProxy_Config *proxy, const char *target_host, int target_port)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a7f08cbaf58cda2bfda0fa9ce8cc28007"><div class="ttname"><a href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a></div><div class="ttdeci">struct SocketProxy_Conn_T * SocketProxy_Conn_T</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00102">SocketProxy.h:102</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a93a495a98a7efa7ecc9d42ce838d4a3e"><div class="ttname"><a href="SocketProxy_8h.html#a93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a></div><div class="ttdeci">const char * SocketProxy_Conn_error(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ac12fc736c9952313a4846dd50380bc3f"><div class="ttname"><a href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a></div><div class="ttdeci">int SocketProxy_Conn_poll(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_af191ce0cae571b057d5ea278392bdf24"><div class="ttname"><a href="SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a></div><div class="ttdeci">SocketProxy_Result SocketProxy_Conn_result(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_af45ecd7d9e7c6214e6bfcc6b2a42f977"><div class="ttname"><a href="SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a></div><div class="ttdeci">void SocketProxy_Conn_process(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_af64af0e87ee1735152783f2b7fd132c9"><div class="ttname"><a href="SocketProxy_8h.html#af64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a></div><div class="ttdeci">int SocketProxy_Conn_next_timeout_ms(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_afee164cf3e979f5cfe745a33366812d9"><div class="ttname"><a href="SocketProxy_8h.html#afee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a></div><div class="ttdeci">void SocketProxy_Conn_free(SocketProxy_Conn_T *conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_aff1d539486b8b250489938c4b71c89a9"><div class="ttname"><a href="SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a></div><div class="ttdeci">Socket_T SocketProxy_Conn_socket(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00041">SocketTimer.h:41</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md207"></a>
-Blocking Connect API</h2>
-<p>Use <code><a class="el" href="SocketProxy_8h.html#a6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new()</a></code> when you want blocking connection to the proxy server followed by async handshake. This is simpler but blocks during the initial DNS resolution and TCP connection:</p>
-<div class="fragment"><div class="line"><span class="comment">/* Blocking connect, async handshake */</span></div>
-<div class="line"><a class="code hl_typedef" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn = <a class="code hl_function" href="SocketProxy_8h.html#a6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a>(&amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
-<div class="ttc" id="aSocketProxy_8h_html_a6d17fac3f6b21b9905aa7c4b0d7d47f7"><div class="ttname"><a href="SocketProxy_8h.html#a6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a></div><div class="ttdeci">SocketProxy_Conn_T SocketProxy_Conn_new(const SocketProxy_Config *proxy, const char *target_host, int target_port)</div></div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gafee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a>(&amp;conn);</div>
+<div class="ttc" id="aSocketDNS_8h_html"><div class="ttname"><a href="SocketDNS_8h.html">SocketDNS.h</a></div><div class="ttdoc">Asynchronous DNS resolution API.</div></div>
+<div class="ttc" id="aSocketPoll_8h_html"><div class="ttname"><a href="SocketPoll_8h.html">SocketPoll.h</a></div><div class="ttdoc">Cross-platform high-level interface for monitoring multiple sockets for I/O events.</div></div>
+<div class="ttc" id="aSocketProxy_8h_html_a7f08cbaf58cda2bfda0fa9ce8cc28007"><div class="ttname"><a href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a></div><div class="ttdeci">struct SocketProxy_Conn_T * SocketProxy_Conn_T</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00117">SocketProxy.h:117</a></div></div>
+<div class="ttc" id="aSocketTimer_8h_html_af9e4be8bc025aedb61cc0b77e8926312"><div class="ttname"><a href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></div><div class="ttdeci">struct SocketPoll_T * SocketPoll_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer_8h_source.html#l00069">SocketTimer.h:69</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ga5f6fd1cde0a54b41805862ce002f6f97"><div class="ttname"><a href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start</a></div><div class="ttdeci">SocketProxy_Conn_T SocketProxy_Conn_start(SocketDNS_T dns, SocketPoll_T poll, const SocketProxy_Config *proxy, const char *target_host, int target_port)</div><div class="ttdoc">Initialize and start fully asynchronous proxy tunneling operation.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga93a495a98a7efa7ecc9d42ce838d4a3e"><div class="ttname"><a href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a></div><div class="ttdeci">const char * SocketProxy_Conn_error(SocketProxy_Conn_T conn)</div><div class="ttdoc">Retrieve human-readable error description for failed operations.</div></div>
+<div class="ttc" id="agroup__core__io_html_gac12fc736c9952313a4846dd50380bc3f"><div class="ttname"><a href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a></div><div class="ttdeci">int SocketProxy_Conn_poll(SocketProxy_Conn_T conn)</div><div class="ttdoc">Query if proxy operation has completed.</div></div>
+<div class="ttc" id="agroup__core__io_html_gaf191ce0cae571b057d5ea278392bdf24"><div class="ttname"><a href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a></div><div class="ttdeci">SocketProxy_Result SocketProxy_Conn_result(SocketProxy_Conn_T conn)</div><div class="ttdoc">Get final result code after operation completion.</div></div>
+<div class="ttc" id="agroup__core__io_html_gaf45ecd7d9e7c6214e6bfcc6b2a42f977"><div class="ttname"><a href="group__core__io.html#gaf45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a></div><div class="ttdeci">void SocketProxy_Conn_process(SocketProxy_Conn_T conn)</div><div class="ttdoc">Advance asynchronous proxy connection state machine.</div></div>
+<div class="ttc" id="agroup__core__io_html_gaf64af0e87ee1735152783f2b7fd132c9"><div class="ttname"><a href="group__core__io.html#gaf64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a></div><div class="ttdeci">int SocketProxy_Conn_next_timeout_ms(SocketProxy_Conn_T conn)</div><div class="ttdoc">Calculate milliseconds until next internal timeout.</div></div>
+<div class="ttc" id="agroup__core__io_html_gafee164cf3e979f5cfe745a33366812d9"><div class="ttname"><a href="group__core__io.html#gafee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a></div><div class="ttdeci">void SocketProxy_Conn_free(SocketProxy_Conn_T *conn)</div><div class="ttdoc">Release proxy connection context and associated resources.</div></div>
+<div class="ttc" id="agroup__core__io_html_gaff1d539486b8b250489938c4b71c89a9"><div class="ttname"><a href="group__core__io.html#gaff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a></div><div class="ttdeci">Socket_T SocketProxy_Conn_socket(SocketProxy_Conn_T conn)</div><div class="ttdoc">Extract successfully tunneled socket from completed context.</div></div>
+<div class="ttc" id="agroup__dns_html_ga799f4d96c77eef54ecb9be5523b591fd"><div class="ttname"><a href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a></div><div class="ttdeci">SocketDNS_T SocketDNS_new(void)</div><div class="ttdoc">Create a new asynchronous DNS resolver.</div></div>
+<div class="ttc" id="agroup__dns_html_gac9190fe07142a017f86dae46145cb2fd"><div class="ttname"><a href="group__dns.html#gac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></div><div class="ttdeci">struct SocketDNS_T * SocketDNS_T</div><div class="ttdoc">Opaque type for DNS resolver instances.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00047">SocketDNS.h:47</a></div></div>
+<div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Wait for I/O events on registered sockets.</div></div>
+<div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
+<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00188">SocketPoll.h:189</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md208"></a>
+Blocking Connect API</h2>
+<p>Use <code><a class="el" href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7" title="Create proxy connection context with blocking proxy connect, async handshake.">SocketProxy_Conn_new()</a></code> when you want blocking connection to the proxy server followed by async handshake. This is simpler but blocks during the initial DNS resolution and TCP connection:</p>
+<div class="fragment"><div class="line"><span class="comment">/* Blocking connect, async handshake */</span></div>
+<div class="line"><a class="code hl_typedef" href="SocketProxy_8h.html#a7f08cbaf58cda2bfda0fa9ce8cc28007">SocketProxy_Conn_T</a> conn = <a class="code hl_function" href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a>(&amp;proxy, <span class="stringliteral">&quot;target.com&quot;</span>, 443);</div>
+<div class="ttc" id="agroup__core__io_html_ga6d17fac3f6b21b9905aa7c4b0d7d47f7"><div class="ttname"><a href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new</a></div><div class="ttdeci">SocketProxy_Conn_T SocketProxy_Conn_new(const SocketProxy_Config *proxy, const char *target_host, int target_port)</div><div class="ttdoc">Create proxy connection context with blocking proxy connect, async handshake.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md209"></a>
 Polling for Handshake</h2>
 <p>After starting the connection, poll for the handshake file descriptor:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Get fd and events for handshake phase */</span></div>
-<div class="line"><span class="keywordtype">int</span> fd = <a class="code hl_function" href="SocketProxy_8h.html#a9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a>(conn);</div>
-<div class="line"><span class="keywordtype">unsigned</span> events = <a class="code hl_function" href="SocketProxy_8h.html#a8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a>(conn);</div>
+<div class="line"><span class="keywordtype">int</span> fd = <a class="code hl_function" href="group__core__io.html#ga9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a>(conn);</div>
+<div class="line"><span class="keywordtype">unsigned</span> events = <a class="code hl_function" href="group__core__io.html#ga8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a>(conn);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* NOTE: During CONNECTING_PROXY state (fully async API only),</span></div>
 <div class="line"><span class="comment"> * fd returns -1 because HappyEyeballs manages its own fds</span></div>
 <div class="line"><span class="comment"> * internally via the poll instance you provided.</span></div>
 <div class="line"><span class="comment"> * Just call SocketPoll_wait() and SocketProxy_Conn_process(). */</span></div>
-<div class="ttc" id="aSocketProxy_8h_html_a8d7492a46210e78249073e289c556ea8"><div class="ttname"><a href="SocketProxy_8h.html#a8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a></div><div class="ttdeci">unsigned SocketProxy_Conn_events(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a9d1139d24bcabc22e6e2b07762e8f753"><div class="ttname"><a href="SocketProxy_8h.html#a9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a></div><div class="ttdeci">int SocketProxy_Conn_fd(SocketProxy_Conn_T conn)</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md209"></a>
+<div class="ttc" id="agroup__core__io_html_ga8d7492a46210e78249073e289c556ea8"><div class="ttname"><a href="group__core__io.html#ga8d7492a46210e78249073e289c556ea8">SocketProxy_Conn_events</a></div><div class="ttdeci">unsigned SocketProxy_Conn_events(SocketProxy_Conn_T conn)</div><div class="ttdoc">Get poll event mask for current connection phase.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga9d1139d24bcabc22e6e2b07762e8f753"><div class="ttname"><a href="group__core__io.html#ga9d1139d24bcabc22e6e2b07762e8f753">SocketProxy_Conn_fd</a></div><div class="ttdeci">int SocketProxy_Conn_fd(SocketProxy_Conn_T conn)</div><div class="ttdoc">Get underlying file descriptor for poll integration.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md210"></a>
 Processing Events</h2>
-<div class="fragment"><div class="line"><span class="keywordflow">while</span> (!<a class="code hl_function" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
-<div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="SocketProxy_8h.html#af64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a>(conn);</div>
+<div class="fragment"><div class="line"><span class="keywordflow">while</span> (!<a class="code hl_function" href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
+<div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="group__core__io.html#gaf64af0e87ee1735152783f2b7fd132c9">SocketProxy_Conn_next_timeout_ms</a>(conn);</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Wait for events on your poll instance */</span></div>
-<div class="line">    <a class="code hl_struct" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a> events[32];</div>
-<div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 32, timeout);</div>
+<div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> events[32];</div>
+<div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 32, timeout);</div>
 <div class="line">    </div>
 <div class="line">    <span class="comment">/* Process the proxy state machine */</span></div>
-<div class="line">    <a class="code hl_function" href="SocketProxy_8h.html#af45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a>(conn);</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#gaf45ecd7d9e7c6214e6bfcc6b2a42f977">SocketProxy_Conn_process</a>(conn);</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md210"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md211"></a>
 Getting Result</h2>
-<div class="fragment"><div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="SocketProxy_8h.html#ac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
-<div class="line">    <a class="code hl_enumeration" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn);</div>
+<div class="fragment"><div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__core__io.html#gac12fc736c9952313a4846dd50380bc3f">SocketProxy_Conn_poll</a>(conn)) {</div>
+<div class="line">    <a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn);</div>
 <div class="line">    </div>
-<div class="line">    <span class="keywordflow">if</span> (result == <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
+<div class="line">    <span class="keywordflow">if</span> (result == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
 <div class="line">        <span class="comment">/* Get tunneled socket (ownership transferred) */</span></div>
-<div class="line">        <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a>(conn);</div>
+<div class="line">        <a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaff1d539486b8b250489938c4b71c89a9">SocketProxy_Conn_socket</a>(conn);</div>
 <div class="line">        <span class="comment">/* Use socket - it&#39;s in blocking mode after transfer */</span></div>
 <div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        <span class="keyword">const</span> <span class="keywordtype">char</span> *error = <a class="code hl_function" href="SocketProxy_8h.html#a93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn);</div>
+<div class="line">        <span class="keyword">const</span> <span class="keywordtype">char</span> *error = <a class="code hl_function" href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn);</div>
 <div class="line">        printf(<span class="stringliteral">&quot;Failed: %s\n&quot;</span>, error);</div>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#afee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a>(&amp;conn);</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md211"></a>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gafee164cf3e979f5cfe745a33366812d9">SocketProxy_Conn_free</a>(&amp;conn);</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md212"></a>
 Cancellation</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Cancel in-progress operation from any state */</span></div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#a2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a>(conn);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#ga2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a>(conn);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Result will be PROXY_ERROR_CANCELLED */</span></div>
-<div class="line">assert(<a class="code hl_function" href="SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn) == <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a>);</div>
-<div class="ttc" id="aSocketProxy_8h_html_a2853a36e933b9ac3803173169b1b159e"><div class="ttname"><a href="SocketProxy_8h.html#a2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a></div><div class="ttdeci">void SocketProxy_Conn_cancel(SocketProxy_Conn_T conn)</div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a></div><div class="ttdeci">@ PROXY_ERROR_CANCELLED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00209">SocketProxy.h:208</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md212"></a>
+<div class="line">assert(<a class="code hl_function" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn) == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a>);</div>
+<div class="ttc" id="agroup__core__io_html_ga2853a36e933b9ac3803173169b1b159e"><div class="ttname"><a href="group__core__io.html#ga2853a36e933b9ac3803173169b1b159e">SocketProxy_Conn_cancel</a></div><div class="ttdeci">void SocketProxy_Conn_cancel(SocketProxy_Conn_T conn)</div><div class="ttdoc">Cancel ongoing proxy connection and cleanup resources.</div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a></div><div class="ttdeci">@ PROXY_ERROR_CANCELLED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00251">SocketProxy.h:250</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md213"></a>
 API Comparison</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Function   </th><th class="markdownTableHeadNone">Initial Connect   </th><th class="markdownTableHeadNone">Use Case    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code><a class="el" href="SocketProxy_8h.html#a5f6fd1cde0a54b41805862ce002f6f97">SocketProxy_Conn_start()</a></code>   </td><td class="markdownTableBodyNone">Non-blocking (HappyEyeballs)   </td><td class="markdownTableBodyNone">Event-driven apps    </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="group__core__io.html#ga5f6fd1cde0a54b41805862ce002f6f97" title="Initialize and start fully asynchronous proxy tunneling operation.">SocketProxy_Conn_start()</a></code>   </td><td class="markdownTableBodyNone">Non-blocking (HappyEyeballs)   </td><td class="markdownTableBodyNone">Event-driven apps    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code><a class="el" href="SocketProxy_8h.html#a6d17fac3f6b21b9905aa7c4b0d7d47f7">SocketProxy_Conn_new()</a></code>   </td><td class="markdownTableBodyNone">Blocking   </td><td class="markdownTableBodyNone">Simple async handshake   </td></tr>
+<td class="markdownTableBodyNone"><code><a class="el" href="group__core__io.html#ga6d17fac3f6b21b9905aa7c4b0d7d47f7" title="Create proxy connection context with blocking proxy connect, async handshake.">SocketProxy_Conn_new()</a></code>   </td><td class="markdownTableBodyNone">Blocking   </td><td class="markdownTableBodyNone">Simple async handshake   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md214"></a>
+<h1><a class="anchor" id="autotoc_md215"></a>
 Result Codes</h1>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">enum</span> {</div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a> = 0,                    <span class="comment">/* Success */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a>,               <span class="comment">/* Async in progress */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424">PROXY_ERROR</a>,                     <span class="comment">/* Generic error */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3">PROXY_ERROR_CONNECT</a>,             <span class="comment">/* Can&#39;t connect to proxy */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a>,       <span class="comment">/* Proxy needs auth */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>,         <span class="comment">/* Auth rejected */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a>,           <span class="comment">/* Target not allowed */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878">PROXY_ERROR_HOST_UNREACHABLE</a>,    <span class="comment">/* Target unreachable */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d">PROXY_ERROR_NETWORK_UNREACHABLE</a>, <span class="comment">/* Network unreachable */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e">PROXY_ERROR_CONNECTION_REFUSED</a>,  <span class="comment">/* Target refused */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9">PROXY_ERROR_TTL_EXPIRED</a>,         <span class="comment">/* TTL expired */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552">PROXY_ERROR_PROTOCOL</a>,            <span class="comment">/* Protocol error */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae">PROXY_ERROR_UNSUPPORTED</a>,         <span class="comment">/* Feature not supported */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128">PROXY_ERROR_TIMEOUT</a>,             <span class="comment">/* Operation timed out */</span></div>
-<div class="line">    <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a>            <span class="comment">/* User cancelled */</span></div>
-<div class="line">} <a class="code hl_enumeration" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>;</div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d">PROXY_ERROR_NETWORK_UNREACHABLE</a></div><div class="ttdeci">@ PROXY_ERROR_NETWORK_UNREACHABLE</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00202">SocketProxy.h:202</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e">PROXY_ERROR_CONNECTION_REFUSED</a></div><div class="ttdeci">@ PROXY_ERROR_CONNECTION_REFUSED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00203">SocketProxy.h:203</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3">PROXY_ERROR_CONNECT</a></div><div class="ttdeci">@ PROXY_ERROR_CONNECT</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00197">SocketProxy.h:197</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424">PROXY_ERROR</a></div><div class="ttdeci">@ PROXY_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00196">SocketProxy.h:196</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128">PROXY_ERROR_TIMEOUT</a></div><div class="ttdeci">@ PROXY_ERROR_TIMEOUT</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00207">SocketProxy.h:207</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552">PROXY_ERROR_PROTOCOL</a></div><div class="ttdeci">@ PROXY_ERROR_PROTOCOL</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00205">SocketProxy.h:205</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878">PROXY_ERROR_HOST_UNREACHABLE</a></div><div class="ttdeci">@ PROXY_ERROR_HOST_UNREACHABLE</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00201">SocketProxy.h:201</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9">PROXY_ERROR_TTL_EXPIRED</a></div><div class="ttdeci">@ PROXY_ERROR_TTL_EXPIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00204">SocketProxy.h:204</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a></div><div class="ttdeci">@ PROXY_ERROR_FORBIDDEN</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00200">SocketProxy.h:200</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae">PROXY_ERROR_UNSUPPORTED</a></div><div class="ttdeci">@ PROXY_ERROR_UNSUPPORTED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00206">SocketProxy.h:206</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_REQUIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00198">SocketProxy.h:198</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a></div><div class="ttdeci">@ PROXY_IN_PROGRESS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00195">SocketProxy.h:195</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_ae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f"><div class="ttname"><a href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_FAILED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00199">SocketProxy.h:199</a></div></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a> = 0,                    <span class="comment">/* Success */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a>,               <span class="comment">/* Async in progress */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424">PROXY_ERROR</a>,                     <span class="comment">/* Generic error */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3">PROXY_ERROR_CONNECT</a>,             <span class="comment">/* Can&#39;t connect to proxy */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a>,       <span class="comment">/* Proxy needs auth */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>,         <span class="comment">/* Auth rejected */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a>,           <span class="comment">/* Target not allowed */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878">PROXY_ERROR_HOST_UNREACHABLE</a>,    <span class="comment">/* Target unreachable */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d">PROXY_ERROR_NETWORK_UNREACHABLE</a>, <span class="comment">/* Network unreachable */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e">PROXY_ERROR_CONNECTION_REFUSED</a>,  <span class="comment">/* Target refused */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9">PROXY_ERROR_TTL_EXPIRED</a>,         <span class="comment">/* TTL expired */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552">PROXY_ERROR_PROTOCOL</a>,            <span class="comment">/* Protocol error */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae">PROXY_ERROR_UNSUPPORTED</a>,         <span class="comment">/* Feature not supported */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128">PROXY_ERROR_TIMEOUT</a>,             <span class="comment">/* Operation timed out */</span></div>
+<div class="line">    <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea15fe5e5fc15227e92086cc3c76e468d8">PROXY_ERROR_CANCELLED</a>            <span class="comment">/* User cancelled */</span></div>
+<div class="line">} <a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a>;</div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea2415989b5d247d71236686d18b1eeb9d">PROXY_ERROR_NETWORK_UNREACHABLE</a></div><div class="ttdeci">@ PROXY_ERROR_NETWORK_UNREACHABLE</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00244">SocketProxy.h:244</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea533fd840f7baa208f63174952243f28e">PROXY_ERROR_CONNECTION_REFUSED</a></div><div class="ttdeci">@ PROXY_ERROR_CONNECTION_REFUSED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00245">SocketProxy.h:245</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea65f9d23b989fea3c0578f03bf69dcbc3">PROXY_ERROR_CONNECT</a></div><div class="ttdeci">@ PROXY_ERROR_CONNECT</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00239">SocketProxy.h:239</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6e9669d107d6f667fc65e467f8ee6424">PROXY_ERROR</a></div><div class="ttdeci">@ PROXY_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00238">SocketProxy.h:238</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6f79c29997ae1e1063f0f4c079e42128">PROXY_ERROR_TIMEOUT</a></div><div class="ttdeci">@ PROXY_ERROR_TIMEOUT</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00249">SocketProxy.h:249</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea743f6cf01e958374a7cae9cce8960552">PROXY_ERROR_PROTOCOL</a></div><div class="ttdeci">@ PROXY_ERROR_PROTOCOL</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00247">SocketProxy.h:247</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea79f3625d5f0c085c05bd00e79c7b4878">PROXY_ERROR_HOST_UNREACHABLE</a></div><div class="ttdeci">@ PROXY_ERROR_HOST_UNREACHABLE</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00243">SocketProxy.h:243</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea942a19cc1c6152dba3f615c94c8190b9">PROXY_ERROR_TTL_EXPIRED</a></div><div class="ttdeci">@ PROXY_ERROR_TTL_EXPIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00246">SocketProxy.h:246</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a></div><div class="ttdeci">@ PROXY_ERROR_FORBIDDEN</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00242">SocketProxy.h:242</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea9acb784df31ca1f49007e0dbec3899ae">PROXY_ERROR_UNSUPPORTED</a></div><div class="ttdeci">@ PROXY_ERROR_UNSUPPORTED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00248">SocketProxy.h:248</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_REQUIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00240">SocketProxy.h:240</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a></div><div class="ttdeci">@ PROXY_IN_PROGRESS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00237">SocketProxy.h:237</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_FAILED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00241">SocketProxy.h:241</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md216"></a>
+<h1><a class="anchor" id="autotoc_md217"></a>
 TLS Over Proxy</h1>
 <p>For HTTPS targets through a proxy:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Connect through proxy */</span></div>
-<div class="line"><a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;secure.example.com&quot;</span>, 443);</div>
+<div class="line"><a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, <span class="stringliteral">&quot;secure.example.com&quot;</span>, 443);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Now establish TLS to target (not proxy) */</span></div>
-<div class="line"><a class="code hl_typedef" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> tls_ctx = <a class="code hl_function" href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a>(NULL);</div>
-<div class="line"><a class="code hl_function" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a>(sock, tls_ctx);</div>
-<div class="line"><a class="code hl_function" href="SocketTLS_8h.html#a15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a>(sock, <span class="stringliteral">&quot;secure.example.com&quot;</span>);</div>
+<div class="line"><a class="code hl_typedef" href="group__security.html#gac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> tls_ctx = <a class="code hl_function" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a>(NULL);</div>
+<div class="line"><a class="code hl_function" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a>(sock, tls_ctx);</div>
+<div class="line"><a class="code hl_function" href="group__security.html#ga15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a>(sock, <span class="stringliteral">&quot;secure.example.com&quot;</span>);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_function" href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a>(sock) &gt; 0) { <span class="comment">/* wait */</span> }</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_function" href="group__security.html#gaeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a>(sock) &gt; 0) { <span class="comment">/* wait */</span> }</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Now have end-to-end TLS through proxy tunnel */</span></div>
-<div class="line"><a class="code hl_function" href="SocketTLS_8h.html#abdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a>(sock, request, len);</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a7fe51da14439d768bdf72f4ed8fbb022"><div class="ttname"><a href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_client(const char *ca_file)</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_a15d2c8f4eaea80114bbd2123da025e56"><div class="ttname"><a href="SocketTLS_8h.html#a15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a></div><div class="ttdeci">void SocketTLS_set_hostname(Socket_T socket, const char *hostname)</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_ab9a8fb788aa1f0d21b5773bc43a48d6f"><div class="ttname"><a href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a></div><div class="ttdeci">void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_abdb38e692dde58bbec4ab905eeb8b3aa"><div class="ttname"><a href="SocketTLS_8h.html#abdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a></div><div class="ttdeci">ssize_t SocketTLS_send(Socket_T socket, const void *buf, size_t len)</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_ac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00110">SocketTLS.h:110</a></div></div>
-<div class="ttc" id="aSocketTLS_8h_html_aeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div></div>
+<div class="line"><a class="code hl_function" href="group__security.html#gabdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a>(sock, request, len);</div>
+<div class="ttc" id="agroup__security_html_ga15d2c8f4eaea80114bbd2123da025e56"><div class="ttname"><a href="group__security.html#ga15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a></div><div class="ttdeci">void SocketTLS_set_hostname(Socket_T socket, const char *hostname)</div><div class="ttdoc">SocketTLS_set_hostname - Set SNI hostname for client TLS connections.</div></div>
+<div class="ttc" id="agroup__security_html_ga7fe51da14439d768bdf72f4ed8fbb022"><div class="ttname"><a href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_client(const char *ca_file)</div><div class="ttdoc">Create client TLS context.</div></div>
+<div class="ttc" id="agroup__security_html_gab9a8fb788aa1f0d21b5773bc43a48d6f"><div class="ttname"><a href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a></div><div class="ttdeci">void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLS_enable - Enable TLS on a socket using the provided context.</div></div>
+<div class="ttc" id="agroup__security_html_gabdb38e692dde58bbec4ab905eeb8b3aa"><div class="ttname"><a href="group__security.html#gabdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a></div><div class="ttdeci">ssize_t SocketTLS_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">SocketTLS_send - Send data over TLS-encrypted connection.</div></div>
+<div class="ttc" id="agroup__security_html_gac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="group__security.html#gac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdoc">Opaque TLS context type for managing certificates, keys, and configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00231">SocketTLS.h:231</a></div></div>
+<div class="ttc" id="agroup__security_html_gaeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="group__security.html#gaeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div><div class="ttdoc">SocketTLS_handshake - Perform non-blocking TLS handshake.</div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md218"></a>
+<h1><a class="anchor" id="autotoc_md219"></a>
 HTTP Client Integration</h1>
 <p>The HTTP client supports proxy configuration:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketHTTPClient_8h.html">http/SocketHTTPClient.h</a>&quot;</span></div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_struct" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
-<div class="line"><a class="code hl_function" href="SocketProxy_8h.html#ae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>, &amp;proxy, NULL);</div>
+<div class="line"><a class="code hl_struct" href="group__core__io.html#structSocketProxy__Config">SocketProxy_Config</a> proxy;</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a>(<span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>, &amp;proxy, NULL);</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_struct" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> config;</div>
-<div class="line"><a class="code hl_function" href="SocketHTTPClient_8h.html#aad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;config);</div>
-<div class="line">config.<a class="code hl_variable" href="SocketHTTPClient_8h.html#af1c22aca38ea27645e9400fe42680bdf">proxy</a> = &amp;proxy;</div>
+<div class="line"><a class="code hl_struct" href="group__http.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> config;</div>
+<div class="line"><a class="code hl_function" href="group__http.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;config);</div>
+<div class="line">config.<a class="code hl_variable" href="group__http.html#af1c22aca38ea27645e9400fe42680bdf">proxy</a> = &amp;proxy;</div>
 <div class="line"> </div>
-<div class="line"><a class="code hl_typedef" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client = <a class="code hl_function" href="SocketHTTPClient_8h.html#a2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
+<div class="line"><a class="code hl_typedef" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client = <a class="code hl_function" href="group__http.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* All requests go through proxy */</span></div>
-<div class="line"><a class="code hl_function" href="SocketHTTPClient_8h.html#afef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a>(client, <span class="stringliteral">&quot;https://example.com&quot;</span>, &amp;response);</div>
-<div class="ttc" id="aSocketHTTPClient_8h_html"><div class="ttname"><a href="SocketHTTPClient_8h.html">SocketHTTPClient.h</a></div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_a2d57db3a9a6388315f253caa099e4205"><div class="ttname"><a href="SocketHTTPClient_8h.html#a2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a></div><div class="ttdeci">SocketHTTPClient_T SocketHTTPClient_new(const SocketHTTPClient_Config *config)</div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_aad5ad81c60bb230588b5f660a834f40e"><div class="ttname"><a href="SocketHTTPClient_8h.html#aad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a></div><div class="ttdeci">void SocketHTTPClient_config_defaults(SocketHTTPClient_Config *config)</div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_aba14ae9994f5645e5aa8488f905aad54"><div class="ttname"><a href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></div><div class="ttdeci">struct SocketHTTPClient * SocketHTTPClient_T</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00374">SocketHTTPClient.h:374</a></div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_af1c22aca38ea27645e9400fe42680bdf"><div class="ttname"><a href="SocketHTTPClient_8h.html#af1c22aca38ea27645e9400fe42680bdf">SocketHTTPClient_Config::proxy</a></div><div class="ttdeci">SocketProxy_Config * proxy</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00341">SocketHTTPClient.h:341</a></div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_afef425814e66932f7cf1f36e9356b70e"><div class="ttname"><a href="SocketHTTPClient_8h.html#afef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a></div><div class="ttdeci">int SocketHTTPClient_get(SocketHTTPClient_T client, const char *url, SocketHTTPClient_Response *response)</div></div>
-<div class="ttc" id="aSocketHTTPClient_8h_html_structSocketHTTPClient__Config"><div class="ttname"><a href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00309">SocketHTTPClient.h:310</a></div></div>
+<div class="line"><a class="code hl_function" href="group__http.html#gafef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a>(client, <span class="stringliteral">&quot;https://example.com&quot;</span>, &amp;response);</div>
+<div class="ttc" id="aSocketHTTPClient_8h_html"><div class="ttname"><a href="SocketHTTPClient_8h.html">SocketHTTPClient.h</a></div><div class="ttdoc">High-level HTTP client library with pooling, async support, and protocol negotiation.</div></div>
+<div class="ttc" id="agroup__http_html_af1c22aca38ea27645e9400fe42680bdf"><div class="ttname"><a href="group__http.html#af1c22aca38ea27645e9400fe42680bdf">SocketHTTPClient_Config::proxy</a></div><div class="ttdeci">SocketProxy_Config * proxy</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00412">SocketHTTPClient.h:412</a></div></div>
+<div class="ttc" id="agroup__http_html_ga2d57db3a9a6388315f253caa099e4205"><div class="ttname"><a href="group__http.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a></div><div class="ttdeci">SocketHTTPClient_T SocketHTTPClient_new(const SocketHTTPClient_Config *config)</div><div class="ttdoc">Create new HTTP client instance.</div></div>
+<div class="ttc" id="agroup__http_html_gaad5ad81c60bb230588b5f660a834f40e"><div class="ttname"><a href="group__http.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a></div><div class="ttdeci">void SocketHTTPClient_config_defaults(SocketHTTPClient_Config *config)</div><div class="ttdoc">Initialize SocketHTTPClient_Config with safe defaults.</div></div>
+<div class="ttc" id="agroup__http_html_gaba14ae9994f5645e5aa8488f905aad54"><div class="ttname"><a href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></div><div class="ttdeci">struct SocketHTTPClient * SocketHTTPClient_T</div><div class="ttdoc">HTTP client instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00449">SocketHTTPClient.h:449</a></div></div>
+<div class="ttc" id="agroup__http_html_gafef425814e66932f7cf1f36e9356b70e"><div class="ttname"><a href="group__http.html#gafef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a></div><div class="ttdeci">int SocketHTTPClient_get(SocketHTTPClient_T client, const char *url, SocketHTTPClient_Response *response)</div><div class="ttdoc">Perform synchronous GET request.</div></div>
+<div class="ttc" id="agroup__http_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00380">SocketHTTPClient.h:381</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md220"></a>
+<h1><a class="anchor" id="autotoc_md221"></a>
 Security Considerations</h1>
-<h2><a class="anchor" id="autotoc_md221"></a>
+<h2><a class="anchor" id="autotoc_md222"></a>
 Credential Handling</h2>
 <p>Credentials are cleared from memory after use:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Library uses SocketCrypto_secure_clear() internally */</span></div>
 <div class="line"><span class="comment">/* Credentials are never logged */</span></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md222"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md223"></a>
 DNS Privacy</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -547,51 +547,51 @@ DNS Privacy</h2>
 <td class="markdownTableBodyNone">HTTP CONNECT   </td><td class="markdownTableBodyNone">Yes   </td><td class="markdownTableBodyNone">No   </td></tr>
 </table>
 <p>Use SOCKS5H or SOCKS4a when DNS queries should not leak locally.</p>
-<h2><a class="anchor" id="autotoc_md223"></a>
+<h2><a class="anchor" id="autotoc_md224"></a>
 Response Validation</h2>
 <p>All proxy responses are strictly validated:</p><ul>
 <li>HTTP response parsing uses strict mode</li>
 <li>SOCKS responses are bounds-checked</li>
-<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> violations raise errors</li>
+<li>Protocol violations raise errors</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md225"></a>
+<h1><a class="anchor" id="autotoc_md226"></a>
 Error Handling</h1>
-<div class="fragment"><div class="line"><a class="code hl_define" href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
-<div class="line">    <a class="code hl_typedef" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, target, port);</div>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_typedef" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> sock = <a class="code hl_function" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect</a>(&amp;proxy, target, port);</div>
 <div class="line">}</div>
-<div class="line"><a class="code hl_define" href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="SocketProxy_8h.html#a8c1385083c8f3a50e20e1ce11faec7b1">SocketProxy_Failed</a>) {</div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__core__io.html#ga8c1385083c8f3a50e20e1ce11faec7b1">SocketProxy_Failed</a>) {</div>
 <div class="line">    <span class="comment">/* Proxy operation failed */</span></div>
 <div class="line">}</div>
-<div class="line"><a class="code hl_define" href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>) {</div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>) {</div>
 <div class="line">    <span class="comment">/* Socket error */</span></div>
 <div class="line">}</div>
-<div class="line"><a class="code hl_define" href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="aExcept_8h_html_ab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00118">Except.h:118</a></div></div>
-<div class="ttc" id="aExcept_8h_html_ad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00103">Except.h:103</a></div></div>
-<div class="ttc" id="aExcept_8h_html_ae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00139">Except.h:139</a></div></div>
-<div class="ttc" id="aSocketProxy_8h_html_a8c1385083c8f3a50e20e1ce11faec7b1"><div class="ttname"><a href="SocketProxy_8h.html#a8c1385083c8f3a50e20e1ce11faec7b1">SocketProxy_Failed</a></div><div class="ttdeci">const Except_T SocketProxy_Failed</div></div>
-<div class="ttc" id="aSocket_8h_html_a225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div></div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__core__io_html_ga225f4a8fd657fd52a05146c6fc4f58b0"><div class="ttname"><a href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></div><div class="ttdeci">const Except_T Socket_Failed</div><div class="ttdoc">General socket operation failure exception.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga8c1385083c8f3a50e20e1ce11faec7b1"><div class="ttname"><a href="group__core__io.html#ga8c1385083c8f3a50e20e1ce11faec7b1">SocketProxy_Failed</a></div><div class="ttdeci">const Except_T SocketProxy_Failed</div><div class="ttdoc">Exception raised on general proxy operation failures.</div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00278">Except.h:278</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00237">Except.h:237</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00374">Except.h:374</a></div></div>
 </div><!-- fragment --><p>For async operations, check result codes:</p>
-<div class="fragment"><div class="line"><a class="code hl_enumeration" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="SocketProxy_8h.html#af191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn);</div>
+<div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> result = <a class="code hl_function" href="group__core__io.html#gaf191ce0cae571b057d5ea278392bdf24">SocketProxy_Conn_result</a>(conn);</div>
 <div class="line"><span class="keywordflow">switch</span> (result) {</div>
-<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>:</div>
+<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>:</div>
 <div class="line">    <span class="comment">/* Success */</span></div>
 <div class="line">    <span class="keywordflow">break</span>;</div>
-<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a>:</div>
+<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a>:</div>
 <div class="line">    <span class="comment">/* Need to add credentials */</span></div>
 <div class="line">    <span class="keywordflow">break</span>;</div>
-<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>:</div>
+<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>:</div>
 <div class="line">    <span class="comment">/* Wrong credentials */</span></div>
 <div class="line">    <span class="keywordflow">break</span>;</div>
-<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="SocketProxy_8h.html#ae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a>:</div>
+<div class="line"><span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea9519d7d7a824bbb8527737bb565a8d26">PROXY_ERROR_FORBIDDEN</a>:</div>
 <div class="line">    <span class="comment">/* Proxy policy blocks target */</span></div>
 <div class="line">    <span class="keywordflow">break</span>;</div>
 <div class="line"><span class="keywordflow">default</span>:</div>
-<div class="line">    printf(<span class="stringliteral">&quot;Error: %s\n&quot;</span>, <a class="code hl_function" href="SocketProxy_8h.html#a93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn));</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Error: %s\n&quot;</span>, <a class="code hl_function" href="group__core__io.html#ga93a495a98a7efa7ecc9d42ce838d4a3e">SocketProxy_Conn_error</a>(conn));</div>
 <div class="line">}</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md227"></a>
+<h1><a class="anchor" id="autotoc_md228"></a>
 Connection State Machine</h1>
 <div class="fragment"><div class="line">IDLE ─────► CONNECTING_PROXY ─────► TLS_TO_PROXY (HTTPS only)</div>
 <div class="line">                  │                        │</div>
@@ -609,7 +609,7 @@ Connection State Machine</h1>
 <div class="line">    Any state ────► FAILED</div>
 <div class="line">    Any state ────► CANCELLED</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md229"></a>
+<h1><a class="anchor" id="autotoc_md230"></a>
 Best Practices</h1>
 <ol type="1">
 <li><b>Use SOCKS5H</b> for privacy-sensitive applications</li>
@@ -619,15 +619,15 @@ Best Practices</h1>
 <li><b>Consider proxy chains</b> - Connect through multiple proxies</li>
 </ol>
 <hr  />
-<h1><a class="anchor" id="autotoc_md231"></a>
+<h1><a class="anchor" id="autotoc_md232"></a>
 Thread Safety</h1>
 <ul>
-<li><code><a class="el" href="SocketProxy_8h.html#aad72c8e58d88ee4bbc975c9163266ef0">SocketProxy_connect()</a></code> is thread-safe (creates internal resources)</li>
+<li><code><a class="el" href="group__core__io.html#gaad72c8e58d88ee4bbc975c9163266ef0" title="Establish synchronous connection to target via proxy tunnel.">SocketProxy_connect()</a></code> is thread-safe (creates internal resources)</li>
 <li><code>SocketProxy_Conn_T</code> instances are NOT thread-safe</li>
 <li>URL parser with <code>arena=NULL</code> uses thread-local buffer</li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md233"></a>
+<h1><a class="anchor" id="autotoc_md234"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="http_guide.html">HTTP Guide</a> - HTTP client proxy integration</li>

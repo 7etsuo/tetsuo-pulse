@@ -116,9 +116,12 @@ $(document).ready(function(){initNavTree('SocketAsync_8h.html',''); initResizabl
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketAsync.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketAsync.h File Reference<div class="ingroups"><a class="el" href="group__async__io.html">Async I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Asynchronous I/O operations using platform-optimized mechanisms.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -133,65 +136,67 @@ $(document).ready(function(){initNavTree('SocketAsync_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque Happy Eyeballs context handle.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:a733615fa159421d6c73d01f6bb34bac8" id="r_a733615fa159421d6c73d01f6bb34bac8"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td></tr>
-<tr class="separator:a733615fa159421d6c73d01f6bb34bac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6644a0c3153b65fa217ecbc45b5b8f9" id="r_ad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a>) (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, int err, void *user_data)</td></tr>
-<tr class="separator:ad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga733615fa159421d6c73d01f6bb34bac8" id="r_ga733615fa159421d6c73d01f6bb34bac8"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td></tr>
+<tr class="memdesc:ga733615fa159421d6c73d01f6bb34bac8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type representing the asynchronous I/O context.  <br /></td></tr>
+<tr class="separator:ga733615fa159421d6c73d01f6bb34bac8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad6644a0c3153b65fa217ecbc45b5b8f9" id="r_gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a>) (<a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, int err, void *user_data)</td></tr>
+<tr class="memdesc:gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion callback type for asynchronous I/O operations.  <br /></td></tr>
+<tr class="separator:gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ae66259c675b6f9658c95d34e1fbfefdf" id="r_ae66259c675b6f9658c95d34e1fbfefdf"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> { <br />
-&#160;&#160;<a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a> = 0
+<tr class="memitem:gae66259c675b6f9658c95d34e1fbfefdf" id="r_gae66259c675b6f9658c95d34e1fbfefdf"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> { <br />
+&#160;&#160;<a class="el" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a> = 1 &lt;&lt; 0
+&#160;&#160;<a class="el" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a> = 1 &lt;&lt; 0
 , <br />
-&#160;&#160;<a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8">ASYNC_FLAG_URGENT</a> = 1 &lt;&lt; 1
+&#160;&#160;<a class="el" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8">ASYNC_FLAG_URGENT</a> = 1 &lt;&lt; 1
 <br />
  }</td></tr>
-<tr class="separator:ae66259c675b6f9658c95d34e1fbfefdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:gae66259c675b6f9658c95d34e1fbfefdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of flags controlling asynchronous I/O operation options.  <a href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">More...</a><br /></td></tr>
+<tr class="separator:gae66259c675b6f9658c95d34e1fbfefdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a1c4916e173cffa9153c983a4fd0d0d56" id="r_a1c4916e173cffa9153c983a4fd0d0d56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="separator:a1c4916e173cffa9153c983a4fd0d0d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d3a7b456b962c6abf4dfd91859492e0" id="r_a0d3a7b456b962c6abf4dfd91859492e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *async)</td></tr>
-<tr class="separator:a0d3a7b456b962c6abf4dfd91859492e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae0ecf4f023555d16b855d39841521f2b" id="r_ae0ecf4f023555d16b855d39841521f2b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#ae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len, <a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
-<tr class="separator:ae0ecf4f023555d16b855d39841521f2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46adb5a1db31901afa5d1d6514e41b64" id="r_a46adb5a1db31901afa5d1d6514e41b64"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len, <a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
-<tr class="separator:a46adb5a1db31901afa5d1d6514e41b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a275aefb76cdeb48b9b9330a777a2bb8c" id="r_a275aefb76cdeb48b9b9330a777a2bb8c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, unsigned request_id)</td></tr>
-<tr class="separator:a275aefb76cdeb48b9b9330a777a2bb8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1cc05d5d1dd032943b57a03da3061da7" id="r_a1cc05d5d1dd032943b57a03da3061da7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, int timeout_ms)</td></tr>
-<tr class="separator:a1cc05d5d1dd032943b57a03da3061da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f304bcb93351c8555f9afa74fa9e665" id="r_a0f304bcb93351c8555f9afa74fa9e665"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a> (const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async)</td></tr>
-<tr class="separator:a0f304bcb93351c8555f9afa74fa9e665"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afae22c23e82d55f6fa3eaf74c0c37f5d" id="r_afae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#afae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a> (const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async)</td></tr>
-<tr class="separator:afae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1c4916e173cffa9153c983a4fd0d0d56" id="r_ga1c4916e173cffa9153c983a4fd0d0d56"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga1c4916e173cffa9153c983a4fd0d0d56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new standalone asynchronous I/O context.  <br /></td></tr>
+<tr class="separator:ga1c4916e173cffa9153c983a4fd0d0d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d3a7b456b962c6abf4dfd91859492e0" id="r_ga0d3a7b456b962c6abf4dfd91859492e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *async)</td></tr>
+<tr class="memdesc:ga0d3a7b456b962c6abf4dfd91859492e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release resources associated with an async I/O context.  <br /></td></tr>
+<tr class="separator:ga0d3a7b456b962c6abf4dfd91859492e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae0ecf4f023555d16b855d39841521f2b" id="r_gae0ecf4f023555d16b855d39841521f2b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len, <a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
+<tr class="memdesc:gae0ecf4f023555d16b855d39841521f2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit asynchronous send operation.  <br /></td></tr>
+<tr class="separator:gae0ecf4f023555d16b855d39841521f2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga46adb5a1db31901afa5d1d6514e41b64" id="r_ga46adb5a1db31901afa5d1d6514e41b64"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len, <a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
+<tr class="memdesc:ga46adb5a1db31901afa5d1d6514e41b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit asynchronous receive operation.  <br /></td></tr>
+<tr class="separator:ga46adb5a1db31901afa5d1d6514e41b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga275aefb76cdeb48b9b9330a777a2bb8c" id="r_ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, unsigned request_id)</td></tr>
+<tr class="memdesc:ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel pending async operation.  <br /></td></tr>
+<tr class="separator:ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1cc05d5d1dd032943b57a03da3061da7" id="r_ga1cc05d5d1dd032943b57a03da3061da7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a> (<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async, int timeout_ms)</td></tr>
+<tr class="memdesc:ga1cc05d5d1dd032943b57a03da3061da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process pending async completions.  <br /></td></tr>
+<tr class="separator:ga1cc05d5d1dd032943b57a03da3061da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0f304bcb93351c8555f9afa74fa9e665" id="r_ga0f304bcb93351c8555f9afa74fa9e665"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a> (const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async)</td></tr>
+<tr class="memdesc:ga0f304bcb93351c8555f9afa74fa9e665"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if async I/O is available on this platform.  <br /></td></tr>
+<tr class="separator:ga0f304bcb93351c8555f9afa74fa9e665"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafae22c23e82d55f6fa3eaf74c0c37f5d" id="r_gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a> (const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> async)</td></tr>
+<tr class="memdesc:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get name of async backend in use.  <br /></td></tr>
+<tr class="separator:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a55b9b96eff9c17f45ff5bfb37f431075" id="r_a55b9b96eff9c17f45ff5bfb37f431075"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketAsync_8h.html#a55b9b96eff9c17f45ff5bfb37f431075">SocketAsync_Failed</a></td></tr>
-<tr class="separator:a55b9b96eff9c17f45ff5bfb37f431075"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga55b9b96eff9c17f45ff5bfb37f431075" id="r_ga55b9b96eff9c17f45ff5bfb37f431075"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga55b9b96eff9c17f45ff5bfb37f431075">SocketAsync_Failed</a></td></tr>
+<tr class="memdesc:ga55b9b96eff9c17f45ff5bfb37f431075"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on asynchronous I/O operation failures.  <br /></td></tr>
+<tr class="separator:ga55b9b96eff9c17f45ff5bfb37f431075"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketAsync - Asynchronous I/O Operations</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Asynchronous I/O operations using platform-optimized mechanisms. </p>
 <p>Provides non-blocking I/O operations using platform-optimized async mechanisms:</p><ul>
 <li>Linux: io_uring (kernel 5.1+)</li>
 <li>macOS/BSD: kqueue AIO</li>
@@ -203,443 +208,19 @@ Variables</h2></td></tr>
 <li>Integration with SocketPoll for event-driven completion</li>
 <li>Thread-safe operation</li>
 </ul>
-<p>PLATFORM REQUIREMENTS:</p><ul>
+<p>Platform Requirements:</p><ul>
 <li>Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if unavailable)</li>
 <li>macOS/BSD: kqueue with AIO support</li>
 <li>All platforms: Non-blocking sockets (automatically handled)</li>
 </ul>
-<p>Usage example: SocketPoll_T poll = SocketPoll_new(4096); SocketAsync_T async = SocketPoll_get_async(poll);</p>
-<p>void send_callback(Socket_T sock, ssize_t bytes, int err, void *data) { if (err != 0) { // Handle error return; } // Process completion }</p>
-<p>unsigned req_id = SocketAsync_send(sock, buf, len, send_callback,
-user_data, 0); </p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0" title="Get async I/O context associated with poll instance.">SocketPoll_get_async()</a> for obtaining async interface. </dd>
+<dd>
+<a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b" title="Submit asynchronous send operation.">SocketAsync_send()</a> for asynchronous send operations. </dd>
+<dd>
+<a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64" title="Submit asynchronous receive operation.">SocketAsync_recv()</a> for asynchronous receive operations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l00044">44</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="ad6644a0c3153b65fa217ecbc45b5b8f9" name="ad6644a0c3153b65fa217ecbc45b5b8f9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad6644a0c3153b65fa217ecbc45b5b8f9">&#9670;&#160;</a></span>SocketAsync_Callback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef void(* SocketAsync_Callback) (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, ssize_t bytes, int err, void *user_data)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketAsync_Callback - Callback function for async operation completion @socket: Socket that completed the operation @bytes: Number of bytes transferred (negative on error) @err: Error code (0 on success, errno value on error) @user_data: User data passed to async function</p>
-<p>Returns: Nothing</p>
-<p>Note: bytes &lt; 0 indicates error, check err for details. For send operations: bytes is total bytes sent (may be partial) For recv operations: bytes is total bytes received (0 = EOF) Callback is invoked from <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a> context - keep it fast! Thread-safe: Yes - invoked from single-threaded poll context </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l00065">65</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
-
-</div>
-</div>
-<a id="a733615fa159421d6c73d01f6bb34bac8" name="a733615fa159421d6c73d01f6bb34bac8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a733615fa159421d6c73d01f6bb34bac8">&#9670;&#160;</a></span>SocketAsync_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>* <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l00045">45</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="ae66259c675b6f9658c95d34e1fbfefdf" name="ae66259c675b6f9658c95d34e1fbfefdf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae66259c675b6f9658c95d34e1fbfefdf">&#9670;&#160;</a></span>SocketAsync_Flags</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Async operation flags </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c" name="ae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c"></a>ASYNC_FLAG_NONE&#160;</td><td class="fielddoc"><p>No special flags </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d" name="ae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d"></a>ASYNC_FLAG_ZERO_COPY&#160;</td><td class="fielddoc"><p>Use zero-copy (sendfile/splice) if available </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8" name="ae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8"></a>ASYNC_FLAG_URGENT&#160;</td><td class="fielddoc"><p>High-priority operation (io_uring IOSQE_IO_LINK) </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l00071">71</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="afae22c23e82d55f6fa3eaf74c0c37f5d" name="afae22c23e82d55f6fa3eaf74c0c37f5d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afae22c23e82d55f6fa3eaf74c0c37f5d">&#9670;&#160;</a></span>SocketAsync_backend_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketAsync_backend_name </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_backend_name - Get name of async backend in use @async: Async context (read-only)</p>
-<p>Returns: String describing backend ("io_uring", "kqueue", "edge-triggered")</p>
-<p>Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a275aefb76cdeb48b9b9330a777a2bb8c" name="a275aefb76cdeb48b9b9330a777a2bb8c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a275aefb76cdeb48b9b9330a777a2bb8c">&#9670;&#160;</a></span>SocketAsync_cancel()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketAsync_cancel </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>request_id</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_cancel - Cancel pending async operation @async: Async context @request_id: Request ID returned from send/recv</p>
-<p>Returns: 0 on success, -1 if request not found or already completed</p>
-<p>Thread-safe: Yes</p>
-<p>Note: Cancellation is best-effort. Operation may complete before cancellation takes effect. </p>
-
-</div>
-</div>
-<a id="a0d3a7b456b962c6abf4dfd91859492e0" name="a0d3a7b456b962c6abf4dfd91859492e0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d3a7b456b962c6abf4dfd91859492e0">&#9670;&#160;</a></span>SocketAsync_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketAsync_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> *&#160;</td>
-          <td class="paramname"><em>async</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_free - Free an async I/O context @async: Pointer to async context (will be set to NULL) Thread-safe: Yes - frees resources </p>
-
-</div>
-</div>
-<a id="a0f304bcb93351c8555f9afa74fa9e665" name="a0f304bcb93351c8555f9afa74fa9e665"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f304bcb93351c8555f9afa74fa9e665">&#9670;&#160;</a></span>SocketAsync_is_available()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketAsync_is_available </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_is_available - Check if async I/O is available on this platform @async: Async context (read-only)</p>
-<p>Returns: Non-zero if async I/O is available, 0 if fallback mode</p>
-<p>Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a1c4916e173cffa9153c983a4fd0d0d56" name="a1c4916e173cffa9153c983a4fd0d0d56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c4916e173cffa9153c983a4fd0d0d56">&#9670;&#160;</a></span>SocketAsync_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> SocketAsync_new </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td>
-          <td class="paramname"><em>arena</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_new - Create a new async I/O context @arena: Arena for memory allocation Returns: New async context (never returns NULL) Raises: SocketAsync_Failed on initialization failure Thread-safe: Yes - returns new instance</p>
-<p>Creates an async context with platform-specific backend initialization. Falls back gracefully if async I/O is unavailable on this platform. </p>
-
-</div>
-</div>
-<a id="a1cc05d5d1dd032943b57a03da3061da7" name="a1cc05d5d1dd032943b57a03da3061da7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1cc05d5d1dd032943b57a03da3061da7">&#9670;&#160;</a></span>SocketAsync_process_completions()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketAsync_process_completions </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_ms</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_process_completions - Process pending async completions @async: Async context @timeout_ms: Timeout in milliseconds (0 = non-blocking)</p>
-<p>Returns: Number of completions processed</p>
-<p>Thread-safe: Yes - uses internal mutex</p>
-<p>Note: This is called automatically by <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a>. Applications typically don't need to call this directly. </p>
-
-</div>
-</div>
-<a id="a46adb5a1db31901afa5d1d6514e41b64" name="a46adb5a1db31901afa5d1d6514e41b64"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46adb5a1db31901afa5d1d6514e41b64">&#9670;&#160;</a></span>SocketAsync_recv()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned SocketAsync_recv </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a>&#160;</td>
-          <td class="paramname"><em>cb</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>user_data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a>&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_recv - Submit asynchronous receive operation @async: Async context (from SocketPoll_get_async) @socket: Socket to receive on (must be non-blocking) @buf: Buffer to receive into (must remain valid until callback invoked) @len: Maximum length to receive @cb: Callback to call on completion @user_data: User data passed to callback @flags: Operation flags (currently unused)</p>
-<p>Returns: Request ID (&gt; 0) on success, 0 on failure Raises: SocketAsync_Failed if submission fails</p>
-<p>Thread-safe: Yes</p>
-<p>Note: Callback receives bytes received (0 = EOF, &lt; 0 = error). Buffer must remain valid until callback is invoked. </p>
-
-</div>
-</div>
-<a id="ae0ecf4f023555d16b855d39841521f2b" name="ae0ecf4f023555d16b855d39841521f2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae0ecf4f023555d16b855d39841521f2b">&#9670;&#160;</a></span>SocketAsync_send()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">unsigned SocketAsync_send </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td>
-          <td class="paramname"><em>async</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketAsync_8h.html#ad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a>&#160;</td>
-          <td class="paramname"><em>cb</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>user_data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketAsync_8h.html#ae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a>&#160;</td>
-          <td class="paramname"><em>flags</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketAsync_send - Submit asynchronous send operation @async: Async context (from SocketPoll_get_async) @socket: Socket to send on (must be non-blocking) @buf: Data to send @len: Length of data to send @cb: Callback to call on completion @user_data: User data passed to callback @flags: Operation flags (ASYNC_FLAG_ZERO_COPY, etc.)</p>
-<p>Returns: Request ID (&gt; 0) on success, 0 on failure Raises: SocketAsync_Failed if submission fails</p>
-<p>Thread-safe: Yes - uses internal mutex for request tracking</p>
-<p>Note: Operation is submitted immediately. Completion will be delivered via callback when data is sent (or error occurs). Callback is invoked from <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a> context - keep it fast!</p>
-<p>Partial sends: If only part of data is sent, callback is called with partial byte count. Use SocketAsync_send_continue() to send remainder.</p>
-<p>Fallback mode: If async I/O is unavailable (<a class="el" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available()</a> == 0), the request is queued but not submitted to kernel. Application must complete the operation manually using regular <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send()</a>/Socket_recv() and then invoke the callback. Check <a class="el" href="SocketAsync_8h.html#a0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available()</a> to determine mode. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a55b9b96eff9c17f45ff5bfb37f431075" name="a55b9b96eff9c17f45ff5bfb37f431075"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55b9b96eff9c17f45ff5bfb37f431075">&#9670;&#160;</a></span>SocketAsync_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketAsync_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Async operation failure </p>
-
-</div>
-</div>
-</div><!-- contents -->
+<p class="definition">Definition in file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

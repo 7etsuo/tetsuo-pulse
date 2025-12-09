@@ -6,6 +6,7 @@ build-*/
 *.so
 *.dylib
 *.dll
+*.gch
 
 # Libraries
 libsocket.so

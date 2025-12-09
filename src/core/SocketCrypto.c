@@ -401,6 +401,7 @@ void
 SocketCrypto_sha1 (const void *input, size_t input_len,
                    unsigned char output[SOCKET_CRYPTO_SHA1_SIZE])
 {
+  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-1");
@@ -432,6 +433,7 @@ void
 SocketCrypto_sha256 (const void *input, size_t input_len,
                      unsigned char output[SOCKET_CRYPTO_SHA256_SIZE])
 {
+  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "SHA-256");
@@ -464,6 +466,7 @@ void
 SocketCrypto_md5 (const void *input, size_t input_len,
                   unsigned char output[SOCKET_CRYPTO_MD5_SIZE])
 {
+  (void) output;  /* Unused in stub implementation; suppress warning */
   assert (output);
 
   SOCKET_CRYPTO_CHECK_INPUT (input, input_len, "MD5");

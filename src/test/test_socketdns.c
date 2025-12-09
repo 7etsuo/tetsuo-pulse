@@ -1,8 +1,14 @@
 /**
- * test_socketdns.c - Comprehensive SocketDNS unit tests
+ * @file test_socketdns.c
+ * @ingroup dns
+ * @brief Comprehensive SocketDNS unit tests.
+ *
  * Industry-standard test coverage for SocketDNS async DNS module.
- * Tests async resolution, callbacks, cancellation, queue management, and
- * thread pool.
+ * Tests async resolution, callbacks, cancellation, queue management,
+ * thread pool, and synchronization primitives.
+ *
+ * @see SocketDNS.h for module API.
+ * @see SocketDNS-private.h for internal structures.
  */
 
 /* cppcheck-suppress-file constVariablePointer ; test result inspection */

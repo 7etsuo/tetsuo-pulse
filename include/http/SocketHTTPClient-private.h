@@ -1,10 +1,26 @@
 /**
- * SocketHTTPClient-private.h - HTTP Client Internal Definitions
+ * @file SocketHTTPClient-private.h
+ * @brief Internal HTTP client structures and connection pooling.
+ * @ingroup http
  *
- * Part of the Socket Library
+ * This header contains internal structures for the HTTP client implementation.
+ * NOT for public consumption - use SocketHTTPClient.h instead.
  *
- * Internal structures and helper functions for HTTP client implementation.
- * NOT part of public API - do not include from application code.
+ * Contains:
+ * - Connection pool management with per-host limits
+ * - HTTP/1.1 and HTTP/2 protocol state machines
+ * - Request/response lifecycle management
+ * - Cookie jar implementation
+ * - Rate limiting and retry logic
+ * - TLS integration and certificate validation
+ * - Asynchronous operation state tracking
+ *
+ * The client supports both synchronous and asynchronous operations with
+ * automatic protocol negotiation and connection reuse.
+ *
+ * @see SocketHTTPClient.h for public HTTP client API.
+ * @see SocketHTTPClient-config.h for configuration constants.
+ * @see SocketHTTP-private.h for core HTTP internal structures.
  */
 
 #ifndef SOCKETHTTPCLIENT_PRIVATE_INCLUDED
@@ -51,13 +67,17 @@
 #define HTTPCLIENT_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 
 /**
- * RAISE_HTTPCLIENT_ERROR - Raise exception with detailed error message
+ * @brief Raise HTTP client exception with detailed error message.
+ * @ingroup http
  *
  * Creates a thread-local copy of the exception with reason from
  * socket_error_buf. Thread-safe: prevents race conditions when
  * multiple threads raise same exception type.
  *
  * Requires: SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient) in .c file.
+ *
+ * @see SocketUtil.h for centralized error infrastructure.
+ * @see docs/ERROR_HANDLING.md for exception patterns.
  */
 #define RAISE_HTTPCLIENT_ERROR(e)                                             \
   SOCKET_RAISE_MODULE_ERROR (SocketHTTPClient, e)
@@ -68,11 +88,15 @@
  */
 
 /**
- * HTTP connection pool entry
+ * @brief HTTP connection pool entry for reusing connections to the same host:port.
+ * @ingroup http
  *
- * Manages a single connection that can be reused for requests to the
- * same host:port. Supports both HTTP/1.1 (one request at a time) and
- * HTTP/2 (multiplexed streams).
+ * Manages a single connection supporting both HTTP/1.1 (sequential requests)
+ * and HTTP/2 (multiplexed streams) protocols.
+ * Includes protocol-specific state, buffers, and lifecycle tracking.
+ *
+ * @see HTTPPool for overall pool structure and management.
+ * @see SocketHTTPClient.c for usage in client operations.
  */
 typedef struct HTTPPoolEntry
 {
@@ -117,10 +141,15 @@ typedef struct HTTPPoolEntry
  */
 
 /**
- * HTTP connection pool
+ * @brief HTTP connection pool managing reusable connections by host:port key.
+ * @ingroup http
  *
- * Manages connections keyed by host:port with per-host limits
- * and HTTP/2 multiplexing support.
+ * Hash-based storage with per-host and total connection limits.
+ * Supports idle timeout cleanup and statistics tracking.
+ * Thread-safe with mutex protection.
+ *
+ * @see httpclient_pool_new() for creation.
+ * @see SocketHTTPClient-pool.c for implementation.
  */
 typedef struct HTTPPool
 {
@@ -150,7 +179,16 @@ typedef struct HTTPPool
  */
 
 /**
- * HTTP client main structure
+ * @brief Main HTTP client instance managing configuration, pool, auth, and state.
+ * @ingroup http
+ *
+ * Internal structure holding connection pool, default auth, cookie jar,
+ * TLS context (if SOCKET_HAS_TLS), and last error state.
+ * Protected by mutex for thread-safe shared access.
+ *
+ * @see SocketHTTPClient_new() in SocketHTTPClient.h for public creation.
+ * @see SocketHTTPClient_free() for cleanup.
+ * @see docs/HTTP-REFACTOR.md for design rationale.
  */
 struct SocketHTTPClient
 {
@@ -186,7 +224,15 @@ struct SocketHTTPClient
  */
 
 /**
- * HTTP request builder
+ * @brief Per-request builder and state for custom HTTP requests.
+ * @ingroup http
+ *
+ * Holds method, URI, headers, body data or stream callback, timeouts,
+ * and authentication overrides for a single request.
+ * Arena-allocated for temporary use.
+ *
+ * @see SocketHTTPClient_Request_new() for creation.
+ * @see SocketHTTPClient_Request_execute() to send the request.
  */
 struct SocketHTTPClient_Request
 {
@@ -217,7 +263,10 @@ struct SocketHTTPClient_Request
  */
 
 /**
- * Async request state
+ * @brief States for asynchronous HTTP requests.
+ * @ingroup http
+ *
+ * Tracks lifecycle from idle to complete, failed, or cancelled.
  */
 typedef enum
 {
@@ -232,7 +281,15 @@ typedef enum
 } HTTPAsyncState;
 
 /**
- * Async HTTP request
+ * @brief Asynchronous HTTP request state and callback handler.
+ * @ingroup http
+ *
+ * Manages async request lifecycle, connection, response accumulation,
+ * and callback invocation upon completion or error.
+ * Linked for pending queue in client.
+ *
+ * @see SocketHTTPClient_get_async() for starting async requests.
+ * @see SocketHTTPClient_Callback for response handling.
  */
 struct SocketHTTPClient_AsyncRequest
 {
@@ -261,7 +318,13 @@ struct SocketHTTPClient_AsyncRequest
  */
 
 /**
- * Cookie entry in jar
+ * @brief Individual cookie storage in the client cookie jar.
+ * @ingroup http
+ *
+ * Stores cookie data, creation time for eviction, and hash chain link.
+ *
+ * @see SocketHTTPClient_CookieJar_T for jar structure.
+ * @see SocketHTTPClient_Cookie for cookie fields.
  */
 typedef struct CookieEntry
 {
@@ -271,7 +334,15 @@ typedef struct CookieEntry
 } CookieEntry;
 
 /**
- * Cookie jar structure
+ * @brief Cookie jar for storing and managing HTTP cookies per domain.
+ * @ingroup http
+ *
+ * Hash-based storage with eviction by age, max size limit, and thread safety.
+ * Supports SameSite policy enforcement and automatic Set-Cookie parsing.
+ *
+ * @see SocketHTTPClient_set_cookie_jar() to associate with client.
+ * @see SocketHTTPClient_CookieJar_new() for creation.
+ * @see docs/SECURITY.md "Cookies" section for security notes.
  */
 struct SocketHTTPClient_CookieJar
 {
@@ -290,8 +361,39 @@ struct SocketHTTPClient_CookieJar
  */
 
 /* Pool operations */
+/**
+ * @brief Create and initialize a new HTTP connection pool.
+ * @ingroup http
+ *
+ * Allocates the pool structure and hash table from the provided arena.
+ * Hash size computed from config max connections with security bounds.
+ *
+ * @param arena Memory arena for allocating pool structures and hash table.
+ * @param config HTTP client configuration for sizing (max_total_connections, etc.).
+ *
+ * @return Pointer to new HTTPPool, or raises exception on failure.
+ * @throws SocketHTTPClient_Failed if arena allocation fails or config invalid.
+ * @threadsafe No - single-threaded initialization expected.
+ *
+ * @see httpclient_pool_free() to dispose the pool.
+ * @see SocketSecurity_check_multiply() for size validation.
+ */
 extern HTTPPool *httpclient_pool_new (Arena_T arena,
                                       const SocketHTTPClient_Config *config);
+/**
+ * @brief Dispose of HTTP connection pool and all associated resources.
+ * @ingroup http
+ *
+ * Closes all connections, frees entries, hash table, and clears statistics.
+ * Does not free the arena; caller responsible for Arena_clear/dispose if needed.
+ *
+ * @param pool Pointer to pool (set to NULL on success).
+ * @throws None - failures logged but not raised.
+ * @threadsafe Conditional - hold pool mutex if concurrent access.
+ *
+ * @see httpclient_pool_new() for creation.
+ * @see Arena_dispose() if pool owns the arena.
+ */
 extern void httpclient_pool_free (HTTPPool *pool);
 extern HTTPPoolEntry *httpclient_pool_get (HTTPPool *pool, const char *host,
                                            int port, int is_secure);
@@ -358,8 +460,9 @@ extern int httpclient_auth_digest_response (
     size_t output_size);
 
 /**
- * httpclient_auth_digest_challenge - Handle Digest WWW-Authenticate challenge
- * @www_authenticate: WWW-Authenticate header value
+ * @brief Handle Digest authentication challenge from WWW-Authenticate header and generate Authorization response.
+ * @param www_authenticate WWW-Authenticate header value from server 401 response.
+ * @ingroup http
  * @username: User's username
  * @password: User's password
  * @method: HTTP method (GET, POST, etc.)
@@ -380,17 +483,21 @@ extern int httpclient_auth_digest_challenge (
     size_t output_size);
 
 /**
- * httpclient_auth_bearer_header - Generate Bearer token Authorization header
- * @token: Bearer token string
- * @output: Output buffer for "Bearer <token>"
- * @output_size: Size of output buffer
+ * @brief Generate Authorization header for Bearer token authentication (RFC 6750).
+ * @param token The Bearer token string (copied as-is, no validation).
+ * @param output Buffer to receive the formatted "Bearer <token>" header value.
+ * @param output_size Size of the output buffer (must be >= strlen(token) + 7).
  *
- * Returns: 0 on success, -1 if buffer too small
- * Thread-safe: Yes
+ * @return 0 on success, -1 if output buffer is too small or token is NULL.
+ * @threadsafe Yes - stateless function.
+ * @ingroup http
  *
- * Format per RFC 6750: Authorization: Bearer <token>
- * Token is copied as-is, no validation or encoding.
- * Token length limited by output_size - 7.
+ * No encoding, validation, or security checks are performed on the token.
+ * Suitable for OAuth 2.0 Bearer tokens in HTTP requests.
+ *
+ * @see SocketHTTP_Headers_set() to add the header to a request.
+ * @see docs/SECURITY.md for authentication security considerations.
+ * @see https://datatracker.ietf.org/doc/html/rfc6750 for specification.
  */
 
 extern int httpclient_auth_bearer_header (const char *token, char *output,
@@ -419,16 +526,20 @@ extern int httpclient_parse_set_cookie (const char *value, size_t len,
                                         Arena_T arena);
 
 /**
- * httpclient_host_hash - Hash function for host:port connection pool key
- * @host: Hostname (case-insensitive hashing)
- * @port: Port number
- * @table_size: Hash table size
+ * @brief Compute hash value for host:port pair used as connection pool key.
+ * @param host Hostname string (case-insensitive hashing via DJB2).
+ * @param port Target port number.
+ * @param table_size Size of the hash table (result modulo this value).
+ * @ingroup http
  *
- * Returns: Hash bucket index
+ * Uses DJB2 case-insensitive hash on hostname, XOR with port hash, final mod.
+ * Ensures even distribution for collision-resistant pool lookup.
  *
- * Uses DJB2 algorithm with case-insensitive hostname hashing.
- * Combines hostname and port into a single hash for pool lookup.
- * Uses SOCKET_UTIL_DJB2_SEED from SocketUtil.h for consistency.
+ * @return Unsigned integer hash index (0 to table_size-1).
+ *
+ * @see socket_util_hash_djb2_ci_len() for hostname hashing.
+ * @see socket_util_hash_uint() for port hashing.
+ * @see docs/METRICS.md for performance considerations.
  */
 static inline unsigned
 httpclient_host_hash (const char *host, int port, size_t table_size)

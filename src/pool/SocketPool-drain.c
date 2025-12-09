@@ -72,11 +72,14 @@
  */
 
 /**
- * load_pool_state - Atomically load pool state with acquire semantics
- * @pool: Pool instance
+ * @brief Atomically load pool state with acquire semantics.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return Current SocketPool_State.
+ * @threadsafe Yes - C11 atomic read.
  *
- * Returns: Current SocketPool_State
- * Thread-safe: Yes - C11 atomic read
+ * @see SocketPool_state() for public interface.
+ * @see store_pool_state() for storing state.
  */
 static inline SocketPool_State
 load_pool_state (const T pool)
@@ -86,15 +89,18 @@ load_pool_state (const T pool)
 }
 
 /**
- * safe_add_ms - Overflow-safe millisecond addition with saturation
- * @base: Base time in milliseconds
- * @delta: Delta to add in milliseconds
- *
- * Returns: base + delta, or INT64_MAX if overflow would occur
- * Thread-safe: Yes - pure function
+ * @brief Overflow-safe millisecond addition with saturation.
+ * @ingroup connection_mgmt
+ * @param base Base time in milliseconds.
+ * @param delta Delta to add in milliseconds.
+ * @return base + delta, or INT64_MAX if overflow would occur.
+ * @threadsafe Yes - pure function.
  *
  * Used for deadline calculations where overflow must saturate to
  * INT64_MAX rather than wrap around.
+ *
+ * @see SocketPool_drain() for usage in drain timeouts.
+ * @see SocketPool_drain_remaining_ms() for remaining time calculation.
  */
 static inline int64_t
 safe_add_ms (int64_t base, int64_t delta)
@@ -105,10 +111,15 @@ safe_add_ms (int64_t base, int64_t delta)
 }
 
 /**
- * shutdown_socket_gracefully - Shutdown socket ignoring errors
- * @sock: Socket to shutdown
+ * @brief Shutdown socket gracefully, ignoring errors.
+ * @ingroup connection_mgmt
+ * @param sock Socket to shutdown.
  *
  * Helper to avoid TRY/EXCEPT in the loop which triggers clobbered warning.
+ * Used during drain operations to close connections.
+ *
+ * @see SocketPool_drain() for usage context.
+ * @see SocketPool_drain_force() for forced shutdown.
  */
 static void
 shutdown_socket_gracefully (Socket_T sock)

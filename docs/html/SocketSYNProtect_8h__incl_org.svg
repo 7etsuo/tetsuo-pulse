@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="SYN flood protection using IP reputation and adaptive rate limiting.">
 <polygon fill="#999999" stroke="#666666" points="699.5,-184 591.5,-184 591.5,-165 699.5,-165 699.5,-184"/>
 <text text-anchor="middle" x="645.5" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketSYNProtect.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="681.5,-129 609.5,-129 609.5,-110 681.5,-110 681.5,-129"/>
 <text text-anchor="middle" x="645.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="748,-74 671,-74 671,-55 748,-55 748,-74"/>
 <text text-anchor="middle" x="709.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
 <polygon fill="white" stroke="#666666" points="415.5,-129 309.5,-129 309.5,-110 415.5,-110 415.5,-129"/>
 <text text-anchor="middle" x="362.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

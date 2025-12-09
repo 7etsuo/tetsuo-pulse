@@ -44,7 +44,8 @@
  */
 
 /**
- * SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir
+ * @brief SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir
+ * @ingroup foundation
  *
  * Higher values give more accurate percentiles but use more memory.
  * Default: 1024 samples per histogram (~8KB per histogram)
@@ -54,21 +55,24 @@
 #endif
 
 /**
- * SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size
+ * @brief SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size
+ * @ingroup foundation
  */
 #ifndef SOCKET_METRICS_EXPORT_BUFFER_SIZE
 #define SOCKET_METRICS_EXPORT_BUFFER_SIZE 65536
 #endif
 
 /**
- * SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels
+ * @brief SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels
+ * @ingroup foundation
  */
 #ifndef SOCKET_METRICS_MAX_LABEL_LEN
 #define SOCKET_METRICS_MAX_LABEL_LEN 64
 #endif
 
 /**
- * SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text
+ * @brief SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text
+ * @ingroup foundation
  */
 #ifndef SOCKET_METRICS_MAX_HELP_LEN
 #define SOCKET_METRICS_MAX_HELP_LEN 256
@@ -80,7 +84,8 @@
  */
 
 /**
- * SocketMetricType - Type of metric
+ * @brief SocketMetricType - Type of metric
+ * @ingroup foundation
  */
 typedef enum SocketMetricType
 {
@@ -90,7 +95,8 @@ typedef enum SocketMetricType
 } SocketMetricType;
 
 /**
- * SocketMetricCategory - Category grouping for metrics
+ * @brief SocketMetricCategory - Category grouping for metrics
+ * @ingroup foundation
  */
 typedef enum SocketMetricCategory
 {
@@ -110,7 +116,8 @@ typedef enum SocketMetricCategory
  */
 
 /**
- * SocketCounterMetric - Counter metric identifiers
+ * @brief SocketCounterMetric - Counter metric identifiers
+ * @ingroup foundation
  *
  * Counters are monotonically increasing values that track totals.
  * Use SocketMetrics_counter_inc() to increment.
@@ -219,7 +226,8 @@ typedef enum SocketCounterMetric
  */
 
 /**
- * SocketGaugeMetric - Gauge metric identifiers
+ * @brief SocketGaugeMetric - Gauge metric identifiers
+ * @ingroup foundation
  *
  * Gauges represent current values that can increase or decrease.
  * Use SocketMetrics_gauge_set(), _inc(), _dec() to modify.
@@ -271,7 +279,8 @@ typedef enum SocketGaugeMetric
  */
 
 /**
- * SocketHistogramMetric - Histogram metric identifiers
+ * @brief SocketHistogramMetric - Histogram metric identifiers
+ * @ingroup foundation
  *
  * Histograms track value distributions and support percentile queries.
  * Use SocketMetrics_histogram_observe() to record observations.
@@ -313,9 +322,11 @@ typedef enum SocketHistogramMetric
  */
 
 /**
- * SocketMetrics_HistogramSnapshot - Point-in-time histogram snapshot
- *
- * Contains pre-calculated percentiles and statistics.
+ * @brief Point-in-time snapshot of histogram statistics with percentiles.
+ * @ingroup foundation
+ * Contains count, sum, min/max, mean, and common percentiles (p50, p95, etc.).
+ * @see SocketMetrics_histogram_snapshot() to populate this structure.
+ * @see SocketMetrics_Snapshot::histograms for integration in full snapshot.
  */
 typedef struct SocketMetrics_HistogramSnapshot
 {
@@ -333,9 +344,13 @@ typedef struct SocketMetrics_HistogramSnapshot
 } SocketMetrics_HistogramSnapshot;
 
 /**
- * SocketMetrics_Snapshot - Complete metrics snapshot
+ * @brief Complete point-in-time snapshot of all metrics for export and analysis.
+ * @ingroup foundation
  *
- * Point-in-time snapshot of all metrics for consistent export.
+ * Aggregates counters, gauges, and histogram snapshots across all categories.
+ * Thread-safe capture ensures consistency for observability tools.
+ * @see SocketMetrics_get() to populate.
+ * @see SocketMetrics_export_prometheus() for Prometheus format export.
  */
 typedef struct SocketMetrics_Snapshot
 {
@@ -351,22 +366,22 @@ typedef struct SocketMetrics_Snapshot
  */
 
 /**
- * SocketMetrics_init - Initialize metrics subsystem
- *
- * Returns: 0 on success, -1 on failure
- * Thread-safe: Yes (idempotent, can be called multiple times)
- *
- * Must be called before using any metrics functions.
- * Called automatically by library initialization.
+ * @brief Initialize the metrics subsystem.
+ * @ingroup foundation
+ * @return 0 on success, -1 on failure.
+ * @threadsafe Yes - idempotent, can be called multiple times.
+ * @note Automatically called by library initialization; explicit call optional for custom setups.
+ * @see SocketMetrics_shutdown() for resource cleanup.
+ * @see SocketMetrics_get() to capture metrics snapshots.
  */
 extern int SocketMetrics_init (void);
 
 /**
- * SocketMetrics_shutdown - Shutdown metrics subsystem
- *
- * Thread-safe: Yes (idempotent)
- *
- * Releases resources. Safe to call multiple times.
+ * @brief Shut down the metrics subsystem, releasing all resources.
+ * @ingroup foundation
+ * @threadsafe Yes - idempotent, safe to call multiple times even if not initialized.
+ * @see SocketMetrics_init() for subsystem initialization.
+ * @see SocketMetrics_reset() if reset needed before shutdown.
  */
 extern void SocketMetrics_shutdown (void);
 
@@ -376,29 +391,34 @@ extern void SocketMetrics_shutdown (void);
  */
 
 /**
- * SocketMetrics_counter_inc - Increment counter by 1
- * @metric: Counter metric to increment
- *
- * Thread-safe: Yes (atomic operation)
+ * @brief Increment a counter metric by 1 atomically.
+ * @ingroup foundation
+ * @param metric The counter metric identifier to increment.
+ * @threadsafe Yes - uses atomic operations for thread safety.
+ * @see SocketMetrics_counter_add() to add arbitrary values.
+ * @see SocketMetrics_counter_get() to read the current value.
+ * @see SocketCounterMetric for list of counters.
  */
 extern void SocketMetrics_counter_inc (SocketCounterMetric metric);
 
 /**
- * SocketMetrics_counter_add - Add value to counter
- * @metric: Counter metric to modify
- * @value: Value to add (must be positive)
+ * @brief Add value to counter
+ * @ingroup foundation
+ * @param metric Counter metric to modify
+ * @param value Value to add (must be positive)
  *
- * Thread-safe: Yes (atomic operation)
+ * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_counter_add (SocketCounterMetric metric,
                                        uint64_t value);
 
 /**
- * SocketMetrics_counter_get - Get current counter value
- * @metric: Counter metric to read
+ * @brief Get current counter value
+ * @ingroup foundation
+ * @param metric Counter metric to read
  *
- * Returns: Current counter value
- * Thread-safe: Yes (atomic read)
+ * @return Current counter value
+ * @threadsafe Yes (atomic read)
  */
 extern uint64_t SocketMetrics_counter_get (SocketCounterMetric metric);
 
@@ -408,45 +428,50 @@ extern uint64_t SocketMetrics_counter_get (SocketCounterMetric metric);
  */
 
 /**
- * SocketMetrics_gauge_set - Set gauge to specific value
- * @metric: Gauge metric to set
- * @value: New value
+ * @brief Set gauge to specific value
+ * @ingroup foundation
+ * @param metric Gauge metric to set
+ * @param value New value
  *
- * Thread-safe: Yes (atomic operation)
+ * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_set (SocketGaugeMetric metric, int64_t value);
 
 /**
- * SocketMetrics_gauge_inc - Increment gauge by 1
- * @metric: Gauge metric to increment
+ * @brief Increment gauge by 1
+ * @ingroup foundation
+ * @param metric Gauge metric to increment
  *
- * Thread-safe: Yes (atomic operation)
+ * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_inc (SocketGaugeMetric metric);
 
 /**
- * SocketMetrics_gauge_dec - Decrement gauge by 1
- * @metric: Gauge metric to decrement
+ * @brief Decrement gauge by 1
+ * @ingroup foundation
+ * @param metric Gauge metric to decrement
  *
- * Thread-safe: Yes (atomic operation)
+ * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_dec (SocketGaugeMetric metric);
 
 /**
- * SocketMetrics_gauge_add - Add value to gauge
- * @metric: Gauge metric to modify
- * @value: Value to add (can be negative)
+ * @brief Add value to gauge
+ * @ingroup foundation
+ * @param metric Gauge metric to modify
+ * @param value Value to add (can be negative)
  *
- * Thread-safe: Yes (atomic operation)
+ * @threadsafe Yes (atomic operation)
  */
 extern void SocketMetrics_gauge_add (SocketGaugeMetric metric, int64_t value);
 
 /**
- * SocketMetrics_gauge_get - Get current gauge value
- * @metric: Gauge metric to read
+ * @brief Get current gauge value
+ * @ingroup foundation
+ * @param metric Gauge metric to read
  *
- * Returns: Current gauge value
- * Thread-safe: Yes (atomic read)
+ * @return Current gauge value
+ * @threadsafe Yes (atomic read)
  */
 extern int64_t SocketMetrics_gauge_get (SocketGaugeMetric metric);
 
@@ -456,22 +481,24 @@ extern int64_t SocketMetrics_gauge_get (SocketGaugeMetric metric);
  */
 
 /**
- * SocketMetrics_histogram_observe - Record observation in histogram
- * @metric: Histogram metric to update
- * @value: Observed value
+ * @brief Record observation in histogram
+ * @ingroup foundation
+ * @param metric Histogram metric to update
+ * @param value Observed value
  *
- * Thread-safe: Yes (mutex protected)
+ * @threadsafe Yes (mutex protected)
  */
 extern void SocketMetrics_histogram_observe (SocketHistogramMetric metric,
                                              double value);
 
 /**
- * SocketMetrics_histogram_percentile - Get percentile from histogram
- * @metric: Histogram metric to query
- * @percentile: Percentile to calculate (0.0 to 100.0)
+ * @brief Get percentile from histogram
+ * @ingroup foundation
+ * @param metric Histogram metric to query
+ * @param percentile Percentile to calculate (0.0 to 100.0)
  *
- * Returns: Percentile value, or 0.0 if no data
- * Thread-safe: Yes (mutex protected)
+ * @return Percentile value, or 0.0 if no data
+ * @threadsafe Yes (mutex protected)
  *
  * Common percentiles: 50 (median), 75, 90, 95, 99, 99.9
  */
@@ -479,29 +506,32 @@ extern double SocketMetrics_histogram_percentile (SocketHistogramMetric metric,
                                                   double percentile);
 
 /**
- * SocketMetrics_histogram_count - Get observation count
- * @metric: Histogram metric to query
+ * @brief Get observation count
+ * @ingroup foundation
+ * @param metric Histogram metric to query
  *
- * Returns: Total number of observations
- * Thread-safe: Yes (atomic read)
+ * @return Total number of observations
+ * @threadsafe Yes (atomic read)
  */
 extern uint64_t SocketMetrics_histogram_count (SocketHistogramMetric metric);
 
 /**
- * SocketMetrics_histogram_sum - Get sum of observations
- * @metric: Histogram metric to query
+ * @brief Get sum of observations
+ * @ingroup foundation
+ * @param metric Histogram metric to query
  *
- * Returns: Sum of all observed values
- * Thread-safe: Yes (mutex protected)
+ * @return Sum of all observed values
+ * @threadsafe Yes (mutex protected)
  */
 extern double SocketMetrics_histogram_sum (SocketHistogramMetric metric);
 
 /**
- * SocketMetrics_histogram_snapshot - Get histogram snapshot
- * @metric: Histogram metric to snapshot
- * @snapshot: Output structure for snapshot data
+ * @brief Get histogram snapshot
+ * @ingroup foundation
+ * @param metric Histogram metric to snapshot
+ * @param snapshot Output structure for snapshot data
  *
- * Thread-safe: Yes (mutex protected)
+ * @threadsafe Yes (mutex protected)
  *
  * Calculates all statistics and percentiles at snapshot time.
  */
@@ -515,20 +545,21 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
  */
 
 /**
- * SocketMetrics_get - Get complete metrics snapshot
- * @snapshot: Output structure for all metrics
- *
- * Thread-safe: Yes
- *
- * Captures consistent point-in-time view of all metrics.
- * Equivalent to the required SocketMetrics_get() from TODO.
+ * @brief Capture a complete point-in-time snapshot of all metrics.
+ * @ingroup foundation
+ * @param snapshot Output structure populated with current metrics data.
+ * @threadsafe Yes - provides consistent view without blocking other operations.
+ * @see SocketMetrics_export_prometheus() to export the snapshot.
+ * @see SocketMetrics_Snapshot for structure details.
+ * @see SocketMetrics_reset() to clear metrics before new snapshot.
  */
 extern void SocketMetrics_get (SocketMetrics_Snapshot *snapshot);
 
 /**
- * SocketMetrics_reset - Reset all metrics to initial values
+ * @brief Reset all metrics to initial values
+ * @ingroup foundation
  *
- * Thread-safe: Yes
+ * @threadsafe Yes
  *
  * Resets all counters to 0, gauges to 0, and clears histogram data.
  * Equivalent to the required SocketMetrics_reset() from TODO.
@@ -536,16 +567,18 @@ extern void SocketMetrics_get (SocketMetrics_Snapshot *snapshot);
 extern void SocketMetrics_reset (void);
 
 /**
- * SocketMetrics_reset_counters - Reset only counter metrics
+ * @brief Reset only counter metrics
+ * @ingroup foundation
  *
- * Thread-safe: Yes
+ * @threadsafe Yes
  */
 extern void SocketMetrics_reset_counters (void);
 
 /**
- * SocketMetrics_reset_histograms - Reset only histogram metrics
+ * @brief Reset only histogram metrics
+ * @ingroup foundation
  *
- * Thread-safe: Yes
+ * @threadsafe Yes
  */
 extern void SocketMetrics_reset_histograms (void);
 
@@ -555,11 +588,12 @@ extern void SocketMetrics_reset_histograms (void);
  */
 
 /**
- * SocketMetrics_export_prometheus - Export metrics in Prometheus text format
- * @buffer: Output buffer for formatted text
- * @buffer_size: Size of output buffer
+ * @brief Export metrics in Prometheus text format
+ * @ingroup foundation
+ * @param buffer Output buffer for formatted text
+ * @param buffer_size Size of output buffer
  *
- * Returns: Number of bytes written (excluding NUL), or required size if too
+ * @return Number of bytes written (excluding NUL), or required size if too
  * small Thread-safe: Yes
  *
  * Exports metrics in Prometheus exposition format (text/plain).
@@ -574,12 +608,13 @@ extern size_t SocketMetrics_export_prometheus (char *buffer,
                                                size_t buffer_size);
 
 /**
- * SocketMetrics_export_statsd - Export metrics in StatsD format
- * @buffer: Output buffer for formatted text
- * @buffer_size: Size of output buffer
- * @prefix: Metric name prefix (e.g., "myapp.socket") or NULL
+ * @brief Export metrics in StatsD format
+ * @ingroup foundation
+ * @param buffer Output buffer for formatted text
+ * @param buffer_size Size of output buffer
+ * @param prefix Metric name prefix (e.g., "myapp.socket") or NULL
  *
- * Returns: Number of bytes written (excluding NUL), or required size if too
+ * @return Number of bytes written (excluding NUL), or required size if too
  * small Thread-safe: Yes
  *
  * Exports metrics in StatsD line format.
@@ -593,11 +628,12 @@ extern size_t SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
                                            const char *prefix);
 
 /**
- * SocketMetrics_export_json - Export metrics in JSON format
- * @buffer: Output buffer for formatted text
- * @buffer_size: Size of output buffer
+ * @brief Export metrics in JSON format
+ * @ingroup foundation
+ * @param buffer Output buffer for formatted text
+ * @param buffer_size Size of output buffer
  *
- * Returns: Number of bytes written (excluding NUL), or required size if too
+ * @return Number of bytes written (excluding NUL), or required size if too
  * small Thread-safe: Yes
  *
  * Exports metrics as JSON object.
@@ -633,65 +669,72 @@ extern size_t SocketMetrics_export_json (char *buffer, size_t buffer_size);
  */
 
 /**
- * SocketMetrics_counter_name - Get counter metric name
- * @metric: Counter metric
+ * @brief Get counter metric name
+ * @ingroup foundation
+ * @param metric Counter metric
  *
- * Returns: Static string with metric name (snake_case)
- * Thread-safe: Yes
+ * @return Static string with metric name (snake_case)
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_counter_name (SocketCounterMetric metric);
 
 /**
- * SocketMetrics_gauge_name - Get gauge metric name
- * @metric: Gauge metric
+ * @brief Get gauge metric name
+ * @ingroup foundation
+ * @param metric Gauge metric
  *
- * Returns: Static string with metric name (snake_case)
- * Thread-safe: Yes
+ * @return Static string with metric name (snake_case)
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_gauge_name (SocketGaugeMetric metric);
 
 /**
- * SocketMetrics_histogram_name - Get histogram metric name
- * @metric: Histogram metric
+ * @brief Get histogram metric name
+ * @ingroup foundation
+ * @param metric Histogram metric
  *
- * Returns: Static string with metric name (snake_case)
- * Thread-safe: Yes
+ * @return Static string with metric name (snake_case)
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_histogram_name (SocketHistogramMetric metric);
 
 /**
- * SocketMetrics_counter_help - Get counter metric help text
- * @metric: Counter metric
+ * @brief Get counter metric help text
+ * @ingroup foundation
+ * @param metric Counter metric
  *
- * Returns: Static string with help text
- * Thread-safe: Yes
+ * @return Static string with help text
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_counter_help (SocketCounterMetric metric);
 
 /**
- * SocketMetrics_gauge_help - Get gauge metric help text
- * @metric: Gauge metric
+ * @brief Get gauge metric help text
+ * @ingroup foundation
+ * @param metric Gauge metric
  *
- * Returns: Static string with help text
- * Thread-safe: Yes
+ * @return Static string with help text
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_gauge_help (SocketGaugeMetric metric);
 
 /**
- * SocketMetrics_histogram_help - Get histogram metric help text
- * @metric: Histogram metric
+ * @brief Get histogram metric help text
+ * @ingroup foundation
+ * @param metric Histogram metric
  *
- * Returns: Static string with help text
- * Thread-safe: Yes
+ * @return Static string with help text
+ * @threadsafe Yes
  */
 extern const char *SocketMetrics_histogram_help (SocketHistogramMetric metric);
 
 /**
- * SocketMetrics_category_name - Get category name
- * @category Metric category
- *
- * Returns: Static string with category name
- * Thread-safe: Yes
+ * @brief Get the name of a metric category as a static string.
+ * @ingroup foundation
+ * @param category The metric category enum value.
+ * @return Static read-only string (do not free) with category name.
+ * @threadsafe Yes - returns constant data.
+ * @see SocketMetricCategory for enum values.
  */
 extern const char *SocketMetrics_category_name (SocketMetricCategory category);
 
@@ -701,14 +744,16 @@ extern const char *SocketMetrics_category_name (SocketMetricCategory category);
  */
 
 /**
- * SOCKET_METRICS_TIME_START - Start timing an operation
+ * @brief SOCKET_METRICS_TIME_START - Start timing an operation
+ * @ingroup foundation
  */
 #define SOCKET_METRICS_TIME_START()                                           \
   int64_t _socket_metrics_start_time = Socket_get_monotonic_ms ()
 
 /**
- * SOCKET_METRICS_TIME_OBSERVE - Record elapsed time to histogram
- * @metric: Histogram metric to record to
+ * @brief SOCKET_METRICS_TIME_OBSERVE - Record elapsed time to histogram
+ * @ingroup foundation
+ * @param metric Histogram metric to record to
  */
 #define SOCKET_METRICS_TIME_OBSERVE(metric)                                   \
   do                                                                          \
@@ -720,8 +765,9 @@ extern const char *SocketMetrics_category_name (SocketMetricCategory category);
   while (0)
 
 /**
- * SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class
- * @status: HTTP status code (100-599)
+ * @brief SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class
+ * @ingroup foundation
+ * @param status HTTP status code (100-599)
  */
 #define SOCKET_METRICS_HTTP_RESPONSE_CLASS(status)                            \
   do                                                                          \

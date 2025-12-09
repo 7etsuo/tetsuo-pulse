@@ -3,31 +3,28 @@
 
 /**
  * @file SocketSYNProtect.h
- * @ingroup foundation
- * @brief SYN flood protection with connection attempt tracking and IP
- * reputation.
+ * @ingroup security
+ * @brief SYN flood protection using IP reputation and adaptive rate limiting.
  *
- * Provides comprehensive SYN flood attack protection through:
- * - Connection attempt tracking (not just established connections)
- * - Time-windowed sliding counters for accurate rate measurement
- * - Adaptive IP reputation scoring with decay
- * - Automatic response actions (allow/throttle/challenge/block)
- * - Whitelist/blacklist support with CIDR notation
- * - Integration with kernel-level socket options (TCP_DEFER_ACCEPT)
+ * Part of the @ref security "Security Modules" group.
  *
- * Platform Requirements:
- * - POSIX-compliant system (Linux, BSD, macOS)
- * - CLOCK_MONOTONIC support for timing
- * - POSIX threads (pthread) for thread safety
+ * Provides defense against SYN flood DDoS attacks via:
+ * - Pre-accept connection attempt tracking
+ * - Sliding window rate counters per IP
+ * - Dynamic reputation scoring with success/failure feedback
+ * - Tiered responses: allow/throttle/challenge/block
+ * - CIDR-aware whitelist/blacklist
+ * - Optional TCP_DEFER_ACCEPT kernel integration
  *
- * Thread Safety:
- * - All operations are thread-safe via internal mutex
- * - Safe to share a single instance across threads
+ * Platform: POSIX systems with CLOCK_MONOTONIC and pthreads.
+ * Thread-safe: All APIs protected by internal mutexes; share instances freely.
  *
- * @see SocketSYNProtect_new() for creating protection instances.
- * @see SocketSYNProtect_check() for rate checking.
- * @see SocketSYNProtect_whitelist_add_cidr() for whitelist management.
- * @see SocketPool_set_syn_protection() for integration with connection pools.
+ * @see SocketSYNProtect_new() to initialize.
+ * @see SocketSYNProtect_check() core evaluation function.
+ * @see SocketSYNProtect_Config for tuning parameters.
+ * @see SocketPool_set_syn_protection() pool integration.
+ * @see docs/SECURITY.md SYN protection best practices.
+ * @see docs/SYN-PROTECT.md detailed protocol and config guide.
  */
 
 #include "core/Arena.h"
@@ -44,7 +41,24 @@ typedef struct T *T;
  * ============================================================================
  */
 
-extern const Except_T SocketSYNProtect_Failed; /**< SYN protection failure */
+/**
+ * @brief General SYN protection operation failure.
+ * @ingroup security
+ *
+ * Category: SYSTEM
+ * Retryable: DEPENDS - often due to resource exhaustion; retry after cleanup.
+ *
+ * Raised in cases such as:
+ * - Memory allocation failure (arena exhaustion or malloc failure)
+ * - Invalid configuration parameters (e.g., negative window duration)
+ * - Internal data structure corruption or hash collisions
+ * - Mutex acquisition failures under extreme contention
+ *
+ * @see Except_T for exception handling patterns.
+ * @see Socket_GetLastError() for detailed error string.
+ * @see docs/ERROR_HANDLING.md for module exception guidelines.
+ */
+extern const Except_T SocketSYNProtect_Failed;
 
 /* ============================================================================
  * Action and Reputation Enums
@@ -52,30 +66,41 @@ extern const Except_T SocketSYNProtect_Failed; /**< SYN protection failure */
  */
 
 /**
- * SocketSYN_Action - Protection response actions
+ * @brief Protection response actions for SYN connection attempts.
+ * @ingroup security
  *
- * Determines how to handle an incoming connection attempt based on
- * the IP's reputation and current rate limits.
+ * Enum values determine the handling strategy for incoming connections
+ * based on IP reputation, rate limiting, whitelist/blacklist status, and
+ * current load.
+ *
+ * @see SocketSYNProtect_check() returns the action for a given client IP.
+ * @see SocketSYNProtect_action_name() for human-readable names.
+ * @see SocketPool_accept_protected() for integration with connection pools.
  */
-typedef enum SocketSYN_Action
-{
-  SYN_ACTION_ALLOW = 0, /**< Normal accept - no restrictions */
-  SYN_ACTION_THROTTLE,  /**< Accept with artificial delay */
-  SYN_ACTION_CHALLENGE, /**< Use TCP_DEFER_ACCEPT (require data) */
-  SYN_ACTION_BLOCK      /**< Reject connection immediately */
+typedef enum SocketSYN_Action {
+  SYN_ACTION_ALLOW = 0, /**< Allow: Normal acceptance without restrictions. */
+  SYN_ACTION_THROTTLE,  /**< Throttle: Accept but introduce artificial delay to slow attacks. */
+  SYN_ACTION_CHALLENGE, /**< Challenge: Apply TCP_DEFER_ACCEPT to require immediate data payload. */
+  SYN_ACTION_BLOCK      /**< Block: Immediately reject the connection attempt. */
 } SocketSYN_Action;
 
 /**
- * SocketSYN_Reputation - IP reputation states
+ * @brief IP reputation levels based on behavior history.
+ * @ingroup security
  *
- * Tracks the trustworthiness of an IP based on historical behavior.
+ * Reputation evolves dynamically based on connection success rates,
+ * attempt frequencies, and manual list status. Lower reputation triggers
+ * stricter actions.
+ *
+ * @see SocketSYNProtect_check() uses reputation to decide actions.
+ * @see SocketSYNProtect_reputation_name() for string names.
+ * @see SocketSYN_IPState::rep for per-IP reputation storage.
  */
-typedef enum SocketSYN_Reputation
-{
-  SYN_REP_TRUSTED = 0, /**< Whitelisted or proven good behavior */
-  SYN_REP_NEUTRAL,     /**< Unknown/new IP - default state */
-  SYN_REP_SUSPECT,     /**< Elevated attempt rate detected */
-  SYN_REP_HOSTILE      /**< Attack pattern detected */
+typedef enum SocketSYN_Reputation {
+  SYN_REP_TRUSTED = 0, /**< Trusted: Whitelisted or consistently successful behavior. */
+  SYN_REP_NEUTRAL,     /**< Neutral: New or unknown IP with no suspicious activity. */
+  SYN_REP_SUSPECT,     /**< Suspect: Elevated attempt rates or low success ratio. */
+  SYN_REP_HOSTILE      /**< Hostile: Detected attack patterns, repeated failures, or blacklisted. */
 } SocketSYN_Reputation;
 
 /* ============================================================================
@@ -84,23 +109,33 @@ typedef enum SocketSYN_Reputation
  */
 
 /**
- * SocketSYN_IPState - Per-IP tracking state
+ * @brief Per-IP address tracking and reputation state.
+ * @ingroup security
  *
- * Contains all tracked information for a single IP address including
- * sliding window counters, success/failure ratios, and reputation score.
+ * Opaque structure holding all metrics and state for a single tracked IP.
+ * Updated atomically for thread safety. Not for direct modification;
+ * use reporting functions to update state.
+ *
+ * Fields:
+ * - Timestamps use CLOCK_MONOTONIC for accuracy.
+ * - Counters are uint32_t to prevent overflow under DDoS.
+ * - Score is float [0.0,1.0] with decay over time.
+ *
+ * @see SocketSYNProtect_get_ip_state() to query state without modification.
+ * @see SocketSYNProtect_report_success() and report_failure() to update counters.
+ * @see SocketSYNProtect_cleanup() for eviction of stale states.
  */
-typedef struct SocketSYN_IPState
-{
-  char ip[SOCKET_IP_MAX_LEN]; /**< IP address string */
-  int64_t window_start_ms;    /**< Current sliding window start time */
-  uint32_t attempts_current;  /**< Attempts in current window */
-  uint32_t attempts_previous; /**< Attempts in previous window (for decay) */
-  uint32_t successes;         /**< Total completed handshakes */
-  uint32_t failures;          /**< Total failed/incomplete handshakes */
-  int64_t last_attempt_ms;    /**< Timestamp of last attempt */
-  int64_t block_until_ms;     /**< Block expiry timestamp (0 = not blocked) */
-  SocketSYN_Reputation rep;   /**< Current reputation state */
-  float score; /**< Reputation score (0.0=hostile, 1.0=trusted) */
+typedef struct SocketSYN_IPState {
+  char ip[SOCKET_IP_MAX_LEN];           /**< Null-terminated IP address string (IPv4/IPv6). */
+  int64_t window_start_ms;              /**< Start timestamp (ms) of current rate window. */
+  uint32_t attempts_current;            /**< Connection attempts in current sliding window. */
+  uint32_t attempts_previous;           /**< Attempts from previous window (used for decay calculation). */
+  uint32_t successes;                   /**< Cumulative successful handshakes/connections. */
+  uint32_t failures;                    /**< Cumulative failed or aborted connections. */
+  int64_t last_attempt_ms;              /**< Timestamp (ms) of most recent connection attempt. */
+  int64_t block_until_ms;               /**< Block expiration timestamp (0 = not blocked; CLOCK_MONOTONIC ms). */
+  SocketSYN_Reputation rep;             /**< Current computed reputation level. */
+  float score;                          /**< Dynamic reputation score (0.0 = hostile, 1.0 = trusted). */
 } SocketSYN_IPState;
 
 /* ============================================================================
@@ -109,10 +144,19 @@ typedef struct SocketSYN_IPState
  */
 
 /**
- * SocketSYNProtect_Config - Protection configuration
+ * @brief Configuration parameters for SYN flood protection.
+ * @ingroup security
  *
- * All timing values are in milliseconds unless otherwise noted.
- * Threshold scores are floats in range [0.0, 1.0].
+ * Defines behavior for rate limiting, reputation scoring, response actions,
+ * and resource constraints. Use SocketSYNProtect_config_defaults() to initialize.
+ * Timing values in ms (except challenge_defer_sec in seconds). Scores in [0.0f, 1.0f].
+ *
+ * @warning Invalid configs (e.g., zero/negative durations, scores out of range)
+ * may lead to undefined behavior or SocketSYNProtect_Failed exceptions.
+ *
+ * @see SocketSYNProtect_config_defaults() for safe initialization.
+ * @see SocketSYNProtect_new() consumes this config.
+ * @see SocketSYNProtect_configure() for dynamic reconfiguration.
  */
 typedef struct SocketSYNProtect_Config
 {
@@ -155,9 +199,15 @@ typedef struct SocketSYNProtect_Config
  */
 
 /**
- * SocketSYNProtect_Stats - Protection statistics
+ * @brief Statistics snapshot for SYN protection activity.
+ * @ingroup security
  *
- * Thread-safe snapshot of protection activity counters.
+ * Thread-safe atomic snapshot of counters and metrics. Does not include
+ * per-IP details or whitelist/blacklist contents for privacy.
+ *
+ * @note Counters wrap around at UINT64_MAX; suitable for 100+ years of activity.
+ * @see SocketSYNProtect_stats() to populate this structure.
+ * @see SocketSYNProtect_stats_reset() to zero counters (except uptime).
  */
 typedef struct SocketSYNProtect_Stats
 {
@@ -180,47 +230,80 @@ typedef struct SocketSYNProtect_Stats
  */
 
 /**
- * SocketSYNProtect_new - Create a new SYN protection instance
- * @arena: Arena for memory allocation (NULL to use malloc)
- * @config: Configuration (NULL for defaults)
+ * @brief Create a new instance of SYN protection.
+ * @ingroup security
+ * @param arena Memory arena for internal allocations (NULL = use malloc/free).
+ * @param config Protection configuration (NULL = defaults).
  *
- * Returns: New protection instance
- * Raises: SocketSYNProtect_Failed on allocation failure
- * Thread-safe: Yes - returns new independent instance
+ * Allocates internal structures: hash tables for IP tracking, mutexes for thread safety,
+ * timer wheels for window management, and lists for whitelists/blacklists.
+ *
+ * @return New SocketSYNProtect_T or NULL on failure.
+ * @throws SocketSYNProtect_Failed Allocation or initialization failure.
+ * @threadsafe Yes - creates independent instance; safe from any thread.
+ *
+ * @see SocketSYNProtect_config_defaults() to set up config.
+ * @see SocketSYNProtect_free() for disposal.
+ * @see SocketSYNProtect_configure() for runtime config changes.
+ * @see docs/SECURITY.md for security considerations.
  */
-extern T SocketSYNProtect_new (Arena_T arena,
-                               const SocketSYNProtect_Config *config);
+extern T SocketSYNProtect_new(Arena_T arena, const SocketSYNProtect_Config *config);
 
 /**
- * SocketSYNProtect_free - Free a SYN protection instance
- * @protect: Pointer to instance (will be set to NULL)
+ * @brief Dispose of a SYN protection instance.
+ * @ingroup security
+ * @param protect Pointer to instance (set to NULL on success).
  *
- * Thread-safe: Yes
+ * Releases all internal resources: hash tables, mutexes, lists.
+ * If created with arena=NULL (malloc), frees memory; otherwise, just clears pointers
+ * (arena dispose will free).
  *
- * Note: Only frees memory if allocated with malloc (arena == NULL).
- * Arena-allocated instances are freed when arena is disposed.
+ * @note Safe to call on NULL pointer (no-op).
+ * @threadsafe Yes - locks internal mutex during cleanup.
+ *
+ * @see SocketSYNProtect_new() for creation.
+ * @see Arena_dispose() for arena-managed cleanup.
+ * @see SocketSYNProtect_clear_all() to clear state without freeing instance.
  */
-extern void SocketSYNProtect_free (T *protect);
+extern void SocketSYNProtect_free(T *protect);
 
 /**
- * SocketSYNProtect_config_defaults - Initialize config with defaults
- * @config: Configuration structure to initialize
+ * @brief Initialize configuration structure with safe defaults.
+ * @ingroup security
+ * @param config Pointer to config structure to populate.
  *
- * Thread-safe: Yes (no shared state)
+ * Sets reasonable defaults for production use:
+ * - window_duration_ms = 10000
+ * - max_attempts_per_window = 100
+ * - ... (see SocketSYNProtect_Config fields for values)
+ *
+ * @note Defaults are conservative; tune for your traffic patterns.
+ * @threadsafe Yes - pure function, no shared state.
+ *
+ * @see SocketSYNProtect_Config for parameter details.
+ * @see SocketSYNProtect_new() which uses these defaults if config=NULL.
  */
-extern void SocketSYNProtect_config_defaults (SocketSYNProtect_Config *config);
+extern void SocketSYNProtect_config_defaults(SocketSYNProtect_Config *config);
 
 /**
- * SocketSYNProtect_configure - Update configuration at runtime
- * @protect: Protection instance
- * @config: New configuration
+ * @brief Update protection configuration during runtime.
+ * @ingroup security
+ * @param protect Active protection instance.
+ * @param config New configuration to apply.
  *
- * Thread-safe: Yes - uses internal mutex
+ * Atomically updates internal parameters like thresholds, delays, and limits.
+ * Existing tracked IPs, blocks, and whitelists unchanged; new behavior applies
+ * to future checks.
  *
- * Does not affect currently blocked IPs or tracked states.
+ * @note Some changes (e.g., max_tracked_ips) may trigger cleanup/eviction.
+ * @threadsafe Yes - mutex-protected update.
+ *
+ * @throws SocketSYNProtect_Failed if invalid config values.
+ * @see SocketSYNProtect_new() initial config.
+ * @see SocketSYNProtect_config_defaults() for base values.
+ * @see SocketSYNProtect_Config for tunable parameters.
  */
-extern void SocketSYNProtect_configure (T protect,
-                                        const SocketSYNProtect_Config *config);
+extern void SocketSYNProtect_configure(T protect, const SocketSYNProtect_Config *config);
 
 /* ============================================================================
  * Core Protection Functions
@@ -228,42 +311,55 @@ extern void SocketSYNProtect_configure (T protect,
  */
 
 /**
- * SocketSYNProtect_check - Check IP and determine action
- * @protect: Protection instance
- * @client_ip: Client IP address string
- * @state_out: Output for IP state (optional, may be NULL)
+ * @brief Evaluate client IP and determine protection action.
+ * @ingroup security
+ * @param protect Protection instance.
+ * @param client_ip Null-terminated IP string (IPv4/IPv6) or NULL.
+ * @param state_out Optional output for detailed IP state (may be NULL).
  *
- * Returns: Action to take (ALLOW, THROTTLE, CHALLENGE, or BLOCK)
- * Thread-safe: Yes - uses internal mutex
+ * Performs comprehensive check: whitelist/blacklist lookup, rate limiting,
+ * reputation scoring, global limits. Increments attempt counter.
  *
- * Call this BEFORE accepting a connection to determine the appropriate
- * action. This increments the attempt counter for the IP.
+ * Returns SYN_ACTION_ALLOW if client_ip NULL/empty or whitelisted.
  *
- * If client_ip is NULL or empty, returns SYN_ACTION_ALLOW.
+ * @return Recommended action: ALLOW, THROTTLE, CHALLENGE, or BLOCK.
+ * @threadsafe Yes - internal mutex protects shared state.
+ *
+ * @note Call before Socket_accept() or SocketPool_accept_limited().
+ * @see SocketSYNProtect_report_success() after successful handshake.
+ * @see SocketSYNProtect_report_failure() on connection errors.
+ * @see SocketSYN_Action for action meanings.
+ * @see SocketPool_set_syn_protection() for pool integration.
  */
-extern SocketSYN_Action SocketSYNProtect_check (T protect,
-                                                const char *client_ip,
-                                                SocketSYN_IPState *state_out);
+extern SocketSYN_Action SocketSYNProtect_check(T protect, const char *client_ip, SocketSYN_IPState *state_out);
 
 /**
- * SocketSYNProtect_report_success - Report successful connection
- * @protect: Protection instance
- * @client_ip: Client IP address string
+ * @brief Report successful connection completion for IP reputation update.
+ * @ingroup security
+ * @param protect Protection instance.
+ * @param client_ip IP of the successful connection.
  *
- * Thread-safe: Yes - uses internal mutex
+ * Increments success counter, applies score reward, potentially improves
+ * reputation, and may lift blocks or reduce throttling for the IP.
  *
- * Call this after a connection successfully completes the TCP handshake
- * and becomes usable. Rewards the IP's reputation score.
+ * Call after full TCP handshake and initial data exchange succeeds.
+ * No-op if IP not tracked or whitelisted.
+ *
+ * @threadsafe Yes - mutex protected.
+ *
+ * @see SocketSYNProtect_report_failure() for failures.
+ * @see SocketSYN_IPState::successes for tracking.
+ * @see SocketSYNProtect_Config::score_reward_success tuning.
  */
-extern void SocketSYNProtect_report_success (T protect, const char *client_ip);
+extern void SocketSYNProtect_report_success(T protect, const char *client_ip);
 
 /**
- * SocketSYNProtect_report_failure - Report connection failure
+ * @brief SocketSYNProtect_report_failure - Report connection failure
  * @protect: Protection instance
  * @client_ip: Client IP address string
  * @error_code: errno value from failed operation (0 if unknown)
  *
- * Thread-safe: Yes - uses internal mutex
+ * @brief Thread-safe: Yes - uses internal mutex
  *
  * Call this when a connection fails during or after accept (e.g., ECONNRESET,
  * ETIMEDOUT, or immediate disconnect). Penalizes the IP's reputation score.
@@ -277,51 +373,51 @@ extern void SocketSYNProtect_report_failure (T protect, const char *client_ip,
  */
 
 /**
- * SocketSYNProtect_whitelist_add - Add IP to whitelist
+ * @brief SocketSYNProtect_whitelist_add - Add IP to whitelist
  * @protect: Protection instance
  * @ip: IP address string (IPv4 or IPv6)
  *
  * Returns: 1 on success, 0 if whitelist is full
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Whitelisted IPs always receive SYN_ACTION_ALLOW.
  */
 extern int SocketSYNProtect_whitelist_add (T protect, const char *ip);
 
 /**
- * SocketSYNProtect_whitelist_add_cidr - Add CIDR range to whitelist
+ * @brief SocketSYNProtect_whitelist_add_cidr - Add CIDR range to whitelist
  * @protect: Protection instance
  * @cidr: CIDR notation (e.g., "10.0.0.0/8", "2001:db8::/32")
  *
  * Returns: 1 on success, 0 on error or whitelist full
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern int SocketSYNProtect_whitelist_add_cidr (T protect, const char *cidr);
 
 /**
- * SocketSYNProtect_whitelist_remove - Remove IP from whitelist
+ * @brief SocketSYNProtect_whitelist_remove - Remove IP from whitelist
  * @protect: Protection instance
  * @ip: IP address string
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern void SocketSYNProtect_whitelist_remove (T protect, const char *ip);
 
 /**
- * SocketSYNProtect_whitelist_contains - Check if IP is whitelisted
+ * @brief SocketSYNProtect_whitelist_contains - Check if IP is whitelisted
  * @protect: Protection instance
  * @ip: IP address string to check
  *
  * Returns: 1 if whitelisted, 0 otherwise
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern int SocketSYNProtect_whitelist_contains (T protect, const char *ip);
 
 /**
- * SocketSYNProtect_whitelist_clear - Clear all whitelist entries
+ * @brief SocketSYNProtect_whitelist_clear - Clear all whitelist entries
  * @protect: Protection instance
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern void SocketSYNProtect_whitelist_clear (T protect);
 
@@ -331,13 +427,13 @@ extern void SocketSYNProtect_whitelist_clear (T protect);
  */
 
 /**
- * SocketSYNProtect_blacklist_add - Add IP to blacklist
+ * @brief SocketSYNProtect_blacklist_add - Add IP to blacklist
  * @protect: Protection instance
  * @ip: IP address string
  * @duration_ms: Block duration (0 = permanent until removed)
  *
  * Returns: 1 on success, 0 if blacklist is full
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Blacklisted IPs always receive SYN_ACTION_BLOCK.
  */
@@ -345,31 +441,31 @@ extern int SocketSYNProtect_blacklist_add (T protect, const char *ip,
                                            int duration_ms);
 
 /**
- * SocketSYNProtect_blacklist_remove - Remove IP from blacklist
+ * @brief SocketSYNProtect_blacklist_remove - Remove IP from blacklist
  * @protect: Protection instance
  * @ip: IP address string
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern void SocketSYNProtect_blacklist_remove (T protect, const char *ip);
 
 /**
- * SocketSYNProtect_blacklist_contains - Check if IP is blacklisted
+ * @brief SocketSYNProtect_blacklist_contains - Check if IP is blacklisted
  * @protect: Protection instance
  * @ip: IP address string to check
  *
  * Returns: 1 if blacklisted, 0 otherwise
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Returns 0 if blacklist entry has expired.
  */
 extern int SocketSYNProtect_blacklist_contains (T protect, const char *ip);
 
 /**
- * SocketSYNProtect_blacklist_clear - Clear all blacklist entries
+ * @brief SocketSYNProtect_blacklist_clear - Clear all blacklist entries
  * @protect: Protection instance
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern void SocketSYNProtect_blacklist_clear (T protect);
 
@@ -379,51 +475,51 @@ extern void SocketSYNProtect_blacklist_clear (T protect);
  */
 
 /**
- * SocketSYNProtect_get_ip_state - Get current state for an IP
+ * @brief SocketSYNProtect_get_ip_state - Get current state for an IP
  * @protect: Protection instance
  * @ip: IP address string
  * @state: Output structure for IP state
  *
  * Returns: 1 if IP found and state populated, 0 if not tracked
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern int SocketSYNProtect_get_ip_state (T protect, const char *ip,
                                           SocketSYN_IPState *state);
 
 /**
- * SocketSYNProtect_stats - Get protection statistics
+ * @brief SocketSYNProtect_stats - Get protection statistics
  * @protect: Protection instance
  * @stats: Output structure for statistics
  *
- * Thread-safe: Yes - returns atomic snapshot
+ * @brief Thread-safe: Yes - returns atomic snapshot
  */
 extern void SocketSYNProtect_stats (T protect, SocketSYNProtect_Stats *stats);
 
 /**
- * SocketSYNProtect_stats_reset - Reset statistics counters
+ * @brief SocketSYNProtect_stats_reset - Reset statistics counters
  * @protect: Protection instance
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Resets all counters except uptime and current_tracked_ips.
  */
 extern void SocketSYNProtect_stats_reset (T protect);
 
 /**
- * SocketSYNProtect_action_name - Get string name for action
+ * @brief SocketSYNProtect_action_name - Get string name for action
  * @action: Action enum value
  *
  * Returns: Static string with action name
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern const char *SocketSYNProtect_action_name (SocketSYN_Action action);
 
 /**
- * SocketSYNProtect_reputation_name - Get string name for reputation
+ * @brief SocketSYNProtect_reputation_name - Get string name for reputation
  * @rep: Reputation enum value
  *
  * Returns: Static string with reputation name
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  */
 extern const char *SocketSYNProtect_reputation_name (SocketSYN_Reputation rep);
 
@@ -433,11 +529,11 @@ extern const char *SocketSYNProtect_reputation_name (SocketSYN_Reputation rep);
  */
 
 /**
- * SocketSYNProtect_cleanup - Remove expired entries
+ * @brief SocketSYNProtect_cleanup - Remove expired entries
  * @protect: Protection instance
  *
  * Returns: Number of entries removed
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Call periodically to:
  * - Remove expired blacklist entries
@@ -449,20 +545,20 @@ extern const char *SocketSYNProtect_reputation_name (SocketSYN_Reputation rep);
 extern size_t SocketSYNProtect_cleanup (T protect);
 
 /**
- * SocketSYNProtect_clear_all - Clear all tracked state
+ * @brief SocketSYNProtect_clear_all - Clear all tracked state
  * @protect: Protection instance
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Clears all IP tracking entries but preserves whitelist and blacklist.
  */
 extern void SocketSYNProtect_clear_all (T protect);
 
 /**
- * SocketSYNProtect_reset - Full reset to initial state
+ * @brief SocketSYNProtect_reset - Full reset to initial state
  * @protect: Protection instance
  *
- * Thread-safe: Yes
+ * @brief Thread-safe: Yes
  *
  * Clears everything: tracked IPs, whitelist, blacklist, and statistics.
  */

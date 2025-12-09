@@ -25,6 +25,8 @@
  *
  * @see SocketSecurity_get_limits() for querying security limits.
  * @see SocketSecurity_check_size() for size validation.
+ * @see @ref security for other security-related modules.
+ * @see SocketConfig.h for security configuration constants.
  * @see SocketTLSContext_new_server() for TLS 1.3 enforcement.
  */
 
@@ -139,21 +141,28 @@
  */
 
 /**
- * SocketSecurity_SizeExceeded - Allocation or buffer size exceeds limits
+ * @brief Exception raised when allocation or buffer size exceeds security limits.
+ * @ingroup foundation
  *
  * Raised when:
  * - Requested allocation exceeds SOCKET_SECURITY_MAX_ALLOCATION
  * - Buffer operation would exceed configured limits
  * - Integer overflow detected in size calculation
+ * @see SocketSecurity_check_size() for size validation utilities.
+ * @see @ref error-handling.mdc "Error Handling Guide" for exception patterns.
  */
 extern const Except_T SocketSecurity_SizeExceeded;
 
 /**
- * SocketSecurity_ValidationFailed - Input validation failure
+ * @brief Exception raised on input validation failure in security checks.
+ * @ingroup foundation
  *
  * Raised when:
  * - Input fails security validation checks
  * - Invalid characters detected in protocol data
+ * @see SocketSecurity_check_size() for size-related validations.
+ * @see SocketUTF8_validate() for UTF-8 specific validation.
+ * @see @ref error-handling.mdc "Error Handling Guide" for exception patterns.
  */
 extern const Except_T SocketSecurity_ValidationFailed;
 
@@ -163,10 +172,18 @@ extern const Except_T SocketSecurity_ValidationFailed;
  */
 
 /**
- * SocketSecurityLimits - Runtime-queryable security limits
+ * @brief Structure containing runtime-queryable security limits.
+ * @ingroup foundation
  *
- * Contains all security-relevant limits currently configured in the library.
- * Use SocketSecurity_get_limits() to populate.
+ * This structure aggregates all security-relevant configuration limits from the
+ * library, allowing runtime inspection of maximum sizes, timeouts, and other
+ * security parameters.
+ *
+ * Use SocketSecurity_get_limits() to populate an instance of this structure.
+ *
+ * @see SocketSecurity_get_limits() to fill this structure.
+ * @see SocketConfig.h for compile-time limit definitions.
+ * @see @ref security for modules enforcing these limits.
  */
 typedef struct SocketSecurityLimits
 {
@@ -229,30 +246,40 @@ typedef struct SocketSecurityLimits
  */
 
 /**
- * SocketSecurity_get_limits - Get current security limits
- * @limits: Output structure to populate
+ * @brief Get the currently configured security limits.
+ * @ingroup foundation
+ * @param limits Pointer to SocketSecurityLimits structure to populate.
  *
- * Populates the limits structure with all current security-relevant limits.
- * Thread-safe: Yes (reads compile-time constants)
+ * Populates the provided structure with all security-relevant limits derived
+ * from compile-time configuration constants.
+ * @threadsafe Yes (purely reads compile-time constants, no state mutation).
+ * @see SocketSecurityLimits for structure members.
+ * @see SocketSecurity_get_max_allocation() for specific limit queries.
  */
 extern void SocketSecurity_get_limits (SocketSecurityLimits *limits);
 
 /**
- * SocketSecurity_get_max_allocation - Get maximum allocation size
- *
- * Returns: Maximum safe allocation size in bytes
- * Thread-safe: Yes
+ * @brief Get the maximum permitted single allocation size.
+ * @ingroup foundation
+ * @return The maximum safe allocation size in bytes (SOCKET_SECURITY_MAX_ALLOCATION).
+ * @threadsafe Yes.
+ * @see SocketSecurity_check_size() to validate a size against this limit.
+ * @see SOCKET_SECURITY_MAX_ALLOCATION for the compile-time constant.
  */
 extern size_t SocketSecurity_get_max_allocation (void);
 
 /**
- * SocketSecurity_get_http_limits - Get HTTP-specific limits
- * @max_uri: Output for max URI length (may be NULL)
- * @max_header_size: Output for max header size (may be NULL)
- * @max_headers: Output for max header count (may be NULL)
- * @max_body: Output for max body size (may be NULL)
+ * @brief Get HTTP protocol-specific security limits.
+ * @ingroup foundation
+ * @param max_uri [out] Maximum URI length, or NULL if not needed.
+ * @param max_header_size [out] Maximum total header size, or NULL if not needed.
+ * @param max_headers [out] Maximum number of headers, or NULL if not needed.
+ * @param max_body [out] Maximum body size, or NULL if not needed.
  *
- * Thread-safe: Yes
+ * Queries individual HTTP-related limits for validation and configuration checks.
+ * @threadsafe Yes.
+ * @see SocketHTTP.h for defining HTTP limit constants.
+ * @see @ref http "HTTP Module" for protocol implementation details.
  */
 extern void SocketSecurity_get_http_limits (size_t *max_uri,
                                             size_t *max_header_size,
@@ -260,28 +287,40 @@ extern void SocketSecurity_get_http_limits (size_t *max_uri,
                                             size_t *max_body);
 
 /**
- * SocketSecurity_get_ws_limits - Get WebSocket-specific limits
- * @max_frame: Output for max frame size (may be NULL)
- * @max_message: Output for max message size (may be NULL)
+ * @brief Get WebSocket protocol-specific security limits.
+ * @ingroup foundation
+ * @param max_frame [out] Maximum WebSocket frame size, or NULL if not needed.
+ * @param max_message [out] Maximum WebSocket message size, or NULL if not needed.
  *
- * Thread-safe: Yes
+ * These limits help prevent denial-of-service attacks via oversized frames or messages.
+ * @threadsafe Yes.
+ * @see SocketWS.h for WebSocket implementation.
+ * @see @ref utilities for rate limiting integration.
  */
 extern void SocketSecurity_get_ws_limits (size_t *max_frame,
                                           size_t *max_message);
 
 /**
- * SocketSecurity_get_arena_limits - Get arena memory limits
- * @max_alloc: Output for max arena allocation size (may be NULL)
+ * @brief Get arena-specific memory allocation limits.
+ * @ingroup foundation
+ * @param max_alloc [out] Maximum arena allocation size, or NULL if not needed.
  *
- * Thread-safe: Yes
+ * Queries the limit on individual allocations within arenas for security.
+ * @threadsafe Yes.
+ * @see Arena_alloc() in Arena.h for allocation function.
+ * @see ARENA_MAX_ALLOC_SIZE for compile-time constant (if defined).
  */
 extern void SocketSecurity_get_arena_limits (size_t *max_alloc);
 
 /**
- * SocketSecurity_get_hpack_limits - Get HPACK-specific limits
- * @max_table: Output for max dynamic table size (may be NULL)
+ * @brief Get HPACK header compression limits.
+ * @ingroup foundation
+ * @param max_table [out] Maximum dynamic table size for HPACK, or NULL if not needed.
  *
- * Thread-safe: Yes
+ * Limits the HPACK dynamic table size to mitigate memory exhaustion in HTTP/2 decompression.
+ * @threadsafe Yes.
+ * @see SocketHPACK.h for HPACK module.
+ * @see @ref http "HTTP Module" for HTTP/2 integration.
  */
 extern void SocketSecurity_get_hpack_limits (size_t *max_table);
 
@@ -291,52 +330,66 @@ extern void SocketSecurity_get_hpack_limits (size_t *max_table);
  */
 
 /**
- * SocketSecurity_check_size - Validate allocation size
- * @size: Requested allocation size
+ * @brief Validate a requested allocation size against security limits.
+ * @ingroup foundation
+ * @param size Requested size in bytes.
  *
- * Checks if the requested size is within safe limits and doesn't indicate
- * an integer overflow (e.g., negative size cast to size_t).
- *
- * Returns: 1 if size is valid, 0 if invalid
- * Thread-safe: Yes
+ * Checks if the size is positive, within SOCKET_SECURITY_MAX_ALLOCATION, and
+ * not indicative of integer overflow (e.g., from negative cast to size_t).
+ * @return 1 if the size is valid and safe, 0 otherwise.
+ * @threadsafe Yes.
+ * @see SocketSecurity_get_max_allocation() for the current limit value.
+ * @see SOCKET_SECURITY_VALID_SIZE() macro for compile-time inline validation.
+ * @see SocketSecurity_SizeExceeded exception for raising on failure.
  */
 extern int SocketSecurity_check_size (size_t size);
 
 /**
- * SocketSecurity_check_multiply - Check for multiplication overflow
- * @a: First operand
- * @b: Second operand
- * @result: Output for product (may be NULL if just checking)
+ * @brief Check for safe multiplication of two sizes without overflow.
+ * @ingroup foundation
+ * @param a First size operand.
+ * @param b Second size operand.
+ * @param result [out] Pointer to store the product if safe, or NULL to just check.
  *
- * Safely multiplies two sizes, detecting overflow before it occurs.
- *
- * Returns: 1 if multiplication is safe, 0 if would overflow
- * Thread-safe: Yes
+ * Performs safe multiplication check, optionally computing and storing the result
+ * if no overflow would occur.
+ * @return 1 if multiplication is safe (no overflow), 0 if it would overflow.
+ * @threadsafe Yes.
+ * @see SocketSecurity_safe_multiply() for inline safe multiplication.
+ * @see SocketSecurity_check_add() for addition overflow checks.
+ * @see SocketSecurity_SizeExceeded for exception on failure in other contexts.
  */
 extern int SocketSecurity_check_multiply (size_t a, size_t b, size_t *result);
 
 /**
- * SocketSecurity_check_add - Check for addition overflow
- * @a: First operand
- * @b: Second operand
- * @result: Output for sum (may be NULL if just checking)
+ * @brief Check for safe addition of two sizes without overflow.
+ * @ingroup foundation
+ * @param a First size operand.
+ * @param b Second size operand.
+ * @param result [out] Pointer to store the sum if safe, or NULL to just check.
  *
- * Safely adds two sizes, detecting overflow before it occurs.
- *
- * Returns: 1 if addition is safe, 0 if would overflow
- * Thread-safe: Yes
+ * Performs safe addition check, optionally storing the result if no overflow occurs.
+ * @return 1 if addition is safe (no overflow), 0 if it would overflow.
+ * @threadsafe Yes.
+ * @see SocketSecurity_safe_add() for inline safe addition function.
+ * @see SocketSecurity_check_multiply() for multiplication checks.
  */
 extern int SocketSecurity_check_add (size_t a, size_t b, size_t *result);
 
 /**
- * SocketSecurity_safe_multiply - Multiply with overflow check
- * @a: First operand
- * @b: Second operand
+ * @brief Perform safe multiplication with overflow protection.
+ * @ingroup foundation
+ * @param a First operand.
+ * @param b Second operand.
  *
- * Multiplies two sizes, returning 0 on overflow.
- *
- * Returns: Product, or 0 if overflow would occur
- * Thread-safe: Yes
+ * Computes the product a * b, returning 0 if either operand is 0 or if the
+ * multiplication would cause integer overflow.
+ * @return The product if safe and non-zero operands, 0 otherwise.
+ * @threadsafe Yes (pure arithmetic, no side effects).
+ * @note This function returns 0 for zero operands or overflow; use
+ *       SocketSecurity_check_multiply() if distinction is needed.
+ * @see SocketSecurity_check_multiply() for validation without computation.
+ * @see SocketSecurity_safe_add() for safe addition.
  */
 static inline size_t
 SocketSecurity_safe_multiply (size_t a, size_t b)
@@ -349,14 +402,17 @@ SocketSecurity_safe_multiply (size_t a, size_t b)
 }
 
 /**
- * SocketSecurity_safe_add - Add with overflow check
- * @a: First operand
- * @b: Second operand
+ * @brief Perform safe addition with overflow protection.
+ * @ingroup foundation
+ * @param a First operand.
+ * @param b Second operand.
  *
- * Adds two sizes, returning SIZE_MAX on overflow.
- *
- * Returns: Sum, or SIZE_MAX if overflow would occur
- * Thread-safe: Yes
+ * Computes the sum a + b, returning SIZE_MAX if the addition would cause integer overflow.
+ * @return The sum if safe, SIZE_MAX otherwise (indicating overflow).
+ * @threadsafe Yes (pure arithmetic, no side effects).
+ * @note Distinguish overflow from valid SIZE_MAX sum by context or prior check.
+ * @see SocketSecurity_check_add() for validation before computation.
+ * @see SocketSecurity_safe_multiply() for safe multiplication.
  */
 static inline size_t
 SocketSecurity_safe_add (size_t a, size_t b)
@@ -372,19 +428,42 @@ SocketSecurity_safe_add (size_t a, size_t b)
  */
 
 /**
- * SOCKET_SECURITY_VALID_SIZE - Check if size is within safe limits
+ * @brief Macro to check if a size is within security allocation limits.
+ * @ingroup foundation
+ * @param s The size value to validate.
+ * @return Non-zero if valid (s > 0 && s <= SOCKET_SECURITY_MAX_ALLOCATION), zero otherwise.
+ *
+ * Provides a fast, inline check for safe allocation sizes at compile or runtime.
+ * @see SocketSecurity_check_size() for the equivalent function call.
+ * @see SocketSecurity_get_max_allocation() for retrieving the limit value.
  */
 #define SOCKET_SECURITY_VALID_SIZE(s)                                         \
   ((size_t)(s) > 0 && (size_t)(s) <= SOCKET_SECURITY_MAX_ALLOCATION)
 
 /**
- * SOCKET_SECURITY_CHECK_OVERFLOW_MUL - Check multiplication overflow
+ * @brief Macro to check if multiplication of two sizes would overflow.
+ * @ingroup foundation
+ * @param a First operand.
+ * @param b Second operand.
+ * @return Non-zero if safe (b == 0 || a <= SIZE_MAX / b), zero if overflow risk.
+ *
+ * Inline overflow check for size multiplications, returns true for zero b (safe, result 0).
+ * @see SocketSecurity_check_multiply() for function version with optional result storage.
+ * @see SocketSecurity_safe_multiply() for computing safe product.
  */
 #define SOCKET_SECURITY_CHECK_OVERFLOW_MUL(a, b)                              \
   ((b) == 0 || (a) <= SIZE_MAX / (b))
 
 /**
- * SOCKET_SECURITY_CHECK_OVERFLOW_ADD - Check addition overflow
+ * @brief Macro to check if addition of two sizes would overflow.
+ * @ingroup foundation
+ * @param a First operand.
+ * @param b Second operand.
+ * @return Non-zero if safe (a <= SIZE_MAX - b), zero if overflow risk.
+ *
+ * Inline overflow check for size additions.
+ * @see SocketSecurity_check_add() for function version with optional result.
+ * @see SocketSecurity_safe_add() for computing safe sum.
  */
 #define SOCKET_SECURITY_CHECK_OVERFLOW_ADD(a, b) ((a) <= SIZE_MAX - (b))
 
@@ -394,10 +473,13 @@ SocketSecurity_safe_add (size_t a, size_t b)
  */
 
 /**
- * SocketSecurity_has_tls - Check if TLS support is compiled in
- *
- * Returns: 1 if TLS available, 0 otherwise
- * Thread-safe: Yes
+ * @brief Check if TLS support is enabled in the build.
+ * @ingroup foundation
+ * @return 1 if the library was compiled with TLS support (SOCKET_HAS_TLS), 0 otherwise.
+ * @threadsafe Yes (compile-time constant check).
+ * @see #if SOCKET_HAS_TLS for conditional code inclusion.
+ * @see @ref security "Security Module" for TLS-related functionality.
+ * @see SocketTLS.h for TLS APIs when available.
  */
 static inline int
 SocketSecurity_has_tls (void)
@@ -410,10 +492,13 @@ SocketSecurity_has_tls (void)
 }
 
 /**
- * SocketSecurity_has_compression - Check if HTTP compression is available
- *
- * Returns: 1 if compression available, 0 otherwise
- * Thread-safe: Yes
+ * @brief Check if HTTP compression support is compiled in.
+ * @ingroup foundation
+ * @return 1 if HTTP/1.1 compression (gzip/deflate) is available, 0 otherwise.
+ * @threadsafe Yes (compile-time constant).
+ * @see SOCKETHTTP1_HAS_COMPRESSION for the build configuration macro.
+ * @see SocketHTTP1.h for using compression in HTTP/1.1 transfers.
+ * @see @ref http "HTTP Module" for protocol-level compression details.
  */
 static inline int
 SocketSecurity_has_compression (void)

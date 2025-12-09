@@ -29,6 +29,7 @@ CMD_TEMPLATES=("redundancy" "refactor" "security" "comment")
 # Selected filters and templates
 declare -a SELECTED_SUBDIRS=()
 declare -a SELECTED_TEMPLATES=()
+HEADERS_ONLY=false
 
 # Show usage/help
 show_help() {
@@ -40,27 +41,30 @@ show_help() {
     echo -e "${YELLOW}Options:${NC}"
     echo "  -h, --help     Show this help message"
     echo "  -l, --list     List available subdirectories with file counts"
+    echo "  -headers       Process header files only (use with -comment)"
     echo ""
     echo -e "${YELLOW}Subdirectory Filters:${NC} (select which src/ subdirs to process)"
-    echo "  -core          Process src/core/*.c files"
-    echo "  -dns           Process src/dns/*.c files"
-    echo "  -http          Process src/http/*.c files"
-    echo "  -poll          Process src/poll/*.c files"
-    echo "  -pool          Process src/pool/*.c files"
-    echo "  -socket        Process src/socket/*.c files"
-    echo "  -tls           Process src/tls/*.c files"
+    echo "  -core          Process src/core/*.c files (or include/core/*.h with -headers)"
+    echo "  -dns           Process src/dns/*.c files (or include/dns/*.h with -headers)"
+    echo "  -http          Process src/http/*.c files (or include/http/*.h with -headers)"
+    echo "  -poll          Process src/poll/*.c files (or include/poll/*.h with -headers)"
+    echo "  -pool          Process src/pool/*.c files (or include/pool/*.h with -headers)"
+    echo "  -socket        Process src/socket/*.c files (or include/socket/*.h with -headers)"
+    echo "  -tls           Process src/tls/*.c files (or include/tls/*.h with -headers)"
     echo ""
     echo -e "${YELLOW}Command Templates:${NC} (select which .cursor/commands/*.md to use)"
-    echo "  -redundancy    Use @.cursor/commands/redundancy.md"
-    echo "  -refactor      Use @.cursor/commands/refactor.md"
-    echo "  -security      Use @.cursor/commands/security.md"
-    echo "  -comment       Use @.cursor/commands/comment.md"
+    echo "  -redundancy    Use @.cursor/commands/redundancy.md (.c files only)"
+    echo "  -refactor      Use @.cursor/commands/refactor.md (.c files only)"
+    echo "  -security      Use @.cursor/commands/security.md (.c files only)"
+    echo "  -comment       Use @.cursor/commands/comment.md (.c and .h files, or .h only with -headers)"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
-    echo "  $0 -core -security              # security.md on 7 core files"
-    echo "  $0 -http -redundancy            # redundancy.md on 21 http files"
-    echo "  $0 -core -redundancy -refactor  # both templates on core files"
-    echo "  $0 -socket -tls -security       # security.md on socket+tls files"
+    echo "  $0 -core -security              # security.md on core .c files"
+    echo "  $0 -http -redundancy            # redundancy.md on http .c files"
+    echo "  $0 -core -redundancy -refactor  # both templates on core .c files"
+    echo "  $0 -socket -tls -security       # security.md on socket+tls .c files"
+    echo "  $0 -core -comment               # comment.md on core .c and .h files"
+    echo "  $0 -core -comment -headers      # comment.md on core .h files only"
     echo ""
 }
 
@@ -68,29 +72,56 @@ show_help() {
 list_subdirs() {
     echo -e "${GREEN}Available subdirectories:${NC}"
     echo ""
-    printf "  ${CYAN}%-10s${NC} %-25s %s\n" "Flag" "Path" "Files"
-    printf "  %-10s %-25s %s\n" "----" "----" "-----"
-    
-    local total=0
+    printf "  ${CYAN}%-10s${NC} %-25s %-10s %-25s %s\n" "Flag" "Source Path" "Files" "Header Path" "Files"
+    printf "  %-10s %-25s %-10s %-25s %s\n" "----" "-----------" "-----" "-----------" "-----"
+
+    local total_c=0
+    local total_h=0
     for subdir in "${SUBDIRS[@]}"; do
-        local dir_path="${REPO_ROOT}/src/${subdir}"
-        if [ -d "$dir_path" ]; then
-            count=$(find "$dir_path" -maxdepth 1 -name "*.c" -type f | wc -l)
-        else
-            count=0
+        local src_path="${REPO_ROOT}/src/${subdir}"
+        local include_path="${REPO_ROOT}/include/${subdir}"
+
+        local count_c=0
+        local count_h=0
+
+        # Count .c files
+        if [ -d "$src_path" ]; then
+            count_c=$(find "$src_path" -maxdepth 1 -name "*.c" -type f | wc -l)
         fi
-        printf "  ${YELLOW}-%-9s${NC} src/%-21s %s\n" "$subdir" "${subdir}/*.c" "$count"
-        ((total += count)) || true
+
+        # Count .h files
+        if [ -d "$include_path" ]; then
+            count_h=$(find "$include_path" -maxdepth 1 -name "*.h" -type f | wc -l)
+        fi
+
+        printf "  ${YELLOW}-%-9s${NC} src/%-19s %-10s" "$subdir" "${subdir}/*.c" "$count_c"
+        if [ "$count_h" -gt 0 ]; then
+            printf " include/%-19s %s\n" "${subdir}/*.h" "$count_h"
+        else
+            printf " %-25s -\n" "(no headers)"
+        fi
+
+        ((total_c += count_c)) || true
+        ((total_h += count_h)) || true
     done
-    
+
     echo ""
-    printf "  ${GREEN}%-10s${NC} %-25s %s\n" "(total)" "src/*/*.c" "$total"
+    printf "  ${GREEN}%-10s${NC} %-25s %-10s" "(total)" "src/*/*.c" "$total_c"
+    if [ "$total_h" -gt 0 ]; then
+        printf " include/*/*.h          %s\n" "$total_h"
+    else
+        printf " %-25s -\n" "(no headers)"
+    fi
     echo ""
-    
+
     echo -e "${GREEN}Available command templates:${NC}"
     echo ""
     for tmpl in "${CMD_TEMPLATES[@]}"; do
-        echo -e "  ${YELLOW}-${tmpl}${NC}    @.cursor/commands/${tmpl}.md"
+        if [ "$tmpl" = "comment" ]; then
+            echo -e "  ${YELLOW}-${tmpl}${NC}    @.cursor/commands/${tmpl}.md (supports .c/.h files, use -headers for .h only)"
+        else
+            echo -e "  ${YELLOW}-${tmpl}${NC}    @.cursor/commands/${tmpl}.md (.c files only)"
+        fi
     done
     echo ""
 }
@@ -172,6 +203,10 @@ while [[ $# -gt 0 ]]; do
             SELECTED_TEMPLATES+=("comment")
             shift
             ;;
+        -headers)
+            HEADERS_ONLY=true
+            shift
+            ;;
         *)
             echo -e "${RED}Error: Unknown option: $1${NC}" >&2
             echo "Use -h or --help for usage information" >&2
@@ -193,6 +228,22 @@ if [ ${#SELECTED_TEMPLATES[@]} -eq 0 ]; then
     echo "Use at least one of: -redundancy, -refactor, -security, -comment" >&2
     echo "Use -h or --help for usage information" >&2
     exit 1
+fi
+
+# Validate -headers flag usage
+if [ "$HEADERS_ONLY" = true ]; then
+    has_comment=false
+    for tmpl in "${SELECTED_TEMPLATES[@]}"; do
+        if [ "$tmpl" = "comment" ]; then
+            has_comment=true
+            break
+        fi
+    done
+    if [ "$has_comment" = false ]; then
+        echo -e "${RED}Error: -headers flag can only be used with -comment${NC}" >&2
+        echo "Use -h or --help for usage information" >&2
+        exit 1
+    fi
 fi
 
 # Check if tmux is available
@@ -217,25 +268,79 @@ echo -e "${CYAN}Templates:${NC} ${SELECTED_TEMPLATES[*]}"
 echo -e "${CYAN}Prompt:${NC} ${PROMPT_STRING}"
 echo ""
 
-# Collect all .c files from selected subdirectories
+# Collect files from selected subdirectories
+# For comment template: include both .c and .h files, or only .h files if -headers is set
+# For other templates: include only .c files
 declare -a ALL_FILES=()
-for subdir in "${SELECTED_SUBDIRS[@]}"; do
-    dir_path="${REPO_ROOT}/src/${subdir}"
-    if [ -d "$dir_path" ]; then
-        while IFS= read -r -d '' file; do
-            ALL_FILES+=("$file")
-        done < <(find "$dir_path" -maxdepth 1 -name "*.c" -type f -print0 | sort -z)
+
+# Check if comment template is selected
+COMMENT_SELECTED=false
+for tmpl in "${SELECTED_TEMPLATES[@]}"; do
+    if [ "$tmpl" = "comment" ]; then
+        COMMENT_SELECTED=true
+        break
     fi
 done
+
+for subdir in "${SELECTED_SUBDIRS[@]}"; do
+    if [ "$COMMENT_SELECTED" = true ] && [ "$HEADERS_ONLY" = true ]; then
+        # Comment + headers only: collect only .h files from include/
+        include_dir="${REPO_ROOT}/include/${subdir}"
+        if [ -d "$include_dir" ]; then
+            while IFS= read -r -d '' file; do
+                ALL_FILES+=("$file")
+            done < <(find "$include_dir" -maxdepth 1 -name "*.h" -type f -print0)
+        fi
+    elif [ "$COMMENT_SELECTED" = true ]; then
+        # Comment without headers only: collect both .c and .h files
+        # Collect .c files from src/
+        src_dir="${REPO_ROOT}/src/${subdir}"
+        if [ -d "$src_dir" ]; then
+            while IFS= read -r -d '' file; do
+                ALL_FILES+=("$file")
+            done < <(find "$src_dir" -maxdepth 1 -name "*.c" -type f -print0)
+        fi
+        # Collect .h files from include/
+        include_dir="${REPO_ROOT}/include/${subdir}"
+        if [ -d "$include_dir" ]; then
+            while IFS= read -r -d '' file; do
+                ALL_FILES+=("$file")
+            done < <(find "$include_dir" -maxdepth 1 -name "*.h" -type f -print0)
+        fi
+    else
+        # Non-comment templates: collect only .c files from src/
+        src_dir="${REPO_ROOT}/src/${subdir}"
+        if [ -d "$src_dir" ]; then
+            while IFS= read -r -d '' file; do
+                ALL_FILES+=("$file")
+            done < <(find "$src_dir" -maxdepth 1 -name "*.c" -type f -print0)
+        fi
+    fi
+done
+
+# Sort all files for consistent ordering
+mapfile -t ALL_FILES < <(printf '%s\n' "${ALL_FILES[@]}" | sort)
 
 TOTAL_COMMANDS=${#ALL_FILES[@]}
 
 if [ $TOTAL_COMMANDS -eq 0 ]; then
-    echo -e "${YELLOW}Warning: No .c files found in selected subdirectories${NC}" >&2
+    if [ "$COMMENT_SELECTED" = true ] && [ "$HEADERS_ONLY" = true ]; then
+        echo -e "${YELLOW}Warning: No .h files found in selected subdirectories${NC}" >&2
+    elif [ "$COMMENT_SELECTED" = true ]; then
+        echo -e "${YELLOW}Warning: No .c or .h files found in selected subdirectories${NC}" >&2
+    else
+        echo -e "${YELLOW}Warning: No .c files found in selected subdirectories${NC}" >&2
+    fi
     exit 0
 fi
 
-echo -e "${GREEN}Found ${TOTAL_COMMANDS} files to process${NC}"
+if [ "$COMMENT_SELECTED" = true ] && [ "$HEADERS_ONLY" = true ]; then
+    echo -e "${GREEN}Found ${TOTAL_COMMANDS} header files to process${NC}"
+elif [ "$COMMENT_SELECTED" = true ]; then
+    echo -e "${GREEN}Found ${TOTAL_COMMANDS} files to process (.c and .h files)${NC}"
+else
+    echo -e "${GREEN}Found ${TOTAL_COMMANDS} files to process (.c files only)${NC}"
+fi
 echo -e "${YELLOW}Will create windows with 5 splits each${NC}"
 echo "Press Enter to start, or Ctrl+C to cancel..."
 read -r < /dev/tty

@@ -2,13 +2,54 @@
 #define SOCKETPOOL_PRIVATE_H_INCLUDED
 
 /**
- * @brief SocketPool-private.h - Private implementation details for SocketPool
+ * @file SocketPool-private.h
+ * @brief Private implementation details and internal structures for SocketPool module.
  * @ingroup connection_mgmt
+ * @internal
  *
- * Part of the Socket Library
+ * **NOT FOR PUBLIC USE** - Internal header shared across SocketPool source files
+ * (SocketPool-*.c). Defines opaque structures, thread-local exceptions, helper
+ * macros (RAISE_POOL_*), and utility functions for connection management, hashing,
+ * and lifecycle operations.
  *
- * Contains internal structures, macros, and function declarations shared
- * across SocketPool implementation files. Not for public use.
+ * KEY COMPONENTS:
+ * - struct Connection: Pre-allocated slot with socket, buffers, timestamps, TLS/reconnect state
+ * - struct AsyncConnectContext: Tracks pending DNS+connect operations
+ * - struct SocketPool_T: Full pool state (connections array, hash table, mutex, stats, etc.)
+ * - Exception macros: RAISE_POOL_ERROR, RAISE_POOL_MSG, RAISE_POOL_FMT for consistent error handling
+ * - Hashing: socketpool_hash() using library-wide SOCKET_HASH_SIZE
+ * - Utilities: Slot allocation/reset, buffer management, free list/hash table ops
+ *
+ * USAGE GUIDELINES:
+ * - Include only from SocketPool implementation files (.c in src/pool/)
+ * - Use RAISE_POOL_* macros for exceptions with detailed errno/context
+ * - All operations assume pool mutex protection (except atomic fields)
+ * - Memory from pool arena; no manual free() for internal allocations
+ * - Thread-local SocketPool_DetailedException defined in SocketPool-core.c
+ *
+ * DEPENDENCIES:
+ * - Foundation (@ref foundation): Arena, Except, SocketConfig, SocketUtil
+ * - Core I/O (@ref core_io): Socket, SocketBuf, SocketDNS
+ * - Utilities (@ref utilities): SocketRateLimit, SocketIPTracker
+ * - Security (@ref security): SocketSYNProtect (optional)
+ * - Socket (@ref socket): SocketReconnect (optional)
+ * - TLS (@ref security): SocketTLSContext (conditional on SOCKET_HAS_TLS)
+ *
+ * IMPLEMENTATION NOTES:
+ * - Multi-file split: core.c (init/free), connections.c (add/remove/lookup), etc.
+ * - Hash table: FD-based with golden ratio multiplier for distribution
+ * - Free list: Doubly-linked for O(1) allocation/deallocation
+ * - Stats: Atomic counters for monitoring (total_added, removed, reused, etc.)
+ * - Drain: Atomic state with monotonic deadlines for graceful shutdown
+ *
+ * @warning Direct use from application code undefined; may change without notice.
+ * @note Regenerate docs with `make doc` after changes to validate links.
+ *
+ * @see SocketPool.h for complete public API documentation and examples.
+ * @see src/pool/ for split implementation files (core.c, connections.c, drain.c, etc.).
+ * @see docs/POOL.md (if exists) or README.md for architectural overview.
+ * @see @ref connection_mgmt "Connection Management Group" for module relationships.
+ * @see Doxyfile for documentation generation configuration.
  */
 
 #include <pthread.h>
@@ -36,12 +77,33 @@
  * ============================================================================
  */
 
-/** Hash table size - uses central configuration for consistency */
+/**
+ * @brief Alias for the library's central hash table size configuration.
+ * @ingroup connection_mgmt
+ * @details
+ * Reuses @ref foundation::SOCKET_HASH_TABLE_SIZE (default: 1021, a prime number)
+ * for consistent hash table sizing across modules like pools, polls, DNS, and timers.
+ * This uniformity ensures predictable performance and collision characteristics.
+ *
+ * Can be overridden at compile time via -DSOCKET_HASH_TABLE_SIZE=<value>.
+ *
+ * @note Prime table sizes minimize hash clustering and improve lookup efficiency.
+ * @warning Changing this may affect hash distribution; test thoroughly.
+ *
+ * @see SocketConfig.h::SOCKET_HASH_TABLE_SIZE for definition and rationale.
+ * @see socketpool_hash() for SocketPool hash computation.
+ * @see socket_util_hash_fd() and related functions in @ref utilities "Utilities Module".
+ * @see @ref foundation "Foundation Module" for core configs.
+ * @see HASH_GOLDEN_RATIO constant in SocketUtil.h for hash multiplier.
+ */
 #define SOCKET_HASH_SIZE SOCKET_HASH_TABLE_SIZE
 
 /* ============================================================================
  * Exception Handling
  * ============================================================================
+ *
+ * @brief Thread-local exception for detailed error messages.
+ * @ingroup connection_mgmt
  *
  * Thread-local exception for detailed error messages across all SocketPool
  * implementation files. Uses the centralized error buffer (socket_error_buf)
@@ -61,7 +123,13 @@
 /**
  * @brief Thread-local exception for detailed error messages.
  * @ingroup connection_mgmt
- * Extern declaration - defined in SocketPool-core.c.
+ *
+ * Extern declaration - actual definition in SocketPool-core.c.
+ * Uses shared socket_error_buf for consistent error formatting.
+ *
+ * @see RAISE_POOL_ERROR macro.
+ * @see socket_error_buf in SocketUtil.h.
+ * @see SocketPool_Failed exception type.
  */
 #ifdef _WIN32
 extern __declspec (thread) Except_T SocketPool_DetailedException;
@@ -70,12 +138,16 @@ extern __thread Except_T SocketPool_DetailedException;
 #endif
 
 /**
- * @brief RAISE_POOL_ERROR - Raise exception with detailed error message
+ * @brief Raise exception with detailed error message.
  * @ingroup connection_mgmt
  *
- * Creates a thread-local copy of the exception with reason from
- * socket_error_buf. Thread-safe: prevents race conditions when
- * multiple threads raise same exception type.
+ * Creates thread-local copy of exception with reason from socket_error_buf.
+ * @threadsafe Prevents race conditions when multiple threads raise same
+ * exception type. Used throughout SocketPool implementation.
+ *
+ * @see RAISE_POOL_MSG for formatted messages.
+ * @see RAISE_POOL_FMT for errno-formatted messages.
+ * @see SocketPool_Failed exception type.
  */
 #define RAISE_POOL_ERROR(exception)                                           \
   do                                                                          \
@@ -87,12 +159,14 @@ extern __thread Except_T SocketPool_DetailedException;
   while (0)
 
 /**
- * @brief RAISE_POOL_MSG - Format error message (without errno) and raise in one step
+ * @brief Format error message (without errno) and raise.
  * @ingroup connection_mgmt
  *
  * Combines SOCKET_ERROR_MSG + RAISE_POOL_ERROR for cleaner code.
- * @note Thread-safe: Yes (uses thread-local buffers)
- * @ingroup connection_mgmt
+ * @threadsafe Uses thread-local buffers.
+ *
+ * @see RAISE_POOL_FMT for errno-formatted messages.
+ * @see RAISE_POOL_ERROR for direct exception raising.
  */
 #define RAISE_POOL_MSG(exception, fmt, ...)                                   \
   do                                                                          \
@@ -103,12 +177,14 @@ extern __thread Except_T SocketPool_DetailedException;
   while (0)
 
 /**
- * @brief RAISE_POOL_FMT - Format error message (with errno) and raise in one step
+ * @brief Format error message (with errno) and raise.
  * @ingroup connection_mgmt
  *
  * Combines SOCKET_ERROR_FMT + RAISE_POOL_ERROR for cleaner code.
- * @note Thread-safe: Yes (uses thread-local buffers)
- * @ingroup connection_mgmt
+ * @threadsafe Uses thread-local buffers.
+ *
+ * @see RAISE_POOL_MSG for non-errno messages.
+ * @see RAISE_POOL_ERROR for direct exception raising.
  */
 #define RAISE_POOL_FMT(exception, fmt, ...)                                   \
   do                                                                          \
@@ -123,29 +199,94 @@ extern __thread Except_T SocketPool_DetailedException;
  * ============================================================================
  */
 
+/**
+ * @brief Internal structure representing a pooled connection slot.
+ * @ingroup connection_mgmt
+ * @details
+ * Each instance manages a single socket connection with dedicated input/output
+ * buffers, activity timestamps, user data, and optional advanced features
+ * like auto-reconnection and TLS session persistence.
+ *
+ * CORE MANAGEMENT:
+ * - Pre-allocated in fixed-size array (pool->connections) for predictable memory
+ * - Fast O(1) lookup via hash table (pool->hash_table) keyed on socket FD
+ * - Free list (pool->free_list) for quick slot recycling
+ * - Linked lists for hash collisions (hash_next) and free slots (free_next)
+ *
+ * STATE TRACKING:
+ * - active flag distinguishes used vs free slots
+ * - last_activity for idle timeout enforcement
+ * - created_at for age-based cleanup and stats
+ *
+ * EXTENSIONS:
+ * - reconnect: Optional SocketReconnect_T for automatic reconnection
+ * - tracked_ip: Per-IP rate limiting via SocketIPTracker_T
+ * - TLS fields: Context, handshake state, session reuse (conditional on SOCKET_HAS_TLS)
+ *
+ * THREAD SAFETY: All modifications protected by pool->mutex. Readers should
+ * acquire mutex or use atomic checks for count/state. Accessors in public API
+ * handle locking transparently.
+ *
+ * LIFECYCLE:
+ * - Initialized via SocketPool_connections_initialize_slot()
+ * - Buffers allocated in SocketPool_connections_alloc_buffers()
+ * - Added to pool via find_or_create_slot() / insert_into_hash_table()
+ * - Removed via remove_from_hash_table() / SocketPool_connections_reset_slot()
+ * - Buffers released in SocketPool_connections_release_buffers()
+ *
+ * @note Fields like hash_next/free_next are internal linking only; ignore for app logic.
+ * @warning Direct field access bypasses thread safety - use accessors or lock pool.
+ * @security TLS session reuse reduces handshake overhead but validate saved_session
+ * via validate_saved_session() before reuse to prevent stale sessions.
+ *
+ * @see SocketPool_T::connections for array allocation.
+ * @see socketpool_hash() for FD-based hashing.
+ * @see find_slot() / find_free_slot() for lookup/allocation logic.
+ * @see SocketPool_add() / SocketPool_get() for public entry points.
+ * @see SocketPool.h::Connection_T for public opaque interface.
+ * @see @ref connection_mgmt "Connection Mgmt Module" for pooling patterns.
+ * @see @ref socket::SocketReconnect for reconnection integration.
+ * @see @ref security::SocketTLSContext for TLS support.
+ */
 struct Connection
 {
-  Socket_T socket;
-  SocketBuf_T inbuf;
-  SocketBuf_T outbuf;
-  void *data;
-  time_t last_activity;
-  time_t created_at; /**< Connection creation timestamp (for age tracking) */
-  int active;
-  struct Connection *hash_next;
-  struct Connection *free_next;
+  Socket_T socket;           /**< Associated socket (NULL if free) */
+  SocketBuf_T inbuf;         /**< Input buffer for reading data */
+  SocketBuf_T outbuf;        /**< Output buffer for writing data */
+  void *data;                /**< User data pointer */
+  time_t last_activity;      /**< Last activity timestamp for idle timeout */
+  time_t created_at;         /**< Connection creation timestamp (for age tracking) */
+  int active;                /**< Non-zero if slot contains active connection */
+  struct Connection *hash_next; /**< Next in hash table collision chain */
+  struct Connection *free_next; /**< Next in free list (when inactive) */
   SocketReconnect_T
-      reconnect; /**< Auto-reconnection context (NULL if disabled) */
+      reconnect;             /**< Auto-reconnection context (NULL if disabled) */
   char
-      *tracked_ip; /**< Tracked IP for per-IP limiting (NULL if not tracked) */
+      *tracked_ip;           /**< Tracked IP for per-IP limiting (NULL if not tracked) */
 #if SOCKET_HAS_TLS
-  SocketTLSContext_T tls_ctx; /**< TLS context for this connection */
-  int tls_handshake_complete; /**< TLS handshake state */
-  SSL_SESSION *tls_session;   /**< Saved session for potential reuse */
-  int last_socket_fd; /**< FD of last socket (for session persistence) */
+  SocketTLSContext_T tls_ctx;     /**< TLS context for this connection */
+  int tls_handshake_complete;     /**< TLS handshake state */
+  SSL_SESSION *tls_session;        /**< Saved session for potential reuse */
+  int last_socket_fd;             /**< FD of last socket (for session persistence) */
 #endif
 };
 
+/**
+ * @brief Internal typedef for connection structure pointer.
+ * @ingroup connection_mgmt
+ *
+ * Opaque externally; provides handle to managed connection state including
+ * socket, buffers, timestamps, and optional TLS/reconnect contexts.
+ * Access internal fields only within SocketPool implementation files.
+ *
+ * @note This typedef matches public Connection_T in SocketPool.h but includes
+ * full struct definition here for implementation convenience.
+ *
+ * @see SocketPool.h::Connection_T for public opaque type documentation.
+ * @see struct Connection for detailed field descriptions.
+ * @see Connection_* accessor functions in SocketPool.h.
+ * @see @ref connection_mgmt "Connection Mgmt Module" for usage patterns.
+ */
 typedef struct Connection *Connection_T;
 
 /* ============================================================================
@@ -154,21 +295,61 @@ typedef struct Connection *Connection_T;
  */
 
 /**
- * @brief AsyncConnectContext - Context for tracking async connect operations
+ * @brief Internal context structure for tracking asynchronous connect operations.
  * @ingroup connection_mgmt
  *
- * Allocated from pool arena, linked in pool->async_ctx list.
- * Sockets in pending contexts must be freed when pool is freed.
+ * Manages state for pending connections initiated via SocketPool_connect_async(),
+ * which combines DNS resolution, socket connection, and pool integration.
+ * Instances are allocated from the pool's arena and chained in pool->async_ctx list.
+ *
+ * LIFECYCLE:
+ * - Allocated in SocketPool_connect_async() with user callback and data
+ * - DNS resolution started via SocketDNS_resolve() (req field)
+ * - Socket created and connect() initiated upon DNS success
+ * - Moved to active pool slot on successful connect, callback invoked
+ * - Removed and freed on failure, timeout, or pool destruction
+ * - Sockets in failed contexts are closed and freed during pool cleanup
+ *
+ * THREAD SAFETY: List operations protected by pool mutex. DNS callbacks execute
+ * in worker threads; user SocketPool_ConnectCallback must be thread-safe.
+ *
+ * MEMORY: All fields arena-allocated; no individual free() calls needed.
+ *
+ * @note Limit concurrent async connects via pool configuration to prevent resource exhaustion.
+ * @warning User callback runs in DNS worker thread context - avoid blocking operations.
+ *
+ * @see SocketPool_connect_async() for public async connect initiation.
+ * @see SocketPool_ConnectCallback for completion notification requirements.
+ * @see SocketDNS.h::Request_T for DNS request handling (@ref dns module).
+ * @see AsyncConnectContext_T for opaque typedef.
+ * @see SocketPool_free() for ensuring pending sockets are cleaned up.
+ * @see SocketPool.h for overall connection pool API.
+ * @see @ref connection_mgmt "Connection Management" for resilience patterns.
+ * @see @ref dns "DNS Module" for asynchronous resolution details.
  */
 struct AsyncConnectContext
 {
   SocketPool_T pool;                /**< Pool instance */
   Socket_T socket;                  /**< Socket being connected */
-  Request_T req;          /**< DNS request handle */
+  Request_T req;          /**< DNS resolution request (@ref SocketDNS::Request_T). Used to track and retrieve results from async DNS lookup for host resolution. @see SocketDNS_resolve() for initiating resolution, SocketDNS_cancel() for aborting, SocketDNS_getresult() for retrieving addrinfo results. */
   SocketPool_ConnectCallback cb;    /**< User callback */
   void *user_data;                  /**< User data for callback */
   struct AsyncConnectContext *next; /**< Next context in list */
 };
+/**
+ * @brief Internal typedef for async connect context pointer.
+ * @ingroup connection_mgmt
+ *
+ * Opaque handle for tracking asynchronous connection operations involving DNS
+ * resolution, socket creation, and pool integration. Managed internally by
+ * SocketPool during async connect lifecycle.
+ *
+ * @note Not exposed in public API; used only within SocketPool implementation.
+ *
+ * @see struct AsyncConnectContext for private fields.
+ * @see SocketPool_connect_async() in SocketPool.h for public async API.
+ * @see SocketPool-private.h for internal async connect details.
+ */
 typedef struct AsyncConnectContext *AsyncConnectContext_T;
 
 /* ============================================================================
@@ -176,9 +357,84 @@ typedef struct AsyncConnectContext *AsyncConnectContext_T;
  * ============================================================================
  */
 
+/**
+ * @brief Core internal structure defining the complete SocketPool state.
+ * @ingroup connection_mgmt
+ * @details
+ * Comprehensive state container for connection pooling, including pre-allocated
+ * slots, hash tables, rate limiters, SYN protection, drain logic, and statistics.
+ * Designed for thread-safe concurrent access with minimal contention.
+ *
+ * CORE STRUCTURES:
+ * - connections[]: Fixed array of Connection slots (pre-allocated for performance)
+ * - hash_table[]: O(1) lookup by socket FD using socketpool_hash()
+ * - free_list: Linked free slots for rapid recycling
+ * - cleanup_buffer: Temp storage for bulk operations like idle cleanup
+ *
+ * SYNCHRONIZATION:
+ * - mutex: pthread_mutex_t protects all mutable state except atomic fields
+ * - state: _Atomic int for lock-free drain state reads (POOL_STATE_* enums)
+ *
+ * ASYNC OPERATIONS:
+ * - dns: Lazy-init SocketDNS_T for async resolution in connect_async()
+ * - async_ctx: Linked list of pending AsyncConnectContext_T
+ * - async_pending_count: Security limit on concurrent async operations
+ *
+ * RESILIENCE FEATURES:
+ * - reconnect_policy: Default policy for SocketReconnect integration
+ * - conn_limiter: SocketRateLimit_T for global connection rate
+ * - ip_tracker: SocketIPTracker_T for per-IP limits
+ * - syn_protect: SocketSYNProtect_T for flood protection
+ *
+ * GRACEFUL SHUTDOWN (DRAIN):
+ * - state: Atomic enum (RUNNING/DRAINING/STOPPED)
+ * - drain_deadline_ms: Monotonic timer for force-stop after timeout
+ * - drain_cb: Optional user notification on drain complete
+ *
+ * CLEANUP & MONITORING:
+ * - idle_timeout_sec: Per-connection idle eviction
+ * - last_cleanup_ms / cleanup_interval_ms: Periodic maintenance scheduling
+ * - validation_cb: User-defined health checks before reuse
+ * - resize_cb: Notification on pool capacity changes
+ * - stats_*: Atomic counters for performance metrics (added/removed/reused/etc.)
+ * - stats_start_time_ms: Sliding window for rate calculations
+ *
+ * THREAD SAFETY:
+ * - Mutex guards all operations except atomic state/count reads
+ * - Accessors (public API) acquire/release mutex transparently
+ * - Stats counters use atomic increments for concurrent updates
+ * - DNS callbacks execute in worker threads (user must handle synchronization)
+ *
+ * MEMORY MANAGEMENT:
+ * - arena: Root allocator; all internal allocations (buffers, lists, trackers) from here
+ * - No manual free(); arena_clear() or dispose() handles bulk cleanup
+ * - Pre-warming allocates buffers proactively to reduce latency
+ *
+ * CONFIGURATION ENFORCEMENT:
+ * - Limits clamped via socketpool_enforce_*() inline functions
+ * - Compile-time overrides via SocketConfig.h defines
+ *
+ * @note Atomic state enables non-blocking checks for draining/stopped conditions.
+ * @warning Avoid long-held locks in callbacks; prefer quick operations or defer work.
+ * @security Rate limiters and trackers prevent DoS; configure conservatively for prod.
+ * @performance Hash table size (SOCKET_HASH_SIZE) impacts lookup speed; tune if needed.
+ *
+ * @see #SocketPool_T for public opaque typedef (in SocketPool.h).
+ * @see struct Connection for per-connection state.
+ * @see socketpool_enforce_range() family for param validation.
+ * @see SocketPool_new() / SocketPool_free() for lifecycle.
+ * @see SocketPool_resize() / SocketPool_prewarm() for dynamic sizing.
+ * @see SocketPool_cleanup() for idle management.
+ * @see SocketPool_drain() for graceful shutdown.
+ * @see SocketPool_setconnrate() / SocketPool_setmaxperip() for limits.
+ * @see @ref connection_mgmt for module overview and patterns.
+ * @see @ref foundation::Arena_T for memory model.
+ * @see @ref utilities::SocketRateLimit_T for rate limiting details.
+ */
 #define T SocketPool_T
 struct T
 {
+  /* Core data structures */
   struct Connection *connections; /**< Pre-allocated connection array */
   Connection_T *hash_table;       /**< Hash table for O(1) lookup */
   Connection_T free_list;         /**< Linked list of free slots */
@@ -186,8 +442,10 @@ struct T
   size_t maxconns;                /**< Maximum connections */
   size_t bufsize;                 /**< Buffer size per connection */
   size_t count;                   /**< Active connection count */
-  Arena_T arena;                  /**< Memory arena */
+  Arena_T arena;                  /**< Memory arena for all allocations */
   pthread_mutex_t mutex;          /**< Thread safety mutex */
+
+  /* DNS and async operations */
   SocketDNS_T dns;                /**< Internal DNS resolver (lazy init) */
   AsyncConnectContext_T
       async_ctx;              /**< Linked list of pending async connects */
@@ -244,61 +502,308 @@ struct T
 };
 #undef T
 
+/**
+ * @brief Allocate array of connection structures.
+ * @ingroup connection_mgmt
+ * @param maxconns Maximum number of connections.
+ * @return Allocated connection array or NULL on failure.
+ *
+ * Allocates array of Connection structures for the pool's pre-allocated slots.
+ *
+ * @see SocketPool_new() for usage.
+ * @see SocketPool_connections_initialize_slot() for initialization.
+ * @see SocketPool_connections_reset_slot() for cleanup.
+ */
 extern struct Connection *
 SocketPool_connections_allocate_array (size_t maxconns);
 
+/**
+ * @brief Allocate hash table for connection lookup.
+ * @ingroup connection_mgmt
+ * @param arena Memory arena for allocation.
+ * @return Allocated hash table array or NULL on failure.
+ *
+ * Allocates array of Connection_T pointers for O(1) hash table lookup.
+ *
+ * @see SocketPool_new() for usage.
+ * @see SOCKET_HASH_SIZE for table size.
+ * @see insert_into_hash_table() for insertion.
+ * @see find_slot() for lookup.
+ * @see socketpool_hash() for hash computation.
+ */
 extern Connection_T *
 SocketPool_connections_allocate_hash_table (Arena_T arena);
 
+/**
+ * @brief Initialize a connection slot to default state.
+ * @ingroup connection_mgmt
+ * @param conn Connection structure to initialize.
+ *
+ * Zeroes all fields and sets up initial state for a connection slot.
+ *
+ * @see SocketPool_connections_reset_slot() for cleanup.
+ * @see SocketPool_connections_allocate_array() for allocation.
+ * @see find_free_slot() for finding available slots.
+ */
 extern void SocketPool_connections_initialize_slot (struct Connection *conn);
 
+/**
+ * @brief Allocate input/output buffers for connection.
+ * @ingroup connection_mgmt
+ * @param arena Memory arena for allocation.
+ * @param bufsize Size of each buffer.
+ * @param conn Connection to allocate buffers for.
+ * @return 0 on success, -1 on allocation failure.
+ *
+ * Allocates SocketBuf_T instances for connection's input and output buffers.
+ *
+ * @see SocketPool_new() for buffer allocation.
+ * @see SocketBuf_new() for buffer creation.
+ * @see SocketPool_connections_release_buffers() for cleanup.
+ * @see Connection_inbuf() and Connection_outbuf() for access.
+ */
 extern int SocketPool_connections_alloc_buffers (Arena_T arena, size_t bufsize,
                                                  Connection_T conn);
 
+/**
+ * @brief Find connection slot by socket (internal).
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Socket to find.
+ * @return Connection slot or NULL if not found.
+ *
+ * Performs O(1) hash table lookup to find existing connection.
+ *
+ * @see SocketPool_get() for public interface.
+ * @see insert_into_hash_table() for insertion.
+ * @see remove_from_hash_table() for removal.
+ * @see socketpool_hash() for hash computation.
+ */
 extern Connection_T find_slot (SocketPool_T pool, const Socket_T socket);
 
+/**
+ * @brief Find first available free connection slot.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return Free connection slot or NULL if pool is full.
+ *
+ * Scans free list to find available slot for new connections.
+ *
+ * @see SocketPool_add() for usage.
+ * @see check_pool_full() for pool capacity checking.
+ * @see remove_from_free_list() for slot activation.
+ * @see return_to_free_list() for slot deactivation.
+ */
 extern Connection_T find_free_slot (const SocketPool_T pool);
 
+/**
+ * @brief Check if pool has reached maximum capacity.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return Non-zero if pool is full, 0 if slots available.
+ *
+ * Fast check without acquiring locks.
+ *
+ * @see SocketPool_add() for capacity enforcement.
+ */
 extern int check_pool_full (const SocketPool_T pool);
 
+/**
+ * @brief Remove connection from free list.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to remove from free list.
+ *
+ * Updates free list pointers when slot becomes active.
+ *
+ * @see return_to_free_list() for reverse operation.
+ */
 extern void remove_from_free_list (SocketPool_T pool, Connection_T conn);
 
+/**
+ * @brief Return connection to free list.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to return to free list.
+ *
+ * Updates free list pointers when slot becomes inactive.
+ *
+ * @see remove_from_free_list() for reverse operation.
+ */
 extern void return_to_free_list (SocketPool_T pool, Connection_T conn);
 
+/**
+ * @brief Prepare free slot for new connection.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Free slot to prepare.
+ * @return 0 on success, -1 on buffer allocation failure.
+ *
+ * Cleans up old connection state and allocates new buffers.
+ *
+ * @see initialize_connection() for connection setup.
+ */
 extern int prepare_free_slot (SocketPool_T pool, Connection_T conn);
 
+/**
+ * @brief Update existing connection slot activity.
+ * @ingroup connection_mgmt
+ * @param conn Connection slot to update.
+ * @param now Current timestamp.
+ *
+ * Updates last activity timestamp for idle timeout tracking.
+ *
+ * @see SocketPool_get() for automatic updates.
+ */
 extern void update_existing_slot (Connection_T conn, time_t now);
 
+/**
+ * @brief Insert connection into hash table.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to insert.
+ * @param socket Socket for hash computation.
+ *
+ * Inserts connection into hash table for O(1) lookup.
+ *
+ * @see remove_from_hash_table() for removal.
+ * @see socketpool_hash() for hash computation.
+ */
 extern void insert_into_hash_table (SocketPool_T pool, Connection_T conn,
                                     Socket_T socket);
 
+/**
+ * @brief Increment active connection count.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ *
+ * Thread-safe increment of pool's active connection counter.
+ *
+ * @see decrement_pool_count() for reverse operation.
+ */
 extern void increment_pool_count (SocketPool_T pool);
 
+/**
+ * @brief Initialize connection with socket and timestamp.
+ * @ingroup connection_mgmt
+ * @param conn Connection to initialize.
+ * @param socket Socket for connection.
+ * @param now Current timestamp.
+ *
+ * Sets up connection with socket, timestamps, and initial state.
+ *
+ * @see prepare_free_slot() for buffer allocation.
+ */
 extern void initialize_connection (Connection_T conn, Socket_T socket,
                                    time_t now);
 
+/**
+ * @brief Find existing connection or create new slot.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Socket to find or add.
+ * @param now Current timestamp.
+ * @return Existing connection or new slot, NULL if pool full.
+ *
+ * Core function for SocketPool_get() and SocketPool_add().
+ *
+ * @see SocketPool_get() for lookup-only.
+ * @see SocketPool_add() for add-only.
+ */
 extern Connection_T find_or_create_slot (SocketPool_T pool, Socket_T socket,
                                          time_t now);
 
+/**
+ * @brief Remove connection from hash table.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param conn Connection to remove.
+ * @param socket Socket for hash computation.
+ *
+ * Removes connection from hash table during cleanup/removal.
+ *
+ * @see insert_into_hash_table() for insertion.
+ */
 extern void remove_from_hash_table (SocketPool_T pool, Connection_T conn,
                                     Socket_T socket);
 
+/**
+ * @brief Release connection's buffer resources.
+ * @ingroup connection_mgmt
+ * @param conn Connection to release buffers from.
+ *
+ * Releases input and output buffers back to arena.
+ *
+ * @see SocketPool_connections_alloc_buffers() for allocation.
+ */
 extern void SocketPool_connections_release_buffers (Connection_T conn);
 
+/**
+ * @brief Reset connection slot to clean state.
+ * @ingroup connection_mgmt
+ * @param conn Connection slot to reset.
+ *
+ * Clears all fields and prepares slot for reuse.
+ *
+ * @see SocketPool_connections_initialize_slot() for initial setup.
+ */
 extern void SocketPool_connections_reset_slot (Connection_T conn);
 
+/**
+ * @brief Decrement active connection count.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ *
+ * Thread-safe decrement of pool's active connection counter.
+ *
+ * @see increment_pool_count() for reverse operation.
+ */
 extern void decrement_pool_count (SocketPool_T pool);
 
+/**
+ * @brief Validate TLS session for reuse.
+ * @ingroup connection_mgmt
+ * @param conn Connection with potential saved session.
+ * @param now Current timestamp.
+ *
+ * Checks if saved TLS session is still valid for reuse.
+ *
+ * @see SocketPool_add() for session saving.
+ */
 extern void validate_saved_session (Connection_T conn, time_t now);
 
+/**
+ * @brief Allocate buffer for cleanup operations.
+ * @ingroup connection_mgmt
+ * @param arena Memory arena for allocation.
+ * @param maxconns Maximum connections (buffer size).
+ * @return Allocated cleanup buffer or NULL on failure.
+ *
+ * Allocates temporary buffer for bulk cleanup operations.
+ *
+ * @see SocketPool_cleanup() for usage.
+ */
 extern Socket_T *SocketPool_cleanup_allocate_buffer (Arena_T arena,
                                                      size_t maxconns);
 
 /**
- * socketpool_hash - Compute hash for socket (internal)
- * @socket: Socket to hash
+ * @brief Compute hash for socket (internal).
+ * @ingroup connection_mgmt
+ * @param socket Socket_T to hash (must not be NULL).
+ * @return unsigned hash value for hash table lookup.
  *
- * Returns: Hash value
+ * Uses golden ratio hash function for optimal distribution and collision resistance.
+ * Hash is computed from socket file descriptor using multiplication method.
+ *
+ * PERFORMANCE: O(1) constant time, optimized for cache performance.
+ * DISTRIBUTION: Designed for low collision rate with typical FD ranges.
+ *
+ * @see SOCKET_HASH_SIZE for table size.
+ * @see socket_util_hash_fd in SocketUtil.h for implementation.
+ * @see insert_into_hash_table() for usage.
+ * @see find_slot() for lookup.
+ * @see HASH_GOLDEN_RATIO in SocketUtil.h for constants.
+ * @see Socket_fd() for getting file descriptor.
  */
 extern unsigned socketpool_hash (const Socket_T socket);
 
@@ -308,12 +813,17 @@ extern unsigned socketpool_hash (const Socket_T socket);
  */
 
 /**
- * safe_time - Get current time with error handling
- *
- * Returns: Current time
- * Raises: SocketPool_Failed on system error
- * @note Thread-safe: Yes
+ * @brief Get current time with error handling.
  * @ingroup connection_mgmt
+ * @return Current time as time_t.
+ * @throws SocketPool_Failed on system error.
+ * @threadsafe Yes.
+ *
+ * Safe wrapper around time() that raises exception on failure.
+ * Used for connection timestamps and idle timeout tracking.
+ *
+ * @see Connection_lastactivity() for usage.
+ * @see Connection_created_at() for creation timestamps.
  */
 extern time_t safe_time (void);
 
@@ -323,14 +833,20 @@ extern time_t safe_time (void);
  */
 
 /**
- * socketpool_enforce_range - Clamp value to min/max bounds
- * @val: Value to clamp
- * @minv: Minimum allowed
- * @maxv: Maximum allowed
- *
- * Returns: Clamped value
- * @note Thread-safe: Yes - pure function
+ * @brief Clamp value to min/max bounds.
  * @ingroup connection_mgmt
+ * @param val size_t value to clamp.
+ * @param minv size_t minimum allowed value.
+ * @param maxv size_t maximum allowed value.
+ * @return Clamped value within bounds.
+ * @threadsafe Yes - pure function, no side effects.
+ *
+ * Used for enforcing configuration limits on pool parameters.
+ * Prevents invalid values from causing security issues or crashes.
+ *
+ * @see socketpool_enforce_max_connections().
+ * @see socketpool_enforce_buffer_size().
+ * @see SocketPool_new() for parameter validation.
  */
 static inline size_t
 socketpool_enforce_range (size_t val, size_t minv, size_t maxv)
@@ -339,10 +855,14 @@ socketpool_enforce_range (size_t val, size_t minv, size_t maxv)
 }
 
 /**
- * socketpool_enforce_max_connections - Enforce the maximum connection limit
- * @maxconns: Requested maximum number of connections
+ * @brief Enforce maximum connection limit.
+ * @ingroup connection_mgmt
+ * @param maxconns Requested maximum number of connections.
+ * @return Enforced value (clamped to SOCKET_MAX_CONNECTIONS, min 1).
+ * @threadsafe Yes - pure function.
  *
- * Returns: Enforced value (clamped to SOCKET_MAX_CONNECTIONS, min 1)
+ * @see SocketPool_resize() for runtime resizing.
+ * @see SOCKET_MAX_CONNECTIONS for global limit.
  */
 static inline size_t
 socketpool_enforce_max_connections (size_t maxconns)
@@ -351,10 +871,14 @@ socketpool_enforce_max_connections (size_t maxconns)
 }
 
 /**
- * socketpool_enforce_buffer_size - Enforce buffer size limits
- * @bufsize: Requested buffer size
+ * @brief Enforce buffer size limits.
+ * @ingroup connection_mgmt
+ * @param bufsize Requested buffer size.
+ * @return Enforced buffer size (clamped between min and max).
+ * @threadsafe Yes - pure function.
  *
- * Returns: Enforced buffer size (clamped between min and max)
+ * @see SocketPool_set_bufsize() for runtime buffer size changes.
+ * @see SOCKET_MIN_BUFFER_SIZE and SOCKET_MAX_BUFFER_SIZE.
  */
 static inline size_t
 socketpool_enforce_buffer_size (size_t bufsize)

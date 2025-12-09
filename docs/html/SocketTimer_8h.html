@@ -115,9 +115,12 @@ $(document).ready(function(){initNavTree('SocketTimer_8h.html',''); initResizabl
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketTimer.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketTimer.h File Reference<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>High-performance timer subsystem integrated with the event loop.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -139,8 +142,9 @@ $(document).ready(function(){initNavTree('SocketTimer_8h.html',''); initResizabl
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque pointer to a timer instance.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -148,66 +152,65 @@ Typedefs</h2></td></tr>
 <tr class="separator:a89e39166f8e24595119733321f2a313e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9e4be8bc025aedb61cc0b77e8926312" id="r_af9e4be8bc025aedb61cc0b77e8926312"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></td></tr>
 <tr class="separator:af9e4be8bc025aedb61cc0b77e8926312"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb51f69cdbf1b882a7a4226959c4fca7" id="r_afb51f69cdbf1b882a7a4226959c4fca7"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a>) (void *userdata)</td></tr>
-<tr class="separator:afb51f69cdbf1b882a7a4226959c4fca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafb51f69cdbf1b882a7a4226959c4fca7" id="r_gafb51f69cdbf1b882a7a4226959c4fca7"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a>) (void *userdata)</td></tr>
+<tr class="memdesc:gafb51f69cdbf1b882a7a4226959c4fca7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Type for timer expiration callback functions.  <br /></td></tr>
+<tr class="separator:gafb51f69cdbf1b882a7a4226959c4fca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a2537cebf106e583079ec472086a26d65" id="r_a2537cebf106e583079ec472086a26d65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a2537cebf106e583079ec472086a26d65">SocketTimer_add</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t delay_ms, <a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
-<tr class="separator:a2537cebf106e583079ec472086a26d65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6961bde0e491d732450b66577294d097" id="r_a6961bde0e491d732450b66577294d097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a6961bde0e491d732450b66577294d097">SocketTimer_add_repeating</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t interval_ms, <a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
-<tr class="separator:a6961bde0e491d732450b66577294d097"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6f7ca05c6cfc7c69ddc3d676a681bc62" id="r_a6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
-<tr class="separator:a6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c5519b89e0bba69f26d03b6893ba779" id="r_a4c5519b89e0bba69f26d03b6893ba779"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a4c5519b89e0bba69f26d03b6893ba779">SocketTimer_remaining</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
-<tr class="separator:a4c5519b89e0bba69f26d03b6893ba779"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2537cebf106e583079ec472086a26d65" id="r_ga2537cebf106e583079ec472086a26d65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t delay_ms, <a class="el" href="group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga2537cebf106e583079ec472086a26d65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a one-shot timer.  <br /></td></tr>
+<tr class="separator:ga2537cebf106e583079ec472086a26d65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6961bde0e491d732450b66577294d097" id="r_ga6961bde0e491d732450b66577294d097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga6961bde0e491d732450b66577294d097">SocketTimer_add_repeating</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t interval_ms, <a class="el" href="group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga6961bde0e491d732450b66577294d097"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a repeating timer.  <br /></td></tr>
+<tr class="separator:ga6961bde0e491d732450b66577294d097"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6f7ca05c6cfc7c69ddc3d676a681bc62" id="r_ga6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
+<tr class="memdesc:ga6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel a pending timer.  <br /></td></tr>
+<tr class="separator:ga6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4c5519b89e0bba69f26d03b6893ba779" id="r_ga4c5519b89e0bba69f26d03b6893ba779"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga4c5519b89e0bba69f26d03b6893ba779">SocketTimer_remaining</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
+<tr class="memdesc:ga4c5519b89e0bba69f26d03b6893ba779"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get milliseconds until timer expiry.  <br /></td></tr>
+<tr class="separator:ga4c5519b89e0bba69f26d03b6893ba779"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a2f0acf311c238671c6d9d14d4cc7c158" id="r_a2f0acf311c238671c6d9d14d4cc7c158"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a2f0acf311c238671c6d9d14d4cc7c158">SocketTimer_Failed</a></td></tr>
-<tr class="separator:a2f0acf311c238671c6d9d14d4cc7c158"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f0acf311c238671c6d9d14d4cc7c158" id="r_ga2f0acf311c238671c6d9d14d4cc7c158"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga2f0acf311c238671c6d9d14d4cc7c158">SocketTimer_Failed</a></td></tr>
+<tr class="memdesc:ga2f0acf311c238671c6d9d14d4cc7c158"><td class="mdescLeft">&#160;</td><td class="mdescRight">Timer subsystem operation failure.  <br /></td></tr>
+<tr class="separator:ga2f0acf311c238671c6d9d14d4cc7c158"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>SocketTimer - Timer Subsystem</p>
-<p>Provides high-performance timer functionality integrated with the event loop. Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer lookup. Timer callbacks fire automatically during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a>.</p>
-<p>FEATURES:</p><ul>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>High-performance timer subsystem integrated with the event loop. </p>
+<p>Provides high-performance timer functionality integrated with the event loop. Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer lookup. Timer callbacks fire automatically during <a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Wait for I/O events on registered sockets.">SocketPoll_wait()</a>.</p>
+<p>Features:</p><ul>
 <li>One-shot and repeating timers</li>
 <li>Monotonic clock timestamps (immune to wall-clock changes)</li>
 <li>Integrated with SocketPoll event loop</li>
 <li>Thread-safe operations</li>
 <li>Arena-based memory management</li>
 </ul>
-<p>TIMING PRECISION:</p><ul>
+<p>Timing Precision:</p><ul>
 <li>Uses CLOCK_MONOTONIC for timestamps</li>
 <li>Millisecond resolution</li>
 <li>Timers may fire slightly after their deadline due to event loop scheduling</li>
 </ul>
-<p>THREAD SAFETY:</p><ul>
+<p>Thread Safety:</p><ul>
 <li>All operations are thread-safe</li>
 <li>Callbacks execute in the calling thread (SocketPoll_wait thread)</li>
-<li>Do not call <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel()</a> from within timer callbacks</li>
+<li>Do not call <a class="el" href="group__event__system.html#ga6f7ca05c6cfc7c69ddc3d676a681bc62" title="Cancel a pending timer.">SocketTimer_cancel()</a> from within timer callbacks</li>
 </ul>
-<p>LIMITATIONS:</p><ul>
+<p>Limitations:</p><ul>
 <li>Maximum timer delay: ~9.2 billion milliseconds (~107 days)</li>
-<li>Timer IDs wrap around at ~4 billion (unsigned int) </li>
+<li>Timer IDs wrap around at ~4 billion (unsigned int)</li>
 </ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> for event loop integration. </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga2537cebf106e583079ec472086a26d65" title="Add a one-shot timer.">SocketTimer_add()</a> for creating timers. </dd>
+<dd>
+<a class="el" href="group__event__system.html">Event System Modules</a> for other event-driven components. </dd>
+<dd>
+<a class="el" href="SocketReconnect_8h.html#a58c9f07cd1532f285c63cb039c548eed">SocketReconnect_T</a> for reconnection timers. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00036">36</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="af9e4be8bc025aedb61cc0b77e8926312" name="af9e4be8bc025aedb61cc0b77e8926312"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af9e4be8bc025aedb61cc0b77e8926312">&#9670;&#160;</a></span>SocketPoll_T</h2>
 
@@ -220,7 +223,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00041">41</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00069">69</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
 
 </div>
 </div>
@@ -236,220 +239,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00037">37</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
-
-</div>
-</div>
-<a id="afb51f69cdbf1b882a7a4226959c4fca7" name="afb51f69cdbf1b882a7a4226959c4fca7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb51f69cdbf1b882a7a4226959c4fca7">&#9670;&#160;</a></span>SocketTimerCallback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef void(* SocketTimerCallback) (void *userdata)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00044">44</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a2537cebf106e583079ec472086a26d65" name="a2537cebf106e583079ec472086a26d65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2537cebf106e583079ec472086a26d65">&#9670;&#160;</a></span>SocketTimer_add()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> SocketTimer_add </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>delay_ms</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketTimer_add - Add a one-shot timer @poll: Event poll instance to associate timer with @delay_ms: Delay in milliseconds (must be &gt;= 0) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires once after delay_ms milliseconds. Callbacks execute during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a> in the calling thread. </p>
-
-</div>
-</div>
-<a id="a6961bde0e491d732450b66577294d097" name="a6961bde0e491d732450b66577294d097"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6961bde0e491d732450b66577294d097">&#9670;&#160;</a></span>SocketTimer_add_repeating()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> SocketTimer_add_repeating </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int64_t&#160;</td>
-          <td class="paramname"><em>interval_ms</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketTimer_add_repeating - Add a repeating timer @poll: Event poll instance to associate timer with @interval_ms: Interval in milliseconds between firings (must be &gt;= 1) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires repeatedly every interval_ms milliseconds. First firing occurs after interval_ms milliseconds. Use <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel()</a> to stop. </p>
-
-</div>
-</div>
-<a id="a6f7ca05c6cfc7c69ddc3d676a681bc62" name="a6f7ca05c6cfc7c69ddc3d676a681bc62"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6f7ca05c6cfc7c69ddc3d676a681bc62">&#9670;&#160;</a></span>SocketTimer_cancel()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketTimer_cancel </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td>
-          <td class="paramname"><em>timer</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @timer: Timer handle to cancel Returns: 0 on success, -1 if timer already fired or invalid Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Safe to call on already-fired or cancelled timers. Do not call from within a timer callback function. </p>
-
-</div>
-</div>
-<a id="a4c5519b89e0bba69f26d03b6893ba779" name="a4c5519b89e0bba69f26d03b6893ba779"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c5519b89e0bba69f26d03b6893ba779">&#9670;&#160;</a></span>SocketTimer_remaining()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t SocketTimer_remaining </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td>
-          <td class="paramname"><em>timer</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketTimer_remaining - Get milliseconds until timer expiry @poll: Event poll instance timer is associated with @timer: Timer handle to query Returns: Milliseconds until expiry (&gt;= 0), or -1 if timer fired/cancelled Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Returns 0 if timer has already expired but not yet fired. Useful for debugging and implementing timeout logic. </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a2f0acf311c238671c6d9d14d4cc7c158" name="a2f0acf311c238671c6d9d14d4cc7c158"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f0acf311c238671c6d9d14d4cc7c158">&#9670;&#160;</a></span>SocketTimer_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketTimer_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>General timer operation failure </p>
+<p class="definition">Definition at line <a class="el" href="SocketTimer_8h_source.html#l00056">56</a> of file <a class="el" href="SocketTimer_8h_source.html">SocketTimer.h</a>.</p>
 
 </div>
 </div>

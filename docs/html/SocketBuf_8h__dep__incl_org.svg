@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Circular buffer for efficient socket I/O operations.">
 <polygon fill="#999999" stroke="#666666" points="89,-129 18,-129 18,-110 89,-110 89,-129"/>
 <text text-anchor="middle" x="53.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketBuf.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketPool_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketPool_8h.html" target="_top" xlink:title="Connection pooling with automatic lifecycle management.">
 <polygon fill="white" stroke="#666666" points="91,-74 16,-74 16,-55 91,-55 91,-74"/>
 <text text-anchor="middle" x="53.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPool.h</text>
 </a>

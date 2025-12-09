@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Strict UTF&#45;8 validation and encoding utilities.">
 <polygon fill="#999999" stroke="#666666" points="135,-129 55,-129 55,-110 135,-110 135,-129"/>
 <text text-anchor="middle" x="95" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketUTF8.h</text>
 </a>
@@ -66,7 +66,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="214.5,-74 137.5,-74 137.5,-55 214.5,-55 214.5,-74"/>
 <text text-anchor="middle" x="176" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>

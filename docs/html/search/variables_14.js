@@ -1,9 +1,9 @@
 var searchData=
 [
-  ['validate_5futf8_0',['validate_utf8',['../SocketWS_8h.html#a1873fe17fa2f2d2d3c0d16cbfbcfc3f1',1,'SocketWS_Config']]],
-  ['value_1',['value',['../SocketUtil_8h.html#aca7bd4c1b8c5b420e41ba5c949495d96',1,'SocketLogField::value'],['../SocketHPACK_8h.html#acce8321d450efabcb974f62beb953b27',1,'SocketHPACK_Header::value'],['../SocketHTTP2_8h.html#aa503c5a217c84181f7adf368f5eea13f',1,'SocketHTTP2_Setting::value'],['../SocketHTTPClient_8h.html#a21b390a321565e4ebf8be575550c1498',1,'SocketHTTPClient_Cookie::value']]],
-  ['value_5flen_2',['value_len',['../SocketHPACK_8h.html#a7903ffe078d8355010272c36a0ee5413',1,'SocketHPACK_Header']]],
-  ['values_3',['values',['../SocketUtil_8h.html#ad4bec382c27642da1ce45dcf676684e6',1,'SocketMetricsSnapshot']]],
-  ['verify_5fssl_4',['verify_ssl',['../SocketHTTPClient_8h.html#aa5c6daa6286ff5a701a804da14108a4c',1,'SocketHTTPClient_Config']]],
-  ['version_5',['version',['../SocketHTTPClient_8h.html#accda45708658a8ada478121524f85e5e',1,'SocketHTTPClient_Response']]]
+  ['uptime_5fms_0',['uptime_ms',['../group__security.html#addc5d09c4b26fa03979894a037830a03',1,'SocketSYNProtect_Stats']]],
+  ['use_5findexing_1',['use_indexing',['../group__http.html#af2abf6915fc7c46c2205371def976d39',1,'SocketHPACK_EncoderConfig']]],
+  ['user_5fagent_2',['user_agent',['../group__http.html#a0d03d16dc3eae06b6ab0b89b288c44df',1,'SocketHTTPClient_Config']]],
+  ['userinfo_3',['userinfo',['../group__http.html#a85ab0b451029f7c337ed9ac3d8c3563c',1,'SocketHTTP_URI']]],
+  ['userinfo_5flen_4',['userinfo_len',['../group__http.html#a797d43d47f2e2ea1bba956e9ec29819f',1,'SocketHTTP_URI']]],
+  ['username_5',['username',['../group__http.html#aebecaec836c2d21aeb36c83c6a037b58',1,'SocketHTTPClient_Auth::username'],['../group__core__io.html#a579714517d79e28bb9b03190d67158d5',1,'SocketProxy_Config::username']]]
 ];

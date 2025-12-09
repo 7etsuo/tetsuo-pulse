@@ -2,11 +2,16 @@
 #define SOCKETRECONNECT_PRIVATE_INCLUDED
 
 /**
- * @brief SocketReconnect-private.h - Internal structures for Reconnection Framework
- * @ingroup core_io
+ * @file SocketReconnect-private.h
+ * @ingroup connection_mgmt
+ * @brief Internal implementation details for automatic reconnection framework.
+ * @internal
  *
- * This header contains internal implementation details for the SocketReconnect
- * module. Not for public use.
+ * This header contains private structures and helper functions for the
+ * SocketReconnect module. Not intended for public use or direct inclusion.
+ *
+ * @see SocketReconnect.h for the public API.
+ * @see @ref connection_mgmt "Connection Management Modules" group.
  */
 
 #include "core/Arena.h"
@@ -21,12 +26,20 @@
  * ============================================================================
  */
 
-/* Error buffer size */
+/**
+ * @brief Maximum length for internal error messages.
+ * @internal
+ * @note Fixed size to avoid dynamic allocation in hot paths.
+ */
 #ifndef SOCKET_RECONNECT_ERROR_BUFSIZE
 #define SOCKET_RECONNECT_ERROR_BUFSIZE 256
 #endif
 
-/* Maximum hostname length */
+/**
+ * @brief Maximum length for hostname strings (excluding null terminator).
+ * @internal
+ * @note Matches standard DNS name limits, sufficient for IPv6 literals.
+ */
 #ifndef SOCKET_RECONNECT_MAX_HOST_LEN
 #define SOCKET_RECONNECT_MAX_HOST_LEN 255
 #endif
@@ -37,8 +50,15 @@
  */
 
 /**
- * @brief SocketReconnect_CircuitState - Internal circuit breaker state
- * @ingroup core_io
+ * @brief Internal circuit breaker states used in reconnection logic.
+ * @ingroup connection_mgmt
+ * @internal
+ *
+ * These states manage the circuit breaker pattern to prevent cascading failures
+ * during outage conditions.
+ *
+ * @see SocketReconnect_State for the public-facing state enumeration.
+ * @see SocketReconnect_T::circuit_state for usage in context structure.
  */
 typedef enum
 {
@@ -53,11 +73,16 @@ typedef enum
  */
 
 /**
- * @brief SocketReconnect_T - Reconnecting connection context
- * @ingroup core_io
+ * @brief Opaque context for managing reconnecting socket connections.
+ * @ingroup connection_mgmt
+ * @internal
  *
- * Manages the full reconnection lifecycle including backoff timing,
- * circuit breaker state, and health monitoring.
+ * This structure holds all state and configuration for a single reconnecting
+ * connection instance. It implements exponential backoff, circuit breaker,
+ * health checks, and transparent I/O with automatic reconnection.
+ *
+ * @see SocketReconnect.h for public interface and creation functions.
+ * @see SocketReconnect_Policy_T for configuration options.
  */
 struct SocketReconnect_T
 {
@@ -108,66 +133,77 @@ struct SocketReconnect_T
  */
 
 /**
- * socketreconnect_get_time_ms - Get current monotonic time in milliseconds
- * Returns: Current monotonic time in milliseconds
+ * @brief Get current monotonic time in milliseconds.
+ * @internal
+ * @return Current monotonic time in milliseconds (int64_t).
  *
- * Uses Socket_get_monotonic_ms() for security against clock manipulation.
+ * Internal helper using Socket_get_monotonic_ms() to ensure monotonic time
+ * resistant to system clock adjustments.
+ *
+ * @see Socket_get_monotonic_ms() in SocketUtil for details.
+ * @see socketreconnect_elapsed_ms() for elapsed time calculation.
  */
 static inline int64_t
-socketreconnect_get_time_ms (void)
+socketreconnect_get_time_ms(void)
 {
-  return Socket_get_monotonic_ms ();
+  return Socket_get_monotonic_ms();
 }
 
 /**
- * socketreconnect_elapsed_ms - Calculate elapsed time in milliseconds
- * @start_ms: Start time from socketreconnect_get_time_ms()
- * Returns: Elapsed milliseconds
+ * @brief Calculate elapsed time since a start timestamp.
+ * @internal
+ * @param start_ms Start time from socketreconnect_get_time_ms().
+ * @return Elapsed milliseconds since start (non-negative).
  *
- * Uses monotonic time, guaranteed non-negative and non-decreasing.
+ * Uses monotonic time to ensure accurate, non-decreasing measurements.
+ *
+ * @see socketreconnect_get_time_ms() for timestamp acquisition.
  */
 static inline int64_t
-socketreconnect_elapsed_ms (int64_t start_ms)
+socketreconnect_elapsed_ms(int64_t start_ms)
 {
-  int64_t now = socketreconnect_get_time_ms ();
+  int64_t now = socketreconnect_get_time_ms();
   return (now > start_ms) ? (now - start_ms) : 0;
 }
 
 /**
- * socketreconnect_random_double - Get random double in [0.0, 1.0)
- * Returns: Random double value
+ * @brief Generate a random double in [0.0, 1.0) for backoff jitter.
+ * @internal
+ * @return Random double value in [0.0, 1.0).
  *
- * Uses a simple xorshift-based PRNG for jitter calculation.
- * Not cryptographically secure, but sufficient for timing jitter.
- * @note Thread-safe: Uses thread-local storage for the PRNG seed.
- * @ingroup core_io
+ * Prefers cryptographically secure randomness via SocketCrypto_random_bytes().
+ * Falls back to thread-local xorshift PRNG seeded by monotonic time.
+ * Intended only for non-cryptographic use like exponential backoff jitter.
+ *
+ * @note Thread-safe: Uses thread-local storage for fallback PRNG seed.
+ * @warning Not suitable for security-sensitive randomness.
+ *
+ * @see SocketCrypto_random_bytes() for secure source.
+ * @see SocketReconnect_Policy_T::jitter for policy integration.
+ * @see socketreconnect_get_time_ms() for time-based seeding.
  */
 static inline double
-socketreconnect_random_double (void)
+socketreconnect_random_double(void)
 {
   unsigned int value;
-  if (SocketCrypto_random_bytes (&value, sizeof (value)) == 0)
-    {
-      return (double)value / (double)0xFFFFFFFFU;
-    }
-  else
-    {
-      /* Fallback to time-based PRNG */
+  if (SocketCrypto_random_bytes(&value, sizeof(value)) == 0) {
+    return (double)value / (double)0xFFFFFFFFU;
+  } else {
+    /* Fallback to time-based PRNG */
 #ifdef _WIN32
-      static __declspec (thread) unsigned int seed = 0;
+    static __declspec(thread) unsigned int seed = 0;
 #else
-      static __thread unsigned int seed = 0;
+    static __thread unsigned int seed = 0;
 #endif
-      if (seed == 0)
-        {
-          seed = (unsigned int)Socket_get_monotonic_ms ();
-        }
-      /* xorshift32 */
-      seed ^= seed << 13;
-      seed ^= seed >> 17;
-      seed ^= seed << 5;
-      return (double)seed / (double)0xFFFFFFFFU;
+    if (seed == 0) {
+      seed = (unsigned int)Socket_get_monotonic_ms();
     }
+    /* xorshift32 */
+    seed ^= seed << 13;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;
+    return (double)seed / (double)0xFFFFFFFFU;
+  }
 }
 
 #endif /* SOCKETRECONNECT_PRIVATE_INCLUDED */

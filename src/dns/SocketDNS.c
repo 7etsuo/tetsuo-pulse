@@ -1,14 +1,15 @@
 /**
  * @file SocketDNS.c
- * @ingroup core_io
+ * @ingroup dns
  * @brief Asynchronous DNS resolution implementation.
  *
- * Part of the Socket Library
+ * Public API implementation for the DNS resolver module.
+ * Contains validation functions, resolver lifecycle management,
+ * and async resolution coordination.
  *
- * Contains:
- * - Public API functions (new, free, resolve, cancel)
- * - Accessor functions (getters/setters for configuration)
- * - Validation functions (hostname, IP address, port validation)
+ * @see SocketDNS-internal.c for internal implementation details.
+ * @see SocketDNS.h for public API declarations.
+ * @see SocketDNS-private.h for internal structures.
  */
 
 /* System headers first */

@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="High&#45;performance timer subsystem integrated with the event loop.">
 <polygon fill="#999999" stroke="#666666" points="340.5,-184 260.5,-184 260.5,-165 340.5,-165 340.5,-184"/>
 <text text-anchor="middle" x="300.5" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTimer.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketPoll_8h.html" target="_top" xlink:title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events.">
 <polygon fill="white" stroke="#666666" points="336.5,-129 264.5,-129 264.5,-110 336.5,-110 336.5,-129"/>
 <text text-anchor="middle" x="300.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll.h</text>
 </a>
@@ -38,7 +38,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000003"><a xlink:href="SocketHTTPServer_8h.html" target="_top" xlink:title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">
 <polygon fill="white" stroke="#666666" points="115.5,-74 5.5,-74 5.5,-55 115.5,-55 115.5,-74"/>
 <text text-anchor="middle" x="60.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHTTPServer.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketHappyEyeballs_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000006"><a xlink:href="SocketHappyEyeballs_8h.html" target="_top" xlink:title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections.">
 <polygon fill="white" stroke="#666666" points="293.5,-74 171.5,-74 171.5,-55 293.5,-55 293.5,-74"/>
 <text text-anchor="middle" x="232.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHappyEyeballs.h</text>
 </a>
@@ -92,7 +92,7 @@
 <!-- Node7 -->
 <g id="Node000007" class="node">
 <title>Node7</title>
-<g id="a_Node000007"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000007"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Abstract interface for platform&#45;specific polling implementations.">
 <polygon fill="white" stroke="#666666" points="425.5,-74 311.5,-74 311.5,-55 425.5,-55 425.5,-74"/>
 <text text-anchor="middle" x="368.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll_backend.h</text>
 </a>
@@ -110,7 +110,7 @@
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000008"><a xlink:href="SocketProxy_8h.html" target="_top" xlink:title="Proxy tunneling support for HTTP CONNECT and SOCKS protocols.">
 <polygon fill="white" stroke="#666666" points="523.5,-74 443.5,-74 443.5,-55 523.5,-55 523.5,-74"/>
 <text text-anchor="middle" x="483.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketProxy.h</text>
 </a>

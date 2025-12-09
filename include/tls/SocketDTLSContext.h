@@ -21,7 +21,7 @@
  * - Non-blocking compatible configuration
  * - Exception-based error handling with detailed OpenSSL error messages
  *
- * Thread safety: Contexts are not thread-safe for modification after creation.
+ * Thread safety Contexts are not thread-safe for modification after creation.
  * Share read-only after full setup, or use per-thread contexts.
  * SSL objects created from context are per-connection and thread-safe.
  *
@@ -32,6 +32,8 @@
  * @see SocketDTLSContext_new_server() for server context creation.
  * @see SocketDTLSContext_new_client() for client context creation.
  * @see SocketDTLS_enable() for applying DTLS to UDP sockets.
+ * @see @ref SocketTLSContext_T for TLS context management on TCP sockets.
+ * @see @ref SocketDTLSConfig.h for DTLS configuration constants.
  */
 
 #include "core/Arena.h"
@@ -56,10 +58,11 @@ typedef struct SocketDgram_T *SocketDgram_T;
  */
 
 /**
- * SocketDTLSContext_new_server - Create server DTLS context with cert/key
- * @cert_file: Path to server certificate file (PEM format)
- * @key_file: Path to private key file (PEM format)
- * @ca_file: Optional path to CA file/directory for client auth (NULL to
+ * @brief Create server DTLS context with cert/key
+ * @ingroup security
+ * @param cert_file Path to server certificate file (PEM format)
+ * @param key_file Path to private key file (PEM format)
+ * @param ca_file Optional path to CA file/directory for client auth (NULL to
  * disable)
  *
  * Creates a server-side DTLS context, loads server cert/key, sets DTLS 1.2
@@ -67,38 +70,40 @@ typedef struct SocketDgram_T *SocketDgram_T;
  * Cookie exchange is NOT enabled by default - call
  * SocketDTLSContext_enable_cookie_exchange() for DoS protection.
  *
- * Returns: New opaque SocketDTLSContext_T instance
- * Raises: SocketDTLS_Failed on OpenSSL errors, file I/O, or invalid cert/key
- * Thread-safe: Yes - each call creates independent context
+ * @return New opaque SocketDTLSContext_T instance
+ * @throws SocketDTLS_Failed on OpenSSL errors, file I/O, or invalid cert/key
+ * @threadsafe Yes - each call creates independent context
  */
 extern T SocketDTLSContext_new_server (const char *cert_file,
                                        const char *key_file,
                                        const char *ca_file);
 
 /**
- * SocketDTLSContext_new_client - Create client DTLS context
- * @ca_file: Optional path to CA file/directory for server verification (NULL
+ * @brief Create client DTLS context
+ * @ingroup security
+ * @param ca_file Optional path to CA file/directory for server verification (NULL
  * to disable)
  *
  * Creates a client-side DTLS context with DTLS 1.2 minimum and modern ciphers.
  * Loads CA if provided and enables peer verification.
  *
- * Returns: New opaque SocketDTLSContext_T instance
- * Raises: SocketDTLS_Failed on OpenSSL errors or invalid CA
- * Thread-safe: Yes
+ * @return New opaque SocketDTLSContext_T instance
+ * @throws SocketDTLS_Failed on OpenSSL errors or invalid CA
+ * @threadsafe Yes
  */
 extern T SocketDTLSContext_new_client (const char *ca_file);
 
 /**
- * SocketDTLSContext_free - Dispose of DTLS context and resources
- * @ctx_p: Pointer to context pointer (set to NULL on success)
+ * @brief Dispose of DTLS context and resources
+ * @ingroup security
+ * @param ctx_p Pointer to context pointer (set to NULL on success)
  *
  * Frees the SSL_CTX, Arena (internal allocations), cookie secret, ALPN data.
  * Caller must not use context after free. Reverse of new_server/client.
  *
- * Returns: void
- * Raises: None (safe for NULL)
- * Thread-safe: Yes (but avoid concurrent use)
+ * @return void
+ * @throws None (safe for NULL)
+ * @threadsafe Yes (but avoid concurrent use)
  */
 extern void SocketDTLSContext_free (T *ctx_p);
 
@@ -108,45 +113,48 @@ extern void SocketDTLSContext_free (T *ctx_p);
  */
 
 /**
- * SocketDTLSContext_load_certificate - Load server certificate and private key
- * @ctx: The DTLS context instance
- * @cert_file: Path to certificate file (PEM)
- * @key_file: Path to private key file (PEM)
+ * @brief Load server certificate and private key
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param cert_file Path to certificate file (PEM)
+ * @param key_file Path to private key file (PEM)
  *
  * Loads and validates server certificate/private key pair. Verifies key
  * matches cert.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on file errors, format issues, or mismatch
- * Thread-safe: No - modifies shared context
+ * @return void
+ * @throws SocketDTLS_Failed on file errors, format issues, or mismatch
+ * @threadsafe No - modifies shared context
  */
 extern void SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
                                                 const char *key_file);
 
 /**
- * SocketDTLSContext_load_ca - Load trusted CA certificates
- * @ctx: The DTLS context instance
- * @ca_file: Path to CA file or directory containing PEM CA certs
+ * @brief Load trusted CA certificates
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param ca_file Path to CA file or directory containing PEM CA certs
  *
  * Loads CA certs for peer verification. Tries as file then directory.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on load errors
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed on load errors
+ * @threadsafe No
  */
 extern void SocketDTLSContext_load_ca (T ctx, const char *ca_file);
 
 /**
- * SocketDTLSContext_set_verify_mode - Set certificate verification policy
- * @ctx: The DTLS context instance
- * @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)
+ * @brief Set certificate verification policy
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param mode Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)
  *
  * Configures peer cert verification behavior, mapping to OpenSSL SSL_VERIFY_*
  * flags.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on invalid mode
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed on invalid mode
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
 
@@ -156,9 +164,9 @@ extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
  */
 
 /**
- * SocketDTLSContext_enable_cookie_exchange - Enable stateless cookie DoS
- * protection
- * @ctx: The DTLS context instance (server only)
+ * @brief Enable stateless cookie DoS protection
+ * @ingroup security
+ * @param ctx The DTLS context instance (server only)
  *
  * Enables RFC 6347 cookie exchange. Server sends HelloVerifyRequest with
  * cookie before allocating per-client state. Client must echo cookie to
@@ -167,41 +175,43 @@ extern void SocketDTLSContext_set_verify_mode (T ctx, TLSVerifyMode mode);
  * A random secret is generated automatically. Use
  * SocketDTLSContext_set_cookie_secret() for deterministic/clustered setups.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on configuration error
- * Thread-safe: No - modifies shared context
+ * @return void
+ * @throws SocketDTLS_Failed on configuration error
+ * @threadsafe No - modifies shared context
  */
 extern void SocketDTLSContext_enable_cookie_exchange (T ctx);
 
 /**
- * SocketDTLSContext_set_cookie_secret - Set cookie HMAC secret key
- * @ctx: The DTLS context instance
- * @secret: Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes)
- * @len: Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN)
+ * @brief Set cookie HMAC secret key
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param secret Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes)
+ * @param len Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN)
  *
  * Sets the secret key used for cookie HMAC generation. Required for
  * clustered deployments where all servers must generate compatible cookies.
  * Call after enable_cookie_exchange() or it will be overwritten.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if invalid length or context not configured
- * Thread-safe: No - modifies shared context
+ * @return void
+ * @throws SocketDTLS_Failed if invalid length or context not configured
+ * @threadsafe No - modifies shared context
  */
 extern void SocketDTLSContext_set_cookie_secret (T ctx,
                                                  const unsigned char *secret,
                                                  size_t len);
 
 /**
- * SocketDTLSContext_rotate_cookie_secret - Generate new cookie secret
- * @ctx: The DTLS context instance
+ * @brief Generate new cookie secret
+ * @ingroup security
+ * @param ctx The DTLS context instance
  *
  * Generates a new random secret for cookie HMAC. Call periodically
  * (e.g., every hour) to limit cookie replay window. In-flight handshakes
  * with old cookie will fail and retry automatically.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on random generation failure
- * Thread-safe: No - modifies shared context
+ * @return void
+ * @throws SocketDTLS_Failed on random generation failure
+ * @threadsafe No - modifies shared context
  */
 extern void SocketDTLSContext_rotate_cookie_secret (T ctx);
 
@@ -211,27 +221,29 @@ extern void SocketDTLSContext_rotate_cookie_secret (T ctx);
  */
 
 /**
- * SocketDTLSContext_set_mtu - Set link MTU for DTLS record sizing
- * @ctx: The DTLS context instance
- * @mtu: Maximum Transmission Unit in bytes
+ * @brief Set link MTU for DTLS record sizing
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param mtu Maximum Transmission Unit in bytes
  *
  * Sets the MTU used for DTLS record fragmentation. Conservative default
  * is 1400 bytes (safe for IPv6 tunnels/VPNs). Use larger values on known
  * LAN environments for better performance.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if MTU out of valid range
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed if MTU out of valid range
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_mtu (T ctx, size_t mtu);
 
 /**
- * SocketDTLSContext_get_mtu - Get configured MTU
- * @ctx: The DTLS context instance
+ * @brief Get configured MTU
+ * @ingroup security
+ * @param ctx The DTLS context instance
  *
- * Returns: Current MTU setting in bytes
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return Current MTU setting in bytes
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern size_t SocketDTLSContext_get_mtu (T ctx);
 
@@ -241,41 +253,44 @@ extern size_t SocketDTLSContext_get_mtu (T ctx);
  */
 
 /**
- * SocketDTLSContext_set_min_protocol - Set minimum supported DTLS version
- * @ctx: The DTLS context instance
- * @version: OpenSSL version constant (e.g., DTLS1_2_VERSION)
+ * @brief Set minimum supported DTLS version
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param version OpenSSL version constant (e.g., DTLS1_2_VERSION)
  *
  * Sets minimum DTLS version. Default is DTLS 1.2.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if cannot set
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed if cannot set
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_min_protocol (T ctx, int version);
 
 /**
- * SocketDTLSContext_set_max_protocol - Set maximum supported DTLS version
- * @ctx: The DTLS context instance
- * @version: OpenSSL version constant (e.g., DTLS1_2_VERSION)
+ * @brief Set maximum supported DTLS version
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param version OpenSSL version constant (e.g., DTLS1_2_VERSION)
  *
  * Sets maximum DTLS version.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if cannot set
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed if cannot set
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_max_protocol (T ctx, int version);
 
 /**
- * SocketDTLSContext_set_cipher_list - Set allowed cipher suites
- * @ctx: The DTLS context instance
- * @ciphers: Cipher list string in OpenSSL format, or NULL for defaults
+ * @brief Set allowed cipher suites
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param ciphers Cipher list string in OpenSSL format, or NULL for defaults
  *
  * Configures allowed ciphers. Defaults to secure modern list if NULL.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if invalid list
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed if invalid list
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
 
@@ -285,19 +300,21 @@ extern void SocketDTLSContext_set_cipher_list (T ctx, const char *ciphers);
  */
 
 /**
- * SocketDTLSContext_set_alpn_protos - Advertise ALPN protocols
- * @ctx: The DTLS context instance
- * @protos: Array of null-terminated protocol strings (e.g., "coap", "h3")
- * @count: Number of protocols
+ * @brief Advertise ALPN protocols
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param protos Array of null-terminated protocol strings (e.g., "coap", "h3")
+ * @param count Number of protocols
  *
  * Sets list of supported ALPN protocols in wire format, allocated from context
  * arena. Validates lengths and formats for TLS compliance.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on invalid protos or allocation error
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed on invalid protos or allocation error
+ * @threadsafe No
+
  *
- * Note: Protocols advertised in preference order (first preferred).
+ * Note Protocols advertised in preference order (first preferred).
  */
 extern void SocketDTLSContext_set_alpn_protos (T ctx, const char **protos,
                                                size_t count);
@@ -308,34 +325,36 @@ extern void SocketDTLSContext_set_alpn_protos (T ctx, const char **protos,
  */
 
 /**
- * SocketDTLSContext_enable_session_cache - Enable session caching
- * @ctx: The DTLS context instance
- * @max_sessions: Maximum number of sessions to cache (>0), 0 for default
- * @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)
+ * @brief Enable session caching
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param max_sessions Maximum number of sessions to cache (>0), 0 for default
+ * @param timeout_seconds Session timeout in seconds, 0 for OpenSSL default (300s)
  *
  * Enables session resumption for reduced handshake latency (1-RTT vs 2-RTT).
  *
- * Returns: void
- * Raises: SocketDTLS_Failed if cannot enable or configure
- * Thread-safe: No - modifies shared context during setup
+ * @return void
+ * @throws SocketDTLS_Failed if cannot enable or configure
+ * @threadsafe No - modifies shared context during setup
  */
 extern void SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
                                                     long timeout_seconds);
 
 /**
- * SocketDTLSContext_get_cache_stats - Get session cache statistics
- * @ctx: The DTLS context instance
- * @hits: Output: number of cache hits
- * @misses: Output: number of cache misses
- * @stores: Output: number of sessions stored
+ * @brief Get session cache statistics
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param hits Output number of cache hits
+ * @param misses Output number of cache misses
+ * @param stores Output number of sessions stored
  *
  * Fills provided pointers with current session cache statistics.
  * Statistics are thread-safe and cumulative since cache enable.
  * If pointers NULL, skipped.
  *
- * Returns: void
- * Raises: None
- * Thread-safe: Yes
+ * @return void
+ * @throws None
+ * @threadsafe Yes
  */
 extern void SocketDTLSContext_get_cache_stats (T ctx, size_t *hits,
                                                size_t *misses, size_t *stores);
@@ -346,17 +365,18 @@ extern void SocketDTLSContext_get_cache_stats (T ctx, size_t *hits,
  */
 
 /**
- * SocketDTLSContext_set_timeout - Set handshake timeout parameters
- * @ctx: The DTLS context instance
- * @initial_ms: Initial retransmission timeout in milliseconds
- * @max_ms: Maximum timeout after exponential backoff
+ * @brief Set handshake timeout parameters
+ * @ingroup security
+ * @param ctx The DTLS context instance
+ * @param initial_ms Initial retransmission timeout in milliseconds
+ * @param max_ms Maximum timeout after exponential backoff
  *
  * Configures DTLS handshake retransmission timer. OpenSSL handles
  * retransmission internally using these parameters.
  *
- * Returns: void
- * Raises: SocketDTLS_Failed on invalid parameters
- * Thread-safe: No
+ * @return void
+ * @throws SocketDTLS_Failed on invalid parameters
+ * @threadsafe No
  */
 extern void SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms);
 
@@ -366,36 +386,39 @@ extern void SocketDTLSContext_set_timeout (T ctx, int initial_ms, int max_ms);
  */
 
 /**
- * SocketDTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX*
- * @ctx: The DTLS context instance
+ * @brief Get underlying OpenSSL SSL_CTX*
+ * @ingroup security
+ * @param ctx The DTLS context instance
  *
  * Internal access to raw SSL_CTX for SocketDTLS_enable() etc.
  *
- * Returns: void* to SSL_CTX (cast as needed)
- * Raises: None
- * Thread-safe: Yes
+ * @return void* to SSL_CTX (cast as needed)
+ * @throws None
+ * @threadsafe Yes
  */
 extern void *SocketDTLSContext_get_ssl_ctx (T ctx);
 
 /**
- * SocketDTLSContext_is_server - Check if context is server-mode
- * @ctx: The DTLS context instance
+ * @brief Check if context is server-mode
+ * @ingroup security
+ * @param ctx The DTLS context instance
  *
  * Internal helper to determine client vs server configuration.
  *
- * Returns: 1 if server, 0 if client
- * Raises: None
- * Thread-safe: Yes
+ * @return 1 if server, 0 if client
+ * @throws None
+ * @threadsafe Yes
  */
 extern int SocketDTLSContext_is_server (T ctx);
 
 /**
- * SocketDTLSContext_has_cookie_exchange - Check if cookie exchange enabled
- * @ctx: The DTLS context instance
+ * @brief Check if cookie exchange enabled
+ * @ingroup security
+ * @param ctx The DTLS context instance
  *
- * Returns: 1 if enabled, 0 if disabled
- * Raises: None
- * Thread-safe: Yes (read-only)
+ * @return 1 if enabled, 0 if disabled
+ * @throws None
+ * @threadsafe Yes (read-only)
  */
 extern int SocketDTLSContext_has_cookie_exchange (T ctx);
 

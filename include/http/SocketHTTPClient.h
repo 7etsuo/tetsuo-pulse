@@ -1,59 +1,37 @@
 /**
- * @defgroup http HTTP Modules
- * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and
- * server support.
- *
- * The HTTP group provides comprehensive HTTP protocol support including
- * parsing, serialization, client/server implementations, and advanced
- * features. Key components include:
- * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes
- * - SocketHTTP1 (http1): HTTP/1.1 parsing and serialization
- * - SocketHTTP2 (http2): HTTP/2 protocol implementation
- * - SocketHTTPClient (client): High-level HTTP client with pooling
- * - SocketHTTPServer (server): HTTP server implementation
- * - SocketHPACK (hpack): HTTP/2 header compression
- *
- * @see foundation for base infrastructure.
- * @see core_io for socket primitives.
- * @see security for TLS integration.
- * @see SocketHTTPClient_T for HTTP client usage.
- * @see SocketHTTPServer_T for HTTP server implementation.
- * @{
- */
-
-/**
  * @file SocketHTTPClient.h
  * @ingroup http
- * @brief High-level HTTP client with connection pooling and protocol
- * negotiation.
+ * @brief High-level HTTP client library with pooling, async support, and protocol negotiation.
  *
- * High-level HTTP client abstracting HTTP/1.1 and HTTP/2 with:
- * - Connection pooling with per-host limits
- * - Automatic protocol negotiation (ALPN for HTTP/2)
- * - Cookie handling (RFC 6265)
- * - Authentication (Basic/Digest/Bearer)
- * - Compression (gzip/deflate/brotli)
- * - Redirect following
- * - Both synchronous and asynchronous APIs
+ * Provides a robust HTTP client supporting HTTP/1.1 and HTTP/2 with advanced features:
+ * - @ref connection_mgmt "Connection pooling" with per-host limits and idle timeouts
+ * - Automatic protocol negotiation via ALPN (h2 preferred)
+ * - RFC 6265 cookie handling with SameSite support
+ * - Multiple authentication schemes: Basic (RFC 7617), Digest (RFC 7616), Bearer (RFC 6750)
+ * - Compression support: Accept gzip/deflate/brotli with auto-decompression
+ * - Configurable redirect following with loop detection
+ * - Synchronous and asynchronous APIs with event integration
+ * - Integration with @ref security "TLS" for HTTPS (OpenSSL/LibreSSL)
+ * - Proxy support via @ref connection_mgmt "SocketProxy"
  *
- * Dependencies (leveraged, not duplicated):
- * - SocketHTTP for headers, URI, methods, status codes
- * - SocketHTTP1 for HTTP/1.1 parsing/serialization
- * - SocketHTTP2 for HTTP/2 protocol
- * - SocketHappyEyeballs for fast connection establishment
- * - SocketCrypto for authentication (base64, MD5, SHA256)
+ * Underlying dependencies:
+ * - @ref http "SocketHTTP" / SocketHTTP1 / SocketHTTP2 for protocol handling
+ * - @ref async_io "SocketHappyEyeballs" for IPv6-preferred connections
+ * - @ref core_io::dns "SocketDNS" for async resolution
+ * - @ref foundation "Arena" for memory management
  *
- * Thread safety: Client instances are NOT thread-safe.
- * Use one client per thread or external synchronization.
+ * Thread safety: Instances are NOT thread-safe. Use one per thread or synchronize externally.
  *
- * PLATFORM REQUIREMENTS:
- * - POSIX-compliant system (Linux, BSD, macOS)
- * - pthread for mutex synchronization
- * - OpenSSL for TLS (optional, via SOCKET_HAS_TLS)
+ * Platform: POSIX (Linux/BSD/macOS), requires pthread. TLS optional via CMake -DENABLE_TLS=ON.
  *
- * @see SocketHTTPClient_new() for client creation.
- * @see SocketHTTPClient_get() for synchronous requests.
- * @see SocketHTTPClient_get_async() for asynchronous requests.
+ * Example usage:
+ * @include examples/http_get.c
+ *
+ * @see @ref http "HTTP Module Group" for related components.
+ * @see SocketHTTPClient_new() for instantiation.
+ * @see SocketHTTPClient_get() / SocketHTTPClient_get_async() for requests.
+ * @see docs/HTTP_GUIDE.md for detailed usage and best practices.
+ * @see docs/SECURITY_GUIDE.md for auth/TLS configuration.
  */
 
 #ifndef SOCKETHTTPCLIENT_INCLUDED
@@ -108,7 +86,8 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
  */
 
 /**
- * SocketHTTPClient_Failed - General client failure
+ * @brief General client failure
+ * @ingroup http
  *
  * Category: Varies
  * Retryable: Depends on underlying cause - check errno
@@ -118,7 +97,8 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 extern const Except_T SocketHTTPClient_Failed;
 
 /**
- * SocketHTTPClient_DNSFailed - DNS resolution failure
+ * @brief DNS resolution failure
+ * @ingroup http
  *
  * Category: NETWORK
  * Retryable: YES - DNS servers may recover, cache may refresh
@@ -129,7 +109,8 @@ extern const Except_T SocketHTTPClient_Failed;
 extern const Except_T SocketHTTPClient_DNSFailed;
 
 /**
- * SocketHTTPClient_ConnectFailed - TCP connection failure
+ * @brief TCP connection failure
+ * @ingroup http
  *
  * Category: NETWORK
  * Retryable: YES - Server may restart, network may recover
@@ -142,7 +123,8 @@ extern const Except_T SocketHTTPClient_DNSFailed;
 extern const Except_T SocketHTTPClient_ConnectFailed;
 
 /**
- * SocketHTTPClient_TLSFailed - TLS/SSL handshake or I/O failure
+ * @brief TLS/SSL handshake or I/O failure
+ * @ingroup http
  *
  * Category: PROTOCOL
  * Retryable: NO - Usually indicates configuration mismatch
@@ -157,7 +139,8 @@ extern const Except_T SocketHTTPClient_ConnectFailed;
 extern const Except_T SocketHTTPClient_TLSFailed;
 
 /**
- * SocketHTTPClient_Timeout - Request timeout exceeded
+ * @brief Request timeout exceeded
+ * @ingroup http
  *
  * Category: TIMEOUT
  * Retryable: YES - Network congestion may clear
@@ -168,7 +151,8 @@ extern const Except_T SocketHTTPClient_TLSFailed;
 extern const Except_T SocketHTTPClient_Timeout;
 
 /**
- * SocketHTTPClient_ProtocolError - HTTP protocol error
+ * @brief HTTP protocol error
+ * @ingroup http
  *
  * Category: PROTOCOL
  * Retryable: NO - Server response is malformed
@@ -183,7 +167,8 @@ extern const Except_T SocketHTTPClient_Timeout;
 extern const Except_T SocketHTTPClient_ProtocolError;
 
 /**
- * SocketHTTPClient_TooManyRedirects - Redirect limit exceeded
+ * @brief Redirect limit exceeded
+ * @ingroup http
  *
  * Category: APPLICATION
  * Retryable: NO - Indicates redirect loop or misconfiguration
@@ -194,7 +179,8 @@ extern const Except_T SocketHTTPClient_ProtocolError;
 extern const Except_T SocketHTTPClient_TooManyRedirects;
 
 /**
- * SocketHTTPClient_ResponseTooLarge - Response body exceeds limit
+ * @brief Response body exceeds limit
+ * @ingroup http
  *
  * Category: RESOURCE
  * Retryable: NO - Server response is too large
@@ -211,9 +197,12 @@ extern const Except_T SocketHTTPClient_ResponseTooLarge;
  */
 
 /**
- * Error codes for async operations
+ * @brief Error codes for HTTP client operations.
+ * @ingroup http
  *
- * Retryability by error code:
+ * Used in asynchronous APIs and error reporting. Indicates specific failure modes.
+ *
+ * Retryability guide:
  * - HTTPCLIENT_ERROR_DNS: YES - DNS may recover
  * - HTTPCLIENT_ERROR_CONNECT: YES - Server may restart
  * - HTTPCLIENT_ERROR_TLS: NO - Configuration issue
@@ -224,6 +213,9 @@ extern const Except_T SocketHTTPClient_ResponseTooLarge;
  * - HTTPCLIENT_ERROR_CANCELLED: NO - User cancelled
  * - HTTPCLIENT_ERROR_OUT_OF_MEMORY: NO - Resource exhaustion
  * - HTTPCLIENT_ERROR_LIMIT_EXCEEDED: NO - Pool limits reached
+ *
+ * @see SocketHTTPClient_error_is_retryable() to check programmatically.
+ * @see SocketHTTPClient_error_string() for descriptions.
  */
 typedef enum
 {
@@ -241,11 +233,12 @@ typedef enum
 } SocketHTTPClient_Error;
 
 /**
- * SocketHTTPClient_error_is_retryable - Check if error code is retryable
- * @error: Error code from async operation
+ * @brief Check if error code is retryable
+ * @ingroup http
+ * @param error Error code from async operation
  *
- * Returns: 1 if error is typically retryable, 0 if fatal
- * Thread-safe: Yes (pure function)
+ * @return 1 if error is typically retryable, 0 if fatal
+ * @threadsafe Yes (pure function)
  *
  * Use this to decide whether to retry a failed request:
  *
@@ -260,16 +253,9 @@ typedef enum
  * - DNS failures (server may recover)
  * - Connection failures (server may restart)
  * - Timeouts (network may clear)
- *
- * Non-retryable errors:
- * - TLS failures (configuration issue)
- * - Protocol errors (server bug)
- * - Redirect loops (server misconfiguration)
- * - Size limits (won't change on retry)
- * - Cancellation (user initiated)
- * - Out of memory (system issue)
  */
 extern int SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error);
+
 
 /* ============================================================================
  * Authentication Types
@@ -303,7 +289,16 @@ extern int SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error);
  */
 
 /**
- * Authentication scheme types
+ * @brief Authentication scheme types supported by the HTTP client.
+ * @ingroup http
+ *
+ * Supported schemes:
+ * - HTTP_AUTH_BASIC: RFC 7617 - Simple base64-encoded credentials
+ * - HTTP_AUTH_DIGEST: RFC 7616 - Challenge-response with MD5/SHA-256
+ * - HTTP_AUTH_BEARER: RFC 6750 - OAuth 2.0 bearer tokens
+ *
+ * @see SocketHTTPClient_Auth for credential configuration.
+ * @see SocketHTTPClient_set_auth() to set default credentials.
  */
 typedef enum
 {
@@ -314,7 +309,22 @@ typedef enum
 } SocketHTTPClient_AuthType;
 
 /**
- * Authentication credentials
+ * @brief Authentication credentials structure.
+ * @ingroup http
+ *
+ * Configure authentication for requests using this structure.
+ * Pass to SocketHTTPClient_set_auth() or SocketHTTPClient_Request_auth().
+ *
+ * Fields:
+ * - type: Authentication scheme (Basic, Digest, Bearer)
+ * - username/password: For Basic and Digest
+ * - token: For Bearer authentication
+ * - realm: Optional realm filter for Digest (matches server challenge)
+ *
+ * @note Credentials are stored in cleartext internally. Use secure storage practices.
+ * @note Basic auth sends credentials with every request; prefer over HTTPS only.
+ * @see SocketHTTPClient_AuthType for scheme details.
+ * @see docs/SECURITY_GUIDE.md for best practices.
  */
 typedef struct
 {
@@ -330,6 +340,12 @@ typedef struct
  * ============================================================================
  */
 
+/**
+ * @brief Proxy configuration structure (opaque).
+ * @ingroup http
+ * @see @ref connection_mgmt "Connection Management" for proxy details.
+ * @see include/socket/SocketProxy.h for full proxy API.
+ */
 typedef struct SocketProxy_Config SocketProxy_Config;
 
 /* ============================================================================
@@ -338,7 +354,28 @@ typedef struct SocketProxy_Config SocketProxy_Config;
  */
 
 /**
- * HTTP client configuration
+ * @brief HTTP client configuration structure.
+ * @ingroup http
+ *
+ * Customize client behavior via this structure. Pass to SocketHTTPClient_new().
+ * Use SocketHTTPClient_config_defaults() to initialize with sensible defaults.
+ *
+ * Key sections:
+ * - Protocol: HTTP version negotiation and HTTP/2 settings
+ * - Connection pooling: Reuse connections for performance
+ * - Timeouts: Prevent hanging requests/connections
+ * - Redirects: Automatic following with limits
+ * - Compression: Accept and auto-decompress encoded responses
+ * - TLS: Secure connections (requires SOCKET_HAS_TLS)
+ * - Proxy: Forward requests through proxy
+ * - Limits: Prevent resource exhaustion
+ * - Retry: Automatic retries for transient failures (experimental)
+ *
+ * @see SocketHTTPClient_config_defaults() for initialization.
+ * @see SocketHTTP_Version for protocol versions.
+ * @see SocketTLSContext_T for TLS configuration.
+ * @note Changes take effect on next SocketHTTPClient_new(). Existing clients unaffected.
+ * @threadsafe Yes - structure is plain data, no methods.
  */
 typedef struct
 {
@@ -405,16 +442,28 @@ typedef struct
  * ============================================================================
  */
 
-/** HTTP client instance */
+/**
+ * @brief HTTP client instance
+ * @ingroup http
+ */
 typedef struct SocketHTTPClient *SocketHTTPClient_T;
 
-/** HTTP request builder */
+/**
+ * @brief HTTP request builder
+ * @ingroup http
+ */
 typedef struct SocketHTTPClient_Request *SocketHTTPClient_Request_T;
 
-/** Async request handle */
+/**
+ * @brief Async request handle
+ * @ingroup http
+ */
 typedef struct SocketHTTPClient_AsyncRequest *SocketHTTPClient_AsyncRequest_T;
 
-/** Cookie jar */
+/**
+ * @brief Cookie jar
+ * @ingroup http
+ */
 typedef struct SocketHTTPClient_CookieJar *SocketHTTPClient_CookieJar_T;
 
 /* ============================================================================
@@ -423,7 +472,25 @@ typedef struct SocketHTTPClient_CookieJar *SocketHTTPClient_CookieJar_T;
  */
 
 /**
- * HTTP response (owned by caller)
+ * @brief HTTP response structure returned by client functions.
+ * @ingroup http
+ *
+ * Contains status, headers, body, and metadata from server response.
+ * Caller owns the response and must call SocketHTTPClient_Response_free()
+ * to release resources (arena, headers, body).
+ *
+ * Fields:
+ * - status_code: HTTP status (200, 404, etc.)
+ * - headers: Parsed headers (SocketHTTP_Headers_T)
+ * - body: Response body data (may be NULL for HEAD or empty)
+ * - body_len: Length of body (0 if no body)
+ * - version: Negotiated HTTP version
+ * - arena: Arena used for allocation (dispose via Response_free)
+ *
+ * @note Body is allocated from response->arena. Do not free separately.
+ * @note For large responses, consider streaming APIs to avoid memory usage.
+ * @see SocketHTTPClient_get() for usage example.
+ * @see SocketHTTPClient_Response_free() for cleanup.
  */
 typedef struct
 {
@@ -441,29 +508,66 @@ typedef struct
  */
 
 /**
- * SocketHTTPClient_config_defaults - Initialize config with defaults
- * @config: Configuration structure to initialize
+ * @brief Initialize SocketHTTPClient_Config with safe defaults.
+ * @ingroup http
+ * @param config Pointer to config structure to populate
  *
- * Thread-safe: Yes
+ * Sets reasonable defaults for production use:
+ * - HTTP/2 max version with ALPN negotiation
+ * - Connection pooling (6 per host, 100 total)
+ * - Timeouts: 30s connect, 60s request, 10s DNS
+ * - Redirects: Follow up to 10 (GET/HEAD only by default)
+ * - Compression: Accept gzip/deflate/brotli, auto-decompress
+ * - TLS: Verify certificates, default system context
+ * - Retry: Disabled by default (enable explicitly)
+ * - Limits: No max response size (use with caution)
+ *
+ * Modify after initialization for custom behavior.
+ * Pass to SocketHTTPClient_new() to create client.
+ *
+ * @threadsafe Yes - pure function, no side effects
+ * @see SocketHTTPClient_new() for client creation.
+ * @see SocketHTTPClient_Config for field details and overrides.
  */
 extern void SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config);
 
 /**
- * SocketHTTPClient_new - Create HTTP client
- * @config: Configuration (NULL for defaults)
+ * @brief Create new HTTP client instance.
+ * @ingroup http
+ * @param config Configuration structure (NULL uses defaults from SocketHTTPClient_config_defaults())
  *
- * Returns: New client instance
- * Raises: SocketHTTPClient_Failed on allocation failure
- * Thread-safe: Yes
+ * Initializes client with connection pool, DNS resolver, and optional TLS context.
+ * Pool size, timeouts, and features configured via config.
+ *
+ * @return Opaque client handle or NULL on failure
+ * @throws SocketHTTPClient_Failed on memory allocation failure or invalid config
+ * @throws Arena_Failed if underlying arena allocation fails
+ * @threadsafe Yes - initialization is atomic
+ *
+ * @note Client must be freed with SocketHTTPClient_free() when done.
+ * @note Default config enables pooling, HTTP/2, compression, and certificate verification.
+ * @see SocketHTTPClient_config_defaults() to populate config.
+ * @see SocketHTTPClient_free() for cleanup.
+ * @see SocketHTTPClient_Config for detailed options.
  */
 extern SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config);
 
 /**
- * SocketHTTPClient_free - Free client and all resources
- * @client: Pointer to client (set to NULL)
+ * @brief Destroy HTTP client and release all resources.
+ * @ingroup http
+ * @param client Pointer to client handle (set to NULL on success)
  *
- * Thread-safe: No
+ * Closes all pooled connections, frees internal arenas, DNS resolver, timers.
+ * Any in-flight async requests are cancelled and callbacks invoked with CANCELLED error.
+ * Safe to call on NULL.
+ *
+ * @threadsafe No - concurrent use may race with ongoing operations
+ * @warning Call only when no threads are using the client.
+ *
+ * @see SocketHTTPClient_new() for creation.
+ * @see SocketHTTPClient_pool_clear() to close connections without destroying client.
+ * @see SocketHTTPClient_process() to drain async before free.
  */
 extern void SocketHTTPClient_free (SocketHTTPClient_T *client);
 
@@ -473,32 +577,89 @@ extern void SocketHTTPClient_free (SocketHTTPClient_T *client);
  */
 
 /**
- * SocketHTTPClient_get - Perform GET request
- * @client: Client instance
- * @url: Full URL (http:// or https://)
- * @response: Output response (caller must free via Response_free)
+ * @brief Perform synchronous GET request.
+ * @ingroup http
+ * @param client Client instance
+ * @param url Full URL (http:// or https://). Supports http/https schemes; relative URLs invalid.
+ * @param response Output response structure (caller must free via Response_free)
  *
- * Returns: 0 on success, -1 on error
- * Raises: Various exceptions on failure
- * Thread-safe: No
+ * Retrieves resource at URL. Automatically handles:
+ * - DNS resolution (via SocketDNS)
+ * - Connection establishment (TCP + optional TLS)
+ * - Protocol negotiation (HTTP/1.1 or HTTP/2 via ALPN)
+ * - Redirect following (configurable)
+ * - Compression (gzip/deflate/brotli)
+ * - Cookie handling (if jar configured)
+ * - Authentication (if configured)
+ *
+ * Response body loaded fully into memory unless max_response_size limits it.
+ * For streaming large responses, use custom Request API with body_stream callback.
+ *
+ * @return 0 on success (status_code in response), -1 on error
+ * @throws SocketHTTPClient_DNSFailed on hostname resolution failure
+ * @throws SocketHTTPClient_ConnectFailed on TCP connection failure
+ * @throws SocketHTTPClient_TLSFailed on TLS handshake/certificate issues
+ * @throws SocketHTTPClient_Timeout on connect/request timeouts
+ * @throws SocketHTTPClient_ProtocolError on malformed server response
+ * @throws SocketHTTPClient_TooManyRedirects on redirect loops
+ * @throws SocketHTTPClient_ResponseTooLarge if body exceeds limit
+ * @throws SocketHTTPClient_Failed for other errors (check errno)
+ * @threadsafe No - client not thread-safe
+ *
+ * @see SocketHTTPClient_head() for header-only request.
+ * @see SocketHTTPClient_post() for requests with body.
+ * @see SocketHTTPClient_get_async() for non-blocking version.
+ * @see SocketHTTPClient_Config for customization (timeouts, pooling, etc.).
+ * @see @ref core_io "Core I/O" for underlying socket operations.
+ * @see @ref security "Security" for TLS details.
  */
 extern int SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
                                  SocketHTTPClient_Response *response);
 
 /**
- * SocketHTTPClient_head - Perform HEAD request
+ * @brief Perform synchronous HEAD request.
+ * @ingroup http
+ * @param client Client instance
+ * @param url Full URL (http:// or https://)
+ * @param response Output response (caller must free via Response_free)
+ *
+ * Sends HEAD request to retrieve headers only (no body).
+ * Useful for checking resource existence, size, or modification time without downloading body.
+ *
+ * @return 0 on success, -1 on error
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed, SocketHTTPClient_TLSFailed,
+ *         SocketHTTPClient_Timeout, SocketHTTPClient_ProtocolError, etc.
+ * @threadsafe No
+ *
+ * @see SocketHTTPClient_get() for full GET request with body.
+ * @see SocketHTTP_Method for other methods.
+ * @see SocketHTTPClient_Response_free() for cleanup.
  */
 extern int SocketHTTPClient_head (SocketHTTPClient_T client, const char *url,
                                   SocketHTTPClient_Response *response);
 
 /**
- * SocketHTTPClient_post - Perform POST request
- * @client: Client
- * @url: Full URL
- * @content_type: Content-Type header value
- * @body: Request body
- * @body_len: Body length
- * @response: Output response
+ * @brief Perform synchronous POST request.
+ * @ingroup http
+ * @param client Client instance
+ * @param url Full URL (http:// or https://)
+ * @param content_type Content-Type header (e.g., "application/json")
+ * @param body Request body data (may be NULL for empty)
+ * @param body_len Length of body data
+ * @param response Output response (caller must free via Response_free)
+ *
+ * Sends POST request with provided body. Automatically sets Content-Length header.
+ * Supports connection pooling, redirects, compression, and authentication.
+ *
+ * @return 0 on success, -1 on error
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed, SocketHTTPClient_Timeout,
+ *         SocketHTTPClient_ProtocolError, SocketHTTPClient_ResponseTooLarge, etc.
+ * @threadsafe No
+ * @note Non-idempotent: Retries may cause duplicate submissions if enabled.
+ *
+ * @see SocketHTTPClient_Request_new() for custom headers/body.
+ * @see SocketHTTPClient_put() for PUT requests.
+ * @see SocketHTTPClient_post_async() for asynchronous version.
  */
 extern int SocketHTTPClient_post (SocketHTTPClient_T client, const char *url,
                                   const char *content_type, const void *body,
@@ -506,7 +667,25 @@ extern int SocketHTTPClient_post (SocketHTTPClient_T client, const char *url,
                                   SocketHTTPClient_Response *response);
 
 /**
- * SocketHTTPClient_put - Perform PUT request
+ * @brief Perform synchronous PUT request.
+ * @ingroup http
+ * @param client Client instance
+ * @param url Full URL (http:// or https://)
+ * @param content_type Content-Type header (e.g., "application/json")
+ * @param body Request body data (may be NULL for empty)
+ * @param body_len Length of body data
+ * @param response Output response (caller must free via Response_free)
+ *
+ * Sends PUT request to update/replace resource with provided body.
+ * Idempotent operation; safe for retries.
+ *
+ * @return 0 on success, -1 on error
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed, SocketHTTPClient_Timeout,
+ *         SocketHTTPClient_ProtocolError, etc.
+ * @threadsafe No
+ *
+ * @see SocketHTTPClient_post() for creating new resources.
+ * @see SocketHTTPClient_Request_new() for custom configuration.
  */
 extern int SocketHTTPClient_put (SocketHTTPClient_T client, const char *url,
                                  const char *content_type, const void *body,
@@ -514,16 +693,33 @@ extern int SocketHTTPClient_put (SocketHTTPClient_T client, const char *url,
                                  SocketHTTPClient_Response *response);
 
 /**
- * SocketHTTPClient_delete - Perform DELETE request
+ * @brief Perform synchronous DELETE request.
+ * @ingroup http
+ * @param client Client instance
+ * @param url Full URL (http:// or https://)
+ * @param response Output response (caller must free via Response_free)
+ *
+ * Sends DELETE request to remove resource at URL.
+ * Idempotent; multiple calls have same effect.
+ * Body is optional but rarely used.
+ *
+ * @return 0 on success, -1 on error
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed, SocketHTTPClient_Timeout,
+ *         SocketHTTPClient_ProtocolError, etc.
+ * @threadsafe No
+ *
+ * @see SocketHTTPClient_put() for resource updates.
+ * @see SocketHTTPClient_get() for retrieval.
  */
 extern int SocketHTTPClient_delete (SocketHTTPClient_T client, const char *url,
                                     SocketHTTPClient_Response *response);
 
 /**
- * SocketHTTPClient_Response_free - Free response resources
- * @response: Response to free
+ * @brief Free response resources
+ * @ingroup http
+ * @param response Response to free
  *
- * Thread-safe: No
+ * @threadsafe No
  */
 extern void
 SocketHTTPClient_Response_free (SocketHTTPClient_Response *response);
@@ -534,54 +730,66 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response);
  */
 
 /**
- * SocketHTTPClient_Request_new - Create request builder
- * @client: Client instance
- * @method: HTTP method
- * @url: Full URL
+ * @brief Create request builder
+ * @ingroup http
+ * @param client Client instance
+ * @param method HTTP method
+ * @param url Full URL
  *
- * Returns: Request builder
- * Thread-safe: No
+ * @return Request builder
+ * @threadsafe No
  */
 extern SocketHTTPClient_Request_T
 SocketHTTPClient_Request_new (SocketHTTPClient_T client,
                               SocketHTTP_Method method, const char *url);
 
 /**
- * SocketHTTPClient_Request_free - Free request builder
- * @req: Pointer to request (set to NULL)
+ * @brief Free request builder and release resources.
+ * @ingroup http
+ * @param req Pointer to request handle (set to NULL on success)
+ *
+ * Cleans up SocketHTTPClient_Request_T instance created by SocketHTTPClient_Request_new().
+ * Releases any temporary allocations (headers, body buffers).
+ * Safe to call on NULL.
+ *
+ * @threadsafe No
+ * @see SocketHTTPClient_Request_new() for creation.
  */
 extern void SocketHTTPClient_Request_free (SocketHTTPClient_Request_T *req);
 
 /**
- * SocketHTTPClient_Request_header - Add header
- * @req: Request
- * @name: Header name
- * @value: Header value
+ * @brief Add header
+ * @ingroup http
+ * @param req Request
+ * @param name Header name
+ * @param value Header value
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int SocketHTTPClient_Request_header (SocketHTTPClient_Request_T req,
                                             const char *name,
                                             const char *value);
 
 /**
- * SocketHTTPClient_Request_body - Set request body
- * @req: Request
- * @data: Body data
- * @len: Data length
+ * @brief Set request body
+ * @ingroup http
+ * @param req Request
+ * @param data Body data
+ * @param len Data length
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int SocketHTTPClient_Request_body (SocketHTTPClient_Request_T req,
                                           const void *data, size_t len);
 
 /**
- * SocketHTTPClient_Request_body_stream - Set streaming body
- * @req: Request
- * @read_cb: Callback to read body data
- * @userdata: User data for callback
+ * @brief Set streaming body
+ * @ingroup http
+ * @param req Request
+ * @param read_cb Callback to read body data
+ * @param userdata User data for callback
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int SocketHTTPClient_Request_body_stream (
     SocketHTTPClient_Request_T req,
@@ -589,28 +797,31 @@ extern int SocketHTTPClient_Request_body_stream (
     void *userdata);
 
 /**
- * SocketHTTPClient_Request_timeout - Set per-request timeout
- * @req: Request
- * @ms: Timeout in milliseconds
+ * @brief Set per-request timeout
+ * @ingroup http
+ * @param req Request
+ * @param ms Timeout in milliseconds
  */
 extern void SocketHTTPClient_Request_timeout (SocketHTTPClient_Request_T req,
                                               int ms);
 
 /**
- * SocketHTTPClient_Request_auth - Set per-request authentication
- * @req: Request
- * @auth: Authentication credentials
+ * @brief Set per-request authentication
+ * @ingroup http
+ * @param req Request
+ * @param auth Authentication credentials
  */
 extern void SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
                                            const SocketHTTPClient_Auth *auth);
 
 /**
- * SocketHTTPClient_Request_execute - Execute request
- * @req: Request
- * @response: Output response
+ * @brief Execute request
+ * @ingroup http
+ * @param req Request
+ * @param response Output response
  *
- * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @return 0 on success, -1 on error
+ * @threadsafe No
  */
 extern int
 SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
@@ -630,7 +841,8 @@ typedef void (*SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req,
                                            void *userdata);
 
 /**
- * SocketHTTPClient_get_async - Start async GET
+ * @brief Start async GET
+ * @ingroup http
  */
 extern SocketHTTPClient_AsyncRequest_T
 SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
@@ -638,7 +850,8 @@ SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
                             void *userdata);
 
 /**
- * SocketHTTPClient_post_async - Start async POST
+ * @brief Start async POST
+ * @ingroup http
  */
 extern SocketHTTPClient_AsyncRequest_T SocketHTTPClient_post_async (
     SocketHTTPClient_T client, const char *url, const char *content_type,
@@ -646,7 +859,8 @@ extern SocketHTTPClient_AsyncRequest_T SocketHTTPClient_post_async (
     void *userdata);
 
 /**
- * SocketHTTPClient_Request_async - Start async custom request
+ * @brief Start async custom request
+ * @ingroup http
  */
 extern SocketHTTPClient_AsyncRequest_T
 SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
@@ -654,18 +868,20 @@ SocketHTTPClient_Request_async (SocketHTTPClient_Request_T req,
                                 void *userdata);
 
 /**
- * SocketHTTPClient_AsyncRequest_cancel - Cancel async request
+ * @brief Cancel async request
+ * @ingroup http
  */
 extern void
 SocketHTTPClient_AsyncRequest_cancel (SocketHTTPClient_AsyncRequest_T req);
 
 /**
- * SocketHTTPClient_process - Process async requests
- * @client: Client
- * @timeout_ms: Poll timeout
+ * @brief Process async requests
+ * @ingroup http
+ * @param client Client
+ * @param timeout_ms Poll timeout
  *
- * Returns: Number of completed requests
- * Thread-safe: No
+ * @return Number of completed requests
+ * @threadsafe No
  *
  * Call in event loop to process pending async requests.
  */
@@ -678,7 +894,16 @@ extern int SocketHTTPClient_process (SocketHTTPClient_T client,
  */
 
 /**
- * Cookie SameSite attribute values
+ * @brief Cookie SameSite attribute values (RFC 6265bis draft).
+ * @ingroup http
+ *
+ * Controls cross-site request protection:
+ * - NONE: No restrictions (requires Secure flag)
+ * - LAX: Allows safe methods (GET, HEAD) on top-level navigation
+ * - STRICT: Blocks all cross-site requests
+ *
+ * @see SocketHTTPClient_Cookie for full cookie structure.
+ * @see SocketHTTPClient_CookieJar_set() for setting cookies.
  */
 typedef enum
 {
@@ -688,7 +913,23 @@ typedef enum
 } SocketHTTPClient_SameSite;
 
 /**
- * Cookie attributes
+ * @brief Cookie attributes structure (RFC 6265).
+ * @ingroup http
+ *
+ * Represents a single HTTP cookie with attributes for storage and transmission.
+ * Used for setting cookies via CookieJar_set() or parsing from Set-Cookie headers.
+ *
+ * Key attributes:
+ * - name/value: Cookie name-value pair
+ * - domain/path: Scope for matching requests
+ * - expires: Expiration time (0 = session cookie)
+ * - secure: Transmit only over HTTPS
+ * - http_only: Prevent JavaScript access (XSS protection)
+ * - same_site: Cross-site request policy
+ *
+ * @note Fields are const char* pointers owned by caller or arena.
+ * @see SocketHTTPClient_CookieJar for management.
+ * @see docs/SECURITY_GUIDE.md for SameSite and security considerations.
  */
 typedef struct
 {
@@ -703,56 +944,69 @@ typedef struct
 } SocketHTTPClient_Cookie;
 
 /**
- * SocketHTTPClient_CookieJar_new - Create cookie jar
+ * @brief Create cookie jar
+ * @ingroup http
  *
- * Returns: New cookie jar
- * Thread-safe: Yes
+ * @return New cookie jar
+ * @threadsafe Yes
  */
 extern SocketHTTPClient_CookieJar_T SocketHTTPClient_CookieJar_new (void);
 
 /**
- * SocketHTTPClient_CookieJar_free - Free cookie jar
- * @jar: Pointer to jar (set to NULL)
+ * @brief Free cookie jar and all stored cookies.
+ * @ingroup http
+ * @param jar Pointer to jar handle (set to NULL on success)
+ *
+ * Releases all memory associated with the cookie jar, including all cookies.
+ * Safe to call on NULL. Cookies are cleared before free.
+ *
+ * @threadsafe Yes - internal mutex protection
+ * @see SocketHTTPClient_CookieJar_new() for creation.
+ * @see SocketHTTPClient_CookieJar_clear() to clear without freeing jar.
  */
 extern void
 SocketHTTPClient_CookieJar_free (SocketHTTPClient_CookieJar_T *jar);
 
 /**
- * SocketHTTPClient_set_cookie_jar - Associate jar with client
- * @client: Client
- * @jar: Cookie jar (NULL to remove)
+ * @brief Associate jar with client
+ * @ingroup http
+ * @param client Client
+ * @param jar Cookie jar (NULL to remove)
  */
 extern void SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
                                              SocketHTTPClient_CookieJar_T jar);
 
 /**
- * SocketHTTPClient_get_cookie_jar - Get associated cookie jar
- * @client: Client
+ * @brief Get associated cookie jar
+ * @ingroup http
+ * @param client Client
  *
- * Returns: Cookie jar or NULL
+ * @return Cookie jar or NULL
  */
 extern SocketHTTPClient_CookieJar_T
 SocketHTTPClient_get_cookie_jar (SocketHTTPClient_T client);
 
 /**
- * SocketHTTPClient_CookieJar_set - Set cookie
- * @jar: Cookie jar
- * @cookie: Cookie to set
+ * @brief Set cookie
+ * @ingroup http
+ * @param jar Cookie jar
+ * @param cookie Cookie to set
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int
 SocketHTTPClient_CookieJar_set (SocketHTTPClient_CookieJar_T jar,
                                 const SocketHTTPClient_Cookie *cookie);
 
 /**
- * SocketHTTPClient_CookieJar_get - Get cookie by name
- * @jar: Cookie jar
- * @domain: Domain to match
- * @path: Path to match
- * @name: Cookie name
+ * @brief Get cookie by name
+ * @ingroup http
+ * @param jar Cookie jar
+ * @param domain Domain to match
+ * @param path Path to match
+ * @name  Cookie name
  *
- * Returns: Cookie or NULL if not found
+ * @return Cookie or NULL if not found
  */
 extern const SocketHTTPClient_Cookie *
 SocketHTTPClient_CookieJar_get (SocketHTTPClient_CookieJar_T jar,
@@ -760,35 +1014,39 @@ SocketHTTPClient_CookieJar_get (SocketHTTPClient_CookieJar_T jar,
                                 const char *name);
 
 /**
- * SocketHTTPClient_CookieJar_clear - Clear all cookies
- * @jar: Cookie jar
+ * @brief Clear all cookies
+ * @ingroup http
+ * @param jar Cookie jar
  */
 extern void
 SocketHTTPClient_CookieJar_clear (SocketHTTPClient_CookieJar_T jar);
 
 /**
- * SocketHTTPClient_CookieJar_clear_expired - Clear expired cookies
- * @jar: Cookie jar
+ * @brief Clear expired cookies
+ * @ingroup http
+ * @param jar Cookie jar
  */
 extern void
 SocketHTTPClient_CookieJar_clear_expired (SocketHTTPClient_CookieJar_T jar);
 
 /**
- * SocketHTTPClient_CookieJar_load - Load cookies from file
- * @jar: Cookie jar
- * @filename: File path
+ * @brief Load cookies from file
+ * @ingroup http
+ * @param jar Cookie jar
+ * @param filename File path
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int SocketHTTPClient_CookieJar_load (SocketHTTPClient_CookieJar_T jar,
                                             const char *filename);
 
 /**
- * SocketHTTPClient_CookieJar_save - Save cookies to file
- * @jar: Cookie jar
- * @filename: File path
+ * @brief Save cookies to file
+ * @ingroup http
+ * @param jar Cookie jar
+ * @param filename File path
  *
- * Returns: 0 on success, -1 on error
+ * @return 0 on success, -1 on error
  */
 extern int SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
                                             const char *filename);
@@ -799,9 +1057,18 @@ extern int SocketHTTPClient_CookieJar_save (SocketHTTPClient_CookieJar_T jar,
  */
 
 /**
- * SocketHTTPClient_set_auth - Set default authentication
- * @client: Client
- * @auth: Authentication credentials
+ * @brief Set default authentication credentials for all requests.
+ * @ingroup http
+ * @param client Client instance
+ * @param auth Authentication configuration (may be NULL to disable)
+ *
+ * Applies auth to all subsequent requests unless overridden by Request_auth().
+ * Supports Basic, Digest, and Bearer schemes.
+ *
+ * @threadsafe No
+ * @note Digest auth requires server challenges; may require retry on 401.
+ * @see SocketHTTPClient_Auth for scheme details.
+ * @see SocketHTTPClient_Request_auth() for per-request override.
  */
 extern void SocketHTTPClient_set_auth (SocketHTTPClient_T client,
                                        const SocketHTTPClient_Auth *auth);
@@ -812,7 +1079,19 @@ extern void SocketHTTPClient_set_auth (SocketHTTPClient_T client,
  */
 
 /**
- * Pool statistics
+ * @brief Connection pool statistics snapshot.
+ * @ingroup http
+ *
+ * Provides metrics on pool usage, efficiency, and health.
+ * Retrieved via SocketHTTPClient_pool_stats().
+ *
+ * Metrics include:
+ * - Connection counts (active/idle)
+ * - Request/reuse counters for performance
+ * - Failure counters for debugging
+ *
+ * @see SocketHTTPClient_pool_stats() to populate.
+ * @see SocketHTTPClient_Config for pool configuration.
  */
 typedef struct
 {
@@ -828,16 +1107,29 @@ typedef struct
 } SocketHTTPClient_PoolStats;
 
 /**
- * SocketHTTPClient_pool_stats - Get pool statistics
- * @client: Client
- * @stats: Output statistics
+ * @brief Get pool statistics
+ * @ingroup http
+ * @param client Client
+ * @param stats Output statistics
  */
 extern void SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
                                          SocketHTTPClient_PoolStats *stats);
 
 /**
- * SocketHTTPClient_pool_clear - Clear all pooled connections
- * @client: Client
+ * @brief Close and clear all connections in the pool.
+ * @ingroup http
+ * @param client Client instance
+ *
+ * Immediately closes all active and idle connections in the connection pool.
+ * Useful for graceful shutdown, configuration changes, or error recovery.
+ * Any in-flight requests will fail with SocketHTTPClient_ConnectFailed or similar.
+ *
+ * Does not affect ongoing requests but prevents reuse of existing connections.
+ *
+ * @threadsafe No
+ * @note Pool will repopulate on next request as needed.
+ * @see SocketHTTPClient_pool_stats() to inspect pool before clearing.
+ * @see SocketHTTPClient_new() for pool recreation.
  */
 extern void SocketHTTPClient_pool_clear (SocketHTTPClient_T client);
 
@@ -847,24 +1139,24 @@ extern void SocketHTTPClient_pool_clear (SocketHTTPClient_T client);
  */
 
 /**
- * SocketHTTPClient_last_error - Get last error code
- * @client: Client
+ * @brief Get last error code
+ * @ingroup http
+ * @param client Client
  *
- * Returns: Error code
+ * @return Error code
  */
 extern SocketHTTPClient_Error
 SocketHTTPClient_last_error (SocketHTTPClient_T client);
 
 /**
- * SocketHTTPClient_error_string - Get error description
- * @error: Error code
+ * @brief Get error description
+ * @ingroup http
+ * @param error Error code
  *
- * Returns: Static string
- * Thread-safe: Yes
+ * @return Static string
+ * @threadsafe Yes
  */
 extern const char *
 SocketHTTPClient_error_string (SocketHTTPClient_Error error);
-
-/** @} */ /* end of http group */
 
 #endif /* SOCKETHTTPCLIENT_INCLUDED */

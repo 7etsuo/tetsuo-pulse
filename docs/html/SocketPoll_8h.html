@@ -117,9 +117,12 @@ $(document).ready(function(){initNavTree('SocketPoll_8h.html',''); initResizable
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketPoll.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketPoll.h File Reference<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Cross-platform high-level interface for monitoring multiple sockets for I/O events.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTimer_8h_source.html">core/SocketTimer.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
@@ -142,15 +145,18 @@ $(document).ready(function(){initNavTree('SocketPoll_8h.html',''); initResizable
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketEvent__T" id="r_structSocketEvent__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a></td></tr>
+<tr class="memitem:structSocketEvent__T" id="r_structSocketEvent__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></td></tr>
+<tr class="memdesc:structSocketEvent__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Event notification structure returned by polling operations.  <a href="group__event__system.html#structSocketEvent__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketEvent__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></td></tr>
-<tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0fc8aa94a3e9bb10cb26d85c6474d04e" id="r_a0fc8aa94a3e9bb10cb26d85c6474d04e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a0fc8aa94a3e9bb10cb26d85c6474d04e">SOCKET_POLL_TIMEOUT_USE_DEFAULT</a>&#160;&#160;&#160;(-2)</td></tr>
-<tr class="separator:a0fc8aa94a3e9bb10cb26d85c6474d04e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">High-performance socket polling abstraction with cross-platform backends.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0fc8aa94a3e9bb10cb26d85c6474d04e" id="r_ga0fc8aa94a3e9bb10cb26d85c6474d04e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0fc8aa94a3e9bb10cb26d85c6474d04e">SOCKET_POLL_TIMEOUT_USE_DEFAULT</a>&#160;&#160;&#160;(-2)</td></tr>
+<tr class="memdesc:ga0fc8aa94a3e9bb10cb26d85c6474d04e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Special timeout value to use the poll's default timeout.  <br /></td></tr>
+<tr class="separator:ga0fc8aa94a3e9bb10cb26d85c6474d04e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
@@ -161,139 +167,105 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a9e8943c9cb47aba63dda4ad9083142b6" id="r_a9e8943c9cb47aba63dda4ad9083142b6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6">SocketPoll_Events</a> { <br />
-&#160;&#160;<a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a> = 1 &lt;&lt; 0
+<tr class="memitem:ga9e8943c9cb47aba63dda4ad9083142b6" id="r_ga9e8943c9cb47aba63dda4ad9083142b6"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga9e8943c9cb47aba63dda4ad9083142b6">SocketPoll_Events</a> { <br />
+&#160;&#160;<a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a> = 1 &lt;&lt; 0
 , <br />
-&#160;&#160;<a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a> = 1 &lt;&lt; 1
+&#160;&#160;<a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a> = 1 &lt;&lt; 1
 , <br />
-&#160;&#160;<a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9">POLL_ERROR</a> = 1 &lt;&lt; 2
+&#160;&#160;<a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9">POLL_ERROR</a> = 1 &lt;&lt; 2
 , <br />
-&#160;&#160;<a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c">POLL_HANGUP</a> = 1 &lt;&lt; 3
+&#160;&#160;<a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c">POLL_HANGUP</a> = 1 &lt;&lt; 3
 <br />
  }</td></tr>
-<tr class="separator:a9e8943c9cb47aba63dda4ad9083142b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga9e8943c9cb47aba63dda4ad9083142b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Event types for socket I/O monitoring.  <a href="group__event__system.html#ga9e8943c9cb47aba63dda4ad9083142b6">More...</a><br /></td></tr>
+<tr class="separator:ga9e8943c9cb47aba63dda4ad9083142b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ac1fbd1a09d564f7988b0e427e5707ca7" id="r_ac1fbd1a09d564f7988b0e427e5707ca7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a> (int maxevents)</td></tr>
-<tr class="separator:ac1fbd1a09d564f7988b0e427e5707ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca744c50badbdb869c52088b9f32f8d2" id="r_aca744c50badbdb869c52088b9f32f8d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#aca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> *poll)</td></tr>
-<tr class="separator:aca744c50badbdb869c52088b9f32f8d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c9f3f1a23dd85dd2d44ff9b0ced4e1e" id="r_a6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, unsigned events, void *data)</td></tr>
-<tr class="separator:a6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3755cc4d5ed8838ce2261f0efd1d5d85" id="r_a3755cc4d5ed8838ce2261f0efd1d5d85"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, unsigned events, void *data)</td></tr>
-<tr class="separator:a3755cc4d5ed8838ce2261f0efd1d5d85"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3074c5a225a7c49880951ecfb984498f" id="r_a3074c5a225a7c49880951ecfb984498f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a3074c5a225a7c49880951ecfb984498f">SocketPoll_del</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="separator:a3074c5a225a7c49880951ecfb984498f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bb5e288308c3de5a479b27366bba257" id="r_a1bb5e288308c3de5a479b27366bba257"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a1bb5e288308c3de5a479b27366bba257">SocketPoll_getdefaulttimeout</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
-<tr class="separator:a1bb5e288308c3de5a479b27366bba257"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a945845cc57758a91e47a75ef17064d2a" id="r_a945845cc57758a91e47a75ef17064d2a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a945845cc57758a91e47a75ef17064d2a">SocketPoll_setdefaulttimeout</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int timeout)</td></tr>
-<tr class="separator:a945845cc57758a91e47a75ef17064d2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3d47365dd18329d50ee636284839738" id="r_aa3d47365dd18329d50ee636284839738"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a> **events, int timeout)</td></tr>
-<tr class="separator:aa3d47365dd18329d50ee636284839738"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a665b3363d16ab859ec60e69a792d1ff0" id="r_a665b3363d16ab859ec60e69a792d1ff0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
-<tr class="separator:a665b3363d16ab859ec60e69a792d1ff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a16688a9e444183863bab8051f57fe688" id="r_a16688a9e444183863bab8051f57fe688"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a16688a9e444183863bab8051f57fe688">SocketPoll_getmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
-<tr class="separator:a16688a9e444183863bab8051f57fe688"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35d4052d444bcab4cae26f41cf5729eb" id="r_a35d4052d444bcab4cae26f41cf5729eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#a35d4052d444bcab4cae26f41cf5729eb">SocketPoll_setmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int max)</td></tr>
-<tr class="separator:a35d4052d444bcab4cae26f41cf5729eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac79e719de24f09f84eb3816b3ab60c65" id="r_ac79e719de24f09f84eb3816b3ab60c65"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ac79e719de24f09f84eb3816b3ab60c65">SocketPoll_getregisteredcount</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
-<tr class="separator:ac79e719de24f09f84eb3816b3ab60c65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac1fbd1a09d564f7988b0e427e5707ca7" id="r_gac1fbd1a09d564f7988b0e427e5707ca7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a> (int maxevents)</td></tr>
+<tr class="memdesc:gac1fbd1a09d564f7988b0e427e5707ca7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new event poll instance.  <br /></td></tr>
+<tr class="separator:gac1fbd1a09d564f7988b0e427e5707ca7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaca744c50badbdb869c52088b9f32f8d2" id="r_gaca744c50badbdb869c52088b9f32f8d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> *poll)</td></tr>
+<tr class="memdesc:gaca744c50badbdb869c52088b9f32f8d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of an event poll instance and release resources.  <br /></td></tr>
+<tr class="separator:gaca744c50badbdb869c52088b9f32f8d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" id="r_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, unsigned events, void *data)</td></tr>
+<tr class="memdesc:ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a socket for event monitoring in the poll set.  <br /></td></tr>
+<tr class="separator:ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3755cc4d5ed8838ce2261f0efd1d5d85" id="r_ga3755cc4d5ed8838ce2261f0efd1d5d85"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, unsigned events, void *data)</td></tr>
+<tr class="memdesc:ga3755cc4d5ed8838ce2261f0efd1d5d85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update event monitoring and/or user data for a registered socket.  <br /></td></tr>
+<tr class="separator:ga3755cc4d5ed8838ce2261f0efd1d5d85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3074c5a225a7c49880951ecfb984498f" id="r_ga3074c5a225a7c49880951ecfb984498f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f">SocketPoll_del</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="group__core__io.html#ga1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
+<tr class="memdesc:ga3074c5a225a7c49880951ecfb984498f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Deregister a socket from event monitoring.  <br /></td></tr>
+<tr class="separator:ga3074c5a225a7c49880951ecfb984498f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1bb5e288308c3de5a479b27366bba257" id="r_ga1bb5e288308c3de5a479b27366bba257"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga1bb5e288308c3de5a479b27366bba257">SocketPoll_getdefaulttimeout</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:ga1bb5e288308c3de5a479b27366bba257"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get default wait timeout in milliseconds.  <br /></td></tr>
+<tr class="separator:ga1bb5e288308c3de5a479b27366bba257"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga945845cc57758a91e47a75ef17064d2a" id="r_ga945845cc57758a91e47a75ef17064d2a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga945845cc57758a91e47a75ef17064d2a">SocketPoll_setdefaulttimeout</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int timeout)</td></tr>
+<tr class="memdesc:ga945845cc57758a91e47a75ef17064d2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default wait timeout in milliseconds.  <br /></td></tr>
+<tr class="separator:ga945845cc57758a91e47a75ef17064d2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa3d47365dd18329d50ee636284839738" id="r_gaa3d47365dd18329d50ee636284839738"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> **events, int timeout)</td></tr>
+<tr class="memdesc:gaa3d47365dd18329d50ee636284839738"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for I/O events on registered sockets.  <br /></td></tr>
+<tr class="separator:gaa3d47365dd18329d50ee636284839738"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga665b3363d16ab859ec60e69a792d1ff0" id="r_ga665b3363d16ab859ec60e69a792d1ff0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:ga665b3363d16ab859ec60e69a792d1ff0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get async I/O context associated with poll instance.  <br /></td></tr>
+<tr class="separator:ga665b3363d16ab859ec60e69a792d1ff0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga16688a9e444183863bab8051f57fe688" id="r_ga16688a9e444183863bab8051f57fe688"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga16688a9e444183863bab8051f57fe688">SocketPoll_getmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:ga16688a9e444183863bab8051f57fe688"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get maximum registered sockets limit.  <br /></td></tr>
+<tr class="separator:ga16688a9e444183863bab8051f57fe688"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga35d4052d444bcab4cae26f41cf5729eb" id="r_ga35d4052d444bcab4cae26f41cf5729eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga35d4052d444bcab4cae26f41cf5729eb">SocketPoll_setmaxregistered</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int max)</td></tr>
+<tr class="memdesc:ga35d4052d444bcab4cae26f41cf5729eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set maximum registered sockets limit.  <br /></td></tr>
+<tr class="separator:ga35d4052d444bcab4cae26f41cf5729eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac79e719de24f09f84eb3816b3ab60c65" id="r_gac79e719de24f09f84eb3816b3ab60c65"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gac79e719de24f09f84eb3816b3ab60c65">SocketPoll_getregisteredcount</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:gac79e719de24f09f84eb3816b3ab60c65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current registered socket count.  <br /></td></tr>
+<tr class="separator:gac79e719de24f09f84eb3816b3ab60c65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ab4754362476e3ffc3e000b1cbcc2a6f0" id="r_ab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketPoll_8h.html#ab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a></td></tr>
-<tr class="separator:ab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab4754362476e3ffc3e000b1cbcc2a6f0" id="r_gab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a></td></tr>
+<tr class="memdesc:gab4754362476e3ffc3e000b1cbcc2a6f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPoll operation failure exception.  <br /></td></tr>
+<tr class="separator:gab4754362476e3ffc3e000b1cbcc2a6f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketEvent__T" id="structSocketEvent__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketEvent__T">&#9670;&#160;</a></span>SocketEvent_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketEvent_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Event structure returned by SocketPoll_wait </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00069">69</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="acb5b92ec2f2954ee3baa024a74ce4655" name="acb5b92ec2f2954ee3baa024a74ce4655"></a>void *</td>
-<td class="fieldname">
-data</td>
-<td class="fielddoc">
-<p>User data associated with socket </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ac526bc7e51851919ae7b0f3cec5934bc" name="ac526bc7e51851919ae7b0f3cec5934bc"></a>unsigned</td>
-<td class="fieldname">
-events</td>
-<td class="fielddoc">
-<p>Bitmask of events that occurred </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a98544b5a507331adac069acd7f42d593" name="a98544b5a507331adac069acd7f42d593"></a><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td>
-<td class="fieldname">
-socket</td>
-<td class="fielddoc">
-<p>Socket that triggered event </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a0fc8aa94a3e9bb10cb26d85c6474d04e" name="a0fc8aa94a3e9bb10cb26d85c6474d04e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0fc8aa94a3e9bb10cb26d85c6474d04e">&#9670;&#160;</a></span>SOCKET_POLL_TIMEOUT_USE_DEFAULT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_POLL_TIMEOUT_USE_DEFAULT&#160;&#160;&#160;(-2)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00076">76</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
-
-</div>
-</div>
-<a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Socket Event Polling</p>
-<p>High-level interface for monitoring multiple sockets for I/O events. Uses epoll on Linux for scalable event notification. Supports both edge-triggered and level-triggered modes. PLATFORM REQUIREMENTS:</p><ul>
-<li>Linux kernel 2.6.8+ (epoll with EPOLLET support)</li>
-<li>POSIX threads (pthread) for mutex synchronization</li>
-<li>NOT portable to BSD/macOS (would require kqueue backend)</li>
-<li>NOT portable to Windows (would require IOCP backend)</li>
-<li>For portable code, consider falling back to poll(2) Features:</li>
-<li>O(1) event delivery regardless of total sockets</li>
-<li>Edge-triggered mode for efficiency</li>
-<li>User data association with sockets</li>
-<li>Configurable default timeout applied when requested</li>
-<li>Thread-safe implementation The poll maintains a mapping of sockets to user data, allowing efficient context retrieval when events occur. </li>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Cross-platform high-level interface for monitoring multiple sockets for I/O events. </p>
+<p>Automatically selects optimal backend: epoll (Linux), kqueue (BSD/macOS), poll (POSIX fallback). Supports edge-triggered and level-triggered modes depending on backend capabilities.</p>
+<p>PLATFORM REQUIREMENTS:</p><ul>
+<li>POSIX-compliant system (Linux, BSD, macOS, etc.)</li>
+<li>Linux: kernel 2.6.8+ for full epoll support</li>
+<li>BSD/macOS: kqueue system call availability</li>
+<li>POSIX threads (pthreads) for internal mutex synchronization</li>
+<li>Windows not supported (would require IOCP or WSAPoll backend)</li>
 </ul>
+<p>Features:</p><ul>
+<li>Scalable event delivery (O(1) with epoll/kqueue backends)</li>
+<li>Edge-triggered notifications for efficiency where supported</li>
+<li>User data association with monitored sockets</li>
+<li>Configurable default timeout for wait operations</li>
+<li>Thread-safe implementation with internal locking</li>
+<li>Integrated async I/O completion processing</li>
+</ul>
+<p>Maintains an internal mapping of sockets to user data for efficient event dispatching and context retrieval. Registered sockets are automatically configured for non-blocking I/O.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7" title="Create a new event poll instance.">SocketPoll_new()</a> for poll instance creation. </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" title="Register a socket for event monitoring in the poll set.">SocketPoll_add()</a> for socket registration with events and user data. </dd>
+<dd>
+<a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Wait for I/O events on registered sockets.">SocketPoll_wait()</a> for blocking on and retrieving I/O events. </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga9e8943c9cb47aba63dda4ad9083142b6" title="Event types for socket I/O monitoring.">SocketPoll_Events</a> for bitmask values (<a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, <a class="el" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a>, etc.). </dd>
+<dd>
+<a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> for event notification structure details. </dd>
+<dd>
+<a class="el" href="group__core__io.html">Core I/O Modules</a> for compatible socket primitives. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> for connection pool integration examples. </dd>
+<dd>
+<a class="el" href="group__async__io.html">Async I/O Modules</a> for advanced asynchronous patterns. </dd>
+<dd>
+<a class="el" href="SocketPoll__backend_8h.html" title="Abstract interface for platform-specific polling implementations.">include/poll/SocketPoll_backend.h</a> for backend abstraction interface. </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for event-driven programming guide. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00034">34</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
+<p class="definition">Definition in file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a733615fa159421d6c73d01f6bb34bac8" name="a733615fa159421d6c73d01f6bb34bac8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a733615fa159421d6c73d01f6bb34bac8">&#9670;&#160;</a></span>SocketAsync_T</h2>
 
@@ -306,7 +278,7 @@ socket</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00010">10</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00021">21</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>
@@ -322,496 +294,7 @@ socket</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00035">35</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a9e8943c9cb47aba63dda4ad9083142b6" name="a9e8943c9cb47aba63dda4ad9083142b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9e8943c9cb47aba63dda4ad9083142b6">&#9670;&#160;</a></span>SocketPoll_Events</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketPoll_8h.html#a9e8943c9cb47aba63dda4ad9083142b6">SocketPoll_Events</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Event types that can be monitored </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8" name="a9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"></a>POLL_READ&#160;</td><td class="fielddoc"><p>Data available for reading </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195" name="a9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195"></a>POLL_WRITE&#160;</td><td class="fielddoc"><p>Socket ready for writing </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9" name="a9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9"></a>POLL_ERROR&#160;</td><td class="fielddoc"><p>Error condition </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c" name="a9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c"></a>POLL_HANGUP&#160;</td><td class="fielddoc"><p>Hang up / disconnection </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00058">58</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a6c9f3f1a23dd85dd2d44ff9b0ced4e1e" name="a6c9f3f1a23dd85dd2d44ff9b0ced4e1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c9f3f1a23dd85dd2d44ff9b0ced4e1e">&#9670;&#160;</a></span>SocketPoll_add()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_add </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>events</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>data</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_add - Add socket to poll set @poll: Poll instance @socket: Socket to monitor @events: Events to monitor (POLL_READ | POLL_WRITE) @data: User data to associate with socket Socket is automatically set to non-blocking mode Raises: SocketPoll_Failed if socket already added or epoll_ctl fails Thread-safe: Yes - uses internal mutex for socket data mapping </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<a id="a3074c5a225a7c49880951ecfb984498f" name="a3074c5a225a7c49880951ecfb984498f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3074c5a225a7c49880951ecfb984498f">&#9670;&#160;</a></span>SocketPoll_del()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_del </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_del - Remove socket from poll set @poll: Poll instance @socket: Socket to remove Silently succeeds if socket not in poll Thread-safe: Yes - uses internal mutex for socket data mapping Note: On backend error (non-ENOENT), raises leaving state intact for retry. Logs ENOENT warning and cleans data map. Security: Prioritizes backend clean. Single-threaded socket access assumed. </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<a id="aca744c50badbdb869c52088b9f32f8d2" name="aca744c50badbdb869c52088b9f32f8d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca744c50badbdb869c52088b9f32f8d2">&#9670;&#160;</a></span>SocketPoll_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> *&#160;</td>
-          <td class="paramname"><em>poll</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_free - Free an event poll @poll: Pointer to poll (will be set to NULL) Closes the underlying epoll descriptor </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<a id="a665b3363d16ab859ec60e69a792d1ff0" name="a665b3363d16ab859ec60e69a792d1ff0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a665b3363d16ab859ec60e69a792d1ff0">&#9670;&#160;</a></span>SocketPoll_get_async()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketPoll_8h.html#a733615fa159421d6c73d01f6bb34bac8">SocketAsync_T</a> SocketPoll_get_async </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_get_async - Get async I/O context from poll @poll: Poll instance Returns: Async context or NULL if unavailable Thread-safe: Yes Note: Returns NULL if async I/O is not available on this platform </p>
-
-</div>
-</div>
-<a id="a1bb5e288308c3de5a479b27366bba257" name="a1bb5e288308c3de5a479b27366bba257"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bb5e288308c3de5a479b27366bba257">&#9670;&#160;</a></span>SocketPoll_getdefaulttimeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketPoll_getdefaulttimeout </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_getdefaulttimeout - Get default wait timeout in milliseconds @poll: Poll instance Returns: Default timeout in milliseconds </p>
-
-</div>
-</div>
-<a id="a16688a9e444183863bab8051f57fe688" name="a16688a9e444183863bab8051f57fe688"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a16688a9e444183863bab8051f57fe688">&#9670;&#160;</a></span>SocketPoll_getmaxregistered()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketPoll_getmaxregistered </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_getmaxregistered - Get maximum registered sockets limit @poll: Poll instance Returns: Maximum limit (0 = unlimited) Thread-safe: Yes</p>
-<p>Defense-in-depth: Returns the configured limit on socket registrations. Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled). </p>
-
-</div>
-</div>
-<a id="ac79e719de24f09f84eb3816b3ab60c65" name="ac79e719de24f09f84eb3816b3ab60c65"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac79e719de24f09f84eb3816b3ab60c65">&#9670;&#160;</a></span>SocketPoll_getregisteredcount()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketPoll_getregisteredcount </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_getregisteredcount - Get current registered socket count @poll: Poll instance Returns: Number of currently registered sockets Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a3755cc4d5ed8838ce2261f0efd1d5d85" name="a3755cc4d5ed8838ce2261f0efd1d5d85"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3755cc4d5ed8838ce2261f0efd1d5d85">&#9670;&#160;</a></span>SocketPoll_mod()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_mod </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td>
-          <td class="paramname"><em>socket</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned&#160;</td>
-          <td class="paramname"><em>events</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>data</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_mod - Modify monitored events @poll: Poll instance @socket: Socket to modify @events: New events to monitor @data: New user data (updates association) Raises: SocketPoll_Failed if socket not in poll or epoll_ctl fails Thread-safe: Yes - atomic update of socket data mapping </p>
-
-</div>
-</div>
-<a id="ac1fbd1a09d564f7988b0e427e5707ca7" name="ac1fbd1a09d564f7988b0e427e5707ca7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac1fbd1a09d564f7988b0e427e5707ca7">&#9670;&#160;</a></span>SocketPoll_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> SocketPoll_new </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>maxevents</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_new - Create a new event poll @maxevents: Maximum events to return per wait call Returns: New poll instance Raises: SocketPoll_Failed on error Thread-safe: Yes - returns new instance Creates an edge-triggered epoll instance for high-performance I/O. </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<a id="a945845cc57758a91e47a75ef17064d2a" name="a945845cc57758a91e47a75ef17064d2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a945845cc57758a91e47a75ef17064d2a">&#9670;&#160;</a></span>SocketPoll_setdefaulttimeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_setdefaulttimeout </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds @poll: Poll instance @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite) Returns: Nothing </p>
-
-</div>
-</div>
-<a id="a35d4052d444bcab4cae26f41cf5729eb" name="a35d4052d444bcab4cae26f41cf5729eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35d4052d444bcab4cae26f41cf5729eb">&#9670;&#160;</a></span>SocketPoll_setmaxregistered()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketPoll_setmaxregistered </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>max</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_setmaxregistered - Set maximum registered sockets limit @poll: Poll instance @max: Maximum limit (0 = unlimited) Thread-safe: Yes</p>
-<p>Defense-in-depth: Limits the number of sockets that can be registered to prevent resource exhaustion attacks. Set to 0 to disable.</p>
-<p>Note: Cannot set limit below current registered_count. Raises: SocketPoll_Failed if max &lt; registered_count and max &gt; 0 </p>
-
-</div>
-</div>
-<a id="aa3d47365dd18329d50ee636284839738" name="aa3d47365dd18329d50ee636284839738"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa3d47365dd18329d50ee636284839738">&#9670;&#160;</a></span>SocketPoll_wait()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketPoll_wait </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a>&#160;</td>
-          <td class="paramname"><em>poll</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketPoll_8h.html#structSocketEvent__T">SocketEvent_T</a> **&#160;</td>
-          <td class="paramname"><em>events</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurred @timeout: Timeout in milliseconds (-1 for infinite) Returns: Number of events (0 on timeout) Raises: SocketPoll_Failed on error Thread-safe: Yes - event array is thread-local to poll instance The events array points to internal memory - do not free Note: Also processes async I/O completions automatically </p>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="ab4754362476e3ffc3e000b1cbcc2a6f0" name="ab4754362476e3ffc3e000b1cbcc2a6f0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4754362476e3ffc3e000b1cbcc2a6f0">&#9670;&#160;</a></span>SocketPoll_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketPoll_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketPoll_Failed - Poll operation failure</p>
-<p>Category: RESOURCE or PROTOCOL Retryable: Depends on errno</p>
-<p>Raised for:</p><ul>
-<li>epoll/kqueue creation failure (RESOURCE, not retryable)</li>
-<li>Invalid socket (PROTOCOL, not retryable)</li>
-<li>Duplicate socket add (PROTOCOL, not retryable)</li>
-<li>EMFILE/ENFILE (RESOURCE, retryable after fd cleanup) </li>
-</ul>
-
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll_8h_source.html#l00127">127</a> of file <a class="el" href="SocketPoll_8h_source.html">SocketPoll.h</a>.</p>
 
 </div>
 </div>

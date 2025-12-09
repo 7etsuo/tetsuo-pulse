@@ -114,9 +114,12 @@ $(document).ready(function(){initNavTree('SocketTLSConfig_8h.html',''); initResi
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">SocketTLSConfig.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketTLSConfig.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>TLS configuration constants, structure, and secure defaults.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;openssl/err.h&gt;</code><br />
 <code>#include &lt;openssl/ssl.h&gt;</code><br />
 <code>#include &lt;openssl/x509.h&gt;</code><br />
@@ -140,310 +143,127 @@ $(document).ready(function(){initNavTree('SocketTLSConfig_8h.html',''); initResi
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketTLSConfig__T" id="r_structSocketTLSConfig__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a></td></tr>
+<tr class="memitem:structSocketTLSConfig__T" id="r_structSocketTLSConfig__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#structSocketTLSConfig__T">SocketTLSConfig_T</a></td></tr>
+<tr class="memdesc:structSocketTLSConfig__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS configuration parameters.  <a href="group__security.html#structSocketTLSConfig__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketTLSConfig__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a3d1a24e799511be7b94d7cb83e30c826" id="r_a3d1a24e799511be7b94d7cb83e30c826"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a3d1a24e799511be7b94d7cb83e30c826">SOCKET_TLS_MIN_VERSION</a>&#160;&#160;&#160;TLS1_3_VERSION</td></tr>
-<tr class="separator:a3d1a24e799511be7b94d7cb83e30c826"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1bb6850b2066656bb9ca5be7bc4e7a26" id="r_a1bb6850b2066656bb9ca5be7bc4e7a26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a1bb6850b2066656bb9ca5be7bc4e7a26">SOCKET_TLS_MAX_VERSION</a>&#160;&#160;&#160;TLS1_3_VERSION</td></tr>
-<tr class="separator:a1bb6850b2066656bb9ca5be7bc4e7a26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8c3a6a178964eee6129e588f6f18861b" id="r_a8c3a6a178964eee6129e588f6f18861b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a8c3a6a178964eee6129e588f6f18861b">SOCKET_TLS13_CIPHERSUITES</a></td></tr>
-<tr class="separator:a8c3a6a178964eee6129e588f6f18861b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261f36b20bf9986a7f09fa9ed31b793e" id="r_a261f36b20bf9986a7f09fa9ed31b793e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a261f36b20bf9986a7f09fa9ed31b793e">SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000 /* 30 seconds */</td></tr>
-<tr class="separator:a261f36b20bf9986a7f09fa9ed31b793e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab30f8121a683dd31fff11c10934b1137" id="r_ab30f8121a683dd31fff11c10934b1137"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#ab30f8121a683dd31fff11c10934b1137">SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS</a>&#160;&#160;&#160;5000 /* 5 seconds */</td></tr>
-<tr class="separator:ab30f8121a683dd31fff11c10934b1137"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5ca7b5f2bc6a521f8b7fb7b94196a94e" id="r_a5ca7b5f2bc6a521f8b7fb7b94196a94e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a5ca7b5f2bc6a521f8b7fb7b94196a94e">SOCKET_TLS_POLL_INTERVAL_MS</a>&#160;&#160;&#160;100 /* 100ms polling interval */</td></tr>
-<tr class="separator:a5ca7b5f2bc6a521f8b7fb7b94196a94e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21c94d7068bbee12788fb1af5b90a393" id="r_a21c94d7068bbee12788fb1af5b90a393"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a21c94d7068bbee12788fb1af5b90a393">SOCKET_TLS_BUFFER_SIZE</a>&#160;&#160;&#160;16384 /* 16KB - TLS record max */</td></tr>
-<tr class="separator:a21c94d7068bbee12788fb1af5b90a393"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d5991568275ac5f8d677aea34656f0a" id="r_a4d5991568275ac5f8d677aea34656f0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a4d5991568275ac5f8d677aea34656f0a">SOCKET_TLS_MAX_CERT_CHAIN_DEPTH</a>&#160;&#160;&#160;10</td></tr>
-<tr class="separator:a4d5991568275ac5f8d677aea34656f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:accea5587344f8cc4d28f5d862dc2fa96" id="r_accea5587344f8cc4d28f5d862dc2fa96"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#accea5587344f8cc4d28f5d862dc2fa96">SOCKET_TLS_MAX_ALPN_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:accea5587344f8cc4d28f5d862dc2fa96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa52cffca1d260f855e90946554827278" id="r_aa52cffca1d260f855e90946554827278"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#aa52cffca1d260f855e90946554827278">SOCKET_TLS_MAX_ALPN_TOTAL_BYTES</a>&#160;&#160;&#160;1024</td></tr>
-<tr class="separator:aa52cffca1d260f855e90946554827278"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f3a226ee7b72b9153e60d985e90fd15" id="r_a2f3a226ee7b72b9153e60d985e90fd15"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a2f3a226ee7b72b9153e60d985e90fd15">SOCKET_TLS_MAX_SNI_LEN</a>&#160;&#160;&#160;255</td></tr>
-<tr class="separator:a2f3a226ee7b72b9153e60d985e90fd15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:addb5f5a6224c2d4c50908c19baab9a2d" id="r_addb5f5a6224c2d4c50908c19baab9a2d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#addb5f5a6224c2d4c50908c19baab9a2d">SOCKET_TLS_SESSION_CACHE_SIZE</a>&#160;&#160;&#160;1000</td></tr>
-<tr class="separator:addb5f5a6224c2d4c50908c19baab9a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa6df1c1fb5a0bcfe9a77b4dbb037c77f" id="r_aa6df1c1fb5a0bcfe9a77b4dbb037c77f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#aa6df1c1fb5a0bcfe9a77b4dbb037c77f">SOCKET_TLS_ERROR_BUFSIZE</a>&#160;&#160;&#160;512</td></tr>
-<tr class="separator:aa6df1c1fb5a0bcfe9a77b4dbb037c77f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae6650ea0075b47d60f5dcfc068c9cb69" id="r_ae6650ea0075b47d60f5dcfc068c9cb69"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#ae6650ea0075b47d60f5dcfc068c9cb69">SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
-<tr class="separator:ae6650ea0075b47d60f5dcfc068c9cb69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac5d4211edcb3114d8d9b26c22b50fac3" id="r_ac5d4211edcb3114d8d9b26c22b50fac3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#ac5d4211edcb3114d8d9b26c22b50fac3">SOCKET_TLS_MAX_SNI_CERTS</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:ac5d4211edcb3114d8d9b26c22b50fac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed59df6881f4fbedd888f060a563eca0" id="r_aed59df6881f4fbedd888f060a563eca0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#aed59df6881f4fbedd888f060a563eca0">SOCKET_TLS_SNI_INITIAL_CAPACITY</a>&#160;&#160;&#160;4</td></tr>
-<tr class="separator:aed59df6881f4fbedd888f060a563eca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31c8aa5bed2b0db51e53847e6b6bc22c" id="r_a31c8aa5bed2b0db51e53847e6b6bc22c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a31c8aa5bed2b0db51e53847e6b6bc22c">SOCKET_TLS_MAX_ALPN_PROTOCOLS</a>&#160;&#160;&#160;16</td></tr>
-<tr class="separator:a31c8aa5bed2b0db51e53847e6b6bc22c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac328cd9a67a36754bdeb92361fb9526b" id="r_ac328cd9a67a36754bdeb92361fb9526b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#ac328cd9a67a36754bdeb92361fb9526b">SOCKET_TLS_TICKET_KEY_LEN</a>&#160;&#160;&#160;80</td></tr>
-<tr class="separator:ac328cd9a67a36754bdeb92361fb9526b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5554586ea5eb4bf0a81c54963d0cbb2f" id="r_a5554586ea5eb4bf0a81c54963d0cbb2f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a5554586ea5eb4bf0a81c54963d0cbb2f">SOCKET_TLS_SESSION_TIMEOUT_DEFAULT</a>&#160;&#160;&#160;300L</td></tr>
-<tr class="separator:a5554586ea5eb4bf0a81c54963d0cbb2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5249d9cf8a8fd02a5c2fcc84b393d160" id="r_a5249d9cf8a8fd02a5c2fcc84b393d160"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a5249d9cf8a8fd02a5c2fcc84b393d160">SOCKET_TLS_MAX_OCSP_RESPONSE_LEN</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
-<tr class="separator:a5249d9cf8a8fd02a5c2fcc84b393d160"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd952b038e2ba7a919097a1c3fca116d" id="r_abd952b038e2ba7a919097a1c3fca116d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#abd952b038e2ba7a919097a1c3fca116d">SOCKET_TLS_MAX_PATH_LEN</a>&#160;&#160;&#160;4096</td></tr>
-<tr class="separator:abd952b038e2ba7a919097a1c3fca116d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a17ff6f02c79ea2099d8329a0e82a6000" id="r_a17ff6f02c79ea2099d8329a0e82a6000"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a17ff6f02c79ea2099d8329a0e82a6000">SOCKET_TLS_MAX_LABEL_LEN</a>&#160;&#160;&#160;63</td></tr>
-<tr class="separator:a17ff6f02c79ea2099d8329a0e82a6000"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf406dfb5329bd8170f908b258660a72" id="r_acf406dfb5329bd8170f908b258660a72"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#acf406dfb5329bd8170f908b258660a72">SOCKET_TLS_MAX_PINS</a>&#160;&#160;&#160;32 /* Max pinned certificates per context */</td></tr>
-<tr class="separator:acf406dfb5329bd8170f908b258660a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab727e6443392c2d7a9b350723f4bf827" id="r_ab727e6443392c2d7a9b350723f4bf827"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#ab727e6443392c2d7a9b350723f4bf827">SOCKET_TLS_PIN_HASH_LEN</a>&#160;&#160;&#160;32 /* SHA256 = 32 bytes */</td></tr>
-<tr class="separator:ab727e6443392c2d7a9b350723f4bf827"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e34a6589554ee91a77d39057681e22e" id="r_a3e34a6589554ee91a77d39057681e22e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a3e34a6589554ee91a77d39057681e22e">SOCKET_TLS_PIN_INITIAL_CAPACITY</a>&#160;&#160;&#160;4 /* Initial pin array capacity */</td></tr>
-<tr class="separator:a3e34a6589554ee91a77d39057681e22e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1c682687285a8a50d6ade71bc8941560" id="r_a1c682687285a8a50d6ade71bc8941560"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a1c682687285a8a50d6ade71bc8941560">SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL</a>&#160;&#160;&#160;60 /* Minimum 60 seconds */</td></tr>
-<tr class="separator:a1c682687285a8a50d6ade71bc8941560"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adbfa56fdcb0238beabd54ceecdf8aba7" id="r_adbfa56fdcb0238beabd54ceecdf8aba7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#adbfa56fdcb0238beabd54ceecdf8aba7">SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL</a>&#160;&#160;&#160;(365LL * 24 * 3600) /* Max 1 year in seconds */</td></tr>
-<tr class="separator:adbfa56fdcb0238beabd54ceecdf8aba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcf496a1134e5bff5ea583e6395f4a44" id="r_abcf496a1134e5bff5ea583e6395f4a44"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#abcf496a1134e5bff5ea583e6395f4a44">SOCKET_TLS_MAX_CRL_SIZE</a>&#160;&#160;&#160;(10 * 1024 * 1024) /* Max 10MB for CRL files */</td></tr>
-<tr class="separator:abcf496a1134e5bff5ea583e6395f4a44"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65c50bd768a726e7a7f036f32a58e49d" id="r_a65c50bd768a726e7a7f036f32a58e49d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a65c50bd768a726e7a7f036f32a58e49d">SOCKET_TLS_MAX_CRL_FILES_IN_DIR</a>&#160;&#160;&#160;1000 /* Max CRL files in directory to prevent exhaustion */</td></tr>
+<tr class="memitem:ga3d1a24e799511be7b94d7cb83e30c826" id="r_ga3d1a24e799511be7b94d7cb83e30c826"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga3d1a24e799511be7b94d7cb83e30c826">SOCKET_TLS_MIN_VERSION</a>&#160;&#160;&#160;TLS1_3_VERSION</td></tr>
+<tr class="memdesc:ga3d1a24e799511be7b94d7cb83e30c826"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum TLS protocol version - STRICT TLS 1.3 ONLY.  <br /></td></tr>
+<tr class="separator:ga3d1a24e799511be7b94d7cb83e30c826"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1bb6850b2066656bb9ca5be7bc4e7a26" id="r_ga1bb6850b2066656bb9ca5be7bc4e7a26"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga1bb6850b2066656bb9ca5be7bc4e7a26">SOCKET_TLS_MAX_VERSION</a>&#160;&#160;&#160;TLS1_3_VERSION</td></tr>
+<tr class="memdesc:ga1bb6850b2066656bb9ca5be7bc4e7a26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum TLS protocol version - STRICT TLS 1.3 ONLY.  <br /></td></tr>
+<tr class="separator:ga1bb6850b2066656bb9ca5be7bc4e7a26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8c3a6a178964eee6129e588f6f18861b" id="r_ga8c3a6a178964eee6129e588f6f18861b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga8c3a6a178964eee6129e588f6f18861b">SOCKET_TLS13_CIPHERSUITES</a></td></tr>
+<tr class="memdesc:ga8c3a6a178964eee6129e588f6f18861b"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS 1.3 Modern Cipher Suites (ECDHE-PFS only, AEAD ciphers)  <br /></td></tr>
+<tr class="separator:ga8c3a6a178964eee6129e588f6f18861b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga261f36b20bf9986a7f09fa9ed31b793e" id="r_ga261f36b20bf9986a7f09fa9ed31b793e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga261f36b20bf9986a7f09fa9ed31b793e">SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</a>&#160;&#160;&#160;30000 /* 30 seconds */</td></tr>
+<tr class="memdesc:ga261f36b20bf9986a7f09fa9ed31b793e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default TLS handshake timeout in milliseconds.  <br /></td></tr>
+<tr class="separator:ga261f36b20bf9986a7f09fa9ed31b793e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab30f8121a683dd31fff11c10934b1137" id="r_gab30f8121a683dd31fff11c10934b1137"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab30f8121a683dd31fff11c10934b1137">SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS</a>&#160;&#160;&#160;5000 /* 5 seconds */</td></tr>
+<tr class="memdesc:gab30f8121a683dd31fff11c10934b1137"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default TLS shutdown timeout in milliseconds.  <br /></td></tr>
+<tr class="separator:gab30f8121a683dd31fff11c10934b1137"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5ca7b5f2bc6a521f8b7fb7b94196a94e" id="r_ga5ca7b5f2bc6a521f8b7fb7b94196a94e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga5ca7b5f2bc6a521f8b7fb7b94196a94e">SOCKET_TLS_POLL_INTERVAL_MS</a>&#160;&#160;&#160;100 /* 100ms polling interval */</td></tr>
+<tr class="memdesc:ga5ca7b5f2bc6a521f8b7fb7b94196a94e"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS handshake poll interval for non-blocking operations.  <br /></td></tr>
+<tr class="separator:ga5ca7b5f2bc6a521f8b7fb7b94196a94e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga21c94d7068bbee12788fb1af5b90a393" id="r_ga21c94d7068bbee12788fb1af5b90a393"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga21c94d7068bbee12788fb1af5b90a393">SOCKET_TLS_BUFFER_SIZE</a>&#160;&#160;&#160;16384 /* 16KB - TLS record max */</td></tr>
+<tr class="memdesc:ga21c94d7068bbee12788fb1af5b90a393"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS read/write buffer size.  <br /></td></tr>
+<tr class="separator:ga21c94d7068bbee12788fb1af5b90a393"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4d5991568275ac5f8d677aea34656f0a" id="r_ga4d5991568275ac5f8d677aea34656f0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4d5991568275ac5f8d677aea34656f0a">SOCKET_TLS_MAX_CERT_CHAIN_DEPTH</a>&#160;&#160;&#160;10</td></tr>
+<tr class="memdesc:ga4d5991568275ac5f8d677aea34656f0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum certificate chain depth for verification.  <br /></td></tr>
+<tr class="separator:ga4d5991568275ac5f8d677aea34656f0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaccea5587344f8cc4d28f5d862dc2fa96" id="r_gaccea5587344f8cc4d28f5d862dc2fa96"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaccea5587344f8cc4d28f5d862dc2fa96">SOCKET_TLS_MAX_ALPN_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="memdesc:gaccea5587344f8cc4d28f5d862dc2fa96"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum ALPN protocol name length.  <br /></td></tr>
+<tr class="separator:gaccea5587344f8cc4d28f5d862dc2fa96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa52cffca1d260f855e90946554827278" id="r_gaa52cffca1d260f855e90946554827278"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaa52cffca1d260f855e90946554827278">SOCKET_TLS_MAX_ALPN_TOTAL_BYTES</a>&#160;&#160;&#160;1024</td></tr>
+<tr class="memdesc:gaa52cffca1d260f855e90946554827278"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum total bytes for ALPN protocol list.  <br /></td></tr>
+<tr class="separator:gaa52cffca1d260f855e90946554827278"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f3a226ee7b72b9153e60d985e90fd15" id="r_ga2f3a226ee7b72b9153e60d985e90fd15"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga2f3a226ee7b72b9153e60d985e90fd15">SOCKET_TLS_MAX_SNI_LEN</a>&#160;&#160;&#160;255</td></tr>
+<tr class="memdesc:ga2f3a226ee7b72b9153e60d985e90fd15"><td class="mdescLeft">&#160;</td><td class="mdescRight">SNI hostname length limit.  <br /></td></tr>
+<tr class="separator:ga2f3a226ee7b72b9153e60d985e90fd15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaddb5f5a6224c2d4c50908c19baab9a2d" id="r_gaddb5f5a6224c2d4c50908c19baab9a2d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaddb5f5a6224c2d4c50908c19baab9a2d">SOCKET_TLS_SESSION_CACHE_SIZE</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="memdesc:gaddb5f5a6224c2d4c50908c19baab9a2d"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS session cache size (number of cached sessions)  <br /></td></tr>
+<tr class="separator:gaddb5f5a6224c2d4c50908c19baab9a2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa6df1c1fb5a0bcfe9a77b4dbb037c77f" id="r_gaa6df1c1fb5a0bcfe9a77b4dbb037c77f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaa6df1c1fb5a0bcfe9a77b4dbb037c77f">SOCKET_TLS_ERROR_BUFSIZE</a>&#160;&#160;&#160;512</td></tr>
+<tr class="memdesc:gaa6df1c1fb5a0bcfe9a77b4dbb037c77f"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS error buffer size for detailed error messages.  <br /></td></tr>
+<tr class="separator:gaa6df1c1fb5a0bcfe9a77b4dbb037c77f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae6650ea0075b47d60f5dcfc068c9cb69" id="r_gae6650ea0075b47d60f5dcfc068c9cb69"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae6650ea0075b47d60f5dcfc068c9cb69">SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:gae6650ea0075b47d60f5dcfc068c9cb69"><td class="mdescLeft">&#160;</td><td class="mdescRight">OpenSSL error string buffer size for temporary formatting.  <br /></td></tr>
+<tr class="separator:gae6650ea0075b47d60f5dcfc068c9cb69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac5d4211edcb3114d8d9b26c22b50fac3" id="r_gac5d4211edcb3114d8d9b26c22b50fac3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac5d4211edcb3114d8d9b26c22b50fac3">SOCKET_TLS_MAX_SNI_CERTS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:gac5d4211edcb3114d8d9b26c22b50fac3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of SNI certificates per context.  <br /></td></tr>
+<tr class="separator:gac5d4211edcb3114d8d9b26c22b50fac3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaed59df6881f4fbedd888f060a563eca0" id="r_gaed59df6881f4fbedd888f060a563eca0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaed59df6881f4fbedd888f060a563eca0">SOCKET_TLS_SNI_INITIAL_CAPACITY</a>&#160;&#160;&#160;4</td></tr>
+<tr class="memdesc:gaed59df6881f4fbedd888f060a563eca0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial SNI certificate array capacity.  <br /></td></tr>
+<tr class="separator:gaed59df6881f4fbedd888f060a563eca0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga31c8aa5bed2b0db51e53847e6b6bc22c" id="r_ga31c8aa5bed2b0db51e53847e6b6bc22c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga31c8aa5bed2b0db51e53847e6b6bc22c">SOCKET_TLS_MAX_ALPN_PROTOCOLS</a>&#160;&#160;&#160;16</td></tr>
+<tr class="memdesc:ga31c8aa5bed2b0db51e53847e6b6bc22c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of ALPN protocols per context.  <br /></td></tr>
+<tr class="separator:ga31c8aa5bed2b0db51e53847e6b6bc22c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac328cd9a67a36754bdeb92361fb9526b" id="r_gac328cd9a67a36754bdeb92361fb9526b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac328cd9a67a36754bdeb92361fb9526b">SOCKET_TLS_TICKET_KEY_LEN</a>&#160;&#160;&#160;80</td></tr>
+<tr class="memdesc:gac328cd9a67a36754bdeb92361fb9526b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Session ticket encryption key length.  <br /></td></tr>
+<tr class="separator:gac328cd9a67a36754bdeb92361fb9526b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5554586ea5eb4bf0a81c54963d0cbb2f" id="r_ga5554586ea5eb4bf0a81c54963d0cbb2f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga5554586ea5eb4bf0a81c54963d0cbb2f">SOCKET_TLS_SESSION_TIMEOUT_DEFAULT</a>&#160;&#160;&#160;300L</td></tr>
+<tr class="memdesc:ga5554586ea5eb4bf0a81c54963d0cbb2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default TLS session cache timeout in seconds.  <br /></td></tr>
+<tr class="separator:ga5554586ea5eb4bf0a81c54963d0cbb2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5249d9cf8a8fd02a5c2fcc84b393d160" id="r_ga5249d9cf8a8fd02a5c2fcc84b393d160"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga5249d9cf8a8fd02a5c2fcc84b393d160">SOCKET_TLS_MAX_OCSP_RESPONSE_LEN</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
+<tr class="memdesc:ga5249d9cf8a8fd02a5c2fcc84b393d160"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum OCSP response size.  <br /></td></tr>
+<tr class="separator:ga5249d9cf8a8fd02a5c2fcc84b393d160"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabd952b038e2ba7a919097a1c3fca116d" id="r_gabd952b038e2ba7a919097a1c3fca116d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabd952b038e2ba7a919097a1c3fca116d">SOCKET_TLS_MAX_PATH_LEN</a>&#160;&#160;&#160;4096</td></tr>
+<tr class="memdesc:gabd952b038e2ba7a919097a1c3fca116d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum file path length for certificates/keys.  <br /></td></tr>
+<tr class="separator:gabd952b038e2ba7a919097a1c3fca116d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga17ff6f02c79ea2099d8329a0e82a6000" id="r_ga17ff6f02c79ea2099d8329a0e82a6000"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga17ff6f02c79ea2099d8329a0e82a6000">SOCKET_TLS_MAX_LABEL_LEN</a>&#160;&#160;&#160;63</td></tr>
+<tr class="memdesc:ga17ff6f02c79ea2099d8329a0e82a6000"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum DNS label length per RFC 1035.  <br /></td></tr>
+<tr class="separator:ga17ff6f02c79ea2099d8329a0e82a6000"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacf406dfb5329bd8170f908b258660a72" id="r_gacf406dfb5329bd8170f908b258660a72"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gacf406dfb5329bd8170f908b258660a72">SOCKET_TLS_MAX_PINS</a>&#160;&#160;&#160;32 /* Max pinned certificates per context */</td></tr>
+<tr class="memdesc:gacf406dfb5329bd8170f908b258660a72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Certificate pinning configuration.  <br /></td></tr>
+<tr class="separator:gacf406dfb5329bd8170f908b258660a72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab727e6443392c2d7a9b350723f4bf827" id="r_gab727e6443392c2d7a9b350723f4bf827"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab727e6443392c2d7a9b350723f4bf827">SOCKET_TLS_PIN_HASH_LEN</a>&#160;&#160;&#160;32 /* SHA256 = 32 bytes */</td></tr>
+<tr class="memdesc:gab727e6443392c2d7a9b350723f4bf827"><td class="mdescLeft">&#160;</td><td class="mdescRight">Certificate pin hash length (SHA256)  <br /></td></tr>
+<tr class="separator:gab727e6443392c2d7a9b350723f4bf827"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3e34a6589554ee91a77d39057681e22e" id="r_ga3e34a6589554ee91a77d39057681e22e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga3e34a6589554ee91a77d39057681e22e">SOCKET_TLS_PIN_INITIAL_CAPACITY</a>&#160;&#160;&#160;4 /* Initial pin array capacity */</td></tr>
+<tr class="memdesc:ga3e34a6589554ee91a77d39057681e22e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial certificate pin array capacity.  <br /></td></tr>
+<tr class="separator:ga3e34a6589554ee91a77d39057681e22e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1c682687285a8a50d6ade71bc8941560" id="r_ga1c682687285a8a50d6ade71bc8941560"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga1c682687285a8a50d6ade71bc8941560">SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL</a>&#160;&#160;&#160;60 /* Minimum 60 seconds */</td></tr>
+<tr class="memdesc:ga1c682687285a8a50d6ade71bc8941560"><td class="mdescLeft">&#160;</td><td class="mdescRight">CRL auto-refresh configuration.  <br /></td></tr>
+<tr class="separator:ga1c682687285a8a50d6ade71bc8941560"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadbfa56fdcb0238beabd54ceecdf8aba7" id="r_gadbfa56fdcb0238beabd54ceecdf8aba7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gadbfa56fdcb0238beabd54ceecdf8aba7">SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL</a>&#160;&#160;&#160;  (365LL * 24 * 3600) /* Max 1 year in seconds */</td></tr>
+<tr class="memdesc:gadbfa56fdcb0238beabd54ceecdf8aba7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum CRL refresh interval in seconds.  <br /></td></tr>
+<tr class="separator:gadbfa56fdcb0238beabd54ceecdf8aba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabcf496a1134e5bff5ea583e6395f4a44" id="r_gabcf496a1134e5bff5ea583e6395f4a44"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabcf496a1134e5bff5ea583e6395f4a44">SOCKET_TLS_MAX_CRL_SIZE</a></td></tr>
+<tr class="memdesc:gabcf496a1134e5bff5ea583e6395f4a44"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum CRL file size.  <br /></td></tr>
+<tr class="separator:gabcf496a1134e5bff5ea583e6395f4a44"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a65c50bd768a726e7a7f036f32a58e49d" id="r_a65c50bd768a726e7a7f036f32a58e49d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a65c50bd768a726e7a7f036f32a58e49d">SOCKET_TLS_MAX_CRL_FILES_IN_DIR</a>&#160;&#160;&#160;  1000 /* Max CRL files in directory to prevent exhaustion */</td></tr>
 <tr class="separator:a65c50bd768a726e7a7f036f32a58e49d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a362c108e58b5204fa5141920db407ed0" id="r_a362c108e58b5204fa5141920db407ed0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a362c108e58b5204fa5141920db407ed0">SOCKET_TLS_CRL_MAX_PATH_LEN</a>&#160;&#160;&#160;4096 /* Max CRL path length */</td></tr>
-<tr class="separator:a362c108e58b5204fa5141920db407ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga362c108e58b5204fa5141920db407ed0" id="r_ga362c108e58b5204fa5141920db407ed0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga362c108e58b5204fa5141920db407ed0">SOCKET_TLS_CRL_MAX_PATH_LEN</a>&#160;&#160;&#160;4096 /* Max CRL path length */</td></tr>
+<tr class="memdesc:ga362c108e58b5204fa5141920db407ed0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum CRL path length.  <br /></td></tr>
+<tr class="separator:ga362c108e58b5204fa5141920db407ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:a122ad62f86b4477f7be54d55b769d58b" id="r_a122ad62f86b4477f7be54d55b769d58b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSConfig_8h.html#a122ad62f86b4477f7be54d55b769d58b">SocketTLS_config_defaults</a> (<a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *config)</td></tr>
-<tr class="separator:a122ad62f86b4477f7be54d55b769d58b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga122ad62f86b4477f7be54d55b769d58b" id="r_ga122ad62f86b4477f7be54d55b769d58b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b">SocketTLS_config_defaults</a> (<a class="el" href="group__security.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *config)</td></tr>
+<tr class="memdesc:ga122ad62f86b4477f7be54d55b769d58b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize the TLS configuration with secure library defaults.  <br /></td></tr>
+<tr class="separator:ga122ad62f86b4477f7be54d55b769d58b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketTLSConfig__T" id="structSocketTLSConfig__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketTLSConfig__T">&#9670;&#160;</a></span>SocketTLSConfig_T</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>TLS configuration constants, structure, and secure defaults. </p>
+<p>Defines secure defaults for TLS operations: TLS1.3-only protocols, modern cipher suites, buffer sizes, timeouts, limits, and configuration structure (<a class="el" href="group__security.html#structSocketTLSConfig__T" title="TLS configuration parameters.">SocketTLSConfig_T</a>). Provides stub typedefs when TLS is disabled for compilation without OpenSSL/LibreSSL. Includes initialization function <a class="el" href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b" title="Initialize the TLS configuration with secure library defaults.">SocketTLS_config_defaults()</a> for the config struct.</p>
+<p>All constants can be overridden before including this header to customize security parameters. Enforces high-security posture by default: no legacy protocols/ciphers, strict version pinning.</p>
+<dl class="section user"><dt>Thread Safety\n Yes - compile-time constants and pure functions.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#structSocketTLSConfig__T" title="TLS configuration parameters.">SocketTLSConfig_T</a> for customizable TLS parameters. </dd>
+<dd>
+<a class="el" href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b" title="Initialize the TLS configuration with secure library defaults.">SocketTLS_config_defaults()</a> for secure initialization. </dd>
+<dd>
+<a class="el" href="group__security.html#gac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> for applying config to contexts. </dd>
+<dd>
+<a class="el" href="group__security.html#ga63e73c93350813167a68162c5cb3d819">SocketTLS_T</a> for TLS I/O operations. </dd>
+<dd>
+<a class="el" href="SocketDTLSConfig_8h.html" title="DTLS configuration constants and secure defaults.">SocketDTLSConfig.h</a> for DTLS-specific constants. </dd>
+<dd>
+<a class="el" href="group__security.html">Security Modules</a> group. </dd></dl>
 
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketTLSConfig_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p><a class="el" href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a> - TLS Configuration Constants and Stubs</p>
-<p>Defines secure defaults for TLS operations: TLS1.3-only, modern ciphers, buffer sizes, timeouts, and limits. Provides stub typedefs when TLS disabled for compilation without OpenSSL.</p>
-<p>All constants can be overridden before including this header. Enforces high-security posture by default (no legacy protocols/ciphers).</p>
-<p>Thread-safe: Yes - compile-time constants </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00020">20</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a5d3105c29493e11690b519dce33267a1" name="a5d3105c29493e11690b519dce33267a1"></a>int</td>
-<td class="fieldname">
-max_version</td>
-<td class="fielddoc">
-<p>Maximum TLS version (default: SOCKET_TLS_MAX_VERSION) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a670bdce01faa6f2ff73dc3ce67b14db5" name="a670bdce01faa6f2ff73dc3ce67b14db5"></a>int</td>
-<td class="fieldname">
-min_version</td>
-<td class="fielddoc">
-<p>Minimum TLS version (default: SOCKET_TLS_MIN_VERSION) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a8c3a6a178964eee6129e588f6f18861b" name="a8c3a6a178964eee6129e588f6f18861b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8c3a6a178964eee6129e588f6f18861b">&#9670;&#160;</a></span>SOCKET_TLS13_CIPHERSUITES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS13_CIPHERSUITES</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Value:</b><div class="fragment"><div class="line">  <span class="stringliteral">&quot;TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_&quot;</span>      \</div>
-<div class="line">  <span class="stringliteral">&quot;SHA256&quot;</span></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00043">43</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a21c94d7068bbee12788fb1af5b90a393" name="a21c94d7068bbee12788fb1af5b90a393"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21c94d7068bbee12788fb1af5b90a393">&#9670;&#160;</a></span>SOCKET_TLS_BUFFER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_BUFFER_SIZE&#160;&#160;&#160;16384 /* 16KB - TLS record max */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00063">63</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a362c108e58b5204fa5141920db407ed0" name="a362c108e58b5204fa5141920db407ed0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a362c108e58b5204fa5141920db407ed0">&#9670;&#160;</a></span>SOCKET_TLS_CRL_MAX_PATH_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_CRL_MAX_PATH_LEN&#160;&#160;&#160;4096 /* Max CRL path length */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00170">170</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="adbfa56fdcb0238beabd54ceecdf8aba7" name="adbfa56fdcb0238beabd54ceecdf8aba7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adbfa56fdcb0238beabd54ceecdf8aba7">&#9670;&#160;</a></span>SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL&#160;&#160;&#160;(365LL * 24 * 3600) /* Max 1 year in seconds */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00160">160</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a1c682687285a8a50d6ade71bc8941560" name="a1c682687285a8a50d6ade71bc8941560"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1c682687285a8a50d6ade71bc8941560">&#9670;&#160;</a></span>SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL&#160;&#160;&#160;60 /* Minimum 60 seconds */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00157">157</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a261f36b20bf9986a7f09fa9ed31b793e" name="a261f36b20bf9986a7f09fa9ed31b793e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a261f36b20bf9986a7f09fa9ed31b793e">&#9670;&#160;</a></span>SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS&#160;&#160;&#160;30000 /* 30 seconds */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00049">49</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ab30f8121a683dd31fff11c10934b1137" name="ab30f8121a683dd31fff11c10934b1137"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab30f8121a683dd31fff11c10934b1137">&#9670;&#160;</a></span>SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS&#160;&#160;&#160;5000 /* 5 seconds */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00053">53</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="aa6df1c1fb5a0bcfe9a77b4dbb037c77f" name="aa6df1c1fb5a0bcfe9a77b4dbb037c77f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa6df1c1fb5a0bcfe9a77b4dbb037c77f">&#9670;&#160;</a></span>SOCKET_TLS_ERROR_BUFSIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_ERROR_BUFSIZE&#160;&#160;&#160;512</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00093">93</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="accea5587344f8cc4d28f5d862dc2fa96" name="accea5587344f8cc4d28f5d862dc2fa96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#accea5587344f8cc4d28f5d862dc2fa96">&#9670;&#160;</a></span>SOCKET_TLS_MAX_ALPN_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_ALPN_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00073">73</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a31c8aa5bed2b0db51e53847e6b6bc22c" name="a31c8aa5bed2b0db51e53847e6b6bc22c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31c8aa5bed2b0db51e53847e6b6bc22c">&#9670;&#160;</a></span>SOCKET_TLS_MAX_ALPN_PROTOCOLS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_ALPN_PROTOCOLS&#160;&#160;&#160;16</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00113">113</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="aa52cffca1d260f855e90946554827278" name="aa52cffca1d260f855e90946554827278"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa52cffca1d260f855e90946554827278">&#9670;&#160;</a></span>SOCKET_TLS_MAX_ALPN_TOTAL_BYTES</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_ALPN_TOTAL_BYTES&#160;&#160;&#160;1024</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00078">78</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a4d5991568275ac5f8d677aea34656f0a" name="a4d5991568275ac5f8d677aea34656f0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d5991568275ac5f8d677aea34656f0a">&#9670;&#160;</a></span>SOCKET_TLS_MAX_CERT_CHAIN_DEPTH</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_CERT_CHAIN_DEPTH&#160;&#160;&#160;10</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00068">68</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
+<p class="definition">Definition in file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+</div><h2 class="groupheader">Macro Definition Documentation</h2>
 <a id="a65c50bd768a726e7a7f036f32a58e49d" name="a65c50bd768a726e7a7f036f32a58e49d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a65c50bd768a726e7a7f036f32a58e49d">&#9670;&#160;</a></span>SOCKET_TLS_MAX_CRL_FILES_IN_DIR</h2>
 
@@ -451,311 +271,12 @@ min_version</td>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR&#160;&#160;&#160;1000 /* Max CRL files in directory to prevent exhaustion */</td>
+          <td class="memname">#define SOCKET_TLS_MAX_CRL_FILES_IN_DIR&#160;&#160;&#160;  1000 /* Max CRL files in directory to prevent exhaustion */</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00165">165</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="abcf496a1134e5bff5ea583e6395f4a44" name="abcf496a1134e5bff5ea583e6395f4a44"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abcf496a1134e5bff5ea583e6395f4a44">&#9670;&#160;</a></span>SOCKET_TLS_MAX_CRL_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_CRL_SIZE&#160;&#160;&#160;(10 * 1024 * 1024) /* Max 10MB for CRL files */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00164">164</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a17ff6f02c79ea2099d8329a0e82a6000" name="a17ff6f02c79ea2099d8329a0e82a6000"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a17ff6f02c79ea2099d8329a0e82a6000">&#9670;&#160;</a></span>SOCKET_TLS_MAX_LABEL_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_LABEL_LEN&#160;&#160;&#160;63</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00139">139</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a5249d9cf8a8fd02a5c2fcc84b393d160" name="a5249d9cf8a8fd02a5c2fcc84b393d160"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5249d9cf8a8fd02a5c2fcc84b393d160">&#9670;&#160;</a></span>SOCKET_TLS_MAX_OCSP_RESPONSE_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_OCSP_RESPONSE_LEN&#160;&#160;&#160;(64 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00129">129</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="abd952b038e2ba7a919097a1c3fca116d" name="abd952b038e2ba7a919097a1c3fca116d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd952b038e2ba7a919097a1c3fca116d">&#9670;&#160;</a></span>SOCKET_TLS_MAX_PATH_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_PATH_LEN&#160;&#160;&#160;4096</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00134">134</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="acf406dfb5329bd8170f908b258660a72" name="acf406dfb5329bd8170f908b258660a72"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acf406dfb5329bd8170f908b258660a72">&#9670;&#160;</a></span>SOCKET_TLS_MAX_PINS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_PINS&#160;&#160;&#160;32 /* Max pinned certificates per context */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00144">144</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ac5d4211edcb3114d8d9b26c22b50fac3" name="ac5d4211edcb3114d8d9b26c22b50fac3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac5d4211edcb3114d8d9b26c22b50fac3">&#9670;&#160;</a></span>SOCKET_TLS_MAX_SNI_CERTS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_SNI_CERTS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00103">103</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a2f3a226ee7b72b9153e60d985e90fd15" name="a2f3a226ee7b72b9153e60d985e90fd15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f3a226ee7b72b9153e60d985e90fd15">&#9670;&#160;</a></span>SOCKET_TLS_MAX_SNI_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_SNI_LEN&#160;&#160;&#160;255</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00083">83</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a1bb6850b2066656bb9ca5be7bc4e7a26" name="a1bb6850b2066656bb9ca5be7bc4e7a26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1bb6850b2066656bb9ca5be7bc4e7a26">&#9670;&#160;</a></span>SOCKET_TLS_MAX_VERSION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MAX_VERSION&#160;&#160;&#160;TLS1_3_VERSION</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00040">40</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a3d1a24e799511be7b94d7cb83e30c826" name="a3d1a24e799511be7b94d7cb83e30c826"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d1a24e799511be7b94d7cb83e30c826">&#9670;&#160;</a></span>SOCKET_TLS_MIN_VERSION</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_MIN_VERSION&#160;&#160;&#160;TLS1_3_VERSION</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00039">39</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ae6650ea0075b47d60f5dcfc068c9cb69" name="ae6650ea0075b47d60f5dcfc068c9cb69"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae6650ea0075b47d60f5dcfc068c9cb69">&#9670;&#160;</a></span>SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE&#160;&#160;&#160;256</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00098">98</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ab727e6443392c2d7a9b350723f4bf827" name="ab727e6443392c2d7a9b350723f4bf827"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab727e6443392c2d7a9b350723f4bf827">&#9670;&#160;</a></span>SOCKET_TLS_PIN_HASH_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_PIN_HASH_LEN&#160;&#160;&#160;32 /* SHA256 = 32 bytes */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00148">148</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a3e34a6589554ee91a77d39057681e22e" name="a3e34a6589554ee91a77d39057681e22e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e34a6589554ee91a77d39057681e22e">&#9670;&#160;</a></span>SOCKET_TLS_PIN_INITIAL_CAPACITY</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_PIN_INITIAL_CAPACITY&#160;&#160;&#160;4 /* Initial pin array capacity */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00152">152</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a5ca7b5f2bc6a521f8b7fb7b94196a94e" name="a5ca7b5f2bc6a521f8b7fb7b94196a94e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5ca7b5f2bc6a521f8b7fb7b94196a94e">&#9670;&#160;</a></span>SOCKET_TLS_POLL_INTERVAL_MS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_POLL_INTERVAL_MS&#160;&#160;&#160;100 /* 100ms polling interval */</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00058">58</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="addb5f5a6224c2d4c50908c19baab9a2d" name="addb5f5a6224c2d4c50908c19baab9a2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#addb5f5a6224c2d4c50908c19baab9a2d">&#9670;&#160;</a></span>SOCKET_TLS_SESSION_CACHE_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_SESSION_CACHE_SIZE&#160;&#160;&#160;1000</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00088">88</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="a5554586ea5eb4bf0a81c54963d0cbb2f" name="a5554586ea5eb4bf0a81c54963d0cbb2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5554586ea5eb4bf0a81c54963d0cbb2f">&#9670;&#160;</a></span>SOCKET_TLS_SESSION_TIMEOUT_DEFAULT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_SESSION_TIMEOUT_DEFAULT&#160;&#160;&#160;300L</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00124">124</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="aed59df6881f4fbedd888f060a563eca0" name="aed59df6881f4fbedd888f060a563eca0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aed59df6881f4fbedd888f060a563eca0">&#9670;&#160;</a></span>SOCKET_TLS_SNI_INITIAL_CAPACITY</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_SNI_INITIAL_CAPACITY&#160;&#160;&#160;4</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00108">108</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<a id="ac328cd9a67a36754bdeb92361fb9526b" name="ac328cd9a67a36754bdeb92361fb9526b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac328cd9a67a36754bdeb92361fb9526b">&#9670;&#160;</a></span>SOCKET_TLS_TICKET_KEY_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKET_TLS_TICKET_KEY_LEN&#160;&#160;&#160;80</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00119">119</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a122ad62f86b4477f7be54d55b769d58b" name="a122ad62f86b4477f7be54d55b769d58b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a122ad62f86b4477f7be54d55b769d58b">&#9670;&#160;</a></span>SocketTLS_config_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketTLS_config_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00460">460</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>

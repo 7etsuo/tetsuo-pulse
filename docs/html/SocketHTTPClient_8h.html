@@ -116,9 +116,12 @@ $(document).ready(function(){initNavTree('SocketHTTPClient_8h.html',''); initRes
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketHTTPClient.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketHTTPClient.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>High-level HTTP client library with pooling, async support, and protocol negotiation.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/types.h&gt;</code><br />
@@ -147,690 +150,279 @@ $(document).ready(function(){initNavTree('SocketHTTPClient_8h.html',''); initRes
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketHTTPClient__Auth" id="r_structSocketHTTPClient__Auth"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a></td></tr>
+<tr class="memitem:structSocketHTTPClient__Auth" id="r_structSocketHTTPClient__Auth"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a></td></tr>
+<tr class="memdesc:structSocketHTTPClient__Auth"><td class="mdescLeft">&#160;</td><td class="mdescRight">Authentication credentials structure.  <a href="group__http.html#structSocketHTTPClient__Auth">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPClient__Auth"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHTTPClient__Config" id="r_structSocketHTTPClient__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></td></tr>
+<tr class="memitem:structSocketHTTPClient__Config" id="r_structSocketHTTPClient__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></td></tr>
+<tr class="memdesc:structSocketHTTPClient__Config"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP client configuration structure.  <a href="group__http.html#structSocketHTTPClient__Config">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPClient__Config"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHTTPClient__Response" id="r_structSocketHTTPClient__Response"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a></td></tr>
+<tr class="memitem:structSocketHTTPClient__Response" id="r_structSocketHTTPClient__Response"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a></td></tr>
+<tr class="memdesc:structSocketHTTPClient__Response"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP response structure returned by client functions.  <a href="group__http.html#structSocketHTTPClient__Response">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPClient__Response"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHTTPClient__Cookie" id="r_structSocketHTTPClient__Cookie"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a></td></tr>
+<tr class="memitem:structSocketHTTPClient__Cookie" id="r_structSocketHTTPClient__Cookie"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a></td></tr>
+<tr class="memdesc:structSocketHTTPClient__Cookie"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cookie attributes structure (RFC 6265).  <a href="group__http.html#structSocketHTTPClient__Cookie">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPClient__Cookie"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHTTPClient__PoolStats" id="r_structSocketHTTPClient__PoolStats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__PoolStats">SocketHTTPClient_PoolStats</a></td></tr>
+<tr class="memitem:structSocketHTTPClient__PoolStats" id="r_structSocketHTTPClient__PoolStats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTPClient__PoolStats">SocketHTTPClient_PoolStats</a></td></tr>
+<tr class="memdesc:structSocketHTTPClient__PoolStats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connection pool statistics snapshot.  <a href="group__http.html#structSocketHTTPClient__PoolStats">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTPClient__PoolStats"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:aba14ae9994f5645e5aa8488f905aad54" id="r_aba14ae9994f5645e5aa8488f905aad54"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></td></tr>
-<tr class="separator:aba14ae9994f5645e5aa8488f905aad54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a265c0209bd77c39f219d72c3956a8818" id="r_a265c0209bd77c39f219d72c3956a8818"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_Request *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a></td></tr>
-<tr class="separator:a265c0209bd77c39f219d72c3956a8818"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f0f539e54a607bea5559f6577f987df" id="r_a1f0f539e54a607bea5559f6577f987df"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_AsyncRequest *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a></td></tr>
-<tr class="separator:a1f0f539e54a607bea5559f6577f987df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a118e7e43ad387b22241607355dbdec9f" id="r_a118e7e43ad387b22241607355dbdec9f"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_CookieJar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a></td></tr>
-<tr class="separator:a118e7e43ad387b22241607355dbdec9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba14ae9994f5645e5aa8488f905aad54" id="r_gaba14ae9994f5645e5aa8488f905aad54"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></td></tr>
+<tr class="memdesc:gaba14ae9994f5645e5aa8488f905aad54"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP client instance.  <br /></td></tr>
+<tr class="separator:gaba14ae9994f5645e5aa8488f905aad54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga265c0209bd77c39f219d72c3956a8818" id="r_ga265c0209bd77c39f219d72c3956a8818"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_Request *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a></td></tr>
+<tr class="memdesc:ga265c0209bd77c39f219d72c3956a8818"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP request builder.  <br /></td></tr>
+<tr class="separator:ga265c0209bd77c39f219d72c3956a8818"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f0f539e54a607bea5559f6577f987df" id="r_ga1f0f539e54a607bea5559f6577f987df"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_AsyncRequest *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a></td></tr>
+<tr class="memdesc:ga1f0f539e54a607bea5559f6577f987df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Async request handle.  <br /></td></tr>
+<tr class="separator:ga1f0f539e54a607bea5559f6577f987df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga118e7e43ad387b22241607355dbdec9f" id="r_ga118e7e43ad387b22241607355dbdec9f"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTPClient_CookieJar *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a></td></tr>
+<tr class="memdesc:ga118e7e43ad387b22241607355dbdec9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cookie jar.  <br /></td></tr>
+<tr class="separator:ga118e7e43ad387b22241607355dbdec9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3cb9ba239e5a623795bae1ddfd084201" id="r_a3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (<a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td></tr>
+<tr class="separator:a3cb9ba239e5a623795bae1ddfd084201"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:a6b0f544308db17e698b4c05ac3358b75" id="r_a6b0f544308db17e698b4c05ac3358b75"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d">HTTPCLIENT_OK</a> = 0
+<tr class="memitem:ga6b0f544308db17e698b4c05ac3358b75" id="r_ga6b0f544308db17e698b4c05ac3358b75"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d">HTTPCLIENT_OK</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75ae1f6869bacb82ecbe3914f3d52a7c5ef">HTTPCLIENT_ERROR_DNS</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75ae1f6869bacb82ecbe3914f3d52a7c5ef">HTTPCLIENT_ERROR_DNS</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75aa0a0bf606da8e46eba8cf29cec56bd25">HTTPCLIENT_ERROR_CONNECT</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75aa0a0bf606da8e46eba8cf29cec56bd25">HTTPCLIENT_ERROR_CONNECT</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75abea0c5bb21ff179f4bff79115f26a9a5">HTTPCLIENT_ERROR_TLS</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75abea0c5bb21ff179f4bff79115f26a9a5">HTTPCLIENT_ERROR_TLS</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a5099780b4bb3fee36f2432496843bac8">HTTPCLIENT_ERROR_TIMEOUT</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a5099780b4bb3fee36f2432496843bac8">HTTPCLIENT_ERROR_TIMEOUT</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a3a208d6e1419093b96cb8335741f2abe">HTTPCLIENT_ERROR_PROTOCOL</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a3a208d6e1419093b96cb8335741f2abe">HTTPCLIENT_ERROR_PROTOCOL</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a178aabd112e942f1ce3c9c9e92d8f657">HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a178aabd112e942f1ce3c9c9e92d8f657">HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a686c1f9288cfc49b1f887b1786ea85e5">HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a686c1f9288cfc49b1f887b1786ea85e5">HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75aa1effb555a4ca8cb0f483adf8319eea8">HTTPCLIENT_ERROR_CANCELLED</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75aa1effb555a4ca8cb0f483adf8319eea8">HTTPCLIENT_ERROR_CANCELLED</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c">HTTPCLIENT_ERROR_OUT_OF_MEMORY</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c">HTTPCLIENT_ERROR_OUT_OF_MEMORY</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb">HTTPCLIENT_ERROR_LIMIT_EXCEEDED</a>
+&#160;&#160;<a class="el" href="group__http.html#gga6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb">HTTPCLIENT_ERROR_LIMIT_EXCEEDED</a>
 <br />
  }</td></tr>
-<tr class="separator:a6b0f544308db17e698b4c05ac3358b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a720036180c834b3f4b41f437d0ce1f30" id="r_a720036180c834b3f4b41f437d0ce1f30"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c">HTTP_AUTH_NONE</a> = 0
+<tr class="memdesc:ga6b0f544308db17e698b4c05ac3358b75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error codes for HTTP client operations.  <a href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">More...</a><br /></td></tr>
+<tr class="separator:ga6b0f544308db17e698b4c05ac3358b75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga720036180c834b3f4b41f437d0ce1f30" id="r_ga720036180c834b3f4b41f437d0ce1f30"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c">HTTP_AUTH_NONE</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba">HTTP_AUTH_BASIC</a>
+&#160;&#160;<a class="el" href="group__http.html#gga720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba">HTTP_AUTH_BASIC</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3">HTTP_AUTH_DIGEST</a>
+&#160;&#160;<a class="el" href="group__http.html#gga720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3">HTTP_AUTH_DIGEST</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96">HTTP_AUTH_BEARER</a>
+&#160;&#160;<a class="el" href="group__http.html#gga720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96">HTTP_AUTH_BEARER</a>
 <br />
  }</td></tr>
-<tr class="separator:a720036180c834b3f4b41f437d0ce1f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga720036180c834b3f4b41f437d0ce1f30"><td class="mdescLeft">&#160;</td><td class="mdescRight">Authentication scheme types supported by the HTTP client.  <a href="group__http.html#ga720036180c834b3f4b41f437d0ce1f30">More...</a><br /></td></tr>
+<tr class="separator:ga720036180c834b3f4b41f437d0ce1f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5a9d40d261a12f620aba6b26e8fb714b" id="r_ga5a9d40d261a12f620aba6b26e8fb714b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5a9d40d261a12f620aba6b26e8fb714baa133f9bf67acb51315ada8cd26d83946">COOKIE_SAMESITE_NONE</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5a9d40d261a12f620aba6b26e8fb714ba9360362eafff108453d53fe004670bb5">COOKIE_SAMESITE_LAX</a> = 1
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80">COOKIE_SAMESITE_STRICT</a> = 2
+<br />
+ }</td></tr>
+<tr class="memdesc:ga5a9d40d261a12f620aba6b26e8fb714b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cookie SameSite attribute values (RFC 6265bis draft).  <a href="group__http.html#ga5a9d40d261a12f620aba6b26e8fb714b">More...</a><br /></td></tr>
+<tr class="separator:ga5a9d40d261a12f620aba6b26e8fb714b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:af69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_af69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#af69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
-<tr class="separator:af69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad5ad81c60bb230588b5f660a834f40e" id="r_aad5ad81c60bb230588b5f660a834f40e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#aad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a> (<a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
-<tr class="separator:aad5ad81c60bb230588b5f660a834f40e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2d57db3a9a6388315f253caa099e4205" id="r_a2d57db3a9a6388315f253caa099e4205"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a> (const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
-<tr class="separator:a2d57db3a9a6388315f253caa099e4205"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a01d6c9bebdcda63949ba9af698f8e7e5" id="r_a01d6c9bebdcda63949ba9af698f8e7e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a01d6c9bebdcda63949ba9af698f8e7e5">SocketHTTPClient_free</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> *client)</td></tr>
-<tr class="separator:a01d6c9bebdcda63949ba9af698f8e7e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afef425814e66932f7cf1f36e9356b70e" id="r_afef425814e66932f7cf1f36e9356b70e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#afef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:afef425814e66932f7cf1f36e9356b70e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4efcd265a023ce14464f07ef360fb030" id="r_a4efcd265a023ce14464f07ef360fb030"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a4efcd265a023ce14464f07ef360fb030">SocketHTTPClient_head</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a4efcd265a023ce14464f07ef360fb030"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9b47bc2dd38d4a6700af79ced0acecb2" id="r_a9b47bc2dd38d4a6700af79ced0acecb2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a9b47bc2dd38d4a6700af79ced0acecb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9d15a2624c43ac163f993827d3756efc" id="r_a9d15a2624c43ac163f993827d3756efc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a9d15a2624c43ac163f993827d3756efc">SocketHTTPClient_put</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a9d15a2624c43ac163f993827d3756efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bc9ded2b6017d03733c50c493605ef7" id="r_a6bc9ded2b6017d03733c50c493605ef7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a6bc9ded2b6017d03733c50c493605ef7">SocketHTTPClient_delete</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a6bc9ded2b6017d03733c50c493605ef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a826bca53483c23de2c8b03d456010149" id="r_a826bca53483c23de2c8b03d456010149"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a826bca53483c23de2c8b03d456010149">SocketHTTPClient_Response_free</a> (<a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a826bca53483c23de2c8b03d456010149"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a46c9c2ab8d3334dd0ad1359d2bb93102" id="r_a46c9c2ab8d3334dd0ad1359d2bb93102"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a46c9c2ab8d3334dd0ad1359d2bb93102">SocketHTTPClient_Request_new</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method, const char *url)</td></tr>
-<tr class="separator:a46c9c2ab8d3334dd0ad1359d2bb93102"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31f46990e2a8d948bfe7db2e22b85565" id="r_a31f46990e2a8d948bfe7db2e22b85565"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a31f46990e2a8d948bfe7db2e22b85565">SocketHTTPClient_Request_free</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> *req)</td></tr>
-<tr class="separator:a31f46990e2a8d948bfe7db2e22b85565"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader">: Cookie name</div></td></tr>
-<tr><td colspan="2"><div class="groupText"><p>SocketHTTPClient_CookieJar_get - Get cookie by name @jar: Cookie jar @domain: Domain to match @path: Path to match</p>
-<p>Returns: Cookie or NULL if not found </p>
+<tr class="memitem:gaf69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
+<tr class="memdesc:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if error code is retryable.  <br /></td></tr>
+<tr class="separator:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaad5ad81c60bb230588b5f660a834f40e" id="r_gaad5ad81c60bb230588b5f660a834f40e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a> (<a class="el" href="group__http.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
+<tr class="memdesc:gaad5ad81c60bb230588b5f660a834f40e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> with safe defaults.  <br /></td></tr>
+<tr class="separator:gaad5ad81c60bb230588b5f660a834f40e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2d57db3a9a6388315f253caa099e4205" id="r_ga2d57db3a9a6388315f253caa099e4205"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a> (const <a class="el" href="group__http.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
+<tr class="memdesc:ga2d57db3a9a6388315f253caa099e4205"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create new HTTP client instance.  <br /></td></tr>
+<tr class="separator:ga2d57db3a9a6388315f253caa099e4205"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga01d6c9bebdcda63949ba9af698f8e7e5" id="r_ga01d6c9bebdcda63949ba9af698f8e7e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga01d6c9bebdcda63949ba9af698f8e7e5">SocketHTTPClient_free</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> *client)</td></tr>
+<tr class="memdesc:ga01d6c9bebdcda63949ba9af698f8e7e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy HTTP client and release all resources.  <br /></td></tr>
+<tr class="separator:ga01d6c9bebdcda63949ba9af698f8e7e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafef425814e66932f7cf1f36e9356b70e" id="r_gafef425814e66932f7cf1f36e9356b70e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:gafef425814e66932f7cf1f36e9356b70e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous GET request.  <br /></td></tr>
+<tr class="separator:gafef425814e66932f7cf1f36e9356b70e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4efcd265a023ce14464f07ef360fb030" id="r_ga4efcd265a023ce14464f07ef360fb030"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4efcd265a023ce14464f07ef360fb030">SocketHTTPClient_head</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga4efcd265a023ce14464f07ef360fb030"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous HEAD request.  <br /></td></tr>
+<tr class="separator:ga4efcd265a023ce14464f07ef360fb030"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9b47bc2dd38d4a6700af79ced0acecb2" id="r_ga9b47bc2dd38d4a6700af79ced0acecb2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga9b47bc2dd38d4a6700af79ced0acecb2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous POST request.  <br /></td></tr>
+<tr class="separator:ga9b47bc2dd38d4a6700af79ced0acecb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9d15a2624c43ac163f993827d3756efc" id="r_ga9d15a2624c43ac163f993827d3756efc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9d15a2624c43ac163f993827d3756efc">SocketHTTPClient_put</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga9d15a2624c43ac163f993827d3756efc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous PUT request.  <br /></td></tr>
+<tr class="separator:ga9d15a2624c43ac163f993827d3756efc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6bc9ded2b6017d03733c50c493605ef7" id="r_ga6bc9ded2b6017d03733c50c493605ef7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6bc9ded2b6017d03733c50c493605ef7">SocketHTTPClient_delete</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga6bc9ded2b6017d03733c50c493605ef7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous DELETE request.  <br /></td></tr>
+<tr class="separator:ga6bc9ded2b6017d03733c50c493605ef7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga826bca53483c23de2c8b03d456010149" id="r_ga826bca53483c23de2c8b03d456010149"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga826bca53483c23de2c8b03d456010149">SocketHTTPClient_Response_free</a> (<a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga826bca53483c23de2c8b03d456010149"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free response resources.  <br /></td></tr>
+<tr class="separator:ga826bca53483c23de2c8b03d456010149"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga46c9c2ab8d3334dd0ad1359d2bb93102" id="r_ga46c9c2ab8d3334dd0ad1359d2bb93102"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga46c9c2ab8d3334dd0ad1359d2bb93102">SocketHTTPClient_Request_new</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method, const char *url)</td></tr>
+<tr class="memdesc:ga46c9c2ab8d3334dd0ad1359d2bb93102"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create request builder.  <br /></td></tr>
+<tr class="separator:ga46c9c2ab8d3334dd0ad1359d2bb93102"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga31f46990e2a8d948bfe7db2e22b85565" id="r_ga31f46990e2a8d948bfe7db2e22b85565"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga31f46990e2a8d948bfe7db2e22b85565">SocketHTTPClient_Request_free</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> *req)</td></tr>
+<tr class="memdesc:ga31f46990e2a8d948bfe7db2e22b85565"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free request builder and release resources.  <br /></td></tr>
+<tr class="separator:ga31f46990e2a8d948bfe7db2e22b85565"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8a7c54a81dc916af60f9747162e844a2" id="r_ga8a7c54a81dc916af60f9747162e844a2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8a7c54a81dc916af60f9747162e844a2">SocketHTTPClient_Request_header</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const char *name, const char *value)</td></tr>
+<tr class="memdesc:ga8a7c54a81dc916af60f9747162e844a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add header.  <br /></td></tr>
+<tr class="separator:ga8a7c54a81dc916af60f9747162e844a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae8f21b1fc1aae1ef8b1bbe43ce875247" id="r_gae8f21b1fc1aae1ef8b1bbe43ce875247"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gae8f21b1fc1aae1ef8b1bbe43ce875247">SocketHTTPClient_Request_body</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const void *data, size_t len)</td></tr>
+<tr class="memdesc:gae8f21b1fc1aae1ef8b1bbe43ce875247"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set request body.  <br /></td></tr>
+<tr class="separator:gae8f21b1fc1aae1ef8b1bbe43ce875247"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8470d0864afe35f5265bda12d221f14e" id="r_ga8470d0864afe35f5265bda12d221f14e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8470d0864afe35f5265bda12d221f14e">SocketHTTPClient_Request_body_stream</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, ssize_t(*read_cb)(void *buf, size_t len, void *userdata), void *userdata)</td></tr>
+<tr class="memdesc:ga8470d0864afe35f5265bda12d221f14e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set streaming body.  <br /></td></tr>
+<tr class="separator:ga8470d0864afe35f5265bda12d221f14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabe918e0dacc9d507f1ad288a399dfca6" id="r_gabe918e0dacc9d507f1ad288a399dfca6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gabe918e0dacc9d507f1ad288a399dfca6">SocketHTTPClient_Request_timeout</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, int ms)</td></tr>
+<tr class="memdesc:gabe918e0dacc9d507f1ad288a399dfca6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set per-request timeout.  <br /></td></tr>
+<tr class="separator:gabe918e0dacc9d507f1ad288a399dfca6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4aaf34db687d93fcbaa8e13b35916b6a" id="r_ga4aaf34db687d93fcbaa8e13b35916b6a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4aaf34db687d93fcbaa8e13b35916b6a">SocketHTTPClient_Request_auth</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const <a class="el" href="group__http.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *auth)</td></tr>
+<tr class="memdesc:ga4aaf34db687d93fcbaa8e13b35916b6a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set per-request authentication.  <br /></td></tr>
+<tr class="separator:ga4aaf34db687d93fcbaa8e13b35916b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ba09b6d59cc2aee465749978f62ad76" id="r_ga4ba09b6d59cc2aee465749978f62ad76"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4ba09b6d59cc2aee465749978f62ad76">SocketHTTPClient_Request_execute</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
+<tr class="memdesc:ga4ba09b6d59cc2aee465749978f62ad76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Execute request.  <br /></td></tr>
+<tr class="separator:ga4ba09b6d59cc2aee465749978f62ad76"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga887d2e7f1b676b7a1bd44de4a2964e03" id="r_ga887d2e7f1b676b7a1bd44de4a2964e03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga887d2e7f1b676b7a1bd44de4a2964e03">SocketHTTPClient_get_async</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga887d2e7f1b676b7a1bd44de4a2964e03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start async GET.  <br /></td></tr>
+<tr class="separator:ga887d2e7f1b676b7a1bd44de4a2964e03"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaddf401e4175374852073d0de27407fef" id="r_gaddf401e4175374852073d0de27407fef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaddf401e4175374852073d0de27407fef">SocketHTTPClient_post_async</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:gaddf401e4175374852073d0de27407fef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start async POST.  <br /></td></tr>
+<tr class="separator:gaddf401e4175374852073d0de27407fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga64e1155f06853b28f5619690840d3962" id="r_ga64e1155f06853b28f5619690840d3962"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga64e1155f06853b28f5619690840d3962">SocketHTTPClient_Request_async</a> (<a class="el" href="group__http.html#ga265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga64e1155f06853b28f5619690840d3962"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start async custom request.  <br /></td></tr>
+<tr class="separator:ga64e1155f06853b28f5619690840d3962"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadedb2c16bf1b0081fb02c8c681973429" id="r_gadedb2c16bf1b0081fb02c8c681973429"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gadedb2c16bf1b0081fb02c8c681973429">SocketHTTPClient_AsyncRequest_cancel</a> (<a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req)</td></tr>
+<tr class="memdesc:gadedb2c16bf1b0081fb02c8c681973429"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel async request.  <br /></td></tr>
+<tr class="separator:gadedb2c16bf1b0081fb02c8c681973429"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9f4f6e7641bef38d356a7349e1d589a4" id="r_ga9f4f6e7641bef38d356a7349e1d589a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9f4f6e7641bef38d356a7349e1d589a4">SocketHTTPClient_process</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, int timeout_ms)</td></tr>
+<tr class="memdesc:ga9f4f6e7641bef38d356a7349e1d589a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process async requests.  <br /></td></tr>
+<tr class="separator:ga9f4f6e7641bef38d356a7349e1d589a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7f6bd73797f507766f9edc1242b9772e" id="r_ga7f6bd73797f507766f9edc1242b9772e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga7f6bd73797f507766f9edc1242b9772e">SocketHTTPClient_CookieJar_new</a> (void)</td></tr>
+<tr class="memdesc:ga7f6bd73797f507766f9edc1242b9772e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create cookie jar.  <br /></td></tr>
+<tr class="separator:ga7f6bd73797f507766f9edc1242b9772e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga628b803f0ccfdc41d8425bf1c1064d7e" id="r_ga628b803f0ccfdc41d8425bf1c1064d7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga628b803f0ccfdc41d8425bf1c1064d7e">SocketHTTPClient_CookieJar_free</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> *jar)</td></tr>
+<tr class="memdesc:ga628b803f0ccfdc41d8425bf1c1064d7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free cookie jar and all stored cookies.  <br /></td></tr>
+<tr class="separator:ga628b803f0ccfdc41d8425bf1c1064d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga07b465d99995da22fc317dc170d09787" id="r_ga07b465d99995da22fc317dc170d09787"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga07b465d99995da22fc317dc170d09787">SocketHTTPClient_set_cookie_jar</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
+<tr class="memdesc:ga07b465d99995da22fc317dc170d09787"><td class="mdescLeft">&#160;</td><td class="mdescRight">Associate jar with client.  <br /></td></tr>
+<tr class="separator:ga07b465d99995da22fc317dc170d09787"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga52e891cd45c787d4025e15d8c4c42849" id="r_ga52e891cd45c787d4025e15d8c4c42849"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga52e891cd45c787d4025e15d8c4c42849">SocketHTTPClient_get_cookie_jar</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
+<tr class="memdesc:ga52e891cd45c787d4025e15d8c4c42849"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get associated cookie jar.  <br /></td></tr>
+<tr class="separator:ga52e891cd45c787d4025e15d8c4c42849"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae276f63daea601b662eae51e1973f3e5" id="r_gae276f63daea601b662eae51e1973f3e5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gae276f63daea601b662eae51e1973f3e5">SocketHTTPClient_CookieJar_set</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const <a class="el" href="group__http.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> *cookie)</td></tr>
+<tr class="memdesc:gae276f63daea601b662eae51e1973f3e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set cookie.  <br /></td></tr>
+<tr class="separator:gae276f63daea601b662eae51e1973f3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Cookie name</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>Get cookie by name</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">jar</td><td>Cookie jar </td></tr>
+    <tr><td class="paramname">domain</td><td>Domain to match </td></tr>
+    <tr><td class="paramname">path</td><td>Path to match</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Cookie or NULL if not found </dd></dl>
 </div></td></tr>
-<tr class="memitem:a79838faf1567b0b9946b95b946de4392" id="r_a79838faf1567b0b9946b95b946de4392"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a79838faf1567b0b9946b95b946de4392">SocketHTTPClient_CookieJar_get</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *domain, const char *path, const char *name)</td></tr>
+<tr class="memitem:a79838faf1567b0b9946b95b946de4392" id="r_a79838faf1567b0b9946b95b946de4392"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a79838faf1567b0b9946b95b946de4392">SocketHTTPClient_CookieJar_get</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *domain, const char *path, const char *name)</td></tr>
+<tr class="memdesc:a79838faf1567b0b9946b95b946de4392"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all cookies.  <br /></td></tr>
 <tr class="separator:a79838faf1567b0b9946b95b946de4392"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aad4e0041def5bbfdbd42f1192b5f588a" id="r_aad4e0041def5bbfdbd42f1192b5f588a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#aad4e0041def5bbfdbd42f1192b5f588a">SocketHTTPClient_CookieJar_clear</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
-<tr class="separator:aad4e0041def5bbfdbd42f1192b5f588a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52288a166212725fc43156b1bb2fc5b4" id="r_a52288a166212725fc43156b1bb2fc5b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a52288a166212725fc43156b1bb2fc5b4">SocketHTTPClient_CookieJar_clear_expired</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
-<tr class="separator:a52288a166212725fc43156b1bb2fc5b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0804b639cfe122234e22b14498f2af13" id="r_a0804b639cfe122234e22b14498f2af13"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a0804b639cfe122234e22b14498f2af13">SocketHTTPClient_CookieJar_load</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *filename)</td></tr>
-<tr class="separator:a0804b639cfe122234e22b14498f2af13"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4f086bf1231cc24fee20d8b0461fec05" id="r_a4f086bf1231cc24fee20d8b0461fec05"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a4f086bf1231cc24fee20d8b0461fec05">SocketHTTPClient_CookieJar_save</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *filename)</td></tr>
-<tr class="separator:a4f086bf1231cc24fee20d8b0461fec05"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e9410043754e2ad4dbaa3572c595547" id="r_a1e9410043754e2ad4dbaa3572c595547"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a1e9410043754e2ad4dbaa3572c595547">SocketHTTPClient_set_auth</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *auth)</td></tr>
-<tr class="separator:a1e9410043754e2ad4dbaa3572c595547"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca84ba9dfcb00f58533dafe869f8c548" id="r_aca84ba9dfcb00f58533dafe869f8c548"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#aca84ba9dfcb00f58533dafe869f8c548">SocketHTTPClient_pool_stats</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__PoolStats">SocketHTTPClient_PoolStats</a> *stats)</td></tr>
-<tr class="separator:aca84ba9dfcb00f58533dafe869f8c548"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1fd6bae0397b3156f49100f444fdaac6" id="r_a1fd6bae0397b3156f49100f444fdaac6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a1fd6bae0397b3156f49100f444fdaac6">SocketHTTPClient_pool_clear</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
-<tr class="separator:a1fd6bae0397b3156f49100f444fdaac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac8680d78a9d70c7662d39466c63aab72" id="r_ac8680d78a9d70c7662d39466c63aab72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#ac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
-<tr class="separator:ac8680d78a9d70c7662d39466c63aab72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a859120de13b0764564f3c1ce111b3379" id="r_a859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
-<tr class="separator:a859120de13b0764564f3c1ce111b3379"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaad4e0041def5bbfdbd42f1192b5f588a" id="r_gaad4e0041def5bbfdbd42f1192b5f588a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaad4e0041def5bbfdbd42f1192b5f588a">SocketHTTPClient_CookieJar_clear</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
+<tr class="memdesc:gaad4e0041def5bbfdbd42f1192b5f588a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all cookies.  <br /></td></tr>
+<tr class="separator:gaad4e0041def5bbfdbd42f1192b5f588a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga52288a166212725fc43156b1bb2fc5b4" id="r_ga52288a166212725fc43156b1bb2fc5b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga52288a166212725fc43156b1bb2fc5b4">SocketHTTPClient_CookieJar_clear_expired</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
+<tr class="memdesc:ga52288a166212725fc43156b1bb2fc5b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear expired cookies.  <br /></td></tr>
+<tr class="separator:ga52288a166212725fc43156b1bb2fc5b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0804b639cfe122234e22b14498f2af13" id="r_ga0804b639cfe122234e22b14498f2af13"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0804b639cfe122234e22b14498f2af13">SocketHTTPClient_CookieJar_load</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *filename)</td></tr>
+<tr class="memdesc:ga0804b639cfe122234e22b14498f2af13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load cookies from file.  <br /></td></tr>
+<tr class="separator:ga0804b639cfe122234e22b14498f2af13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f086bf1231cc24fee20d8b0461fec05" id="r_ga4f086bf1231cc24fee20d8b0461fec05"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4f086bf1231cc24fee20d8b0461fec05">SocketHTTPClient_CookieJar_save</a> (<a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const char *filename)</td></tr>
+<tr class="memdesc:ga4f086bf1231cc24fee20d8b0461fec05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Save cookies to file.  <br /></td></tr>
+<tr class="separator:ga4f086bf1231cc24fee20d8b0461fec05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1e9410043754e2ad4dbaa3572c595547" id="r_ga1e9410043754e2ad4dbaa3572c595547"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1e9410043754e2ad4dbaa3572c595547">SocketHTTPClient_set_auth</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const <a class="el" href="group__http.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *auth)</td></tr>
+<tr class="memdesc:ga1e9410043754e2ad4dbaa3572c595547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default authentication credentials for all requests.  <br /></td></tr>
+<tr class="separator:ga1e9410043754e2ad4dbaa3572c595547"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaca84ba9dfcb00f58533dafe869f8c548" id="r_gaca84ba9dfcb00f58533dafe869f8c548"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaca84ba9dfcb00f58533dafe869f8c548">SocketHTTPClient_pool_stats</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="group__http.html#structSocketHTTPClient__PoolStats">SocketHTTPClient_PoolStats</a> *stats)</td></tr>
+<tr class="memdesc:gaca84ba9dfcb00f58533dafe869f8c548"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get pool statistics.  <br /></td></tr>
+<tr class="separator:gaca84ba9dfcb00f58533dafe869f8c548"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1fd6bae0397b3156f49100f444fdaac6" id="r_ga1fd6bae0397b3156f49100f444fdaac6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1fd6bae0397b3156f49100f444fdaac6">SocketHTTPClient_pool_clear</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
+<tr class="memdesc:ga1fd6bae0397b3156f49100f444fdaac6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close and clear all connections in the pool.  <br /></td></tr>
+<tr class="separator:ga1fd6bae0397b3156f49100f444fdaac6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac8680d78a9d70c7662d39466c63aab72" id="r_gac8680d78a9d70c7662d39466c63aab72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a> (<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
+<tr class="memdesc:gac8680d78a9d70c7662d39466c63aab72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get last error code.  <br /></td></tr>
+<tr class="separator:gac8680d78a9d70c7662d39466c63aab72"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
+<tr class="memdesc:ga859120de13b0764564f3c1ce111b3379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
+<tr class="separator:ga859120de13b0764564f3c1ce111b3379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a5dc1b9ac7f30436bc422f312cd6db709" id="r_a5dc1b9ac7f30436bc422f312cd6db709"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a5dc1b9ac7f30436bc422f312cd6db709">SocketHTTPClient_Failed</a></td></tr>
-<tr class="separator:a5dc1b9ac7f30436bc422f312cd6db709"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50039c8c595271d7d51b28ed5a4e7196" id="r_a50039c8c595271d7d51b28ed5a4e7196"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a50039c8c595271d7d51b28ed5a4e7196">SocketHTTPClient_DNSFailed</a></td></tr>
-<tr class="separator:a50039c8c595271d7d51b28ed5a4e7196"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a83bda6e77bc5fb165e4e7fead483094b" id="r_a83bda6e77bc5fb165e4e7fead483094b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a83bda6e77bc5fb165e4e7fead483094b">SocketHTTPClient_ConnectFailed</a></td></tr>
-<tr class="separator:a83bda6e77bc5fb165e4e7fead483094b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac109f9bf9ba67f2f56db130172b3dd94" id="r_ac109f9bf9ba67f2f56db130172b3dd94"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#ac109f9bf9ba67f2f56db130172b3dd94">SocketHTTPClient_TLSFailed</a></td></tr>
-<tr class="separator:ac109f9bf9ba67f2f56db130172b3dd94"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa0847dd6efa2f627e07173f29b29c8ae" id="r_aa0847dd6efa2f627e07173f29b29c8ae"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#aa0847dd6efa2f627e07173f29b29c8ae">SocketHTTPClient_Timeout</a></td></tr>
-<tr class="separator:aa0847dd6efa2f627e07173f29b29c8ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24ffae352f53c9580d861d3590b61e2a" id="r_a24ffae352f53c9580d861d3590b61e2a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a24ffae352f53c9580d861d3590b61e2a">SocketHTTPClient_ProtocolError</a></td></tr>
-<tr class="separator:a24ffae352f53c9580d861d3590b61e2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd7d2611128ad32cc65cb256403c671f" id="r_afd7d2611128ad32cc65cb256403c671f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#afd7d2611128ad32cc65cb256403c671f">SocketHTTPClient_TooManyRedirects</a></td></tr>
-<tr class="separator:afd7d2611128ad32cc65cb256403c671f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ed14f04119b1dec3cb25c432b7a383d" id="r_a4ed14f04119b1dec3cb25c432b7a383d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a4ed14f04119b1dec3cb25c432b7a383d">SocketHTTPClient_ResponseTooLarge</a></td></tr>
-<tr class="separator:a4ed14f04119b1dec3cb25c432b7a383d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader">: Header name</h2></td></tr>
-<tr><td class="ititle" colspan="2"><p>SocketHTTPClient_Request_header - Add header @req: Request</p>
-<p>@value: Header value</p>
-<p>Returns: 0 on success, -1 on error </p>
-</td></tr>
-<tr class="memitem:a5a9d40d261a12f620aba6b26e8fb714b" id="r_a5a9d40d261a12f620aba6b26e8fb714b"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714baa133f9bf67acb51315ada8cd26d83946">COOKIE_SAMESITE_NONE</a> = 0
-, <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714ba9360362eafff108453d53fe004670bb5">COOKIE_SAMESITE_LAX</a> = 1
-, <br />
-&#160;&#160;<a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80">COOKIE_SAMESITE_STRICT</a> = 2
-<br />
- }</td></tr>
-<tr class="separator:a5a9d40d261a12f620aba6b26e8fb714b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3cb9ba239e5a623795bae1ddfd084201" id="r_a3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (<a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td></tr>
-<tr class="separator:a3cb9ba239e5a623795bae1ddfd084201"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a7c54a81dc916af60f9747162e844a2" id="r_a8a7c54a81dc916af60f9747162e844a2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a8a7c54a81dc916af60f9747162e844a2">SocketHTTPClient_Request_header</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const char *name, const char *value)</td></tr>
-<tr class="separator:a8a7c54a81dc916af60f9747162e844a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8f21b1fc1aae1ef8b1bbe43ce875247" id="r_ae8f21b1fc1aae1ef8b1bbe43ce875247"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#ae8f21b1fc1aae1ef8b1bbe43ce875247">SocketHTTPClient_Request_body</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const void *data, size_t len)</td></tr>
-<tr class="separator:ae8f21b1fc1aae1ef8b1bbe43ce875247"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8470d0864afe35f5265bda12d221f14e" id="r_a8470d0864afe35f5265bda12d221f14e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a8470d0864afe35f5265bda12d221f14e">SocketHTTPClient_Request_body_stream</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, ssize_t(*read_cb)(void *buf, size_t len, void *userdata), void *userdata)</td></tr>
-<tr class="separator:a8470d0864afe35f5265bda12d221f14e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe918e0dacc9d507f1ad288a399dfca6" id="r_abe918e0dacc9d507f1ad288a399dfca6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#abe918e0dacc9d507f1ad288a399dfca6">SocketHTTPClient_Request_timeout</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, int ms)</td></tr>
-<tr class="separator:abe918e0dacc9d507f1ad288a399dfca6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4aaf34db687d93fcbaa8e13b35916b6a" id="r_a4aaf34db687d93fcbaa8e13b35916b6a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a4aaf34db687d93fcbaa8e13b35916b6a">SocketHTTPClient_Request_auth</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *auth)</td></tr>
-<tr class="separator:a4aaf34db687d93fcbaa8e13b35916b6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4ba09b6d59cc2aee465749978f62ad76" id="r_a4ba09b6d59cc2aee465749978f62ad76"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a4ba09b6d59cc2aee465749978f62ad76">SocketHTTPClient_Request_execute</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
-<tr class="separator:a4ba09b6d59cc2aee465749978f62ad76"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a887d2e7f1b676b7a1bd44de4a2964e03" id="r_a887d2e7f1b676b7a1bd44de4a2964e03"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a887d2e7f1b676b7a1bd44de4a2964e03">SocketHTTPClient_get_async</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
-<tr class="separator:a887d2e7f1b676b7a1bd44de4a2964e03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:addf401e4175374852073d0de27407fef" id="r_addf401e4175374852073d0de27407fef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#addf401e4175374852073d0de27407fef">SocketHTTPClient_post_async</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, const char *url, const char *content_type, const void *body, size_t body_len, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
-<tr class="separator:addf401e4175374852073d0de27407fef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a64e1155f06853b28f5619690840d3962" id="r_a64e1155f06853b28f5619690840d3962"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a64e1155f06853b28f5619690840d3962">SocketHTTPClient_Request_async</a> (<a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> req, <a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> callback, void *userdata)</td></tr>
-<tr class="separator:a64e1155f06853b28f5619690840d3962"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adedb2c16bf1b0081fb02c8c681973429" id="r_adedb2c16bf1b0081fb02c8c681973429"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#adedb2c16bf1b0081fb02c8c681973429">SocketHTTPClient_AsyncRequest_cancel</a> (<a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req)</td></tr>
-<tr class="separator:adedb2c16bf1b0081fb02c8c681973429"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9f4f6e7641bef38d356a7349e1d589a4" id="r_a9f4f6e7641bef38d356a7349e1d589a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a9f4f6e7641bef38d356a7349e1d589a4">SocketHTTPClient_process</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, int timeout_ms)</td></tr>
-<tr class="separator:a9f4f6e7641bef38d356a7349e1d589a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f6bd73797f507766f9edc1242b9772e" id="r_a7f6bd73797f507766f9edc1242b9772e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a7f6bd73797f507766f9edc1242b9772e">SocketHTTPClient_CookieJar_new</a> (void)</td></tr>
-<tr class="separator:a7f6bd73797f507766f9edc1242b9772e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a628b803f0ccfdc41d8425bf1c1064d7e" id="r_a628b803f0ccfdc41d8425bf1c1064d7e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a628b803f0ccfdc41d8425bf1c1064d7e">SocketHTTPClient_CookieJar_free</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> *jar)</td></tr>
-<tr class="separator:a628b803f0ccfdc41d8425bf1c1064d7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a07b465d99995da22fc317dc170d09787" id="r_a07b465d99995da22fc317dc170d09787"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a07b465d99995da22fc317dc170d09787">SocketHTTPClient_set_cookie_jar</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client, <a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar)</td></tr>
-<tr class="separator:a07b465d99995da22fc317dc170d09787"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a52e891cd45c787d4025e15d8c4c42849" id="r_a52e891cd45c787d4025e15d8c4c42849"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#a52e891cd45c787d4025e15d8c4c42849">SocketHTTPClient_get_cookie_jar</a> (<a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> client)</td></tr>
-<tr class="separator:a52e891cd45c787d4025e15d8c4c42849"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae276f63daea601b662eae51e1973f3e5" id="r_ae276f63daea601b662eae51e1973f3e5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPClient_8h.html#ae276f63daea601b662eae51e1973f3e5">SocketHTTPClient_CookieJar_set</a> (<a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> jar, const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> *cookie)</td></tr>
-<tr class="separator:ae276f63daea601b662eae51e1973f3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5dc1b9ac7f30436bc422f312cd6db709" id="r_ga5dc1b9ac7f30436bc422f312cd6db709"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5dc1b9ac7f30436bc422f312cd6db709">SocketHTTPClient_Failed</a></td></tr>
+<tr class="memdesc:ga5dc1b9ac7f30436bc422f312cd6db709"><td class="mdescLeft">&#160;</td><td class="mdescRight">General client failure.  <br /></td></tr>
+<tr class="separator:ga5dc1b9ac7f30436bc422f312cd6db709"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga50039c8c595271d7d51b28ed5a4e7196" id="r_ga50039c8c595271d7d51b28ed5a4e7196"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga50039c8c595271d7d51b28ed5a4e7196">SocketHTTPClient_DNSFailed</a></td></tr>
+<tr class="memdesc:ga50039c8c595271d7d51b28ed5a4e7196"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS resolution failure.  <br /></td></tr>
+<tr class="separator:ga50039c8c595271d7d51b28ed5a4e7196"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga83bda6e77bc5fb165e4e7fead483094b" id="r_ga83bda6e77bc5fb165e4e7fead483094b"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga83bda6e77bc5fb165e4e7fead483094b">SocketHTTPClient_ConnectFailed</a></td></tr>
+<tr class="memdesc:ga83bda6e77bc5fb165e4e7fead483094b"><td class="mdescLeft">&#160;</td><td class="mdescRight">TCP connection failure.  <br /></td></tr>
+<tr class="separator:ga83bda6e77bc5fb165e4e7fead483094b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac109f9bf9ba67f2f56db130172b3dd94" id="r_gac109f9bf9ba67f2f56db130172b3dd94"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac109f9bf9ba67f2f56db130172b3dd94">SocketHTTPClient_TLSFailed</a></td></tr>
+<tr class="memdesc:gac109f9bf9ba67f2f56db130172b3dd94"><td class="mdescLeft">&#160;</td><td class="mdescRight">TLS/SSL handshake or I/O failure.  <br /></td></tr>
+<tr class="separator:gac109f9bf9ba67f2f56db130172b3dd94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa0847dd6efa2f627e07173f29b29c8ae" id="r_gaa0847dd6efa2f627e07173f29b29c8ae"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa0847dd6efa2f627e07173f29b29c8ae">SocketHTTPClient_Timeout</a></td></tr>
+<tr class="memdesc:gaa0847dd6efa2f627e07173f29b29c8ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request timeout exceeded.  <br /></td></tr>
+<tr class="separator:gaa0847dd6efa2f627e07173f29b29c8ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24ffae352f53c9580d861d3590b61e2a" id="r_ga24ffae352f53c9580d861d3590b61e2a"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga24ffae352f53c9580d861d3590b61e2a">SocketHTTPClient_ProtocolError</a></td></tr>
+<tr class="memdesc:ga24ffae352f53c9580d861d3590b61e2a"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP protocol error.  <br /></td></tr>
+<tr class="separator:ga24ffae352f53c9580d861d3590b61e2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd7d2611128ad32cc65cb256403c671f" id="r_gafd7d2611128ad32cc65cb256403c671f"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafd7d2611128ad32cc65cb256403c671f">SocketHTTPClient_TooManyRedirects</a></td></tr>
+<tr class="memdesc:gafd7d2611128ad32cc65cb256403c671f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Redirect limit exceeded.  <br /></td></tr>
+<tr class="separator:gafd7d2611128ad32cc65cb256403c671f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ed14f04119b1dec3cb25c432b7a383d" id="r_ga4ed14f04119b1dec3cb25c432b7a383d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4ed14f04119b1dec3cb25c432b7a383d">SocketHTTPClient_ResponseTooLarge</a></td></tr>
+<tr class="memdesc:ga4ed14f04119b1dec3cb25c432b7a383d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Response body exceeds limit.  <br /></td></tr>
+<tr class="separator:ga4ed14f04119b1dec3cb25c432b7a383d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketHTTPClient__Auth" id="structSocketHTTPClient__Auth"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPClient__Auth">&#9670;&#160;</a></span>SocketHTTPClient_Auth</h2>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>High-level HTTP client library with pooling, async support, and protocol negotiation. </p>
+<p>Provides a robust HTTP client supporting HTTP/1.1 and HTTP/2 with advanced features:</p><ul>
+<li><a class="el" href="group__connection__mgmt.html">Connection pooling</a> with per-host limits and idle timeouts</li>
+<li>Automatic protocol negotiation via ALPN (h2 preferred)</li>
+<li>RFC 6265 cookie handling with SameSite support</li>
+<li>Multiple authentication schemes: Basic (RFC 7617), Digest (RFC 7616), Bearer (RFC 6750)</li>
+<li>Compression support: Accept gzip/deflate/brotli with auto-decompression</li>
+<li>Configurable redirect following with loop detection</li>
+<li>Synchronous and asynchronous APIs with event integration</li>
+<li>Integration with <a class="el" href="group__security.html">TLS</a> for HTTPS (OpenSSL/LibreSSL)</li>
+<li>Proxy support via <a class="el" href="group__connection__mgmt.html">SocketProxy</a></li>
+</ul>
+<p>Underlying dependencies:</p><ul>
+<li><a class="el" href="group__http.html">SocketHTTP</a> / SocketHTTP1 / SocketHTTP2 for protocol handling</li>
+<li><a class="el" href="group__async__io.html">SocketHappyEyeballs</a> for IPv6-preferred connections</li>
+<li>SocketDNS for async resolution</li>
+<li><a class="el" href="group__foundation.html">Arena</a> for memory management</li>
+</ul>
+<p>Thread safety: Instances are NOT thread-safe. Use one per thread or synchronize externally.</p>
+<p>Platform: POSIX (Linux/BSD/macOS), requires pthread. TLS optional via CMake -DENABLE_TLS=ON.</p>
+<p>Example usage: </p><div class="fragment"></div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html">HTTP Module Group</a> for related components. </dd>
+<dd>
+<a class="el" href="group__http.html#ga2d57db3a9a6388315f253caa099e4205" title="Create new HTTP client instance.">SocketHTTPClient_new()</a> for instantiation. </dd>
+<dd>
+<a class="el" href="group__http.html#gafef425814e66932f7cf1f36e9356b70e" title="Perform synchronous GET request.">SocketHTTPClient_get()</a> / <a class="el" href="group__http.html#ga887d2e7f1b676b7a1bd44de4a2964e03" title="Start async GET.">SocketHTTPClient_get_async()</a> for requests. </dd>
+<dd>
+docs/HTTP_GUIDE.md for detailed usage and best practices. </dd>
+<dd>
+docs/SECURITY_GUIDE.md for auth/TLS configuration. </dd></dl>
 
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPClient_Auth</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Authentication credentials </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00287">287</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a709145c7dcf32bbfbdbc68da8da0842f" name="a709145c7dcf32bbfbdbc68da8da0842f"></a>const char *</td>
-<td class="fieldname">
-password</td>
-<td class="fielddoc">
-<p>For Basic, Digest </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a89774175b3f815b3c17b8b150347b453" name="a89774175b3f815b3c17b8b150347b453"></a>const char *</td>
-<td class="fieldname">
-realm</td>
-<td class="fielddoc">
-<p>Optional realm filter </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a75371d88c2cb09feb95620c237b37882" name="a75371d88c2cb09feb95620c237b37882"></a>const char *</td>
-<td class="fieldname">
-token</td>
-<td class="fielddoc">
-<p>For Bearer </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aea321b9aeb6d8d36babd95cd7af87d35" name="aea321b9aeb6d8d36babd95cd7af87d35"></a><a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a></td>
-<td class="fieldname">
-type</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aebecaec836c2d21aeb36c83c6a037b58" name="aebecaec836c2d21aeb36c83c6a037b58"></a>const char *</td>
-<td class="fieldname">
-username</td>
-<td class="fielddoc">
-<p>For Basic, Digest </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHTTPClient__Config" id="structSocketHTTPClient__Config"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPClient__Config">&#9670;&#160;</a></span>SocketHTTPClient_Config</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPClient_Config</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>HTTP client configuration </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00309">309</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPClient_Config:</div>
-<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
-</div>
-<div id="dynsection-2-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTPClient__Config__coll__graph.svg" width="188" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
-<table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="aa6bd2632f03fadb8a08f023e641c2c64" name="aa6bd2632f03fadb8a08f023e641c2c64"></a>int</td>
-<td class="fieldname">
-accept_encoding</td>
-<td class="fielddoc">
-<p>Bitmask: GZIP | DEFLATE | BR </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a12094d3f2718443658de2cab3f8873b4" name="a12094d3f2718443658de2cab3f8873b4"></a>int</td>
-<td class="fieldname">
-acquire_timeout_ms</td>
-<td class="fielddoc">
-<p>Timeout waiting for pool slot </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a9a480ef82e914f17714c7c57d12f88af" name="a9a480ef82e914f17714c7c57d12f88af"></a>int</td>
-<td class="fieldname">
-allow_http2_cleartext</td>
-<td class="fielddoc">
-<p>Allow h2c upgrade (default: 0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a39d5d74dbbdec57ac84fed12f747e299" name="a39d5d74dbbdec57ac84fed12f747e299"></a>int</td>
-<td class="fieldname">
-auto_decompress</td>
-<td class="fielddoc">
-<p>Auto-decompress responses (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ad0964ac6e0738a3c4914054529bb51a7" name="ad0964ac6e0738a3c4914054529bb51a7"></a>int</td>
-<td class="fieldname">
-connect_timeout_ms</td>
-<td class="fielddoc">
-<p>Connection timeout </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a6e7fd7c2a4f862fc8d613d4662a7e2e1" name="a6e7fd7c2a4f862fc8d613d4662a7e2e1"></a>int</td>
-<td class="fieldname">
-dns_timeout_ms</td>
-<td class="fielddoc">
-<p>DNS resolution timeout </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ac81b35696b105b13f703c5d71f5c5692" name="ac81b35696b105b13f703c5d71f5c5692"></a>int</td>
-<td class="fieldname">
-enable_connection_pool</td>
-<td class="fielddoc">
-<p>Enable pooling (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="adb6071171fe058cbc1c221e1b0d6ec98" name="adb6071171fe058cbc1c221e1b0d6ec98"></a>int</td>
-<td class="fieldname">
-enable_retry</td>
-<td class="fielddoc">
-<p>Enable automatic retry (default: 0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae9bb372f96fd426c9fcf729fa78f26e3" name="ae9bb372f96fd426c9fcf729fa78f26e3"></a>int</td>
-<td class="fieldname">
-enforce_samesite</td>
-<td class="fielddoc">
-<p>Security configuration Enforce SameSite attribute (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a1e5a28b4e256802af5f979726c728553" name="a1e5a28b4e256802af5f979726c728553"></a>int</td>
-<td class="fieldname">
-follow_redirects</td>
-<td class="fielddoc">
-<p>Max redirects (0 = disabled) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a867974712621670ef1dc975b2b396f84" name="a867974712621670ef1dc975b2b396f84"></a>int</td>
-<td class="fieldname">
-idle_timeout_ms</td>
-<td class="fielddoc">
-<p>Idle connection timeout </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a82bcf56254c541ebd8fbdbba0a7ba7bb" name="a82bcf56254c541ebd8fbdbba0a7ba7bb"></a>int</td>
-<td class="fieldname">
-max_connection_age_ms</td>
-<td class="fielddoc">
-<p>Max connection age (0 = unlimited) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ad87a23b29168c1a6a738bd07268247de" name="ad87a23b29168c1a6a738bd07268247de"></a>size_t</td>
-<td class="fieldname">
-max_connections_per_host</td>
-<td class="fielddoc">
-<p>Per-host limit (default: 6) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aa26d176771f3b6ddee9a2d95142e9c46" name="aa26d176771f3b6ddee9a2d95142e9c46"></a>size_t</td>
-<td class="fieldname">
-max_response_size</td>
-<td class="fielddoc">
-<p>Max response body (0 = unlimited) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ad8b244df21d9337ed74c872e694d10ba" name="ad8b244df21d9337ed74c872e694d10ba"></a>int</td>
-<td class="fieldname">
-max_retries</td>
-<td class="fielddoc">
-<p>Max retry attempts (default: 3) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aacd5591ab8f36783e6f759052439eb30" name="aacd5591ab8f36783e6f759052439eb30"></a>size_t</td>
-<td class="fieldname">
-max_total_connections</td>
-<td class="fielddoc">
-<p>Total limit (default: 100) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aeeeb2ea03d33db0ba500da1c7782f7f3" name="aeeeb2ea03d33db0ba500da1c7782f7f3"></a><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
-<td class="fieldname">
-max_version</td>
-<td class="fielddoc">
-<p>Max HTTP version (default: HTTP/2) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="af1c22aca38ea27645e9400fe42680bdf" name="af1c22aca38ea27645e9400fe42680bdf"></a><a class="el" href="SocketProxy_8h.html#structSocketProxy__Config">SocketProxy_Config</a> *</td>
-<td class="fieldname">
-proxy</td>
-<td class="fielddoc">
-<p>Default proxy (NULL for none) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a847eaef5232b2ada9149eea8aa9d4d4c" name="a847eaef5232b2ada9149eea8aa9d4d4c"></a>int</td>
-<td class="fieldname">
-redirect_on_post</td>
-<td class="fielddoc">
-<p>Follow redirects for POST (default: 0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a5d89d81bfb2401b06059048425fafb93" name="a5d89d81bfb2401b06059048425fafb93"></a>int</td>
-<td class="fieldname">
-request_timeout_ms</td>
-<td class="fielddoc">
-<p>Request timeout </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a1b02030b2c83c6e7bd1812de2362ede3" name="a1b02030b2c83c6e7bd1812de2362ede3"></a>int</td>
-<td class="fieldname">
-retry_initial_delay_ms</td>
-<td class="fielddoc">
-<p>Initial backoff delay (default: 100ms) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="afd505949c45d0fb48c0810759cb66176" name="afd505949c45d0fb48c0810759cb66176"></a>int</td>
-<td class="fieldname">
-retry_max_delay_ms</td>
-<td class="fielddoc">
-<p>Max backoff delay (default: 10s) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a86ed34fbe021d156e6ee5ac2bc8e9b6e" name="a86ed34fbe021d156e6ee5ac2bc8e9b6e"></a>int</td>
-<td class="fieldname">
-retry_on_5xx</td>
-<td class="fielddoc">
-<p>Retry on 5xx responses (default: 0) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a6355fa7fdfcc9db5d6069189aef62928" name="a6355fa7fdfcc9db5d6069189aef62928"></a>int</td>
-<td class="fieldname">
-retry_on_connection_error</td>
-<td class="fielddoc">
-<p>Retry on connect failures (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a58a60bcfb2edaa6accced6acd52191ad" name="a58a60bcfb2edaa6accced6acd52191ad"></a>int</td>
-<td class="fieldname">
-retry_on_timeout</td>
-<td class="fielddoc">
-<p>Retry on timeouts (default: 1) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a30f979d083088bc46c8c7de3bc37a3db" name="a30f979d083088bc46c8c7de3bc37a3db"></a><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></td>
-<td class="fieldname">
-tls_context</td>
-<td class="fielddoc">
-<p>Custom TLS context (NULL for default) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a0d03d16dc3eae06b6ab0b89b288c44df" name="a0d03d16dc3eae06b6ab0b89b288c44df"></a>const char *</td>
-<td class="fieldname">
-user_agent</td>
-<td class="fielddoc">
-<p>User-Agent header </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aa5c6daa6286ff5a701a804da14108a4c" name="aa5c6daa6286ff5a701a804da14108a4c"></a>int</td>
-<td class="fieldname">
-verify_ssl</td>
-<td class="fielddoc">
-<p>Verify certificates (default: 1) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHTTPClient__Response" id="structSocketHTTPClient__Response"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPClient__Response">&#9670;&#160;</a></span>SocketHTTPClient_Response</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPClient_Response</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>HTTP response (owned by caller) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00392">392</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="ab3f98045a2f32cb3249ee62d036654c3" name="ab3f98045a2f32cb3249ee62d036654c3"></a><a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
-<td class="fieldname">
-arena</td>
-<td class="fielddoc">
-<p>For cleanup - caller must dispose </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ab7f8558743b64c751b64ac26231dca31" name="ab7f8558743b64c751b64ac26231dca31"></a>void *</td>
-<td class="fieldname">
-body</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aae64f48637811f9ddbc8e12aea55e0e6" name="aae64f48637811f9ddbc8e12aea55e0e6"></a>size_t</td>
-<td class="fieldname">
-body_len</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a8b459516887245f8e4b77f8d8517ede1" name="a8b459516887245f8e4b77f8d8517ede1"></a><a class="el" href="SocketProxy_8h.html#af1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></td>
-<td class="fieldname">
-headers</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a0baa2f233436d7bb00f28214d6382542" name="a0baa2f233436d7bb00f28214d6382542"></a>int</td>
-<td class="fieldname">
-status_code</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="accda45708658a8ada478121524f85e5e" name="accda45708658a8ada478121524f85e5e"></a><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
-<td class="fieldname">
-version</td>
-<td class="fielddoc">
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHTTPClient__Cookie" id="structSocketHTTPClient__Cookie"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPClient__Cookie">&#9670;&#160;</a></span>SocketHTTPClient_Cookie</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPClient_Cookie</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Cookie attributes </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00649">649</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a0dc75016531006762afa85a21130ac13" name="a0dc75016531006762afa85a21130ac13"></a>const char *</td>
-<td class="fieldname">
-domain</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a76752117eaf672a88292a3c7c250b52d" name="a76752117eaf672a88292a3c7c250b52d"></a>time_t</td>
-<td class="fieldname">
-expires</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae47a67be4b88e83dd7c877f63af2ae8a" name="ae47a67be4b88e83dd7c877f63af2ae8a"></a>int</td>
-<td class="fieldname">
-http_only</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae7076917489dca85561ff672d120551c" name="ae7076917489dca85561ff672d120551c"></a>const char *</td>
-<td class="fieldname">
-name</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a7259b82f78dc6e60c52ef6c5d741ca06" name="a7259b82f78dc6e60c52ef6c5d741ca06"></a>const char *</td>
-<td class="fieldname">
-path</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ad1fc2e3ea45172e27a07aaacfe3c7eeb" name="ad1fc2e3ea45172e27a07aaacfe3c7eeb"></a><a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a></td>
-<td class="fieldname">
-same_site</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a3300f627ad07cd15a596451a41dc4b69" name="a3300f627ad07cd15a596451a41dc4b69"></a>int</td>
-<td class="fieldname">
-secure</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a21b390a321565e4ebf8be575550c1498" name="a21b390a321565e4ebf8be575550c1498"></a>const char *</td>
-<td class="fieldname">
-value</td>
-<td class="fielddoc">
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketHTTPClient__PoolStats" id="structSocketHTTPClient__PoolStats"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTPClient__PoolStats">&#9670;&#160;</a></span>SocketHTTPClient_PoolStats</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTPClient_PoolStats</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Pool statistics </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00769">769</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a102cdd1136d87673c4eb8ca42cd64942" name="a102cdd1136d87673c4eb8ca42cd64942"></a>size_t</td>
-<td class="fieldname">
-active_connections</td>
-<td class="fielddoc">
-<p>Connections currently in use </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a9a5d4cac43fdb9d880edef1dc778273a" name="a9a5d4cac43fdb9d880edef1dc778273a"></a>size_t</td>
-<td class="fieldname">
-connections_created</td>
-<td class="fielddoc">
-<p>Total connections created </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a1dfc46ee0c2d61f3facd7daf0d93f0a0" name="a1dfc46ee0c2d61f3facd7daf0d93f0a0"></a>size_t</td>
-<td class="fieldname">
-connections_failed</td>
-<td class="fielddoc">
-<p>Connection attempts that failed </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ac9548fe3f865ed4d99c7366b0f64937d" name="ac9548fe3f865ed4d99c7366b0f64937d"></a>size_t</td>
-<td class="fieldname">
-connections_timed_out</td>
-<td class="fielddoc">
-<p>Connections that timed out waiting </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aaab49cd26a75dd2f3f7ed96eafc09a25" name="aaab49cd26a75dd2f3f7ed96eafc09a25"></a>size_t</td>
-<td class="fieldname">
-idle_connections</td>
-<td class="fielddoc">
-<p>Connections available for reuse </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a2388e92ca44d26b70ce6904abbcf0d13" name="a2388e92ca44d26b70ce6904abbcf0d13"></a>size_t</td>
-<td class="fieldname">
-pool_exhausted_waits</td>
-<td class="fielddoc">
-<p>Times we waited for pool slot </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a0bb94abb8c7aa981d1aae1d47469b316" name="a0bb94abb8c7aa981d1aae1d47469b316"></a>size_t</td>
-<td class="fieldname">
-reused_connections</td>
-<td class="fielddoc">
-<p>Times a pooled connection was reused </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a822cd3674285e9ee5a3e541b42cc8f9a" name="a822cd3674285e9ee5a3e541b42cc8f9a"></a>size_t</td>
-<td class="fieldname">
-stale_connections_removed</td>
-<td class="fielddoc">
-<p>Stale/dead connections cleaned up </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="acbe290157d79e718d8397a6d7078487c" name="acbe290157d79e718d8397a6d7078487c"></a>size_t</td>
-<td class="fieldname">
-total_requests</td>
-<td class="fielddoc">
-<p>Total requests made </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="a1f0f539e54a607bea5559f6577f987df" name="a1f0f539e54a607bea5559f6577f987df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f0f539e54a607bea5559f6577f987df">&#9670;&#160;</a></span>SocketHTTPClient_AsyncRequest_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPClient_AsyncRequest* <a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Async request handle </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00380">380</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
+<p class="definition">Definition in file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+</div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a3cb9ba239e5a623795bae1ddfd084201" name="a3cb9ba239e5a623795bae1ddfd084201"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3cb9ba239e5a623795bae1ddfd084201">&#9670;&#160;</a></span>SocketHTTPClient_Callback</h2>
 
@@ -838,298 +430,17 @@ total_requests</td>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* SocketHTTPClient_Callback) (<a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req, <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td>
+          <td class="memname">typedef void(* SocketHTTPClient_Callback) (<a class="el" href="group__http.html#ga1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> req, <a class="el" href="group__http.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>Async completion callback </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00585">585</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<a id="a118e7e43ad387b22241607355dbdec9f" name="a118e7e43ad387b22241607355dbdec9f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a118e7e43ad387b22241607355dbdec9f">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPClient_CookieJar* <a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Cookie jar </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00383">383</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<a id="a265c0209bd77c39f219d72c3956a8818" name="a265c0209bd77c39f219d72c3956a8818"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a265c0209bd77c39f219d72c3956a8818">&#9670;&#160;</a></span>SocketHTTPClient_Request_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPClient_Request* <a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP request builder </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00377">377</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<a id="aba14ae9994f5645e5aa8488f905aad54" name="aba14ae9994f5645e5aa8488f905aad54"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba14ae9994f5645e5aa8488f905aad54">&#9670;&#160;</a></span>SocketHTTPClient_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef struct SocketHTTPClient* <a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP client instance </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00374">374</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="a720036180c834b3f4b41f437d0ce1f30" name="a720036180c834b3f4b41f437d0ce1f30"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a720036180c834b3f4b41f437d0ce1f30">&#9670;&#160;</a></span>SocketHTTPClient_AuthType</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Authentication scheme types </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c" name="a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c"></a>HTTP_AUTH_NONE&#160;</td><td class="fielddoc"><p>No authentication </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba" name="a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba"></a>HTTP_AUTH_BASIC&#160;</td><td class="fielddoc"><p>RFC 7617 - Basic Authentication </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3" name="a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3"></a>HTTP_AUTH_DIGEST&#160;</td><td class="fielddoc"><p>RFC 7616 - Digest Access Authentication </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96" name="a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96"></a>HTTP_AUTH_BEARER&#160;</td><td class="fielddoc"><p>RFC 6750 - Bearer Token (OAuth 2.0) </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00276">276</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<a id="a6b0f544308db17e698b4c05ac3358b75" name="a6b0f544308db17e698b4c05ac3358b75"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b0f544308db17e698b4c05ac3358b75">&#9670;&#160;</a></span>SocketHTTPClient_Error</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Error codes for async operations</p>
-<p>Retryability by error code:</p><ul>
-<li>HTTPCLIENT_ERROR_DNS: YES - DNS may recover</li>
-<li>HTTPCLIENT_ERROR_CONNECT: YES - Server may restart</li>
-<li>HTTPCLIENT_ERROR_TLS: NO - Configuration issue</li>
-<li>HTTPCLIENT_ERROR_TIMEOUT: YES - Transient congestion</li>
-<li>HTTPCLIENT_ERROR_PROTOCOL: NO - Server bug</li>
-<li>HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS: NO - Redirect loop</li>
-<li>HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: NO - Size limit</li>
-<li>HTTPCLIENT_ERROR_CANCELLED: NO - User cancelled</li>
-<li>HTTPCLIENT_ERROR_OUT_OF_MEMORY: NO - Resource exhaustion</li>
-<li>HTTPCLIENT_ERROR_LIMIT_EXCEEDED: NO - Pool limits reached </li>
-</ul>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d" name="a6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d"></a>HTTPCLIENT_OK&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75ae1f6869bacb82ecbe3914f3d52a7c5ef" name="a6b0f544308db17e698b4c05ac3358b75ae1f6869bacb82ecbe3914f3d52a7c5ef"></a>HTTPCLIENT_ERROR_DNS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75aa0a0bf606da8e46eba8cf29cec56bd25" name="a6b0f544308db17e698b4c05ac3358b75aa0a0bf606da8e46eba8cf29cec56bd25"></a>HTTPCLIENT_ERROR_CONNECT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75abea0c5bb21ff179f4bff79115f26a9a5" name="a6b0f544308db17e698b4c05ac3358b75abea0c5bb21ff179f4bff79115f26a9a5"></a>HTTPCLIENT_ERROR_TLS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a5099780b4bb3fee36f2432496843bac8" name="a6b0f544308db17e698b4c05ac3358b75a5099780b4bb3fee36f2432496843bac8"></a>HTTPCLIENT_ERROR_TIMEOUT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a3a208d6e1419093b96cb8335741f2abe" name="a6b0f544308db17e698b4c05ac3358b75a3a208d6e1419093b96cb8335741f2abe"></a>HTTPCLIENT_ERROR_PROTOCOL&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a178aabd112e942f1ce3c9c9e92d8f657" name="a6b0f544308db17e698b4c05ac3358b75a178aabd112e942f1ce3c9c9e92d8f657"></a>HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a686c1f9288cfc49b1f887b1786ea85e5" name="a6b0f544308db17e698b4c05ac3358b75a686c1f9288cfc49b1f887b1786ea85e5"></a>HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75aa1effb555a4ca8cb0f483adf8319eea8" name="a6b0f544308db17e698b4c05ac3358b75aa1effb555a4ca8cb0f483adf8319eea8"></a>HTTPCLIENT_ERROR_CANCELLED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c" name="a6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c"></a>HTTPCLIENT_ERROR_OUT_OF_MEMORY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb" name="a6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb"></a>HTTPCLIENT_ERROR_LIMIT_EXCEEDED&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00197">197</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
-
-</div>
-</div>
-<a id="a5a9d40d261a12f620aba6b26e8fb714b" name="a5a9d40d261a12f620aba6b26e8fb714b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a9d40d261a12f620aba6b26e8fb714b">&#9670;&#160;</a></span>SocketHTTPClient_SameSite</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Cookie SameSite attribute values </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a5a9d40d261a12f620aba6b26e8fb714baa133f9bf67acb51315ada8cd26d83946" name="a5a9d40d261a12f620aba6b26e8fb714baa133f9bf67acb51315ada8cd26d83946"></a>COOKIE_SAMESITE_NONE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a5a9d40d261a12f620aba6b26e8fb714ba9360362eafff108453d53fe004670bb5" name="a5a9d40d261a12f620aba6b26e8fb714ba9360362eafff108453d53fe004670bb5"></a>COOKIE_SAMESITE_LAX&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="a5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80" name="a5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80"></a>COOKIE_SAMESITE_STRICT&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00639">639</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00838">838</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
-<a id="adedb2c16bf1b0081fb02c8c681973429" name="adedb2c16bf1b0081fb02c8c681973429"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adedb2c16bf1b0081fb02c8c681973429">&#9670;&#160;</a></span>SocketHTTPClient_AsyncRequest_cancel()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_AsyncRequest_cancel </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a>&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_AsyncRequest_cancel - Cancel async request </p>
-
-</div>
-</div>
-<a id="aad5ad81c60bb230588b5f660a834f40e" name="aad5ad81c60bb230588b5f660a834f40e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad5ad81c60bb230588b5f660a834f40e">&#9670;&#160;</a></span>SocketHTTPClient_config_defaults()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_config_defaults </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_config_defaults - Initialize config with defaults @config: Configuration structure to initialize</p>
-<p>Thread-safe: Yes </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="aad4e0041def5bbfdbd42f1192b5f588a" name="aad4e0041def5bbfdbd42f1192b5f588a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aad4e0041def5bbfdbd42f1192b5f588a">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_clear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_CookieJar_clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_clear - Clear all cookies @jar: Cookie jar </p>
-
-</div>
-</div>
-<a id="a52288a166212725fc43156b1bb2fc5b4" name="a52288a166212725fc43156b1bb2fc5b4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52288a166212725fc43156b1bb2fc5b4">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_clear_expired()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_CookieJar_clear_expired </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_clear_expired - Clear expired cookies @jar: Cookie jar </p>
-
-</div>
-</div>
-<a id="a628b803f0ccfdc41d8425bf1c1064d7e" name="a628b803f0ccfdc41d8425bf1c1064d7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a628b803f0ccfdc41d8425bf1c1064d7e">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_CookieJar_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> *&#160;</td>
-          <td class="paramname"><em>jar</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_free - Free cookie jar @jar: Pointer to jar (set to NULL) </p>
-
-</div>
-</div>
 <a id="a79838faf1567b0b9946b95b946de4392" name="a79838faf1567b0b9946b95b946de4392"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a79838faf1567b0b9946b95b946de4392">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_get()</h2>
 
@@ -1140,9 +451,9 @@ total_requests</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> * SocketHTTPClient_CookieJar_get </td>
+          <td class="memname">const <a class="el" href="group__http.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> * SocketHTTPClient_CookieJar_get </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="group__http.html#ga118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
           <td class="paramname"><em>jar</em>, </td>
         </tr>
         <tr>
@@ -1175,1532 +486,14 @@ total_requests</td>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_clear - Clear all cookies @jar: Cookie jar </p>
 
-</div>
-</div>
-<a id="a0804b639cfe122234e22b14498f2af13" name="a0804b639cfe122234e22b14498f2af13"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0804b639cfe122234e22b14498f2af13">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_load()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_CookieJar_load </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>filename</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_load - Load cookies from file @jar: Cookie jar @filename: File path</p>
-<p>Returns: 0 on success, -1 on error </p>
-
-</div>
-</div>
-<a id="a7f6bd73797f507766f9edc1242b9772e" name="a7f6bd73797f507766f9edc1242b9772e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f6bd73797f507766f9edc1242b9772e">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> SocketHTTPClient_CookieJar_new </td>
-          <td>(</td>
-          <td class="paramtype">void&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_new - Create cookie jar</p>
-<p>Returns: New cookie jar Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a4f086bf1231cc24fee20d8b0461fec05" name="a4f086bf1231cc24fee20d8b0461fec05"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f086bf1231cc24fee20d8b0461fec05">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_save()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_CookieJar_save </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>filename</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_save - Save cookies to file @jar: Cookie jar @filename: File path</p>
-<p>Returns: 0 on success, -1 on error </p>
-
-</div>
-</div>
-<a id="ae276f63daea601b662eae51e1973f3e5" name="ae276f63daea601b662eae51e1973f3e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae276f63daea601b662eae51e1973f3e5">&#9670;&#160;</a></span>SocketHTTPClient_CookieJar_set()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_CookieJar_set </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Cookie">SocketHTTPClient_Cookie</a> *&#160;</td>
-          <td class="paramname"><em>cookie</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_CookieJar_set - Set cookie @jar: Cookie jar @cookie: Cookie to set</p>
-<p>Returns: 0 on success, -1 on error </p>
-
-</div>
-</div>
-<a id="a6bc9ded2b6017d03733c50c493605ef7" name="a6bc9ded2b6017d03733c50c493605ef7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6bc9ded2b6017d03733c50c493605ef7">&#9670;&#160;</a></span>SocketHTTPClient_delete()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_delete </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_delete - Perform DELETE request </p>
-
-</div>
-</div>
-<a id="af69fc4efa6d5b4df9cdf207cfa05b6b9" name="af69fc4efa6d5b4df9cdf207cfa05b6b9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af69fc4efa6d5b4df9cdf207cfa05b6b9">&#9670;&#160;</a></span>SocketHTTPClient_error_is_retryable()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_error_is_retryable </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td>
-          <td class="paramname"><em>error</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_error_is_retryable - Check if error code is retryable @error: Error code from async operation</p>
-<p>Returns: 1 if error is typically retryable, 0 if fatal Thread-safe: Yes (pure function)</p>
-<p>Use this to decide whether to retry a failed request:</p>
-<p>Example: SocketHTTPClient_Error err = SocketHTTPClient_Request_error(req); if (SocketHTTPClient_error_is_retryable(err)) // Schedule retry with exponential backoff else // Log error and give up</p>
-<p>Retryable errors:</p><ul>
-<li>DNS failures (server may recover)</li>
-<li>Connection failures (server may restart)</li>
-<li>Timeouts (network may clear)</li>
-</ul>
-<p>Non-retryable errors:</p><ul>
-<li>TLS failures (configuration issue)</li>
-<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> errors (server bug)</li>
-<li>Redirect loops (server misconfiguration)</li>
-<li>Size limits (won't change on retry)</li>
-<li>Cancellation (user initiated)</li>
-<li>Out of memory (system issue) </li>
-</ul>
-
-</div>
-</div>
-<a id="a859120de13b0764564f3c1ce111b3379" name="a859120de13b0764564f3c1ce111b3379"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a859120de13b0764564f3c1ce111b3379">&#9670;&#160;</a></span>SocketHTTPClient_error_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketHTTPClient_error_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td>
-          <td class="paramname"><em>error</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_error_string - Get error description @error: Error code</p>
-<p>Returns: Static string Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a01d6c9bebdcda63949ba9af698f8e7e5" name="a01d6c9bebdcda63949ba9af698f8e7e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a01d6c9bebdcda63949ba9af698f8e7e5">&#9670;&#160;</a></span>SocketHTTPClient_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> *&#160;</td>
-          <td class="paramname"><em>client</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_free - Free client and all resources @client: Pointer to client (set to NULL)</p>
-<p>Thread-safe: No </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="afef425814e66932f7cf1f36e9356b70e" name="afef425814e66932f7cf1f36e9356b70e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afef425814e66932f7cf1f36e9356b70e">&#9670;&#160;</a></span>SocketHTTPClient_get()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_get </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_get - Perform GET request @client: Client instance @url: Full URL (<a href="http://">http://</a> or <a href="https://">https://</a>) @response: Output response (caller must free via Response_free)</p>
-<p>Returns: 0 on success, -1 on error Raises: Various exceptions on failure Thread-safe: No </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a887d2e7f1b676b7a1bd44de4a2964e03" name="a887d2e7f1b676b7a1bd44de4a2964e03"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a887d2e7f1b676b7a1bd44de4a2964e03">&#9670;&#160;</a></span>SocketHTTPClient_get_async()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> SocketHTTPClient_get_async </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_get_async - Start async GET </p>
-
-</div>
-</div>
-<a id="a52e891cd45c787d4025e15d8c4c42849" name="a52e891cd45c787d4025e15d8c4c42849"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a52e891cd45c787d4025e15d8c4c42849">&#9670;&#160;</a></span>SocketHTTPClient_get_cookie_jar()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a> SocketHTTPClient_get_cookie_jar </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_get_cookie_jar - Get associated cookie jar @client: Client</p>
-<p>Returns: Cookie jar or NULL </p>
-
-</div>
-</div>
-<a id="a4efcd265a023ce14464f07ef360fb030" name="a4efcd265a023ce14464f07ef360fb030"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4efcd265a023ce14464f07ef360fb030">&#9670;&#160;</a></span>SocketHTTPClient_head()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_head </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_head - Perform HEAD request </p>
-
-</div>
-</div>
-<a id="ac8680d78a9d70c7662d39466c63aab72" name="ac8680d78a9d70c7662d39466c63aab72"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac8680d78a9d70c7662d39466c63aab72">&#9670;&#160;</a></span>SocketHTTPClient_last_error()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> SocketHTTPClient_last_error </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_last_error - Get last error code @client: Client</p>
-<p>Returns: Error code </p>
-
-</div>
-</div>
-<a id="a2d57db3a9a6388315f253caa099e4205" name="a2d57db3a9a6388315f253caa099e4205"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d57db3a9a6388315f253caa099e4205">&#9670;&#160;</a></span>SocketHTTPClient_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a> SocketHTTPClient_new </td>
-          <td>(</td>
-          <td class="paramtype">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *&#160;</td>
-          <td class="paramname"><em>config</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_new - Create HTTP client @config: Configuration (NULL for defaults)</p>
-<p>Returns: New client instance Raises: SocketHTTPClient_Failed on allocation failure Thread-safe: Yes </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a1fd6bae0397b3156f49100f444fdaac6" name="a1fd6bae0397b3156f49100f444fdaac6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1fd6bae0397b3156f49100f444fdaac6">&#9670;&#160;</a></span>SocketHTTPClient_pool_clear()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_pool_clear </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_pool_clear - Clear all pooled connections @client: Client </p>
-
-</div>
-</div>
-<a id="aca84ba9dfcb00f58533dafe869f8c548" name="aca84ba9dfcb00f58533dafe869f8c548"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca84ba9dfcb00f58533dafe869f8c548">&#9670;&#160;</a></span>SocketHTTPClient_pool_stats()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_pool_stats </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__PoolStats">SocketHTTPClient_PoolStats</a> *&#160;</td>
-          <td class="paramname"><em>stats</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_pool_stats - Get pool statistics @client: Client @stats: Output statistics </p>
-
-</div>
-</div>
-<a id="a9b47bc2dd38d4a6700af79ced0acecb2" name="a9b47bc2dd38d4a6700af79ced0acecb2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9b47bc2dd38d4a6700af79ced0acecb2">&#9670;&#160;</a></span>SocketHTTPClient_post()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_post </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>content_type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>body</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>body_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_post - Perform POST request @client: Client @url: Full URL @content_type: Content-Type header value @body: Request body @body_len: Body length @response: Output response </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="addf401e4175374852073d0de27407fef" name="addf401e4175374852073d0de27407fef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#addf401e4175374852073d0de27407fef">&#9670;&#160;</a></span>SocketHTTPClient_post_async()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> SocketHTTPClient_post_async </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>content_type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>body</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>body_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_post_async - Start async POST </p>
-
-</div>
-</div>
-<a id="a9f4f6e7641bef38d356a7349e1d589a4" name="a9f4f6e7641bef38d356a7349e1d589a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9f4f6e7641bef38d356a7349e1d589a4">&#9670;&#160;</a></span>SocketHTTPClient_process()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_process </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_ms</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_process - Process async requests @client: Client @timeout_ms: Poll timeout</p>
-<p>Returns: Number of completed requests Thread-safe: No</p>
-<p>Call in event loop to process pending async requests. </p>
-
-</div>
-</div>
-<a id="a9d15a2624c43ac163f993827d3756efc" name="a9d15a2624c43ac163f993827d3756efc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9d15a2624c43ac163f993827d3756efc">&#9670;&#160;</a></span>SocketHTTPClient_put()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_put </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>content_type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>body</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>body_len</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_put - Perform PUT request </p>
-
-</div>
-</div>
-<a id="a64e1155f06853b28f5619690840d3962" name="a64e1155f06853b28f5619690840d3962"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a64e1155f06853b28f5619690840d3962">&#9670;&#160;</a></span>SocketHTTPClient_Request_async()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a1f0f539e54a607bea5559f6577f987df">SocketHTTPClient_AsyncRequest_T</a> SocketHTTPClient_Request_async </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>&#160;</td>
-          <td class="paramname"><em>callback</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_async - Start async custom request </p>
-
-</div>
-</div>
-<a id="a4aaf34db687d93fcbaa8e13b35916b6a" name="a4aaf34db687d93fcbaa8e13b35916b6a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4aaf34db687d93fcbaa8e13b35916b6a">&#9670;&#160;</a></span>SocketHTTPClient_Request_auth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_Request_auth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *&#160;</td>
-          <td class="paramname"><em>auth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_auth - Set per-request authentication @req: Request @auth: Authentication credentials </p>
-
-</div>
-</div>
-<a id="ae8f21b1fc1aae1ef8b1bbe43ce875247" name="ae8f21b1fc1aae1ef8b1bbe43ce875247"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae8f21b1fc1aae1ef8b1bbe43ce875247">&#9670;&#160;</a></span>SocketHTTPClient_Request_body()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_Request_body </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const void *&#160;</td>
-          <td class="paramname"><em>data</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_body - Set request body @req: Request @data: Body data @len: Data length</p>
-<p>Returns: 0 on success, -1 on error </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="a8470d0864afe35f5265bda12d221f14e" name="a8470d0864afe35f5265bda12d221f14e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8470d0864afe35f5265bda12d221f14e">&#9670;&#160;</a></span>SocketHTTPClient_Request_body_stream()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_Request_body_stream </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ssize_t(*)(void *buf, size_t len, void *userdata)&#160;</td>
-          <td class="paramname"><em>read_cb</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">void *&#160;</td>
-          <td class="paramname"><em>userdata</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_body_stream - Set streaming body @req: Request @read_cb: Callback to read body data @userdata: User data for callback</p>
-<p>Returns: 0 on success, -1 on error </p>
-
-</div>
-</div>
-<a id="a4ba09b6d59cc2aee465749978f62ad76" name="a4ba09b6d59cc2aee465749978f62ad76"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ba09b6d59cc2aee465749978f62ad76">&#9670;&#160;</a></span>SocketHTTPClient_Request_execute()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_Request_execute </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_execute - Execute request @req: Request @response: Output response</p>
-<p>Returns: 0 on success, -1 on error Thread-safe: No </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="a31f46990e2a8d948bfe7db2e22b85565" name="a31f46990e2a8d948bfe7db2e22b85565"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a31f46990e2a8d948bfe7db2e22b85565">&#9670;&#160;</a></span>SocketHTTPClient_Request_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_Request_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> *&#160;</td>
-          <td class="paramname"><em>req</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_free - Free request builder @req: Pointer to request (set to NULL) </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="a8a7c54a81dc916af60f9747162e844a2" name="a8a7c54a81dc916af60f9747162e844a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a7c54a81dc916af60f9747162e844a2">&#9670;&#160;</a></span>SocketHTTPClient_Request_header()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTPClient_Request_header </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>value</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>Cookie SameSite attribute values </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="a46c9c2ab8d3334dd0ad1359d2bb93102" name="a46c9c2ab8d3334dd0ad1359d2bb93102"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a46c9c2ab8d3334dd0ad1359d2bb93102">&#9670;&#160;</a></span>SocketHTTPClient_Request_new()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a> SocketHTTPClient_Request_new </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td>
-          <td class="paramname"><em>method</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>url</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_new - Create request builder @client: Client instance @method: HTTP method @url: Full URL</p>
-<p>Returns: Request builder Thread-safe: No </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="abe918e0dacc9d507f1ad288a399dfca6" name="abe918e0dacc9d507f1ad288a399dfca6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe918e0dacc9d507f1ad288a399dfca6">&#9670;&#160;</a></span>SocketHTTPClient_Request_timeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_Request_timeout </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a265c0209bd77c39f219d72c3956a8818">SocketHTTPClient_Request_T</a>&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>ms</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Request_timeout - Set per-request timeout @req: Request @ms: Timeout in milliseconds </p>
-
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
-
-</div>
-</div>
-<a id="a826bca53483c23de2c8b03d456010149" name="a826bca53483c23de2c8b03d456010149"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a826bca53483c23de2c8b03d456010149">&#9670;&#160;</a></span>SocketHTTPClient_Response_free()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_Response_free </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *&#160;</td>
-          <td class="paramname"><em>response</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Response_free - Free response resources @response: Response to free</p>
-<p>Thread-safe: No </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a1e9410043754e2ad4dbaa3572c595547" name="a1e9410043754e2ad4dbaa3572c595547"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e9410043754e2ad4dbaa3572c595547">&#9670;&#160;</a></span>SocketHTTPClient_set_auth()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_set_auth </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">const <a class="el" href="SocketHTTPClient_8h.html#structSocketHTTPClient__Auth">SocketHTTPClient_Auth</a> *&#160;</td>
-          <td class="paramname"><em>auth</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_set_auth - Set default authentication @client: Client @auth: Authentication credentials </p>
-
-</div>
-</div>
-<a id="a07b465d99995da22fc317dc170d09787" name="a07b465d99995da22fc317dc170d09787"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a07b465d99995da22fc317dc170d09787">&#9670;&#160;</a></span>SocketHTTPClient_set_cookie_jar()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketHTTPClient_set_cookie_jar </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#aba14ae9994f5645e5aa8488f905aad54">SocketHTTPClient_T</a>&#160;</td>
-          <td class="paramname"><em>client</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="SocketHTTPClient_8h.html#a118e7e43ad387b22241607355dbdec9f">SocketHTTPClient_CookieJar_T</a>&#160;</td>
-          <td class="paramname"><em>jar</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_set_cookie_jar - Associate jar with client @client: Client @jar: Cookie jar (NULL to remove) </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a83bda6e77bc5fb165e4e7fead483094b" name="a83bda6e77bc5fb165e4e7fead483094b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a83bda6e77bc5fb165e4e7fead483094b">&#9670;&#160;</a></span>SocketHTTPClient_ConnectFailed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_ConnectFailed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_ConnectFailed - TCP connection failure</p>
-<p>Category: NETWORK Retryable: YES - Server may restart, network may recover</p>
-<p>Raised when TCP connect() fails. Common causes:</p><ul>
-<li>ECONNREFUSED: Server not listening (may start later)</li>
-<li>ENETUNREACH: Network route unavailable (may recover)</li>
-<li>EHOSTUNREACH: Host unreachable (may become reachable) </li>
-</ul>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a50039c8c595271d7d51b28ed5a4e7196" name="a50039c8c595271d7d51b28ed5a4e7196"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a50039c8c595271d7d51b28ed5a4e7196">&#9670;&#160;</a></span>SocketHTTPClient_DNSFailed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_DNSFailed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_DNSFailed - DNS resolution failure</p>
-<p>Category: NETWORK Retryable: YES - DNS servers may recover, cache may refresh</p>
-<p>Raised when hostname cannot be resolved. May be transient (DNS server overloaded) or permanent (invalid hostname). </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a5dc1b9ac7f30436bc422f312cd6db709" name="a5dc1b9ac7f30436bc422f312cd6db709"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5dc1b9ac7f30436bc422f312cd6db709">&#9670;&#160;</a></span>SocketHTTPClient_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketHTTPClient_8h.html">SocketHTTPClient.h</a> - HTTP Client API</p>
-<p>Part of the Socket Library</p>
-<p>High-level HTTP client abstracting HTTP/1.1 and HTTP/2 with:</p><ul>
-<li>Connection pooling with per-host limits</li>
-<li>Automatic protocol negotiation (ALPN for HTTP/2)</li>
-<li>Cookie handling (RFC 6265)</li>
-<li>Authentication (Basic/Digest/Bearer)</li>
-<li>Compression (gzip/deflate/brotli)</li>
-<li>Redirect following</li>
-<li>Both synchronous and asynchronous APIs</li>
-</ul>
-<p>Dependencies (leveraged, not duplicated):</p><ul>
-<li>SocketHTTP for headers, URI, methods, status codes</li>
-<li>SocketHTTP1 for HTTP/1.1 parsing/serialization</li>
-<li>SocketHTTP2 for HTTP/2 protocol</li>
-<li>SocketHappyEyeballs for fast connection establishment</li>
-<li>SocketCrypto for authentication (base64, MD5, SHA256)</li>
-</ul>
-<p>Thread safety: Client instances are NOT thread-safe. Use one client per thread or external synchronization.</p>
-<p>PLATFORM REQUIREMENTS:</p><ul>
-<li>POSIX-compliant system (Linux, BSD, macOS)</li>
-<li>pthread for mutex synchronization</li>
-<li>OpenSSL for TLS (optional, via SOCKET_HAS_TLS) SocketHTTPClient_Failed - General client failure</li>
-</ul>
-<p>Category: Varies Retryable: Depends on underlying cause - check errno</p>
-<p>Raised for unclassified errors. Check <a class="el" href="SocketUtil_8h.html#aacd3ef2f86186c451f2eb90cd490eae5">Socket_geterrno()</a> for details. </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="a24ffae352f53c9580d861d3590b61e2a" name="a24ffae352f53c9580d861d3590b61e2a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24ffae352f53c9580d861d3590b61e2a">&#9670;&#160;</a></span>SocketHTTPClient_ProtocolError</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_ProtocolError</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_ProtocolError - HTTP protocol error</p>
-<p>Category: PROTOCOL Retryable: NO - Server response is malformed</p>
-<p>Raised when HTTP response cannot be parsed:</p><ul>
-<li>Invalid status line</li>
-<li>Malformed headers</li>
-<li>Invalid chunked encoding</li>
-</ul>
-<p>Indicates server bug or proxy corruption. </p>
-
-</div>
-</div>
-<a id="a4ed14f04119b1dec3cb25c432b7a383d" name="a4ed14f04119b1dec3cb25c432b7a383d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ed14f04119b1dec3cb25c432b7a383d">&#9670;&#160;</a></span>SocketHTTPClient_ResponseTooLarge</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_ResponseTooLarge</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_ResponseTooLarge - Response body exceeds limit</p>
-<p>Category: RESOURCE Retryable: NO - Server response is too large</p>
-<p>Raised when response body exceeds max_response_size config. Retry would produce same result. Increase limit or use streaming API for large responses. </p>
-
-</div>
-</div>
-<a id="aa0847dd6efa2f627e07173f29b29c8ae" name="aa0847dd6efa2f627e07173f29b29c8ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa0847dd6efa2f627e07173f29b29c8ae">&#9670;&#160;</a></span>SocketHTTPClient_Timeout</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_Timeout</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_Timeout - Request timeout exceeded</p>
-<p>Category: TIMEOUT Retryable: YES - Network congestion may clear</p>
-<p>Raised when request exceeds configured timeout. May succeed on retry if server/network recovers. </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="ac109f9bf9ba67f2f56db130172b3dd94" name="ac109f9bf9ba67f2f56db130172b3dd94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac109f9bf9ba67f2f56db130172b3dd94">&#9670;&#160;</a></span>SocketHTTPClient_TLSFailed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_TLSFailed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_TLSFailed - TLS/SSL handshake or I/O failure</p>
-<p>Category: PROTOCOL Retryable: NO - Usually indicates configuration mismatch</p>
-<p>Raised for TLS errors:</p><ul>
-<li>Certificate verification failure</li>
-<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> version mismatch</li>
-<li>Cipher suite negotiation failure</li>
-</ul>
-<p>Retrying won't help unless TLS configuration is changed. </p>
-
-<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
-
-</div>
-</div>
-<a id="afd7d2611128ad32cc65cb256403c671f" name="afd7d2611128ad32cc65cb256403c671f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd7d2611128ad32cc65cb256403c671f">&#9670;&#160;</a></span>SocketHTTPClient_TooManyRedirects</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTPClient_TooManyRedirects</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTPClient_TooManyRedirects - Redirect limit exceeded</p>
-<p>Category: APPLICATION Retryable: NO - Indicates redirect loop or misconfiguration</p>
-<p>Raised when redirect count exceeds max_redirects config. Usually indicates server misconfiguration (redirect loop). </p>
+<p>Clear all cookies. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">jar</td><td>Cookie jar </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

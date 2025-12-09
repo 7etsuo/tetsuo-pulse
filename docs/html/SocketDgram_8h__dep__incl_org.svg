@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="High&#45;level UDP/datagram socket interface with multicast and broadcast support.">
 <polygon fill="#999999" stroke="#666666" points="85,-74 0,-74 0,-55 85,-55 85,-74"/>
 <text text-anchor="middle" x="42.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDgram.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title="Datagram TLS (DTLS) protocol implementation for UDP sockets.">
 <polygon fill="white" stroke="#666666" points="83,-19 2,-19 2,0 83,0 83,-19"/>
 <text text-anchor="middle" x="42.5" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLS.h</text>
 </a>

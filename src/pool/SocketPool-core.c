@@ -54,11 +54,17 @@ __thread Except_T SocketPool_DetailedException;
  */
 
 /**
- * safe_time - Retrieve current time with error checking
+ * @brief Get current time with error handling.
+ * @ingroup connection_mgmt
+ * @return Current time as time_t.
+ * @throws SocketPool_Failed on system error.
+ * @threadsafe Yes.
  *
- * Returns: Current time as time_t
- * Raises: SocketPool_Failed if time() call fails
- * Thread-safe: Yes - time() is thread-safe per POSIX
+ * Safe wrapper around time() that raises exception on failure.
+ * Used for connection timestamps and idle timeout tracking.
+ *
+ * @see Connection_lastactivity() for usage.
+ * @see Connection_created_at() for creation timestamps.
  */
 time_t
 safe_time (void)
@@ -75,14 +81,19 @@ safe_time (void)
  */
 
 /**
- * socketpool_hash - Compute hash value for socket file descriptor
- * @socket: Socket instance to hash (const)
+ * @brief Compute hash for socket (internal).
+ * @ingroup connection_mgmt
+ * @param socket Socket to hash.
+ * @return Hash value for hash table lookup.
+ * @threadsafe Yes - pure function.
  *
- * Returns: Unsigned hash value in range [0, SOCKET_HASH_SIZE)
- * Thread-safe: Yes - pure function
- * Performance: O(1)
+ * Uses golden ratio hash function for optimal distribution.
  *
- * Uses socket_util_hash_fd() for golden ratio multiplicative hashing.
+ * @see SOCKET_HASH_SIZE for table size.
+ * @see socket_util_hash_fd in SocketUtil.h.
+ * @see insert_into_hash_table() for usage.
+ * @see find_slot() for lookup.
+ * @see HASH_GOLDEN_RATIO in SocketUtil.h.
  */
 unsigned
 socketpool_hash (const Socket_T socket)

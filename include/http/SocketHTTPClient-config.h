@@ -1,8 +1,7 @@
 /**
  * @file SocketHTTPClient-config.h
+ * @brief Configuration constants for HTTP client with compile-time override support.
  * @ingroup http
- * @brief Configuration constants for HTTP client with compile-time override
- * support.
  *
  * Centralized configuration for HTTP client module.
  * All magic numbers are defined here with compile-time override support.
@@ -13,37 +12,40 @@
  * via SocketHTTPClient_Config fields.
  *
  * Resource Limits:
- *   HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE - 0 (unlimited) - Max response body
- *   HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST - 6 - Per-host connection limit
- *   HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS - 100 - Total connection limit
- *   HTTPCLIENT_DEFAULT_MAX_REDIRECTS - 10 - Max redirect hops
- *   HTTPCLIENT_MAX_AUTH_RETRIES - 2 - Max auth retry attempts
+ * - HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE: 10MB - Max response body size (0=unlimited via config)
+ * - HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST: 6 - Per-host connection limit
+ * - HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS: 100 - Total connection limit
+ * - HTTPCLIENT_DEFAULT_MAX_REDIRECTS: 10 - Max redirect hops
+ * - HTTPCLIENT_MAX_AUTH_RETRIES: 2 - Max auth retry attempts
  *
  * Timeout Limits:
- *   HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS - 30s - Connection timeout
- *   HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS - 60s - Full request timeout
- *   HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS - 10s - DNS resolution timeout
- *   HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS - 60s - Idle connection timeout
+ * - HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS: 30s - Connection establishment timeout
+ * - HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS: 60s - Full request completion timeout
+ * - HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS: 10s - DNS resolution timeout
+ * - HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS: 60s - Idle connection timeout
  *
  * Enforcement:
- *   - max_response_size: Checked during body accumulation (raises exception)
- *   - max_conns_per_host: Enforced by connection pool
- *   - max_redirects: Checked before each redirect (raises TooManyRedirects)
+ * - max_response_size: Checked during body accumulation (raises SocketHTTPClient_ResponseTooLarge)
+ * - max_conns_per_host: Enforced by connection pool
+ * - max_redirects: Checked before each redirect (raises SocketHTTPClient_TooManyRedirects)
  *
  * Metrics:
- *   - SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED incremented on size violation
+ * - SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED incremented on size violation
  *
- * Constants are grouped by category:
+ * Constants grouped by category:
  * - Error buffers
  * - Connection pool
  * - Timeouts
  * - Connection limits
+ * - Retry configuration
  * - Cookie configuration
  * - Authentication buffers
  * - Request/Response limits
+ * - Encoding flags
  *
- * @see SocketHTTPClient_config_defaults() for runtime configuration.
- * @see SocketHTTPClient_Config for configuration structure.
+ * @see SocketHTTPClient_config_defaults() for runtime defaults.
+ * @see SocketHTTPClient_Config for full structure.
+ * @see @ref http "HTTP Module" for related components.
  */
 
 #ifndef SOCKETHTTPCLIENT_CONFIG_INCLUDED
@@ -54,7 +56,12 @@
  * ============================================================================
  */
 
-/** Error message buffer size (bytes) */
+/**
+ * @brief Size of internal buffer for formatting HTTP client error messages.
+ * @ingroup http
+ * Used in SocketHTTPClient_error_format() and related functions to prevent buffer overflows.
+ * @see SocketHTTPClient_Error
+ */
 #ifndef HTTPCLIENT_ERROR_BUFSIZE
 #define HTTPCLIENT_ERROR_BUFSIZE 256
 #endif
@@ -64,7 +71,13 @@
  * ============================================================================
  */
 
-/** Default hash table size for connection pool (prime for better distribution)
+/**
+ * @brief Default initial hash table size for HTTP client connection pool.
+ * @ingroup http
+ * Prime number 127 chosen for good distribution with low load factor.
+ * Automatically resizes to larger table when exceeding HTTPCLIENT_POOL_LARGE_THRESHOLD connections.
+ * @see HTTPCLIENT_POOL_LARGE_HASH_SIZE
+ * @see SocketHTTPClient_pool_init()
  */
 #ifndef HTTPCLIENT_POOL_HASH_SIZE
 #define HTTPCLIENT_POOL_HASH_SIZE 127
@@ -90,7 +103,15 @@
  * ============================================================================
  */
 
-/** Default connection timeout */
+/**
+ * @brief Default timeout for establishing new connections (30 seconds).
+ * @ingroup http
+ * Applies to TCP connect, TLS handshake, and proxy connections.
+ * Override via SocketHTTPClient_Config.connect_timeout_ms or per-request.
+ * @see Socket_connect()
+ * @see SocketTLS_handshake()
+ * @see SocketHTTPClient_Request_timeout()
+ */
 #ifndef HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS
 #define HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS 30000
 #endif
@@ -146,7 +167,14 @@
  * Non-idempotent requests (POST/PUT/DELETE) may cause duplicate actions.
  */
 
-/** Enable automatic retry (default: disabled for backward compatibility) */
+/**
+ * @brief Flag to enable automatic retry logic for transient failures.
+ * @ingroup http
+ * Default: 0 (disabled) for backward compatibility.
+ * When enabled, client retries on connect errors, timeouts, and optionally 5xx responses.
+ * @see HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT
+ * @see SocketHTTPClient_Config::enable_retry
+ */
 #ifndef HTTPCLIENT_DEFAULT_ENABLE_RETRY
 #define HTTPCLIENT_DEFAULT_ENABLE_RETRY 0
 #endif
@@ -192,23 +220,39 @@
 #endif
 
 /**
- * Default maximum response body size (0 = unlimited)
+ * @brief Default maximum size for HTTP response bodies (10MB).
+ * @ingroup http
+ * @details 0 in SocketHTTPClient_Config allows unlimited, but compile-time default is 10MB to mitigate DoS.
  *
- * ENFORCEMENT: Checked during body accumulation in receive_http1_response().
- * Raises SocketHTTPClient_ResponseTooLarge exception when exceeded.
- * Increments SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED metric.
+ * ENFORCEMENT: During response body accumulation in HTTP/1.1 parsing.
+ * If exceeded, raises SocketHTTPClient_ResponseTooLarge exception.
+ * Increments SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED metric for monitoring.
  *
- * Recommendation: Set to non-zero value in production to prevent memory
- * exhaustion attacks (e.g., 10MB for typical API responses).
+ * Recommendation: Keep non-zero in production; adjust based on expected payload sizes
+ * (e.g., 1MB for APIs, larger for file downloads).
+ * Override at runtime via SocketHTTPClient_Config.max_response_size.
+ *
+ * @see SocketHTTPClient_ResponseTooLarge
+ * @see SocketHTTPClient_Config::max_response_size
+ * @see SocketMetrics for counter details.
  */
 #ifndef HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE
 #define HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE                                  \
   (10ULL * 1024 * 1024) /* 10MB default to prevent DoS */
 #endif
 
-/* ============================================================================
- * Cookie Configuration
- * ============================================================================
+/**
+ * @defgroup http_client_cookie Cookie Configuration Constants
+ * @brief Limits and buffer sizes for HTTP client cookie handling and jar management.
+ * @ingroup http
+ *
+ * Controls cookie parsing, storage, and serialization for compliance with RFC 6265.
+ * Includes hash table sizing, string limits, and DoS protections.
+ *
+ * @see SocketHTTPClient_CookieJar_T
+ * @see SocketHTTPClient_set_cookie_jar()
+ * @{
+
  */
 
 /** Cookie jar hash table size (prime for better distribution) */
@@ -256,10 +300,19 @@
 #define HTTPCLIENT_MAX_COOKIE_AGE_SEC (365LL * 24 * 3600 * 10)
 #endif
 
-/** Maximum hash chain length before eviction (DoS protection) */
+/**
+ * @brief Maximum allowed length of hash chains in cookie jar hash table.
+ * @ingroup http
+ * Exceeding this triggers eviction of oldest cookies to prevent DoS via hash collision attacks.
+ * Balances performance and security.
+ * @see http_client_cookie
+ * @see SocketHTTPClient_CookieJar_add() for insertion logic.
+ */
 #ifndef HTTPCLIENT_COOKIE_MAX_CHAIN_LEN
 #define HTTPCLIENT_COOKIE_MAX_CHAIN_LEN 100
 #endif
+
+/** @} */ /* end of http_client_cookie group */
 
 /* ============================================================================
  * Authentication Buffer Sizes
@@ -370,14 +423,60 @@
 #define HTTPCLIENT_DEFAULT_USER_AGENT "SocketHTTPClient/1.0"
 #endif
 
-/* ============================================================================
- * Encoding Constants (Content-Encoding support flags)
- * ============================================================================
+/**
+ * @defgroup http_client_encoding Content-Encoding Flags
+ * @brief Bit flags indicating supported Content-Encoding methods for HTTP client.
+ * @ingroup http
+ *
+ * These flags are combined (bitwise OR) in SocketHTTPClient_Config.accept_encoding
+ * to specify which encoding methods the client supports in Accept-Encoding header
+ * and can decompress in responses.
+ *
+ * Default: GZIP | DEFLATE (Brotli optional for smaller payloads).
+ *
+ * @see SocketHTTPClient_Config::accept_encoding
+ * @see SocketHTTPClient_config_defaults()
+ * @{
  */
 
+/**
+ * @brief Identity (no compression) encoding flag.
+ * @ingroup http
+ * @details Bit value 0x00. Represents uncompressed data transfer.
+ * Used as base flag or when no encoding is applied.
+ * @see http_client_encoding
+ */
 #define HTTPCLIENT_ENCODING_IDENTITY 0x00
+/**
+ * @brief GZIP compression encoding flag.
+ * @ingroup http
+ * @details Bit value 0x01. Supports gzip compression (RFC 9110, formerly RFC 7230).
+ * Advertises "gzip" in Accept-Encoding header. Client must decompress gzip-encoded responses.
+ * @see http_client_encoding
+ * @see SocketHTTPClient.c for header construction and decompression logic.
+ */
 #define HTTPCLIENT_ENCODING_GZIP 0x01
+/**
+ * @brief DEFLATE compression encoding flag.
+ * @ingroup http
+ * @details Bit value 0x02. Supports deflate compression (RFC 9110).
+ * Advertises "deflate" in Accept-Encoding. Note: zlib wrapper often used; raw deflate deprecated.
+ * Client handles decompression for responses with this encoding.
+ * @see http_client_encoding
+ * @see SocketHTTPClient.c line ~918 for Accept-Encoding handling.
+ */
 #define HTTPCLIENT_ENCODING_DEFLATE 0x02
+/**
+ * @brief Brotli compression encoding flag.
+ * @ingroup http
+ * @details Bit value 0x04. Supports Brotli compression (RFC 7932).
+ * Advertises "br" in Accept-Encoding header. Modern, efficient for text; requires Brotli library support.
+ * Client decompresses br-encoded responses if enabled.
+ * @see http_client_encoding
+ * @note Brotli support may require additional dependencies or conditional compilation.
+ */
 #define HTTPCLIENT_ENCODING_BR 0x04
+
+/** @} */  /* end of http_client_encoding group */
 
 #endif /* SOCKETHTTPCLIENT_CONFIG_INCLUDED */

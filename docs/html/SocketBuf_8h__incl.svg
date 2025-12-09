@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Circular buffer for efficient socket I/O operations.">
 <polygon fill="#999999" stroke="#666666" points="135.5,-184 64.5,-184 64.5,-165 135.5,-165 135.5,-184"/>
 <text text-anchor="middle" x="100" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketBuf.h</text>
 </a>
@@ -30,7 +30,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="Arena_8h.html" target="_top" xlink:title="Arena&#45;based memory allocator for efficient bulk memory management.">
 <polygon fill="white" stroke="#666666" points="104,-129 32,-129 32,-110 104,-110 104,-129"/>
 <text text-anchor="middle" x="68" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/Arena.h</text>
 </a>
@@ -55,9 +55,9 @@
 </g>
 </g>
 <!-- Node1&#45;&gt;Node3 -->
-<g id="edge5_Node000001_Node000003" class="edge">
+<g id="edge6_Node000001_Node000003" class="edge">
 <title>Node1&#45;&gt;Node3</title>
-<g id="a_edge5_Node000001_Node000003"><a xlink:title=" ">
+<g id="a_edge6_Node000001_Node000003"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M70.86,-164.87C53.65,-158.1 33.26,-146.79 23,-129 15.24,-115.56 16.91,-97.72 19.99,-84.38"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="23.46,-84.99 22.74,-74.42 16.71,-83.13 23.46,-84.99"/>
 </a>
@@ -66,7 +66,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000004"><a xlink:href="Except_8h.html" target="_top" xlink:title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">
 <polygon fill="white" stroke="#666666" points="158.5,-74 81.5,-74 81.5,-55 158.5,-55 158.5,-74"/>
 <text text-anchor="middle" x="120" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/Except.h</text>
 </a>
@@ -91,9 +91,9 @@
 </g>
 </g>
 <!-- Node1&#45;&gt;Node6 -->
-<g id="edge6_Node000001_Node000006" class="edge">
+<g id="edge5_Node000001_Node000006" class="edge">
 <title>Node1&#45;&gt;Node6</title>
-<g id="a_edge6_Node000001_Node000006"><a xlink:title=" ">
+<g id="a_edge5_Node000001_Node000006"><a xlink:title=" ">
 <path fill="none" stroke="#63b8ff" d="M114.14,-164.98C127.79,-156.77 148.69,-144.18 164.78,-134.49"/>
 <polygon fill="#63b8ff" stroke="#63b8ff" points="166.84,-137.33 173.6,-129.17 163.23,-131.33 166.84,-137.33"/>
 </a>

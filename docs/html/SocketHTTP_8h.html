@@ -113,12 +113,16 @@ $(document).ready(function(){initNavTree('SocketHTTP_8h.html',''); initResizable
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketHTTP.h File Reference</div></div>
+  <div class="headertitle"><div class="title">SocketHTTP.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/types.h&gt;</code><br />
@@ -144,528 +148,427 @@ $(document).ready(function(){initNavTree('SocketHTTP_8h.html',''); initResizable
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketHTTP__MethodProperties" id="r_structSocketHTTP__MethodProperties"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#structSocketHTTP__MethodProperties">SocketHTTP_MethodProperties</a></td></tr>
+<tr class="memitem:structSocketHTTP__MethodProperties" id="r_structSocketHTTP__MethodProperties"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__MethodProperties">SocketHTTP_MethodProperties</a></td></tr>
+<tr class="memdesc:structSocketHTTP__MethodProperties"><td class="mdescLeft">&#160;</td><td class="mdescRight">Semantic properties of an HTTP method as defined in RFC 9110 Section 9.2.  <a href="group__http.html#structSocketHTTP__MethodProperties">More...</a><br /></td></tr>
 <tr class="separator:structSocketHTTP__MethodProperties"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__Header" id="r_structSocketHTTP__Header"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__Header">SocketHTTP_Header</a></td></tr>
+<tr class="memdesc:structSocketHTTP__Header"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single HTTP header field representation for iteration and access.  <a href="group__http.html#structSocketHTTP__Header">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__Header"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__URI" id="r_structSocketHTTP__URI"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a></td></tr>
+<tr class="memdesc:structSocketHTTP__URI"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parsed URI components according to RFC 3986.  <a href="group__http.html#structSocketHTTP__URI">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__URI"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__MediaType" id="r_structSocketHTTP__MediaType"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__MediaType">SocketHTTP_MediaType</a></td></tr>
+<tr class="memdesc:structSocketHTTP__MediaType"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parsed representation of an HTTP media type (Content-Type, Accept, etc.).  <a href="group__http.html#structSocketHTTP__MediaType">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__MediaType"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__QualityValue" id="r_structSocketHTTP__QualityValue"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__QualityValue">SocketHTTP_QualityValue</a></td></tr>
+<tr class="memdesc:structSocketHTTP__QualityValue"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single entry from quality-sorted list in Accept-like headers for content negotiation.  <a href="group__http.html#structSocketHTTP__QualityValue">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__QualityValue"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__Request" id="r_structSocketHTTP__Request"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a></td></tr>
+<tr class="memdesc:structSocketHTTP__Request"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protocol-agnostic representation of an HTTP request message.  <a href="group__http.html#structSocketHTTP__Request">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__Request"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHTTP__Response" id="r_structSocketHTTP__Response"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHTTP__Response">SocketHTTP_Response</a></td></tr>
+<tr class="memdesc:structSocketHTTP__Response"><td class="mdescLeft">&#160;</td><td class="mdescRight">Protocol-agnostic representation of an HTTP response message.  <a href="group__http.html#structSocketHTTP__Response">More...</a><br /></td></tr>
+<tr class="separator:structSocketHTTP__Response"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:a67cb8ab40e2085b3682e91a79aea2553" id="r_a67cb8ab40e2085b3682e91a79aea2553"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a67cb8ab40e2085b3682e91a79aea2553">SOCKETHTTP_MAX_HEADER_NAME</a>&#160;&#160;&#160;256</td></tr>
-<tr class="separator:a67cb8ab40e2085b3682e91a79aea2553"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a711feea372680c3db3f52cb12954e8d8" id="r_a711feea372680c3db3f52cb12954e8d8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a711feea372680c3db3f52cb12954e8d8">SOCKETHTTP_MAX_HEADER_VALUE</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
-<tr class="separator:a711feea372680c3db3f52cb12954e8d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7bb4c78960a2783f19b993f193932727" id="r_a7bb4c78960a2783f19b993f193932727"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a7bb4c78960a2783f19b993f193932727">SOCKETHTTP_MAX_HEADER_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
-<tr class="separator:a7bb4c78960a2783f19b993f193932727"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f5713c3b88ddc329d0119a789847ba6" id="r_a2f5713c3b88ddc329d0119a789847ba6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a2f5713c3b88ddc329d0119a789847ba6">SOCKETHTTP_MAX_HEADERS</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:a2f5713c3b88ddc329d0119a789847ba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a13dfbee4ad8c1b29949c1fd0cc360f45" id="r_a13dfbee4ad8c1b29949c1fd0cc360f45"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a13dfbee4ad8c1b29949c1fd0cc360f45">SOCKETHTTP_MAX_URI_LEN</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
-<tr class="separator:a13dfbee4ad8c1b29949c1fd0cc360f45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a613a2fead5a6288d5d4e794ba95adeee" id="r_a613a2fead5a6288d5d4e794ba95adeee"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a613a2fead5a6288d5d4e794ba95adeee">SOCKETHTTP_DATE_BUFSIZE</a>&#160;&#160;&#160;30</td></tr>
-<tr class="separator:a613a2fead5a6288d5d4e794ba95adeee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7182eca7a6bd99ccbf0cb12b275adf9d" id="r_a7182eca7a6bd99ccbf0cb12b275adf9d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a7182eca7a6bd99ccbf0cb12b275adf9d">HTTP_STATUS_CODE_MIN</a>&#160;&#160;&#160;100</td></tr>
-<tr class="separator:a7182eca7a6bd99ccbf0cb12b275adf9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab6a83b3daff3f633c8deda4408cea03c" id="r_ab6a83b3daff3f633c8deda4408cea03c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#ab6a83b3daff3f633c8deda4408cea03c">HTTP_STATUS_CODE_MAX</a>&#160;&#160;&#160;599</td></tr>
-<tr class="separator:ab6a83b3daff3f633c8deda4408cea03c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee82a204474700c91dad9a806e48f64f" id="r_aee82a204474700c91dad9a806e48f64f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#aee82a204474700c91dad9a806e48f64f">HTTP_STATUS_1XX_MIN</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c">HTTP_STATUS_CONTINUE</a></td></tr>
-<tr class="separator:aee82a204474700c91dad9a806e48f64f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a261a87375b42933ff21a2b0fc7fdc8c3" id="r_a261a87375b42933ff21a2b0fc7fdc8c3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a261a87375b42933ff21a2b0fc7fdc8c3">HTTP_STATUS_1XX_MAX</a>&#160;&#160;&#160;199</td></tr>
-<tr class="separator:a261a87375b42933ff21a2b0fc7fdc8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a803cba6422aa720d629c3a9bd660cb4c" id="r_a803cba6422aa720d629c3a9bd660cb4c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a803cba6422aa720d629c3a9bd660cb4c">HTTP_STATUS_2XX_MIN</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91">HTTP_STATUS_OK</a></td></tr>
-<tr class="separator:a803cba6422aa720d629c3a9bd660cb4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa802911b92b079f19b3e1f4049cc36d7" id="r_aa802911b92b079f19b3e1f4049cc36d7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#aa802911b92b079f19b3e1f4049cc36d7">HTTP_STATUS_2XX_MAX</a>&#160;&#160;&#160;299</td></tr>
-<tr class="separator:aa802911b92b079f19b3e1f4049cc36d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3991461d2ca50eeab1c693aaf37717a8" id="r_a3991461d2ca50eeab1c693aaf37717a8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a3991461d2ca50eeab1c693aaf37717a8">HTTP_STATUS_3XX_MIN</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c">HTTP_STATUS_MULTIPLE_CHOICES</a></td></tr>
-<tr class="separator:a3991461d2ca50eeab1c693aaf37717a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1f0660454bb40ecd77d30150ec42e198" id="r_a1f0660454bb40ecd77d30150ec42e198"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a1f0660454bb40ecd77d30150ec42e198">HTTP_STATUS_3XX_MAX</a>&#160;&#160;&#160;399</td></tr>
-<tr class="separator:a1f0660454bb40ecd77d30150ec42e198"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a530d36f357344463eb4b5ca8a46157b6" id="r_a530d36f357344463eb4b5ca8a46157b6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a530d36f357344463eb4b5ca8a46157b6">HTTP_STATUS_4XX_MIN</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477">HTTP_STATUS_BAD_REQUEST</a></td></tr>
-<tr class="separator:a530d36f357344463eb4b5ca8a46157b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af38c37f224e9e3cf82aeec28f1da00b5" id="r_af38c37f224e9e3cf82aeec28f1da00b5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#af38c37f224e9e3cf82aeec28f1da00b5">HTTP_STATUS_4XX_MAX</a>&#160;&#160;&#160;499</td></tr>
-<tr class="separator:af38c37f224e9e3cf82aeec28f1da00b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abe599c847c5cf301bd5d9f151bba17d7" id="r_abe599c847c5cf301bd5d9f151bba17d7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#abe599c847c5cf301bd5d9f151bba17d7">HTTP_STATUS_5XX_MIN</a>&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9">HTTP_STATUS_INTERNAL_ERROR</a></td></tr>
-<tr class="separator:abe599c847c5cf301bd5d9f151bba17d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a18bd3c97e4435317e073b63c13ca6aa1" id="r_a18bd3c97e4435317e073b63c13ca6aa1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a18bd3c97e4435317e073b63c13ca6aa1">HTTP_STATUS_5XX_MAX</a>&#160;&#160;&#160;599</td></tr>
-<tr class="separator:a18bd3c97e4435317e073b63c13ca6aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga67cb8ab40e2085b3682e91a79aea2553" id="r_ga67cb8ab40e2085b3682e91a79aea2553"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga67cb8ab40e2085b3682e91a79aea2553">SOCKETHTTP_MAX_HEADER_NAME</a>&#160;&#160;&#160;256</td></tr>
+<tr class="separator:ga67cb8ab40e2085b3682e91a79aea2553"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga711feea372680c3db3f52cb12954e8d8" id="r_ga711feea372680c3db3f52cb12954e8d8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga711feea372680c3db3f52cb12954e8d8">SOCKETHTTP_MAX_HEADER_VALUE</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
+<tr class="separator:ga711feea372680c3db3f52cb12954e8d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7bb4c78960a2783f19b993f193932727" id="r_ga7bb4c78960a2783f19b993f193932727"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga7bb4c78960a2783f19b993f193932727">SOCKETHTTP_MAX_HEADER_SIZE</a>&#160;&#160;&#160;(64 * 1024)</td></tr>
+<tr class="separator:ga7bb4c78960a2783f19b993f193932727"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f5713c3b88ddc329d0119a789847ba6" id="r_ga2f5713c3b88ddc329d0119a789847ba6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2f5713c3b88ddc329d0119a789847ba6">SOCKETHTTP_MAX_HEADERS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="separator:ga2f5713c3b88ddc329d0119a789847ba6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13dfbee4ad8c1b29949c1fd0cc360f45" id="r_ga13dfbee4ad8c1b29949c1fd0cc360f45"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga13dfbee4ad8c1b29949c1fd0cc360f45">SOCKETHTTP_MAX_URI_LEN</a>&#160;&#160;&#160;(8 * 1024)</td></tr>
+<tr class="separator:ga13dfbee4ad8c1b29949c1fd0cc360f45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga613a2fead5a6288d5d4e794ba95adeee" id="r_ga613a2fead5a6288d5d4e794ba95adeee"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga613a2fead5a6288d5d4e794ba95adeee">SOCKETHTTP_DATE_BUFSIZE</a>&#160;&#160;&#160;30</td></tr>
+<tr class="separator:ga613a2fead5a6288d5d4e794ba95adeee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7182eca7a6bd99ccbf0cb12b275adf9d" id="r_ga7182eca7a6bd99ccbf0cb12b275adf9d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga7182eca7a6bd99ccbf0cb12b275adf9d">HTTP_STATUS_CODE_MIN</a>&#160;&#160;&#160;100</td></tr>
+<tr class="separator:ga7182eca7a6bd99ccbf0cb12b275adf9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab6a83b3daff3f633c8deda4408cea03c" id="r_gab6a83b3daff3f633c8deda4408cea03c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab6a83b3daff3f633c8deda4408cea03c">HTTP_STATUS_CODE_MAX</a>&#160;&#160;&#160;599</td></tr>
+<tr class="separator:gab6a83b3daff3f633c8deda4408cea03c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaee82a204474700c91dad9a806e48f64f" id="r_gaee82a204474700c91dad9a806e48f64f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaee82a204474700c91dad9a806e48f64f">HTTP_STATUS_1XX_MIN</a>&#160;&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c">HTTP_STATUS_CONTINUE</a></td></tr>
+<tr class="separator:gaee82a204474700c91dad9a806e48f64f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga261a87375b42933ff21a2b0fc7fdc8c3" id="r_ga261a87375b42933ff21a2b0fc7fdc8c3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga261a87375b42933ff21a2b0fc7fdc8c3">HTTP_STATUS_1XX_MAX</a>&#160;&#160;&#160;199</td></tr>
+<tr class="separator:ga261a87375b42933ff21a2b0fc7fdc8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga803cba6422aa720d629c3a9bd660cb4c" id="r_ga803cba6422aa720d629c3a9bd660cb4c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga803cba6422aa720d629c3a9bd660cb4c">HTTP_STATUS_2XX_MIN</a>&#160;&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91">HTTP_STATUS_OK</a></td></tr>
+<tr class="separator:ga803cba6422aa720d629c3a9bd660cb4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa802911b92b079f19b3e1f4049cc36d7" id="r_gaa802911b92b079f19b3e1f4049cc36d7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa802911b92b079f19b3e1f4049cc36d7">HTTP_STATUS_2XX_MAX</a>&#160;&#160;&#160;299</td></tr>
+<tr class="separator:gaa802911b92b079f19b3e1f4049cc36d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3991461d2ca50eeab1c693aaf37717a8" id="r_ga3991461d2ca50eeab1c693aaf37717a8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3991461d2ca50eeab1c693aaf37717a8">HTTP_STATUS_3XX_MIN</a>&#160;&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c">HTTP_STATUS_MULTIPLE_CHOICES</a></td></tr>
+<tr class="separator:ga3991461d2ca50eeab1c693aaf37717a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1f0660454bb40ecd77d30150ec42e198" id="r_ga1f0660454bb40ecd77d30150ec42e198"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga1f0660454bb40ecd77d30150ec42e198">HTTP_STATUS_3XX_MAX</a>&#160;&#160;&#160;399</td></tr>
+<tr class="separator:ga1f0660454bb40ecd77d30150ec42e198"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga530d36f357344463eb4b5ca8a46157b6" id="r_ga530d36f357344463eb4b5ca8a46157b6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga530d36f357344463eb4b5ca8a46157b6">HTTP_STATUS_4XX_MIN</a>&#160;&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477">HTTP_STATUS_BAD_REQUEST</a></td></tr>
+<tr class="separator:ga530d36f357344463eb4b5ca8a46157b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf38c37f224e9e3cf82aeec28f1da00b5" id="r_gaf38c37f224e9e3cf82aeec28f1da00b5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf38c37f224e9e3cf82aeec28f1da00b5">HTTP_STATUS_4XX_MAX</a>&#160;&#160;&#160;499</td></tr>
+<tr class="separator:gaf38c37f224e9e3cf82aeec28f1da00b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabe599c847c5cf301bd5d9f151bba17d7" id="r_gabe599c847c5cf301bd5d9f151bba17d7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gabe599c847c5cf301bd5d9f151bba17d7">HTTP_STATUS_5XX_MIN</a>&#160;&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9">HTTP_STATUS_INTERNAL_ERROR</a></td></tr>
+<tr class="separator:gabe599c847c5cf301bd5d9f151bba17d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga18bd3c97e4435317e073b63c13ca6aa1" id="r_ga18bd3c97e4435317e073b63c13ca6aa1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga18bd3c97e4435317e073b63c13ca6aa1">HTTP_STATUS_5XX_MAX</a>&#160;&#160;&#160;599</td></tr>
+<tr class="separator:ga18bd3c97e4435317e073b63c13ca6aa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr class="memitem:gaf1f6772bf122ad6e2e90639b2877754f" id="r_gaf1f6772bf122ad6e2e90639b2877754f"><td class="memItemLeft" align="right" valign="top">typedef struct SocketHTTP_Headers *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a></td></tr>
+<tr class="memdesc:gaf1f6772bf122ad6e2e90639b2877754f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type for HTTP header collection with efficient operations.  <br /></td></tr>
+<tr class="separator:gaf1f6772bf122ad6e2e90639b2877754f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga991d5a6b9f11673b53a19b7505224668" id="r_ga991d5a6b9f11673b53a19b7505224668"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga991d5a6b9f11673b53a19b7505224668">SocketHTTP_HeaderCallback</a>) (const char *name, size_t name_len, const char *value, size_t value_len, void *userdata)</td></tr>
+<tr class="separator:ga991d5a6b9f11673b53a19b7505224668"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ac46610efb2f138f9f5c58f9134f11a78" id="r_ac46610efb2f138f9f5c58f9134f11a78"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78abca6852c70f3b9617834ca911ee9e737">HTTP_VERSION_0_9</a> = 9
+<tr class="memitem:gac46610efb2f138f9f5c58f9134f11a78" id="r_gac46610efb2f138f9f5c58f9134f11a78"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#ggac46610efb2f138f9f5c58f9134f11a78abca6852c70f3b9617834ca911ee9e737">HTTP_VERSION_0_9</a> = 9
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78a3932308db22120ce049dd60f3430b814">HTTP_VERSION_1_0</a> = 10
+&#160;&#160;<a class="el" href="group__http.html#ggac46610efb2f138f9f5c58f9134f11a78a3932308db22120ce049dd60f3430b814">HTTP_VERSION_1_0</a> = 10
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78af1a34119b438038bc609a273f9bc08c6">HTTP_VERSION_1_1</a> = 11
+&#160;&#160;<a class="el" href="group__http.html#ggac46610efb2f138f9f5c58f9134f11a78af1a34119b438038bc609a273f9bc08c6">HTTP_VERSION_1_1</a> = 11
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78a2240d6f65d5af421be670655fed8b202">HTTP_VERSION_2</a> = 20
+&#160;&#160;<a class="el" href="group__http.html#ggac46610efb2f138f9f5c58f9134f11a78a2240d6f65d5af421be670655fed8b202">HTTP_VERSION_2</a> = 20
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78a907296c738aa0848b48cc07b0b776751">HTTP_VERSION_3</a> = 30
+&#160;&#160;<a class="el" href="group__http.html#ggac46610efb2f138f9f5c58f9134f11a78a907296c738aa0848b48cc07b0b776751">HTTP_VERSION_3</a> = 30
 <br />
  }</td></tr>
-<tr class="separator:ac46610efb2f138f9f5c58f9134f11a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6f90bb536a5cd085f4327bda4d3ee8f" id="r_af6f90bb536a5cd085f4327bda4d3ee8f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a> = 0
+<tr class="memdesc:gac46610efb2f138f9f5c58f9134f11a78"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP protocol versions supported by the library.  <a href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">More...</a><br /></td></tr>
+<tr class="separator:gac46610efb2f138f9f5c58f9134f11a78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf6f90bb536a5cd085f4327bda4d3ee8f" id="r_gaf6f90bb536a5cd085f4327bda4d3ee8f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a> = 0
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa27e993d38ff6b43284014a10798b6223">HTTP_METHOD_HEAD</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa27e993d38ff6b43284014a10798b6223">HTTP_METHOD_HEAD</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa1944682922ac79b2e682312d8f3f71e2">HTTP_METHOD_POST</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa1944682922ac79b2e682312d8f3f71e2">HTTP_METHOD_POST</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8faf7557927b605c64f35f629b43823b1c9">HTTP_METHOD_PUT</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8faf7557927b605c64f35f629b43823b1c9">HTTP_METHOD_PUT</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa761371f7807255b7912afbac2f665ffe">HTTP_METHOD_DELETE</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa761371f7807255b7912afbac2f665ffe">HTTP_METHOD_DELETE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa3755246bea87120e8311dc914d573fbf">HTTP_METHOD_CONNECT</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa3755246bea87120e8311dc914d573fbf">HTTP_METHOD_CONNECT</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8faf6b02f8ff0467dbdaebb24f0a996cdd4">HTTP_METHOD_OPTIONS</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8faf6b02f8ff0467dbdaebb24f0a996cdd4">HTTP_METHOD_OPTIONS</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fa95b5b19305a14de1400aedfdec1c1eed">HTTP_METHOD_TRACE</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa95b5b19305a14de1400aedfdec1c1eed">HTTP_METHOD_TRACE</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fac1adf0f44043552b637a6235ae3ff283">HTTP_METHOD_PATCH</a>
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fac1adf0f44043552b637a6235ae3ff283">HTTP_METHOD_PATCH</a>
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31">HTTP_METHOD_UNKNOWN</a> = -1
+&#160;&#160;<a class="el" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31">HTTP_METHOD_UNKNOWN</a> = -1
 <br />
  }</td></tr>
-<tr class="separator:af6f90bb536a5cd085f4327bda4d3ee8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aceb714c26b828fe187a7fa72749ee75c" id="r_aceb714c26b828fe187a7fa72749ee75c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75c">SocketHTTP_StatusCode</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c">HTTP_STATUS_CONTINUE</a> = 100
+<tr class="memdesc:gaf6f90bb536a5cd085f4327bda4d3ee8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Standard HTTP request methods as defined in RFC 9110 and extensions.  <a href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">More...</a><br /></td></tr>
+<tr class="separator:gaf6f90bb536a5cd085f4327bda4d3ee8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaceb714c26b828fe187a7fa72749ee75c" id="r_gaceb714c26b828fe187a7fa72749ee75c"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaceb714c26b828fe187a7fa72749ee75c">SocketHTTP_StatusCode</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c">HTTP_STATUS_CONTINUE</a> = 100
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cabdff771301c12ef6b9ae9b7b5b87c30d">HTTP_STATUS_SWITCHING_PROTOCOLS</a> = 101
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cabdff771301c12ef6b9ae9b7b5b87c30d">HTTP_STATUS_SWITCHING_PROTOCOLS</a> = 101
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca4edd1153b1090c6b04f41a9728184c69">HTTP_STATUS_PROCESSING</a> = 102
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca4edd1153b1090c6b04f41a9728184c69">HTTP_STATUS_PROCESSING</a> = 102
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caff74945405d29d86c567878f1514dcb6">HTTP_STATUS_EARLY_HINTS</a> = 103
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caff74945405d29d86c567878f1514dcb6">HTTP_STATUS_EARLY_HINTS</a> = 103
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91">HTTP_STATUS_OK</a> = 200
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91">HTTP_STATUS_OK</a> = 200
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caa9a59ef7151e4a9944519c2a7b5a4193">HTTP_STATUS_CREATED</a> = 201
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caa9a59ef7151e4a9944519c2a7b5a4193">HTTP_STATUS_CREATED</a> = 201
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca95022d17916c4aa66324379ecdd53247">HTTP_STATUS_ACCEPTED</a> = 202
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca95022d17916c4aa66324379ecdd53247">HTTP_STATUS_ACCEPTED</a> = 202
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca690301c36a7a04247e4828a3361fcb0f">HTTP_STATUS_NON_AUTHORITATIVE</a> = 203
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca690301c36a7a04247e4828a3361fcb0f">HTTP_STATUS_NON_AUTHORITATIVE</a> = 203
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad000a2e30c534c201201dd74fac8d2f9">HTTP_STATUS_NO_CONTENT</a> = 204
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad000a2e30c534c201201dd74fac8d2f9">HTTP_STATUS_NO_CONTENT</a> = 204
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca72431bee6eae3e12040af717a0af2df1">HTTP_STATUS_RESET_CONTENT</a> = 205
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca72431bee6eae3e12040af717a0af2df1">HTTP_STATUS_RESET_CONTENT</a> = 205
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caa55ceddb5bb2104bfcfefb16995192a4">HTTP_STATUS_PARTIAL_CONTENT</a> = 206
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caa55ceddb5bb2104bfcfefb16995192a4">HTTP_STATUS_PARTIAL_CONTENT</a> = 206
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca5b5f6b48a150926864f66aa8882708df">HTTP_STATUS_MULTI_STATUS</a> = 207
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca5b5f6b48a150926864f66aa8882708df">HTTP_STATUS_MULTI_STATUS</a> = 207
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caf60c8de8de4eb8fe02562aff8ee96f1f">HTTP_STATUS_ALREADY_REPORTED</a> = 208
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caf60c8de8de4eb8fe02562aff8ee96f1f">HTTP_STATUS_ALREADY_REPORTED</a> = 208
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caadd5b6f83dd05c6de2ef12de1dd006cd">HTTP_STATUS_IM_USED</a> = 226
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caadd5b6f83dd05c6de2ef12de1dd006cd">HTTP_STATUS_IM_USED</a> = 226
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c">HTTP_STATUS_MULTIPLE_CHOICES</a> = 300
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c">HTTP_STATUS_MULTIPLE_CHOICES</a> = 300
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca9632802fcd318d1676be7589e6004e96">HTTP_STATUS_MOVED_PERMANENTLY</a> = 301
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca9632802fcd318d1676be7589e6004e96">HTTP_STATUS_MOVED_PERMANENTLY</a> = 301
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca53df069872b37830e4296f32e7ec20d8">HTTP_STATUS_FOUND</a> = 302
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca53df069872b37830e4296f32e7ec20d8">HTTP_STATUS_FOUND</a> = 302
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cae301c12d0cf56920659cb7b947a95267">HTTP_STATUS_SEE_OTHER</a> = 303
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cae301c12d0cf56920659cb7b947a95267">HTTP_STATUS_SEE_OTHER</a> = 303
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca67de2c448cc952048485e4261a5dab19">HTTP_STATUS_NOT_MODIFIED</a> = 304
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca67de2c448cc952048485e4261a5dab19">HTTP_STATUS_NOT_MODIFIED</a> = 304
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cab13f90697368bfecc05dc5a8b18fc87c">HTTP_STATUS_USE_PROXY</a> = 305
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cab13f90697368bfecc05dc5a8b18fc87c">HTTP_STATUS_USE_PROXY</a> = 305
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca70de6a18224da6df336ce0c4be7d52e7">HTTP_STATUS_TEMPORARY_REDIRECT</a> = 307
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca70de6a18224da6df336ce0c4be7d52e7">HTTP_STATUS_TEMPORARY_REDIRECT</a> = 307
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac0f841f58eb31779ca76bb3cfb600267">HTTP_STATUS_PERMANENT_REDIRECT</a> = 308
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac0f841f58eb31779ca76bb3cfb600267">HTTP_STATUS_PERMANENT_REDIRECT</a> = 308
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477">HTTP_STATUS_BAD_REQUEST</a> = 400
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477">HTTP_STATUS_BAD_REQUEST</a> = 400
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad771b2a0ab88db11b2719c8e5086fb48">HTTP_STATUS_UNAUTHORIZED</a> = 401
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cad771b2a0ab88db11b2719c8e5086fb48">HTTP_STATUS_UNAUTHORIZED</a> = 401
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cafac24097912a70f224166528ce44b83b">HTTP_STATUS_PAYMENT_REQUIRED</a> = 402
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cafac24097912a70f224166528ce44b83b">HTTP_STATUS_PAYMENT_REQUIRED</a> = 402
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca419c919f74b88d18803358141ab9471c">HTTP_STATUS_FORBIDDEN</a> = 403
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca419c919f74b88d18803358141ab9471c">HTTP_STATUS_FORBIDDEN</a> = 403
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caf06c31278cb67d7eec4b2b8157b9ad25">HTTP_STATUS_NOT_FOUND</a> = 404
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caf06c31278cb67d7eec4b2b8157b9ad25">HTTP_STATUS_NOT_FOUND</a> = 404
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca63eb71a406e943d4634c357d60dd96df">HTTP_STATUS_METHOD_NOT_ALLOWED</a> = 405
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca63eb71a406e943d4634c357d60dd96df">HTTP_STATUS_METHOD_NOT_ALLOWED</a> = 405
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca1558c42d80f54def5f3277dc879d2844">HTTP_STATUS_NOT_ACCEPTABLE</a> = 406
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca1558c42d80f54def5f3277dc879d2844">HTTP_STATUS_NOT_ACCEPTABLE</a> = 406
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca40246e02220192ce8d7f86591ca1cfe4">HTTP_STATUS_PROXY_AUTH_REQUIRED</a> = 407
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca40246e02220192ce8d7f86591ca1cfe4">HTTP_STATUS_PROXY_AUTH_REQUIRED</a> = 407
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca36b5bcf2059ae3c84a47e080822239c7">HTTP_STATUS_REQUEST_TIMEOUT</a> = 408
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca36b5bcf2059ae3c84a47e080822239c7">HTTP_STATUS_REQUEST_TIMEOUT</a> = 408
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca6964f9591ba7284dc4bd388d40c106a9">HTTP_STATUS_CONFLICT</a> = 409
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca6964f9591ba7284dc4bd388d40c106a9">HTTP_STATUS_CONFLICT</a> = 409
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca67278d96cfa0eb507535b94338810d65">HTTP_STATUS_GONE</a> = 410
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca67278d96cfa0eb507535b94338810d65">HTTP_STATUS_GONE</a> = 410
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cab42dfcbd67b4e66096e3a8e924b6d6c9">HTTP_STATUS_LENGTH_REQUIRED</a> = 411
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cab42dfcbd67b4e66096e3a8e924b6d6c9">HTTP_STATUS_LENGTH_REQUIRED</a> = 411
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac3d4da4de851d5c8f95748145b59716a">HTTP_STATUS_PRECONDITION_FAILED</a> = 412
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac3d4da4de851d5c8f95748145b59716a">HTTP_STATUS_PRECONDITION_FAILED</a> = 412
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca43bd00c293731a84ef3f2ae1b4cb725d">HTTP_STATUS_CONTENT_TOO_LARGE</a> = 413
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca43bd00c293731a84ef3f2ae1b4cb725d">HTTP_STATUS_CONTENT_TOO_LARGE</a> = 413
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca033ec26aabe2b7ece963fd3e43d0d064">HTTP_STATUS_URI_TOO_LONG</a> = 414
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca033ec26aabe2b7ece963fd3e43d0d064">HTTP_STATUS_URI_TOO_LONG</a> = 414
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca145570ed1178d3d90ad9b7652fea83cf">HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE</a> = 415
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca145570ed1178d3d90ad9b7652fea83cf">HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE</a> = 415
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca5398c5b8f1a8d3b7656994638dba2ad5">HTTP_STATUS_RANGE_NOT_SATISFIABLE</a> = 416
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca5398c5b8f1a8d3b7656994638dba2ad5">HTTP_STATUS_RANGE_NOT_SATISFIABLE</a> = 416
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca08107f6b0e1d7c9e2ca100700cc7200f">HTTP_STATUS_EXPECTATION_FAILED</a> = 417
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca08107f6b0e1d7c9e2ca100700cc7200f">HTTP_STATUS_EXPECTATION_FAILED</a> = 417
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca034d9620babe01011810fe384375a92b">HTTP_STATUS_IM_A_TEAPOT</a> = 418
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca034d9620babe01011810fe384375a92b">HTTP_STATUS_IM_A_TEAPOT</a> = 418
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca3e8907f1d75b7b2f41a1e3015a212d2e">HTTP_STATUS_MISDIRECTED_REQUEST</a> = 421
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca3e8907f1d75b7b2f41a1e3015a212d2e">HTTP_STATUS_MISDIRECTED_REQUEST</a> = 421
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca837ed1203940888cbc53bdc8e1e743cb">HTTP_STATUS_UNPROCESSABLE_CONTENT</a> = 422
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca837ed1203940888cbc53bdc8e1e743cb">HTTP_STATUS_UNPROCESSABLE_CONTENT</a> = 422
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caa6e28f289443c753660cddc9b4ce28a1">HTTP_STATUS_LOCKED</a> = 423
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caa6e28f289443c753660cddc9b4ce28a1">HTTP_STATUS_LOCKED</a> = 423
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac268c2f9a1c531f403403a99da6a80cd">HTTP_STATUS_FAILED_DEPENDENCY</a> = 424
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac268c2f9a1c531f403403a99da6a80cd">HTTP_STATUS_FAILED_DEPENDENCY</a> = 424
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca92e9f9944fc5c40bd23de3ab5a7c9bfa">HTTP_STATUS_TOO_EARLY</a> = 425
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca92e9f9944fc5c40bd23de3ab5a7c9bfa">HTTP_STATUS_TOO_EARLY</a> = 425
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca5ce4ed593a2ebd6f7fb3cd86c8ab5fb8">HTTP_STATUS_UPGRADE_REQUIRED</a> = 426
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca5ce4ed593a2ebd6f7fb3cd86c8ab5fb8">HTTP_STATUS_UPGRADE_REQUIRED</a> = 426
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca9ddf391ade5190c8d685d998ef35e604">HTTP_STATUS_PRECONDITION_REQUIRED</a> = 428
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca9ddf391ade5190c8d685d998ef35e604">HTTP_STATUS_PRECONDITION_REQUIRED</a> = 428
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca892176fbdf3f79e2c888f677ea34d451">HTTP_STATUS_TOO_MANY_REQUESTS</a> = 429
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca892176fbdf3f79e2c888f677ea34d451">HTTP_STATUS_TOO_MANY_REQUESTS</a> = 429
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca136b0743cb135e8a710fda41f129dd09">HTTP_STATUS_HEADER_TOO_LARGE</a> = 431
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca136b0743cb135e8a710fda41f129dd09">HTTP_STATUS_HEADER_TOO_LARGE</a> = 431
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca8a21f739779622311f20253467449575">HTTP_STATUS_UNAVAILABLE_LEGAL</a> = 451
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca8a21f739779622311f20253467449575">HTTP_STATUS_UNAVAILABLE_LEGAL</a> = 451
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9">HTTP_STATUS_INTERNAL_ERROR</a> = 500
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9">HTTP_STATUS_INTERNAL_ERROR</a> = 500
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac9c5b4e80aa858cfe2763656db1f16e3">HTTP_STATUS_NOT_IMPLEMENTED</a> = 501
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac9c5b4e80aa858cfe2763656db1f16e3">HTTP_STATUS_NOT_IMPLEMENTED</a> = 501
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac96829d2c2cb76feb1549f0fac72c69e">HTTP_STATUS_BAD_GATEWAY</a> = 502
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac96829d2c2cb76feb1549f0fac72c69e">HTTP_STATUS_BAD_GATEWAY</a> = 502
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cab355dd546e62b1478fe3ef94b554f75c">HTTP_STATUS_SERVICE_UNAVAILABLE</a> = 503
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cab355dd546e62b1478fe3ef94b554f75c">HTTP_STATUS_SERVICE_UNAVAILABLE</a> = 503
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75caefdfc7b525c87b911d6e92a30e36cfec">HTTP_STATUS_GATEWAY_TIMEOUT</a> = 504
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75caefdfc7b525c87b911d6e92a30e36cfec">HTTP_STATUS_GATEWAY_TIMEOUT</a> = 504
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca59783212e968b200a33ff495fd4eec7b">HTTP_STATUS_VERSION_NOT_SUPPORTED</a> = 505
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca59783212e968b200a33ff495fd4eec7b">HTTP_STATUS_VERSION_NOT_SUPPORTED</a> = 505
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cac5f77dc9692876a7f19cabdc12d42c5d">HTTP_STATUS_VARIANT_ALSO_NEGOTIATES</a> = 506
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cac5f77dc9692876a7f19cabdc12d42c5d">HTTP_STATUS_VARIANT_ALSO_NEGOTIATES</a> = 506
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca2876de0bf7f4302883626399b868b49b">HTTP_STATUS_INSUFFICIENT_STORAGE</a> = 507
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca2876de0bf7f4302883626399b868b49b">HTTP_STATUS_INSUFFICIENT_STORAGE</a> = 507
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca5db103eeafcd3c0b245f42065a8a096f">HTTP_STATUS_LOOP_DETECTED</a> = 508
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca5db103eeafcd3c0b245f42065a8a096f">HTTP_STATUS_LOOP_DETECTED</a> = 508
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca9f989de7a400bb10b4a75613504bd889">HTTP_STATUS_NOT_EXTENDED</a> = 510
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75ca9f989de7a400bb10b4a75613504bd889">HTTP_STATUS_NOT_EXTENDED</a> = 510
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cae60954618af03c3b7f9a24f6e57974c7">HTTP_STATUS_NETWORK_AUTH_REQUIRED</a> = 511
+&#160;&#160;<a class="el" href="group__http.html#ggaceb714c26b828fe187a7fa72749ee75cae60954618af03c3b7f9a24f6e57974c7">HTTP_STATUS_NETWORK_AUTH_REQUIRED</a> = 511
 <br />
  }</td></tr>
-<tr class="separator:aceb714c26b828fe187a7fa72749ee75c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a905b7faf61f39aaa3cfcfed80d1675d5" id="r_a905b7faf61f39aaa3cfcfed80d1675d5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5">SocketHTTP_StatusCategory</a> { <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249">HTTP_STATUS_INFORMATIONAL</a> = 1
+<tr class="memdesc:gaceb714c26b828fe187a7fa72749ee75c"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP status codes as defined in RFC 9110 Section 15 and common extensions.  <a href="group__http.html#gaceb714c26b828fe187a7fa72749ee75c">More...</a><br /></td></tr>
+<tr class="separator:gaceb714c26b828fe187a7fa72749ee75c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga905b7faf61f39aaa3cfcfed80d1675d5" id="r_ga905b7faf61f39aaa3cfcfed80d1675d5"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga905b7faf61f39aaa3cfcfed80d1675d5">SocketHTTP_StatusCategory</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249">HTTP_STATUS_INFORMATIONAL</a> = 1
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0">HTTP_STATUS_SUCCESSFUL</a> = 2
+&#160;&#160;<a class="el" href="group__http.html#gga905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0">HTTP_STATUS_SUCCESSFUL</a> = 2
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b">HTTP_STATUS_REDIRECTION</a> = 3
+&#160;&#160;<a class="el" href="group__http.html#gga905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b">HTTP_STATUS_REDIRECTION</a> = 3
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b">HTTP_STATUS_CLIENT_ERROR</a> = 4
+&#160;&#160;<a class="el" href="group__http.html#gga905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b">HTTP_STATUS_CLIENT_ERROR</a> = 4
 , <br />
-&#160;&#160;<a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5a271ea994d1cabf358e86b2f9c7e327ad">HTTP_STATUS_SERVER_ERROR</a> = 5
+&#160;&#160;<a class="el" href="group__http.html#gga905b7faf61f39aaa3cfcfed80d1675d5a271ea994d1cabf358e86b2f9c7e327ad">HTTP_STATUS_SERVER_ERROR</a> = 5
 <br />
  }</td></tr>
-<tr class="separator:a905b7faf61f39aaa3cfcfed80d1675d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memdesc:ga905b7faf61f39aaa3cfcfed80d1675d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Categories of HTTP status codes for quick classification.  <a href="group__http.html#ga905b7faf61f39aaa3cfcfed80d1675d5">More...</a><br /></td></tr>
+<tr class="separator:ga905b7faf61f39aaa3cfcfed80d1675d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gada5478cfca166a354a76529faf4f7a40" id="r_gada5478cfca166a354a76529faf4f7a40"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gada5478cfca166a354a76529faf4f7a40">SocketHTTP_URIResult</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a24d73a45e9c21c50560917eca763e73c">URI_PARSE_OK</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a71143b8d56a7fb09d79501fda009d42d">URI_PARSE_ERROR</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40adf4790f5ca0ea927d28a863dacb6debc">URI_PARSE_INVALID_SCHEME</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a73494dfae9cdc850d7666e848fb4f643">URI_PARSE_INVALID_HOST</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a6a1261c7a60d12c7de4a4c533ea7a2e3">URI_PARSE_INVALID_PORT</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a983773f1ed0b4d54287a3e9cd966e332">URI_PARSE_INVALID_PATH</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40a31dc815f91549634b800232703469599">URI_PARSE_INVALID_QUERY</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#ggada5478cfca166a354a76529faf4f7a40adb75f5f064e0160c721f20d7a7b4f41f">URI_PARSE_TOO_LONG</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:gada5478cfca166a354a76529faf4f7a40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Result codes from URI parsing and related operations.  <a href="group__http.html#gada5478cfca166a354a76529faf4f7a40">More...</a><br /></td></tr>
+<tr class="separator:gada5478cfca166a354a76529faf4f7a40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5b16a96fcd7f45cd6d9e1929c9d9ab80" id="r_ga5b16a96fcd7f45cd6d9e1929c9d9ab80"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80">SocketHTTP_Coding</a> { <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a671a1c83bc150850262b1b8f664219ad">HTTP_CODING_IDENTITY</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a40b5711e85eaca643ab447f7fd54e497">HTTP_CODING_CHUNKED</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a9b5dd0a74e79b73f963a71683205e633">HTTP_CODING_GZIP</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a3cb99fa681420da3dc68fe8d332b1afe">HTTP_CODING_DEFLATE</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80a331210a9d5b239c64af76967d10c8eae">HTTP_CODING_COMPRESS</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80aeddff3b1c4a68dd8596314dd9b293c59">HTTP_CODING_BR</a>
+, <br />
+&#160;&#160;<a class="el" href="group__http.html#gga5b16a96fcd7f45cd6d9e1929c9d9ab80afa3a34e297c9bb0b05ff25d250739edd">HTTP_CODING_UNKNOWN</a> = -1
+<br />
+ }</td></tr>
+<tr class="memdesc:ga5b16a96fcd7f45cd6d9e1929c9d9ab80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Common HTTP transfer encodings and content codings per RFC 9110.  <a href="group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80">More...</a><br /></td></tr>
+<tr class="separator:ga5b16a96fcd7f45cd6d9e1929c9d9ab80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:afd6a702248ad5bce0c0d6f1825795f1e" id="r_afd6a702248ad5bce0c0d6f1825795f1e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#afd6a702248ad5bce0c0d6f1825795f1e">SocketHTTP_version_string</a> (<a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> version)</td></tr>
-<tr class="separator:afd6a702248ad5bce0c0d6f1825795f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2c1cc8d1f48f39b8a3cabe4a47aaa295" id="r_a2c1cc8d1f48f39b8a3cabe4a47aaa295"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a2c1cc8d1f48f39b8a3cabe4a47aaa295">SocketHTTP_version_parse</a> (const char *str, size_t len)</td></tr>
-<tr class="separator:a2c1cc8d1f48f39b8a3cabe4a47aaa295"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeebb1299d256377b2abc6756c77827ef" id="r_aeebb1299d256377b2abc6756c77827ef"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#aeebb1299d256377b2abc6756c77827ef">SocketHTTP_method_name</a> (<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method)</td></tr>
-<tr class="separator:aeebb1299d256377b2abc6756c77827ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98ea0fbffa4e6f97e009b3772c251007" id="r_a98ea0fbffa4e6f97e009b3772c251007"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a98ea0fbffa4e6f97e009b3772c251007">SocketHTTP_method_parse</a> (const char *str, size_t len)</td></tr>
-<tr class="separator:a98ea0fbffa4e6f97e009b3772c251007"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80b627d3253567e6c73b94ddd6fe1bb5" id="r_a80b627d3253567e6c73b94ddd6fe1bb5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTP_8h.html#structSocketHTTP__MethodProperties">SocketHTTP_MethodProperties</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a80b627d3253567e6c73b94ddd6fe1bb5">SocketHTTP_method_properties</a> (<a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method)</td></tr>
-<tr class="separator:a80b627d3253567e6c73b94ddd6fe1bb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac30c95d487cc694a02c2b46796c27d07" id="r_ac30c95d487cc694a02c2b46796c27d07"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#ac30c95d487cc694a02c2b46796c27d07">SocketHTTP_method_valid</a> (const char *str, size_t len)</td></tr>
-<tr class="separator:ac30c95d487cc694a02c2b46796c27d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd6a702248ad5bce0c0d6f1825795f1e" id="r_gafd6a702248ad5bce0c0d6f1825795f1e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafd6a702248ad5bce0c0d6f1825795f1e">SocketHTTP_version_string</a> (<a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> version)</td></tr>
+<tr class="memdesc:gafd6a702248ad5bce0c0d6f1825795f1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get version string.  <br /></td></tr>
+<tr class="separator:gafd6a702248ad5bce0c0d6f1825795f1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2c1cc8d1f48f39b8a3cabe4a47aaa295" id="r_ga2c1cc8d1f48f39b8a3cabe4a47aaa295"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2c1cc8d1f48f39b8a3cabe4a47aaa295">SocketHTTP_version_parse</a> (const char *str, size_t len)</td></tr>
+<tr class="memdesc:ga2c1cc8d1f48f39b8a3cabe4a47aaa295"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse version string.  <br /></td></tr>
+<tr class="separator:ga2c1cc8d1f48f39b8a3cabe4a47aaa295"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaeebb1299d256377b2abc6756c77827ef" id="r_gaeebb1299d256377b2abc6756c77827ef"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaeebb1299d256377b2abc6756c77827ef">SocketHTTP_method_name</a> (<a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method)</td></tr>
+<tr class="memdesc:gaeebb1299d256377b2abc6756c77827ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get method name string.  <br /></td></tr>
+<tr class="separator:gaeebb1299d256377b2abc6756c77827ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga98ea0fbffa4e6f97e009b3772c251007" id="r_ga98ea0fbffa4e6f97e009b3772c251007"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga98ea0fbffa4e6f97e009b3772c251007">SocketHTTP_method_parse</a> (const char *str, size_t len)</td></tr>
+<tr class="memdesc:ga98ea0fbffa4e6f97e009b3772c251007"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse method string.  <br /></td></tr>
+<tr class="separator:ga98ea0fbffa4e6f97e009b3772c251007"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga80b627d3253567e6c73b94ddd6fe1bb5" id="r_ga80b627d3253567e6c73b94ddd6fe1bb5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#structSocketHTTP__MethodProperties">SocketHTTP_MethodProperties</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga80b627d3253567e6c73b94ddd6fe1bb5">SocketHTTP_method_properties</a> (<a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> method)</td></tr>
+<tr class="memdesc:ga80b627d3253567e6c73b94ddd6fe1bb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get method semantic properties.  <br /></td></tr>
+<tr class="separator:ga80b627d3253567e6c73b94ddd6fe1bb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac30c95d487cc694a02c2b46796c27d07" id="r_gac30c95d487cc694a02c2b46796c27d07"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac30c95d487cc694a02c2b46796c27d07">SocketHTTP_method_valid</a> (const char *str, size_t len)</td></tr>
+<tr class="memdesc:gac30c95d487cc694a02c2b46796c27d07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if string is valid HTTP method token.  <br /></td></tr>
+<tr class="separator:gac30c95d487cc694a02c2b46796c27d07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad0f790ccec22e5c3862f7d07abc81038" id="r_gad0f790ccec22e5c3862f7d07abc81038"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad0f790ccec22e5c3862f7d07abc81038">SocketHTTP_status_reason</a> (int code)</td></tr>
+<tr class="memdesc:gad0f790ccec22e5c3862f7d07abc81038"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get reason phrase for status code.  <br /></td></tr>
+<tr class="separator:gad0f790ccec22e5c3862f7d07abc81038"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafa90f0cd5d3fa4e281b6debe6fed8fe6" id="r_gafa90f0cd5d3fa4e281b6debe6fed8fe6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga905b7faf61f39aaa3cfcfed80d1675d5">SocketHTTP_StatusCategory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafa90f0cd5d3fa4e281b6debe6fed8fe6">SocketHTTP_status_category</a> (int code)</td></tr>
+<tr class="memdesc:gafa90f0cd5d3fa4e281b6debe6fed8fe6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get status code category.  <br /></td></tr>
+<tr class="separator:gafa90f0cd5d3fa4e281b6debe6fed8fe6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13f50bb573333c5a0fe6ed5308392b1d" id="r_ga13f50bb573333c5a0fe6ed5308392b1d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga13f50bb573333c5a0fe6ed5308392b1d">SocketHTTP_status_valid</a> (int code)</td></tr>
+<tr class="memdesc:ga13f50bb573333c5a0fe6ed5308392b1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if status code is valid.  <br /></td></tr>
+<tr class="separator:ga13f50bb573333c5a0fe6ed5308392b1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga99b788a59c808ad4e1860b7e64514aa2" id="r_ga99b788a59c808ad4e1860b7e64514aa2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga99b788a59c808ad4e1860b7e64514aa2">SocketHTTP_Headers_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga99b788a59c808ad4e1860b7e64514aa2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new empty HTTP header collection.  <br /></td></tr>
+<tr class="separator:ga99b788a59c808ad4e1860b7e64514aa2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga10295fab9419b6257a90c16506b7842f" id="r_ga10295fab9419b6257a90c16506b7842f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga10295fab9419b6257a90c16506b7842f">SocketHTTP_Headers_clear</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers)</td></tr>
+<tr class="memdesc:ga10295fab9419b6257a90c16506b7842f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all headers.  <br /></td></tr>
+<tr class="separator:ga10295fab9419b6257a90c16506b7842f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga564aa2d79c404e093b07c56e7d7910eb" id="r_ga564aa2d79c404e093b07c56e7d7910eb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, const char *value)</td></tr>
+<tr class="memdesc:ga564aa2d79c404e093b07c56e7d7910eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add header (null-terminated strings).  <br /></td></tr>
+<tr class="separator:ga564aa2d79c404e093b07c56e7d7910eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2775245710f3cb5fd00b123f464d38b" id="r_gad2775245710f3cb5fd00b123f464d38b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad2775245710f3cb5fd00b123f464d38b">SocketHTTP_Headers_add_n</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, size_t name_len, const char *value, size_t value_len)</td></tr>
+<tr class="memdesc:gad2775245710f3cb5fd00b123f464d38b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add header with explicit lengths.  <br /></td></tr>
+<tr class="separator:gad2775245710f3cb5fd00b123f464d38b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga917a5a8b8b780832c025f47c596c4bec" id="r_ga917a5a8b8b780832c025f47c596c4bec"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga917a5a8b8b780832c025f47c596c4bec">SocketHTTP_Headers_set</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, const char *value)</td></tr>
+<tr class="memdesc:ga917a5a8b8b780832c025f47c596c4bec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set header (replace if exists).  <br /></td></tr>
+<tr class="separator:ga917a5a8b8b780832c025f47c596c4bec"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga14656f39c3a134218da1afd58407bda1" id="r_ga14656f39c3a134218da1afd58407bda1"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga14656f39c3a134218da1afd58407bda1">SocketHTTP_Headers_get</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name)</td></tr>
+<tr class="memdesc:ga14656f39c3a134218da1afd58407bda1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get first header value (case-insensitive).  <br /></td></tr>
+<tr class="separator:ga14656f39c3a134218da1afd58407bda1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0e659368f81323c6e7c32f65cf1c00df" id="r_ga0e659368f81323c6e7c32f65cf1c00df"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0e659368f81323c6e7c32f65cf1c00df">SocketHTTP_Headers_get_int</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, int64_t *value)</td></tr>
+<tr class="memdesc:ga0e659368f81323c6e7c32f65cf1c00df"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get header value as integer.  <br /></td></tr>
+<tr class="separator:ga0e659368f81323c6e7c32f65cf1c00df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd71cd43385e40af664f2a8c15b7c204" id="r_gafd71cd43385e40af664f2a8c15b7c204"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafd71cd43385e40af664f2a8c15b7c204">SocketHTTP_Headers_get_all</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, const char **values, size_t max_values)</td></tr>
+<tr class="memdesc:gafd71cd43385e40af664f2a8c15b7c204"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get all values for header.  <br /></td></tr>
+<tr class="separator:gafd71cd43385e40af664f2a8c15b7c204"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga894520d65dc4573481c9a4028f73ae11" id="r_ga894520d65dc4573481c9a4028f73ae11"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga894520d65dc4573481c9a4028f73ae11">SocketHTTP_Headers_has</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name)</td></tr>
+<tr class="memdesc:ga894520d65dc4573481c9a4028f73ae11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if header exists.  <br /></td></tr>
+<tr class="separator:ga894520d65dc4573481c9a4028f73ae11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf6d60c59d9931264a36c064557345dac" id="r_gaf6d60c59d9931264a36c064557345dac"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf6d60c59d9931264a36c064557345dac">SocketHTTP_Headers_contains</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name, const char *token)</td></tr>
+<tr class="memdesc:gaf6d60c59d9931264a36c064557345dac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if header contains token.  <br /></td></tr>
+<tr class="separator:gaf6d60c59d9931264a36c064557345dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga870e78c2dec0d6c8bc9f65eeaf9fbd1e" id="r_ga870e78c2dec0d6c8bc9f65eeaf9fbd1e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga870e78c2dec0d6c8bc9f65eeaf9fbd1e">SocketHTTP_Headers_remove</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name)</td></tr>
+<tr class="memdesc:ga870e78c2dec0d6c8bc9f65eeaf9fbd1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove first header with name.  <br /></td></tr>
+<tr class="separator:ga870e78c2dec0d6c8bc9f65eeaf9fbd1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaba9e8498c0a0715dd0169e6a345d29ad" id="r_gaba9e8498c0a0715dd0169e6a345d29ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaba9e8498c0a0715dd0169e6a345d29ad">SocketHTTP_Headers_remove_all</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, const char *name)</td></tr>
+<tr class="memdesc:gaba9e8498c0a0715dd0169e6a345d29ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove all headers with name.  <br /></td></tr>
+<tr class="separator:gaba9e8498c0a0715dd0169e6a345d29ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae4243f40c1fae6cc9a78eb51119cefb8" id="r_gae4243f40c1fae6cc9a78eb51119cefb8"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gae4243f40c1fae6cc9a78eb51119cefb8">SocketHTTP_Headers_count</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers)</td></tr>
+<tr class="memdesc:gae4243f40c1fae6cc9a78eb51119cefb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get total header count.  <br /></td></tr>
+<tr class="separator:gae4243f40c1fae6cc9a78eb51119cefb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea574c084c4037fd97b0566bd02d3ec7" id="r_gaea574c084c4037fd97b0566bd02d3ec7"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structSocketHTTP__Header">SocketHTTP_Header</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaea574c084c4037fd97b0566bd02d3ec7">SocketHTTP_Headers_at</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, size_t index)</td></tr>
+<tr class="memdesc:gaea574c084c4037fd97b0566bd02d3ec7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get header by index.  <br /></td></tr>
+<tr class="separator:gaea574c084c4037fd97b0566bd02d3ec7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2dc4cb8e02de1b8ed00826becde57f77" id="r_ga2dc4cb8e02de1b8ed00826becde57f77"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2dc4cb8e02de1b8ed00826becde57f77">SocketHTTP_Headers_iterate</a> (<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f">SocketHTTP_Headers_T</a> headers, <a class="el" href="group__http.html#ga991d5a6b9f11673b53a19b7505224668">SocketHTTP_HeaderCallback</a> callback, void *userdata)</td></tr>
+<tr class="memdesc:ga2dc4cb8e02de1b8ed00826becde57f77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterate over all headers.  <br /></td></tr>
+<tr class="separator:ga2dc4cb8e02de1b8ed00826becde57f77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9cd7416c4d2d906c57303c814cfffa05" id="r_ga9cd7416c4d2d906c57303c814cfffa05"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga9cd7416c4d2d906c57303c814cfffa05">SocketHTTP_header_name_valid</a> (const char *name, size_t len)</td></tr>
+<tr class="memdesc:ga9cd7416c4d2d906c57303c814cfffa05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate header name.  <br /></td></tr>
+<tr class="separator:ga9cd7416c4d2d906c57303c814cfffa05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafcd22b68210c4a6e922bbb88f34caacd" id="r_gafcd22b68210c4a6e922bbb88f34caacd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gafcd22b68210c4a6e922bbb88f34caacd">SocketHTTP_header_value_valid</a> (const char *value, size_t len)</td></tr>
+<tr class="memdesc:gafcd22b68210c4a6e922bbb88f34caacd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate header value.  <br /></td></tr>
+<tr class="separator:gafcd22b68210c4a6e922bbb88f34caacd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacadf7ec10cae4332222ee074c58bbd9b" id="r_gacadf7ec10cae4332222ee074c58bbd9b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gada5478cfca166a354a76529faf4f7a40">SocketHTTP_URIResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gacadf7ec10cae4332222ee074c58bbd9b">SocketHTTP_URI_parse</a> (const char *uri, size_t len, <a class="el" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a> *result, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:gacadf7ec10cae4332222ee074c58bbd9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse and validate a URI string into components.  <br /></td></tr>
+<tr class="separator:gacadf7ec10cae4332222ee074c58bbd9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf635e39c16e4337fd63e0adf72e2a255" id="r_gaf635e39c16e4337fd63e0adf72e2a255"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf635e39c16e4337fd63e0adf72e2a255">SocketHTTP_URI_result_string</a> (<a class="el" href="group__http.html#gada5478cfca166a354a76529faf4f7a40">SocketHTTP_URIResult</a> result)</td></tr>
+<tr class="memdesc:gaf635e39c16e4337fd63e0adf72e2a255"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
+<tr class="separator:gaf635e39c16e4337fd63e0adf72e2a255"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d205bd6286796dbdb3413766a6f1a50" id="r_ga0d205bd6286796dbdb3413766a6f1a50"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0d205bd6286796dbdb3413766a6f1a50">SocketHTTP_URI_get_port</a> (const <a class="el" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a> *uri, int default_port)</td></tr>
+<tr class="memdesc:ga0d205bd6286796dbdb3413766a6f1a50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get port with default fallback.  <br /></td></tr>
+<tr class="separator:ga0d205bd6286796dbdb3413766a6f1a50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabfed4438fa6b1f93409a582efd4a8448" id="r_gabfed4438fa6b1f93409a582efd4a8448"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gabfed4438fa6b1f93409a582efd4a8448">SocketHTTP_URI_is_secure</a> (const <a class="el" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a> *uri)</td></tr>
+<tr class="memdesc:gabfed4438fa6b1f93409a582efd4a8448"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if URI uses secure scheme.  <br /></td></tr>
+<tr class="separator:gabfed4438fa6b1f93409a582efd4a8448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28" id="r_ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28">SocketHTTP_URI_encode</a> (const char *input, size_t len, char *output, size_t output_size)</td></tr>
+<tr class="memdesc:ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percent-encode string.  <br /></td></tr>
+<tr class="separator:ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga68e3ed44f86aa5b9ce778bf3ff1fb868" id="r_ga68e3ed44f86aa5b9ce778bf3ff1fb868"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga68e3ed44f86aa5b9ce778bf3ff1fb868">SocketHTTP_URI_decode</a> (const char *input, size_t len, char *output, size_t output_size)</td></tr>
+<tr class="memdesc:ga68e3ed44f86aa5b9ce778bf3ff1fb868"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percent-decode string.  <br /></td></tr>
+<tr class="separator:ga68e3ed44f86aa5b9ce778bf3ff1fb868"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga11a8df3a30b4d1001c6c504f4289ebae" id="r_ga11a8df3a30b4d1001c6c504f4289ebae"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga11a8df3a30b4d1001c6c504f4289ebae">SocketHTTP_URI_build</a> (const <a class="el" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a> *uri, char *output, size_t output_size)</td></tr>
+<tr class="memdesc:ga11a8df3a30b4d1001c6c504f4289ebae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Build URI string from components.  <br /></td></tr>
+<tr class="separator:ga11a8df3a30b4d1001c6c504f4289ebae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad1bd59d68c6362c7a547785c53709163" id="r_gad1bd59d68c6362c7a547785c53709163"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad1bd59d68c6362c7a547785c53709163">SocketHTTP_date_parse</a> (const char *date_str, size_t len, time_t *time_out)</td></tr>
+<tr class="memdesc:gad1bd59d68c6362c7a547785c53709163"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse HTTP-date.  <br /></td></tr>
+<tr class="separator:gad1bd59d68c6362c7a547785c53709163"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3bcf9f5487eca065ac77e28cdcb03482" id="r_ga3bcf9f5487eca065ac77e28cdcb03482"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3bcf9f5487eca065ac77e28cdcb03482">SocketHTTP_date_format</a> (time_t t, char *output)</td></tr>
+<tr class="memdesc:ga3bcf9f5487eca065ac77e28cdcb03482"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format time as HTTP-date (IMF-fixdate)  <br /></td></tr>
+<tr class="separator:ga3bcf9f5487eca065ac77e28cdcb03482"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf43ac3bfe3ff58d22f57a10efcbcfbea" id="r_gaf43ac3bfe3ff58d22f57a10efcbcfbea"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf43ac3bfe3ff58d22f57a10efcbcfbea">SocketHTTP_MediaType_parse</a> (const char *value, size_t len, <a class="el" href="group__http.html#structSocketHTTP__MediaType">SocketHTTP_MediaType</a> *result, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:gaf43ac3bfe3ff58d22f57a10efcbcfbea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse Content-Type header.  <br /></td></tr>
+<tr class="separator:gaf43ac3bfe3ff58d22f57a10efcbcfbea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2a544671be752e72e6c35dfc237037ed" id="r_ga2a544671be752e72e6c35dfc237037ed"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2a544671be752e72e6c35dfc237037ed">SocketHTTP_MediaType_matches</a> (const <a class="el" href="group__http.html#structSocketHTTP__MediaType">SocketHTTP_MediaType</a> *type, const char *pattern)</td></tr>
+<tr class="memdesc:ga2a544671be752e72e6c35dfc237037ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if media type matches pattern.  <br /></td></tr>
+<tr class="separator:ga2a544671be752e72e6c35dfc237037ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2bd50a204ccbbe78fc2938162d2a4248" id="r_ga2bd50a204ccbbe78fc2938162d2a4248"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga2bd50a204ccbbe78fc2938162d2a4248">SocketHTTP_parse_accept</a> (const char *value, size_t len, <a class="el" href="group__http.html#structSocketHTTP__QualityValue">SocketHTTP_QualityValue</a> *results, size_t max_results, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga2bd50a204ccbbe78fc2938162d2a4248"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse Accept-style header.  <br /></td></tr>
+<tr class="separator:ga2bd50a204ccbbe78fc2938162d2a4248"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91f3dc78f39a6c965a14d718b2066f52" id="r_ga91f3dc78f39a6c965a14d718b2066f52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80">SocketHTTP_Coding</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga91f3dc78f39a6c965a14d718b2066f52">SocketHTTP_coding_parse</a> (const char *name, size_t len)</td></tr>
+<tr class="memdesc:ga91f3dc78f39a6c965a14d718b2066f52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse coding name.  <br /></td></tr>
+<tr class="separator:ga91f3dc78f39a6c965a14d718b2066f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0868f224eab429e1d2216651beee04fa" id="r_ga0868f224eab429e1d2216651beee04fa"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0868f224eab429e1d2216651beee04fa">SocketHTTP_coding_name</a> (<a class="el" href="group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80">SocketHTTP_Coding</a> coding)</td></tr>
+<tr class="memdesc:ga0868f224eab429e1d2216651beee04fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get coding name string.  <br /></td></tr>
+<tr class="separator:ga0868f224eab429e1d2216651beee04fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a4f683bdd1ab1acf36a383a7be5f5b6d2" id="r_a4f683bdd1ab1acf36a383a7be5f5b6d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTP_8h.html#a4f683bdd1ab1acf36a383a7be5f5b6d2">SocketHTTP_Failed</a></td></tr>
-<tr class="separator:a4f683bdd1ab1acf36a383a7be5f5b6d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4f683bdd1ab1acf36a383a7be5f5b6d2" id="r_ga4f683bdd1ab1acf36a383a7be5f5b6d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga4f683bdd1ab1acf36a383a7be5f5b6d2">SocketHTTP_Failed</a></td></tr>
+<tr class="memdesc:ga4f683bdd1ab1acf36a383a7be5f5b6d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketHTTP_Failed - Generic HTTP module failure.  <br /></td></tr>
+<tr class="separator:ga4f683bdd1ab1acf36a383a7be5f5b6d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketHTTP__MethodProperties" id="structSocketHTTP__MethodProperties"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketHTTP__MethodProperties">&#9670;&#160;</a></span>SocketHTTP_MethodProperties</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHTTP_MethodProperties</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Method semantic properties (RFC 9110 Section 9.2) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00149">149</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a7c626100bb166521094c508c2907cab3" name="a7c626100bb166521094c508c2907cab3"></a>unsigned</td>
-<td class="fieldname">
-cacheable: 1</td>
-<td class="fielddoc">
-<p>Response may be cached </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a49f204f98e783e66d7ff44a41d776a91" name="a49f204f98e783e66d7ff44a41d776a91"></a>unsigned</td>
-<td class="fieldname">
-has_body: 1</td>
-<td class="fielddoc">
-<p>Request may have body </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a6665b6641419663e5d2f89bcb4eff8dc" name="a6665b6641419663e5d2f89bcb4eff8dc"></a>unsigned</td>
-<td class="fieldname">
-idempotent: 1</td>
-<td class="fielddoc">
-<p>Multiple identical requests same as one </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a56b452f5e749b9785b8926e469093417" name="a56b452f5e749b9785b8926e469093417"></a>unsigned</td>
-<td class="fieldname">
-response_body: 1</td>
-<td class="fielddoc">
-<p>Response has body (except HEAD) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a73218e27f40ce28175276e72244863c6" name="a73218e27f40ce28175276e72244863c6"></a>unsigned</td>
-<td class="fieldname">
-safe: 1</td>
-<td class="fielddoc">
-<p>Does not modify resources </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a261a87375b42933ff21a2b0fc7fdc8c3" name="a261a87375b42933ff21a2b0fc7fdc8c3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a261a87375b42933ff21a2b0fc7fdc8c3">&#9670;&#160;</a></span>HTTP_STATUS_1XX_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_1XX_MAX&#160;&#160;&#160;199</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00293">293</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="aee82a204474700c91dad9a806e48f64f" name="aee82a204474700c91dad9a806e48f64f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aee82a204474700c91dad9a806e48f64f">&#9670;&#160;</a></span>HTTP_STATUS_1XX_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_1XX_MIN&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c">HTTP_STATUS_CONTINUE</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00292">292</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="aa802911b92b079f19b3e1f4049cc36d7" name="aa802911b92b079f19b3e1f4049cc36d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa802911b92b079f19b3e1f4049cc36d7">&#9670;&#160;</a></span>HTTP_STATUS_2XX_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_2XX_MAX&#160;&#160;&#160;299</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00296">296</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a803cba6422aa720d629c3a9bd660cb4c" name="a803cba6422aa720d629c3a9bd660cb4c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a803cba6422aa720d629c3a9bd660cb4c">&#9670;&#160;</a></span>HTTP_STATUS_2XX_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_2XX_MIN&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91">HTTP_STATUS_OK</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00295">295</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a1f0660454bb40ecd77d30150ec42e198" name="a1f0660454bb40ecd77d30150ec42e198"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f0660454bb40ecd77d30150ec42e198">&#9670;&#160;</a></span>HTTP_STATUS_3XX_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_3XX_MAX&#160;&#160;&#160;399</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00299">299</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a3991461d2ca50eeab1c693aaf37717a8" name="a3991461d2ca50eeab1c693aaf37717a8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3991461d2ca50eeab1c693aaf37717a8">&#9670;&#160;</a></span>HTTP_STATUS_3XX_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_3XX_MIN&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c">HTTP_STATUS_MULTIPLE_CHOICES</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00298">298</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="af38c37f224e9e3cf82aeec28f1da00b5" name="af38c37f224e9e3cf82aeec28f1da00b5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af38c37f224e9e3cf82aeec28f1da00b5">&#9670;&#160;</a></span>HTTP_STATUS_4XX_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_4XX_MAX&#160;&#160;&#160;499</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00302">302</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a530d36f357344463eb4b5ca8a46157b6" name="a530d36f357344463eb4b5ca8a46157b6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a530d36f357344463eb4b5ca8a46157b6">&#9670;&#160;</a></span>HTTP_STATUS_4XX_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_4XX_MIN&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477">HTTP_STATUS_BAD_REQUEST</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00301">301</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a18bd3c97e4435317e073b63c13ca6aa1" name="a18bd3c97e4435317e073b63c13ca6aa1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a18bd3c97e4435317e073b63c13ca6aa1">&#9670;&#160;</a></span>HTTP_STATUS_5XX_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_5XX_MAX&#160;&#160;&#160;599</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00305">305</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="abe599c847c5cf301bd5d9f151bba17d7" name="abe599c847c5cf301bd5d9f151bba17d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abe599c847c5cf301bd5d9f151bba17d7">&#9670;&#160;</a></span>HTTP_STATUS_5XX_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_5XX_MIN&#160;&#160;&#160;<a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9">HTTP_STATUS_INTERNAL_ERROR</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00304">304</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="ab6a83b3daff3f633c8deda4408cea03c" name="ab6a83b3daff3f633c8deda4408cea03c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab6a83b3daff3f633c8deda4408cea03c">&#9670;&#160;</a></span>HTTP_STATUS_CODE_MAX</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_CODE_MAX&#160;&#160;&#160;599</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a7182eca7a6bd99ccbf0cb12b275adf9d" name="a7182eca7a6bd99ccbf0cb12b275adf9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7182eca7a6bd99ccbf0cb12b275adf9d">&#9670;&#160;</a></span>HTTP_STATUS_CODE_MIN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HTTP_STATUS_CODE_MIN&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Status code boundary constants</p>
-<p>Used for validation and categorization. Note: Not all codes in range are defined in SocketHTTP_StatusCode enum; enum only includes standard/common codes. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00289">289</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a613a2fead5a6288d5d4e794ba95adeee" name="a613a2fead5a6288d5d4e794ba95adeee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a613a2fead5a6288d5d4e794ba95adeee">&#9670;&#160;</a></span>SOCKETHTTP_DATE_BUFSIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_DATE_BUFSIZE&#160;&#160;&#160;30</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP-date buffer size (30 bytes including null) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00074">74</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a67cb8ab40e2085b3682e91a79aea2553" name="a67cb8ab40e2085b3682e91a79aea2553"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a67cb8ab40e2085b3682e91a79aea2553">&#9670;&#160;</a></span>SOCKETHTTP_MAX_HEADER_NAME</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_MAX_HEADER_NAME&#160;&#160;&#160;256</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p><a class="el" href="SocketHTTP_8h.html">SocketHTTP.h</a> - HTTP Core Types and Utilities (RFC 9110)</p>
-<p>Part of the Socket Library</p>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Protocol-agnostic HTTP types, header handling, URI parsing, and utilities. </p>
 <p>Provides protocol-agnostic HTTP types, header handling, URI parsing, and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.</p>
 <p>Features:</p><ul>
 <li>HTTP methods with semantic properties (safe, idempotent, cacheable)</li>
@@ -678,514 +581,29 @@ safe: 1</td>
 </ul>
 <p>Thread safety: All functions are thread-safe (no global state). Header collections are not thread-safe; use external synchronization if sharing across threads.</p>
 <p>Security notes:</p><ul>
-<li>Rejects control characters and invalid syntax in URI components (host, path, query, fragment)</li>
-<li>Validates host as reg-name or basic IPv6 literal, path/query/fragment per pchar rules</li>
-<li>Media types/parameters validated as HTTP tokens (RFC 7230), rejects malformed escapes</li>
-<li>Per-component length limits (host&lt;=255, path&lt;=4KB, etc.) prevent resource exhaustion</li>
+<li>Rejects control characters and invalid syntax in URI components</li>
+<li>Validates host as reg-name or basic IPv6 literal</li>
+<li>Media types/parameters validated as HTTP tokens (RFC 7230)</li>
+<li>Per-component length limits prevent resource exhaustion</li>
 <li>Header names/values validated to reject injection attacks</li>
-<li>URI total length limited to prevent DoS</li>
-<li>Integer overflow protection on all size calculations and percent decoding</li>
-<li>Basic percent-encoding validation (% followed by valid hex) Maximum header name length in bytes </li>
+<li>Integer overflow protection on all size calculations</li>
 </ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f" title="Standard HTTP request methods as defined in RFC 9110 and extensions.">SocketHTTP_Method</a> for HTTP methods. </dd>
+<dd>
+<a class="el" href="group__http.html#gaf1f6772bf122ad6e2e90639b2877754f" title="Opaque type for HTTP header collection with efficient operations.">SocketHTTP_Headers_T</a> for header collections. </dd>
+<dd>
+<a class="el" href="group__http.html#structSocketHTTP__URI" title="Parsed URI components according to RFC 3986.">SocketHTTP_URI</a> for URI parsing. </dd>
+<dd>
+SocketHTTP1_T for HTTP/1.1 protocol implementation. </dd>
+<dd>
+SocketHTTP2_T for HTTP/2 protocol implementation. </dd>
+<dd>
+<a class="el" href="group__http.html#gaba14ae9994f5645e5aa8488f905aad54" title="HTTP client instance.">SocketHTTPClient_T</a> for HTTP client functionality. </dd>
+<dd>
+<a class="el" href="group__http.html#gad59859e8ae07bfb95f5807590dd034f4" title="Opaque HTTP server instance managing connections, requests, and protocol handling.">SocketHTTPServer_T</a> for HTTP server functionality. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00050">50</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a7bb4c78960a2783f19b993f193932727" name="a7bb4c78960a2783f19b993f193932727"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7bb4c78960a2783f19b993f193932727">&#9670;&#160;</a></span>SOCKETHTTP_MAX_HEADER_SIZE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_MAX_HEADER_SIZE&#160;&#160;&#160;(64 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum total header size in bytes </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00060">60</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a711feea372680c3db3f52cb12954e8d8" name="a711feea372680c3db3f52cb12954e8d8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a711feea372680c3db3f52cb12954e8d8">&#9670;&#160;</a></span>SOCKETHTTP_MAX_HEADER_VALUE</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_MAX_HEADER_VALUE&#160;&#160;&#160;(8 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum header value length in bytes </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00055">55</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a2f5713c3b88ddc329d0119a789847ba6" name="a2f5713c3b88ddc329d0119a789847ba6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f5713c3b88ddc329d0119a789847ba6">&#9670;&#160;</a></span>SOCKETHTTP_MAX_HEADERS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_MAX_HEADERS&#160;&#160;&#160;100</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum header count </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00065">65</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a13dfbee4ad8c1b29949c1fd0cc360f45" name="a13dfbee4ad8c1b29949c1fd0cc360f45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a13dfbee4ad8c1b29949c1fd0cc360f45">&#9670;&#160;</a></span>SOCKETHTTP_MAX_URI_LEN</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define SOCKETHTTP_MAX_URI_LEN&#160;&#160;&#160;(8 * 1024)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum URI length in bytes </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00070">70</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Enumeration Type Documentation</h2>
-<a id="af6f90bb536a5cd085f4327bda4d3ee8f" name="af6f90bb536a5cd085f4327bda4d3ee8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6f90bb536a5cd085f4327bda4d3ee8f">&#9670;&#160;</a></span>SocketHTTP_Method</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP request methods </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659" name="af6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659"></a>HTTP_METHOD_GET&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.1 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa27e993d38ff6b43284014a10798b6223" name="af6f90bb536a5cd085f4327bda4d3ee8fa27e993d38ff6b43284014a10798b6223"></a>HTTP_METHOD_HEAD&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.2 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa1944682922ac79b2e682312d8f3f71e2" name="af6f90bb536a5cd085f4327bda4d3ee8fa1944682922ac79b2e682312d8f3f71e2"></a>HTTP_METHOD_POST&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.3 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8faf7557927b605c64f35f629b43823b1c9" name="af6f90bb536a5cd085f4327bda4d3ee8faf7557927b605c64f35f629b43823b1c9"></a>HTTP_METHOD_PUT&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.4 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa761371f7807255b7912afbac2f665ffe" name="af6f90bb536a5cd085f4327bda4d3ee8fa761371f7807255b7912afbac2f665ffe"></a>HTTP_METHOD_DELETE&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.5 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa3755246bea87120e8311dc914d573fbf" name="af6f90bb536a5cd085f4327bda4d3ee8fa3755246bea87120e8311dc914d573fbf"></a>HTTP_METHOD_CONNECT&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.6 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8faf6b02f8ff0467dbdaebb24f0a996cdd4" name="af6f90bb536a5cd085f4327bda4d3ee8faf6b02f8ff0467dbdaebb24f0a996cdd4"></a>HTTP_METHOD_OPTIONS&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.7 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fa95b5b19305a14de1400aedfdec1c1eed" name="af6f90bb536a5cd085f4327bda4d3ee8fa95b5b19305a14de1400aedfdec1c1eed"></a>HTTP_METHOD_TRACE&#160;</td><td class="fielddoc"><p>RFC 9110 Section 9.3.8 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fac1adf0f44043552b637a6235ae3ff283" name="af6f90bb536a5cd085f4327bda4d3ee8fac1adf0f44043552b637a6235ae3ff283"></a>HTTP_METHOD_PATCH&#160;</td><td class="fielddoc"><p>RFC 5789 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="af6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31" name="af6f90bb536a5cd085f4327bda4d3ee8fafaba39836e3963977f2d329394f8df31"></a>HTTP_METHOD_UNKNOWN&#160;</td><td class="fielddoc"></td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00132">132</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="a905b7faf61f39aaa3cfcfed80d1675d5" name="a905b7faf61f39aaa3cfcfed80d1675d5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a905b7faf61f39aaa3cfcfed80d1675d5">&#9670;&#160;</a></span>SocketHTTP_StatusCategory</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTP_8h.html#a905b7faf61f39aaa3cfcfed80d1675d5">SocketHTTP_StatusCategory</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Status code categories </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249" name="a905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249"></a>HTTP_STATUS_INFORMATIONAL&#160;</td><td class="fielddoc"><p>1xx </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0" name="a905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0"></a>HTTP_STATUS_SUCCESSFUL&#160;</td><td class="fielddoc"><p>2xx </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b" name="a905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b"></a>HTTP_STATUS_REDIRECTION&#160;</td><td class="fielddoc"><p>3xx </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b" name="a905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b"></a>HTTP_STATUS_CLIENT_ERROR&#160;</td><td class="fielddoc"><p>4xx </p>
-</td></tr>
-<tr><td class="fieldname"><a id="a905b7faf61f39aaa3cfcfed80d1675d5a271ea994d1cabf358e86b2f9c7e327ad" name="a905b7faf61f39aaa3cfcfed80d1675d5a271ea994d1cabf358e86b2f9c7e327ad"></a>HTTP_STATUS_SERVER_ERROR&#160;</td><td class="fielddoc"><p>5xx </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00310">310</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="aceb714c26b828fe187a7fa72749ee75c" name="aceb714c26b828fe187a7fa72749ee75c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aceb714c26b828fe187a7fa72749ee75c">&#9670;&#160;</a></span>SocketHTTP_StatusCode</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTP_8h.html#aceb714c26b828fe187a7fa72749ee75c">SocketHTTP_StatusCode</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP status codes </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c" name="aceb714c26b828fe187a7fa72749ee75cad397c30fb0f937e965c1f23e19763a5c"></a>HTTP_STATUS_CONTINUE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cabdff771301c12ef6b9ae9b7b5b87c30d" name="aceb714c26b828fe187a7fa72749ee75cabdff771301c12ef6b9ae9b7b5b87c30d"></a>HTTP_STATUS_SWITCHING_PROTOCOLS&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca4edd1153b1090c6b04f41a9728184c69" name="aceb714c26b828fe187a7fa72749ee75ca4edd1153b1090c6b04f41a9728184c69"></a>HTTP_STATUS_PROCESSING&#160;</td><td class="fielddoc"><p>RFC 2518 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caff74945405d29d86c567878f1514dcb6" name="aceb714c26b828fe187a7fa72749ee75caff74945405d29d86c567878f1514dcb6"></a>HTTP_STATUS_EARLY_HINTS&#160;</td><td class="fielddoc"><p>RFC 8297 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91" name="aceb714c26b828fe187a7fa72749ee75cad34cd21de350cd4fa83b8099e3993b91"></a>HTTP_STATUS_OK&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caa9a59ef7151e4a9944519c2a7b5a4193" name="aceb714c26b828fe187a7fa72749ee75caa9a59ef7151e4a9944519c2a7b5a4193"></a>HTTP_STATUS_CREATED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca95022d17916c4aa66324379ecdd53247" name="aceb714c26b828fe187a7fa72749ee75ca95022d17916c4aa66324379ecdd53247"></a>HTTP_STATUS_ACCEPTED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca690301c36a7a04247e4828a3361fcb0f" name="aceb714c26b828fe187a7fa72749ee75ca690301c36a7a04247e4828a3361fcb0f"></a>HTTP_STATUS_NON_AUTHORITATIVE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cad000a2e30c534c201201dd74fac8d2f9" name="aceb714c26b828fe187a7fa72749ee75cad000a2e30c534c201201dd74fac8d2f9"></a>HTTP_STATUS_NO_CONTENT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca72431bee6eae3e12040af717a0af2df1" name="aceb714c26b828fe187a7fa72749ee75ca72431bee6eae3e12040af717a0af2df1"></a>HTTP_STATUS_RESET_CONTENT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caa55ceddb5bb2104bfcfefb16995192a4" name="aceb714c26b828fe187a7fa72749ee75caa55ceddb5bb2104bfcfefb16995192a4"></a>HTTP_STATUS_PARTIAL_CONTENT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca5b5f6b48a150926864f66aa8882708df" name="aceb714c26b828fe187a7fa72749ee75ca5b5f6b48a150926864f66aa8882708df"></a>HTTP_STATUS_MULTI_STATUS&#160;</td><td class="fielddoc"><p>RFC 4918 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caf60c8de8de4eb8fe02562aff8ee96f1f" name="aceb714c26b828fe187a7fa72749ee75caf60c8de8de4eb8fe02562aff8ee96f1f"></a>HTTP_STATUS_ALREADY_REPORTED&#160;</td><td class="fielddoc"><p>RFC 5842 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caadd5b6f83dd05c6de2ef12de1dd006cd" name="aceb714c26b828fe187a7fa72749ee75caadd5b6f83dd05c6de2ef12de1dd006cd"></a>HTTP_STATUS_IM_USED&#160;</td><td class="fielddoc"><p>RFC 3229 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c" name="aceb714c26b828fe187a7fa72749ee75cace45e0a70d239d5883e023655d9c381c"></a>HTTP_STATUS_MULTIPLE_CHOICES&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca9632802fcd318d1676be7589e6004e96" name="aceb714c26b828fe187a7fa72749ee75ca9632802fcd318d1676be7589e6004e96"></a>HTTP_STATUS_MOVED_PERMANENTLY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca53df069872b37830e4296f32e7ec20d8" name="aceb714c26b828fe187a7fa72749ee75ca53df069872b37830e4296f32e7ec20d8"></a>HTTP_STATUS_FOUND&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cae301c12d0cf56920659cb7b947a95267" name="aceb714c26b828fe187a7fa72749ee75cae301c12d0cf56920659cb7b947a95267"></a>HTTP_STATUS_SEE_OTHER&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca67de2c448cc952048485e4261a5dab19" name="aceb714c26b828fe187a7fa72749ee75ca67de2c448cc952048485e4261a5dab19"></a>HTTP_STATUS_NOT_MODIFIED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cab13f90697368bfecc05dc5a8b18fc87c" name="aceb714c26b828fe187a7fa72749ee75cab13f90697368bfecc05dc5a8b18fc87c"></a>HTTP_STATUS_USE_PROXY&#160;</td><td class="fielddoc"><p>Deprecated </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca70de6a18224da6df336ce0c4be7d52e7" name="aceb714c26b828fe187a7fa72749ee75ca70de6a18224da6df336ce0c4be7d52e7"></a>HTTP_STATUS_TEMPORARY_REDIRECT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac0f841f58eb31779ca76bb3cfb600267" name="aceb714c26b828fe187a7fa72749ee75cac0f841f58eb31779ca76bb3cfb600267"></a>HTTP_STATUS_PERMANENT_REDIRECT&#160;</td><td class="fielddoc"><p>RFC 7538 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477" name="aceb714c26b828fe187a7fa72749ee75ca49cf9c4c184f9e4d265ceae249e92477"></a>HTTP_STATUS_BAD_REQUEST&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cad771b2a0ab88db11b2719c8e5086fb48" name="aceb714c26b828fe187a7fa72749ee75cad771b2a0ab88db11b2719c8e5086fb48"></a>HTTP_STATUS_UNAUTHORIZED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cafac24097912a70f224166528ce44b83b" name="aceb714c26b828fe187a7fa72749ee75cafac24097912a70f224166528ce44b83b"></a>HTTP_STATUS_PAYMENT_REQUIRED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca419c919f74b88d18803358141ab9471c" name="aceb714c26b828fe187a7fa72749ee75ca419c919f74b88d18803358141ab9471c"></a>HTTP_STATUS_FORBIDDEN&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caf06c31278cb67d7eec4b2b8157b9ad25" name="aceb714c26b828fe187a7fa72749ee75caf06c31278cb67d7eec4b2b8157b9ad25"></a>HTTP_STATUS_NOT_FOUND&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca63eb71a406e943d4634c357d60dd96df" name="aceb714c26b828fe187a7fa72749ee75ca63eb71a406e943d4634c357d60dd96df"></a>HTTP_STATUS_METHOD_NOT_ALLOWED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca1558c42d80f54def5f3277dc879d2844" name="aceb714c26b828fe187a7fa72749ee75ca1558c42d80f54def5f3277dc879d2844"></a>HTTP_STATUS_NOT_ACCEPTABLE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca40246e02220192ce8d7f86591ca1cfe4" name="aceb714c26b828fe187a7fa72749ee75ca40246e02220192ce8d7f86591ca1cfe4"></a>HTTP_STATUS_PROXY_AUTH_REQUIRED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca36b5bcf2059ae3c84a47e080822239c7" name="aceb714c26b828fe187a7fa72749ee75ca36b5bcf2059ae3c84a47e080822239c7"></a>HTTP_STATUS_REQUEST_TIMEOUT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca6964f9591ba7284dc4bd388d40c106a9" name="aceb714c26b828fe187a7fa72749ee75ca6964f9591ba7284dc4bd388d40c106a9"></a>HTTP_STATUS_CONFLICT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca67278d96cfa0eb507535b94338810d65" name="aceb714c26b828fe187a7fa72749ee75ca67278d96cfa0eb507535b94338810d65"></a>HTTP_STATUS_GONE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cab42dfcbd67b4e66096e3a8e924b6d6c9" name="aceb714c26b828fe187a7fa72749ee75cab42dfcbd67b4e66096e3a8e924b6d6c9"></a>HTTP_STATUS_LENGTH_REQUIRED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac3d4da4de851d5c8f95748145b59716a" name="aceb714c26b828fe187a7fa72749ee75cac3d4da4de851d5c8f95748145b59716a"></a>HTTP_STATUS_PRECONDITION_FAILED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca43bd00c293731a84ef3f2ae1b4cb725d" name="aceb714c26b828fe187a7fa72749ee75ca43bd00c293731a84ef3f2ae1b4cb725d"></a>HTTP_STATUS_CONTENT_TOO_LARGE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca033ec26aabe2b7ece963fd3e43d0d064" name="aceb714c26b828fe187a7fa72749ee75ca033ec26aabe2b7ece963fd3e43d0d064"></a>HTTP_STATUS_URI_TOO_LONG&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca145570ed1178d3d90ad9b7652fea83cf" name="aceb714c26b828fe187a7fa72749ee75ca145570ed1178d3d90ad9b7652fea83cf"></a>HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca5398c5b8f1a8d3b7656994638dba2ad5" name="aceb714c26b828fe187a7fa72749ee75ca5398c5b8f1a8d3b7656994638dba2ad5"></a>HTTP_STATUS_RANGE_NOT_SATISFIABLE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca08107f6b0e1d7c9e2ca100700cc7200f" name="aceb714c26b828fe187a7fa72749ee75ca08107f6b0e1d7c9e2ca100700cc7200f"></a>HTTP_STATUS_EXPECTATION_FAILED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca034d9620babe01011810fe384375a92b" name="aceb714c26b828fe187a7fa72749ee75ca034d9620babe01011810fe384375a92b"></a>HTTP_STATUS_IM_A_TEAPOT&#160;</td><td class="fielddoc"><p>RFC 2324 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca3e8907f1d75b7b2f41a1e3015a212d2e" name="aceb714c26b828fe187a7fa72749ee75ca3e8907f1d75b7b2f41a1e3015a212d2e"></a>HTTP_STATUS_MISDIRECTED_REQUEST&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca837ed1203940888cbc53bdc8e1e743cb" name="aceb714c26b828fe187a7fa72749ee75ca837ed1203940888cbc53bdc8e1e743cb"></a>HTTP_STATUS_UNPROCESSABLE_CONTENT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caa6e28f289443c753660cddc9b4ce28a1" name="aceb714c26b828fe187a7fa72749ee75caa6e28f289443c753660cddc9b4ce28a1"></a>HTTP_STATUS_LOCKED&#160;</td><td class="fielddoc"><p>RFC 4918 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac268c2f9a1c531f403403a99da6a80cd" name="aceb714c26b828fe187a7fa72749ee75cac268c2f9a1c531f403403a99da6a80cd"></a>HTTP_STATUS_FAILED_DEPENDENCY&#160;</td><td class="fielddoc"><p>RFC 4918 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca92e9f9944fc5c40bd23de3ab5a7c9bfa" name="aceb714c26b828fe187a7fa72749ee75ca92e9f9944fc5c40bd23de3ab5a7c9bfa"></a>HTTP_STATUS_TOO_EARLY&#160;</td><td class="fielddoc"><p>RFC 8470 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca5ce4ed593a2ebd6f7fb3cd86c8ab5fb8" name="aceb714c26b828fe187a7fa72749ee75ca5ce4ed593a2ebd6f7fb3cd86c8ab5fb8"></a>HTTP_STATUS_UPGRADE_REQUIRED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca9ddf391ade5190c8d685d998ef35e604" name="aceb714c26b828fe187a7fa72749ee75ca9ddf391ade5190c8d685d998ef35e604"></a>HTTP_STATUS_PRECONDITION_REQUIRED&#160;</td><td class="fielddoc"><p>RFC 6585 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca892176fbdf3f79e2c888f677ea34d451" name="aceb714c26b828fe187a7fa72749ee75ca892176fbdf3f79e2c888f677ea34d451"></a>HTTP_STATUS_TOO_MANY_REQUESTS&#160;</td><td class="fielddoc"><p>RFC 6585 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca136b0743cb135e8a710fda41f129dd09" name="aceb714c26b828fe187a7fa72749ee75ca136b0743cb135e8a710fda41f129dd09"></a>HTTP_STATUS_HEADER_TOO_LARGE&#160;</td><td class="fielddoc"><p>RFC 6585 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca8a21f739779622311f20253467449575" name="aceb714c26b828fe187a7fa72749ee75ca8a21f739779622311f20253467449575"></a>HTTP_STATUS_UNAVAILABLE_LEGAL&#160;</td><td class="fielddoc"><p>RFC 7725 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9" name="aceb714c26b828fe187a7fa72749ee75ca998e34987c3c8322f4cfb89d5c0724f9"></a>HTTP_STATUS_INTERNAL_ERROR&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac9c5b4e80aa858cfe2763656db1f16e3" name="aceb714c26b828fe187a7fa72749ee75cac9c5b4e80aa858cfe2763656db1f16e3"></a>HTTP_STATUS_NOT_IMPLEMENTED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac96829d2c2cb76feb1549f0fac72c69e" name="aceb714c26b828fe187a7fa72749ee75cac96829d2c2cb76feb1549f0fac72c69e"></a>HTTP_STATUS_BAD_GATEWAY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cab355dd546e62b1478fe3ef94b554f75c" name="aceb714c26b828fe187a7fa72749ee75cab355dd546e62b1478fe3ef94b554f75c"></a>HTTP_STATUS_SERVICE_UNAVAILABLE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75caefdfc7b525c87b911d6e92a30e36cfec" name="aceb714c26b828fe187a7fa72749ee75caefdfc7b525c87b911d6e92a30e36cfec"></a>HTTP_STATUS_GATEWAY_TIMEOUT&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca59783212e968b200a33ff495fd4eec7b" name="aceb714c26b828fe187a7fa72749ee75ca59783212e968b200a33ff495fd4eec7b"></a>HTTP_STATUS_VERSION_NOT_SUPPORTED&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cac5f77dc9692876a7f19cabdc12d42c5d" name="aceb714c26b828fe187a7fa72749ee75cac5f77dc9692876a7f19cabdc12d42c5d"></a>HTTP_STATUS_VARIANT_ALSO_NEGOTIATES&#160;</td><td class="fielddoc"><p>RFC 2295 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca2876de0bf7f4302883626399b868b49b" name="aceb714c26b828fe187a7fa72749ee75ca2876de0bf7f4302883626399b868b49b"></a>HTTP_STATUS_INSUFFICIENT_STORAGE&#160;</td><td class="fielddoc"><p>RFC 4918 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca5db103eeafcd3c0b245f42065a8a096f" name="aceb714c26b828fe187a7fa72749ee75ca5db103eeafcd3c0b245f42065a8a096f"></a>HTTP_STATUS_LOOP_DETECTED&#160;</td><td class="fielddoc"><p>RFC 5842 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75ca9f989de7a400bb10b4a75613504bd889" name="aceb714c26b828fe187a7fa72749ee75ca9f989de7a400bb10b4a75613504bd889"></a>HTTP_STATUS_NOT_EXTENDED&#160;</td><td class="fielddoc"><p>RFC 2774 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="aceb714c26b828fe187a7fa72749ee75cae60954618af03c3b7f9a24f6e57974c7" name="aceb714c26b828fe187a7fa72749ee75cae60954618af03c3b7f9a24f6e57974c7"></a>HTTP_STATUS_NETWORK_AUTH_REQUIRED&#160;</td><td class="fielddoc"><p>RFC 6585 </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00206">206</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<a id="ac46610efb2f138f9f5c58f9134f11a78" name="ac46610efb2f138f9f5c58f9134f11a78"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac46610efb2f138f9f5c58f9134f11a78">&#9670;&#160;</a></span>SocketHTTP_Version</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">enum <a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>HTTP protocol versions </p>
-<table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ac46610efb2f138f9f5c58f9134f11a78abca6852c70f3b9617834ca911ee9e737" name="ac46610efb2f138f9f5c58f9134f11a78abca6852c70f3b9617834ca911ee9e737"></a>HTTP_VERSION_0_9&#160;</td><td class="fielddoc"><p>HTTP/0.9 (simple, no headers) </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ac46610efb2f138f9f5c58f9134f11a78a3932308db22120ce049dd60f3430b814" name="ac46610efb2f138f9f5c58f9134f11a78a3932308db22120ce049dd60f3430b814"></a>HTTP_VERSION_1_0&#160;</td><td class="fielddoc"><p>HTTP/1.0 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ac46610efb2f138f9f5c58f9134f11a78af1a34119b438038bc609a273f9bc08c6" name="ac46610efb2f138f9f5c58f9134f11a78af1a34119b438038bc609a273f9bc08c6"></a>HTTP_VERSION_1_1&#160;</td><td class="fielddoc"><p>HTTP/1.1 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ac46610efb2f138f9f5c58f9134f11a78a2240d6f65d5af421be670655fed8b202" name="ac46610efb2f138f9f5c58f9134f11a78a2240d6f65d5af421be670655fed8b202"></a>HTTP_VERSION_2&#160;</td><td class="fielddoc"><p>HTTP/2 </p>
-</td></tr>
-<tr><td class="fieldname"><a id="ac46610efb2f138f9f5c58f9134f11a78a907296c738aa0848b48cc07b0b776751" name="ac46610efb2f138f9f5c58f9134f11a78a907296c738aa0848b48cc07b0b776751"></a>HTTP_VERSION_3&#160;</td><td class="fielddoc"><p>HTTP/3 (future) </p>
-</td></tr>
-</table>
-
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00096">96</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="aeebb1299d256377b2abc6756c77827ef" name="aeebb1299d256377b2abc6756c77827ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeebb1299d256377b2abc6756c77827ef">&#9670;&#160;</a></span>SocketHTTP_method_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketHTTP_method_name </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td>
-          <td class="paramname"><em>method</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_method_name - Get method name string @method: HTTP method</p>
-<p>Returns: Static string like "GET", or NULL for unknown Thread-safe: Yes </p>
-
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>.</p>
-
-</div>
-</div>
-<a id="a98ea0fbffa4e6f97e009b3772c251007" name="a98ea0fbffa4e6f97e009b3772c251007"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a98ea0fbffa4e6f97e009b3772c251007">&#9670;&#160;</a></span>SocketHTTP_method_parse()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a> SocketHTTP_method_parse </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_method_parse - Parse method string @str: Method string (e.g., "GET", "POST") @len: String length (0 for strlen)</p>
-<p>Returns: HTTP method, or HTTP_METHOD_UNKNOWN if unrecognized Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="a80b627d3253567e6c73b94ddd6fe1bb5" name="a80b627d3253567e6c73b94ddd6fe1bb5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80b627d3253567e6c73b94ddd6fe1bb5">&#9670;&#160;</a></span>SocketHTTP_method_properties()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTP_8h.html#structSocketHTTP__MethodProperties">SocketHTTP_MethodProperties</a> SocketHTTP_method_properties </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTP_8h.html#af6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td>
-          <td class="paramname"><em>method</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_method_properties - Get method semantic properties @method: HTTP method</p>
-<p>Returns: Method properties structure Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="ac30c95d487cc694a02c2b46796c27d07" name="ac30c95d487cc694a02c2b46796c27d07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac30c95d487cc694a02c2b46796c27d07">&#9670;&#160;</a></span>SocketHTTP_method_valid()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketHTTP_method_valid </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_method_valid - Check if string is valid HTTP method token @str: Method string @len: String length</p>
-<p>Returns: 1 if valid token per RFC 9110, 0 otherwise Thread-safe: Yes</p>
-<p>Valid token chars: !#$%&amp;'*+-.0-9A-Z^_`a-z|~ </p>
-
-</div>
-</div>
-<a id="a2c1cc8d1f48f39b8a3cabe4a47aaa295" name="a2c1cc8d1f48f39b8a3cabe4a47aaa295"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2c1cc8d1f48f39b8a3cabe4a47aaa295">&#9670;&#160;</a></span>SocketHTTP_version_parse()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> SocketHTTP_version_parse </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_version_parse - Parse version string @str: Version string (e.g., "HTTP/1.1") @len: String length (0 for strlen)</p>
-<p>Returns: HTTP version, or HTTP_VERSION_0_9 if unrecognized Thread-safe: Yes </p>
-
-</div>
-</div>
-<a id="afd6a702248ad5bce0c0d6f1825795f1e" name="afd6a702248ad5bce0c0d6f1825795f1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd6a702248ad5bce0c0d6f1825795f1e">&#9670;&#160;</a></span>SocketHTTP_version_string()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const char * SocketHTTP_version_string </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="SocketHTTP_8h.html#ac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td>
-          <td class="paramname"><em>version</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_version_string - Get version string </p><dl class="section version"><dt>Version</dt><dd>: HTTP version</dd></dl>
-<p>Returns: Static string like "HTTP/1.1", or "HTTP/?" for unknown Thread-safe: Yes </p>
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="a4f683bdd1ab1acf36a383a7be5f5b6d2" name="a4f683bdd1ab1acf36a383a7be5f5b6d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f683bdd1ab1acf36a383a7be5f5b6d2">&#9670;&#160;</a></span>SocketHTTP_Failed</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> SocketHTTP_Failed</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<p>SocketHTTP_Failed - Generic HTTP module failure</p>
-<p>Use for general errors in HTTP core utilities. Specific errors should use module exceptions like SocketHTTP1_ParseError for parsers. </p>
-
-</div>
-</div>
-</div><!-- contents -->
+<p class="definition">Definition in file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">
