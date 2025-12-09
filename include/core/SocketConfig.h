@@ -2,12 +2,15 @@
 #define SOCKETCONFIG_INCLUDED
 
 /**
- * SocketConfig.h - Socket Library Configuration
- *
- * Part of the Socket Library
+ * @file SocketConfig.h
+ * @ingroup foundation
+ * @brief Compile-time configuration and platform detection for the socket library.
  *
  * This header provides compile-time configuration for the socket library
  * including all size limits, platform detection, and socket option mappings.
+ * All configuration values can be overridden at compile time using -D flags.
+ *
+ * @see SocketUtil.h for runtime utilities that use these configurations.
  */
 
 /* Standard includes required for configuration macros */

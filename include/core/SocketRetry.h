@@ -2,9 +2,9 @@
 #define SOCKETRETRY_INCLUDED
 
 /**
- * SocketRetry.h - Generic Retry Framework with Exponential Backoff
- *
- * Part of the Socket Library
+ * @file SocketRetry.h
+ * @ingroup utilities
+ * @brief Generic retry framework with exponential backoff and jitter.
  *
  * Provides a generic retry mechanism with exponential backoff and jitter.
  * Can be used for any operation that may fail transiently.
@@ -15,19 +15,14 @@
  * - Pluggable retry decision callback
  * - Attempt counting and statistics
  *
- * Usage:
- *   SocketRetry_Policy policy;
- *   SocketRetry_policy_defaults(&policy);
- *   policy.max_attempts = 5;
- *
- *   SocketRetry_T retry = SocketRetry_new(&policy);
- *   int result = SocketRetry_execute(retry, my_operation, should_retry, ctx);
- *   SocketRetry_free(&retry);
- *
  * Thread Safety:
  * - SocketRetry_T instances are NOT thread-safe
  * - Multiple instances can be used from different threads
  * - Policy configuration functions are thread-safe
+ *
+ * @see SocketRetry_new() for creating retry instances.
+ * @see SocketRetry_execute() for running operations with retry.
+ * @see SocketRetry_Policy for configuration options.
  */
 
 #include <stddef.h>

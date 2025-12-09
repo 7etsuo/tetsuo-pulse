@@ -5,32 +5,37 @@
 #include <stdint.h>
 
 /**
- * SocketTimer - Timer Subsystem
+ * @file SocketTimer.h
+ * @ingroup event_system
+ * @brief High-performance timer subsystem integrated with the event loop.
  *
  * Provides high-performance timer functionality integrated with the event loop.
  * Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer
  * lookup. Timer callbacks fire automatically during SocketPoll_wait().
  *
- * FEATURES:
+ * Features:
  * - One-shot and repeating timers
  * - Monotonic clock timestamps (immune to wall-clock changes)
  * - Integrated with SocketPoll event loop
  * - Thread-safe operations
  * - Arena-based memory management
  *
- * TIMING PRECISION:
+ * Timing Precision:
  * - Uses CLOCK_MONOTONIC for timestamps
  * - Millisecond resolution
  * - Timers may fire slightly after their deadline due to event loop scheduling
  *
- * THREAD SAFETY:
+ * Thread Safety:
  * - All operations are thread-safe
  * - Callbacks execute in the calling thread (SocketPoll_wait thread)
  * - Do not call SocketTimer_cancel() from within timer callbacks
  *
- * LIMITATIONS:
+ * Limitations:
  * - Maximum timer delay: ~9.2 billion milliseconds (~107 days)
  * - Timer IDs wrap around at ~4 billion (unsigned int)
+ *
+ * @see SocketPoll_T for event loop integration.
+ * @see SocketTimer_add() for creating timers.
  */
 
 #define T SocketTimer_T

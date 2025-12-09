@@ -17,7 +17,9 @@ typedef struct T *T; /* Opaque pointer to TLS context */
 
 
 /**
- * SocketTLSContext - TLS Context Management Module
+ * @file SocketTLSContext.h
+ * @ingroup security
+ * @brief TLS context management with secure defaults and certificate handling.
  *
  * Manages OpenSSL SSL_CTX objects with socket library integration. Provides
  * secure defaults (TLS1.3-only, modern ciphers), certificate loading, protocol
@@ -33,21 +35,14 @@ typedef struct T *T; /* Opaque pointer to TLS context */
  * - Non-blocking compatible configuration
  * - Exception-based error handling with detailed OpenSSL error messages
  *
- * Usage:
- *   // Server context
- *   SocketTLSContext_T server_ctx = SocketTLSContext_new_server("server.crt",
- * "server.key", "ca-bundle.pem"); SocketTLSContext_set_alpn_protos(server_ctx,
- * (const char*[]){"h2", "http/1.1"}, 2);
- *   SocketTLSContext_enable_session_cache(server_ctx, SOCKET_TLS_SESSION_CACHE_SIZE, 300);
- *
- *   // Client context
- *   SocketTLSContext_T client_ctx =
- * SocketTLSContext_new_client("ca-bundle.pem");
- *   SocketTLSContext_set_verify_mode(client_ctx, TLS_VERIFY_PEER);
- *
  * Thread safety: Contexts are not thread-safe for modification after creation.
  * Share read-only after full setup, or use per-thread contexts.
- * SSL objects created from context are per-connection and thread-safe for
+ * SSL objects created from context are per-connection and thread-safe.
+ *
+ * @see SocketTLSContext_new_server() for server context creation.
+ * @see SocketTLSContext_new_client() for client context creation.
+ * @see SocketTLS_enable() for applying TLS to sockets.
+ */
  * their lifetime.
  */
 

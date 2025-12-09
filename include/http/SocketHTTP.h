@@ -1,7 +1,7 @@
 /**
- * SocketHTTP.h - HTTP Core Types and Utilities (RFC 9110)
- *
- * Part of the Socket Library
+ * @file SocketHTTP.h
+ * @ingroup http
+ * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.
  *
  * Provides protocol-agnostic HTTP types, header handling, URI parsing,
  * and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.
@@ -20,14 +20,16 @@
  * if sharing across threads.
  *
  * Security notes:
- * - Rejects control characters and invalid syntax in URI components (host, path, query, fragment)
- * - Validates host as reg-name or basic IPv6 literal, path/query/fragment per pchar rules
- * - Media types/parameters validated as HTTP tokens (RFC 7230), rejects malformed escapes
- * - Per-component length limits (host<=255, path<=4KB, etc.) prevent resource exhaustion
+ * - Rejects control characters and invalid syntax in URI components
+ * - Validates host as reg-name or basic IPv6 literal
+ * - Media types/parameters validated as HTTP tokens (RFC 7230)
+ * - Per-component length limits prevent resource exhaustion
  * - Header names/values validated to reject injection attacks
- * - URI total length limited to prevent DoS
- * - Integer overflow protection on all size calculations and percent decoding
- * - Basic percent-encoding validation (% followed by valid hex)
+ * - Integer overflow protection on all size calculations
+ *
+ * @see SocketHTTP_Method for HTTP methods.
+ * @see SocketHTTP_Headers_T for header collections.
+ * @see SocketHTTP_URI for URI parsing.
  */
 
 #ifndef SOCKETHTTP_INCLUDED

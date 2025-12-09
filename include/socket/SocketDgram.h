@@ -7,34 +7,42 @@
 #include "socket/SocketCommon.h"  /* For SocketBase_T and Unix support */
 
 /**
- * UDP/Datagram Socket Abstraction Layer
+ * @file SocketDgram.h
+ * @ingroup core_io
+ * @brief High-level UDP/datagram socket interface with multicast and broadcast support.
  *
  * Provides a high-level, exception-based interface for UDP/datagram sockets.
  * All functions use exceptions for error handling, making code cleaner
  * and more robust than traditional error code checking.
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - POSIX-compliant system (Linux, BSD, macOS, etc.)
  * - IPv6 support in kernel (for dual-stack sockets)
  * - POSIX threads (pthread) for thread-safe error reporting
  * - NOT portable to Windows without Winsock adaptation layer
+ *
  * Features:
  * - Connectionless (sendto/recvfrom) and connected (send/recv) modes
  * - Non-blocking I/O support
  * - Thread-safe error reporting
  * - IPv4 and IPv6 dual-stack support
  * - Broadcast and multicast support
+ *
  * UDP vs TCP:
  * - Connectionless: No three-way handshake required
  * - Unreliable: Packets may be lost, duplicated, or reordered
  * - Message-oriented: Preserves message boundaries
- * - Unix domain sockets: Not supported for datagram (UDP Unix possible but omitted per architectural focus on IP networks and TCP/Unix in Socket module). Use Socket module for Unix stream sockets.
  * - Lower latency: No connection setup or ACK delays
  * - Use cases: DNS, gaming, streaming, service discovery
+ *
  * Error Handling:
  * - Most functions raise SocketDgram_Failed on errors
  * - Some functions (recvfrom, sendto) may return 0 for would-block (EAGAIN)
  * - Check individual function documentation for specific behavior
+ *
+ * @see Socket_T for TCP and Unix domain sockets.
+ * @see SocketDgram_new() for socket creation.
+ * @see SocketDgram_sendto() for connectionless sending.
  */
 
 #define T SocketDgram_T
