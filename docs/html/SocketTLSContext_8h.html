@@ -150,10 +150,8 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ac46f2ab9dacbb1af2d590f2974e21577" id="r_ac46f2ab9dacbb1af2d590f2974e21577"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></td></tr>
 <tr class="separator:ac46f2ab9dacbb1af2d590f2974e21577"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac9a12208531822c8304c23dcbcb8ba97" id="r_ac9a12208531822c8304c23dcbcb8ba97"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac9a12208531822c8304c23dcbcb8ba97">SocketTLSVerifyCallback</a>) (int preverify_ok, X509_STORE_CTX *x509_ctx, <a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> tls_ctx, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *user_data)</td></tr>
-<tr class="memdesc:ac9a12208531822c8304c23dcbcb8ba97"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSVerifyCallback - User-defined certificate verification callback @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail) @x509_ctx: OpenSSL certificate store context (access cert chain via X509_STORE_CTX_get_current_cert()) @tls_ctx: TLS context for shared configuration/data @socket: Associated socket for connection-specific info (e.g., hostname) @user_data: Opaque user data from SocketTLSContext_set_verify_callback.  <br /></td></tr>
 <tr class="separator:ac9a12208531822c8304c23dcbcb8ba97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a60686895b6fbdd1290a6f6176484bf5b" id="r_a60686895b6fbdd1290a6f6176484bf5b"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a60686895b6fbdd1290a6f6176484bf5b">SocketTLSCrlCallback</a>) (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *path, int success, void *user_data)</td></tr>
-<tr class="memdesc:a60686895b6fbdd1290a6f6176484bf5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSCrlCallback - CRL refresh notification callback @ctx: TLS context that was refreshed @path: Path to CRL file @success: 1 if refresh succeeded, 0 if failed @user_data: User data from set_crl_auto_refresh.  <br /></td></tr>
 <tr class="separator:a60686895b6fbdd1290a6f6176484bf5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1acd7a590114ffbf4307a6f5a3bab35c" id="r_a1acd7a590114ffbf4307a6f5a3bab35c"><td class="memItemLeft" align="right" valign="top">typedef OCSP_RESPONSE *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a1acd7a590114ffbf4307a6f5a3bab35c">SocketTLSOcspGenCallback</a>) (SSL *ssl, void *arg)</td></tr>
 <tr class="separator:a1acd7a590114ffbf4307a6f5a3bab35c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -161,66 +159,46 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a79a403f2f54f21c90a92e9cb73e24cbc" id="r_a79a403f2f54f21c90a92e9cb73e24cbc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a> (const char *cert_file, const char *key_file, const char *ca_file)</td></tr>
-<tr class="memdesc:a79a403f2f54f21c90a92e9cb73e24cbc"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext - TLS Context Management Module.  <br /></td></tr>
 <tr class="separator:a79a403f2f54f21c90a92e9cb73e24cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7fe51da14439d768bdf72f4ed8fbb022" id="r_a7fe51da14439d768bdf72f4ed8fbb022"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a> (const char *ca_file)</td></tr>
-<tr class="memdesc:a7fe51da14439d768bdf72f4ed8fbb022"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable)  <br /></td></tr>
 <tr class="separator:a7fe51da14439d768bdf72f4ed8fbb022"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69b7880fa99df9a39b4db5259a9e1234" id="r_a69b7880fa99df9a39b4db5259a9e1234"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a> (const <a class="el" href="SocketTLSConfig_8h.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> *config)</td></tr>
-<tr class="memdesc:a69b7880fa99df9a39b4db5259a9e1234"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_new - Create client TLS context with custom config @config: Custom TLS configuration (or NULL for defaults)  <br /></td></tr>
 <tr class="separator:a69b7880fa99df9a39b4db5259a9e1234"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e2af3e4421c3c20c7dbc4b99cfb4211" id="r_a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211">SocketTLSContext_load_certificate</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *cert_file, const char *key_file)</td></tr>
-<tr class="memdesc:a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_load_certificate - Load server certificate and private key @ctx: The TLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM)  <br /></td></tr>
 <tr class="separator:a1e2af3e4421c3c20c7dbc4b99cfb4211"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92be47dab18fc79c409fc8b450e7aa0d" id="r_a92be47dab18fc79c409fc8b450e7aa0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a92be47dab18fc79c409fc8b450e7aa0d">SocketTLSContext_add_certificate</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *hostname, const char *cert_file, const char *key_file)</td></tr>
-<tr class="memdesc:a92be47dab18fc79c409fc8b450e7aa0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting @ctx: The TLS context instance @hostname: Hostname this certificate is for (NULL for default certificate) @cert_file: Certificate file path (PEM format) @key_file: Private key file path (PEM format)  <br /></td></tr>
 <tr class="separator:a92be47dab18fc79c409fc8b450e7aa0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4de1881e05f041a3d5016cba7d5a045" id="r_ac4de1881e05f041a3d5016cba7d5a045"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac4de1881e05f041a3d5016cba7d5a045">SocketTLSContext_load_ca</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *ca_file)</td></tr>
-<tr class="memdesc:ac4de1881e05f041a3d5016cba7d5a045"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_load_ca - Load trusted CA certificates @ctx: The TLS context instance @ca_file: Path to CA file or directory containing PEM CA certs.  <br /></td></tr>
 <tr class="separator:ac4de1881e05f041a3d5016cba7d5a045"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71084c00bec22f65b90301188868b759" id="r_a71084c00bec22f65b90301188868b759"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a71084c00bec22f65b90301188868b759">SocketTLSContext_set_verify_mode</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694">TLSVerifyMode</a> mode)</td></tr>
-<tr class="memdesc:a71084c00bec22f65b90301188868b759"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_verify_mode - Set certificate verification policy @ctx: The TLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)  <br /></td></tr>
 <tr class="separator:a71084c00bec22f65b90301188868b759"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea7ca3e656e9b58706fafc3232147203" id="r_aea7ca3e656e9b58706fafc3232147203"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aea7ca3e656e9b58706fafc3232147203">SocketTLSContext_free</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> *ctx_p)</td></tr>
-<tr class="memdesc:aea7ca3e656e9b58706fafc3232147203"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_verify_callback - Register custom verification callback @ctx: The TLS context instance @callback: User callback function (NULL to disable custom and use default) @user_data: Opaque data passed to callback (lifetime managed by caller)  <br /></td></tr>
 <tr class="separator:aea7ca3e656e9b58706fafc3232147203"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2712efd6f1918aa87a3120547c0cf64d" id="r_a2712efd6f1918aa87a3120547c0cf64d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a2712efd6f1918aa87a3120547c0cf64d">SocketTLSContext_set_verify_callback</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#ac9a12208531822c8304c23dcbcb8ba97">SocketTLSVerifyCallback</a> callback, void *user_data)</td></tr>
 <tr class="separator:a2712efd6f1918aa87a3120547c0cf64d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8bf03223d7c3b3cd28f8d03fe082d15e" id="r_a8bf03223d7c3b3cd28f8d03fe082d15e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a8bf03223d7c3b3cd28f8d03fe082d15e">SocketTLSContext_load_crl</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *crl_path)</td></tr>
-<tr class="memdesc:a8bf03223d7c3b3cd28f8d03fe082d15e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_load_crl - Load CRL file or directory into verification store @ctx: TLS context instance @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed names)  <br /></td></tr>
 <tr class="separator:a8bf03223d7c3b3cd28f8d03fe082d15e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ea9577387ebc9edb186a6c491c67ab4" id="r_a9ea9577387ebc9edb186a6c491c67ab4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a9ea9577387ebc9edb186a6c491c67ab4">SocketTLSContext_refresh_crl</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *crl_path)</td></tr>
-<tr class="memdesc:a9ea9577387ebc9edb186a6c491c67ab4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load) @ctx: TLS context @crl_path: Path to refresh.  <br /></td></tr>
 <tr class="separator:a9ea9577387ebc9edb186a6c491c67ab4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac5ba25c0153bc63b6087cff6304f4938" id="r_ac5ba25c0153bc63b6087cff6304f4938"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac5ba25c0153bc63b6087cff6304f4938">SocketTLSContext_reload_crl</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *crl_path)</td></tr>
-<tr class="memdesc:ac5ba25c0153bc63b6087cff6304f4938"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl) @ctx: TLS context @crl_path: Path to CRL file or directory.  <br /></td></tr>
 <tr class="separator:ac5ba25c0153bc63b6087cff6304f4938"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac049c86b0b5edba0a7bcb73ca2e1e2eb" id="r_ac049c86b0b5edba0a7bcb73ca2e1e2eb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac049c86b0b5edba0a7bcb73ca2e1e2eb">SocketTLSContext_set_crl_auto_refresh</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *crl_path, long interval_seconds, <a class="el" href="SocketTLSContext_8h.html#a60686895b6fbdd1290a6f6176484bf5b">SocketTLSCrlCallback</a> callback, void *user_data)</td></tr>
-<tr class="memdesc:ac049c86b0b5edba0a7bcb73ca2e1e2eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh @ctx: TLS context instance @crl_path: Path to CRL file (copied to context) @interval_seconds: Refresh interval (minimum 60, 0 to disable) @callback: Optional callback for refresh notifications (may be NULL) @user_data: User data passed to callback.  <br /></td></tr>
 <tr class="separator:ac049c86b0b5edba0a7bcb73ca2e1e2eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4bee293124b9d83681f9471f0519689" id="r_ab4bee293124b9d83681f9471f0519689"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ab4bee293124b9d83681f9471f0519689">SocketTLSContext_cancel_crl_auto_refresh</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ab4bee293124b9d83681f9471f0519689"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh @ctx: TLS context instance.  <br /></td></tr>
 <tr class="separator:ab4bee293124b9d83681f9471f0519689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a516c739f9ab7a0a5968279aba78a250c" id="r_a516c739f9ab7a0a5968279aba78a250c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a516c739f9ab7a0a5968279aba78a250c">SocketTLSContext_crl_check_refresh</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a516c739f9ab7a0a5968279aba78a250c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due @ctx: TLS context instance.  <br /></td></tr>
 <tr class="separator:a516c739f9ab7a0a5968279aba78a250c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1e822bd45ec2dad56c13d541dcd0c23d" id="r_a1e822bd45ec2dad56c13d541dcd0c23d"><td class="memItemLeft" align="right" valign="top">long&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a1e822bd45ec2dad56c13d541dcd0c23d">SocketTLSContext_crl_next_refresh_ms</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a1e822bd45ec2dad56c13d541dcd0c23d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_crl_next_refresh_ms - Get milliseconds until next refresh @ctx: TLS context instance.  <br /></td></tr>
 <tr class="separator:a1e822bd45ec2dad56c13d541dcd0c23d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acad0c368922de598277e4237779504b7" id="r_acad0c368922de598277e4237779504b7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#acad0c368922de598277e4237779504b7">SocketTLSContext_set_ocsp_response</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *response, size_t len)</td></tr>
-<tr class="memdesc:acad0c368922de598277e4237779504b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling (server) @ctx: TLS context instance @response: OCSP response bytes (DER encoded) @len: Length of response.  <br /></td></tr>
 <tr class="separator:acad0c368922de598277e4237779504b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0b49040701aa37f11720d9539c046347" id="r_a0b49040701aa37f11720d9539c046347"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a0b49040701aa37f11720d9539c046347">SocketTLSContext_set_ocsp_gen_callback</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#a1acd7a590114ffbf4307a6f5a3bab35c">SocketTLSOcspGenCallback</a> cb, void *arg)</td></tr>
-<tr class="memdesc:a0b49040701aa37f11720d9539c046347"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_ocsp_gen_callback - Register dynamic OCSP response generator @ctx: TLS context (server) @cb: Callback to generate OCSP response during handshake.  <br /></td></tr>
 <tr class="separator:a0b49040701aa37f11720d9539c046347"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1a1b2392cfa8dd68e636bbef9df443f" id="r_ae1a1b2392cfa8dd68e636bbef9df443f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae1a1b2392cfa8dd68e636bbef9df443f">SocketTLS_get_ocsp_status</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:ae1a1b2392cfa8dd68e636bbef9df443f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLS_get_ocsp_status - Get OCSP status after handshake (client) @socket: TLS socket with completed handshake.  <br /></td></tr>
 <tr class="separator:ae1a1b2392cfa8dd68e636bbef9df443f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a414fb627189037256afd8c4e015b74d1" id="r_a414fb627189037256afd8c4e015b74d1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a414fb627189037256afd8c4e015b74d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request (client) @ctx: TLS context instance (client only)  <br /></td></tr>
 <tr class="separator:a414fb627189037256afd8c4e015b74d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7f214a19238ce8cd567d6ad6efa806c9" id="r_a7f214a19238ce8cd567d6ad6efa806c9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a7f214a19238ce8cd567d6ad6efa806c9">SocketTLSContext_ocsp_stapling_enabled</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a7f214a19238ce8cd567d6ad6efa806c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_ocsp_stapling_enabled - Check if OCSP stapling is enabled @ctx: TLS context instance.  <br /></td></tr>
 <tr class="separator:a7f214a19238ce8cd567d6ad6efa806c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">: Subject name being looked up</h2></td></tr>
@@ -234,97 +212,66 @@ Functions</h2></td></tr>
 &#160;&#160;<a class="el" href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a> = 1
 <br />
  }</td></tr>
-<tr class="memdesc:a4d930163393a67950a5378e540c0e939"><td class="mdescLeft">&#160;</td><td class="mdescRight">CTValidationMode - Certificate Transparency validation mode.  <a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">More...</a><br /></td></tr>
 <tr class="separator:a4d930163393a67950a5378e540c0e939"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c2914ee879d575869932c3a3aed4863" id="r_a5c2914ee879d575869932c3a3aed4863"><td class="memItemLeft" align="right" valign="top">typedef X509 *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a5c2914ee879d575869932c3a3aed4863">SocketTLSCertLookupCallback</a>) (X509_STORE_CTX *store_ctx, X509_NAME *name, void *user_data)</td></tr>
-<tr class="memdesc:a5c2914ee879d575869932c3a3aed4863"><td class="mdescLeft">&#160;</td><td class="mdescRight">CTValidationMode - Certificate Transparency validation mode.  <br /></td></tr>
 <tr class="separator:a5c2914ee879d575869932c3a3aed4863"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa53566f8d54960bb2d44516a50f67c70" id="r_aa53566f8d54960bb2d44516a50f67c70"><td class="memItemLeft" align="right" valign="top">typedef const char *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a>) (const char **client_protos, size_t client_count, void *user_data)</td></tr>
-<tr class="memdesc:aa53566f8d54960bb2d44516a50f67c70"><td class="mdescLeft">&#160;</td><td class="mdescRight">CTValidationMode - Certificate Transparency validation mode.  <br /></td></tr>
 <tr class="separator:aa53566f8d54960bb2d44516a50f67c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a445003fff70029dd096df971801be0e4" id="r_a445003fff70029dd096df971801be0e4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a445003fff70029dd096df971801be0e4">SocketTLS_PinVerifyFailed</a></td></tr>
-<tr class="memdesc:a445003fff70029dd096df971801be0e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">CTValidationMode - Certificate Transparency validation mode.  <br /></td></tr>
 <tr class="separator:a445003fff70029dd096df971801be0e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1d9ff9d7e15f5a798d316ddf6ec6d53" id="r_ae1d9ff9d7e15f5a798d316ddf6ec6d53"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae1d9ff9d7e15f5a798d316ddf6ec6d53">SocketTLSContext_set_cert_lookup_callback</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#a5c2914ee879d575869932c3a3aed4863">SocketTLSCertLookupCallback</a> callback, void *user_data)</td></tr>
-<tr class="memdesc:ae1d9ff9d7e15f5a798d316ddf6ec6d53"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_cert_lookup_callback - Register custom cert lookup @ctx: TLS context instance @callback: Lookup function (NULL to disable) @user_data: User data passed to callback.  <br /></td></tr>
 <tr class="separator:ae1d9ff9d7e15f5a798d316ddf6ec6d53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7703e1d2c80b49601af8237e81729ef" id="r_aa7703e1d2c80b49601af8237e81729ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa7703e1d2c80b49601af8237e81729ef">SocketTLSContext_set_min_protocol</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, int version)</td></tr>
-<tr class="memdesc:aa7703e1d2c80b49601af8237e81729ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_min_protocol - Set minimum supported TLS version @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:aa7703e1d2c80b49601af8237e81729ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad094c4db92c9979bcde108166193abee" id="r_ad094c4db92c9979bcde108166193abee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ad094c4db92c9979bcde108166193abee">SocketTLSContext_set_max_protocol</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, int version)</td></tr>
-<tr class="memdesc:ad094c4db92c9979bcde108166193abee"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_max_protocol - Set maximum supported TLS version @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:ad094c4db92c9979bcde108166193abee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e731151980c8c30a7fbb18da74ddffa" id="r_a2e731151980c8c30a7fbb18da74ddffa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a2e731151980c8c30a7fbb18da74ddffa">SocketTLSContext_set_cipher_list</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *ciphers)</td></tr>
-<tr class="memdesc:a2e731151980c8c30a7fbb18da74ddffa"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The TLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults.  <br /></td></tr>
 <tr class="separator:a2e731151980c8c30a7fbb18da74ddffa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fcc29a81cf5c643ee9a56deb46b9ec8" id="r_a4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a4fcc29a81cf5c643ee9a56deb46b9ec8">SocketTLSContext_set_alpn_protos</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char **protos, size_t count)</td></tr>
-<tr class="memdesc:a4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The TLS context instance @protos: Array of null-terminated protocol strings (e.g., "h2", "http/1.1") @count: Number of protocols.  <br /></td></tr>
 <tr class="separator:a4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab7c088402bdf132a710551ebe2268ed0" id="r_ab7c088402bdf132a710551ebe2268ed0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ab7c088402bdf132a710551ebe2268ed0">SocketTLSContext_set_alpn_callback</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a> callback, void *user_data)</td></tr>
-<tr class="memdesc:ab7c088402bdf132a710551ebe2268ed0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback @ctx: The TLS context instance @callback: Function to call for ALPN protocol selection @user_data: User data passed to callback function.  <br /></td></tr>
 <tr class="separator:ab7c088402bdf132a710551ebe2268ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f0a68e802e789df40eaa28cb641a422" id="r_a6f0a68e802e789df40eaa28cb641a422"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a6f0a68e802e789df40eaa28cb641a422">SocketTLSContext_enable_session_cache</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, size_t max_sessions, long timeout_seconds)</td></tr>
-<tr class="memdesc:a6f0a68e802e789df40eaa28cb641a422"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_enable_session_cache - Enable session caching infrastructure @ctx: The TLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)  <br /></td></tr>
 <tr class="separator:a6f0a68e802e789df40eaa28cb641a422"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51fa29a23c87a8f2a9c7b71b6731fb50" id="r_a51fa29a23c87a8f2a9c7b71b6731fb50"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a51fa29a23c87a8f2a9c7b71b6731fb50">SocketTLSContext_set_session_cache_size</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, size_t size)</td></tr>
-<tr class="memdesc:a51fa29a23c87a8f2a9c7b71b6731fb50"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_session_cache_size - Limit cached sessions @ctx: The TLS context instance @size: Max number of sessions to cache (&gt;0)  <br /></td></tr>
 <tr class="separator:a51fa29a23c87a8f2a9c7b71b6731fb50"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2093721c235cb8ebc83e90606abdcb33" id="r_a2093721c235cb8ebc83e90606abdcb33"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a2093721c235cb8ebc83e90606abdcb33">SocketTLSContext_get_cache_stats</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, size_t *hits, size_t *misses, size_t *stores)</td></tr>
-<tr class="memdesc:a2093721c235cb8ebc83e90606abdcb33"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_cache_stats - Get session cache statistics @ctx: The TLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored.  <br /></td></tr>
 <tr class="separator:a2093721c235cb8ebc83e90606abdcb33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7d40e475eec529625a3d6ba74d23f4a" id="r_ae7d40e475eec529625a3d6ba74d23f4a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae7d40e475eec529625a3d6ba74d23f4a">SocketTLSContext_enable_session_tickets</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *key, size_t key_len)</td></tr>
-<tr class="memdesc:ae7d40e475eec529625a3d6ba74d23f4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets @ctx: The TLS context instance @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes required) @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)  <br /></td></tr>
 <tr class="separator:ae7d40e475eec529625a3d6ba74d23f4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34caeef50e78017625d2eb62142a7e45" id="r_a34caeef50e78017625d2eb62142a7e45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a34caeef50e78017625d2eb62142a7e45">SocketTLSContext_add_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *sha256_hash)</td></tr>
-<tr class="memdesc:a34caeef50e78017625d2eb62142a7e45"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format) @ctx: The TLS context instance @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding.  <br /></td></tr>
 <tr class="separator:a34caeef50e78017625d2eb62142a7e45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afd50881da0db97098204ff6fa920bb26" id="r_afd50881da0db97098204ff6fa920bb26"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#afd50881da0db97098204ff6fa920bb26">SocketTLSContext_add_pin_hex</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *hex_hash)</td></tr>
-<tr class="memdesc:afd50881da0db97098204ff6fa920bb26"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string) @ctx: The TLS context instance @hex_hash: 64-character hex string (optionally prefixed with "sha256//")  <br /></td></tr>
 <tr class="separator:afd50881da0db97098204ff6fa920bb26"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa535f69cf93b2f0dec403e71336b0682" id="r_aa535f69cf93b2f0dec403e71336b0682"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa535f69cf93b2f0dec403e71336b0682">SocketTLSContext_add_pin_from_cert</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *cert_file)</td></tr>
-<tr class="memdesc:aa535f69cf93b2f0dec403e71336b0682"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate @ctx: The TLS context instance @cert_file: Path to PEM-encoded certificate file.  <br /></td></tr>
 <tr class="separator:aa535f69cf93b2f0dec403e71336b0682"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf5982c65823fa0eedc34d8d933710a9" id="r_acf5982c65823fa0eedc34d8d933710a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#acf5982c65823fa0eedc34d8d933710a9">SocketTLSContext_add_pin_from_x509</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const X509 *cert)</td></tr>
-<tr class="memdesc:acf5982c65823fa0eedc34d8d933710a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object @ctx: The TLS context instance @cert: OpenSSL X509 certificate object.  <br /></td></tr>
 <tr class="separator:acf5982c65823fa0eedc34d8d933710a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae201aacce977d32ab0187dd8b97d6c9a" id="r_ae201aacce977d32ab0187dd8b97d6c9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae201aacce977d32ab0187dd8b97d6c9a">SocketTLSContext_clear_pins</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ae201aacce977d32ab0187dd8b97d6c9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_clear_pins - Remove all certificate pins @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:ae201aacce977d32ab0187dd8b97d6c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a972b0da962c5515936444b6921182d" id="r_a8a972b0da962c5515936444b6921182d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a8a972b0da962c5515936444b6921182d">SocketTLSContext_set_pin_enforcement</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, int enforce)</td></tr>
-<tr class="memdesc:a8a972b0da962c5515936444b6921182d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_pin_enforcement - Set pin enforcement mode @ctx: The TLS context instance @enforce: 1 = strict (fail on mismatch), 0 = warn only.  <br /></td></tr>
 <tr class="separator:a8a972b0da962c5515936444b6921182d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9d03fb564c11628d54e76a1c177b8494" id="r_a9d03fb564c11628d54e76a1c177b8494"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a9d03fb564c11628d54e76a1c177b8494">SocketTLSContext_get_pin_enforcement</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a9d03fb564c11628d54e76a1c177b8494"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_pin_enforcement - Get current enforcement mode @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a9d03fb564c11628d54e76a1c177b8494"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aec2e531425cc03bff359517f60aa474c" id="r_aec2e531425cc03bff359517f60aa474c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aec2e531425cc03bff359517f60aa474c">SocketTLSContext_get_pin_count</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:aec2e531425cc03bff359517f60aa474c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_pin_count - Get number of configured pins @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:aec2e531425cc03bff359517f60aa474c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea37c149f7babbf14c28caf0ffef97cf" id="r_aea37c149f7babbf14c28caf0ffef97cf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aea37c149f7babbf14c28caf0ffef97cf">SocketTLSContext_has_pins</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:aea37c149f7babbf14c28caf0ffef97cf"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_has_pins - Check if any pins are configured @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:aea37c149f7babbf14c28caf0ffef97cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac051204c676250b114e00af223055686" id="r_ac051204c676250b114e00af223055686"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ac051204c676250b114e00af223055686">SocketTLSContext_verify_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const unsigned char *sha256_hash)</td></tr>
-<tr class="memdesc:ac051204c676250b114e00af223055686"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_verify_pin - Check if hash matches any pin @ctx: The TLS context instance @sha256_hash: 32-byte hash to check.  <br /></td></tr>
 <tr class="separator:ac051204c676250b114e00af223055686"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae69fbca6dae1712eb7abd1f1b268926b" id="r_ae69fbca6dae1712eb7abd1f1b268926b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ae69fbca6dae1712eb7abd1f1b268926b">SocketTLSContext_verify_cert_pin</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const X509 *cert)</td></tr>
-<tr class="memdesc:ae69fbca6dae1712eb7abd1f1b268926b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_verify_cert_pin - Check if certificate matches any pin @ctx: The TLS context instance @cert: X509 certificate to verify.  <br /></td></tr>
 <tr class="separator:ae69fbca6dae1712eb7abd1f1b268926b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af27bede9402c6c8c7541143e019c635f" id="r_af27bede9402c6c8c7541143e019c635f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#af27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">CTValidationMode</a> mode)</td></tr>
-<tr class="memdesc:af27bede9402c6c8c7541143e019c635f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_enable_ct - Enable Certificate Transparency verification @ctx: The TLS context instance (client only) @mode: Validation mode (strict or permissive)  <br /></td></tr>
 <tr class="separator:af27bede9402c6c8c7541143e019c635f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3b70029e86352f55e3710673ba30c23f" id="r_a3b70029e86352f55e3710673ba30c23f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a3b70029e86352f55e3710673ba30c23f">SocketTLSContext_ct_enabled</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a3b70029e86352f55e3710673ba30c23f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_ct_enabled - Check if CT verification is enabled @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a3b70029e86352f55e3710673ba30c23f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af18e867664012c78a758c5454f62c367" id="r_af18e867664012c78a758c5454f62c367"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">CTValidationMode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#af18e867664012c78a758c5454f62c367">SocketTLSContext_get_ct_mode</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:af18e867664012c78a758c5454f62c367"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_ct_mode - Get current CT validation mode @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:af18e867664012c78a758c5454f62c367"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada967caf61c070399281b088b35ed78a" id="r_ada967caf61c070399281b088b35ed78a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#ada967caf61c070399281b088b35ed78a">SocketTLSContext_set_ctlog_list_file</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx, const char *log_file)</td></tr>
-<tr class="memdesc:ada967caf61c070399281b088b35ed78a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_set_ctlog_list_file - Load custom CT log list @ctx: The TLS context instance (client only) @log_file: Path to CT log list file (OpenSSL format)  <br /></td></tr>
 <tr class="separator:ada967caf61c070399281b088b35ed78a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6e8aae1b6b1182d3f83b8673fdbbe945" id="r_a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a6e8aae1b6b1182d3f83b8673fdbbe945">SocketTLSContext_get_ssl_ctx</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a6e8aae1b6b1182d3f83b8673fdbbe945"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39bd71708494c1c833d3064c3a70f8ad" id="r_a39bd71708494c1c833d3064c3a70f8ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#a39bd71708494c1c833d3064c3a70f8ad">SocketTLSContext_is_server</a> (<a class="el" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a39bd71708494c1c833d3064c3a70f8ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTLSContext_is_server - Check if context is server-mode @ctx: The TLS context instance.  <br /></td></tr>
 <tr class="separator:a39bd71708494c1c833d3064c3a70f8ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -356,8 +303,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>CTValidationMode - Certificate Transparency validation mode. </p>
+<p>CTValidationMode - Certificate Transparency validation mode </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00536">536</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
@@ -374,8 +320,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>CTValidationMode - Certificate Transparency validation mode. </p>
+<p>CTValidationMode - Certificate Transparency validation mode </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00450">450</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
@@ -408,8 +353,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>SocketTLSCrlCallback - CRL refresh notification callback @ctx: TLS context that was refreshed @path: Path to CRL file @success: 1 if refresh succeeded, 0 if failed @user_data: User data from set_crl_auto_refresh. </p>
+<p>SocketTLSCrlCallback - CRL refresh notification callback @ctx: TLS context that was refreshed @path: Path to CRL file @success: 1 if refresh succeeded, 0 if failed @user_data: User data from set_crl_auto_refresh</p>
 <p>Called after each refresh attempt. On failure, the old CRL remains in effect. Application should log failures and potentially alert. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00289">289</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
@@ -443,8 +387,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>SocketTLSVerifyCallback - User-defined certificate verification callback @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail) @x509_ctx: OpenSSL certificate store context (access cert chain via X509_STORE_CTX_get_current_cert()) @tls_ctx: TLS context for shared configuration/data @socket: Associated socket for connection-specific info (e.g., hostname) @user_data: Opaque user data from SocketTLSContext_set_verify_callback. </p>
+<p>SocketTLSVerifyCallback - User-defined certificate verification callback @preverify_ok: OpenSSL pre-verification result (1=OK, 0=fail) @x509_ctx: OpenSSL certificate store context (access cert chain via X509_STORE_CTX_get_current_cert()) @tls_ctx: TLS context for shared configuration/data @socket: Associated socket for connection-specific info (e.g., hostname) @user_data: Opaque user data from SocketTLSContext_set_verify_callback</p>
 <p>Called during TLS verification to allow custom logic (e.g., pinning, policy checks). Return 1 to accept/continue verification, 0 to fail (aborts handshake). Can raise exceptions for detailed errors. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00183">183</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
@@ -463,12 +406,11 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>CTValidationMode - Certificate Transparency validation mode. </p>
+<p>CTValidationMode - Certificate Transparency validation mode </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8" name="a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8"></a>CT_VALIDATION_PERMISSIVE&#160;</td><td class="fielddoc"><p>Log but don't fail on missing SCTs. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8" name="a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8"></a>CT_VALIDATION_PERMISSIVE&#160;</td><td class="fielddoc"><p>Log but don't fail on missing SCTs </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab" name="a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"></a>CT_VALIDATION_STRICT&#160;</td><td class="fielddoc"><p>Require valid SCTs, fail otherwise. </p>
+<tr><td class="fieldname"><a id="a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab" name="a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"></a>CT_VALIDATION_STRICT&#160;</td><td class="fielddoc"><p>Require valid SCTs, fail otherwise </p>
 </td></tr>
 </table>
 
@@ -500,8 +442,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLS_get_ocsp_status - Get OCSP status after handshake (client) @socket: TLS socket with completed handshake. </p>
+<p>SocketTLS_get_ocsp_status - Get OCSP status after handshake (client) @socket: TLS socket with completed handshake</p>
 <p>Parses stapled OCSP response from server, validates, returns status. Returns OCSP_STATUS_GOOD=1, REVOKED=2, UNKNOWN=3, NONE=0 if no response. Caller can check for revocation.</p>
 <p>Returns: int (OCSP status code) Raises: None (returns error code on parse fail) Thread-safe: Yes (post-handshake) </p>
 
@@ -552,8 +493,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting @ctx: The TLS context instance @hostname: Hostname this certificate is for (NULL for default certificate) @cert_file: Certificate file path (PEM format) @key_file: Private key file path (PEM format) </p>
+<p>SocketTLSContext_add_certificate - Add certificate mapping for SNI virtual hosting @ctx: The TLS context instance @hostname: Hostname this certificate is for (NULL for default certificate) @cert_file: Certificate file path (PEM format) @key_file: Private key file path (PEM format)</p>
 <p>Adds a certificate/key pair for SNI-based virtual hosting. Multiple certificates can be loaded for different hostnames. The first certificate loaded becomes the default if no hostname match is found.</p>
 <p>Returns: void Raises: SocketTLS_Failed on error (file not found, invalid cert/key, allocation) Thread-safe: No (modifies shared context) </p>
 
@@ -592,8 +532,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format) @ctx: The TLS context instance @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding. </p>
+<p>SocketTLSContext_add_pin - Add SPKI SHA256 pin (binary format) @ctx: The TLS context instance @sha256_hash: 32-byte SHA256 hash of the SPKI DER encoding</p>
 <p>Adds a certificate pin using raw binary hash. The hash is copied to context-owned storage. Duplicate pins are silently ignored.</p>
 <p>Returns: void Raises: SocketTLS_Failed if hash is NULL or max pins exceeded Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -632,8 +571,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate @ctx: The TLS context instance @cert_file: Path to PEM-encoded certificate file. </p>
+<p>SocketTLSContext_add_pin_from_cert - Extract and add pin from certificate @ctx: The TLS context instance @cert_file: Path to PEM-encoded certificate file</p>
 <p>Loads certificate, extracts SPKI, computes SHA256, and adds as pin. Useful for pinning leaf certificates or intermediate CAs.</p>
 <p>Returns: void Raises: SocketTLS_Failed if file invalid, parse error, or max pins exceeded Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -672,8 +610,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object @ctx: The TLS context instance @cert: OpenSSL X509 certificate object. </p>
+<p>SocketTLSContext_add_pin_from_x509 - Add pin from X509 certificate object @ctx: The TLS context instance @cert: OpenSSL X509 certificate object</p>
 <p>Extracts SPKI hash from provided X509 and adds as pin. The certificate is not freed by this function; caller retains ownership.</p>
 <p>Returns: void Raises: SocketTLS_Failed if cert NULL, extraction fails, or max exceeded Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -712,8 +649,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string) @ctx: The TLS context instance @hex_hash: 64-character hex string (optionally prefixed with "sha256//") </p>
+<p>SocketTLSContext_add_pin_hex - Add SPKI SHA256 pin (hex string) @ctx: The TLS context instance @hex_hash: 64-character hex string (optionally prefixed with "sha256//")</p>
 <p>Adds a certificate pin using hex-encoded hash. Accepts both uppercase and lowercase hex. Optional "sha256//" prefix is stripped for HPKP compatibility.</p>
 <p>Returns: void Raises: SocketTLS_Failed if format invalid or max pins exceeded Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -742,8 +678,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh @ctx: TLS context instance. </p>
+<p>SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh @ctx: TLS context instance</p>
 <p>Cancels any configured automatic refresh. The current CRL remains loaded.</p>
 <p>Returns: void Raises: None Thread-safe: Yes (mutex protected) </p>
 
@@ -772,8 +707,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_clear_pins - Remove all certificate pins @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_clear_pins - Remove all certificate pins @ctx: The TLS context instance</p>
 <p>Securely clears all configured pins. Memory is zeroed before release. Pin enforcement mode is preserved.</p>
 <p>Returns: void Raises: None Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -802,8 +736,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due @ctx: TLS context instance. </p>
+<p>SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due @ctx: TLS context instance</p>
 <p>Call this periodically from your event loop. If a refresh is scheduled and due, it will reload the CRL and invoke the callback.</p>
 <p>Returns: 1 if refresh was performed, 0 if not due or not configured Raises: None (errors reported via callback) Thread-safe: Yes (mutex protected) </p>
 
@@ -832,8 +765,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_crl_next_refresh_ms - Get milliseconds until next refresh @ctx: TLS context instance. </p>
+<p>SocketTLSContext_crl_next_refresh_ms - Get milliseconds until next refresh @ctx: TLS context instance</p>
 <p>Returns time until next scheduled CRL refresh. Useful for setting poll/select timeouts in event loops.</p>
 <p>Returns: -1 if disabled, 0 if due now/past, positive ms until next, LONG_MAX if far future (overflow prot.) Raises: None Thread-safe: Yes (read-only) </p>
 
@@ -862,8 +794,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_ct_enabled - Check if CT verification is enabled @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_ct_enabled - Check if CT verification is enabled @ctx: The TLS context instance</p>
 <p>Returns: 1 if CT enabled, 0 if disabled Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -901,8 +832,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_enable_ct - Enable Certificate Transparency verification @ctx: The TLS context instance (client only) @mode: Validation mode (strict or permissive) </p>
+<p>SocketTLSContext_enable_ct - Enable Certificate Transparency verification @ctx: The TLS context instance (client only) @mode: Validation mode (strict or permissive)</p>
 <p>Enables CT verification for client connections. In strict mode, connections fail if no valid SCTs are present. In permissive mode, missing SCTs are logged but don't cause failure.</p>
 <p>Returns: void Raises: SocketTLS_Failed if CT not supported or server context Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -931,9 +861,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request (client) @ctx: TLS context instance (client only) </p>
-<p>Configures client context to request OCSP stapled responses from servers during TLS handshake. After handshake, use <a class="el" href="SocketTLSContext_8h.html#ae1a1b2392cfa8dd68e636bbef9df443f" title="SocketTLS_get_ocsp_status - Get OCSP status after handshake (client) @socket: TLS socket with complet...">SocketTLS_get_ocsp_status()</a> to check the stapled response.</p>
+<p>SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request (client) @ctx: TLS context instance (client only)</p>
+<p>Configures client context to request OCSP stapled responses from servers during TLS handshake. After handshake, use <a class="el" href="SocketTLSContext_8h.html#ae1a1b2392cfa8dd68e636bbef9df443f">SocketTLS_get_ocsp_status()</a> to check the stapled response.</p>
 <p>Note: This enables the STATUS_REQUEST TLS extension. The server must support OCSP stapling and have a valid OCSP response configured.</p>
 <p>Returns: void Raises: SocketTLS_Failed if server context or OpenSSL error Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -978,8 +907,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_enable_session_cache - Enable session caching infrastructure @ctx: The TLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s) </p>
+<p>SocketTLSContext_enable_session_cache - Enable session caching infrastructure @ctx: The TLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)</p>
 <p>Extends <code>SocketTLSContext_T</code> with session cache configuration. Implements session cache using OpenSSL's built-in caching with thread-safe storage. Adds cache size and timeout configuration. Enables statistics tracking.</p>
 <p>Returns: void Raises: SocketTLS_Failed if cannot enable or configure Thread-safe: Yes (mutex protected) - modifies shared context during setup </p>
 
@@ -1024,8 +952,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets @ctx: The TLS context instance @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes required) @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes) </p>
+<p>SocketTLSContext_enable_session_tickets - Enable stateless session resumption using tickets @ctx: The TLS context instance @key: Ticket encryption key material (SOCKET_TLS_TICKET_KEY_LEN bytes required) @key_len: Length of key (must be SOCKET_TLS_TICKET_KEY_LEN = 80 bytes)</p>
 <p>Implements stateless session resumption using encrypted session tickets. OpenSSL requires 80 bytes: 16 (name) + 32 (AES) + 32 (HMAC). Configures ticket key management, encryption/decryption using provided key. Supports ticket lifetime matching session timeout, and basic rotation. Requires cache enabled for full effect.</p>
 <p>Returns: void Raises: SocketTLS_Failed if invalid key length or OpenSSL config fails Thread-safe: Yes (mutex protected) </p>
 
@@ -1054,8 +981,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_verify_callback - Register custom verification callback @ctx: The TLS context instance @callback: User callback function (NULL to disable custom and use default) @user_data: Opaque data passed to callback (lifetime managed by caller) </p>
+<p>SocketTLSContext_set_verify_callback - Register custom verification callback @ctx: The TLS context instance @callback: User callback function (NULL to disable custom and use default) @user_data: Opaque data passed to callback (lifetime managed by caller)</p>
 <p>Sets a custom verification callback, overriding default OpenSSL behavior while respecting current verify_mode. The wrapper ensures thread-safety and error propagation via exceptions.</p>
 <p>Returns: void Raises: SocketTLS_Failed if OpenSSL configuration fails Thread-safe: Yes (mutex protected) (modifies shared context; call before sharing) SocketTLSContext_free - Dispose of TLS context and resources @ctx_p: Pointer to context pointer (set to NULL on success)</p>
 <p>Frees the SSL_CTX, Arena (internal allocations), SNI arrays/certs/keys, ALPN data, and securely wipes sensitive material (e.g., session ticket keys via OPENSSL_cleanse, pinning data via SocketCrypto_secure_clear). Caller must not use context after free. Reverse of new_server/client. Security: Ensures no residual sensitive data in memory; thread-safe but avoid concurrent access.</p>
@@ -1110,8 +1036,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_get_cache_stats - Get session cache statistics @ctx: The TLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored. </p>
+<p>SocketTLSContext_get_cache_stats - Get session cache statistics @ctx: The TLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored</p>
 <p>Fills provided pointers with current session cache statistics. Statistics are thread-safe and cumulative since cache enable. If pointers NULL, skipped.</p>
 <p>Returns: void Raises: None Thread-safe: Yes </p>
 
@@ -1140,8 +1065,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_get_ct_mode - Get current CT validation mode @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_get_ct_mode - Get current CT validation mode @ctx: The TLS context instance</p>
 <p>Returns: CT validation mode (strict or permissive) if enabled, or CT_VALIDATION_PERMISSIVE if disabled Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -1169,8 +1093,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_get_pin_count - Get number of configured pins @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_get_pin_count - Get number of configured pins @ctx: The TLS context instance</p>
 <p>Returns: Number of pins currently configured Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -1198,8 +1121,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_get_pin_enforcement - Get current enforcement mode @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_get_pin_enforcement - Get current enforcement mode @ctx: The TLS context instance</p>
 <p>Returns: 1 if strict enforcement, 0 if warn-only Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -1227,9 +1149,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The TLS context instance. </p>
-<p>Internal access to raw SSL_CTX for <a class="el" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f" title="SocketTLS_enable - Enable TLS on a socket using the provided context @socket: The socket instance to ...">SocketTLS_enable()</a> etc.</p>
+<p>SocketTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The TLS context instance</p>
+<p>Internal access to raw SSL_CTX for <a class="el" href="SocketTLS_8h.html#ab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable()</a> etc.</p>
 <p>Returns: void* to SSL_CTX (cast as needed) Raises: None Thread-safe: Yes </p>
 
 </div>
@@ -1257,8 +1178,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_has_pins - Check if any pins are configured @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_has_pins - Check if any pins are configured @ctx: The TLS context instance</p>
 <p>Returns: 1 if pins configured, 0 if none Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -1286,8 +1206,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_is_server - Check if context is server-mode @ctx: The TLS context instance. </p>
+<p>SocketTLSContext_is_server - Check if context is server-mode @ctx: The TLS context instance</p>
 <p>Internal helper to determine client vs server configuration.</p>
 <p>Returns: 1 if server, 0 if client Raises: None Thread-safe: Yes </p>
 
@@ -1326,8 +1245,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_load_ca - Load trusted CA certificates @ctx: The TLS context instance @ca_file: Path to CA file or directory containing PEM CA certs. </p>
+<p>SocketTLSContext_load_ca - Load trusted CA certificates @ctx: The TLS context instance @ca_file: Path to CA file or directory containing PEM CA certs</p>
 <p>Loads CA certs for peer verification. Tries as file then directory.</p>
 <p>Returns: void Raises: SocketTLS_Failed on load errors Thread-safe: Yes (mutex protected) </p>
 
@@ -1372,8 +1290,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_load_certificate - Load server certificate and private key @ctx: The TLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM) </p>
+<p>SocketTLSContext_load_certificate - Load server certificate and private key @ctx: The TLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM)</p>
 <p>Loads and validates server certificate/private key pair. Verifies key matches cert.</p>
 <p>Returns: void Raises: SocketTLS_Failed on file errors, format issues, or mismatch Thread-safe: Yes (mutex protected) - modifies shared context </p>
 
@@ -1412,8 +1329,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_load_crl - Load CRL file or directory into verification store @ctx: TLS context instance @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed names) </p>
+<p>SocketTLSContext_load_crl - Load CRL file or directory into verification store @ctx: TLS context instance @crl_path: Path to CRL file (PEM/DER) or directory of CRL files (hashed names)</p>
 <p>Loads CRL data into the context's X509_STORE for revocation checking during peer verification. Supports single file or directory (auto-detect via stat). Multiple calls append additional CRLs. Enables CRL_CHECK flags automatically. CRL refresh not implemented (manual reload via re-call).</p>
 <p>Returns: void Raises: SocketTLS_Failed if load/path invalid or OpenSSL error Thread-safe: Yes (mutex protected) - modifies shared store; call during setup Note: Effective only if verify_mode requires peer cert check (PEER/FAIL_IF_NO_PEER) </p>
 
@@ -1442,8 +1358,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_new - Create client TLS context with custom config @config: Custom TLS configuration (or NULL for defaults) </p>
+<p>SocketTLSContext_new - Create client TLS context with custom config @config: Custom TLS configuration (or NULL for defaults)</p>
 <p>Creates a client-side TLS context with provided configuration. If config NULL, uses secure defaults.</p>
 <p>Returns: New opaque SocketTLSContext_T instance Raises: SocketTLS_Failed on OpenSSL errors Thread-safe: Yes </p>
 
@@ -1472,8 +1387,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable) </p>
+<p>SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable)</p>
 <p>Creates a client-side TLS context with TLS1.3-only and modern ciphers (ECDHE + AES-GCM/ChaCha20-Poly1305). Loads CA if provided and enables peer verification by default. Security: Enforces TLS 1.3-only protocol; disables renegotiation and compression; warns on missing CA (MITM risk); peer verification required; securely clears sensitive data on free.</p>
 <p>Returns: New opaque SocketTLSContext_T instance Raises: SocketTLS_Failed on OpenSSL errors or invalid CA Thread-safe: Yes </p>
 
@@ -1520,8 +1434,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext - TLS Context Management Module. </p>
+<p>SocketTLSContext - TLS Context Management Module</p>
 <p>Manages OpenSSL SSL_CTX objects with socket library integration. Provides secure defaults (TLS1.3-only, modern ciphers), certificate loading, protocol configuration, and session caching. Supports both client and server contexts with Arena-based memory management for zero-leak operation.</p>
 <p>Features:</p><ul>
 <li>TLS1.3-only enforcement for forward secrecy and security</li>
@@ -1563,8 +1476,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_ocsp_stapling_enabled - Check if OCSP stapling is enabled @ctx: TLS context instance. </p>
+<p>SocketTLSContext_ocsp_stapling_enabled - Check if OCSP stapling is enabled @ctx: TLS context instance</p>
 <p>Returns: 1 if OCSP stapling request enabled, 0 otherwise Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -1602,8 +1514,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load) @ctx: TLS context @crl_path: Path to refresh. </p>
+<p>SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load) @ctx: TLS context @crl_path: Path to refresh</p>
 <p>Re-loads the CRL from path (appends to store). Use for periodic refresh. For full store refresh, recreate context (CRLs accumulate). Thread-safe: Yes (mutex protected) Raises: SocketTLS_Failed on load error </p>
 
 </div>
@@ -1641,9 +1552,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl) @ctx: TLS context @crl_path: Path to CRL file or directory. </p>
-<p>Reloads the CRL from the specified path. This is an alias for <a class="el" href="SocketTLSContext_8h.html#a9ea9577387ebc9edb186a6c491c67ab4" title="SocketTLSContext_refresh_crl - Refresh a specific CRL (re-load) @ctx: TLS context @crl_path: Path to ...">SocketTLSContext_refresh_crl()</a> provided for semantic clarity. Use when you have downloaded an updated CRL and want to reload it.</p>
+<p>SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl) @ctx: TLS context @crl_path: Path to CRL file or directory</p>
+<p>Reloads the CRL from the specified path. This is an alias for <a class="el" href="SocketTLSContext_8h.html#a9ea9577387ebc9edb186a6c491c67ab4">SocketTLSContext_refresh_crl()</a> provided for semantic clarity. Use when you have downloaded an updated CRL and want to reload it.</p>
 <p>Thread-safe: Yes (mutex protected) Raises: SocketTLS_Failed on load error </p>
 
 </div>
@@ -1687,8 +1597,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback @ctx: The TLS context instance @callback: Function to call for ALPN protocol selection @user_data: User data passed to callback function. </p>
+<p>SocketTLSContext_set_alpn_callback - Set custom ALPN protocol selection callback @ctx: The TLS context instance @callback: Function to call for ALPN protocol selection @user_data: User data passed to callback function</p>
 <p>Sets a custom callback for ALPN protocol selection instead of using default priority order. The callback receives parsed and validated client-offered protocols (library rejects malformed lists per RFC 7301 Section 3.2). Return a const char* to a persistent matching protocol string or NULL to decline. Library validates return (must match offered list, valid length/chars), internally allocates a copy for OpenSSL (avoids UAF if returning temporary ptr), and uses it during handshake.</p>
 <p>Returns: void Raises: SocketTLS_Failed on invalid parameters Thread-safe: Yes (mutex protected)</p>
 <p>Note: Callback is called during TLS handshake, must be thread-safe if context is shared. </p>
@@ -1734,8 +1643,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The TLS context instance @protos: Array of null-terminated protocol strings (e.g., "h2", "http/1.1") @count: Number of protocols. </p>
+<p>SocketTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The TLS context instance @protos: Array of null-terminated protocol strings (e.g., "h2", "http/1.1") @count: Number of protocols</p>
 <p>Sets list of supported ALPN protocols in wire format, allocated from context arena. Validates lengths (1-255 bytes per protocol, max SOCKET_TLS_MAX_ALPN_PROTOCOLS) and contents (full RFC 7301 Section 3.2: printable ASCII 0x21-0x7E only, rejects invalid lists/entries). Invalid names raise SocketTLS_Failed. Uses SocketSecurity limits at runtime.</p>
 <p>Returns: void Raises: SocketTLS_Failed on invalid protos or allocation error Thread-safe: Yes (mutex protected)</p>
 <p>Note: Protocols advertised in preference order (first preferred). </p>
@@ -1781,8 +1689,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_cert_lookup_callback - Register custom cert lookup @ctx: TLS context instance @callback: Lookup function (NULL to disable) @user_data: User data passed to callback. </p>
+<p>SocketTLSContext_set_cert_lookup_callback - Register custom cert lookup @ctx: TLS context instance @callback: Lookup function (NULL to disable) @user_data: User data passed to callback</p>
 <p>Sets a custom callback for certificate lookup during verification. This allows loading certificates from databases, HSMs, or other sources instead of the filesystem.</p>
 <p>Note: Requires OpenSSL 1.1.0+ for X509_STORE_set_lookup_certs_cb.</p>
 <p>Returns: void Raises: SocketTLS_Failed if not supported or OpenSSL error Thread-safe: Yes (mutex protected) - configure before sharing context </p>
@@ -1822,8 +1729,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The TLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults. </p>
+<p>SocketTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The TLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults</p>
 <p>Configures allowed ciphers. Defaults to secure modern list if NULL.</p>
 <p>Returns: void Raises: SocketTLS_Failed if invalid list Thread-safe: Yes (mutex protected) </p>
 
@@ -1880,9 +1786,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh @ctx: TLS context instance @crl_path: Path to CRL file (copied to context) @interval_seconds: Refresh interval (minimum 60, 0 to disable) @callback: Optional callback for refresh notifications (may be NULL) @user_data: User data passed to callback. </p>
-<p>Configures automatic CRL refresh. The CRL will be reloaded every interval_seconds. Call <a class="el" href="SocketTLSContext_8h.html#a516c739f9ab7a0a5968279aba78a250c" title="SocketTLSContext_crl_check_refresh - Check and perform CRL refresh if due @ctx: TLS context instance.">SocketTLSContext_crl_check_refresh()</a> from your event loop to trigger scheduled refreshes.</p>
+<p>SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh @ctx: TLS context instance @crl_path: Path to CRL file (copied to context) @interval_seconds: Refresh interval (minimum 60, 0 to disable) @callback: Optional callback for refresh notifications (may be NULL) @user_data: User data passed to callback</p>
+<p>Configures automatic CRL refresh. The CRL will be reloaded every interval_seconds. Call <a class="el" href="SocketTLSContext_8h.html#a516c739f9ab7a0a5968279aba78a250c">SocketTLSContext_crl_check_refresh()</a> from your event loop to trigger scheduled refreshes.</p>
 <p>Returns: void Raises: SocketTLS_Failed on invalid parameters Thread-safe: Yes (mutex protected) - configure before sharing context </p>
 
 </div>
@@ -1920,8 +1825,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_ctlog_list_file - Load custom CT log list @ctx: The TLS context instance (client only) @log_file: Path to CT log list file (OpenSSL format) </p>
+<p>SocketTLSContext_set_ctlog_list_file - Load custom CT log list @ctx: The TLS context instance (client only) @log_file: Path to CT log list file (OpenSSL format)</p>
 <p>Loads a custom list of trusted CT logs from file, overriding OpenSSL defaults. Validates file path and format. Call before enable_ct for effect.</p>
 <p>Returns: void Raises: SocketTLS_Failed if file invalid, load fails, or server context Thread-safe: No (config phase only) </p>
 
@@ -1960,9 +1864,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_max_protocol - Set maximum supported TLS version @ctx: The TLS context instance. </p>
-<dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., TLS1_3_VERSION)</dd></dl>
+<p>SocketTLSContext_set_max_protocol - Set maximum supported TLS version @ctx: The TLS context instance </p><dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., TLS1_3_VERSION)</dd></dl>
 <p>Sets max TLS version using set_max_proto_version().</p>
 <p>Returns: void Raises: SocketTLS_Failed if cannot set Thread-safe: Yes (mutex protected) </p>
 
@@ -2001,9 +1903,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_min_protocol - Set minimum supported TLS version @ctx: The TLS context instance. </p>
-<dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., TLS1_3_VERSION)</dd></dl>
+<p>SocketTLSContext_set_min_protocol - Set minimum supported TLS version @ctx: The TLS context instance </p><dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., TLS1_3_VERSION)</dd></dl>
 <p>Sets min TLS version using set_min_proto_version() with fallback to options.</p>
 <p>Returns: void Raises: SocketTLS_Failed if cannot set Thread-safe: Yes (mutex protected) </p>
 
@@ -2048,9 +1948,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_ocsp_gen_callback - Register dynamic OCSP response generator @ctx: TLS context (server) @cb: Callback to generate OCSP response during handshake. </p>
-<ul>
+<p>SocketTLSContext_set_ocsp_gen_callback - Register dynamic OCSP response generator @ctx: TLS context (server) @cb: Callback to generate OCSP response during handshake </p><ul>
 <li>: User data passed to cb</li>
 </ul>
 <p>Enables dynamic OCSP stapling. Called during handshake to generate response. Wrapper handles serialization and SSL_set_tlsext_status_ocsp_resp. Thread-safe: cb must be; called in handshake thread. Raises: SocketTLS_Failed if OpenSSL cb set fails </p>
@@ -2096,8 +1994,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling (server) @ctx: TLS context instance @response: OCSP response bytes (DER encoded) @len: Length of response. </p>
+<p>SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling (server) @ctx: TLS context instance @response: OCSP response bytes (DER encoded) @len: Length of response</p>
 <p>Sets a static OCSP response to staple in server handshakes. Multiple calls override. Validates basic response format.</p>
 <p>Returns: void Raises: SocketTLS_Failed if invalid response (len=0 or parse fail) Thread-safe: Yes (mutex protected) Note: For dynamic, use set_ocsp_callback. </p>
 
@@ -2136,8 +2033,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_pin_enforcement - Set pin enforcement mode @ctx: The TLS context instance @enforce: 1 = strict (fail on mismatch), 0 = warn only. </p>
+<p>SocketTLSContext_set_pin_enforcement - Set pin enforcement mode @ctx: The TLS context instance @enforce: 1 = strict (fail on mismatch), 0 = warn only</p>
 <p>Controls behavior when no pin matches during verification:</p><ul>
 <li>enforce=1 (default): Handshake fails with X509_V_ERR_APPLICATION_VERIFICATION</li>
 <li>enforce=0: Verification continues, mismatch is logged</li>
@@ -2179,8 +2075,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_session_cache_size - Limit cached sessions @ctx: The TLS context instance @size: Max number of sessions to cache (&gt;0) </p>
+<p>SocketTLSContext_set_session_cache_size - Limit cached sessions @ctx: The TLS context instance @size: Max number of sessions to cache (&gt;0)</p>
 <p>Controls memory usage of session cache.</p>
 <p>Returns: void Raises: SocketTLS_Failed if invalid size or cannot set Thread-safe: Yes (mutex protected) </p>
 
@@ -2261,8 +2156,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_set_verify_mode - Set certificate verification policy @ctx: The TLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.) </p>
+<p>SocketTLSContext_set_verify_mode - Set certificate verification policy @ctx: The TLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)</p>
 <p>Configures peer cert verification behavior, mapping to OpenSSL SSL_VERIFY_* flags.</p>
 <p>Returns: void Raises: SocketTLS_Failed on invalid mode Thread-safe: Yes (mutex protected) </p>
 
@@ -2301,8 +2195,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_verify_cert_pin - Check if certificate matches any pin @ctx: The TLS context instance @cert: X509 certificate to verify. </p>
+<p>SocketTLSContext_verify_cert_pin - Check if certificate matches any pin @ctx: The TLS context instance @cert: X509 certificate to verify</p>
 <p>Extracts SPKI hash from certificate and checks against pins. Useful for manual chain verification.</p>
 <p>Returns: 1 if match found, 0 if no match Raises: None Thread-safe: Yes (read-only) </p>
 
@@ -2341,8 +2234,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTLSContext_verify_pin - Check if hash matches any pin @ctx: The TLS context instance @sha256_hash: 32-byte hash to check. </p>
+<p>SocketTLSContext_verify_pin - Check if hash matches any pin @ctx: The TLS context instance @sha256_hash: 32-byte hash to check</p>
 <p>Manual verification without full handshake. Useful for testing or custom verification logic.</p>
 <p>Returns: 1 if match found, 0 if no match Raises: None Thread-safe: Yes (read-only) </p>
 
@@ -2368,8 +2260,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>CTValidationMode - Certificate Transparency validation mode. </p>
+<p>CTValidationMode - Certificate Transparency validation mode </p>
 
 </div>
 </div>

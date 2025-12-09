@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="SocketMetrics_Snapshot &#45; Complete metrics snapshot.">
+<g id="a_Node000001"><a xlink:title=" ">
 <polygon fill="#999999" stroke="#666666" points="148.5,-19 22.5,-19 22.5,0 148.5,0 148.5,-19"/>
 <text text-anchor="middle" x="85.5" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketMetrics_Snapshot</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketMetrics_8h.html#structSocketMetrics__HistogramSnapshot" target="_top" xlink:title="SocketMetrics_HistogramSnapshot &#45; Point&#45;in&#45;time histogram snapshot.">
+<g id="a_Node000002"><a xlink:href="SocketMetrics_8h.html#structSocketMetrics__HistogramSnapshot" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="171,-85 0,-85 0,-66 171,-66 171,-85"/>
 <text text-anchor="middle" x="85.5" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">SocketMetrics_HistogramSnapshot</text>
 </a>

@@ -140,7 +140,6 @@ $(document).ready(function(){initNavTree('SocketTimer_8h.html',''); initResizabl
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimer - Timer Subsystem.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -155,22 +154,17 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a2537cebf106e583079ec472086a26d65" id="r_a2537cebf106e583079ec472086a26d65"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a2537cebf106e583079ec472086a26d65">SocketTimer_add</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t delay_ms, <a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
-<tr class="memdesc:a2537cebf106e583079ec472086a26d65"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimer_add - Add a one-shot timer @poll: Event poll instance to associate timer with @delay_ms: Delay in milliseconds (must be &gt;= 0) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires once after delay_ms milliseconds.  <br /></td></tr>
 <tr class="separator:a2537cebf106e583079ec472086a26d65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6961bde0e491d732450b66577294d097" id="r_a6961bde0e491d732450b66577294d097"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a6961bde0e491d732450b66577294d097">SocketTimer_add_repeating</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, int64_t interval_ms, <a class="el" href="SocketTimer_8h.html#afb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a> callback, void *userdata)</td></tr>
-<tr class="memdesc:a6961bde0e491d732450b66577294d097"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimer_add_repeating - Add a repeating timer @poll: Event poll instance to associate timer with @interval_ms: Interval in milliseconds between firings (must be &gt;= 1) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires repeatedly every interval_ms milliseconds.  <br /></td></tr>
 <tr class="separator:a6961bde0e491d732450b66577294d097"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6f7ca05c6cfc7c69ddc3d676a681bc62" id="r_a6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
-<tr class="memdesc:a6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @timer: Timer handle to cancel Returns: 0 on success, -1 if timer already fired or invalid Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Safe to call on already-fired or cancelled timers.  <br /></td></tr>
 <tr class="separator:a6f7ca05c6cfc7c69ddc3d676a681bc62"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c5519b89e0bba69f26d03b6893ba779" id="r_a4c5519b89e0bba69f26d03b6893ba779"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a4c5519b89e0bba69f26d03b6893ba779">SocketTimer_remaining</a> (<a class="el" href="SocketTimer_8h.html#af9e4be8bc025aedb61cc0b77e8926312">SocketPoll_T</a> poll, <a class="el" href="SocketTimer_8h.html#a89e39166f8e24595119733321f2a313e">SocketTimer_T</a> timer)</td></tr>
-<tr class="memdesc:a4c5519b89e0bba69f26d03b6893ba779"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketTimer_remaining - Get milliseconds until timer expiry @poll: Event poll instance timer is associated with @timer: Timer handle to query Returns: Milliseconds until expiry (&gt;= 0), or -1 if timer fired/cancelled Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Returns 0 if timer has already expired but not yet fired.  <br /></td></tr>
 <tr class="separator:a4c5519b89e0bba69f26d03b6893ba779"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a2f0acf311c238671c6d9d14d4cc7c158" id="r_a2f0acf311c238671c6d9d14d4cc7c158"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer_8h.html#a2f0acf311c238671c6d9d14d4cc7c158">SocketTimer_Failed</a></td></tr>
-<tr class="memdesc:a2f0acf311c238671c6d9d14d4cc7c158"><td class="mdescLeft">&#160;</td><td class="mdescRight">General timer operation failure.  <br /></td></tr>
 <tr class="separator:a2f0acf311c238671c6d9d14d4cc7c158"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -185,9 +179,8 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>SocketTimer - Timer Subsystem. </p>
-<p>Provides high-performance timer functionality integrated with the event loop. Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer lookup. Timer callbacks fire automatically during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738" title="SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurre...">SocketPoll_wait()</a>.</p>
+<p>SocketTimer - Timer Subsystem</p>
+<p>Provides high-performance timer functionality integrated with the event loop. Timers are stored in a min-heap for O(log n) insert/delete and O(1) next-timer lookup. Timer callbacks fire automatically during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a>.</p>
 <p>FEATURES:</p><ul>
 <li>One-shot and repeating timers</li>
 <li>Monotonic clock timestamps (immune to wall-clock changes)</li>
@@ -203,7 +196,7 @@ Variables</h2></td></tr>
 <p>THREAD SAFETY:</p><ul>
 <li>All operations are thread-safe</li>
 <li>Callbacks execute in the calling thread (SocketPoll_wait thread)</li>
-<li>Do not call <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62" title="SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @time...">SocketTimer_cancel()</a> from within timer callbacks</li>
+<li>Do not call <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel()</a> from within timer callbacks</li>
 </ul>
 <p>LIMITATIONS:</p><ul>
 <li>Maximum timer delay: ~9.2 billion milliseconds (~107 days)</li>
@@ -309,9 +302,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTimer_add - Add a one-shot timer @poll: Event poll instance to associate timer with @delay_ms: Delay in milliseconds (must be &gt;= 0) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires once after delay_ms milliseconds. </p>
-<p>Callbacks execute during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738" title="SocketPoll_wait - Wait for events @poll: Poll instance @events: Output - array of events that occurre...">SocketPoll_wait()</a> in the calling thread. </p>
+<p>SocketTimer_add - Add a one-shot timer @poll: Event poll instance to associate timer with @delay_ms: Delay in milliseconds (must be &gt;= 0) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires once after delay_ms milliseconds. Callbacks execute during <a class="el" href="SocketPoll_8h.html#aa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a> in the calling thread. </p>
 
 </div>
 </div>
@@ -360,9 +351,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTimer_add_repeating - Add a repeating timer @poll: Event poll instance to associate timer with @interval_ms: Interval in milliseconds between firings (must be &gt;= 1) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires repeatedly every interval_ms milliseconds. </p>
-<p>First firing occurs after interval_ms milliseconds. Use <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62" title="SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @time...">SocketTimer_cancel()</a> to stop. </p>
+<p>SocketTimer_add_repeating - Add a repeating timer @poll: Event poll instance to associate timer with @interval_ms: Interval in milliseconds between firings (must be &gt;= 1) @callback: Function to call when timer expires @userdata: User data passed to callback Returns: Timer handle for cancellation, or NULL on error Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Timer fires repeatedly every interval_ms milliseconds. First firing occurs after interval_ms milliseconds. Use <a class="el" href="SocketTimer_8h.html#a6f7ca05c6cfc7c69ddc3d676a681bc62">SocketTimer_cancel()</a> to stop. </p>
 
 </div>
 </div>
@@ -399,9 +388,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @timer: Timer handle to cancel Returns: 0 on success, -1 if timer already fired or invalid Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Safe to call on already-fired or cancelled timers. </p>
-<p>Do not call from within a timer callback function. </p>
+<p>SocketTimer_cancel - Cancel a pending timer @poll: Event poll instance timer is associated with @timer: Timer handle to cancel Returns: 0 on success, -1 if timer already fired or invalid Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Safe to call on already-fired or cancelled timers. Do not call from within a timer callback function. </p>
 
 </div>
 </div>
@@ -438,9 +425,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketTimer_remaining - Get milliseconds until timer expiry @poll: Event poll instance timer is associated with @timer: Timer handle to query Returns: Milliseconds until expiry (&gt;= 0), or -1 if timer fired/cancelled Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Returns 0 if timer has already expired but not yet fired. </p>
-<p>Useful for debugging and implementing timeout logic. </p>
+<p>SocketTimer_remaining - Get milliseconds until timer expiry @poll: Event poll instance timer is associated with @timer: Timer handle to query Returns: Milliseconds until expiry (&gt;= 0), or -1 if timer fired/cancelled Raises: SocketTimer_Failed on error Thread-safe: Yes Note: Returns 0 if timer has already expired but not yet fired. Useful for debugging and implementing timeout logic. </p>
 
 </div>
 </div>
@@ -464,8 +449,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>General timer operation failure. </p>
+<p>General timer operation failure </p>
 
 </div>
 </div>

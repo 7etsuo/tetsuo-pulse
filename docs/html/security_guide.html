@@ -131,8 +131,8 @@ Default Configuration</h2>
 <div class="line">    <span class="stringliteral">&quot;/path/to/key.pem&quot;</span></div>
 <div class="line">);</div>
 <div class="ttc" id="aSocketTLSContext_8h_html"><div class="ttname"><a href="SocketTLSContext_8h.html">SocketTLSContext.h</a></div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a79a403f2f54f21c90a92e9cb73e24cbc"><div class="ttname"><a href="SocketTLSContext_8h.html#a79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div><div class="ttdoc">SocketTLSContext - TLS Context Management Module.</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a7fe51da14439d768bdf72f4ed8fbb022"><div class="ttname"><a href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_client(const char *ca_file)</div><div class="ttdoc">SocketTLSContext_new_client - Create client TLS context @ca_file: Optional path to CA file/directory ...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a79a403f2f54f21c90a92e9cb73e24cbc"><div class="ttname"><a href="SocketTLSContext_8h.html#a79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a7fe51da14439d768bdf72f4ed8fbb022"><div class="ttname"><a href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_client(const char *ca_file)</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_ac46f2ab9dacbb1af2d590f2974e21577"><div class="ttname"><a href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a></div><div class="ttdeci">struct SocketTLSContext_T * SocketTLSContext_T</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00110">SocketTLS.h:110</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md237"></a>
 TLS Settings (SocketTLSConfig.h)</h2>
@@ -176,13 +176,13 @@ Usage</h2>
 <div class="line">  <a class="code hl_enumeration" href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">CTValidationMode</a> mode = <a class="code hl_function" href="SocketTLSContext_8h.html#af18e867664012c78a758c5454f62c367">SocketTLSContext_get_ct_mode</a>(ctx);</div>
 <div class="line">  <span class="comment">// mode == CT_VALIDATION_STRICT or PERMISSIVE</span></div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a3b70029e86352f55e3710673ba30c23f"><div class="ttname"><a href="SocketTLSContext_8h.html#a3b70029e86352f55e3710673ba30c23f">SocketTLSContext_ct_enabled</a></div><div class="ttdeci">int SocketTLSContext_ct_enabled(SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLSContext_ct_enabled - Check if CT verification is enabled @ctx: The TLS context instance.</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">CTValidationMode</a></div><div class="ttdeci">CTValidationMode</div><div class="ttdoc">CTValidationMode - Certificate Transparency validation mode.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00828">SocketTLSContext.h:829</a></div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a></div><div class="ttdeci">@ CT_VALIDATION_STRICT</div><div class="ttdoc">Require valid SCTs, fail otherwise.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00832">SocketTLSContext.h:831</a></div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8">CT_VALIDATION_PERMISSIVE</a></div><div class="ttdeci">@ CT_VALIDATION_PERMISSIVE</div><div class="ttdoc">Log but don't fail on missing SCTs.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00830">SocketTLSContext.h:830</a></div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_ada967caf61c070399281b088b35ed78a"><div class="ttname"><a href="SocketTLSContext_8h.html#ada967caf61c070399281b088b35ed78a">SocketTLSContext_set_ctlog_list_file</a></div><div class="ttdeci">void SocketTLSContext_set_ctlog_list_file(SocketTLSContext_T ctx, const char *log_file)</div><div class="ttdoc">SocketTLSContext_set_ctlog_list_file - Load custom CT log list @ctx: The TLS context instance (client...</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_af18e867664012c78a758c5454f62c367"><div class="ttname"><a href="SocketTLSContext_8h.html#af18e867664012c78a758c5454f62c367">SocketTLSContext_get_ct_mode</a></div><div class="ttdeci">CTValidationMode SocketTLSContext_get_ct_mode(SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLSContext_get_ct_mode - Get current CT validation mode @ctx: The TLS context instance.</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_af27bede9402c6c8c7541143e019c635f"><div class="ttname"><a href="SocketTLSContext_8h.html#af27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a></div><div class="ttdeci">void SocketTLSContext_enable_ct(SocketTLSContext_T ctx, CTValidationMode mode)</div><div class="ttdoc">SocketTLSContext_enable_ct - Enable Certificate Transparency verification @ctx: The TLS context insta...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a3b70029e86352f55e3710673ba30c23f"><div class="ttname"><a href="SocketTLSContext_8h.html#a3b70029e86352f55e3710673ba30c23f">SocketTLSContext_ct_enabled</a></div><div class="ttdeci">int SocketTLSContext_ct_enabled(SocketTLSContext_T ctx)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939">CTValidationMode</a></div><div class="ttdeci">CTValidationMode</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00828">SocketTLSContext.h:829</a></div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a></div><div class="ttdeci">@ CT_VALIDATION_STRICT</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00832">SocketTLSContext.h:831</a></div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8"><div class="ttname"><a href="SocketTLSContext_8h.html#a4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8">CT_VALIDATION_PERMISSIVE</a></div><div class="ttdeci">@ CT_VALIDATION_PERMISSIVE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l00830">SocketTLSContext.h:830</a></div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_ada967caf61c070399281b088b35ed78a"><div class="ttname"><a href="SocketTLSContext_8h.html#ada967caf61c070399281b088b35ed78a">SocketTLSContext_set_ctlog_list_file</a></div><div class="ttdeci">void SocketTLSContext_set_ctlog_list_file(SocketTLSContext_T ctx, const char *log_file)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_af18e867664012c78a758c5454f62c367"><div class="ttname"><a href="SocketTLSContext_8h.html#af18e867664012c78a758c5454f62c367">SocketTLSContext_get_ct_mode</a></div><div class="ttdeci">CTValidationMode SocketTLSContext_get_ct_mode(SocketTLSContext_T ctx)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_af27bede9402c6c8c7541143e019c635f"><div class="ttname"><a href="SocketTLSContext_8h.html#af27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a></div><div class="ttdeci">void SocketTLSContext_enable_ct(SocketTLSContext_T ctx, CTValidationMode mode)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md242"></a>
 Security Benefits</h2>
 <ul>
@@ -295,7 +295,7 @@ Buffer Size Validation</h2>
 DNS Security</h1>
 <h2><a class="anchor" id="autotoc_md258"></a>
 Blocking DNS Warning</h2>
-<p>DNS resolution via <code><a class="el" href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98" title="Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/&quot;0....">Socket_bind()</a></code> and <code><a class="el" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e" title="Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...">Socket_connect()</a></code> may block:</p>
+<p>DNS resolution via <code><a class="el" href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind()</a></code> and <code><a class="el" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect()</a></code> may block:</p>
 <div class="fragment"><div class="line"><span class="comment">/* WARNING: May block for 30+ seconds on DNS timeout */</span></div>
 <div class="line"><a class="code hl_function" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, <span class="stringliteral">&quot;hostname.example.com&quot;</span>, 80);</div>
 <div class="line"> </div>
@@ -304,10 +304,10 @@ Blocking DNS Warning</h2>
 <div class="line"><a class="code hl_typedef" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req = <a class="code hl_function" href="SocketDNS_8h.html#ac4df82b60dff42e9104a19062074a2f5">SocketDNS_resolve</a>(dns, hostname, port, NULL, NULL);</div>
 <div class="line"><span class="comment">/* Poll for completion */</span></div>
 <div class="ttc" id="aSocketDNS_8h_html_a2d39e79bb7d4fa2271b6158750267c13"><div class="ttname"><a href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a></div><div class="ttdeci">struct SocketDNS_Request_T * SocketDNS_Request_T</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00050">SocketDNS.h:50</a></div></div>
-<div class="ttc" id="aSocketDNS_8h_html_a799f4d96c77eef54ecb9be5523b591fd"><div class="ttname"><a href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a></div><div class="ttdeci">SocketDNS_T SocketDNS_new(void)</div><div class="ttdoc">SocketDNS_new - Create a new async DNS resolver Returns: New DNS resolver instance Raises: SocketDNS_...</div></div>
-<div class="ttc" id="aSocketDNS_8h_html_ac4df82b60dff42e9104a19062074a2f5"><div class="ttname"><a href="SocketDNS_8h.html#ac4df82b60dff42e9104a19062074a2f5">SocketDNS_resolve</a></div><div class="ttdeci">SocketDNS_Request_T SocketDNS_resolve(SocketDNS_T dns, const char *host, int port, SocketDNS_Callback callback, void *data)</div><div class="ttdoc">SocketDNS_resolve - Start async DNS resolution @dns: DNS resolver instance @host: Hostname or IP addr...</div></div>
+<div class="ttc" id="aSocketDNS_8h_html_a799f4d96c77eef54ecb9be5523b591fd"><div class="ttname"><a href="SocketDNS_8h.html#a799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a></div><div class="ttdeci">SocketDNS_T SocketDNS_new(void)</div></div>
+<div class="ttc" id="aSocketDNS_8h_html_ac4df82b60dff42e9104a19062074a2f5"><div class="ttname"><a href="SocketDNS_8h.html#ac4df82b60dff42e9104a19062074a2f5">SocketDNS_resolve</a></div><div class="ttdeci">SocketDNS_Request_T SocketDNS_resolve(SocketDNS_T dns, const char *host, int port, SocketDNS_Callback callback, void *data)</div></div>
 <div class="ttc" id="aSocketDNS_8h_html_ac9190fe07142a017f86dae46145cb2fd"><div class="ttname"><a href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a></div><div class="ttdeci">struct SocketDNS_T * SocketDNS_T</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00047">SocketDNS.h:47</a></div></div>
-<div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostna...</div></div>
+<div class="ttc" id="aSocket_8h_html_ac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md259"></a>
 DNS DoS Prevention</h2>
 <p>Never use untrusted hostnames directly:</p>
@@ -321,7 +321,7 @@ DNS DoS Prevention</h2>
 <div class="line"><span class="keywordflow">if</span> (inet_pton(AF_INET, user_input, &amp;addr) &gt; 0) {</div>
 <div class="line">    <a class="code hl_function" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, user_input, port);</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketDNS_8h_html_a009b2ac023375f1416344ab445d15667"><div class="ttname"><a href="SocketDNS_8h.html#a009b2ac023375f1416344ab445d15667">SocketDNS_request_settimeout</a></div><div class="ttdeci">void SocketDNS_request_settimeout(SocketDNS_T dns, SocketDNS_Request_T req, int timeout_ms)</div><div class="ttdoc">SocketDNS_request_settimeout - Override timeout for specific request @dns: DNS resolver instance @req...</div></div>
+<div class="ttc" id="aSocketDNS_8h_html_a009b2ac023375f1416344ab445d15667"><div class="ttname"><a href="SocketDNS_8h.html#a009b2ac023375f1416344ab445d15667">SocketDNS_request_settimeout</a></div><div class="ttdeci">void SocketDNS_request_settimeout(SocketDNS_T dns, SocketDNS_Request_T req, int timeout_ms)</div></div>
 </div><!-- fragment --><hr  />
 <h1><a class="anchor" id="autotoc_md261"></a>
 Credential Handling</h1>
@@ -336,7 +336,7 @@ Secure Memory Clearing</h2>
 <div class="line"><span class="comment">/* Clear from memory (won&#39;t be optimized away) */</span></div>
 <div class="line"><a class="code hl_function" href="SocketCrypto_8h.html#a00f94677d393f24e0b0c549be7bbcdf2">SocketCrypto_secure_clear</a>(password, <span class="keyword">sizeof</span>(password));</div>
 <div class="ttc" id="aSocketCrypto_8h_html"><div class="ttname"><a href="SocketCrypto_8h.html">SocketCrypto.h</a></div></div>
-<div class="ttc" id="aSocketCrypto_8h_html_a00f94677d393f24e0b0c549be7bbcdf2"><div class="ttname"><a href="SocketCrypto_8h.html#a00f94677d393f24e0b0c549be7bbcdf2">SocketCrypto_secure_clear</a></div><div class="ttdeci">void SocketCrypto_secure_clear(void *ptr, size_t len)</div><div class="ttdoc">SocketCrypto_secure_clear - Securely clear sensitive data @ptr: Buffer to clear @len: Length of buffe...</div></div>
+<div class="ttc" id="aSocketCrypto_8h_html_a00f94677d393f24e0b0c549be7bbcdf2"><div class="ttname"><a href="SocketCrypto_8h.html#a00f94677d393f24e0b0c549be7bbcdf2">SocketCrypto_secure_clear</a></div><div class="ttdeci">void SocketCrypto_secure_clear(void *ptr, size_t len)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md263"></a>
 The Library Does This Internally</h2>
 <ul>
@@ -354,7 +354,7 @@ Constant-Time Comparison</h2>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="SocketCrypto_8h.html#ae5f9b65e71620529159130c81b6d0dba">SocketCrypto_secure_compare</a>(provided, expected, len) == 0) {</div>
 <div class="line">    <span class="comment">/* Match */</span></div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketCrypto_8h_html_ae5f9b65e71620529159130c81b6d0dba"><div class="ttname"><a href="SocketCrypto_8h.html#ae5f9b65e71620529159130c81b6d0dba">SocketCrypto_secure_compare</a></div><div class="ttdeci">int SocketCrypto_secure_compare(const void *a, const void *b, size_t len)</div><div class="ttdoc">SocketCrypto_secure_compare - Constant-time memory comparison : First buffer : Second buffer @len: Le...</div></div>
+<div class="ttc" id="aSocketCrypto_8h_html_ae5f9b65e71620529159130c81b6d0dba"><div class="ttname"><a href="SocketCrypto_8h.html#ae5f9b65e71620529159130c81b6d0dba">SocketCrypto_secure_compare</a></div><div class="ttdeci">int SocketCrypto_secure_compare(const void *a, const void *b, size_t len)</div></div>
 </div><!-- fragment --><hr  />
 <h1><a class="anchor" id="autotoc_md266"></a>
 DoS Protection</h1>
@@ -393,14 +393,14 @@ SYN Flood Protection</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketSYNProtect_8h_html"><div class="ttname"><a href="SocketSYNProtect_8h.html">SocketSYNProtect.h</a></div></div>
 <div class="ttc" id="aSocketSYNProtect_8h_html_a2d44b8e90f00f2e635f7bf123e2e4c10"><div class="ttname"><a href="SocketSYNProtect_8h.html#a2d44b8e90f00f2e635f7bf123e2e4c10">SocketSYNProtect_T</a></div><div class="ttdeci">struct SocketSYNProtect_T * SocketSYNProtect_T</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00052">SocketSYNProtect.h:52</a></div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_a45b12919783a7ba4426db4134fda1a5f"><div class="ttname"><a href="SocketSYNProtect_8h.html#a45b12919783a7ba4426db4134fda1a5f">SocketSYNProtect_check</a></div><div class="ttdeci">SocketSYN_Action SocketSYNProtect_check(SocketSYNProtect_T protect, const char *client_ip, SocketSYN_IPState *state_out)</div><div class="ttdoc">SocketSYNProtect_check - Check IP and determine action @protect: Protection instance @client_ip: Clie...</div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_a59e979862677789482cb5f297f544001"><div class="ttname"><a href="SocketSYNProtect_8h.html#a59e979862677789482cb5f297f544001">SocketSYNProtect_configure</a></div><div class="ttdeci">void SocketSYNProtect_configure(SocketSYNProtect_T protect, const SocketSYNProtect_Config *config)</div><div class="ttdoc">SocketSYNProtect_configure - Update configuration at runtime @protect: Protection instance @config: N...</div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_a5f5d6f2ac8cbd366d57c1e8e55983143"><div class="ttname"><a href="SocketSYNProtect_8h.html#a5f5d6f2ac8cbd366d57c1e8e55983143">SocketSYNProtect_new</a></div><div class="ttdeci">SocketSYNProtect_T SocketSYNProtect_new(Arena_T arena, const SocketSYNProtect_Config *config)</div><div class="ttdoc">SocketSYNProtect_new - Create a new SYN protection instance @arena: Arena for memory allocation (NULL...</div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1">SYN_ACTION_CHALLENGE</a></div><div class="ttdeci">@ SYN_ACTION_CHALLENGE</div><div class="ttdoc">Use TCP_DEFER_ACCEPT (require data)</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00074">SocketSYNProtect.h:74</a></div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9">SYN_ACTION_THROTTLE</a></div><div class="ttdeci">@ SYN_ACTION_THROTTLE</div><div class="ttdoc">Accept with artificial delay.</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00073">SocketSYNProtect.h:73</a></div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8">SYN_ACTION_ALLOW</a></div><div class="ttdeci">@ SYN_ACTION_ALLOW</div><div class="ttdoc">Normal accept - no restrictions.</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00072">SocketSYNProtect.h:72</a></div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa">SYN_ACTION_BLOCK</a></div><div class="ttdeci">@ SYN_ACTION_BLOCK</div><div class="ttdoc">Reject connection immediately.</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00076">SocketSYNProtect.h:75</a></div></div>
-<div class="ttc" id="aSocketSYNProtect_8h_html_structSocketSYNProtect__Config"><div class="ttname"><a href="SocketSYNProtect_8h.html#structSocketSYNProtect__Config">SocketSYNProtect_Config</a></div><div class="ttdoc">SocketSYNProtect_Config - Protection configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00125">SocketSYNProtect.h:126</a></div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_a45b12919783a7ba4426db4134fda1a5f"><div class="ttname"><a href="SocketSYNProtect_8h.html#a45b12919783a7ba4426db4134fda1a5f">SocketSYNProtect_check</a></div><div class="ttdeci">SocketSYN_Action SocketSYNProtect_check(SocketSYNProtect_T protect, const char *client_ip, SocketSYN_IPState *state_out)</div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_a59e979862677789482cb5f297f544001"><div class="ttname"><a href="SocketSYNProtect_8h.html#a59e979862677789482cb5f297f544001">SocketSYNProtect_configure</a></div><div class="ttdeci">void SocketSYNProtect_configure(SocketSYNProtect_T protect, const SocketSYNProtect_Config *config)</div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_a5f5d6f2ac8cbd366d57c1e8e55983143"><div class="ttname"><a href="SocketSYNProtect_8h.html#a5f5d6f2ac8cbd366d57c1e8e55983143">SocketSYNProtect_new</a></div><div class="ttdeci">SocketSYNProtect_T SocketSYNProtect_new(Arena_T arena, const SocketSYNProtect_Config *config)</div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1">SYN_ACTION_CHALLENGE</a></div><div class="ttdeci">@ SYN_ACTION_CHALLENGE</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00074">SocketSYNProtect.h:74</a></div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9">SYN_ACTION_THROTTLE</a></div><div class="ttdeci">@ SYN_ACTION_THROTTLE</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00073">SocketSYNProtect.h:73</a></div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8">SYN_ACTION_ALLOW</a></div><div class="ttdeci">@ SYN_ACTION_ALLOW</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00072">SocketSYNProtect.h:72</a></div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_aca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa"><div class="ttname"><a href="SocketSYNProtect_8h.html#aca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa">SYN_ACTION_BLOCK</a></div><div class="ttdeci">@ SYN_ACTION_BLOCK</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00076">SocketSYNProtect.h:75</a></div></div>
+<div class="ttc" id="aSocketSYNProtect_8h_html_structSocketSYNProtect__Config"><div class="ttname"><a href="SocketSYNProtect_8h.html#structSocketSYNProtect__Config">SocketSYNProtect_Config</a></div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00125">SocketSYNProtect.h:126</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md268"></a>
 Rate Limiting</h2>
 <p>Limit connection/request rates:</p>
@@ -418,8 +418,8 @@ Rate Limiting</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketRateLimit_8h_html"><div class="ttname"><a href="SocketRateLimit_8h.html">SocketRateLimit.h</a></div></div>
 <div class="ttc" id="aSocketRateLimit_8h_html_a241a48be9b0f1c7f74e0b8edefeb10a5"><div class="ttname"><a href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></div><div class="ttdeci">struct SocketRateLimit_T * SocketRateLimit_T</div><div class="ttdef"><b>Definition</b> <a href="SocketRateLimit_8h_source.html#l00050">SocketRateLimit.h:50</a></div></div>
-<div class="ttc" id="aSocketRateLimit_8h_html_a984414b5ee576c6acb3fbd9e8a96ef0f"><div class="ttname"><a href="SocketRateLimit_8h.html#a984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a></div><div class="ttdeci">SocketRateLimit_T SocketRateLimit_new(Arena_T arena, size_t tokens_per_sec, size_t bucket_size)</div><div class="ttdoc">SocketRateLimit_new - Create a new token bucket rate limiter @arena: Arena for memory allocation (NUL...</div></div>
-<div class="ttc" id="aSocketRateLimit_8h_html_abb5d1321362b759ed688cfc414c4b2a7"><div class="ttname"><a href="SocketRateLimit_8h.html#abb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a></div><div class="ttdeci">int SocketRateLimit_try_acquire(SocketRateLimit_T limiter, size_t tokens)</div><div class="ttdoc">SocketRateLimit_try_acquire - Try to consume tokens (non-blocking) @limiter: Rate limiter instance @t...</div></div>
+<div class="ttc" id="aSocketRateLimit_8h_html_a984414b5ee576c6acb3fbd9e8a96ef0f"><div class="ttname"><a href="SocketRateLimit_8h.html#a984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a></div><div class="ttdeci">SocketRateLimit_T SocketRateLimit_new(Arena_T arena, size_t tokens_per_sec, size_t bucket_size)</div></div>
+<div class="ttc" id="aSocketRateLimit_8h_html_abb5d1321362b759ed688cfc414c4b2a7"><div class="ttname"><a href="SocketRateLimit_8h.html#abb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a></div><div class="ttdeci">int SocketRateLimit_try_acquire(SocketRateLimit_T limiter, size_t tokens)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md269"></a>
 Per-IP Connection Limits</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketIPTracker_8h.html">core/SocketIPTracker.h</a>&quot;</span></div>
@@ -436,7 +436,7 @@ Per-IP Connection Limits</h2>
 <div class="line">SocketIPTracker_increment(tracker, client_addr);</div>
 <div class="ttc" id="aSocketIPTracker_8h_html"><div class="ttname"><a href="SocketIPTracker_8h.html">SocketIPTracker.h</a></div></div>
 <div class="ttc" id="aSocketIPTracker_8h_html_a763b573474982e2761d5b7fbdf9155fc"><div class="ttname"><a href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></div><div class="ttdeci">struct SocketIPTracker_T * SocketIPTracker_T</div><div class="ttdef"><b>Definition</b> <a href="SocketIPTracker_8h_source.html#l00049">SocketIPTracker.h:49</a></div></div>
-<div class="ttc" id="aSocketIPTracker_8h_html_ab87cad57ddf1ed19226cf8535456bbde"><div class="ttname"><a href="SocketIPTracker_8h.html#ab87cad57ddf1ed19226cf8535456bbde">SocketIPTracker_new</a></div><div class="ttdeci">SocketIPTracker_T SocketIPTracker_new(Arena_T arena, int max_per_ip)</div><div class="ttdoc">SocketIPTracker_new - Create a new IP connection tracker @arena: Arena for memory allocation (NULL to...</div></div>
+<div class="ttc" id="aSocketIPTracker_8h_html_ab87cad57ddf1ed19226cf8535456bbde"><div class="ttname"><a href="SocketIPTracker_8h.html#ab87cad57ddf1ed19226cf8535456bbde">SocketIPTracker_new</a></div><div class="ttdeci">SocketIPTracker_T SocketIPTracker_new(Arena_T arena, int max_per_ip)</div></div>
 </div><!-- fragment --><hr  />
 <h1><a class="anchor" id="autotoc_md271"></a>
 Thread Safety</h1>
@@ -444,7 +444,8 @@ Thread Safety</h1>
 Thread-Local Error Buffers</h2>
 <p>Error messages use thread-local storage:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Safe - each thread has own buffer */</span></div>
-<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *error = Socket_error();</div>
+<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *error = <a class="code hl_function" href="SocketUtil_8h.html#ac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a>();</div>
+<div class="ttc" id="aSocketUtil_8h_html_ac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="SocketUtil_8h.html#ac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md273"></a>
 Exception Thread Safety</h2>
 <p>The library uses thread-local exception copies:</p>
@@ -457,7 +458,7 @@ Exception Thread Safety</h2>
 <div class="line"><span class="preprocessor">        Module_DetailedException.reason = error_buf; \</span></div>
 <div class="line"><span class="preprocessor">        RAISE(Module_DetailedException);             \</span></div>
 <div class="line"><span class="preprocessor">    } while (0)</span></div>
-<div class="ttc" id="aExcept_8h_html_structExcept__T"><div class="ttname"><a href="Except_8h.html#structExcept__T">Except_T</a></div><div class="ttdoc">Exception Handling for C.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00032">Except.h:32</a></div></div>
+<div class="ttc" id="aExcept_8h_html_structExcept__T"><div class="ttname"><a href="Except_8h.html#structExcept__T">Except_T</a></div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00032">Except.h:32</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md274"></a>
 What's NOT Thread-Safe</h2>
 <ul>
@@ -486,9 +487,9 @@ Always Handle Security Exceptions</h2>
 <div class="ttc" id="aExcept_8h_html_ab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="Except_8h.html#ab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00118">Except.h:118</a></div></div>
 <div class="ttc" id="aExcept_8h_html_ad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="Except_8h.html#ad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00103">Except.h:103</a></div></div>
 <div class="ttc" id="aExcept_8h_html_ae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="Except_8h.html#ae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00139">Except.h:139</a></div></div>
-<div class="ttc" id="aSocketTLS_8h_html_a82be75dd764021fb64cd6824768e2254"><div class="ttname"><a href="SocketTLS_8h.html#a82be75dd764021fb64cd6824768e2254">SocketTLS_HandshakeFailed</a></div><div class="ttdeci">const Except_T SocketTLS_HandshakeFailed</div><div class="ttdoc">SocketTLS_HandshakeFailed - TLS handshake could not complete.</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_abe406e483a861198db5bca58300f1728"><div class="ttname"><a href="SocketTLS_8h.html#abe406e483a861198db5bca58300f1728">SocketTLS_VerifyFailed</a></div><div class="ttdeci">const Except_T SocketTLS_VerifyFailed</div><div class="ttdoc">SocketTLS_VerifyFailed - Certificate verification failure.</div></div>
-<div class="ttc" id="aSocketTLS_8h_html_aeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div><div class="ttdoc">SocketTLS_handshake - Perform non-blocking TLS handshake @socket: The socket instance with TLS enable...</div></div>
+<div class="ttc" id="aSocketTLS_8h_html_a82be75dd764021fb64cd6824768e2254"><div class="ttname"><a href="SocketTLS_8h.html#a82be75dd764021fb64cd6824768e2254">SocketTLS_HandshakeFailed</a></div><div class="ttdeci">const Except_T SocketTLS_HandshakeFailed</div></div>
+<div class="ttc" id="aSocketTLS_8h_html_abe406e483a861198db5bca58300f1728"><div class="ttname"><a href="SocketTLS_8h.html#abe406e483a861198db5bca58300f1728">SocketTLS_VerifyFailed</a></div><div class="ttdeci">const Except_T SocketTLS_VerifyFailed</div></div>
+<div class="ttc" id="aSocketTLS_8h_html_aeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="SocketTLS_8h.html#aeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md278"></a>
 Don't Ignore Verification Failures</h2>
 <div class="fragment"><div class="line"><span class="comment">/* BAD - disabling verification */</span></div>
@@ -522,8 +523,8 @@ WebSocket Security</h2>
 <div class="line"><span class="keywordflow">if</span> (!is_supported_protocol(selected)) {</div>
 <div class="line">    SocketWS_close(ws, <a class="code hl_enumvalue" href="SocketWS_8h.html#a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf">WS_CLOSE_PROTOCOL_ERROR</a>, <span class="stringliteral">&quot;Unsupported protocol&quot;</span>);</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketWS_8h_html_a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf"><div class="ttname"><a href="SocketWS_8h.html#a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf">WS_CLOSE_PROTOCOL_ERROR</a></div><div class="ttdeci">@ WS_CLOSE_PROTOCOL_ERROR</div><div class="ttdoc">Protocol error.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00127">SocketWS.h:127</a></div></div>
-<div class="ttc" id="aSocketWS_8h_html_ad6e400c85623f8603c5965d38b1a60e0"><div class="ttname"><a href="SocketWS_8h.html#ad6e400c85623f8603c5965d38b1a60e0">SocketWS_server_reject</a></div><div class="ttdeci">void SocketWS_server_reject(Socket_T socket, int status_code, const char *reason)</div><div class="ttdoc">SocketWS_server_reject - Reject upgrade with HTTP response @socket: TCP socket @status_code: HTTP sta...</div></div>
+<div class="ttc" id="aSocketWS_8h_html_a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf"><div class="ttname"><a href="SocketWS_8h.html#a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf">WS_CLOSE_PROTOCOL_ERROR</a></div><div class="ttdeci">@ WS_CLOSE_PROTOCOL_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00127">SocketWS.h:127</a></div></div>
+<div class="ttc" id="aSocketWS_8h_html_ad6e400c85623f8603c5965d38b1a60e0"><div class="ttname"><a href="SocketWS_8h.html#ad6e400c85623f8603c5965d38b1a60e0">SocketWS_server_reject</a></div><div class="ttdeci">void SocketWS_server_reject(Socket_T socket, int status_code, const char *reason)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md283"></a>
 Cookie Security</h2>
 <div class="fragment"><div class="line"><span class="comment">/* Set secure cookie attributes */</span></div>
@@ -566,7 +567,7 @@ Prevent FD Leaks</h2>
 <div class="ttc" id="aExcept_8h_html_a0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="Except_8h.html#a0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00132">Except.h:132</a></div></div>
 <div class="ttc" id="aSocket_8h_html_a1bcdb0c6d5827c2493bd622fa7751f14"><div class="ttname"><a href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></div><div class="ttdeci">struct Socket_T * Socket_T</div><div class="ttdef"><b>Definition</b> <a href="Socket_8h_source.html#l00045">Socket.h:45</a></div></div>
 <div class="ttc" id="aSocket_8h_html_a6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div></div>
-<div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)</div></div>
+<div class="ttc" id="aSocket_8h_html_a74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div></div>
 </div><!-- fragment --><hr  />
 <h1><a class="anchor" id="autotoc_md290"></a>
 Audit Logging</h1>
@@ -577,7 +578,7 @@ What to Log</h2>
 <li>Authentication failures</li>
 <li>Certificate verification failures</li>
 <li>Rate limiting triggers</li>
-<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> violations</li>
+<li><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> violations</li>
 </ul>
 <h2><a class="anchor" id="autotoc_md292"></a>
 How to Log Safely</h2>
@@ -664,7 +665,7 @@ Certificate Verification</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* BAD: Never disable verification in production */</span></div>
 <div class="line"><span class="comment">// SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_NONE);  // INSECURE!</span></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a71084c00bec22f65b90301188868b759"><div class="ttname"><a href="SocketTLSContext_8h.html#a71084c00bec22f65b90301188868b759">SocketTLSContext_set_verify_mode</a></div><div class="ttdeci">void SocketTLSContext_set_verify_mode(SocketTLSContext_T ctx, TLSVerifyMode mode)</div><div class="ttdoc">SocketTLSContext_set_verify_mode - Set certificate verification policy @ctx: The TLS context instance...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a71084c00bec22f65b90301188868b759"><div class="ttname"><a href="SocketTLSContext_8h.html#a71084c00bec22f65b90301188868b759">SocketTLSContext_set_verify_mode</a></div><div class="ttdeci">void SocketTLSContext_set_verify_mode(SocketTLSContext_T ctx, TLSVerifyMode mode)</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_ac32c3958835b92ff683ae15f78448694ae56010acbcb7edcdcd7707be028cc6fe"><div class="ttname"><a href="SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694ae56010acbcb7edcdcd7707be028cc6fe">TLS_VERIFY_PEER</a></div><div class="ttdeci">@ TLS_VERIFY_PEER</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00104">SocketTLS.h:104</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md303"></a>
 Mutual TLS (mTLS)</h2>
@@ -677,7 +678,7 @@ Mutual TLS (mTLS)</h2>
 <div class="line"><span class="comment">/* Client: Provide certificate */</span></div>
 <div class="line"><a class="code hl_typedef" href="SocketTLS_8h.html#ac46f2ab9dacbb1af2d590f2974e21577">SocketTLSContext_T</a> client_ctx = <a class="code hl_function" href="SocketTLSContext_8h.html#a7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a>(<span class="stringliteral">&quot;ca.crt&quot;</span>);</div>
 <div class="line"><a class="code hl_function" href="SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211">SocketTLSContext_load_certificate</a>(client_ctx, <span class="stringliteral">&quot;client.crt&quot;</span>, <span class="stringliteral">&quot;client.key&quot;</span>);</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a1e2af3e4421c3c20c7dbc4b99cfb4211"><div class="ttname"><a href="SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211">SocketTLSContext_load_certificate</a></div><div class="ttdeci">void SocketTLSContext_load_certificate(SocketTLSContext_T ctx, const char *cert_file, const char *key_file)</div><div class="ttdoc">SocketTLSContext_load_certificate - Load server certificate and private key @ctx: The TLS context ins...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a1e2af3e4421c3c20c7dbc4b99cfb4211"><div class="ttname"><a href="SocketTLSContext_8h.html#a1e2af3e4421c3c20c7dbc4b99cfb4211">SocketTLSContext_load_certificate</a></div><div class="ttdeci">void SocketTLSContext_load_certificate(SocketTLSContext_T ctx, const char *cert_file, const char *key_file)</div></div>
 <div class="ttc" id="aSocketTLS_8h_html_ac32c3958835b92ff683ae15f78448694a29928ea4593855bb860f7a0bb8eb027d"><div class="ttname"><a href="SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694a29928ea4593855bb860f7a0bb8eb027d">TLS_VERIFY_FAIL_IF_NO_PEER_CERT</a></div><div class="ttdeci">@ TLS_VERIFY_FAIL_IF_NO_PEER_CERT</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00105">SocketTLS.h:105</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md304"></a>
 OCSP Stapling</h2>
@@ -694,9 +695,9 @@ OCSP Stapling</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Server: Provide OCSP response */</span></div>
 <div class="line"><a class="code hl_function" href="SocketTLSContext_8h.html#acad0c368922de598277e4237779504b7">SocketTLSContext_set_ocsp_response</a>(server_ctx, ocsp_response, ocsp_len);</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a414fb627189037256afd8c4e015b74d1"><div class="ttname"><a href="SocketTLSContext_8h.html#a414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a></div><div class="ttdeci">void SocketTLSContext_enable_ocsp_stapling(SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLSContext_enable_ocsp_stapling - Enable OCSP stapling request (client) @ctx: TLS context insta...</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_acad0c368922de598277e4237779504b7"><div class="ttname"><a href="SocketTLSContext_8h.html#acad0c368922de598277e4237779504b7">SocketTLSContext_set_ocsp_response</a></div><div class="ttdeci">void SocketTLSContext_set_ocsp_response(SocketTLSContext_T ctx, const unsigned char *response, size_t len)</div><div class="ttdoc">SocketTLSContext_set_ocsp_response - Set static OCSP response for stapling (server) @ctx: TLS context...</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_ae1a1b2392cfa8dd68e636bbef9df443f"><div class="ttname"><a href="SocketTLSContext_8h.html#ae1a1b2392cfa8dd68e636bbef9df443f">SocketTLS_get_ocsp_status</a></div><div class="ttdeci">int SocketTLS_get_ocsp_status(Socket_T socket)</div><div class="ttdoc">SocketTLS_get_ocsp_status - Get OCSP status after handshake (client) @socket: TLS socket with complet...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a414fb627189037256afd8c4e015b74d1"><div class="ttname"><a href="SocketTLSContext_8h.html#a414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a></div><div class="ttdeci">void SocketTLSContext_enable_ocsp_stapling(SocketTLSContext_T ctx)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_acad0c368922de598277e4237779504b7"><div class="ttname"><a href="SocketTLSContext_8h.html#acad0c368922de598277e4237779504b7">SocketTLSContext_set_ocsp_response</a></div><div class="ttdeci">void SocketTLSContext_set_ocsp_response(SocketTLSContext_T ctx, const unsigned char *response, size_t len)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_ae1a1b2392cfa8dd68e636bbef9df443f"><div class="ttname"><a href="SocketTLSContext_8h.html#ae1a1b2392cfa8dd68e636bbef9df443f">SocketTLS_get_ocsp_status</a></div><div class="ttdeci">int SocketTLS_get_ocsp_status(Socket_T socket)</div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md305"></a>
 Certificate Transparency</h2>
 <p>Enable CT verification to detect misissued certificates:</p>
@@ -714,7 +715,7 @@ Certificate Revocation Lists (CRL)</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* CRL directory (OpenSSL hashed names required) */</span></div>
 <div class="line"><a class="code hl_function" href="SocketTLSContext_8h.html#a8bf03223d7c3b3cd28f8d03fe082d15e">SocketTLSContext_load_crl</a>(ctx, <span class="stringliteral">&quot;/etc/ssl/crls/&quot;</span>);</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a8bf03223d7c3b3cd28f8d03fe082d15e"><div class="ttname"><a href="SocketTLSContext_8h.html#a8bf03223d7c3b3cd28f8d03fe082d15e">SocketTLSContext_load_crl</a></div><div class="ttdeci">void SocketTLSContext_load_crl(SocketTLSContext_T ctx, const char *crl_path)</div><div class="ttdoc">SocketTLSContext_load_crl - Load CRL file or directory into verification store @ctx: TLS context inst...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a8bf03223d7c3b3cd28f8d03fe082d15e"><div class="ttname"><a href="SocketTLSContext_8h.html#a8bf03223d7c3b3cd28f8d03fe082d15e">SocketTLSContext_load_crl</a></div><div class="ttdeci">void SocketTLSContext_load_crl(SocketTLSContext_T ctx, const char *crl_path)</div></div>
 </div><!-- fragment --><p><b>Manual CRL Refresh Workflow:</b></p>
 <p>CRLs have expiration dates and must be refreshed periodically:</p>
 <div class="fragment"><div class="line"><span class="comment">/* 1. Download updated CRL from CA&#39;s distribution point */</span></div>
@@ -725,7 +726,7 @@ Certificate Revocation Lists (CRL)</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* 3. Schedule next refresh before CRL expires */</span></div>
 <div class="line"><span class="comment">/* Typically refresh at 50% of validity period */</span></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_ac5ba25c0153bc63b6087cff6304f4938"><div class="ttname"><a href="SocketTLSContext_8h.html#ac5ba25c0153bc63b6087cff6304f4938">SocketTLSContext_reload_crl</a></div><div class="ttdeci">void SocketTLSContext_reload_crl(SocketTLSContext_T ctx, const char *crl_path)</div><div class="ttdoc">SocketTLSContext_reload_crl - Reload CRL from path (alias for refresh_crl) @ctx: TLS context @crl_pat...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_ac5ba25c0153bc63b6087cff6304f4938"><div class="ttname"><a href="SocketTLSContext_8h.html#ac5ba25c0153bc63b6087cff6304f4938">SocketTLSContext_reload_crl</a></div><div class="ttdeci">void SocketTLSContext_reload_crl(SocketTLSContext_T ctx, const char *crl_path)</div></div>
 </div><!-- fragment --><p><b>Automatic CRL Refresh:</b></p>
 <p>For production systems, configure automatic refresh:</p>
 <div class="fragment"><div class="line"><span class="comment">/* Enable automatic CRL refresh every 6 hours */</span></div>
@@ -745,8 +746,8 @@ Certificate Revocation Lists (CRL)</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">/* Cancel auto-refresh when done */</span></div>
 <div class="line"><a class="code hl_function" href="SocketTLSContext_8h.html#ab4bee293124b9d83681f9471f0519689">SocketTLSContext_cancel_crl_auto_refresh</a>(ctx);</div>
-<div class="ttc" id="aSocketTLSContext_8h_html_ab4bee293124b9d83681f9471f0519689"><div class="ttname"><a href="SocketTLSContext_8h.html#ab4bee293124b9d83681f9471f0519689">SocketTLSContext_cancel_crl_auto_refresh</a></div><div class="ttdeci">void SocketTLSContext_cancel_crl_auto_refresh(SocketTLSContext_T ctx)</div><div class="ttdoc">SocketTLSContext_cancel_crl_auto_refresh - Disable automatic CRL refresh @ctx: TLS context instance.</div></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_ac049c86b0b5edba0a7bcb73ca2e1e2eb"><div class="ttname"><a href="SocketTLSContext_8h.html#ac049c86b0b5edba0a7bcb73ca2e1e2eb">SocketTLSContext_set_crl_auto_refresh</a></div><div class="ttdeci">void SocketTLSContext_set_crl_auto_refresh(SocketTLSContext_T ctx, const char *crl_path, long interval_seconds, SocketTLSCrlCallback callback, void *user_data)</div><div class="ttdoc">SocketTLSContext_set_crl_auto_refresh - Enable automatic CRL refresh @ctx: TLS context instance @crl_...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_ab4bee293124b9d83681f9471f0519689"><div class="ttname"><a href="SocketTLSContext_8h.html#ab4bee293124b9d83681f9471f0519689">SocketTLSContext_cancel_crl_auto_refresh</a></div><div class="ttdeci">void SocketTLSContext_cancel_crl_auto_refresh(SocketTLSContext_T ctx)</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_ac049c86b0b5edba0a7bcb73ca2e1e2eb"><div class="ttname"><a href="SocketTLSContext_8h.html#ac049c86b0b5edba0a7bcb73ca2e1e2eb">SocketTLSContext_set_crl_auto_refresh</a></div><div class="ttdeci">void SocketTLSContext_set_crl_auto_refresh(SocketTLSContext_T ctx, const char *crl_path, long interval_seconds, SocketTLSCrlCallback callback, void *user_data)</div></div>
 </div><!-- fragment --><p><b>CRL Best Practices:</b></p>
 <ul>
 <li><b>Refresh frequency:</b> Check CRL's nextUpdate field; refresh at 50% of validity</li>
@@ -769,7 +770,7 @@ Session Resumption Security</h2>
 <div class="line"><span class="comment">/* For high-security: disable session tickets */</span></div>
 <div class="line"><span class="comment">/* (Session tickets encrypt session state with server key - if key</span></div>
 <div class="line"><span class="comment">   is compromised, all past sessions can be decrypted) */</span></div>
-<div class="ttc" id="aSocketTLSContext_8h_html_a6f0a68e802e789df40eaa28cb641a422"><div class="ttname"><a href="SocketTLSContext_8h.html#a6f0a68e802e789df40eaa28cb641a422">SocketTLSContext_enable_session_cache</a></div><div class="ttdeci">void SocketTLSContext_enable_session_cache(SocketTLSContext_T ctx, size_t max_sessions, long timeout_seconds)</div><div class="ttdoc">SocketTLSContext_enable_session_cache - Enable session caching infrastructure @ctx: The TLS context i...</div></div>
+<div class="ttc" id="aSocketTLSContext_8h_html_a6f0a68e802e789df40eaa28cb641a422"><div class="ttname"><a href="SocketTLSContext_8h.html#a6f0a68e802e789df40eaa28cb641a422">SocketTLSContext_enable_session_cache</a></div><div class="ttdeci">void SocketTLSContext_enable_session_cache(SocketTLSContext_T ctx, size_t max_sessions, long timeout_seconds)</div></div>
 </div><!-- fragment --><p><b>Session Ticket Key Rotation:</b></p><ul>
 <li>Rotate session ticket keys regularly (every few hours)</li>
 <li>Use <code>SocketTLSContext_rotate_ticket_key()</code> for key rotation</li>

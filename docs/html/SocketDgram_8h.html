@@ -142,7 +142,6 @@ $(document).ready(function(){initNavTree('SocketDgram_8h.html',''); initResizabl
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">UDP/Datagram Socket Abstraction Layer.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -155,107 +154,75 @@ Functions</h2></td></tr>
 <tr class="memitem:ad6902c87ab5883f155dab2adfa950c52" id="r_ad6902c87ab5883f155dab2adfa950c52"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a> (int domain, int protocol)</td></tr>
 <tr class="separator:ad6902c87ab5883f155dab2adfa950c52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a020169c79640786afa4c36fd1dc965e4" id="r_a020169c79640786afa4c36fd1dc965e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> *socket)</td></tr>
-<tr class="memdesc:a020169c79640786afa4c36fd1dc965e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)  <br /></td></tr>
 <tr class="separator:a020169c79640786afa4c36fd1dc965e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c81d9ef1d90e7ab34dd7286f13878ee" id="r_a0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0c81d9ef1d90e7ab34dd7286f13878ee">SocketDgram_bind</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:a0c81d9ef1d90e7ab34dd7286f13878ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided.  <br /></td></tr>
 <tr class="separator:a0c81d9ef1d90e7ab34dd7286f13878ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcb18c16142d3b5ef49bee08a96e15fa" id="r_abcb18c16142d3b5ef49bee08a96e15fa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:abcb18c16142d3b5ef49bee08a96e15fa"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided.  <br /></td></tr>
 <tr class="separator:abcb18c16142d3b5ef49bee08a96e15fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08371cbf32cb15528b42e189f8267923" id="r_a08371cbf32cb15528b42e189f8267923"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a08371cbf32cb15528b42e189f8267923">SocketDgram_sendto</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
-<tr class="memdesc:a08371cbf32cb15528b42e189f8267923"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_sendto - Send datagram to specific address @socket: Socket to send from @buf: Data to send @len: Length of data (must be &gt; 0) @host: Destination IP address or hostname @port: Destination port Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided.  <br /></td></tr>
 <tr class="separator:a08371cbf32cb15528b42e189f8267923"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada4b76edaec59a44eb5bc959e6948d3f" id="r_ada4b76edaec59a44eb5bc959e6948d3f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len, char *host, size_t host_len, int *port)</td></tr>
-<tr class="memdesc:ada4b76edaec59a44eb5bc959e6948d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_recvfrom - Receive datagram and get sender address @socket: Socket to receive from @buf: Buffer for received data @len: Buffer size (must be &gt; 0) @host: Output - sender IP address (buffer must be &gt;= 46 bytes for IPv6) @host_len: Size of host buffer @port: Output - sender port number Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: UDP is message-oriented.  <br /></td></tr>
 <tr class="separator:ada4b76edaec59a44eb5bc959e6948d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08b2ab199a5c50a654683ba1ddb4d004" id="r_a08b2ab199a5c50a654683ba1ddb4d004"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a08b2ab199a5c50a654683ba1ddb4d004">SocketDgram_send</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:a08b2ab199a5c50a654683ba1ddb4d004"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_send - Send to default destination (connected socket) @socket: Connected socket @buf: Data to send @len: Length of data (must be &gt; 0) Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa" title="SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP ...">SocketDgram_connect()</a> first.  <br /></td></tr>
 <tr class="separator:a08b2ab199a5c50a654683ba1ddb4d004"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af832ef8734ab4dfb43ad639470461bda" id="r_af832ef8734ab4dfb43ad639470461bda"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af832ef8734ab4dfb43ad639470461bda">SocketDgram_recv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:af832ef8734ab4dfb43ad639470461bda"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_recv - Receive from default source (connected socket) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (must be &gt; 0) Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa" title="SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP ...">SocketDgram_connect()</a> first.  <br /></td></tr>
 <tr class="separator:af832ef8734ab4dfb43ad639470461bda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc08ada68a6f9a6922d4e2b0b8f4c081" id="r_adc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#adc08ada68a6f9a6922d4e2b0b8f4c081">SocketDgram_sendall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:adc08ada68a6f9a6922d4e2b0b8f4c081"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data is sent or an error occurs.  <br /></td></tr>
 <tr class="separator:adc08ada68a6f9a6922d4e2b0b8f4c081"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af96de127ecced1b5d8166e6a039e664c" id="r_af96de127ecced1b5d8166e6a039e664c"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af96de127ecced1b5d8166e6a039e664c">SocketDgram_recvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:af96de127ecced1b5d8166e6a039e664c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until len bytes are received or an error occurs.  <br /></td></tr>
 <tr class="separator:af96de127ecced1b5d8166e6a039e664c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2527bddec3459405a6a989de06727a2f" id="r_a2527bddec3459405a6a989de06727a2f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a2527bddec3459405a6a989de06727a2f">SocketDgram_sendv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:a2527bddec3459405a6a989de06727a2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Sends data from multiple buffers in a single system call.  <br /></td></tr>
 <tr class="separator:a2527bddec3459405a6a989de06727a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a485908b4ff4a79f514f8e86ec6030107" id="r_a485908b4ff4a79f514f8e86ec6030107"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a485908b4ff4a79f514f8e86ec6030107">SocketDgram_recvv</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:a485908b4ff4a79f514f8e86ec6030107"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Receives data into multiple buffers in a single system call.  <br /></td></tr>
 <tr class="separator:a485908b4ff4a79f514f8e86ec6030107"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa208c4a07e76579c3e924ee31ea02777" id="r_aa208c4a07e76579c3e924ee31ea02777"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#aa208c4a07e76579c3e924ee31ea02777">SocketDgram_sendvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:aa208c4a07e76579c3e924ee31ea02777"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data from all buffers is sent or an error occurs.  <br /></td></tr>
 <tr class="separator:aa208c4a07e76579c3e924ee31ea02777"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31fd826092fb6b9c1a3b11953568f2d6" id="r_a31fd826092fb6b9c1a3b11953568f2d6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a31fd826092fb6b9c1a3b11953568f2d6">SocketDgram_recvvall</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:a31fd826092fb6b9c1a3b11953568f2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all requested data is received into all buffers or an error occurs.  <br /></td></tr>
 <tr class="separator:a31fd826092fb6b9c1a3b11953568f2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1817a8561af1801a9baa7630bc277ce6" id="r_a1817a8561af1801a9baa7630bc277ce6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a1817a8561af1801a9baa7630bc277ce6">SocketDgram_setnonblocking</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a1817a8561af1801a9baa7630bc277ce6"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:a1817a8561af1801a9baa7630bc277ce6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74995a7164d93c4e958da6642e0f317d" id="r_a74995a7164d93c4e958da6642e0f317d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a74995a7164d93c4e958da6642e0f317d">SocketDgram_setreuseaddr</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a74995a7164d93c4e958da6642e0f317d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:a74995a7164d93c4e958da6642e0f317d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9770b3c571ac6a900071db266a632816" id="r_a9770b3c571ac6a900071db266a632816"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a9770b3c571ac6a900071db266a632816">SocketDgram_setreuseport</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a9770b3c571ac6a900071db266a632816"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setreuseport - Enable port reuse across sockets @socket: Socket to modify Raises: SocketDgram_Failed on error (or if SO_REUSEPORT unsupported)  <br /></td></tr>
 <tr class="separator:a9770b3c571ac6a900071db266a632816"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a637a1a778f293e4843f2355a9299d381" id="r_a637a1a778f293e4843f2355a9299d381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a637a1a778f293e4843f2355a9299d381">SocketDgram_setbroadcast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
-<tr class="memdesc:a637a1a778f293e4843f2355a9299d381"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setbroadcast - Enable broadcast @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: SocketDgram_Failed on error Note: Required to send broadcast datagrams to 255.255.255.255 or subnet broadcast addresses.  <br /></td></tr>
 <tr class="separator:a637a1a778f293e4843f2355a9299d381"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae25dbfe6a79cb46494ec438accb53db0" id="r_ae25dbfe6a79cb46494ec438accb53db0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ae25dbfe6a79cb46494ec438accb53db0">SocketDgram_joinmulticast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
 <tr class="separator:ae25dbfe6a79cb46494ec438accb53db0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53cb8e627cf35e3d0c6db85e3bc33bab" id="r_a53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a53cb8e627cf35e3d0c6db85e3bc33bab">SocketDgram_leavemulticast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, const char *group, const char *interface)</td></tr>
 <tr class="separator:a53cb8e627cf35e3d0c6db85e3bc33bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22d94185a6ccf28eceb98d69240ba3d2" id="r_a22d94185a6ccf28eceb98d69240ba3d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a22d94185a6ccf28eceb98d69240ba3d2">SocketDgram_setttl</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int ttl)</td></tr>
-<tr class="memdesc:a22d94185a6ccf28eceb98d69240ba3d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setttl - Set time-to-live (hop limit) @socket: Socket to modify @ttl: TTL value (1-255) Raises: SocketDgram_Failed on error Note: TTL controls how many network hops a packet can traverse Default is usually 64.  <br /></td></tr>
 <tr class="separator:a22d94185a6ccf28eceb98d69240ba3d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe579d108c83517ff9ceeac750139bc4" id="r_afe579d108c83517ff9ceeac750139bc4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#afe579d108c83517ff9ceeac750139bc4">SocketDgram_settimeout</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int timeout_sec)</td></tr>
-<tr class="memdesc:afe579d108c83517ff9ceeac750139bc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets receive timeout to prevent blocking indefinitely Raises: SocketDgram_Failed on error Note: Useful for signal-responsive servers.  <br /></td></tr>
 <tr class="separator:afe579d108c83517ff9ceeac750139bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a99243c75f546aab2534b529611b647f8" id="r_a99243c75f546aab2534b529611b647f8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a99243c75f546aab2534b529611b647f8">SocketDgram_gettimeout</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a99243c75f546aab2534b529611b647f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: SocketDgram_Failed on error Note: Returns receive timeout (send timeout may differ)  <br /></td></tr>
 <tr class="separator:a99243c75f546aab2534b529611b647f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae6c2bde38c3a7addb7cfffe98a253f60" id="r_ae6c2bde38c3a7addb7cfffe98a253f60"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ae6c2bde38c3a7addb7cfffe98a253f60">SocketDgram_getbroadcast</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ae6c2bde38c3a7addb7cfffe98a253f60"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getbroadcast - Get broadcast setting @socket: Socket to query Returns: 1 if broadcast is enabled, 0 if disabled Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:ae6c2bde38c3a7addb7cfffe98a253f60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b91970d4ffe2a7162c4104b0b6de78f" id="r_a6b91970d4ffe2a7162c4104b0b6de78f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a6b91970d4ffe2a7162c4104b0b6de78f">SocketDgram_getttl</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a6b91970d4ffe2a7162c4104b0b6de78f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getttl - Get time-to-live (hop limit) @socket: Socket to query Returns: TTL value (1-255) Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:a6b91970d4ffe2a7162c4104b0b6de78f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0dd532f19eef5d8220480e06cc3a7db" id="r_ab0dd532f19eef5d8220480e06cc3a7db"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#ab0dd532f19eef5d8220480e06cc3a7db">SocketDgram_getrcvbuf</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ab0dd532f19eef5d8220480e06cc3a7db"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:ab0dd532f19eef5d8220480e06cc3a7db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af54f02197f8c0dc53fbdf333d476aae2" id="r_af54f02197f8c0dc53fbdf333d476aae2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#af54f02197f8c0dc53fbdf333d476aae2">SocketDgram_getsndbuf</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:af54f02197f8c0dc53fbdf333d476aae2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: SocketDgram_Failed on error.  <br /></td></tr>
 <tr class="separator:af54f02197f8c0dc53fbdf333d476aae2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73455982ede6d44649f85adb25c4bda2" id="r_a73455982ede6d44649f85adb25c4bda2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a73455982ede6d44649f85adb25c4bda2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes (operates on single socket) Note: Uses getpeername() to determine connection state.  <br /></td></tr>
 <tr class="separator:a73455982ede6d44649f85adb25c4bda2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06d3085b3b7287330e8cb49d6d9a4da1" id="r_a06d3085b3b7287330e8cb49d6d9a4da1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a06d3085b3b7287330e8cb49d6d9a4da1">SocketDgram_isbound</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a06d3085b3b7287330e8cb49d6d9a4da1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_isbound - Check if datagram socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes (operates on single socket) Note: Uses getsockname() to determine binding state.  <br /></td></tr>
 <tr class="separator:a06d3085b3b7287330e8cb49d6d9a4da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a54e91e6824df0c114a5e6a4d79e5c6fb" id="r_a54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a54e91e6824df0c114a5e6a4d79e5c6fb">SocketDgram_fd</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a54e91e6824df0c114a5e6a4d79e5c6fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor.  <br /></td></tr>
 <tr class="separator:a54e91e6824df0c114a5e6a4d79e5c6fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9822234959be9508363bb3c0f2bd47b7" id="r_a9822234959be9508363bb3c0f2bd47b7"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a9822234959be9508363bb3c0f2bd47b7">SocketDgram_getlocaladdr</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a9822234959be9508363bb3c0f2bd47b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: Returns "(unknown)" if address info unavailable.  <br /></td></tr>
 <tr class="separator:a9822234959be9508363bb3c0f2bd47b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8b2685e6ad39d1c2fc16df7234f7a87a" id="r_a8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a8b2685e6ad39d1c2fc16df7234f7a87a">SocketDgram_getlocalport</a> (const <a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:a8b2685e6ad39d1c2fc16df7234f7a87a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable.  <br /></td></tr>
 <tr class="separator:a8b2685e6ad39d1c2fc16df7234f7a87a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc7a0ae08dfe973bee1067aa4a6869d2" id="r_acc7a0ae08dfe973bee1067aa4a6869d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#acc7a0ae08dfe973bee1067aa4a6869d2">SocketDgram_setcloexec</a> (<a class="el" href="SocketDgram_8h.html#a178c1e09efbfdacb14740d3a0265721f">SocketDgram_T</a> socket, int enable)</td></tr>
-<tr class="memdesc:acc7a0ae08dfe973bee1067aa4a6869d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: By default, all sockets have CLOEXEC enabled.  <br /></td></tr>
 <tr class="separator:acc7a0ae08dfe973bee1067aa4a6869d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e8f0a454d58b2ff87878e39960c9187" id="r_a0e8f0a454d58b2ff87878e39960c9187"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a0e8f0a454d58b2ff87878e39960c9187">SocketDgram_debug_live_count</a> (void)</td></tr>
-<tr class="memdesc:a0e8f0a454d58b2ff87878e39960c9187"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDgram_debug_live_count - Get number of live datagram socket instances Returns: Number of currently allocated SocketDgram instances Thread-safe: Yes Note: Test/debug function for leak detection.  <br /></td></tr>
 <tr class="separator:a0e8f0a454d58b2ff87878e39960c9187"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a28354c49d1726c674932f420a57bb21d" id="r_a28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram_8h.html#a28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
-<tr class="memdesc:a28354c49d1726c674932f420a57bb21d"><td class="mdescLeft">&#160;</td><td class="mdescRight">General datagram socket operation failure.  <br /></td></tr>
 <tr class="separator:a28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -270,8 +237,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>UDP/Datagram Socket Abstraction Layer. </p>
+<p>UDP/Datagram Socket Abstraction Layer</p>
 <p>Provides a high-level, exception-based interface for UDP/datagram sockets. All functions use exceptions for error handling, making code cleaner and more robust than traditional error code checking.</p>
 <p>PLATFORM REQUIREMENTS:</p><ul>
 <li>POSIX-compliant system (Linux, BSD, macOS, etc.)</li>
@@ -355,9 +321,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. </p>
-<p>For non-blocking operation, use IP addresses directly. All parameters are validated at runtime for safety with user input. </p>
+<p>SocketDgram_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. For non-blocking operation, use IP addresses directly. All parameters are validated at runtime for safety with user input. </p>
 
 </div>
 </div>
@@ -400,9 +364,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. </p>
-<p>Note: "Connect" for UDP means setting a default destination. After connecting, you can use send/recv instead of sendto/recvfrom. The socket only accepts packets from the connected address. You can still use sendto/recvfrom to override the default destination. </p>
+<p>SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. Note: "Connect" for UDP means setting a default destination. After connecting, you can use send/recv instead of sendto/recvfrom. The socket only accepts packets from the connected address. You can still use sendto/recvfrom to override the default destination. </p>
 
 </div>
 </div>
@@ -429,9 +391,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_debug_live_count - Get number of live datagram socket instances Returns: Number of currently allocated SocketDgram instances Thread-safe: Yes Note: Test/debug function for leak detection. </p>
-<p>Returns count of sockets that have been created but not yet freed. </p>
+<p>SocketDgram_debug_live_count - Get number of live datagram socket instances Returns: Number of currently allocated SocketDgram instances Thread-safe: Yes Note: Test/debug function for leak detection. Returns count of sockets that have been created but not yet freed. </p>
 
 </div>
 </div>
@@ -458,8 +418,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor. </p>
+<p>SocketDgram_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor </p>
 
 </div>
 </div>
@@ -486,7 +445,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>SocketDgram_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL) </p>
 
 </div>
@@ -514,8 +472,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getbroadcast - Get broadcast setting @socket: Socket to query Returns: 1 if broadcast is enabled, 0 if disabled Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_getbroadcast - Get broadcast setting @socket: Socket to query Returns: 1 if broadcast is enabled, 0 if disabled Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -542,9 +499,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: Returns "(unknown)" if address info unavailable. </p>
-<p>String is owned by socket, must not be freed/modified. Valid until socket freed. </p>
+<p>SocketDgram_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: Returns "(unknown)" if address info unavailable. String is owned by socket, must not be freed/modified. Valid until socket freed. </p>
 
 </div>
 </div>
@@ -571,8 +526,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable. </p>
+<p>SocketDgram_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable </p>
 
 </div>
 </div>
@@ -599,8 +553,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -627,8 +580,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -655,7 +607,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>SocketDgram_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: SocketDgram_Failed on error Note: Returns receive timeout (send timeout may differ) </p>
 
 </div>
@@ -683,8 +634,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_getttl - Get time-to-live (hop limit) @socket: Socket to query Returns: TTL value (1-255) Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_getttl - Get time-to-live (hop limit) @socket: Socket to query Returns: TTL value (1-255) Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -711,9 +661,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_isbound - Check if datagram socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes (operates on single socket) Note: Uses getsockname() to determine binding state. </p>
-<p>A socket is bound if getsockname() succeeds and returns a valid address. Wildcard addresses (0.0.0.0 or ::) still count as bound. </p>
+<p>SocketDgram_isbound - Check if datagram socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes (operates on single socket) Note: Uses getsockname() to determine binding state. A socket is bound if getsockname() succeeds and returns a valid address. Wildcard addresses (0.0.0.0 or ::) still count as bound. </p>
 
 </div>
 </div>
@@ -740,9 +688,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes (operates on single socket) Note: Uses getpeername() to determine connection state. </p>
-<p>For UDP sockets, "connected" means a default destination is set. </p>
+<p>SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes (operates on single socket) Note: Uses getpeername() to determine connection state. For UDP sockets, "connected" means a default destination is set. </p>
 
 </div>
 </div>
@@ -905,9 +851,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_recv - Receive from default source (connected socket) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (must be &gt; 0) Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa" title="SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP ...">SocketDgram_connect()</a> first. </p>
-<p>Only accepts packets from the connected address. </p>
+<p>SocketDgram_recv - Receive from default source (connected socket) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (must be &gt; 0) Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect()</a> first. Only accepts packets from the connected address. </p>
 
 </div>
 </div>
@@ -950,9 +894,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until len bytes are received or an error occurs. </p>
-<p>For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2" title="SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 i...">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
+<p>SocketDgram_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until len bytes are received or an error occurs. For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
 
 </div>
 </div>
@@ -1013,9 +955,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_recvfrom - Receive datagram and get sender address @socket: Socket to receive from @buf: Buffer for received data @len: Buffer size (must be &gt; 0) @host: Output - sender IP address (buffer must be &gt;= 46 bytes for IPv6) @host_len: Size of host buffer @port: Output - sender port number Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: UDP is message-oriented. </p>
-<p>If buffer is too small, data is truncated. Recommended buffer size &gt;= 65507 bytes (max UDP payload) to avoid truncation. Common buffer sizes: 8192 (8KB), 65536 (64KB). The host parameter receives the sender's IP address as a string. The port parameter receives the sender's port number. </p>
+<p>SocketDgram_recvfrom - Receive datagram and get sender address @socket: Socket to receive from @buf: Buffer for received data @len: Buffer size (must be &gt; 0) @host: Output - sender IP address (buffer must be &gt;= 46 bytes for IPv6) @host_len: Size of host buffer @port: Output - sender port number Returns: Number of bytes received (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: UDP is message-oriented. If buffer is too small, data is truncated. Recommended buffer size &gt;= 65507 bytes (max UDP payload) to avoid truncation. Common buffer sizes: 8192 (8KB), 65536 (64KB). The host parameter receives the sender's IP address as a string. The port parameter receives the sender's port number. </p>
 
 </div>
 </div>
@@ -1058,9 +998,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Receives data into multiple buffers in a single system call. </p>
-<p>May receive less than requested. Use <a class="el" href="SocketDgram_8h.html#a31fd826092fb6b9c1a3b11953568f2d6" title="SocketDgram_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socke...">SocketDgram_recvvall()</a> for guaranteed complete receive. </p>
+<p>SocketDgram_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Receives data into multiple buffers in a single system call. May receive less than requested. Use <a class="el" href="SocketDgram_8h.html#a31fd826092fb6b9c1a3b11953568f2d6">SocketDgram_recvvall()</a> for guaranteed complete receive. </p>
 
 </div>
 </div>
@@ -1103,9 +1041,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all requested data is received into all buffers or an error occurs. </p>
-<p>For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2" title="SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 i...">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
+<p>SocketDgram_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all requested data is received into all buffers or an error occurs. For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
 
 </div>
 </div>
@@ -1148,8 +1084,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_send - Send to default destination (connected socket) @socket: Connected socket @buf: Data to send @len: Length of data (must be &gt; 0) Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa" title="SocketDgram_connect - Set default destination for socket @socket: Socket to connect @host: Remote IP ...">SocketDgram_connect()</a> first. </p>
+<p>SocketDgram_send - Send to default destination (connected socket) @socket: Connected socket @buf: Data to send @len: Length of data (must be &gt; 0) Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Note: Socket must be connected via <a class="el" href="SocketDgram_8h.html#abcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect()</a> first. </p>
 
 </div>
 </div>
@@ -1192,9 +1127,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data is sent or an error occurs. </p>
-<p>For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2" title="SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 i...">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
+<p>SocketDgram_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data is sent or an error occurs. For non-blocking sockets, returns 0 if would block (EAGAIN/EWOULDBLOCK). Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
 
 </div>
 </div>
@@ -1249,9 +1182,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_sendto - Send datagram to specific address @socket: Socket to send from @buf: Data to send @len: Length of data (must be &gt; 0) @host: Destination IP address or hostname @port: Destination port Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. </p>
-<p>Note: UDP sends complete datagrams. If len &gt; MTU, fragmentation may occur. Recommended to keep len &lt;= 1472 bytes to avoid fragmentation (1500 MTU - headers). Unlike TCP, send may return less than len only on would-block, not partial sends. </p>
+<p>SocketDgram_sendto - Send datagram to specific address @socket: Socket to send from @buf: Data to send @len: Length of data (must be &gt; 0) @host: Destination IP address or hostname @port: Destination port Returns: Number of bytes sent (&gt; 0), or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error WARNING: This function may block during DNS resolution if hostname is provided. Note: UDP sends complete datagrams. If len &gt; MTU, fragmentation may occur. Recommended to keep len &lt;= 1472 bytes to avoid fragmentation (1500 MTU - headers). Unlike TCP, send may return less than len only on would-block, not partial sends. </p>
 
 </div>
 </div>
@@ -1294,9 +1225,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Sends data from multiple buffers in a single system call. </p>
-<p>May send less than requested. Use <a class="el" href="SocketDgram_8h.html#aa208c4a07e76579c3e924ee31ea02777" title="SocketDgram_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov...">SocketDgram_sendvall()</a> for guaranteed complete send. </p>
+<p>SocketDgram_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Sends data from multiple buffers in a single system call. May send less than requested. Use <a class="el" href="SocketDgram_8h.html#aa208c4a07e76579c3e924ee31ea02777">SocketDgram_sendvall()</a> for guaranteed complete send. </p>
 
 </div>
 </div>
@@ -1339,9 +1268,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data from all buffers is sent or an error occurs. </p>
-<p>For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2" title="SocketDgram_isconnected - Check if datagram socket is connected @socket: Socket to check Returns: 1 i...">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
+<p>SocketDgram_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: Loops until all data from all buffers is sent or an error occurs. For non-blocking sockets, returns partial progress if would block. Use <a class="el" href="SocketDgram_8h.html#a73455982ede6d44649f85adb25c4bda2">SocketDgram_isconnected()</a> to verify connection state before calling. </p>
 
 </div>
 </div>
@@ -1378,7 +1305,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>SocketDgram_setbroadcast - Enable broadcast @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: SocketDgram_Failed on error Note: Required to send broadcast datagrams to 255.255.255.255 or subnet broadcast addresses. </p>
 
 </div>
@@ -1416,9 +1342,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: By default, all sockets have CLOEXEC enabled. </p>
-<p>This function allows disabling it if you need to pass the socket to a child process. </p>
+<p>SocketDgram_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: SocketDgram_Failed on error Thread-safe: Yes (operates on single socket) Note: By default, all sockets have CLOEXEC enabled. This function allows disabling it if you need to pass the socket to a child process. </p>
 
 </div>
 </div>
@@ -1445,8 +1369,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -1473,8 +1396,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: SocketDgram_Failed on error. </p>
+<p>SocketDgram_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: SocketDgram_Failed on error </p>
 
 </div>
 </div>
@@ -1501,7 +1423,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>SocketDgram_setreuseport - Enable port reuse across sockets @socket: Socket to modify Raises: SocketDgram_Failed on error (or if SO_REUSEPORT unsupported) </p>
 
 </div>
@@ -1539,9 +1460,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets receive timeout to prevent blocking indefinitely Raises: SocketDgram_Failed on error Note: Useful for signal-responsive servers. </p>
-<p>With timeout, recvfrom returns 0 (would-block) after timeout, allowing the event loop to check for shutdown signals. </p>
+<p>SocketDgram_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets receive timeout to prevent blocking indefinitely Raises: SocketDgram_Failed on error Note: Useful for signal-responsive servers. With timeout, recvfrom returns 0 (would-block) after timeout, allowing the event loop to check for shutdown signals. </p>
 
 </div>
 </div>
@@ -1578,9 +1497,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDgram_setttl - Set time-to-live (hop limit) @socket: Socket to modify @ttl: TTL value (1-255) Raises: SocketDgram_Failed on error Note: TTL controls how many network hops a packet can traverse Default is usually 64. </p>
-<p>Use 1 for link-local only. </p>
+<p>SocketDgram_setttl - Set time-to-live (hop limit) @socket: Socket to modify @ttl: TTL value (1-255) Raises: SocketDgram_Failed on error Note: TTL controls how many network hops a packet can traverse Default is usually 64. Use 1 for link-local only. </p>
 
 </div>
 </div>
@@ -1604,8 +1521,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>General datagram socket operation failure. </p>
+<p>General datagram socket operation failure </p>
 
 </div>
 </div>

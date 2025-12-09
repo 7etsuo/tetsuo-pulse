@@ -136,7 +136,6 @@ $(document).ready(function(){initNavTree('SocketDTLSContext_8h.html',''); initRe
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketDTLSContext_8h.html">SocketDTLSContext.h</a> - DTLS Context Management Module.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -149,67 +148,46 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a0e99fc1644e610eb26324fb12cb96a57" id="r_a0e99fc1644e610eb26324fb12cb96a57"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a> (const char *cert_file, const char *key_file, const char *ca_file)</td></tr>
-<tr class="memdesc:a0e99fc1644e610eb26324fb12cb96a57"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_new_server - Create server DTLS context with cert/key @cert_file: Path to server certificate file (PEM format) @key_file: Path to private key file (PEM format) @ca_file: Optional path to CA file/directory for client auth (NULL to disable)  <br /></td></tr>
 <tr class="separator:a0e99fc1644e610eb26324fb12cb96a57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa2f96caa6d90a1fae0ce4f8fb52970a" id="r_afa2f96caa6d90a1fae0ce4f8fb52970a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#afa2f96caa6d90a1fae0ce4f8fb52970a">SocketDTLSContext_new_client</a> (const char *ca_file)</td></tr>
-<tr class="memdesc:afa2f96caa6d90a1fae0ce4f8fb52970a"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_new_client - Create client DTLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable)  <br /></td></tr>
 <tr class="separator:afa2f96caa6d90a1fae0ce4f8fb52970a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af05f6e0175668dd52a2d68af50f67983" id="r_af05f6e0175668dd52a2d68af50f67983"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#af05f6e0175668dd52a2d68af50f67983">SocketDTLSContext_free</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> *ctx_p)</td></tr>
-<tr class="memdesc:af05f6e0175668dd52a2d68af50f67983"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_free - Dispose of DTLS context and resources @ctx_p: Pointer to context pointer (set to NULL on success)  <br /></td></tr>
 <tr class="separator:af05f6e0175668dd52a2d68af50f67983"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52fb3ca5d16466a21ac871ad2217904c" id="r_a52fb3ca5d16466a21ac871ad2217904c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a52fb3ca5d16466a21ac871ad2217904c">SocketDTLSContext_load_certificate</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, const char *cert_file, const char *key_file)</td></tr>
-<tr class="memdesc:a52fb3ca5d16466a21ac871ad2217904c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_load_certificate - Load server certificate and private key @ctx: The DTLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM)  <br /></td></tr>
 <tr class="separator:a52fb3ca5d16466a21ac871ad2217904c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a210798613a063bb2be1fdf07a5d9648c" id="r_a210798613a063bb2be1fdf07a5d9648c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a210798613a063bb2be1fdf07a5d9648c">SocketDTLSContext_load_ca</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, const char *ca_file)</td></tr>
-<tr class="memdesc:a210798613a063bb2be1fdf07a5d9648c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_load_ca - Load trusted CA certificates @ctx: The DTLS context instance @ca_file: Path to CA file or directory containing PEM CA certs.  <br /></td></tr>
 <tr class="separator:a210798613a063bb2be1fdf07a5d9648c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a167f13bc2d88dd59da040a6423cbb741" id="r_a167f13bc2d88dd59da040a6423cbb741"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a167f13bc2d88dd59da040a6423cbb741">SocketDTLSContext_set_verify_mode</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, <a class="el" href="SocketTLS_8h.html#ac32c3958835b92ff683ae15f78448694">TLSVerifyMode</a> mode)</td></tr>
-<tr class="memdesc:a167f13bc2d88dd59da040a6423cbb741"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_verify_mode - Set certificate verification policy @ctx: The DTLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)  <br /></td></tr>
 <tr class="separator:a167f13bc2d88dd59da040a6423cbb741"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abbffd63c9a5c7551ecaf8f89a4034eb4" id="r_abbffd63c9a5c7551ecaf8f89a4034eb4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#abbffd63c9a5c7551ecaf8f89a4034eb4">SocketDTLSContext_enable_cookie_exchange</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:abbffd63c9a5c7551ecaf8f89a4034eb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_enable_cookie_exchange - Enable stateless cookie DoS protection @ctx: The DTLS context instance (server only)  <br /></td></tr>
 <tr class="separator:abbffd63c9a5c7551ecaf8f89a4034eb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19b67aa468ee1ad317683b1839b26e7b" id="r_a19b67aa468ee1ad317683b1839b26e7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a19b67aa468ee1ad317683b1839b26e7b">SocketDTLSContext_set_cookie_secret</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, const unsigned char *secret, size_t len)</td></tr>
-<tr class="memdesc:a19b67aa468ee1ad317683b1839b26e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_cookie_secret - Set cookie HMAC secret key @ctx: The DTLS context instance @secret: Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes) @len: Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN)  <br /></td></tr>
 <tr class="separator:a19b67aa468ee1ad317683b1839b26e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a488bdfe1b7d278bbcb2d2f80a9540df5" id="r_a488bdfe1b7d278bbcb2d2f80a9540df5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a488bdfe1b7d278bbcb2d2f80a9540df5">SocketDTLSContext_rotate_cookie_secret</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a488bdfe1b7d278bbcb2d2f80a9540df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_rotate_cookie_secret - Generate new cookie secret @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:a488bdfe1b7d278bbcb2d2f80a9540df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a473e4425731c220ae48a1bfec9ba279d" id="r_a473e4425731c220ae48a1bfec9ba279d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a473e4425731c220ae48a1bfec9ba279d">SocketDTLSContext_set_mtu</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, size_t mtu)</td></tr>
-<tr class="memdesc:a473e4425731c220ae48a1bfec9ba279d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_mtu - Set link MTU for DTLS record sizing @ctx: The DTLS context instance @mtu: Maximum Transmission Unit in bytes.  <br /></td></tr>
 <tr class="separator:a473e4425731c220ae48a1bfec9ba279d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9edc0ddb77ac1a52c2d65e202d6c4fdc" id="r_a9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a9edc0ddb77ac1a52c2d65e202d6c4fdc">SocketDTLSContext_get_mtu</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_get_mtu - Get configured MTU @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:a9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad674b683e396a1af639691d9a18c6aa0" id="r_ad674b683e396a1af639691d9a18c6aa0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#ad674b683e396a1af639691d9a18c6aa0">SocketDTLSContext_set_min_protocol</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, int version)</td></tr>
-<tr class="memdesc:ad674b683e396a1af639691d9a18c6aa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_min_protocol - Set minimum supported DTLS version @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:ad674b683e396a1af639691d9a18c6aa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47bb5aa1a1eafa97c6e026d5b66b0ad9" id="r_a47bb5aa1a1eafa97c6e026d5b66b0ad9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a47bb5aa1a1eafa97c6e026d5b66b0ad9">SocketDTLSContext_set_max_protocol</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, int version)</td></tr>
-<tr class="memdesc:a47bb5aa1a1eafa97c6e026d5b66b0ad9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_max_protocol - Set maximum supported DTLS version @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:a47bb5aa1a1eafa97c6e026d5b66b0ad9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ada5ef3bbfb37dfe6c7f92c09958cf75c" id="r_ada5ef3bbfb37dfe6c7f92c09958cf75c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#ada5ef3bbfb37dfe6c7f92c09958cf75c">SocketDTLSContext_set_cipher_list</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, const char *ciphers)</td></tr>
-<tr class="memdesc:ada5ef3bbfb37dfe6c7f92c09958cf75c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The DTLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults.  <br /></td></tr>
 <tr class="separator:ada5ef3bbfb37dfe6c7f92c09958cf75c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a090ce55e808027fc886ea6e6232b5a01" id="r_a090ce55e808027fc886ea6e6232b5a01"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a090ce55e808027fc886ea6e6232b5a01">SocketDTLSContext_set_alpn_protos</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, const char **protos, size_t count)</td></tr>
-<tr class="memdesc:a090ce55e808027fc886ea6e6232b5a01"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The DTLS context instance @protos: Array of null-terminated protocol strings (e.g., "coap", "h3") @count: Number of protocols.  <br /></td></tr>
 <tr class="separator:a090ce55e808027fc886ea6e6232b5a01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a880ec894956f1a3a9029c512259df71b" id="r_a880ec894956f1a3a9029c512259df71b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a880ec894956f1a3a9029c512259df71b">SocketDTLSContext_enable_session_cache</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, size_t max_sessions, long timeout_seconds)</td></tr>
-<tr class="memdesc:a880ec894956f1a3a9029c512259df71b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_enable_session_cache - Enable session caching @ctx: The DTLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)  <br /></td></tr>
 <tr class="separator:a880ec894956f1a3a9029c512259df71b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeaff18122638de5b79f9e261a4a63761" id="r_aeaff18122638de5b79f9e261a4a63761"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#aeaff18122638de5b79f9e261a4a63761">SocketDTLSContext_get_cache_stats</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, size_t *hits, size_t *misses, size_t *stores)</td></tr>
-<tr class="memdesc:aeaff18122638de5b79f9e261a4a63761"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_get_cache_stats - Get session cache statistics @ctx: The DTLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored.  <br /></td></tr>
 <tr class="separator:aeaff18122638de5b79f9e261a4a63761"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af81e36256b380aaf7060607a22842d20" id="r_af81e36256b380aaf7060607a22842d20"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#af81e36256b380aaf7060607a22842d20">SocketDTLSContext_set_timeout</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx, int initial_ms, int max_ms)</td></tr>
-<tr class="memdesc:af81e36256b380aaf7060607a22842d20"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_set_timeout - Set handshake timeout parameters @ctx: The DTLS context instance @initial_ms: Initial retransmission timeout in milliseconds @max_ms: Maximum timeout after exponential backoff.  <br /></td></tr>
 <tr class="separator:af81e36256b380aaf7060607a22842d20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3319b2d0dcdfd165af1cb81448cdb9f9" id="r_a3319b2d0dcdfd165af1cb81448cdb9f9"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a3319b2d0dcdfd165af1cb81448cdb9f9">SocketDTLSContext_get_ssl_ctx</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a3319b2d0dcdfd165af1cb81448cdb9f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:a3319b2d0dcdfd165af1cb81448cdb9f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25c64fa874902c37b8aafcd9601b7cef" id="r_a25c64fa874902c37b8aafcd9601b7cef"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#a25c64fa874902c37b8aafcd9601b7cef">SocketDTLSContext_is_server</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:a25c64fa874902c37b8aafcd9601b7cef"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_is_server - Check if context is server-mode @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:a25c64fa874902c37b8aafcd9601b7cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af77697da681e01b26f48c9472f13efad" id="r_af77697da681e01b26f48c9472f13efad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLSContext_8h.html#af77697da681e01b26f48c9472f13efad">SocketDTLSContext_has_cookie_exchange</a> (<a class="el" href="SocketDTLS_8h.html#a05a015dd6cc639dd38a5853194c9002f">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:af77697da681e01b26f48c9472f13efad"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketDTLSContext_has_cookie_exchange - Check if cookie exchange enabled @ctx: The DTLS context instance.  <br /></td></tr>
 <tr class="separator:af77697da681e01b26f48c9472f13efad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -224,8 +202,7 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="SocketDTLSContext_8h.html">SocketDTLSContext.h</a> - DTLS Context Management Module. </p>
+<p><a class="el" href="SocketDTLSContext_8h.html">SocketDTLSContext.h</a> - DTLS Context Management Module</p>
 <p>Manages OpenSSL SSL_CTX objects for DTLS with socket library integration. Provides secure defaults (DTLS 1.2 minimum, modern ciphers), certificate loading, cookie-based DoS protection, and session caching.</p>
 <p>Features:</p><ul>
 <li>DTLS 1.2 enforcement for forward secrecy and security</li>
@@ -307,10 +284,9 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_enable_cookie_exchange - Enable stateless cookie DoS protection @ctx: The DTLS context instance (server only) </p>
+<p>SocketDTLSContext_enable_cookie_exchange - Enable stateless cookie DoS protection @ctx: The DTLS context instance (server only)</p>
 <p>Enables RFC 6347 cookie exchange. Server sends HelloVerifyRequest with cookie before allocating per-client state. Client must echo cookie to prove address ownership. Prevents memory exhaustion from spoofed sources.</p>
-<p>A random secret is generated automatically. Use <a class="el" href="SocketDTLSContext_8h.html#a19b67aa468ee1ad317683b1839b26e7b" title="SocketDTLSContext_set_cookie_secret - Set cookie HMAC secret key @ctx: The DTLS context instance @sec...">SocketDTLSContext_set_cookie_secret()</a> for deterministic/clustered setups.</p>
+<p>A random secret is generated automatically. Use <a class="el" href="SocketDTLSContext_8h.html#a19b67aa468ee1ad317683b1839b26e7b">SocketDTLSContext_set_cookie_secret()</a> for deterministic/clustered setups.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on configuration error Thread-safe: No - modifies shared context </p>
 
 </div>
@@ -354,8 +330,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_enable_session_cache - Enable session caching @ctx: The DTLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s) </p>
+<p>SocketDTLSContext_enable_session_cache - Enable session caching @ctx: The DTLS context instance @max_sessions: Maximum number of sessions to cache (&gt;0), 0 for default @timeout_seconds: Session timeout in seconds, 0 for OpenSSL default (300s)</p>
 <p>Enables session resumption for reduced handshake latency (1-RTT vs 2-RTT).</p>
 <p>Returns: void Raises: SocketDTLS_Failed if cannot enable or configure Thread-safe: No - modifies shared context during setup </p>
 
@@ -384,8 +359,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_free - Dispose of DTLS context and resources @ctx_p: Pointer to context pointer (set to NULL on success) </p>
+<p>SocketDTLSContext_free - Dispose of DTLS context and resources @ctx_p: Pointer to context pointer (set to NULL on success)</p>
 <p>Frees the SSL_CTX, Arena (internal allocations), cookie secret, ALPN data. Caller must not use context after free. Reverse of new_server/client.</p>
 <p>Returns: void Raises: None (safe for NULL) Thread-safe: Yes (but avoid concurrent use) </p>
 
@@ -436,8 +410,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_get_cache_stats - Get session cache statistics @ctx: The DTLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored. </p>
+<p>SocketDTLSContext_get_cache_stats - Get session cache statistics @ctx: The DTLS context instance @hits: Output: number of cache hits @misses: Output: number of cache misses @stores: Output: number of sessions stored</p>
 <p>Fills provided pointers with current session cache statistics. Statistics are thread-safe and cumulative since cache enable. If pointers NULL, skipped.</p>
 <p>Returns: void Raises: None Thread-safe: Yes </p>
 
@@ -466,8 +439,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_get_mtu - Get configured MTU @ctx: The DTLS context instance. </p>
+<p>SocketDTLSContext_get_mtu - Get configured MTU @ctx: The DTLS context instance</p>
 <p>Returns: Current MTU setting in bytes Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -495,9 +467,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The DTLS context instance. </p>
-<p>Internal access to raw SSL_CTX for <a class="el" href="SocketDTLS_8h.html#ad2f26460b23a711e0fa74605371cf127" title="SocketDTLS_enable - Enable DTLS on a datagram socket @socket: The datagram socket instance to enable ...">SocketDTLS_enable()</a> etc.</p>
+<p>SocketDTLSContext_get_ssl_ctx - Get underlying OpenSSL SSL_CTX* @ctx: The DTLS context instance</p>
+<p>Internal access to raw SSL_CTX for <a class="el" href="SocketDTLS_8h.html#ad2f26460b23a711e0fa74605371cf127">SocketDTLS_enable()</a> etc.</p>
 <p>Returns: void* to SSL_CTX (cast as needed) Raises: None Thread-safe: Yes </p>
 
 </div>
@@ -525,8 +496,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_has_cookie_exchange - Check if cookie exchange enabled @ctx: The DTLS context instance. </p>
+<p>SocketDTLSContext_has_cookie_exchange - Check if cookie exchange enabled @ctx: The DTLS context instance</p>
 <p>Returns: 1 if enabled, 0 if disabled Raises: None Thread-safe: Yes (read-only) </p>
 
 </div>
@@ -554,8 +524,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_is_server - Check if context is server-mode @ctx: The DTLS context instance. </p>
+<p>SocketDTLSContext_is_server - Check if context is server-mode @ctx: The DTLS context instance</p>
 <p>Internal helper to determine client vs server configuration.</p>
 <p>Returns: 1 if server, 0 if client Raises: None Thread-safe: Yes </p>
 
@@ -594,8 +563,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_load_ca - Load trusted CA certificates @ctx: The DTLS context instance @ca_file: Path to CA file or directory containing PEM CA certs. </p>
+<p>SocketDTLSContext_load_ca - Load trusted CA certificates @ctx: The DTLS context instance @ca_file: Path to CA file or directory containing PEM CA certs</p>
 <p>Loads CA certs for peer verification. Tries as file then directory.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on load errors Thread-safe: No </p>
 
@@ -640,8 +608,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_load_certificate - Load server certificate and private key @ctx: The DTLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM) </p>
+<p>SocketDTLSContext_load_certificate - Load server certificate and private key @ctx: The DTLS context instance @cert_file: Path to certificate file (PEM) @key_file: Path to private key file (PEM)</p>
 <p>Loads and validates server certificate/private key pair. Verifies key matches cert.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on file errors, format issues, or mismatch Thread-safe: No - modifies shared context </p>
 
@@ -670,8 +637,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_new_client - Create client DTLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable) </p>
+<p>SocketDTLSContext_new_client - Create client DTLS context @ca_file: Optional path to CA file/directory for server verification (NULL to disable)</p>
 <p>Creates a client-side DTLS context with DTLS 1.2 minimum and modern ciphers. Loads CA if provided and enables peer verification.</p>
 <p>Returns: New opaque SocketDTLSContext_T instance Raises: SocketDTLS_Failed on OpenSSL errors or invalid CA Thread-safe: Yes </p>
 
@@ -716,9 +682,8 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_new_server - Create server DTLS context with cert/key @cert_file: Path to server certificate file (PEM format) @key_file: Path to private key file (PEM format) @ca_file: Optional path to CA file/directory for client auth (NULL to disable) </p>
-<p>Creates a server-side DTLS context, loads server cert/key, sets DTLS 1.2 minimum, modern ciphers, and optionally CA for client verification. Cookie exchange is NOT enabled by default - call <a class="el" href="SocketDTLSContext_8h.html#abbffd63c9a5c7551ecaf8f89a4034eb4" title="SocketDTLSContext_enable_cookie_exchange - Enable stateless cookie DoS protection @ctx: The DTLS cont...">SocketDTLSContext_enable_cookie_exchange()</a> for DoS protection.</p>
+<p>SocketDTLSContext_new_server - Create server DTLS context with cert/key @cert_file: Path to server certificate file (PEM format) @key_file: Path to private key file (PEM format) @ca_file: Optional path to CA file/directory for client auth (NULL to disable)</p>
+<p>Creates a server-side DTLS context, loads server cert/key, sets DTLS 1.2 minimum, modern ciphers, and optionally CA for client verification. Cookie exchange is NOT enabled by default - call <a class="el" href="SocketDTLSContext_8h.html#abbffd63c9a5c7551ecaf8f89a4034eb4">SocketDTLSContext_enable_cookie_exchange()</a> for DoS protection.</p>
 <p>Returns: New opaque SocketDTLSContext_T instance Raises: SocketDTLS_Failed on OpenSSL errors, file I/O, or invalid cert/key Thread-safe: Yes - each call creates independent context </p>
 
 </div>
@@ -746,8 +711,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_rotate_cookie_secret - Generate new cookie secret @ctx: The DTLS context instance. </p>
+<p>SocketDTLSContext_rotate_cookie_secret - Generate new cookie secret @ctx: The DTLS context instance</p>
 <p>Generates a new random secret for cookie HMAC. Call periodically (e.g., every hour) to limit cookie replay window. In-flight handshakes with old cookie will fail and retry automatically.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on random generation failure Thread-safe: No - modifies shared context </p>
 
@@ -792,8 +756,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The DTLS context instance @protos: Array of null-terminated protocol strings (e.g., "coap", "h3") @count: Number of protocols. </p>
+<p>SocketDTLSContext_set_alpn_protos - Advertise ALPN protocols @ctx: The DTLS context instance @protos: Array of null-terminated protocol strings (e.g., "coap", "h3") @count: Number of protocols</p>
 <p>Sets list of supported ALPN protocols in wire format, allocated from context arena. Validates lengths and formats for TLS compliance.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on invalid protos or allocation error Thread-safe: No</p>
 <p>Note: Protocols advertised in preference order (first preferred). </p>
@@ -833,8 +796,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The DTLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults. </p>
+<p>SocketDTLSContext_set_cipher_list - Set allowed cipher suites @ctx: The DTLS context instance @ciphers: Cipher list string in OpenSSL format, or NULL for defaults</p>
 <p>Configures allowed ciphers. Defaults to secure modern list if NULL.</p>
 <p>Returns: void Raises: SocketDTLS_Failed if invalid list Thread-safe: No </p>
 
@@ -879,8 +841,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_cookie_secret - Set cookie HMAC secret key @ctx: The DTLS context instance @secret: Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes) @len: Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN) </p>
+<p>SocketDTLSContext_set_cookie_secret - Set cookie HMAC secret key @ctx: The DTLS context instance @secret: Secret key bytes (must be SOCKET_DTLS_COOKIE_SECRET_LEN bytes) @len: Length of secret (must be SOCKET_DTLS_COOKIE_SECRET_LEN)</p>
 <p>Sets the secret key used for cookie HMAC generation. Required for clustered deployments where all servers must generate compatible cookies. Call after enable_cookie_exchange() or it will be overwritten.</p>
 <p>Returns: void Raises: SocketDTLS_Failed if invalid length or context not configured Thread-safe: No - modifies shared context </p>
 
@@ -919,9 +880,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_max_protocol - Set maximum supported DTLS version @ctx: The DTLS context instance. </p>
-<dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., DTLS1_2_VERSION)</dd></dl>
+<p>SocketDTLSContext_set_max_protocol - Set maximum supported DTLS version @ctx: The DTLS context instance </p><dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., DTLS1_2_VERSION)</dd></dl>
 <p>Sets maximum DTLS version.</p>
 <p>Returns: void Raises: SocketDTLS_Failed if cannot set Thread-safe: No </p>
 
@@ -960,9 +919,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_min_protocol - Set minimum supported DTLS version @ctx: The DTLS context instance. </p>
-<dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., DTLS1_2_VERSION)</dd></dl>
+<p>SocketDTLSContext_set_min_protocol - Set minimum supported DTLS version @ctx: The DTLS context instance </p><dl class="section version"><dt>Version</dt><dd>: OpenSSL version constant (e.g., DTLS1_2_VERSION)</dd></dl>
 <p>Sets minimum DTLS version. Default is DTLS 1.2.</p>
 <p>Returns: void Raises: SocketDTLS_Failed if cannot set Thread-safe: No </p>
 
@@ -1001,8 +958,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_mtu - Set link MTU for DTLS record sizing @ctx: The DTLS context instance @mtu: Maximum Transmission Unit in bytes. </p>
+<p>SocketDTLSContext_set_mtu - Set link MTU for DTLS record sizing @ctx: The DTLS context instance @mtu: Maximum Transmission Unit in bytes</p>
 <p>Sets the MTU used for DTLS record fragmentation. Conservative default is 1400 bytes (safe for IPv6 tunnels/VPNs). Use larger values on known LAN environments for better performance.</p>
 <p>Returns: void Raises: SocketDTLS_Failed if MTU out of valid range Thread-safe: No </p>
 
@@ -1047,8 +1003,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_timeout - Set handshake timeout parameters @ctx: The DTLS context instance @initial_ms: Initial retransmission timeout in milliseconds @max_ms: Maximum timeout after exponential backoff. </p>
+<p>SocketDTLSContext_set_timeout - Set handshake timeout parameters @ctx: The DTLS context instance @initial_ms: Initial retransmission timeout in milliseconds @max_ms: Maximum timeout after exponential backoff</p>
 <p>Configures DTLS handshake retransmission timer. OpenSSL handles retransmission internally using these parameters.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on invalid parameters Thread-safe: No </p>
 
@@ -1087,8 +1042,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketDTLSContext_set_verify_mode - Set certificate verification policy @ctx: The DTLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.) </p>
+<p>SocketDTLSContext_set_verify_mode - Set certificate verification policy @ctx: The DTLS context instance @mode: Verification mode enum (TLS_VERIFY_NONE, PEER, etc.)</p>
 <p>Configures peer cert verification behavior, mapping to OpenSSL SSL_VERIFY_* flags.</p>
 <p>Returns: void Raises: SocketDTLS_Failed on invalid mode Thread-safe: No </p>
 

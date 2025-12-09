@@ -143,7 +143,6 @@ $(document).ready(function(){initNavTree('graceful__shutdown_8c.html',''); initR
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a16b710f592bf8f7900666392adc444dc" id="r_a16b710f592bf8f7900666392adc444dc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#a16b710f592bf8f7900666392adc444dc">DEFAULT_PORT</a>&#160;&#160;&#160;8080</td></tr>
-<tr class="memdesc:a16b710f592bf8f7900666392adc444dc"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="graceful__shutdown_8c.html">graceful_shutdown.c</a> - Production-grade signal handling example  <br /></td></tr>
 <tr class="separator:a16b710f592bf8f7900666392adc444dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a053b7859476cc9867ec62c49e68d3fa1" id="r_a053b7859476cc9867ec62c49e68d3fa1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#a053b7859476cc9867ec62c49e68d3fa1">MAX_CONNECTIONS</a>&#160;&#160;&#160;100</td></tr>
 <tr class="separator:a053b7859476cc9867ec62c49e68d3fa1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,19 +156,14 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ac8e66a8857ca7f368cfc16bdbbac37d9" id="r_ac8e66a8857ca7f368cfc16bdbbac37d9"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">signal_handler</a> (int signo)</td></tr>
-<tr class="memdesc:ac8e66a8857ca7f368cfc16bdbbac37d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">signal_handler - Async-signal-safe signal handler  <br /></td></tr>
 <tr class="separator:ac8e66a8857ca7f368cfc16bdbbac37d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a419cdf3aeb93a4a2758b620b47584438" id="r_a419cdf3aeb93a4a2758b620b47584438"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#a419cdf3aeb93a4a2758b620b47584438">setup_signal_handling</a> (void)</td></tr>
-<tr class="memdesc:a419cdf3aeb93a4a2758b620b47584438"><td class="mdescLeft">&#160;</td><td class="mdescRight">setup_signal_handling - Initialize signal handling infrastructure  <br /></td></tr>
 <tr class="separator:a419cdf3aeb93a4a2758b620b47584438"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a295e7ddacbf8bd557b8d625970fd6244" id="r_a295e7ddacbf8bd557b8d625970fd6244"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#a295e7ddacbf8bd557b8d625970fd6244">check_signal_pipe</a> (void)</td></tr>
-<tr class="memdesc:a295e7ddacbf8bd557b8d625970fd6244"><td class="mdescLeft">&#160;</td><td class="mdescRight">check_signal_pipe - Check if signal pipe has data (non-blocking)  <br /></td></tr>
 <tr class="separator:a295e7ddacbf8bd557b8d625970fd6244"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae342ec361b98a9de5121b60e3e886972" id="r_ae342ec361b98a9de5121b60e3e886972"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#ae342ec361b98a9de5121b60e3e886972">cleanup_signal_handling</a> (void)</td></tr>
-<tr class="memdesc:ae342ec361b98a9de5121b60e3e886972"><td class="mdescLeft">&#160;</td><td class="mdescRight">cleanup_signal_handling - Clean up signal infrastructure  <br /></td></tr>
 <tr class="separator:ae342ec361b98a9de5121b60e3e886972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa28a4c169a33f7f9821322e49230c62e" id="r_aa28a4c169a33f7f9821322e49230c62e"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#aa28a4c169a33f7f9821322e49230c62e">handle_client_data</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> client, <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> inbuf, <a class="el" href="SocketBuf_8h.html#ad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> outbuf)</td></tr>
-<tr class="memdesc:aa28a4c169a33f7f9821322e49230c62e"><td class="mdescLeft">&#160;</td><td class="mdescRight">handle_client_data - Process data from a client connection  <br /></td></tr>
 <tr class="separator:aa28a4c169a33f7f9821322e49230c62e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ddf1224851353fc92bfbff6f499fa97" id="r_a0ddf1224851353fc92bfbff6f499fa97"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a> (int argc, char *argv[])</td></tr>
 <tr class="separator:a0ddf1224851353fc92bfbff6f499fa97"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -209,8 +203,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="graceful__shutdown_8c.html">graceful_shutdown.c</a> - Production-grade signal handling example </p>
+<p><a class="el" href="graceful__shutdown_8c.html">graceful_shutdown.c</a> - Production-grade signal handling example</p>
 <p>Demonstrates async-signal-safe shutdown patterns:</p><ul>
 <li>Self-pipe trick for signal notification</li>
 <li>Integration with SocketPoll event loop (using poll timeout)</li>
@@ -302,8 +295,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>check_signal_pipe - Check if signal pipe has data (non-blocking) </p>
+<p>check_signal_pipe - Check if signal pipe has data (non-blocking)</p>
 <p>Returns: 1 if signal received, 0 otherwise </p>
 
 <p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00161">161</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
@@ -337,7 +329,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>cleanup_signal_handling - Clean up signal infrastructure </p>
 
 <p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00172">172</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
@@ -387,8 +378,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>handle_client_data - Process data from a client connection </p>
+<p>handle_client_data - Process data from a client connection</p>
 <p>Simple echo server: reads data and echoes it back. Returns: 1 to keep connection, 0 to close </p>
 
 <p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00193">193</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
@@ -454,8 +444,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>setup_signal_handling - Initialize signal handling infrastructure </p>
+<p>setup_signal_handling - Initialize signal handling infrastructure</p>
 <p>Creates the self-pipe and installs signal handlers for:</p><ul>
 <li>SIGINT (Ctrl+C)</li>
 <li>SIGTERM (kill default)</li>
@@ -494,8 +483,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>signal_handler - Async-signal-safe signal handler </p>
+<p>signal_handler - Async-signal-safe signal handler</p>
 <p>ONLY performs async-signal-safe operations:</p><ul>
 <li>Saves errno</li>
 <li>Writes to pipe (write() is async-signal-safe)</li>

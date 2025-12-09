@@ -134,7 +134,6 @@ $(document).ready(function(){initNavTree('SocketIPTracker_8h.html',''); initResi
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketIPTracker_8h.html">SocketIPTracker.h</a> - Per-IP Connection Tracking.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -145,46 +144,33 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ab87cad57ddf1ed19226cf8535456bbde" id="r_ab87cad57ddf1ed19226cf8535456bbde"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#ab87cad57ddf1ed19226cf8535456bbde">SocketIPTracker_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int max_per_ip)</td></tr>
-<tr class="memdesc:ab87cad57ddf1ed19226cf8535456bbde"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_new - Create a new IP connection tracker @arena: Arena for memory allocation (NULL to use malloc) @max_per_ip: Maximum connections allowed per IP (0 = unlimited) Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion.  <br /></td></tr>
 <tr class="separator:ab87cad57ddf1ed19226cf8535456bbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a9850f5f3c08335dd18e2a8dbfaed39" id="r_a1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a1a9850f5f3c08335dd18e2a8dbfaed39">SocketIPTracker_free</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> *tracker)</td></tr>
-<tr class="memdesc:a1a9850f5f3c08335dd18e2a8dbfaed39"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_free - Free an IP tracker @tracker: Pointer to tracker (will be set to NULL)  <br /></td></tr>
 <tr class="separator:a1a9850f5f3c08335dd18e2a8dbfaed39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a796a06e82e58c6fea3deaf767101dea3" id="r_a796a06e82e58c6fea3deaf767101dea3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a796a06e82e58c6fea3deaf767101dea3">SocketIPTracker_track</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="memdesc:a796a06e82e58c6fea3deaf767101dea3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_track - Track a new connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)  <br /></td></tr>
 <tr class="separator:a796a06e82e58c6fea3deaf767101dea3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a340ee75715f9dd3a6446dc3ec2c528dc" id="r_a340ee75715f9dd3a6446dc3ec2c528dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a340ee75715f9dd3a6446dc3ec2c528dc">SocketIPTracker_release</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="memdesc:a340ee75715f9dd3a6446dc3ec2c528dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_release - Release a connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)  <br /></td></tr>
 <tr class="separator:a340ee75715f9dd3a6446dc3ec2c528dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01a74a09256ae28c23c79244f6b832c0" id="r_a01a74a09256ae28c23c79244f6b832c0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a01a74a09256ae28c23c79244f6b832c0">SocketIPTracker_count</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, const char *ip)</td></tr>
-<tr class="memdesc:a01a74a09256ae28c23c79244f6b832c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_count - Get current connection count for IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)  <br /></td></tr>
 <tr class="separator:a01a74a09256ae28c23c79244f6b832c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ae1930faa05574038978e46612e5385" id="r_a3ae1930faa05574038978e46612e5385"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a3ae1930faa05574038978e46612e5385">SocketIPTracker_setmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, int max_per_ip)</td></tr>
-<tr class="memdesc:a3ae1930faa05574038978e46612e5385"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_setmax - Set maximum connections per IP @tracker: IP tracker instance @max_per_ip: New maximum (0 = unlimited)  <br /></td></tr>
 <tr class="separator:a3ae1930faa05574038978e46612e5385"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2633ef22c045d2a4ab7f260b508bd5fc" id="r_a2633ef22c045d2a4ab7f260b508bd5fc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a2633ef22c045d2a4ab7f260b508bd5fc">SocketIPTracker_getmax</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="memdesc:a2633ef22c045d2a4ab7f260b508bd5fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_getmax - Get maximum connections per IP @tracker: IP tracker instance.  <br /></td></tr>
 <tr class="separator:a2633ef22c045d2a4ab7f260b508bd5fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f416e973e3f32b1c9cf2a2b620214f4" id="r_a9f416e973e3f32b1c9cf2a2b620214f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a9f416e973e3f32b1c9cf2a2b620214f4">SocketIPTracker_setmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker, size_t max_unique)</td></tr>
-<tr class="memdesc:a9f416e973e3f32b1c9cf2a2b620214f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_setmaxunique - Set maximum unique IPs tracked @tracker: IP tracker instance @max_unique: New maximum (0 = unlimited)  <br /></td></tr>
 <tr class="separator:a9f416e973e3f32b1c9cf2a2b620214f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e4510d8147198039726bd8250b95afb" id="r_a0e4510d8147198039726bd8250b95afb"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a0e4510d8147198039726bd8250b95afb">SocketIPTracker_getmaxunique</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="memdesc:a0e4510d8147198039726bd8250b95afb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_getmaxunique - Get maximum unique IPs limit @tracker: IP tracker instance.  <br /></td></tr>
 <tr class="separator:a0e4510d8147198039726bd8250b95afb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e69b52a3b64cbba1b17711c9961095f" id="r_a3e69b52a3b64cbba1b17711c9961095f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a3e69b52a3b64cbba1b17711c9961095f">SocketIPTracker_total</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="memdesc:a3e69b52a3b64cbba1b17711c9961095f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_total - Get total tracked connections @tracker: IP tracker instance.  <br /></td></tr>
 <tr class="separator:a3e69b52a3b64cbba1b17711c9961095f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8639fe1f640949b820cd1496a67ca56" id="r_ad8639fe1f640949b820cd1496a67ca56"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#ad8639fe1f640949b820cd1496a67ca56">SocketIPTracker_unique_ips</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="memdesc:ad8639fe1f640949b820cd1496a67ca56"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_unique_ips - Get number of unique IPs being tracked @tracker: IP tracker instance.  <br /></td></tr>
 <tr class="separator:ad8639fe1f640949b820cd1496a67ca56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47055e396eb7fa4f633bb19ec7720620" id="r_a47055e396eb7fa4f633bb19ec7720620"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a47055e396eb7fa4f633bb19ec7720620">SocketIPTracker_clear</a> (<a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> tracker)</td></tr>
-<tr class="memdesc:a47055e396eb7fa4f633bb19ec7720620"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketIPTracker_clear - Clear all tracked connections @tracker: IP tracker instance.  <br /></td></tr>
 <tr class="separator:a47055e396eb7fa4f633bb19ec7720620"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a4692098ecf52e6929c8763f0fa9fe222" id="r_a4692098ecf52e6929c8763f0fa9fe222"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIPTracker_8h.html#a4692098ecf52e6929c8763f0fa9fe222">SocketIPTracker_Failed</a></td></tr>
-<tr class="memdesc:a4692098ecf52e6929c8763f0fa9fe222"><td class="mdescLeft">&#160;</td><td class="mdescRight">IP tracker operation failure.  <br /></td></tr>
 <tr class="separator:a4692098ecf52e6929c8763f0fa9fe222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -199,8 +185,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="SocketIPTracker_8h.html">SocketIPTracker.h</a> - Per-IP Connection Tracking. </p>
+<p><a class="el" href="SocketIPTracker_8h.html">SocketIPTracker.h</a> - Per-IP Connection Tracking</p>
 <p>Part of the Socket Library</p>
 <p>Tracks the number of concurrent connections from each IP address. Used to enforce per-IP connection limits to prevent single-source denial of service attacks.</p>
 <p>Features:</p><ul>
@@ -217,7 +202,7 @@ Variables</h2></td></tr>
 <li>All operations are thread-safe via internal mutex</li>
 <li>Safe to share a single tracker across threads</li>
 </ul>
-<p>Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Arena_new - Create a new memory arena Returns: New arena instance, or NULL on allocation failure Note...">Arena_new()</a>; SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10); // Max 10 connections per IP SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000</p>
+<p>Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>; SocketIPTracker_T tracker = SocketIPTracker_new(arena, 10); // Max 10 connections per IP SocketIPTracker_setmaxunique(tracker, 5000); // Optional: limit unique IPs to 5000</p>
 <p>const char *client_ip = Socket_getpeeraddr(client); if (SocketIPTracker_track(tracker, client_ip)) { // Allowed - connection tracked } else { // Limit reached - reject connection }</p>
 <p>// When connection closes: SocketIPTracker_release(tracker, client_ip); </p>
 
@@ -266,8 +251,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_clear - Clear all tracked connections @tracker: IP tracker instance. </p>
+<p>SocketIPTracker_clear - Clear all tracked connections @tracker: IP tracker instance</p>
 <p>Thread-safe: Yes - uses internal mutex</p>
 <p>Removes all entries from the tracker. Useful for testing or administrative reset. </p>
 
@@ -306,8 +290,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_count - Get current connection count for IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6) </p>
+<p>SocketIPTracker_count - Get current connection count for IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
 <p>Returns: Current connection count (0 if not tracked) Thread-safe: Yes - uses internal mutex </p>
 
 </div>
@@ -335,8 +318,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_free - Free an IP tracker @tracker: Pointer to tracker (will be set to NULL) </p>
+<p>SocketIPTracker_free - Free an IP tracker @tracker: Pointer to tracker (will be set to NULL)</p>
 <p>Thread-safe: Yes</p>
 <p>Note: Only frees if allocated with malloc (arena == NULL). Arena-allocated trackers are freed when arena is disposed. </p>
 
@@ -365,8 +347,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_getmax - Get maximum connections per IP @tracker: IP tracker instance. </p>
+<p>SocketIPTracker_getmax - Get maximum connections per IP @tracker: IP tracker instance</p>
 <p>Returns: Maximum connections per IP (0 = unlimited) Thread-safe: Yes </p>
 
 </div>
@@ -394,8 +375,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_getmaxunique - Get maximum unique IPs limit @tracker: IP tracker instance. </p>
+<p>SocketIPTracker_getmaxunique - Get maximum unique IPs limit @tracker: IP tracker instance</p>
 <p>Returns: Current maximum unique IPs (0 = unlimited) Thread-safe: Yes </p>
 
 </div>
@@ -433,9 +413,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_new - Create a new IP connection tracker @arena: Arena for memory allocation (NULL to use malloc) @max_per_ip: Maximum connections allowed per IP (0 = unlimited) Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion. </p>
-<p>Adjustable via <a class="el" href="SocketIPTracker_8h.html#a9f416e973e3f32b1c9cf2a2b620214f4" title="SocketIPTracker_setmaxunique - Set maximum unique IPs tracked @tracker: IP tracker instance @max_uniq...">SocketIPTracker_setmaxunique()</a>.</p>
+<p>SocketIPTracker_new - Create a new IP connection tracker @arena: Arena for memory allocation (NULL to use malloc) @max_per_ip: Maximum connections allowed per IP (0 = unlimited) Note: Defaults max_unique_ips to SOCKET_MAX_CONNECTIONS to prevent memory exhaustion. Adjustable via <a class="el" href="SocketIPTracker_8h.html#a9f416e973e3f32b1c9cf2a2b620214f4">SocketIPTracker_setmaxunique()</a>.</p>
 <p>Returns: New IP tracker instance Raises: SocketIPTracker_Failed on allocation failure Thread-safe: Yes - returns new instance </p>
 
 </div>
@@ -473,8 +451,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_release - Release a connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6) </p>
+<p>SocketIPTracker_release - Release a connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
 <p>Thread-safe: Yes - uses internal mutex</p>
 <p>Decrements the connection count for the IP address. Automatically removes entry when count reaches zero. Safe to call with NULL or empty IP (no-op). </p>
 
@@ -513,8 +490,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_setmax - Set maximum connections per IP @tracker: IP tracker instance @max_per_ip: New maximum (0 = unlimited) </p>
+<p>SocketIPTracker_setmax - Set maximum connections per IP @tracker: IP tracker instance @max_per_ip: New maximum (0 = unlimited)</p>
 <p>Thread-safe: Yes - uses internal mutex</p>
 <p>Note: Does not affect existing connections over the new limit. New connections will be rejected until count drops below limit. </p>
 
@@ -553,8 +529,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_setmaxunique - Set maximum unique IPs tracked @tracker: IP tracker instance @max_unique: New maximum (0 = unlimited) </p>
+<p>SocketIPTracker_setmaxunique - Set maximum unique IPs tracked @tracker: IP tracker instance @max_unique: New maximum (0 = unlimited)</p>
 <p>Thread-safe: Yes</p>
 <p>Limits memory usage by rejecting new unique IPs when limit reached. Does not evict existing entries. </p>
 
@@ -583,8 +558,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_total - Get total tracked connections @tracker: IP tracker instance. </p>
+<p>SocketIPTracker_total - Get total tracked connections @tracker: IP tracker instance</p>
 <p>Returns: Total number of tracked connections across all IPs Thread-safe: Yes - uses internal mutex </p>
 
 </div>
@@ -622,8 +596,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_track - Track a new connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6) </p>
+<p>SocketIPTracker_track - Track a new connection from IP @tracker: IP tracker instance @ip: IP address string (IPv4 or IPv6)</p>
 <p>Returns: 1 if allowed (under limit), 0 if limit reached Thread-safe: Yes - uses internal mutex</p>
 <p>Increments the connection count for the IP address. If max_per_ip is 0 (unlimited), always returns 1. If IP is NULL or empty, always returns 1 (no tracking). </p>
 
@@ -652,8 +625,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketIPTracker_unique_ips - Get number of unique IPs being tracked @tracker: IP tracker instance. </p>
+<p>SocketIPTracker_unique_ips - Get number of unique IPs being tracked @tracker: IP tracker instance</p>
 <p>Returns: Number of unique IP addresses with at least one connection Thread-safe: Yes - uses internal mutex </p>
 
 </div>
@@ -678,8 +650,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>IP tracker operation failure. </p>
+<p>IP tracker operation failure </p>
 
 </div>
 </div>

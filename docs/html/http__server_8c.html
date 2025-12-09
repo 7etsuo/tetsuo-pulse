@@ -138,7 +138,6 @@ Functions</h2></td></tr>
 <tr class="memitem:ac8e66a8857ca7f368cfc16bdbbac37d9" id="r_ac8e66a8857ca7f368cfc16bdbbac37d9"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="http__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">signal_handler</a> (int signo)</td></tr>
 <tr class="separator:ac8e66a8857ca7f368cfc16bdbbac37d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a029441ff8281d934bb949f7c64e9bff5" id="r_a029441ff8281d934bb949f7c64e9bff5"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="http__server_8c.html#a029441ff8281d934bb949f7c64e9bff5">request_handler</a> (<a class="el" href="SocketHTTPServer_8h.html#a071a3760545fbd5fca4c2df224af0fad">SocketHTTPServer_Request_T</a> req, void *userdata)</td></tr>
-<tr class="memdesc:a029441ff8281d934bb949f7c64e9bff5"><td class="mdescLeft">&#160;</td><td class="mdescRight">HTTP request handler.  <br /></td></tr>
 <tr class="separator:a029441ff8281d934bb949f7c64e9bff5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c04138a5bfe5d72780bb7e82a18e627" id="r_a3c04138a5bfe5d72780bb7e82a18e627"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="http__server_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> (int argc, char **argv)</td></tr>
 <tr class="separator:a3c04138a5bfe5d72780bb7e82a18e627"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,7 +145,6 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:af1f449cc09f8d36befcce07bc38c29c0" id="r_af1f449cc09f8d36befcce07bc38c29c0"><td class="memItemLeft" align="right" valign="top">static volatile int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a> = 1</td></tr>
-<tr class="memdesc:af1f449cc09f8d36befcce07bc38c29c0"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="http__server_8c.html">http_server.c</a> - Basic HTTP Server Example  <br /></td></tr>
 <tr class="separator:af1f449cc09f8d36befcce07bc38c29c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
@@ -215,8 +213,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>HTTP request handler. </p>
+<p>HTTP request handler</p>
 <p>Routes requests based on path and responds appropriately. </p>
 
 <p class="definition">Definition at line <a class="el" href="http__server_8c_source.html#l00047">47</a> of file <a class="el" href="http__server_8c_source.html">http_server.c</a>.</p>
@@ -279,8 +276,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="http__server_8c.html">http_server.c</a> - Basic HTTP Server Example </p>
+<p><a class="el" href="http__server_8c.html">http_server.c</a> - Basic HTTP Server Example</p>
 <p>Demonstrates a simple HTTP server using the SocketHTTPServer API. Supports HTTP/1.1 with keep-alive.</p>
 <p>Build: cmake -DBUILD_EXAMPLES=ON .. make example_http_server</p>
 <p>Usage: ./example_http_server [port] ./example_http_server 8080</p>

@@ -260,61 +260,43 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ac129f58e59f8b169f2c2a48a330fb176" id="r_ac129f58e59f8b169f2c2a48a330fb176"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#ac129f58e59f8b169f2c2a48a330fb176">SocketWS_config_defaults</a> (<a class="el" href="SocketWS_8h.html#structSocketWS__Config">SocketWS_Config</a> *config)</td></tr>
-<tr class="memdesc:ac129f58e59f8b169f2c2a48a330fb176"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_config_defaults - Initialize configuration with defaults @config: Configuration to initialize.  <br /></td></tr>
 <tr class="separator:ac129f58e59f8b169f2c2a48a330fb176"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acad45d5dbc4f2191ba5f732a1b648842" id="r_acad45d5dbc4f2191ba5f732a1b648842"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#acad45d5dbc4f2191ba5f732a1b648842">SocketWS_client_new</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *host, const char *path, const <a class="el" href="SocketWS_8h.html#structSocketWS__Config">SocketWS_Config</a> *config)</td></tr>
-<tr class="memdesc:acad45d5dbc4f2191ba5f732a1b648842"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_client_new - Create client WebSocket from connected socket @socket: Connected TCP socket @host: Host header value (required) @path: Request path (e.g., "/ws", default: "/") @config: Configuration (NULL for defaults)  <br /></td></tr>
 <tr class="separator:acad45d5dbc4f2191ba5f732a1b648842"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abd34fccaadaee0c043bbb1368c3d0673" id="r_abd34fccaadaee0c043bbb1368c3d0673"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#abd34fccaadaee0c043bbb1368c3d0673">SocketWS_is_upgrade</a> (const SocketHTTP_Request *request)</td></tr>
-<tr class="memdesc:abd34fccaadaee0c043bbb1368c3d0673"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade @request: Parsed HTTP request.  <br /></td></tr>
 <tr class="separator:abd34fccaadaee0c043bbb1368c3d0673"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a29e02ecca2d5a1b78d0eaf2c08883960" id="r_a29e02ecca2d5a1b78d0eaf2c08883960"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a29e02ecca2d5a1b78d0eaf2c08883960">SocketWS_server_accept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const SocketHTTP_Request *request, const <a class="el" href="SocketWS_8h.html#structSocketWS__Config">SocketWS_Config</a> *config)</td></tr>
-<tr class="memdesc:a29e02ecca2d5a1b78d0eaf2c08883960"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_server_accept - Accept WebSocket upgrade @socket: TCP socket with pending upgrade request @request: Parsed HTTP upgrade request @config: Configuration (NULL for defaults)  <br /></td></tr>
 <tr class="separator:a29e02ecca2d5a1b78d0eaf2c08883960"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6e400c85623f8603c5965d38b1a60e0" id="r_ad6e400c85623f8603c5965d38b1a60e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#ad6e400c85623f8603c5965d38b1a60e0">SocketWS_server_reject</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int status_code, const char *reason)</td></tr>
-<tr class="memdesc:ad6e400c85623f8603c5965d38b1a60e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_server_reject - Reject upgrade with HTTP response @socket: TCP socket @status_code: HTTP status (e.g., 400, 403) @reason: Rejection reason.  <br /></td></tr>
 <tr class="separator:ad6e400c85623f8603c5965d38b1a60e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa040ebe5bc5f2673b04b15091a45b944" id="r_aa040ebe5bc5f2673b04b15091a45b944"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#aa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> *ws)</td></tr>
-<tr class="memdesc:aa040ebe5bc5f2673b04b15091a45b944"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_free - Free WebSocket connection @ws: Pointer to WebSocket (set to NULL after free)  <br /></td></tr>
 <tr class="separator:aa040ebe5bc5f2673b04b15091a45b944"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbbea030dbe9d643b7f8bd6c1656ff06" id="r_acbbea030dbe9d643b7f8bd6c1656ff06"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#acbbea030dbe9d643b7f8bd6c1656ff06">SocketWS_handshake</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws)</td></tr>
-<tr class="memdesc:acbbea030dbe9d643b7f8bd6c1656ff06"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_handshake - Perform/continue handshake @ws: WebSocket instance.  <br /></td></tr>
 <tr class="separator:acbbea030dbe9d643b7f8bd6c1656ff06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa40def588d31ab50126603fa720f83b0" id="r_aa40def588d31ab50126603fa720f83b0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketWS_8h.html#ab8b49607a661224d66bb264b1e597e2d">SocketWS_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#aa40def588d31ab50126603fa720f83b0">SocketWS_state</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws)</td></tr>
-<tr class="memdesc:aa40def588d31ab50126603fa720f83b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_state - Get current state @ws: WebSocket instance.  <br /></td></tr>
 <tr class="separator:aa40def588d31ab50126603fa720f83b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00e6f2953f92843874cd7b6c3e363288" id="r_a00e6f2953f92843874cd7b6c3e363288"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a00e6f2953f92843874cd7b6c3e363288">SocketWS_socket</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws)</td></tr>
-<tr class="memdesc:a00e6f2953f92843874cd7b6c3e363288"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_socket - Get underlying socket @ws: WebSocket instance.  <br /></td></tr>
 <tr class="separator:a00e6f2953f92843874cd7b6c3e363288"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a1ce264ad5e6d3cf25ce2442504aa20" id="r_a2a1ce264ad5e6d3cf25ce2442504aa20"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a2a1ce264ad5e6d3cf25ce2442504aa20">SocketWS_selected_subprotocol</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws)</td></tr>
-<tr class="memdesc:a2a1ce264ad5e6d3cf25ce2442504aa20"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_selected_subprotocol - Get negotiated subprotocol @ws: WebSocket instance.  <br /></td></tr>
 <tr class="separator:a2a1ce264ad5e6d3cf25ce2442504aa20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02790d0b994d613324052794269b0e22" id="r_a02790d0b994d613324052794269b0e22"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a02790d0b994d613324052794269b0e22">SocketWS_compression_enabled</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws)</td></tr>
-<tr class="memdesc:a02790d0b994d613324052794269b0e22"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_compression_enabled - Check if compression active @ws: WebSocket instance.  <br /></td></tr>
 <tr class="separator:a02790d0b994d613324052794269b0e22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b8450a05502aaa70e88cdf14a73fa03" id="r_a4b8450a05502aaa70e88cdf14a73fa03"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a4b8450a05502aaa70e88cdf14a73fa03">SocketWS_send_text</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws, const char *data, size_t len)</td></tr>
-<tr class="memdesc:a4b8450a05502aaa70e88cdf14a73fa03"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_send_text - Send text message @ws: WebSocket instance @data: UTF-8 text data @len: Length in bytes.  <br /></td></tr>
 <tr class="separator:a4b8450a05502aaa70e88cdf14a73fa03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1a8aff35f7c69172e0c2f9c0ec53abcb" id="r_a1a8aff35f7c69172e0c2f9c0ec53abcb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a1a8aff35f7c69172e0c2f9c0ec53abcb">SocketWS_send_binary</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws, const void *data, size_t len)</td></tr>
-<tr class="memdesc:a1a8aff35f7c69172e0c2f9c0ec53abcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_send_binary - Send binary message @ws: WebSocket instance @data: Binary data @len: Length in bytes.  <br /></td></tr>
 <tr class="separator:a1a8aff35f7c69172e0c2f9c0ec53abcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2be521a2fe8aa5eb5d30869905371a71" id="r_a2be521a2fe8aa5eb5d30869905371a71"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a2be521a2fe8aa5eb5d30869905371a71">SocketWS_ping</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws, const void *data, size_t len)</td></tr>
-<tr class="memdesc:a2be521a2fe8aa5eb5d30869905371a71"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_ping - Send PING control frame @ws: WebSocket instance @data: Optional payload (max 125 bytes, may be NULL) @len: Payload length.  <br /></td></tr>
 <tr class="separator:a2be521a2fe8aa5eb5d30869905371a71"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e17279abcb92810c8066f1813287334" id="r_a3e17279abcb92810c8066f1813287334"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a3e17279abcb92810c8066f1813287334">SocketWS_pong</a> (<a class="el" href="SocketHTTPServer_8h.html#a62eac457c36851d5e4a184e1a5602555">SocketWS_T</a> ws, const void *data, size_t len)</td></tr>
-<tr class="memdesc:a3e17279abcb92810c8066f1813287334"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_pong - Send unsolicited PONG @ws: WebSocket instance @data: Payload (max 125 bytes, may be NULL) @len: Payload length.  <br /></td></tr>
 <tr class="separator:a3e17279abcb92810c8066f1813287334"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a0fb92a65a798e17aca6df1cdba118067" id="r_a0fb92a65a798e17aca6df1cdba118067"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a0fb92a65a798e17aca6df1cdba118067">SocketWS_Failed</a></td></tr>
-<tr class="memdesc:a0fb92a65a798e17aca6df1cdba118067"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_Failed - General WebSocket operation failure.  <br /></td></tr>
 <tr class="separator:a0fb92a65a798e17aca6df1cdba118067"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8400199bb1b785111015ff06d16de370" id="r_a8400199bb1b785111015ff06d16de370"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a8400199bb1b785111015ff06d16de370">SocketWS_ProtocolError</a></td></tr>
-<tr class="memdesc:a8400199bb1b785111015ff06d16de370"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_ProtocolError - WebSocket protocol violation.  <br /></td></tr>
 <tr class="separator:a8400199bb1b785111015ff06d16de370"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51caf3b6f8086dc6535fd843593dcbde" id="r_a51caf3b6f8086dc6535fd843593dcbde"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS_8h.html#a51caf3b6f8086dc6535fd843593dcbde">SocketWS_Closed</a></td></tr>
-<tr class="memdesc:a51caf3b6f8086dc6535fd843593dcbde"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketWS_Closed - WebSocket connection closed.  <br /></td></tr>
 <tr class="separator:a51caf3b6f8086dc6535fd843593dcbde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -338,67 +320,78 @@ Variables</h2></td></tr>
 <td class="fieldname">
 deflate_max_window_bits</td>
 <td class="fielddoc">
-LZ77 window size (8-15, default: 15) </td></tr>
+<p>LZ77 window size (8-15, default: 15) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a6990f2e1597412e0fd8101407944f51d" name="a6990f2e1597412e0fd8101407944f51d"></a>int</td>
 <td class="fieldname">
 deflate_no_context_takeover</td>
 <td class="fielddoc">
-Don't reuse compression context. </td></tr>
+<p>Don't reuse compression context </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a5b4cb5b34e0960b4964eec24547ebe29" name="a5b4cb5b34e0960b4964eec24547ebe29"></a>int</td>
 <td class="fieldname">
 enable_permessage_deflate</td>
 <td class="fielddoc">
-Enable compression (default: no) </td></tr>
+<p>Enable compression (default: no) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="ac3b980e3936f7e3763e4a6c2c5e466d3" name="ac3b980e3936f7e3763e4a6c2c5e466d3"></a>size_t</td>
 <td class="fieldname">
 max_fragments</td>
 <td class="fielddoc">
-Max fragments per message (default: 1000) </td></tr>
+<p>Max fragments per message (default: 1000) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a622a5556ac8a0b6888819a40851a11fd" name="a622a5556ac8a0b6888819a40851a11fd"></a>size_t</td>
 <td class="fieldname">
 max_frame_size</td>
 <td class="fielddoc">
-Max single frame (default: 16MB) </td></tr>
+<p>Max single frame (default: 16MB) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a2100320f9508ad064f387dc26bbef62f" name="a2100320f9508ad064f387dc26bbef62f"></a>size_t</td>
 <td class="fieldname">
 max_message_size</td>
 <td class="fielddoc">
-Max reassembled message (default: 64MB) </td></tr>
+<p>Max reassembled message (default: 64MB) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a376fe666ac3f3654087792edae1ce054" name="a376fe666ac3f3654087792edae1ce054"></a>int</td>
 <td class="fieldname">
 ping_interval_ms</td>
 <td class="fielddoc">
-Auto-ping interval (0 = disabled) </td></tr>
+<p>Auto-ping interval (0 = disabled) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a4ca65b7722835ec62374763fa625596f" name="a4ca65b7722835ec62374763fa625596f"></a>int</td>
 <td class="fieldname">
 ping_timeout_ms</td>
 <td class="fielddoc">
-Pong timeout. </td></tr>
+<p>Pong timeout </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="aa895fa89617603768d89d043b41b3bc9" name="aa895fa89617603768d89d043b41b3bc9"></a><a class="el" href="SocketWS_8h.html#a9d14d3d0f1b05e44fcd74782107cbd94">SocketWS_Role</a></td>
 <td class="fieldname">
 role</td>
 <td class="fielddoc">
-Client or server role. </td></tr>
+<p>Client or server role </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a72bb5bfa2a49c7bdd770303635e0e49d" name="a72bb5bfa2a49c7bdd770303635e0e49d"></a>const char **</td>
 <td class="fieldname">
 subprotocols</td>
 <td class="fielddoc">
-NULL-terminated list of subprotocols. </td></tr>
+<p>NULL-terminated list of subprotocols </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a1873fe17fa2f2d2d3c0d16cbfbcfc3f1" name="a1873fe17fa2f2d2d3c0d16cbfbcfc3f1"></a>int</td>
 <td class="fieldname">
 validate_utf8</td>
 <td class="fielddoc">
-Validate UTF-8 in text frames (default: yes) </td></tr>
+<p>Validate UTF-8 in text frames (default: yes) </p>
+</td></tr>
 </table>
 
 </div>
@@ -423,31 +416,36 @@ Validate UTF-8 in text frames (default: yes) </td></tr>
 <td class="fieldname">
 fin</td>
 <td class="fielddoc">
-Final fragment flag. </td></tr>
+<p>Final fragment flag </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a3316616d6bd9228919cf2eac7df3c780" name="a3316616d6bd9228919cf2eac7df3c780"></a><a class="el" href="SocketWS_8h.html#a174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a></td>
 <td class="fieldname">
 opcode</td>
 <td class="fielddoc">
-Frame opcode. </td></tr>
+<p>Frame opcode </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="ab17b0ddda509759d90d3c7f5aa09144b" name="ab17b0ddda509759d90d3c7f5aa09144b"></a>const unsigned char *</td>
 <td class="fieldname">
 payload</td>
 <td class="fielddoc">
-Payload data. </td></tr>
+<p>Payload data </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="ab6da903ab04e63a093ed73f861b7d5c8" name="ab6da903ab04e63a093ed73f861b7d5c8"></a>size_t</td>
 <td class="fieldname">
 payload_len</td>
 <td class="fielddoc">
-Payload length. </td></tr>
+<p>Payload length </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a40b506b65f89a2c8d96acecf636c5191" name="a40b506b65f89a2c8d96acecf636c5191"></a>int</td>
 <td class="fieldname">
 rsv1</td>
 <td class="fielddoc">
-Reserved bit 1 (compression) </td></tr>
+<p>Reserved bit 1 (compression) </p>
+</td></tr>
 </table>
 
 </div>
@@ -472,19 +470,22 @@ Reserved bit 1 (compression) </td></tr>
 <td class="fieldname">
 data</td>
 <td class="fielddoc">
-Message data (caller must free) </td></tr>
+<p>Message data (caller must free) </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a48e400e0db4731142c0baa97427de817" name="a48e400e0db4731142c0baa97427de817"></a>size_t</td>
 <td class="fieldname">
 len</td>
 <td class="fielddoc">
-Message length. </td></tr>
+<p>Message length </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="acb9416eb06a0a6e95260acebee3544b2" name="acb9416eb06a0a6e95260acebee3544b2"></a><a class="el" href="SocketWS_8h.html#a174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a></td>
 <td class="fieldname">
 type</td>
 <td class="fielddoc">
-TEXT or BINARY. </td></tr>
+<p>TEXT or BINARY </p>
+</td></tr>
 </table>
 
 </div>
@@ -552,13 +553,13 @@ TEXT or BINARY. </td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30" name="a386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30"></a>WS_CLOSE_NORMAL&#160;</td><td class="fielddoc"><p>Normal closure. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30" name="a386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30"></a>WS_CLOSE_NORMAL&#160;</td><td class="fielddoc"><p>Normal closure </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d" name="a386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d"></a>WS_CLOSE_GOING_AWAY&#160;</td><td class="fielddoc"><p>Endpoint going away. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d" name="a386c437e966aeaeb091d1d81c0e77b13a9bb565620ebf9a5c79afa6281a253b6d"></a>WS_CLOSE_GOING_AWAY&#160;</td><td class="fielddoc"><p>Endpoint going away </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf" name="a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf"></a>WS_CLOSE_PROTOCOL_ERROR&#160;</td><td class="fielddoc"><p><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> error. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf" name="a386c437e966aeaeb091d1d81c0e77b13aaf641b4eedfe849aeed35a84f61709bf"></a>WS_CLOSE_PROTOCOL_ERROR&#160;</td><td class="fielddoc"><p><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> error </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e" name="a386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e"></a>WS_CLOSE_UNSUPPORTED_DATA&#160;</td><td class="fielddoc"><p>Unsupported data type. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e" name="a386c437e966aeaeb091d1d81c0e77b13a2852358b8d5151feda017ab29972f16e"></a>WS_CLOSE_UNSUPPORTED_DATA&#160;</td><td class="fielddoc"><p>Unsupported data type </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a859b46a0f5a7a29e664a22a1c1c86919" name="a386c437e966aeaeb091d1d81c0e77b13a859b46a0f5a7a29e664a22a1c1c86919"></a>WS_CLOSE_NO_STATUS&#160;</td><td class="fielddoc"><p>No status received (internal) </p>
 </td></tr>
@@ -566,19 +567,19 @@ TEXT or BINARY. </td></tr>
 </td></tr>
 <tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a5fcad814a12fede092794145c328fb9f" name="a386c437e966aeaeb091d1d81c0e77b13a5fcad814a12fede092794145c328fb9f"></a>WS_CLOSE_INVALID_PAYLOAD&#160;</td><td class="fielddoc"><p>Invalid frame payload (e.g., bad UTF-8) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d" name="a386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d"></a>WS_CLOSE_POLICY_VIOLATION&#160;</td><td class="fielddoc"><p>Policy violation. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d" name="a386c437e966aeaeb091d1d81c0e77b13a35ac58f4457834de3faeb1fa7792366d"></a>WS_CLOSE_POLICY_VIOLATION&#160;</td><td class="fielddoc"><p>Policy violation </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6" name="a386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6"></a>WS_CLOSE_MESSAGE_TOO_BIG&#160;</td><td class="fielddoc"><p>Message too big. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6" name="a386c437e966aeaeb091d1d81c0e77b13adbdae48a85dc5e937a163e01508001c6"></a>WS_CLOSE_MESSAGE_TOO_BIG&#160;</td><td class="fielddoc"><p>Message too big </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a" name="a386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a"></a>WS_CLOSE_MANDATORY_EXT&#160;</td><td class="fielddoc"><p>Mandatory extension missing. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a" name="a386c437e966aeaeb091d1d81c0e77b13a1f6f581ca2b8fc652c8ffb993fb8194a"></a>WS_CLOSE_MANDATORY_EXT&#160;</td><td class="fielddoc"><p>Mandatory extension missing </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a" name="a386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a"></a>WS_CLOSE_INTERNAL_ERROR&#160;</td><td class="fielddoc"><p>Internal server error. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a" name="a386c437e966aeaeb091d1d81c0e77b13a5724188e50f92c13d3673f08ce69412a"></a>WS_CLOSE_INTERNAL_ERROR&#160;</td><td class="fielddoc"><p>Internal server error </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b" name="a386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b"></a>WS_CLOSE_SERVICE_RESTART&#160;</td><td class="fielddoc"><p>Service restart. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b" name="a386c437e966aeaeb091d1d81c0e77b13a9af38cc3ecad679dcf15e666000dfa4b"></a>WS_CLOSE_SERVICE_RESTART&#160;</td><td class="fielddoc"><p>Service restart </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2" name="a386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2"></a>WS_CLOSE_TRY_AGAIN_LATER&#160;</td><td class="fielddoc"><p>Try again later. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2" name="a386c437e966aeaeb091d1d81c0e77b13ae899716cd2fc4d8f76d4dad9889129e2"></a>WS_CLOSE_TRY_AGAIN_LATER&#160;</td><td class="fielddoc"><p>Try again later </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b" name="a386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b"></a>WS_CLOSE_BAD_GATEWAY&#160;</td><td class="fielddoc"><p>Bad gateway. </p>
+<tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b" name="a386c437e966aeaeb091d1d81c0e77b13ac0935030c6af954b99019692f8757b1b"></a>WS_CLOSE_BAD_GATEWAY&#160;</td><td class="fielddoc"><p>Bad gateway </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a386c437e966aeaeb091d1d81c0e77b13aceffd9fee405e4dee36e9596939ba5ec" name="a386c437e966aeaeb091d1d81c0e77b13aceffd9fee405e4dee36e9596939ba5ec"></a>WS_CLOSE_TLS_HANDSHAKE&#160;</td><td class="fielddoc"><p>TLS handshake failure (internal) </p>
 </td></tr>
@@ -600,27 +601,27 @@ TEXT or BINARY. </td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb" name="abd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb"></a>WS_OK&#160;</td><td class="fielddoc"><p>Success. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb" name="abd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb"></a>WS_OK&#160;</td><td class="fielddoc"><p>Success </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd" name="abd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd"></a>WS_ERROR&#160;</td><td class="fielddoc"><p>General error. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd" name="abd79199a60ad91cf785166f24f41101faa41b8e2f5c20dd621e69746820e10ecd"></a>WS_ERROR&#160;</td><td class="fielddoc"><p>General error </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c" name="abd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c"></a>WS_ERROR_HANDSHAKE&#160;</td><td class="fielddoc"><p>Handshake failed. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c" name="abd79199a60ad91cf785166f24f41101fa326cba4dbca2cd3fc40aa705e3c8c43c"></a>WS_ERROR_HANDSHAKE&#160;</td><td class="fielddoc"><p>Handshake failed </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec" name="abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec"></a>WS_ERROR_PROTOCOL&#160;</td><td class="fielddoc"><p><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p" title="Socket_new - Create a new socket @domain: Address family (AF_INET, AF_INET6, etc.) @type: Socket type...">Protocol</a> violation. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec" name="abd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec"></a>WS_ERROR_PROTOCOL&#160;</td><td class="fielddoc"><p><a class="el" href="namespace_3globalScope_4.html#protocolProtocol-p">Protocol</a> violation </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304" name="abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304"></a>WS_ERROR_FRAME_TOO_LARGE&#160;</td><td class="fielddoc"><p>Frame exceeds limit. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304" name="abd79199a60ad91cf785166f24f41101fad67cba0f02674ecdb494d3c897945304"></a>WS_ERROR_FRAME_TOO_LARGE&#160;</td><td class="fielddoc"><p>Frame exceeds limit </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa" name="abd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa"></a>WS_ERROR_MESSAGE_TOO_LARGE&#160;</td><td class="fielddoc"><p>Message exceeds limit. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa" name="abd79199a60ad91cf785166f24f41101fa202edc337483e9a546142eeadae60afa"></a>WS_ERROR_MESSAGE_TOO_LARGE&#160;</td><td class="fielddoc"><p>Message exceeds limit </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e" name="abd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e"></a>WS_ERROR_INVALID_UTF8&#160;</td><td class="fielddoc"><p>Invalid UTF-8 in text. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e" name="abd79199a60ad91cf785166f24f41101fa276c19a5f29e2a5d3032eeebf7d54a8e"></a>WS_ERROR_INVALID_UTF8&#160;</td><td class="fielddoc"><p>Invalid UTF-8 in text </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f" name="abd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f"></a>WS_ERROR_COMPRESSION&#160;</td><td class="fielddoc"><p>Compression error. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f" name="abd79199a60ad91cf785166f24f41101fa7bb811cc75e39503c96e5e58f41e392f"></a>WS_ERROR_COMPRESSION&#160;</td><td class="fielddoc"><p>Compression error </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c" name="abd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c"></a>WS_ERROR_CLOSED&#160;</td><td class="fielddoc"><p>Connection closed. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c" name="abd79199a60ad91cf785166f24f41101fa4b6bd8241f6074e7efa54cc113fce39c"></a>WS_ERROR_CLOSED&#160;</td><td class="fielddoc"><p>Connection closed </p>
 </td></tr>
 <tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761" name="abd79199a60ad91cf785166f24f41101fad8bea1e89b1464f633c15cc454699761"></a>WS_ERROR_WOULD_BLOCK&#160;</td><td class="fielddoc"><p>Would block (non-blocking) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf" name="abd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf"></a>WS_ERROR_TIMEOUT&#160;</td><td class="fielddoc"><p>Operation timed out. </p>
+<tr><td class="fieldname"><a id="abd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf" name="abd79199a60ad91cf785166f24f41101fab7f48522858a5f62bb83f2102996daaf"></a>WS_ERROR_TIMEOUT&#160;</td><td class="fielddoc"><p>Operation timed out </p>
 </td></tr>
 </table>
 
@@ -640,17 +641,17 @@ TEXT or BINARY. </td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3" name="a174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3"></a>WS_OPCODE_CONTINUATION&#160;</td><td class="fielddoc"><p>Continuation frame. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3" name="a174740343c7f920060f8640f23600c7ba414ed52e10fc98a59c9fbadc896b3ea3"></a>WS_OPCODE_CONTINUATION&#160;</td><td class="fielddoc"><p>Continuation frame </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558" name="a174740343c7f920060f8640f23600c7bab290478c848bb099a2fefe6c7b633558"></a>WS_OPCODE_TEXT&#160;</td><td class="fielddoc"><p>Text frame (UTF-8) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361" name="a174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361"></a>WS_OPCODE_BINARY&#160;</td><td class="fielddoc"><p>Binary frame. </p>
+<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361" name="a174740343c7f920060f8640f23600c7ba01f825533b31920937ba5ddb2315a361"></a>WS_OPCODE_BINARY&#160;</td><td class="fielddoc"><p>Binary frame </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5" name="a174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5"></a>WS_OPCODE_CLOSE&#160;</td><td class="fielddoc"><p>Close frame. </p>
+<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5" name="a174740343c7f920060f8640f23600c7ba847b054f16b331a8a701b7e76255d8e5"></a>WS_OPCODE_CLOSE&#160;</td><td class="fielddoc"><p>Close frame </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539" name="a174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539"></a>WS_OPCODE_PING&#160;</td><td class="fielddoc"><p>Ping frame. </p>
+<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539" name="a174740343c7f920060f8640f23600c7ba2e1dad19209b2641fcb2d12025651539"></a>WS_OPCODE_PING&#160;</td><td class="fielddoc"><p>Ping frame </p>
 </td></tr>
-<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c" name="a174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c"></a>WS_OPCODE_PONG&#160;</td><td class="fielddoc"><p>Pong frame. </p>
+<tr><td class="fieldname"><a id="a174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c" name="a174740343c7f920060f8640f23600c7ba809eaa105785fd07440fa833f602469c"></a>WS_OPCODE_PONG&#160;</td><td class="fielddoc"><p>Pong frame </p>
 </td></tr>
 </table>
 
@@ -692,13 +693,13 @@ TEXT or BINARY. </td></tr>
       </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31" name="ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31"></a>WS_STATE_CONNECTING&#160;</td><td class="fielddoc"><p>Handshake in progress. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31" name="ab8b49607a661224d66bb264b1e597e2da782bbde9b515882abdd6b712c127af31"></a>WS_STATE_CONNECTING&#160;</td><td class="fielddoc"><p>Handshake in progress </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c" name="ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c"></a>WS_STATE_OPEN&#160;</td><td class="fielddoc"><p>Ready for messages. </p>
+<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c" name="ab8b49607a661224d66bb264b1e597e2dab0325195f22aca5be7491a425f84808c"></a>WS_STATE_OPEN&#160;</td><td class="fielddoc"><p>Ready for messages </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac" name="ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac"></a>WS_STATE_CLOSING&#160;</td><td class="fielddoc"><p>Close handshake in progress. </p>
+<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac" name="ab8b49607a661224d66bb264b1e597e2daa3bafc31c6e8514011174ffeb2dd1eac"></a>WS_STATE_CLOSING&#160;</td><td class="fielddoc"><p>Close handshake in progress </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296" name="ab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296"></a>WS_STATE_CLOSED&#160;</td><td class="fielddoc"><p>Connection terminated. </p>
+<tr><td class="fieldname"><a id="ab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296" name="ab8b49607a661224d66bb264b1e597e2da4356293e46722d1fa27ca8624f62b296"></a>WS_STATE_CLOSED&#160;</td><td class="fielddoc"><p>Connection terminated </p>
 </td></tr>
 </table>
 
@@ -752,9 +753,8 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_client_new - Create client WebSocket from connected socket @socket: Connected TCP socket @host: Host header value (required) @path: Request path (e.g., "/ws", default: "/") @config: Configuration (NULL for defaults) </p>
-<p>Creates a WebSocket in CONNECTING state. Call <a class="el" href="SocketWS_8h.html#acbbea030dbe9d643b7f8bd6c1656ff06" title="SocketWS_handshake - Perform/continue handshake @ws: WebSocket instance.">SocketWS_handshake()</a> to complete the HTTP upgrade.</p>
+<p>SocketWS_client_new - Create client WebSocket from connected socket @socket: Connected TCP socket @host: Host header value (required) @path: Request path (e.g., "/ws", default: "/") @config: Configuration (NULL for defaults)</p>
+<p>Creates a WebSocket in CONNECTING state. Call <a class="el" href="SocketWS_8h.html#acbbea030dbe9d643b7f8bd6c1656ff06">SocketWS_handshake()</a> to complete the HTTP upgrade.</p>
 <p>Returns: WebSocket instance Raises: SocketWS_Failed on error Thread-safe: Yes </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
@@ -784,8 +784,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_compression_enabled - Check if compression active @ws: WebSocket instance. </p>
+<p>SocketWS_compression_enabled - Check if compression active @ws: WebSocket instance</p>
 <p>Returns: 1 if permessage-deflate enabled, 0 otherwise Thread-safe: No </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
@@ -815,8 +814,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_config_defaults - Initialize configuration with defaults @config: Configuration to initialize. </p>
+<p>SocketWS_config_defaults - Initialize configuration with defaults @config: Configuration to initialize</p>
 <p>Thread-safe: Yes </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
@@ -846,8 +844,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_free - Free WebSocket connection @ws: Pointer to WebSocket (set to NULL after free) </p>
+<p>SocketWS_free - Free WebSocket connection @ws: Pointer to WebSocket (set to NULL after free)</p>
 <p>Thread-safe: No </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00228">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
@@ -877,8 +874,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_handshake - Perform/continue handshake @ws: WebSocket instance. </p>
+<p>SocketWS_handshake - Perform/continue handshake @ws: WebSocket instance</p>
 <p>For clients: Sends HTTP upgrade request, receives and validates response. For servers: Sends HTTP 101 response.</p>
 <p>Returns: 0 if complete, 1 if in progress (call again), -1 on error Thread-safe: No </p>
 
@@ -909,8 +905,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade @request: Parsed HTTP request. </p>
+<p>SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade @request: Parsed HTTP request</p>
 <p>Returns: 1 if WebSocket upgrade request, 0 otherwise Thread-safe: Yes </p>
 
 </div>
@@ -954,8 +949,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_ping - Send PING control frame @ws: WebSocket instance @data: Optional payload (max 125 bytes, may be NULL) @len: Payload length. </p>
+<p>SocketWS_ping - Send PING control frame @ws: WebSocket instance @data: Optional payload (max 125 bytes, may be NULL) @len: Payload length</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: No </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
@@ -1001,8 +995,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_pong - Send unsolicited PONG @ws: WebSocket instance @data: Payload (max 125 bytes, may be NULL) @len: Payload length. </p>
+<p>SocketWS_pong - Send unsolicited PONG @ws: WebSocket instance @data: Payload (max 125 bytes, may be NULL) @len: Payload length</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: No </p>
 
 </div>
@@ -1030,8 +1023,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_selected_subprotocol - Get negotiated subprotocol @ws: WebSocket instance. </p>
+<p>SocketWS_selected_subprotocol - Get negotiated subprotocol @ws: WebSocket instance</p>
 <p>Returns: Selected subprotocol string, or NULL if none Thread-safe: No </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
@@ -1077,8 +1069,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_send_binary - Send binary message @ws: WebSocket instance @data: Binary data @len: Length in bytes. </p>
+<p>SocketWS_send_binary - Send binary message @ws: WebSocket instance @data: Binary data @len: Length in bytes</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: No </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00228">process_websocket_clients()</a>.</p>
@@ -1124,8 +1115,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_send_text - Send text message @ws: WebSocket instance @data: UTF-8 text data @len: Length in bytes. </p>
+<p>SocketWS_send_text - Send text message @ws: WebSocket instance @data: UTF-8 text data @len: Length in bytes</p>
 <p>Data is validated for UTF-8 if validate_utf8 enabled. Large messages are automatically fragmented.</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: No </p>
 
@@ -1172,9 +1162,8 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_server_accept - Accept WebSocket upgrade @socket: TCP socket with pending upgrade request @request: Parsed HTTP upgrade request @config: Configuration (NULL for defaults) </p>
-<p>Creates a WebSocket in CONNECTING state. Call <a class="el" href="SocketWS_8h.html#acbbea030dbe9d643b7f8bd6c1656ff06" title="SocketWS_handshake - Perform/continue handshake @ws: WebSocket instance.">SocketWS_handshake()</a> to send the HTTP 101 response.</p>
+<p>SocketWS_server_accept - Accept WebSocket upgrade @socket: TCP socket with pending upgrade request @request: Parsed HTTP upgrade request @config: Configuration (NULL for defaults)</p>
+<p>Creates a WebSocket in CONNECTING state. Call <a class="el" href="SocketWS_8h.html#acbbea030dbe9d643b7f8bd6c1656ff06">SocketWS_handshake()</a> to send the HTTP 101 response.</p>
 <p>Returns: WebSocket instance Raises: SocketWS_Failed on error Thread-safe: Yes </p>
 
 </div>
@@ -1218,8 +1207,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_server_reject - Reject upgrade with HTTP response @socket: TCP socket @status_code: HTTP status (e.g., 400, 403) @reason: Rejection reason. </p>
+<p>SocketWS_server_reject - Reject upgrade with HTTP response @socket: TCP socket @status_code: HTTP status (e.g., 400, 403) @reason: Rejection reason</p>
 <p>Thread-safe: Yes </p>
 
 </div>
@@ -1247,8 +1235,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_socket - Get underlying socket @ws: WebSocket instance. </p>
+<p>SocketWS_socket - Get underlying socket @ws: WebSocket instance</p>
 <p>Returns: TCP socket (do not close directly) Thread-safe: No </p>
 
 </div>
@@ -1276,8 +1263,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_state - Get current state @ws: WebSocket instance. </p>
+<p>SocketWS_state - Get current state @ws: WebSocket instance</p>
 <p>Returns: Current state (CONNECTING, OPEN, CLOSING, CLOSED) Thread-safe: No (read-only, safe for status checks) </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00228">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
@@ -1304,8 +1290,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_Closed - WebSocket connection closed. </p>
+<p>SocketWS_Closed - WebSocket connection closed </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
 
@@ -1330,8 +1315,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_Failed - General WebSocket operation failure. </p>
+<p>SocketWS_Failed - General WebSocket operation failure </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
 
@@ -1356,8 +1340,7 @@ TEXT or BINARY. </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketWS_ProtocolError - WebSocket protocol violation. </p>
+<p>SocketWS_ProtocolError - WebSocket protocol violation </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
 

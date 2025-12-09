@@ -140,7 +140,6 @@ $(document).ready(function(){initNavTree('Except_8h.html',''); initResizable(); 
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structExcept__T" id="r_structExcept__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#structExcept__T">Except_T</a></td></tr>
-<tr class="memdesc:structExcept__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception Handling for C.  <a href="Except_8h.html#structExcept__T">More...</a><br /></td></tr>
 <tr class="separator:structExcept__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structExcept__Frame" id="r_structExcept__Frame"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#structExcept__Frame">Except_Frame</a></td></tr>
 <tr class="separator:structExcept__Frame"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -152,7 +151,6 @@ Macros</h2></td></tr>
 <tr class="memitem:a947ef43f0f0def3fcc050a8df849fd16" id="r_a947ef43f0f0def3fcc050a8df849fd16"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a947ef43f0f0def3fcc050a8df849fd16">RERAISE</a></td></tr>
 <tr class="separator:a947ef43f0f0def3fcc050a8df849fd16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6a0e6b80dd3d5ca395cf58151749f5e2" id="r_a6a0e6b80dd3d5ca395cf58151749f5e2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a6a0e6b80dd3d5ca395cf58151749f5e2">RETURN</a></td></tr>
-<tr class="memdesc:a6a0e6b80dd3d5ca395cf58151749f5e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">RETURN macro - Returns from function while cleaning up exception stack WARNING: This macro uses the comma operator to modify Except_stack as a side effect before returning.  <br /></td></tr>
 <tr class="separator:a6a0e6b80dd3d5ca395cf58151749f5e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05f22e2dc12bcb0f4bfdf22cd81f8ab8" id="r_a05f22e2dc12bcb0f4bfdf22cd81f8ab8"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Except_8h.html#a05f22e2dc12bcb0f4bfdf22cd81f8ab8">EXCEPT_POP_FRAME_IF_ENTERED</a></td></tr>
 <tr class="separator:a05f22e2dc12bcb0f4bfdf22cd81f8ab8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -205,7 +203,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="textblock"><p>Exception Handling for C. </p>
+<div class="textblock"><p>Exception Handling for C</p>
 <p>IMPORTANT: Do NOT compile with -DNDEBUG in production code. The exception system relies on runtime checks that are critical for safety. While assert() statements will be disabled, the explicit NULL checks will remain active.</p>
 <p>This module provides structured exception handling similar to try/catch in other languages. It uses setjmp/longjmp for non-local control flow. Features:</p><ul>
 <li>TRY/EXCEPT/FINALLY blocks</li>
@@ -229,7 +227,8 @@ Variables</h2></td></tr>
 <td class="fieldname">
 reason</td>
 <td class="fielddoc">
-Human-readable error description. </td></tr>
+<p>Human-readable error description </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a343b5beb0d02c17f95cceb95f4598405" name="a343b5beb0d02c17f95cceb95f4598405"></a>const struct <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> *</td>
 <td class="fieldname">
@@ -452,7 +451,7 @@ prev</td>
 <b>Value:</b><div class="fragment"><div class="line">  <a class="code hl_function" href="Except_8h.html#a9199ea10e7cd2cf2422ae8ffa9ac43a1">Except_raise</a> ((<span class="keyword">const</span> <a class="code hl_struct" href="Except_8h.html#structExcept__T">Except_T</a> *)Except_frame.exception, Except_frame.file,  \</div>
 <div class="line">                Except_frame.line)</div>
 <div class="ttc" id="aExcept_8h_html_a9199ea10e7cd2cf2422ae8ffa9ac43a1"><div class="ttname"><a href="Except_8h.html#a9199ea10e7cd2cf2422ae8ffa9ac43a1">Except_raise</a></div><div class="ttdeci">void Except_raise(const Except_T *e, const char *file, int line)</div></div>
-<div class="ttc" id="aExcept_8h_html_structExcept__T"><div class="ttname"><a href="Except_8h.html#structExcept__T">Except_T</a></div><div class="ttdoc">Exception Handling for C.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00032">Except.h:32</a></div></div>
+<div class="ttc" id="aExcept_8h_html_structExcept__T"><div class="ttname"><a href="Except_8h.html#structExcept__T">Except_T</a></div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00032">Except.h:32</a></div></div>
 </div><!-- fragment -->
 <p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00066">66</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 
@@ -472,9 +471,7 @@ prev</td>
 <b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">switch</span> (<a class="code hl_variable" href="Except_8h.html#a3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a> = ((<a class="code hl_struct" href="Except_8h.html#structExcept__Frame">Except_Frame</a> *)<a class="code hl_variable" href="Except_8h.html#a3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a>)-&gt;prev, 0)             \</div>
 <div class="line">  <span class="keywordflow">default</span>:                                                                    \</div>
 <div class="line">    <span class="keywordflow">return</span></div>
-</div><!-- fragment -->
-<p>RETURN macro - Returns from function while cleaning up exception stack WARNING: This macro uses the comma operator to modify Except_stack as a side effect before returning. </p>
-<p>This is intentional but subtle. Use only within TRY blocks when you need to return early while properly cleaning up the exception stack. The switch/default pattern is necessary because:</p><ol type="1">
+</div><!-- fragment --><p>RETURN macro - Returns from function while cleaning up exception stack WARNING: This macro uses the comma operator to modify Except_stack as a side effect before returning. This is intentional but subtle. Use only within TRY blocks when you need to return early while properly cleaning up the exception stack. The switch/default pattern is necessary because:</p><ol type="1">
 <li>The comma operator evaluates left-to-right: (expr1, expr2) evaluates expr1, discards result, evaluates expr2, returns result of expr2.</li>
 <li>switch(expr1, 0) executes the assignment, then switches on 0.</li>
 <li>default: always matches, allowing "return" to work as a statement.</li>

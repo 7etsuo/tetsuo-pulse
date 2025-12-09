@@ -142,7 +142,6 @@ $(document).ready(function(){initNavTree('Socket_8h.html',''); initResizable(); 
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="Socket_8h.html">Socket.h</a> - Socket Abstraction Layer.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -153,222 +152,150 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a8517adf0df2e5331a952fb713ec314f9" id="r_a8517adf0df2e5331a952fb713ec314f9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a8517adf0df2e5331a952fb713ec314f9">Socket_error_is_retryable</a> (int err)</td></tr>
-<tr class="memdesc:a8517adf0df2e5331a952fb713ec314f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check.  <br /></td></tr>
 <tr class="separator:a8517adf0df2e5331a952fb713ec314f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6212fb2b6eefa567592a59f55c25a6f1" id="r_a6212fb2b6eefa567592a59f55c25a6f1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a> (int domain, int type, int protocol)</td></tr>
 <tr class="separator:a6212fb2b6eefa567592a59f55c25a6f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1290da3d1c546b8c550a59e138f722b8" id="r_a1290da3d1c546b8c550a59e138f722b8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a1290da3d1c546b8c550a59e138f722b8">SocketPair_new</a> (int type, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *socket1, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *socket2)</td></tr>
-<tr class="memdesc:a1290da3d1c546b8c550a59e138f722b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketPair_new - Create a pair of connected Unix domain sockets @type: Socket type (SOCK_STREAM or SOCK_DGRAM) @socket1: Output - first socket of the pair @socket2: Output - second socket of the pair Raises: Socket_Failed on error Thread-safe: Yes (creates new sockets) Note: Creates two connected Unix domain sockets for IPC.  <br /></td></tr>
 <tr class="separator:a1290da3d1c546b8c550a59e138f722b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74ad7a9bb8deaf499c59d90d6e411f37" id="r_a74ad7a9bb8deaf499c59d90d6e411f37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> *socket)</td></tr>
-<tr class="memdesc:a74ad7a9bb8deaf499c59d90d6e411f37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL)  <br /></td></tr>
 <tr class="separator:a74ad7a9bb8deaf499c59d90d6e411f37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7c6b82ec5bf6be8131532de9ade5caf" id="r_ae7c6b82ec5bf6be8131532de9ade5caf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ae7c6b82ec5bf6be8131532de9ade5caf">Socket_new_from_fd</a> (int fd)</td></tr>
-<tr class="memdesc:ae7c6b82ec5bf6be8131532de9ade5caf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_new_from_fd - Create Socket_T from existing file descriptor @fd: File descriptor (must be valid socket, will be set to non-blocking) Returns: New Socket_T instance or NULL on failure Raises: Socket_Failed on error Thread-safe: Yes - returns new instance.  <br /></td></tr>
 <tr class="separator:ae7c6b82ec5bf6be8131532de9ade5caf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa8cacd863c275e6e12f7c63b65708e1b" id="r_aa8cacd863c275e6e12f7c63b65708e1b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a> (void)</td></tr>
-<tr class="memdesc:aa8cacd863c275e6e12f7c63b65708e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_debug_live_count - Get number of live socket instances (test-only) Returns: Current count of allocated Socket_T instances.  <br /></td></tr>
 <tr class="separator:aa8cacd863c275e6e12f7c63b65708e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb65d693d8c93e2a1fe6411dd0d0af98" id="r_acb65d693d8c93e2a1fe6411dd0d0af98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#acb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:acb65d693d8c93e2a1fe6411dd0d0af98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) WARNING: May block 30+ seconds during DNS resolution if hostname provided.  <br /></td></tr>
 <tr class="separator:acb65d693d8c93e2a1fe6411dd0d0af98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab24b026bc4c69e6f766211f44675e189" id="r_ab24b026bc4c69e6f766211f44675e189"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab24b026bc4c69e6f766211f44675e189">Socket_listen</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int backlog)</td></tr>
-<tr class="memdesc:ab24b026bc4c69e6f766211f44675e189"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending connections Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:ab24b026bc4c69e6f766211f44675e189"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32b67d95639513cd6a602f6175b48f15" id="r_a32b67d95639513cd6a602f6175b48f15"><td class="memItemLeft" align="right" valign="top"><a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a32b67d95639513cd6a602f6175b48f15">Socket_accept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a32b67d95639513cd6a602f6175b48f15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a32b67d95639513cd6a602f6175b48f15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac14390090ee26136c1f7a816fc08406e" id="r_ac14390090ee26136c1f7a816fc08406e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ac14390090ee26136c1f7a816fc08406e">Socket_connect</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:ac14390090ee26136c1f7a816fc08406e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port WARNING: May block 30+ seconds during DNS resolution if hostname provided.  <br /></td></tr>
 <tr class="separator:ac14390090ee26136c1f7a816fc08406e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23ace6e065fe4b9a01db8caa6513515b" id="r_a23ace6e065fe4b9a01db8caa6513515b"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:a23ace6e065fe4b9a01db8caa6513515b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_send - Send data @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:a23ace6e065fe4b9a01db8caa6513515b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a95db343f47445925cecd6b20054518e9" id="r_a95db343f47445925cecd6b20054518e9"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:a95db343f47445925cecd6b20054518e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other.  <br /></td></tr>
 <tr class="separator:a95db343f47445925cecd6b20054518e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ea9ad33d78c50d327c9677b52849bcb" id="r_a6ea9ad33d78c50d327c9677b52849bcb"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:a6ea9ad33d78c50d327c9677b52849bcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:a6ea9ad33d78c50d327c9677b52849bcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18ea888b05b09714cc010463b8cead4b" id="r_a18ea888b05b09714cc010463b8cead4b"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a18ea888b05b09714cc010463b8cead4b">Socket_recvall</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:a18ea888b05b09714cc010463b8cead4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other.  <br /></td></tr>
 <tr class="separator:a18ea888b05b09714cc010463b8cead4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adb50371f84b2c796c4e57a34d41f180a" id="r_adb50371f84b2c796c4e57a34d41f180a"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#adb50371f84b2c796c4e57a34d41f180a">Socket_sendv</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:adb50371f84b2c796c4e57a34d41f180a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:adb50371f84b2c796c4e57a34d41f180a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb1c8e39587d4ea5e3ffe4b06dcaca0f" id="r_abb1c8e39587d4ea5e3ffe4b06dcaca0f"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#abb1c8e39587d4ea5e3ffe4b06dcaca0f">Socket_recvv</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:abb1c8e39587d4ea5e3ffe4b06dcaca0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other.  <br /></td></tr>
 <tr class="separator:abb1c8e39587d4ea5e3ffe4b06dcaca0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6d033a04d5041249950fa2f54a8d9fd" id="r_af6d033a04d5041249950fa2f54a8d9fd"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#af6d033a04d5041249950fa2f54a8d9fd">Socket_sendvall</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:af6d033a04d5041249950fa2f54a8d9fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:af6d033a04d5041249950fa2f54a8d9fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3472c67c78cd29944a87783e09247f9a" id="r_a3472c67c78cd29944a87783e09247f9a"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a3472c67c78cd29944a87783e09247f9a">Socket_recvvall</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct iovec *iov, int iovcnt)</td></tr>
-<tr class="memdesc:a3472c67c78cd29944a87783e09247f9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other.  <br /></td></tr>
 <tr class="separator:a3472c67c78cd29944a87783e09247f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1003c289820587894dbfcad9b567c43" id="r_ad1003c289820587894dbfcad9b567c43"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad1003c289820587894dbfcad9b567c43">Socket_sendfile</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int file_fd, off_t *offset, size_t count)</td></tr>
-<tr class="memdesc:ad1003c289820587894dbfcad9b567c43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfile - Zero-copy file-to-socket transfer @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:ad1003c289820587894dbfcad9b567c43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6262f6ab4c927347abc0fb3c105a0575" id="r_a6262f6ab4c927347abc0fb3c105a0575"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a6262f6ab4c927347abc0fb3c105a0575">Socket_sendfileall</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int file_fd, off_t *offset, size_t count)</td></tr>
-<tr class="memdesc:a6262f6ab4c927347abc0fb3c105a0575"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial) @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (always equals count on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:a6262f6ab4c927347abc0fb3c105a0575"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb12f81392f3c1fb21255bf44521e20c" id="r_aeb12f81392f3c1fb21255bf44521e20c"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aeb12f81392f3c1fb21255bf44521e20c">Socket_sendmsg</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct msghdr *msg, int flags)</td></tr>
-<tr class="memdesc:aeb12f81392f3c1fb21255bf44521e20c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendmsg - Send message with ancillary data (sendmsg wrapper) @socket: Connected socket @msg: Message structure with data, address, and ancillary data @flags: Message flags (MSG_NOSIGNAL, MSG_DONTWAIT, etc.) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors.  <br /></td></tr>
 <tr class="separator:aeb12f81392f3c1fb21255bf44521e20c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92c972ba69ef189d5d802e4d1889a9c6" id="r_a92c972ba69ef189d5d802e4d1889a9c6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a92c972ba69ef189d5d802e4d1889a9c6">Socket_recvmsg</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct msghdr *msg, int flags)</td></tr>
-<tr class="memdesc:a92c972ba69ef189d5d802e4d1889a9c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper) @socket: Connected socket @msg: Message structure for data, address, and ancillary data @flags: Message flags (MSG_DONTWAIT, MSG_PEEK, etc.) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other.  <br /></td></tr>
 <tr class="separator:a92c972ba69ef189d5d802e4d1889a9c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10d49f774ed335cf4e42f77c07948119" id="r_a10d49f774ed335cf4e42f77c07948119"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a10d49f774ed335cf4e42f77c07948119">Socket_isconnected</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a10d49f774ed335cf4e42f77c07948119"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_isconnected - Check if socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a10d49f774ed335cf4e42f77c07948119"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1710f1e1251df44fb4f82c60ff199a76" id="r_a1710f1e1251df44fb4f82c60ff199a76"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a1710f1e1251df44fb4f82c60ff199a76">Socket_isbound</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a1710f1e1251df44fb4f82c60ff199a76"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_isbound - Check if socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:a1710f1e1251df44fb4f82c60ff199a76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab693dfb51bcfe2b284969a5f1db14a84" id="r_ab693dfb51bcfe2b284969a5f1db14a84"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab693dfb51bcfe2b284969a5f1db14a84">Socket_islistening</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:ab693dfb51bcfe2b284969a5f1db14a84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_islistening - Check if socket is listening for connections @socket: Socket to check Returns: 1 if listening, 0 if not listening Thread-safe: Yes.  <br /></td></tr>
 <tr class="separator:ab693dfb51bcfe2b284969a5f1db14a84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d727948c677509eec04746585819877" id="r_a4d727948c677509eec04746585819877"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a4d727948c677509eec04746585819877">Socket_fd</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a4d727948c677509eec04746585819877"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor.  <br /></td></tr>
 <tr class="separator:a4d727948c677509eec04746585819877"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0957f43694d0728e70b23364a89623c" id="r_ab0957f43694d0728e70b23364a89623c"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:ab0957f43694d0728e70b23364a89623c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeeraddr - Get peer IP address @socket: Connected socket Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed.  <br /></td></tr>
 <tr class="separator:ab0957f43694d0728e70b23364a89623c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38d7e5845519867261a9f24dfe0e03db" id="r_a38d7e5845519867261a9f24dfe0e03db"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a38d7e5845519867261a9f24dfe0e03db">Socket_getpeerport</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a38d7e5845519867261a9f24dfe0e03db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeerport - Get peer port number @socket: Connected socket Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable.  <br /></td></tr>
 <tr class="separator:a38d7e5845519867261a9f24dfe0e03db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04e55475bcedbc100767663e1e7d9de1" id="r_a04e55475bcedbc100767663e1e7d9de1"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a04e55475bcedbc100767663e1e7d9de1">Socket_getlocaladdr</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a04e55475bcedbc100767663e1e7d9de1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed.  <br /></td></tr>
 <tr class="separator:a04e55475bcedbc100767663e1e7d9de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3bdedaea9dac966d75343cdffa5d1f3e" id="r_a3bdedaea9dac966d75343cdffa5d1f3e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a3bdedaea9dac966d75343cdffa5d1f3e">Socket_getlocalport</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a3bdedaea9dac966d75343cdffa5d1f3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable.  <br /></td></tr>
 <tr class="separator:a3bdedaea9dac966d75343cdffa5d1f3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35309677a1760480783d5f0c294d0db4" id="r_a35309677a1760480783d5f0c294d0db4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a35309677a1760480783d5f0c294d0db4">Socket_setnonblocking</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a35309677a1760480783d5f0c294d0db4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a35309677a1760480783d5f0c294d0db4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2c6f352cec920859c71206898ed135fc" id="r_a2c6f352cec920859c71206898ed135fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a2c6f352cec920859c71206898ed135fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a2c6f352cec920859c71206898ed135fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2126127d2fa85fb5de27587e0d41a466" id="r_a2126127d2fa85fb5de27587e0d41a466"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a2126127d2fa85fb5de27587e0d41a466">Socket_setreuseport</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a2126127d2fa85fb5de27587e0d41a466"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setreuseport - Enable port reuse across sockets @socket: Socket to modify Raises: Socket_Failed on error (or if SO_REUSEPORT unsupported)  <br /></td></tr>
 <tr class="separator:a2126127d2fa85fb5de27587e0d41a466"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a210cbf763685c0b201b0f5caa2dc0f06" id="r_a210cbf763685c0b201b0f5caa2dc0f06"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a210cbf763685c0b201b0f5caa2dc0f06">Socket_settimeout</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_sec)</td></tr>
-<tr class="memdesc:a210cbf763685c0b201b0f5caa2dc0f06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets both send and receive timeouts Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a210cbf763685c0b201b0f5caa2dc0f06"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af03ef2a81d1894713aeb96c12bb2389b" id="r_af03ef2a81d1894713aeb96c12bb2389b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#af03ef2a81d1894713aeb96c12bb2389b">Socket_setkeepalive</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int idle, int interval, int count)</td></tr>
-<tr class="memdesc:af03ef2a81d1894713aeb96c12bb2389b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setkeepalive - Enable TCP keepalive @socket: Socket to modify @idle: Seconds before sending keepalive probes @interval: Interval between keepalive probes @count: Number of probes before declaring dead Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:af03ef2a81d1894713aeb96c12bb2389b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a55174d7f9aca0e94d25321540646e6b0" id="r_a55174d7f9aca0e94d25321540646e6b0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a55174d7f9aca0e94d25321540646e6b0">Socket_setnodelay</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int nodelay)</td></tr>
-<tr class="memdesc:a55174d7f9aca0e94d25321540646e6b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setnodelay - Disable Nagle's algorithm @socket: Socket to modify @nodelay: 1 to disable Nagle, 0 to enable Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a55174d7f9aca0e94d25321540646e6b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa40c1cdc37abfc34cbc17cdcbf607241" id="r_aa40c1cdc37abfc34cbc17cdcbf607241"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aa40c1cdc37abfc34cbc17cdcbf607241">Socket_gettimeout</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:aa40c1cdc37abfc34cbc17cdcbf607241"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:aa40c1cdc37abfc34cbc17cdcbf607241"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd2f2e66892b062079f4c0a1dd7f8bac" id="r_acd2f2e66892b062079f4c0a1dd7f8bac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#acd2f2e66892b062079f4c0a1dd7f8bac">Socket_getkeepalive</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int *idle, int *interval, int *count)</td></tr>
-<tr class="memdesc:acd2f2e66892b062079f4c0a1dd7f8bac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getkeepalive - Get TCP keepalive configuration @socket: Socket to query @idle: Output - idle timeout in seconds @interval: Output - interval between probes in seconds @count: Output - number of probes before declaring dead Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:acd2f2e66892b062079f4c0a1dd7f8bac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01aa484c370addf3f117cfdb4f9adb8a" id="r_a01aa484c370addf3f117cfdb4f9adb8a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a01aa484c370addf3f117cfdb4f9adb8a">Socket_getnodelay</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a01aa484c370addf3f117cfdb4f9adb8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getnodelay - Get TCP_NODELAY setting @socket: Socket to query Returns: 1 if Nagle's algorithm is disabled, 0 if enabled Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a01aa484c370addf3f117cfdb4f9adb8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a73b2908934ed8757725da6e6d22ff60c" id="r_a73b2908934ed8757725da6e6d22ff60c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a73b2908934ed8757725da6e6d22ff60c">Socket_getrcvbuf</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a73b2908934ed8757725da6e6d22ff60c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a73b2908934ed8757725da6e6d22ff60c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a23a3e2bbff42609e2e4089d5e6c55bbd" id="r_a23a3e2bbff42609e2e4089d5e6c55bbd"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a23a3e2bbff42609e2e4089d5e6c55bbd">Socket_getsndbuf</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a23a3e2bbff42609e2e4089d5e6c55bbd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a23a3e2bbff42609e2e4089d5e6c55bbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad59dc86a3f3728e75983daa0f5b34550" id="r_ad59dc86a3f3728e75983daa0f5b34550"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad59dc86a3f3728e75983daa0f5b34550">Socket_setrcvbuf</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int size)</td></tr>
-<tr class="memdesc:ad59dc86a3f3728e75983daa0f5b34550"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setrcvbuf - Set receive buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:ad59dc86a3f3728e75983daa0f5b34550"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a430b3464f6e656f4d8884031deffa507" id="r_a430b3464f6e656f4d8884031deffa507"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a430b3464f6e656f4d8884031deffa507">Socket_setsndbuf</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int size)</td></tr>
-<tr class="memdesc:a430b3464f6e656f4d8884031deffa507"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setsndbuf - Set send buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a430b3464f6e656f4d8884031deffa507"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae144a341a05e25011d95761368eefe13" id="r_ae144a341a05e25011d95761368eefe13"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ae144a341a05e25011d95761368eefe13">Socket_setcongestion</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *algorithm)</td></tr>
-<tr class="memdesc:ae144a341a05e25011d95761368eefe13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setcongestion - Set TCP congestion control algorithm @socket: Socket to modify @algorithm: Algorithm name (e.g., "cubic", "reno", "bbr") Raises: Socket_Failed on error or if not supported Note: Only available on Linux 2.6.13+.  <br /></td></tr>
 <tr class="separator:ae144a341a05e25011d95761368eefe13"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebaf7f944985462e9198998a650f2b5c" id="r_aebaf7f944985462e9198998a650f2b5c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aebaf7f944985462e9198998a650f2b5c">Socket_getcongestion</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, char *algorithm, size_t len)</td></tr>
-<tr class="memdesc:aebaf7f944985462e9198998a650f2b5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getcongestion - Get TCP congestion control algorithm @socket: Socket to query @algorithm: Output buffer for algorithm name @len: Buffer length Returns: 0 on success, -1 on error or if not supported.  <br /></td></tr>
 <tr class="separator:aebaf7f944985462e9198998a650f2b5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7c1651e6f9e3e97ddab01d40ac1d39d" id="r_aa7c1651e6f9e3e97ddab01d40ac1d39d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aa7c1651e6f9e3e97ddab01d40ac1d39d">Socket_setfastopen</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int enable)</td></tr>
-<tr class="memdesc:aa7c1651e6f9e3e97ddab01d40ac1d39d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setfastopen - Enable TCP Fast Open @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: Socket_Failed on error or if not supported.  <br /></td></tr>
 <tr class="separator:aa7c1651e6f9e3e97ddab01d40ac1d39d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a762ad6759e76f58f5a8f1fcb305387a8" id="r_a762ad6759e76f58f5a8f1fcb305387a8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a762ad6759e76f58f5a8f1fcb305387a8">Socket_getfastopen</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a762ad6759e76f58f5a8f1fcb305387a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getfastopen - Get TCP Fast Open setting @socket: Socket to query Returns: 1 if enabled, 0 if disabled, -1 on error.  <br /></td></tr>
 <tr class="separator:a762ad6759e76f58f5a8f1fcb305387a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abfad0f5567b5f8720a4667e13e79f282" id="r_abfad0f5567b5f8720a4667e13e79f282"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#abfad0f5567b5f8720a4667e13e79f282">Socket_setusertimeout</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, unsigned int timeout_ms)</td></tr>
-<tr class="memdesc:abfad0f5567b5f8720a4667e13e79f282"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setusertimeout - Set TCP user timeout @socket: Socket to modify @timeout_ms: Timeout in milliseconds (&gt; 0) Raises: Socket_Failed on error or if not supported Note: Only available on Linux 2.6.37+.  <br /></td></tr>
 <tr class="separator:abfad0f5567b5f8720a4667e13e79f282"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2b81fe340e400d96d2552a65cfde5430" id="r_a2b81fe340e400d96d2552a65cfde5430"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a2b81fe340e400d96d2552a65cfde5430">Socket_getusertimeout</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a2b81fe340e400d96d2552a65cfde5430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getusertimeout - Get TCP user timeout @socket: Socket to query Returns: Timeout in milliseconds, or 0 on error.  <br /></td></tr>
 <tr class="separator:a2b81fe340e400d96d2552a65cfde5430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a559b1aaebbe5d0ca69ec99e15b1c7e68" id="r_a559b1aaebbe5d0ca69ec99e15b1c7e68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a559b1aaebbe5d0ca69ec99e15b1c7e68">Socket_shutdown</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int how)</td></tr>
-<tr class="memdesc:a559b1aaebbe5d0ca69ec99e15b1c7e68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_shutdown - Disable further sends and/or receives @socket: Connected socket @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR) Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a559b1aaebbe5d0ca69ec99e15b1c7e68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a18ad1f92bb3233c463ea4067b69f73c2" id="r_a18ad1f92bb3233c463ea4067b69f73c2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a18ad1f92bb3233c463ea4067b69f73c2">Socket_setcloexec</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int enable)</td></tr>
-<tr class="memdesc:a18ad1f92bb3233c463ea4067b69f73c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a18ad1f92bb3233c463ea4067b69f73c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab5b9e684faf1a8d5c1ccb9e231ef1354" id="r_ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab5b9e684faf1a8d5c1ccb9e231ef1354">Socket_setdeferaccept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int timeout_sec)</td></tr>
-<tr class="memdesc:ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT @socket: Listening socket @timeout_sec: Seconds to wait for data before completing accept (0 to disable, max platform-specific)  <br /></td></tr>
 <tr class="separator:ab5b9e684faf1a8d5c1ccb9e231ef1354"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a80f9fc5782bf3caf5228e458d3f3c112" id="r_a80f9fc5782bf3caf5228e458d3f3c112"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a80f9fc5782bf3caf5228e458d3f3c112">Socket_getdeferaccept</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a80f9fc5782bf3caf5228e458d3f3c112"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout @socket: Listening socket.  <br /></td></tr>
 <tr class="separator:a80f9fc5782bf3caf5228e458d3f3c112"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5fa0449e34ebfb141da236023da3edb7" id="r_a5fa0449e34ebfb141da236023da3edb7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a5fa0449e34ebfb141da236023da3edb7">Socket_timeouts_get</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="memdesc:a5fa0449e34ebfb141da236023da3edb7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_get - Retrieve per-socket timeout configuration @socket: Socket instance @timeouts: Output timeout structure.  <br /></td></tr>
 <tr class="separator:a5fa0449e34ebfb141da236023da3edb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3e3b95a49618f5a56869606adeeda58f" id="r_a3e3b95a49618f5a56869606adeeda58f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a3e3b95a49618f5a56869606adeeda58f">Socket_timeouts_set</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="memdesc:a3e3b95a49618f5a56869606adeeda58f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_set - Set per-socket timeout configuration @socket: Socket instance @timeouts: Timeout configuration (NULL to reset to defaults)  <br /></td></tr>
 <tr class="separator:a3e3b95a49618f5a56869606adeeda58f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfcc79428e54b0284cc7cad257d56adf" id="r_acfcc79428e54b0284cc7cad257d56adf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#acfcc79428e54b0284cc7cad257d56adf">Socket_timeouts_getdefaults</a> (<a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="memdesc:acfcc79428e54b0284cc7cad257d56adf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_getdefaults - Get global default timeouts @timeouts: Output timeout structure containing current defaults.  <br /></td></tr>
 <tr class="separator:acfcc79428e54b0284cc7cad257d56adf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0385e87c51740c37c9d90ff5bba1eced" id="r_a0385e87c51740c37c9d90ff5bba1eced"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a0385e87c51740c37c9d90ff5bba1eced">Socket_timeouts_setdefaults</a> (const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="memdesc:a0385e87c51740c37c9d90ff5bba1eced"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_setdefaults - Set global default timeouts @timeouts: New default timeout configuration.  <br /></td></tr>
 <tr class="separator:a0385e87c51740c37c9d90ff5bba1eced"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad663873fbc8f0846c092a380f64b1f52" id="r_ad663873fbc8f0846c092a380f64b1f52"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad663873fbc8f0846c092a380f64b1f52">Socket_timeouts_set_extended</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *extended)</td></tr>
-<tr class="memdesc:ad663873fbc8f0846c092a380f64b1f52"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_set_extended - Set per-socket extended timeout configuration @socket: Socket to modify @extended: Extended per-phase timeout configuration.  <br /></td></tr>
 <tr class="separator:ad663873fbc8f0846c092a380f64b1f52"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4affc77e30721f266acfc9ba7870dff5" id="r_a4affc77e30721f266acfc9ba7870dff5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a4affc77e30721f266acfc9ba7870dff5">Socket_timeouts_get_extended</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a> *extended)</td></tr>
-<tr class="memdesc:a4affc77e30721f266acfc9ba7870dff5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration @socket: Socket to query @extended: Output structure for extended timeouts.  <br /></td></tr>
 <tr class="separator:a4affc77e30721f266acfc9ba7870dff5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acab565f9a6e6c40c56d6d21df89b30a9" id="r_acab565f9a6e6c40c56d6d21df89b30a9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9">Socket_setbandwidth</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, size_t bytes_per_sec)</td></tr>
-<tr class="memdesc:acab565f9a6e6c40c56d6d21df89b30a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximum bytes per second (0 to disable limiting)  <br /></td></tr>
 <tr class="separator:acab565f9a6e6c40c56d6d21df89b30a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae49a9ad4c524354506bef71ec6cffdf9" id="r_ae49a9ad4c524354506bef71ec6cffdf9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ae49a9ad4c524354506bef71ec6cffdf9">Socket_getbandwidth</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:ae49a9ad4c524354506bef71ec6cffdf9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getbandwidth - Get bandwidth limit for socket @socket: Socket to query.  <br /></td></tr>
 <tr class="separator:ae49a9ad4c524354506bef71ec6cffdf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a274b6782b2029d2d8aa33579ad60a4c1" id="r_a274b6782b2029d2d8aa33579ad60a4c1"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a274b6782b2029d2d8aa33579ad60a4c1">Socket_send_limited</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:a274b6782b2029d2d8aa33579ad60a4c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_send_limited - Send data with bandwidth limiting @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0)  <br /></td></tr>
 <tr class="separator:a274b6782b2029d2d8aa33579ad60a4c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6839d0b5738d2764b47de35bf7e16430" id="r_a6839d0b5738d2764b47de35bf7e16430"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a6839d0b5738d2764b47de35bf7e16430">Socket_recv_limited</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:a6839d0b5738d2764b47de35bf7e16430"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recv_limited - Receive data with bandwidth limiting @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0)  <br /></td></tr>
 <tr class="separator:a6839d0b5738d2764b47de35bf7e16430"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a89643e52780099fe0012e2fa22725e07" id="r_a89643e52780099fe0012e2fa22725e07"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a89643e52780099fe0012e2fa22725e07">Socket_bandwidth_wait_ms</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, size_t bytes)</td></tr>
-<tr class="memdesc:a89643e52780099fe0012e2fa22725e07"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bandwidth_wait_ms - Get wait time until bandwidth available @socket: Socket to query @bytes: Number of bytes needed.  <br /></td></tr>
 <tr class="separator:a89643e52780099fe0012e2fa22725e07"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad85ee4be563a1006b7518645995ab65e" id="r_ad85ee4be563a1006b7518645995ab65e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad85ee4be563a1006b7518645995ab65e">Socket_bind_unix</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *path)</td></tr>
-<tr class="memdesc:ad85ee4be563a1006b7518645995ab65e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bind_unix - Bind to Unix domain socket path @socket: Socket to bind (AF_UNIX) @path: Socket file path Raises: Socket_Failed on error Note: Fails with EADDRINUSE if path exists.  <br /></td></tr>
 <tr class="separator:ad85ee4be563a1006b7518645995ab65e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad353c95a8994569af7b650f1fda7036f" id="r_ad353c95a8994569af7b650f1fda7036f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad353c95a8994569af7b650f1fda7036f">Socket_connect_unix</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *path)</td></tr>
-<tr class="memdesc:ad353c95a8994569af7b650f1fda7036f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect_unix - Connect to Unix domain socket path @socket: Socket to connect (AF_UNIX) @path: Socket file path Raises: Socket_Failed on error Note: Supports abstract namespace sockets on Linux (path starting with '@').  <br /></td></tr>
 <tr class="separator:ad353c95a8994569af7b650f1fda7036f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabc2fdbcfb3c619c05c7aa3c4c555382" id="r_aabc2fdbcfb3c619c05c7aa3c4c555382"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aabc2fdbcfb3c619c05c7aa3c4c555382">Socket_getpeerpid</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:aabc2fdbcfb3c619c05c7aa3c4c555382"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeerpid - Get peer process ID (Linux only) @socket: Connected Unix domain socket Returns: Peer process ID, or -1 if unavailable.  <br /></td></tr>
 <tr class="separator:aabc2fdbcfb3c619c05c7aa3c4c555382"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0bf945a195478ed5a85c881b0f163a08" id="r_a0bf945a195478ed5a85c881b0f163a08"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a0bf945a195478ed5a85c881b0f163a08">Socket_getpeeruid</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a0bf945a195478ed5a85c881b0f163a08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeeruid - Get peer user ID (Linux only) @socket: Connected Unix domain socket Returns: Peer user ID, or (uid_t)-1 if unavailable.  <br /></td></tr>
 <tr class="separator:a0bf945a195478ed5a85c881b0f163a08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64a5bd6dc33ef5f000b9f7d334a1fdfa" id="r_a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a64a5bd6dc33ef5f000b9f7d334a1fdfa">Socket_getpeergid</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_getpeergid - Get peer group ID (Linux only) @socket: Connected Unix domain socket Returns: Peer group ID, or (gid_t)-1 if unavailable.  <br /></td></tr>
 <tr class="separator:a64a5bd6dc33ef5f000b9f7d334a1fdfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a001e932180b059a805ca53a8edbeef15" id="r_a001e932180b059a805ca53a8edbeef15"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a001e932180b059a805ca53a8edbeef15">Socket_sendfd</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int fd_to_pass)</td></tr>
-<tr class="memdesc:a001e932180b059a805ca53a8edbeef15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfd - Send a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_to_pass: File descriptor to pass (must be &gt;= 0)  <br /></td></tr>
 <tr class="separator:a001e932180b059a805ca53a8edbeef15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad1236a73c0cac828b3079b74d1b0996d" id="r_ad1236a73c0cac828b3079b74d1b0996d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad1236a73c0cac828b3079b74d1b0996d">Socket_recvfd</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int *fd_received)</td></tr>
-<tr class="memdesc:ad1236a73c0cac828b3079b74d1b0996d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvfd - Receive a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_received: Output pointer for received file descriptor.  <br /></td></tr>
 <tr class="separator:ad1236a73c0cac828b3079b74d1b0996d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a70c2f94b87d307842c7d11de0b6a2bce" id="r_a70c2f94b87d307842c7d11de0b6a2bce"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a70c2f94b87d307842c7d11de0b6a2bce">Socket_sendfds</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const int *fds, size_t count)</td></tr>
-<tr class="memdesc:a70c2f94b87d307842c7d11de0b6a2bce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_sendfds - Send multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Array of file descriptors to pass (all must be &gt;= 0) @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG)  <br /></td></tr>
 <tr class="separator:a70c2f94b87d307842c7d11de0b6a2bce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab806cbdac1b78ff644c4f841151cf3a8" id="r_ab806cbdac1b78ff644c4f841151cf3a8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab806cbdac1b78ff644c4f841151cf3a8">Socket_recvfds</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, int *fds, size_t max_count, size_t *received_count)</td></tr>
-<tr class="memdesc:ab806cbdac1b78ff644c4f841151cf3a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_recvfds - Receive multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Output array for received descriptors (must have max_count capacity) @max_count: Maximum descriptors to receive @received_count: Output for actual count received.  <br /></td></tr>
 <tr class="separator:ab806cbdac1b78ff644c4f841151cf3a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad12cd27d2531c8ea2b762e0ab4659d63" id="r_ad12cd27d2531c8ea2b762e0ab4659d63"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad12cd27d2531c8ea2b762e0ab4659d63">SocketUnix_bind</a> (<a class="el" href="SocketCommon_8h.html#ac716bcecf8b2060038ad6ede113539a2">SocketBase_T</a> base, const char *path, <a class="el" href="Except_8h.html#structExcept__T">Except_T</a> exc_type)</td></tr>
 <tr class="separator:ad12cd27d2531c8ea2b762e0ab4659d63"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -377,37 +304,27 @@ Functions</h2></td></tr>
 <tr class="memitem:a039fc234ac9f3aa259ea01e22218e442" id="r_a039fc234ac9f3aa259ea01e22218e442"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a039fc234ac9f3aa259ea01e22218e442">SocketUnix_validate_unix_path</a> (const char *path, size_t path_len)</td></tr>
 <tr class="separator:a039fc234ac9f3aa259ea01e22218e442"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab17262422d628bfd3c64e219b7474d3f" id="r_ab17262422d628bfd3c64e219b7474d3f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab17262422d628bfd3c64e219b7474d3f">Socket_bind_async</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:ab17262422d628bfd3c64e219b7474d3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bind_async - Start async DNS resolution for bind @dns: DNS resolver instance @socket: Socket to bind @host: IP address or hostname (NULL for any) @port: Port number (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:ab17262422d628bfd3c64e219b7474d3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad6e2d6b94b41a45e9d9fb43f6122e489" id="r_ad6e2d6b94b41a45e9d9fb43f6122e489"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ad6e2d6b94b41a45e9d9fb43f6122e489">Socket_bind_async_cancel</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req)</td></tr>
-<tr class="memdesc:ad6e2d6b94b41a45e9d9fb43f6122e489"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bind_async_cancel - Cancel pending async bind resolution @dns: DNS resolver instance @req: Request handle returned by Socket_bind_async.  <br /></td></tr>
 <tr class="separator:ad6e2d6b94b41a45e9d9fb43f6122e489"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa3f4e3781b8abe542d0fd907788c5c01" id="r_aa3f4e3781b8abe542d0fd907788c5c01"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#aa3f4e3781b8abe542d0fd907788c5c01">Socket_connect_async</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const char *host, int port)</td></tr>
-<tr class="memdesc:aa3f4e3781b8abe542d0fd907788c5c01"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect_async - Start async DNS resolution for connect @dns: DNS resolver instance @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:aa3f4e3781b8abe542d0fd907788c5c01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac935e4853e90426e05722f6e54c2e7b9" id="r_ac935e4853e90426e05722f6e54c2e7b9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ac935e4853e90426e05722f6e54c2e7b9">Socket_connect_async_cancel</a> (<a class="el" href="SocketDNS_8h.html#ac9190fe07142a017f86dae46145cb2fd">SocketDNS_T</a> dns, <a class="el" href="SocketDNS_8h.html#a2d39e79bb7d4fa2271b6158750267c13">SocketDNS_Request_T</a> req)</td></tr>
-<tr class="memdesc:ac935e4853e90426e05722f6e54c2e7b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect_async_cancel - Cancel pending async connect resolution @dns: DNS resolver instance @req: Request handle returned by Socket_connect_async.  <br /></td></tr>
 <tr class="separator:ac935e4853e90426e05722f6e54c2e7b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7147a127f3463d5861da5a16435ef4e7" id="r_a7147a127f3463d5861da5a16435ef4e7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a7147a127f3463d5861da5a16435ef4e7">Socket_bind_with_addrinfo</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct addrinfo *res)</td></tr>
-<tr class="memdesc:a7147a127f3463d5861da5a16435ef4e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_bind_with_addrinfo - Bind socket using resolved address @socket: Socket to bind @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a7147a127f3463d5861da5a16435ef4e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28271af8ebad671a64fd37ffb2d07e0c" id="r_a28271af8ebad671a64fd37ffb2d07e0c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a28271af8ebad671a64fd37ffb2d07e0c">Socket_connect_with_addrinfo</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct addrinfo *res)</td></tr>
-<tr class="memdesc:a28271af8ebad671a64fd37ffb2d07e0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_connect_with_addrinfo - Connect socket using resolved address @socket: Socket to connect @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error.  <br /></td></tr>
 <tr class="separator:a28271af8ebad671a64fd37ffb2d07e0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a410b67062c053c3af7e86531acc1620c" id="r_a410b67062c053c3af7e86531acc1620c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a410b67062c053c3af7e86531acc1620c">Socket_ignore_sigpipe</a> (void)</td></tr>
-<tr class="memdesc:a410b67062c053c3af7e86531acc1620c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_ignore_sigpipe - Globally ignore SIGPIPE signal.  <br /></td></tr>
 <tr class="separator:a410b67062c053c3af7e86531acc1620c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a225f4a8fd657fd52a05146c6fc4f58b0" id="r_a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></td></tr>
-<tr class="memdesc:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_Failed - General socket operation failure.  <br /></td></tr>
 <tr class="separator:a225f4a8fd657fd52a05146c6fc4f58b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2db3d742dcea3f39ad2eb37d4fb1e453" id="r_a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#a2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a></td></tr>
-<tr class="memdesc:a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_Closed - Connection closed by peer.  <br /></td></tr>
 <tr class="separator:a2db3d742dcea3f39ad2eb37d4fb1e453"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab05e641cc9abed67180036e51a1dc633" id="r_ab05e641cc9abed67180036e51a1dc633"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="Socket_8h.html#ab05e641cc9abed67180036e51a1dc633">SocketUnix_Failed</a></td></tr>
-<tr class="memdesc:ab05e641cc9abed67180036e51a1dc633"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUnix_Failed - Unix domain socket operation failure.  <br /></td></tr>
 <tr class="separator:ab05e641cc9abed67180036e51a1dc633"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -422,8 +339,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="Socket_8h.html">Socket.h</a> - Socket Abstraction Layer. </p>
+<p><a class="el" href="Socket_8h.html">Socket.h</a> - Socket Abstraction Layer</p>
 <p>Part of the Socket Library</p>
 <p>High-level, exception-based TCP/IP/Unix domain socket interface. This header consolidates all socket operations including:</p><ul>
 <li>Core socket creation and I/O</li>
@@ -445,8 +361,8 @@ Variables</h2></td></tr>
 <li>Some functions return NULL/0 for non-blocking EAGAIN/EWOULDBLOCK</li>
 </ul>
 <p>Timeouts:</p><ul>
-<li>Global defaults configurable via <a class="el" href="Socket_8h.html#a0385e87c51740c37c9d90ff5bba1eced" title="Socket_timeouts_setdefaults - Set global default timeouts @timeouts: New default timeout configuratio...">Socket_timeouts_setdefaults()</a></li>
-<li>Per-socket overrides via <a class="el" href="Socket_8h.html#a3e3b95a49618f5a56869606adeeda58f" title="Socket_timeouts_set - Set per-socket timeout configuration @socket: Socket instance @timeouts: Timeou...">Socket_timeouts_set()</a></li>
+<li>Global defaults configurable via <a class="el" href="Socket_8h.html#a0385e87c51740c37c9d90ff5bba1eced">Socket_timeouts_setdefaults()</a></li>
+<li>Per-socket overrides via <a class="el" href="Socket_8h.html#a3e3b95a49618f5a56869606adeeda58f">Socket_timeouts_set()</a></li>
 <li>Applied to DNS resolution and blocking connect() paths </li>
 </ul>
 
@@ -495,8 +411,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error. </p>
+<p>Socket_accept - Accept incoming connection @socket: Listening socket Returns: New socket or NULL if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -535,8 +450,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bandwidth_wait_ms - Get wait time until bandwidth available @socket: Socket to query @bytes: Number of bytes needed. </p>
+<p>Socket_bandwidth_wait_ms - Get wait time until bandwidth available @socket: Socket to query @bytes: Number of bytes needed</p>
 <p>Returns: Milliseconds to wait, 0 if immediate, -1 if impossible Thread-safe: Yes</p>
 <p>Useful for event loop integration - use as poll timeout. </p>
 
@@ -581,9 +495,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) WARNING: May block 30+ seconds during DNS resolution if hostname provided. </p>
-<p>Raises: Socket_Failed on error </p>
+<p>Socket_bind - Bind socket to address and port @socket: Socket to bind @host: IP address or NULL/"0.0.0.0" for any @port: Port number (1 to SOCKET_MAX_PORT) WARNING: May block 30+ seconds during DNS resolution if hostname provided. Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -634,8 +546,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bind_async - Start async DNS resolution for bind @dns: DNS resolver instance @socket: Socket to bind @host: IP address or hostname (NULL for any) @port: Port number (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error. </p>
+<p>Socket_bind_async - Start async DNS resolution for bind @dns: DNS resolver instance @socket: Socket to bind @host: IP address or hostname (NULL for any) @port: Port number (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -672,8 +583,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bind_async_cancel - Cancel pending async bind resolution @dns: DNS resolver instance @req: Request handle returned by Socket_bind_async. </p>
+<p>Socket_bind_async_cancel - Cancel pending async bind resolution @dns: DNS resolver instance @req: Request handle returned by Socket_bind_async </p>
 
 </div>
 </div>
@@ -710,9 +620,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bind_unix - Bind to Unix domain socket path @socket: Socket to bind (AF_UNIX) @path: Socket file path Raises: Socket_Failed on error Note: Fails with EADDRINUSE if path exists. </p>
-<p>Max path length ~108 bytes. Supports abstract namespace sockets on Linux (path starting with '@'). </p>
+<p>Socket_bind_unix - Bind to Unix domain socket path @socket: Socket to bind (AF_UNIX) @path: Socket file path Raises: Socket_Failed on error Note: Fails with EADDRINUSE if path exists. Max path length ~108 bytes. Supports abstract namespace sockets on Linux (path starting with '@'). </p>
 
 </div>
 </div>
@@ -749,8 +657,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_bind_with_addrinfo - Bind socket using resolved address @socket: Socket to bind @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error. </p>
+<p>Socket_bind_with_addrinfo - Bind socket using resolved address @socket: Socket to bind @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -793,9 +700,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port WARNING: May block 30+ seconds during DNS resolution if hostname provided. </p>
-<p>Raises: Socket_Failed on error </p>
+<p>Socket_connect - Connect to remote host @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port WARNING: May block 30+ seconds during DNS resolution if hostname provided. Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00039">main()</a>.</p>
 
@@ -846,8 +751,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_connect_async - Start async DNS resolution for connect @dns: DNS resolver instance @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error. </p>
+<p>Socket_connect_async - Start async DNS resolution for connect @dns: DNS resolver instance @socket: Socket to connect @host: Remote IP address or hostname @port: Remote port (1 to SOCKET_MAX_PORT) Returns: DNS request handle Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -884,8 +788,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_connect_async_cancel - Cancel pending async connect resolution @dns: DNS resolver instance @req: Request handle returned by Socket_connect_async. </p>
+<p>Socket_connect_async_cancel - Cancel pending async connect resolution @dns: DNS resolver instance @req: Request handle returned by Socket_connect_async </p>
 
 </div>
 </div>
@@ -922,7 +825,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_connect_unix - Connect to Unix domain socket path @socket: Socket to connect (AF_UNIX) @path: Socket file path Raises: Socket_Failed on error Note: Supports abstract namespace sockets on Linux (path starting with '@'). </p>
 
 </div>
@@ -960,8 +862,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_connect_with_addrinfo - Connect socket using resolved address @socket: Socket to connect @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error. </p>
+<p>Socket_connect_with_addrinfo - Connect socket using resolved address @socket: Socket to connect @res: Resolved addrinfo result from DNS resolution Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -988,8 +889,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_debug_live_count - Get number of live socket instances (test-only) Returns: Current count of allocated Socket_T instances. </p>
+<p>Socket_debug_live_count - Get number of live socket instances (test-only) Returns: Current count of allocated Socket_T instances </p>
 
 </div>
 </div>
@@ -1016,10 +916,9 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check. </p>
+<p>Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check</p>
 <p>Returns: 1 if error is typically retryable, 0 if fatal Thread-safe: Yes (pure function)</p>
-<p>This is a convenience wrapper around <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error @err: errno value to check.">SocketError_is_retryable_errno()</a> for socket-specific error handling.</p>
+<p>This is a convenience wrapper around <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163">SocketError_is_retryable_errno()</a> for socket-specific error handling.</p>
 <p>Retryable errors (return 1):</p><ul>
 <li>ECONNREFUSED: Server not listening, may start later</li>
 <li>ECONNRESET: Connection dropped, can reconnect</li>
@@ -1064,8 +963,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor. </p>
+<p>Socket_fd - Get underlying file descriptor @socket: Socket instance Returns: File descriptor </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
@@ -1094,7 +992,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_free - Free a socket and close the connection @socket: Pointer to socket (will be set to NULL) </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
@@ -1124,8 +1021,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getbandwidth - Get bandwidth limit for socket @socket: Socket to query. </p>
+<p>Socket_getbandwidth - Get bandwidth limit for socket @socket: Socket to query</p>
 <p>Returns: Bandwidth limit in bytes per second (0 if unlimited) Thread-safe: Yes </p>
 
 </div>
@@ -1169,8 +1065,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getcongestion - Get TCP congestion control algorithm @socket: Socket to query @algorithm: Output buffer for algorithm name @len: Buffer length Returns: 0 on success, -1 on error or if not supported. </p>
+<p>Socket_getcongestion - Get TCP congestion control algorithm @socket: Socket to query @algorithm: Output buffer for algorithm name @len: Buffer length Returns: 0 on success, -1 on error or if not supported </p>
 
 </div>
 </div>
@@ -1197,8 +1092,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout @socket: Listening socket. </p>
+<p>Socket_getdeferaccept - Get TCP_DEFER_ACCEPT timeout @socket: Listening socket</p>
 <p>Returns: Current defer accept timeout in seconds, 0 if disabled Raises: Socket_Failed on error Thread-safe: Yes </p>
 
 </div>
@@ -1226,8 +1120,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getfastopen - Get TCP Fast Open setting @socket: Socket to query Returns: 1 if enabled, 0 if disabled, -1 on error. </p>
+<p>Socket_getfastopen - Get TCP Fast Open setting @socket: Socket to query Returns: 1 if enabled, 0 if disabled, -1 on error </p>
 
 </div>
 </div>
@@ -1276,8 +1169,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getkeepalive - Get TCP keepalive configuration @socket: Socket to query @idle: Output - idle timeout in seconds @interval: Output - interval between probes in seconds @count: Output - number of probes before declaring dead Raises: Socket_Failed on error. </p>
+<p>Socket_getkeepalive - Get TCP keepalive configuration @socket: Socket to query @idle: Output - idle timeout in seconds @interval: Output - interval between probes in seconds @count: Output - number of probes before declaring dead Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -1304,7 +1196,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_getlocaladdr - Get local IP address @socket: Socket instance Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed. </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
@@ -1334,8 +1225,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable. </p>
+<p>Socket_getlocalport - Get local port number @socket: Socket instance Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable </p>
 
 <p class="reference">Referenced by <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
@@ -1364,8 +1254,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getnodelay - Get TCP_NODELAY setting @socket: Socket to query Returns: 1 if Nagle's algorithm is disabled, 0 if enabled Raises: Socket_Failed on error. </p>
+<p>Socket_getnodelay - Get TCP_NODELAY setting @socket: Socket to query Returns: 1 if Nagle's algorithm is disabled, 0 if enabled Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -1392,7 +1281,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_getpeeraddr - Get peer IP address @socket: Connected socket Returns: IP address string (IPv4/IPv6) or "(unknown)" if unavailable Note: String is owned by socket, valid until socket freed. </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
@@ -1422,8 +1310,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getpeergid - Get peer group ID (Linux only) @socket: Connected Unix domain socket Returns: Peer group ID, or (gid_t)-1 if unavailable. </p>
+<p>Socket_getpeergid - Get peer group ID (Linux only) @socket: Connected Unix domain socket Returns: Peer group ID, or (gid_t)-1 if unavailable </p>
 
 </div>
 </div>
@@ -1450,8 +1337,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getpeerpid - Get peer process ID (Linux only) @socket: Connected Unix domain socket Returns: Peer process ID, or -1 if unavailable. </p>
+<p>Socket_getpeerpid - Get peer process ID (Linux only) @socket: Connected Unix domain socket Returns: Peer process ID, or -1 if unavailable </p>
 
 </div>
 </div>
@@ -1478,8 +1364,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getpeerport - Get peer port number @socket: Connected socket Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable. </p>
+<p>Socket_getpeerport - Get peer port number @socket: Connected socket Returns: Port number (1 to SOCKET_MAX_PORT) or 0 if unavailable </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -1508,8 +1393,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getpeeruid - Get peer user ID (Linux only) @socket: Connected Unix domain socket Returns: Peer user ID, or (uid_t)-1 if unavailable. </p>
+<p>Socket_getpeeruid - Get peer user ID (Linux only) @socket: Connected Unix domain socket Returns: Peer user ID, or (uid_t)-1 if unavailable </p>
 
 </div>
 </div>
@@ -1536,8 +1420,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: Socket_Failed on error. </p>
+<p>Socket_getrcvbuf - Get receive buffer size @socket: Socket to query Returns: Receive buffer size in bytes Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -1564,8 +1447,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: Socket_Failed on error. </p>
+<p>Socket_getsndbuf - Get send buffer size @socket: Socket to query Returns: Send buffer size in bytes Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -1592,8 +1474,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: Socket_Failed on error. </p>
+<p>Socket_gettimeout - Get socket timeout @socket: Socket to query Returns: Timeout in seconds (0 if disabled) Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -1620,8 +1501,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_getusertimeout - Get TCP user timeout @socket: Socket to query Returns: Timeout in milliseconds, or 0 on error. </p>
+<p>Socket_getusertimeout - Get TCP user timeout @socket: Socket to query Returns: Timeout in milliseconds, or 0 on error </p>
 
 </div>
 </div>
@@ -1648,8 +1528,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_ignore_sigpipe - Globally ignore SIGPIPE signal. </p>
+<p>Socket_ignore_sigpipe - Globally ignore SIGPIPE signal</p>
 <p>NOTE: This function is NOT required when using this library. The library handles SIGPIPE internally via:</p><ul>
 <li>MSG_NOSIGNAL flag on send operations (Linux/FreeBSD)</li>
 <li>SO_NOSIGPIPE socket option at creation (BSD/macOS)</li>
@@ -1660,7 +1539,7 @@ Variables</h2></td></tr>
 <li>Defense-in-depth preference</li>
 </ul>
 <p>Returns: 0 on success, -1 on error (sets errno) Thread-safe: Yes (can be called from any thread, idempotent)</p>
-<p>Usage: // Optional - call once at program startup if desired <a class="el" href="Socket_8h.html#a410b67062c053c3af7e86531acc1620c" title="Socket_ignore_sigpipe - Globally ignore SIGPIPE signal.">Socket_ignore_sigpipe()</a>;</p>
+<p>Usage: // Optional - call once at program startup if desired <a class="el" href="Socket_8h.html#a410b67062c053c3af7e86531acc1620c">Socket_ignore_sigpipe()</a>;</p>
 <p>IMPORTANT: Do not call this if your application needs to handle SIGPIPE for other purposes (e.g., detecting broken pipes in shell pipelines). </p>
 
 </div>
@@ -1688,8 +1567,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_isbound - Check if socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes. </p>
+<p>Socket_isbound - Check if socket is bound to an address @socket: Socket to check Returns: 1 if bound, 0 if not bound Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1716,8 +1594,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_isconnected - Check if socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes. </p>
+<p>Socket_isconnected - Check if socket is connected @socket: Socket to check Returns: 1 if connected, 0 if not connected Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1744,8 +1621,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_islistening - Check if socket is listening for connections @socket: Socket to check Returns: 1 if listening, 0 if not listening Thread-safe: Yes. </p>
+<p>Socket_islistening - Check if socket is listening for connections @socket: Socket to check Returns: 1 if listening, 0 if not listening Thread-safe: Yes </p>
 
 </div>
 </div>
@@ -1782,8 +1658,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending connections Raises: Socket_Failed on error. </p>
+<p>Socket_listen - Listen for incoming connections @socket: Bound socket @backlog: Maximum pending connections Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -1856,8 +1731,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_new_from_fd - Create Socket_T from existing file descriptor @fd: File descriptor (must be valid socket, will be set to non-blocking) Returns: New Socket_T instance or NULL on failure Raises: Socket_Failed on error Thread-safe: Yes - returns new instance. </p>
+<p>Socket_new_from_fd - Create Socket_T from existing file descriptor @fd: File descriptor (must be valid socket, will be set to non-blocking) Returns: New Socket_T instance or NULL on failure Raises: Socket_Failed on error Thread-safe: Yes - returns new instance </p>
 
 </div>
 </div>
@@ -1900,8 +1774,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+<p>Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Bytes received (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
@@ -1946,10 +1819,9 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recv_limited - Receive data with bandwidth limiting @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) </p>
+<p>Socket_recv_limited - Receive data with bandwidth limiting @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0)</p>
 <p>Returns: Bytes received (&gt; 0), 0 if rate limited or would block, or raises Raises: Socket_Closed on peer close, Socket_Failed on other errors Thread-safe: Yes - uses socket's bandwidth limiter</p>
-<p>Like <a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9" title="Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size...">Socket_recv()</a> but respects bandwidth limit set by <a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9" title="Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximu...">Socket_setbandwidth()</a>. If bandwidth limiting is disabled (0), behaves like <a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9" title="Socket_recv - Receive data @socket: Connected socket @buf: Buffer for received data @len: Buffer size...">Socket_recv()</a>. </p>
+<p>Like <a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv()</a> but respects bandwidth limit set by <a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9">Socket_setbandwidth()</a>. If bandwidth limiting is disabled (0), behaves like <a class="el" href="Socket_8h.html#a95db343f47445925cecd6b20054518e9">Socket_recv()</a>. </p>
 
 </div>
 </div>
@@ -1992,8 +1864,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+<p>Socket_recvall - Receive all requested data (handles partial receives) @socket: Connected socket @buf: Buffer for received data @len: Buffer size (&gt; 0) Returns: Total bytes received (always equals len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other </p>
 
 </div>
 </div>
@@ -2030,8 +1901,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvfd - Receive a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_received: Output pointer for received file descriptor. </p>
+<p>Socket_recvfd - Receive a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_received: Output pointer for received file descriptor</p>
 <p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
 <p>Receives a file descriptor from the peer process via SCM_RIGHTS. The received fd is owned by this process and must be closed when done.</p>
 <p>OWNERSHIP: Caller takes ownership of the received fd and MUST close it.</p>
@@ -2084,8 +1954,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvfds - Receive multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Output array for received descriptors (must have max_count capacity) @max_count: Maximum descriptors to receive @received_count: Output for actual count received. </p>
+<p>Socket_recvfds - Receive multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Output array for received descriptors (must have max_count capacity) @max_count: Maximum descriptors to receive @received_count: Output for actual count received</p>
 <p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
 <p>Receives multiple file descriptors from a single message. On success, *received_count contains the number of fds received.</p>
 <p>OWNERSHIP: Caller takes ownership of all received fds and MUST close them.</p>
@@ -2132,8 +2001,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper) @socket: Connected socket @msg: Message structure for data, address, and ancillary data @flags: Message flags (MSG_DONTWAIT, MSG_PEEK, etc.) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+<p>Socket_recvmsg - Receive message with ancillary data (recvmsg wrapper) @socket: Connected socket @msg: Message structure for data, address, and ancillary data @flags: Message flags (MSG_DONTWAIT, MSG_PEEK, etc.) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other </p>
 
 </div>
 </div>
@@ -2176,8 +2044,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+<p>Socket_recvv - Scatter/gather receive (readv wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (&gt; 0) or 0 if would block Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other </p>
 
 </div>
 </div>
@@ -2220,8 +2087,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other. </p>
+<p>Socket_recvvall - Scatter/gather receive all (handles partial receives) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes received (always equals sum of all iov_len on success) Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on other </p>
 
 </div>
 </div>
@@ -2264,8 +2130,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_send - Send data @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_send - Send data @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Bytes sent (&gt; 0) or 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2308,10 +2173,9 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_send_limited - Send data with bandwidth limiting @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) </p>
+<p>Socket_send_limited - Send data with bandwidth limiting @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0)</p>
 <p>Returns: Bytes sent (&gt; 0), 0 if rate limited (try again later), or raises Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors Thread-safe: Yes - uses socket's bandwidth limiter</p>
-<p>Like <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b" title="Socket_send - Send data @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Retur...">Socket_send()</a> but respects bandwidth limit set by <a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9" title="Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximu...">Socket_setbandwidth()</a>. If bandwidth limiting is disabled (0), behaves like <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b" title="Socket_send - Send data @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Retur...">Socket_send()</a>. If rate limited, returns 0 and caller should wait before retrying. Use <a class="el" href="Socket_8h.html#a89643e52780099fe0012e2fa22725e07" title="Socket_bandwidth_wait_ms - Get wait time until bandwidth available @socket: Socket to query @bytes: N...">Socket_bandwidth_wait_ms()</a> to get recommended wait time. </p>
+<p>Like <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send()</a> but respects bandwidth limit set by <a class="el" href="Socket_8h.html#acab565f9a6e6c40c56d6d21df89b30a9">Socket_setbandwidth()</a>. If bandwidth limiting is disabled (0), behaves like <a class="el" href="Socket_8h.html#a23ace6e065fe4b9a01db8caa6513515b">Socket_send()</a>. If rate limited, returns 0 and caller should wait before retrying. Use <a class="el" href="Socket_8h.html#a89643e52780099fe0012e2fa22725e07">Socket_bandwidth_wait_ms()</a> to get recommended wait time. </p>
 
 </div>
 </div>
@@ -2354,8 +2218,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendall - Send all data (handles partial sends) @socket: Connected socket @buf: Data to send @len: Length of data (&gt; 0) Returns: Total bytes sent (always equals len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, and <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>.</p>
 
@@ -2394,8 +2257,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendfd - Send a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_to_pass: File descriptor to pass (must be &gt;= 0) </p>
+<p>Socket_sendfd - Send a file descriptor over Unix domain socket @socket: Connected Unix domain socket (AF_UNIX) @fd_to_pass: File descriptor to pass (must be &gt;= 0)</p>
 <p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
 <p>Passes a single file descriptor to the peer process using SCM_RIGHTS. The receiving process gets a new fd referring to the same kernel object.</p>
 <p>PLATFORM REQUIREMENTS:</p><ul>
@@ -2449,8 +2311,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendfds - Send multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Array of file descriptors to pass (all must be &gt;= 0) @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG) </p>
+<p>Socket_sendfds - Send multiple file descriptors @socket: Connected Unix domain socket (AF_UNIX) @fds: Array of file descriptors to pass (all must be &gt;= 0) @count: Number of descriptors (1 to SOCKET_MAX_FDS_PER_MSG)</p>
 <p>Returns: 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK) Raises: Socket_Failed on error, Socket_Closed on disconnect</p>
 <p>Passes multiple file descriptors atomically in a single message. All descriptors are either sent together or none are sent.</p>
 <p>Thread-safe: Yes (uses thread-local error buffers) </p>
@@ -2502,8 +2363,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendfile - Zero-copy file-to-socket transfer @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendfile - Zero-copy file-to-socket transfer @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2552,8 +2412,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial) @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (always equals count on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendfileall - Zero-copy file-to-socket transfer (handles partial) @socket: Connected socket to send to @file_fd: File descriptor to read from (must be a regular file) @offset: File offset to start reading from (NULL for current position) @count: Number of bytes to transfer (0 for entire file from offset) Returns: Total bytes transferred (always equals count on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2596,8 +2455,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendmsg - Send message with ancillary data (sendmsg wrapper) @socket: Connected socket @msg: Message structure with data, address, and ancillary data @flags: Message flags (MSG_NOSIGNAL, MSG_DONTWAIT, etc.) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendmsg - Send message with ancillary data (sendmsg wrapper) @socket: Connected socket @msg: Message structure with data, address, and ancillary data @flags: Message flags (MSG_NOSIGNAL, MSG_DONTWAIT, etc.) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2640,8 +2498,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendv - Scatter/gather send (writev wrapper) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (&gt; 0) or 0 if would block Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2684,8 +2541,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors. </p>
+<p>Socket_sendvall - Scatter/gather send all (handles partial sends) @socket: Connected socket @iov: Array of iovec structures @iovcnt: Number of iovec structures (&gt; 0, &lt;= IOV_MAX) Returns: Total bytes sent (always equals sum of all iov_len on success) Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors </p>
 
 </div>
 </div>
@@ -2722,10 +2578,9 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximum bytes per second (0 to disable limiting) </p>
+<p>Socket_setbandwidth - Set bandwidth limit for socket @socket: Socket to modify @bytes_per_sec: Maximum bytes per second (0 to disable limiting)</p>
 <p>Raises: Socket_Failed on allocation failure Thread-safe: Yes - uses internal mutex</p>
-<p>Enables bandwidth throttling using a token bucket algorithm. The burst capacity is set to bytes_per_sec (1 second of data). Use <a class="el" href="Socket_8h.html#a274b6782b2029d2d8aa33579ad60a4c1" title="Socket_send_limited - Send data with bandwidth limiting @socket: Connected socket @buf: Data to send ...">Socket_send_limited()</a> for rate-limited sending. </p>
+<p>Enables bandwidth throttling using a token bucket algorithm. The burst capacity is set to bytes_per_sec (1 second of data). Use <a class="el" href="Socket_8h.html#a274b6782b2029d2d8aa33579ad60a4c1">Socket_send_limited()</a> for rate-limited sending. </p>
 
 </div>
 </div>
@@ -2762,8 +2617,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: Socket_Failed on error. </p>
+<p>Socket_setcloexec - Control close-on-exec flag @socket: Socket to modify @enable: 1 to enable CLOEXEC, 0 to disable Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -2800,7 +2654,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_setcongestion - Set TCP congestion control algorithm @socket: Socket to modify @algorithm: Algorithm name (e.g., "cubic", "reno", "bbr") Raises: Socket_Failed on error or if not supported Note: Only available on Linux 2.6.13+. </p>
 
 </div>
@@ -2838,8 +2691,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT @socket: Listening socket @timeout_sec: Seconds to wait for data before completing accept (0 to disable, max platform-specific) </p>
+<p>Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT @socket: Listening socket @timeout_sec: Seconds to wait for data before completing accept (0 to disable, max platform-specific)</p>
 <p>Delays accept() completion until client sends data, preventing SYN-only connections from consuming application resources. This is a key defense against SYN flood attacks.</p>
 <p>Linux: Uses TCP_DEFER_ACCEPT socket option BSD/macOS: Uses SO_ACCEPTFILTER with "dataready" filter</p>
 <p>Raises: Socket_Failed on error or if unsupported Thread-safe: Yes </p>
@@ -2879,8 +2731,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setfastopen - Enable TCP Fast Open @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: Socket_Failed on error or if not supported. </p>
+<p>Socket_setfastopen - Enable TCP Fast Open @socket: Socket to modify @enable: 1 to enable, 0 to disable Raises: Socket_Failed on error or if not supported </p>
 
 </div>
 </div>
@@ -2929,8 +2780,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setkeepalive - Enable TCP keepalive @socket: Socket to modify @idle: Seconds before sending keepalive probes @interval: Interval between keepalive probes @count: Number of probes before declaring dead Raises: Socket_Failed on error. </p>
+<p>Socket_setkeepalive - Enable TCP keepalive @socket: Socket to modify @idle: Seconds before sending keepalive probes @interval: Interval between keepalive probes @count: Number of probes before declaring dead Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -2967,8 +2817,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setnodelay - Disable Nagle's algorithm @socket: Socket to modify @nodelay: 1 to disable Nagle, 0 to enable Raises: Socket_Failed on error. </p>
+<p>Socket_setnodelay - Disable Nagle's algorithm @socket: Socket to modify @nodelay: 1 to disable Nagle, 0 to enable Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -2995,8 +2844,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on error. </p>
+<p>Socket_setnonblocking - Enable non-blocking mode @socket: Socket to modify Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -3035,8 +2883,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setrcvbuf - Set receive buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error. </p>
+<p>Socket_setrcvbuf - Set receive buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -3063,8 +2910,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error. </p>
+<p>Socket_setreuseaddr - Enable address reuse @socket: Socket to modify Raises: Socket_Failed on error </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -3093,7 +2939,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_setreuseport - Enable port reuse across sockets @socket: Socket to modify Raises: Socket_Failed on error (or if SO_REUSEPORT unsupported) </p>
 
 </div>
@@ -3131,8 +2976,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_setsndbuf - Set send buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error. </p>
+<p>Socket_setsndbuf - Set send buffer size @socket: Socket to modify @size: Buffer size in bytes (&gt; 0) Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -3169,8 +3013,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets both send and receive timeouts Raises: Socket_Failed on error. </p>
+<p>Socket_settimeout - Set socket timeout @socket: Socket to modify @timeout_sec: Timeout in seconds (0 to disable) Sets both send and receive timeouts Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -3207,7 +3050,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_setusertimeout - Set TCP user timeout @socket: Socket to modify @timeout_ms: Timeout in milliseconds (&gt; 0) Raises: Socket_Failed on error or if not supported Note: Only available on Linux 2.6.37+. </p>
 
 </div>
@@ -3245,8 +3087,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_shutdown - Disable further sends and/or receives @socket: Connected socket @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR) Raises: Socket_Failed on error. </p>
+<p>Socket_shutdown - Disable further sends and/or receives @socket: Connected socket @how: Shutdown mode (SHUT_RD, SHUT_WR, or SHUT_RDWR) Raises: Socket_Failed on error </p>
 
 </div>
 </div>
@@ -3283,8 +3124,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_timeouts_get - Retrieve per-socket timeout configuration @socket: Socket instance @timeouts: Output timeout structure. </p>
+<p>Socket_timeouts_get - Retrieve per-socket timeout configuration @socket: Socket instance @timeouts: Output timeout structure </p>
 
 </div>
 </div>
@@ -3321,8 +3161,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration @socket: Socket to query @extended: Output structure for extended timeouts. </p>
+<p>Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration @socket: Socket to query @extended: Output structure for extended timeouts</p>
 <p>Retrieves the current extended timeout configuration. If extended timeouts haven't been set, returns the basic timeouts mapped to the extended structure.</p>
 <p>Thread-safe: No - caller must ensure exclusive access </p>
 
@@ -3351,8 +3190,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_timeouts_getdefaults - Get global default timeouts @timeouts: Output timeout structure containing current defaults. </p>
+<p>Socket_timeouts_getdefaults - Get global default timeouts @timeouts: Output timeout structure containing current defaults </p>
 
 </div>
 </div>
@@ -3389,7 +3227,6 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>Socket_timeouts_set - Set per-socket timeout configuration @socket: Socket instance @timeouts: Timeout configuration (NULL to reset to defaults) </p>
 
 </div>
@@ -3427,9 +3264,8 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_timeouts_set_extended - Set per-socket extended timeout configuration @socket: Socket to modify @extended: Extended per-phase timeout configuration. </p>
-<p>Sets granular per-phase timeouts for advanced use cases. The extended timeouts provide finer control than <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T" title="SocketTimeouts_T - Timeout configuration structure.">SocketTimeouts_T</a>, allowing different timeouts for DNS, connect, TLS, and request phases.</p>
+<p>Socket_timeouts_set_extended - Set per-socket extended timeout configuration @socket: Socket to modify @extended: Extended per-phase timeout configuration</p>
+<p>Sets granular per-phase timeouts for advanced use cases. The extended timeouts provide finer control than <a class="el" href="SocketConfig_8h.html#structSocketTimeouts__T">SocketTimeouts_T</a>, allowing different timeouts for DNS, connect, TLS, and request phases.</p>
 <p>Values of 0 in the extended structure mean "inherit from basic timeouts". Values of -1 mean "no timeout (infinite)".</p>
 <p>Thread-safe: No - caller must ensure exclusive access </p>
 
@@ -3458,8 +3294,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_timeouts_setdefaults - Set global default timeouts @timeouts: New default timeout configuration. </p>
+<p>Socket_timeouts_setdefaults - Set global default timeouts @timeouts: New default timeout configuration </p>
 
 </div>
 </div>
@@ -3502,9 +3337,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketPair_new - Create a pair of connected Unix domain sockets @type: Socket type (SOCK_STREAM or SOCK_DGRAM) @socket1: Output - first socket of the pair @socket2: Output - second socket of the pair Raises: Socket_Failed on error Thread-safe: Yes (creates new sockets) Note: Creates two connected Unix domain sockets for IPC. </p>
-<p>Both sockets are ready to use - no bind/connect needed. </p>
+<p>SocketPair_new - Create a pair of connected Unix domain sockets @type: Socket type (SOCK_STREAM or SOCK_DGRAM) @socket1: Output - first socket of the pair @socket2: Output - second socket of the pair Raises: Socket_Failed on error Thread-safe: Yes (creates new sockets) Note: Creates two connected Unix domain sockets for IPC. Both sockets are ready to use - no bind/connect needed. </p>
 
 </div>
 </div>
@@ -3648,8 +3481,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_Closed - Connection closed by peer. </p>
+<p>Socket_Closed - Connection closed by peer</p>
 <p>Category: NETWORK Retryable: Yes - indicates graceful close or reset, reconnect may succeed</p>
 <p>Raised when:</p><ul>
 <li>recv() returns 0 (graceful close)</li>
@@ -3681,16 +3513,15 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Socket_Failed - General socket operation failure. </p>
-<p>Category: NETWORK (usually) or PROTOCOL (configuration errors) Retryable: Depends on errno - use <a class="el" href="Socket_8h.html#a8517adf0df2e5331a952fb713ec314f9" title="Socket_error_is_retryable - Check if an errno indicates a retryable error @err: errno value to check.">Socket_error_is_retryable()</a> to check</p>
+<p>Socket_Failed - General socket operation failure</p>
+<p>Category: NETWORK (usually) or PROTOCOL (configuration errors) Retryable: Depends on errno - use <a class="el" href="Socket_8h.html#a8517adf0df2e5331a952fb713ec314f9">Socket_error_is_retryable()</a> to check</p>
 <p>Raised for:</p><ul>
 <li>Socket creation failures (socket(), bind(), listen(), accept())</li>
 <li>Connection failures (connect())</li>
 <li>I/O failures (send(), recv())</li>
 <li>Option setting failures (setsockopt())</li>
 </ul>
-<p>Check errno via <a class="el" href="SocketUtil_8h.html#aacd3ef2f86186c451f2eb90cd490eae5" title="Socket_geterrno - Get the last captured errno value Returns: Last errno value (0 if no error) Thread-...">Socket_geterrno()</a> for specific error code. </p>
+<p>Check errno via <a class="el" href="SocketUtil_8h.html#aacd3ef2f86186c451f2eb90cd490eae5">Socket_geterrno()</a> for specific error code. </p>
 
 <p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00193">handle_client_data()</a>, <a class="el" href="proxy__connect_8c_source.html#l00128">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00235">main()</a>.</p>
 
@@ -3715,8 +3546,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUnix_Failed - Unix domain socket operation failure. </p>
+<p>SocketUnix_Failed - Unix domain socket operation failure</p>
 <p>Category: NETWORK or APPLICATION Retryable: Depends on errno</p>
 <p>Raised for Unix domain socket specific errors:</p><ul>
 <li>Path too long</li>

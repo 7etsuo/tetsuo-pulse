@@ -51,7 +51,12 @@ High-performance, exception-driven socket toolkit for POSIX systems. Provides a 
 ### Infrastructure
 - **Exception-Based Errors** - Clean error propagation with `TRY/EXCEPT/FINALLY`
 - **Arena Memory Management** - Efficient allocation with overflow protection
+- **Circular Buffer I/O** - Zero-copy buffering for network operations
+- **Asynchronous I/O** - Platform-optimized async operations (io_uring/kqueue)
 - **Asynchronous DNS** - Non-blocking resolution with thread pool and timeouts
+- **UTF-8 Validation** - Security-focused UTF-8 processing for WebSocket text frames
+- **Generic Retry Framework** - Exponential backoff with jitter for resilient operations
+- **Per-IP Connection Tracking** - Connection limits and rate limiting per client IP
 - **Zero-Copy I/O** - Platform-optimized `sendfile()` and scatter/gather I/O
 - **Observability** - Pluggable logging, Prometheus/StatsD/JSON metrics export, event dispatching
 - **Cryptographic Utilities** - SHA-1/256, HMAC, Base64, secure random

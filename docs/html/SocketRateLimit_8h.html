@@ -142,7 +142,6 @@ $(document).ready(function(){initNavTree('SocketRateLimit_8h.html',''); initResi
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a></td></tr>
-<tr class="memdesc:a0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketRateLimit_8h.html">SocketRateLimit.h</a> - Token Bucket Rate Limiter.  <br /></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -153,40 +152,29 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a984414b5ee576c6acb3fbd9e8a96ef0f" id="r_a984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a> (<a class="el" href="Arena_8h.html#ac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t tokens_per_sec, size_t bucket_size)</td></tr>
-<tr class="memdesc:a984414b5ee576c6acb3fbd9e8a96ef0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_new - Create a new token bucket rate limiter @arena: Arena for memory allocation (NULL to use malloc) @tokens_per_sec: Token refill rate (tokens added per second) @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec)  <br /></td></tr>
 <tr class="separator:a984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac871476460ec6f0eeea5ecea0b9e8747" id="r_ac871476460ec6f0eeea5ecea0b9e8747"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ac871476460ec6f0eeea5ecea0b9e8747">SocketRateLimit_free</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> *limiter)</td></tr>
-<tr class="memdesc:ac871476460ec6f0eeea5ecea0b9e8747"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_free - Free a rate limiter @limiter: Pointer to limiter (will be set to NULL)  <br /></td></tr>
 <tr class="separator:ac871476460ec6f0eeea5ecea0b9e8747"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abb5d1321362b759ed688cfc414c4b2a7" id="r_abb5d1321362b759ed688cfc414c4b2a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#abb5d1321362b759ed688cfc414c4b2a7">SocketRateLimit_try_acquire</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
-<tr class="memdesc:abb5d1321362b759ed688cfc414c4b2a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_try_acquire - Try to consume tokens (non-blocking) @limiter: Rate limiter instance @tokens: Number of tokens to consume.  <br /></td></tr>
 <tr class="separator:abb5d1321362b759ed688cfc414c4b2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a231dd056cc866fc7652660374e3e3f" id="r_a5a231dd056cc866fc7652660374e3e3f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens)</td></tr>
-<tr class="memdesc:a5a231dd056cc866fc7652660374e3e3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_wait_time_ms - Calculate wait time for tokens @limiter: Rate limiter instance @tokens: Number of tokens needed.  <br /></td></tr>
 <tr class="separator:a5a231dd056cc866fc7652660374e3e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeccac0acfc81db650718aa84162c51f3" id="r_aeccac0acfc81db650718aa84162c51f3"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#aeccac0acfc81db650718aa84162c51f3">SocketRateLimit_available</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="memdesc:aeccac0acfc81db650718aa84162c51f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_available - Get current available tokens @limiter: Rate limiter instance.  <br /></td></tr>
 <tr class="separator:aeccac0acfc81db650718aa84162c51f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a32ac5df3f02155bbf440553f7729978b" id="r_a32ac5df3f02155bbf440553f7729978b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a32ac5df3f02155bbf440553f7729978b">SocketRateLimit_reset</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="memdesc:a32ac5df3f02155bbf440553f7729978b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_reset - Reset limiter to full bucket @limiter: Rate limiter instance.  <br /></td></tr>
 <tr class="separator:a32ac5df3f02155bbf440553f7729978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04a0e83dac474ff6a45597eb4e8a37a0" id="r_a04a0e83dac474ff6a45597eb4e8a37a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a04a0e83dac474ff6a45597eb4e8a37a0">SocketRateLimit_configure</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter, size_t tokens_per_sec, size_t bucket_size)</td></tr>
-<tr class="memdesc:a04a0e83dac474ff6a45597eb4e8a37a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_configure - Reconfigure rate limiter @limiter: Rate limiter instance @tokens_per_sec: New token refill rate (0 to keep current) @bucket_size: New bucket capacity (0 to keep current)  <br /></td></tr>
 <tr class="separator:a04a0e83dac474ff6a45597eb4e8a37a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33a8790eeb8ee8f3f2cb7f9c8e7d16c9" id="r_a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#a33a8790eeb8ee8f3f2cb7f9c8e7d16c9">SocketRateLimit_get_rate</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="memdesc:a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_get_rate - Get current tokens per second rate @limiter: Rate limiter instance.  <br /></td></tr>
 <tr class="separator:a33a8790eeb8ee8f3f2cb7f9c8e7d16c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab29dadd4e6a32a10eb577cf6f1399994" id="r_ab29dadd4e6a32a10eb577cf6f1399994"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ab29dadd4e6a32a10eb577cf6f1399994">SocketRateLimit_get_bucket_size</a> (<a class="el" href="SocketRateLimit_8h.html#a241a48be9b0f1c7f74e0b8edefeb10a5">SocketRateLimit_T</a> limiter)</td></tr>
-<tr class="memdesc:ab29dadd4e6a32a10eb577cf6f1399994"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_get_bucket_size - Get current bucket size @limiter: Rate limiter instance.  <br /></td></tr>
 <tr class="separator:ab29dadd4e6a32a10eb577cf6f1399994"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae39058e1d9114bc4dc403587d062b2d6" id="r_ae39058e1d9114bc4dc403587d062b2d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count</a> (void)</td></tr>
-<tr class="memdesc:ae39058e1d9114bc4dc403587d062b2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketRateLimit_debug_live_count - Debug function to get live instance count.  <br /></td></tr>
 <tr class="separator:ae39058e1d9114bc4dc403587d062b2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:af06f7fa3fe589c3d406f8f12cbc4e59e" id="r_af06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit_8h.html#af06f7fa3fe589c3d406f8f12cbc4e59e">SocketRateLimit_Failed</a></td></tr>
-<tr class="memdesc:af06f7fa3fe589c3d406f8f12cbc4e59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rate limiter operation failure.  <br /></td></tr>
 <tr class="separator:af06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -201,8 +189,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="SocketRateLimit_8h.html">SocketRateLimit.h</a> - Token Bucket Rate Limiter. </p>
+<p><a class="el" href="SocketRateLimit_8h.html">SocketRateLimit.h</a> - Token Bucket Rate Limiter</p>
 <p>Part of the Socket Library</p>
 <p>Implements a token bucket rate limiter for controlling connection rates and bandwidth throttling. The token bucket algorithm allows bursting while enforcing average rates over time.</p>
 <p>Algorithm:</p><ul>
@@ -221,7 +208,7 @@ Variables</h2></td></tr>
 <li>Safe to share a single limiter across threads</li>
 </ul>
 <p>Debugging:</p><ul>
-<li><p class="startli">Live instance count tracking for leak detection Use <a class="el" href="SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6" title="SocketRateLimit_debug_live_count - Debug function to get live instance count.">SocketRateLimit_debug_live_count()</a> == 0 after cleanup Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Arena_new - Create a new memory arena Returns: New arena instance, or NULL on allocation failure Note...">Arena_new()</a>; SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50); // 100 tokens/sec, burst capacity of 50</p>
+<li><p class="startli">Live instance count tracking for leak detection Use <a class="el" href="SocketRateLimit_8h.html#ae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count()</a> == 0 after cleanup Usage: Arena_T arena = <a class="el" href="Arena_8h.html#a6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>; SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50); // 100 tokens/sec, burst capacity of 50</p>
 <p class="startli">if (SocketRateLimit_try_acquire(limiter, 1)) { // Allowed - proceed with operation } else { // Rate limited - wait or reject int64_t wait_ms = SocketRateLimit_wait_time_ms(limiter, 1); } </p>
 </li>
 </ul>
@@ -271,8 +258,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_available - Get current available tokens @limiter: Rate limiter instance. </p>
+<p>SocketRateLimit_available - Get current available tokens @limiter: Rate limiter instance</p>
 <p>Returns: Number of tokens currently available Thread-safe: Yes - uses internal mutex</p>
 <p>Refills bucket based on elapsed time before returning count. </p>
 
@@ -317,8 +303,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_configure - Reconfigure rate limiter @limiter: Rate limiter instance @tokens_per_sec: New token refill rate (0 to keep current) @bucket_size: New bucket capacity (0 to keep current) </p>
+<p>SocketRateLimit_configure - Reconfigure rate limiter @limiter: Rate limiter instance @tokens_per_sec: New token refill rate (0 to keep current) @bucket_size: New bucket capacity (0 to keep current)</p>
 <p>Thread-safe: Yes - uses internal mutex</p>
 <p>Allows runtime reconfiguration. Current tokens are capped to new bucket_size. </p>
 
@@ -347,8 +332,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_debug_live_count - Debug function to get live instance count. </p>
+<p>SocketRateLimit_debug_live_count - Debug function to get live instance count</p>
 <p>Returns: Number of currently allocated rate limiter instances Thread-safe: Yes</p>
 <p>Use for leak detection and debugging. Should be 0 after all instances freed. </p>
 
@@ -377,8 +361,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_free - Free a rate limiter @limiter: Pointer to limiter (will be set to NULL) </p>
+<p>SocketRateLimit_free - Free a rate limiter @limiter: Pointer to limiter (will be set to NULL)</p>
 <p>Thread-safe: Yes (acquires mutex during cleanup)</p>
 <p>Note: Only frees memory if allocated with malloc (arena == NULL). Arena-allocated limiters are freed when arena is disposed. Always destroys the mutex regardless of allocation method. </p>
 
@@ -407,8 +390,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_get_bucket_size - Get current bucket size @limiter: Rate limiter instance. </p>
+<p>SocketRateLimit_get_bucket_size - Get current bucket size @limiter: Rate limiter instance</p>
 <p>Returns: Maximum bucket capacity (0 if invalid/shutdown) Thread-safe: Yes - uses internal mutex </p>
 
 </div>
@@ -436,8 +418,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_get_rate - Get current tokens per second rate @limiter: Rate limiter instance. </p>
+<p>SocketRateLimit_get_rate - Get current tokens per second rate @limiter: Rate limiter instance</p>
 <p>Returns: Tokens per second rate (0 if invalid/shutdown) Thread-safe: Yes - uses internal mutex </p>
 
 </div>
@@ -481,8 +462,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_new - Create a new token bucket rate limiter @arena: Arena for memory allocation (NULL to use malloc) @tokens_per_sec: Token refill rate (tokens added per second) @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec) </p>
+<p>SocketRateLimit_new - Create a new token bucket rate limiter @arena: Arena for memory allocation (NULL to use malloc) @tokens_per_sec: Token refill rate (tokens added per second) @bucket_size: Maximum bucket capacity (burst limit, 0 = use tokens_per_sec)</p>
 <p>Returns: New rate limiter instance Raises: SocketRateLimit_Failed on allocation failure or invalid parameters Thread-safe: Yes - returns new independent instance</p>
 <p>The bucket starts full (at bucket_size tokens). Use bucket_size &gt;= tokens_per_sec for reasonable burst handling. If bucket_size is 0, defaults to tokens_per_sec (1 second burst). </p>
 
@@ -511,8 +491,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_reset - Reset limiter to full bucket @limiter: Rate limiter instance. </p>
+<p>SocketRateLimit_reset - Reset limiter to full bucket @limiter: Rate limiter instance</p>
 <p>Thread-safe: Yes - uses internal mutex</p>
 <p>Resets tokens to bucket_size and updates refill timestamp. Useful after configuration changes or manual intervention. </p>
 
@@ -551,8 +530,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_try_acquire - Try to consume tokens (non-blocking) @limiter: Rate limiter instance @tokens: Number of tokens to consume. </p>
+<p>SocketRateLimit_try_acquire - Try to consume tokens (non-blocking) @limiter: Rate limiter instance @tokens: Number of tokens to consume</p>
 <p>Returns: 1 if tokens acquired successfully, 0 if rate limited Thread-safe: Yes - uses internal mutex</p>
 <p>Refills bucket based on elapsed time, then attempts to consume tokens. Does not block - returns immediately with result. Requesting 0 tokens always succeeds. </p>
 
@@ -591,8 +569,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketRateLimit_wait_time_ms - Calculate wait time for tokens @limiter: Rate limiter instance @tokens: Number of tokens needed. </p>
+<p>SocketRateLimit_wait_time_ms - Calculate wait time for tokens @limiter: Rate limiter instance @tokens: Number of tokens needed</p>
 <p>Returns: Milliseconds to wait before tokens available, or 0 if immediate Returns -1 if tokens &gt; bucket_size (impossible to acquire) Thread-safe: Yes - uses internal mutex</p>
 <p>Does not consume tokens - just calculates wait time. Returns 0 if tokens are already available. </p>
 
@@ -618,8 +595,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>Rate limiter operation failure. </p>
+<p>Rate limiter operation failure </p>
 
 </div>
 </div>

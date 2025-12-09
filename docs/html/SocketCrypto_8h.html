@@ -134,79 +134,56 @@ $(document).ready(function(){initNavTree('SocketCrypto_8h.html',''); initResizab
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a4146e6487ed50541dfd26378ba17803d" id="r_a4146e6487ed50541dfd26378ba17803d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a4146e6487ed50541dfd26378ba17803d">SOCKET_CRYPTO_SHA1_SIZE</a>&#160;&#160;&#160;20</td></tr>
-<tr class="memdesc:a4146e6487ed50541dfd26378ba17803d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketCrypto_8h.html">SocketCrypto.h</a> - Cryptographic Utilities for Socket Library.  <br /></td></tr>
 <tr class="separator:a4146e6487ed50541dfd26378ba17803d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2939672d8ed14c71789b094ddfc906fe" id="r_a2939672d8ed14c71789b094ddfc906fe"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a2939672d8ed14c71789b094ddfc906fe">SOCKET_CRYPTO_SHA256_SIZE</a>&#160;&#160;&#160;32</td></tr>
-<tr class="memdesc:a2939672d8ed14c71789b094ddfc906fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">SHA-256 digest size in bytes.  <br /></td></tr>
 <tr class="separator:a2939672d8ed14c71789b094ddfc906fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a413c2643e3f0988cccbcfd5d34c4cbda" id="r_a413c2643e3f0988cccbcfd5d34c4cbda"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a413c2643e3f0988cccbcfd5d34c4cbda">SOCKET_CRYPTO_MD5_SIZE</a>&#160;&#160;&#160;16</td></tr>
-<tr class="memdesc:a413c2643e3f0988cccbcfd5d34c4cbda"><td class="mdescLeft">&#160;</td><td class="mdescRight">MD5 digest size in bytes.  <br /></td></tr>
 <tr class="separator:a413c2643e3f0988cccbcfd5d34c4cbda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a390b8039fab9556833f72626cbfd47f6" id="r_a390b8039fab9556833f72626cbfd47f6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a390b8039fab9556833f72626cbfd47f6">SOCKET_CRYPTO_WEBSOCKET_GUID</a>&#160;&#160;&#160;&quot;258EAFA5-E914-47DA-95CA-C5AB0DC85B11&quot;</td></tr>
-<tr class="memdesc:a390b8039fab9556833f72626cbfd47f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">WebSocket GUID for Sec-WebSocket-Accept computation (RFC 6455 Section 4.2.2)  <br /></td></tr>
 <tr class="separator:a390b8039fab9556833f72626cbfd47f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4bf259fd90694f37b713c62bf8807312" id="r_a4bf259fd90694f37b713c62bf8807312"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a4bf259fd90694f37b713c62bf8807312">SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE</a>&#160;&#160;&#160;25</td></tr>
-<tr class="memdesc:a4bf259fd90694f37b713c62bf8807312"><td class="mdescLeft">&#160;</td><td class="mdescRight">WebSocket key size (16 random bytes, base64 encoded = 24 chars + null)  <br /></td></tr>
 <tr class="separator:a4bf259fd90694f37b713c62bf8807312"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a90800f80ea4bcfa066bee419fd6b42a9" id="r_a90800f80ea4bcfa066bee419fd6b42a9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a90800f80ea4bcfa066bee419fd6b42a9">SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE</a>&#160;&#160;&#160;29</td></tr>
-<tr class="memdesc:a90800f80ea4bcfa066bee419fd6b42a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">WebSocket accept size (SHA1 base64 encoded = 28 chars + null)  <br /></td></tr>
 <tr class="separator:a90800f80ea4bcfa066bee419fd6b42a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ab852f17f17eb272912f698bead0b8dc7" id="r_ab852f17f17eb272912f698bead0b8dc7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#ab852f17f17eb272912f698bead0b8dc7">SocketCrypto_sha1</a> (const void *input, size_t input_len, unsigned char output[20])</td></tr>
-<tr class="memdesc:ab852f17f17eb272912f698bead0b8dc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_sha1 - Compute SHA-1 hash (RFC 3174) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes)  <br /></td></tr>
 <tr class="separator:ab852f17f17eb272912f698bead0b8dc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91324fc869353b60385a325367ee88db" id="r_a91324fc869353b60385a325367ee88db"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a91324fc869353b60385a325367ee88db">SocketCrypto_sha256</a> (const void *input, size_t input_len, unsigned char output[32])</td></tr>
-<tr class="memdesc:a91324fc869353b60385a325367ee88db"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_sha256 - Compute SHA-256 hash (FIPS 180-4) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)  <br /></td></tr>
 <tr class="separator:a91324fc869353b60385a325367ee88db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac843ec3b2ea1885955d9866a9cba7ac4" id="r_ac843ec3b2ea1885955d9866a9cba7ac4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#ac843ec3b2ea1885955d9866a9cba7ac4">SocketCrypto_md5</a> (const void *input, size_t input_len, unsigned char output[16])</td></tr>
-<tr class="memdesc:ac843ec3b2ea1885955d9866a9cba7ac4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_md5 - Compute MD5 hash (RFC 1321) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes)  <br /></td></tr>
 <tr class="separator:ac843ec3b2ea1885955d9866a9cba7ac4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af63711dccfbba5ed31224035cb541d37" id="r_af63711dccfbba5ed31224035cb541d37"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#af63711dccfbba5ed31224035cb541d37">SocketCrypto_hmac_sha256</a> (const void *key, size_t key_len, const void *data, size_t data_len, unsigned char output[32])</td></tr>
-<tr class="memdesc:af63711dccfbba5ed31224035cb541d37"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_hmac_sha256 - Compute HMAC-SHA256 @key: HMAC key @key_len: Key length in bytes @data: Input data @data_len: Data length in bytes @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)  <br /></td></tr>
 <tr class="separator:af63711dccfbba5ed31224035cb541d37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae97600ec3667d60bfa5cbfa1d945e0a9" id="r_ae97600ec3667d60bfa5cbfa1d945e0a9"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#ae97600ec3667d60bfa5cbfa1d945e0a9">SocketCrypto_base64_encode</a> (const void *input, size_t input_len, char *output, size_t output_size)</td></tr>
-<tr class="memdesc:ae97600ec3667d60bfa5cbfa1d945e0a9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_base64_encode - Base64 encode data @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer for encoded string @output_size: Size of output buffer in bytes.  <br /></td></tr>
 <tr class="separator:ae97600ec3667d60bfa5cbfa1d945e0a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf7e5b5acebdb206c46b4e848b3108b8" id="r_aaf7e5b5acebdb206c46b4e848b3108b8"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#aaf7e5b5acebdb206c46b4e848b3108b8">SocketCrypto_base64_decode</a> (const char *input, size_t input_len, unsigned char *output, size_t output_size)</td></tr>
-<tr class="memdesc:aaf7e5b5acebdb206c46b4e848b3108b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_base64_decode - Base64 decode data @input: Base64 encoded string @input_len: Length of input (0 to auto-detect from null terminator) @output: Output buffer for decoded data @output_size: Size of output buffer in bytes.  <br /></td></tr>
 <tr class="separator:aaf7e5b5acebdb206c46b4e848b3108b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0db3f49e65df22cd5824c3a65995800f" id="r_a0db3f49e65df22cd5824c3a65995800f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a0db3f49e65df22cd5824c3a65995800f">SocketCrypto_base64_encoded_size</a> (size_t input_len)</td></tr>
-<tr class="memdesc:a0db3f49e65df22cd5824c3a65995800f"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_base64_encoded_size - Calculate required encoded buffer size @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)  <br /></td></tr>
 <tr class="separator:a0db3f49e65df22cd5824c3a65995800f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1cf99c5eeadfeec437513ae0cd63991b" id="r_a1cf99c5eeadfeec437513ae0cd63991b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a1cf99c5eeadfeec437513ae0cd63991b">SocketCrypto_base64_decoded_size</a> (size_t input_len)</td></tr>
-<tr class="memdesc:a1cf99c5eeadfeec437513ae0cd63991b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_base64_decoded_size - Calculate maximum decoded size @input_len: Length of Base64 string.  <br /></td></tr>
 <tr class="separator:a1cf99c5eeadfeec437513ae0cd63991b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8dd87ea9b8cd776e3434139d6339fb5" id="r_af8dd87ea9b8cd776e3434139d6339fb5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#af8dd87ea9b8cd776e3434139d6339fb5">SocketCrypto_hex_encode</a> (const void *input, size_t input_len, char *output, int lowercase)</td></tr>
-<tr class="memdesc:af8dd87ea9b8cd776e3434139d6339fb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_hex_encode - Encode binary data as hexadecimal @input: Input data @input_len: Length of input in bytes @output: Output buffer (must be at least input_len * 2 + 1 bytes) @lowercase: Use lowercase hex digits (0) or uppercase (non-zero)  <br /></td></tr>
 <tr class="separator:af8dd87ea9b8cd776e3434139d6339fb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48f3e3abb4afe6f9031f1df9c0796718" id="r_a48f3e3abb4afe6f9031f1df9c0796718"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a48f3e3abb4afe6f9031f1df9c0796718">SocketCrypto_hex_decode</a> (const char *input, size_t input_len, unsigned char *output, size_t output_capacity)</td></tr>
-<tr class="memdesc:a48f3e3abb4afe6f9031f1df9c0796718"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_hex_decode - Decode hexadecimal string @input: Hex string @input_len: Length of string (must be even) @output: Output buffer @output_capacity: Capacity of output buffer in bytes (must be at least input_len / 2)  <br /></td></tr>
 <tr class="separator:a48f3e3abb4afe6f9031f1df9c0796718"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae153fb5408e633479d6a61ac233d3676" id="r_ae153fb5408e633479d6a61ac233d3676"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#ae153fb5408e633479d6a61ac233d3676">SocketCrypto_random_bytes</a> (void *output, size_t len)</td></tr>
-<tr class="memdesc:ae153fb5408e633479d6a61ac233d3676"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_random_bytes - Generate cryptographically secure random bytes @output: Output buffer @len: Number of bytes to generate.  <br /></td></tr>
 <tr class="separator:ae153fb5408e633479d6a61ac233d3676"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5028bf521bc54469347820c429b3b64e" id="r_a5028bf521bc54469347820c429b3b64e"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a5028bf521bc54469347820c429b3b64e">SocketCrypto_random_uint32</a> (void)</td></tr>
-<tr class="memdesc:a5028bf521bc54469347820c429b3b64e"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_random_uint32 - Generate random 32-bit integer.  <br /></td></tr>
 <tr class="separator:a5028bf521bc54469347820c429b3b64e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a44e9f5e169c8359a4bcd57a0c08e36" id="r_a0a44e9f5e169c8359a4bcd57a0c08e36"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a0a44e9f5e169c8359a4bcd57a0c08e36">SocketCrypto_websocket_accept</a> (const char *client_key, char output[29])</td></tr>
-<tr class="memdesc:a0a44e9f5e169c8359a4bcd57a0c08e36"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_websocket_accept - Compute Sec-WebSocket-Accept value @client_key: Sec-WebSocket-Key from client request (24 chars base64) @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes)  <br /></td></tr>
 <tr class="separator:a0a44e9f5e169c8359a4bcd57a0c08e36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a39b2220140687eefcc86e920b6bf9731" id="r_a39b2220140687eefcc86e920b6bf9731"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a39b2220140687eefcc86e920b6bf9731">SocketCrypto_websocket_key</a> (char output[25])</td></tr>
-<tr class="memdesc:a39b2220140687eefcc86e920b6bf9731"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_websocket_key - Generate random Sec-WebSocket-Key @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes)  <br /></td></tr>
 <tr class="separator:a39b2220140687eefcc86e920b6bf9731"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5f9b65e71620529159130c81b6d0dba" id="r_ae5f9b65e71620529159130c81b6d0dba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#ae5f9b65e71620529159130c81b6d0dba">SocketCrypto_secure_compare</a> (const void *a, const void *b, size_t len)</td></tr>
-<tr class="memdesc:ae5f9b65e71620529159130c81b6d0dba"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_secure_compare - Constant-time memory comparison <em></em>: First buffer <b></b>: Second buffer @len: Length to compare.  <br /></td></tr>
 <tr class="separator:ae5f9b65e71620529159130c81b6d0dba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a00f94677d393f24e0b0c549be7bbcdf2" id="r_a00f94677d393f24e0b0c549be7bbcdf2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a00f94677d393f24e0b0c549be7bbcdf2">SocketCrypto_secure_clear</a> (void *ptr, size_t len)</td></tr>
-<tr class="memdesc:a00f94677d393f24e0b0c549be7bbcdf2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_secure_clear - Securely clear sensitive data @ptr: Buffer to clear @len: Length of buffer.  <br /></td></tr>
 <tr class="separator:a00f94677d393f24e0b0c549be7bbcdf2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a1b0be74d809b6dc7d119ef835fd21fc9" id="r_a1b0be74d809b6dc7d119ef835fd21fc9"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCrypto_8h.html#a1b0be74d809b6dc7d119ef835fd21fc9">SocketCrypto_Failed</a></td></tr>
-<tr class="memdesc:a1b0be74d809b6dc7d119ef835fd21fc9"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketCrypto_Failed - General cryptographic operation failure.  <br /></td></tr>
 <tr class="separator:a1b0be74d809b6dc7d119ef835fd21fc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -221,8 +198,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>MD5 digest size in bytes. </p>
+<p>MD5 digest size in bytes </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketCrypto_8h_source.html#l00049">49</a> of file <a class="el" href="SocketCrypto_8h_source.html">SocketCrypto.h</a>.</p>
 
@@ -239,8 +215,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="SocketCrypto_8h.html">SocketCrypto.h</a> - Cryptographic Utilities for Socket Library. </p>
+<p><a class="el" href="SocketCrypto_8h.html">SocketCrypto.h</a> - Cryptographic Utilities for Socket Library</p>
 <p>Part of the Socket Library</p>
 <p>Provides cryptographic primitives required for HTTP/2, WebSocket, and security features. Thin wrappers around OpenSSL with fallbacks when TLS is disabled.</p>
 <p>Features:</p><ul>
@@ -274,8 +249,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>SHA-256 digest size in bytes. </p>
+<p>SHA-256 digest size in bytes </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketCrypto_8h_source.html#l00046">46</a> of file <a class="el" href="SocketCrypto_8h_source.html">SocketCrypto.h</a>.</p>
 
@@ -292,7 +266,6 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>WebSocket accept size (SHA1 base64 encoded = 28 chars + null) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketCrypto_8h_source.html#l00058">58</a> of file <a class="el" href="SocketCrypto_8h_source.html">SocketCrypto.h</a>.</p>
@@ -310,7 +283,6 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>WebSocket GUID for Sec-WebSocket-Accept computation (RFC 6455 Section 4.2.2) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketCrypto_8h_source.html#l00052">52</a> of file <a class="el" href="SocketCrypto_8h_source.html">SocketCrypto.h</a>.</p>
@@ -328,7 +300,6 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>WebSocket key size (16 random bytes, base64 encoded = 24 chars + null) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketCrypto_8h_source.html#l00055">55</a> of file <a class="el" href="SocketCrypto_8h_source.html">SocketCrypto.h</a>.</p>
@@ -381,8 +352,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_base64_decode - Base64 decode data @input: Base64 encoded string @input_len: Length of input (0 to auto-detect from null terminator) @output: Output buffer for decoded data @output_size: Size of output buffer in bytes. </p>
+<p>SocketCrypto_base64_decode - Base64 decode data @input: Base64 encoded string @input_len: Length of input (0 to auto-detect from null terminator) @output: Output buffer for decoded data @output_size: Size of output buffer in bytes</p>
 <p>Decodes Base64 string to binary data.</p>
 <p>Handles:</p><ul>
 <li>Standard Base64 alphabet (A-Za-z0-9+/)</li>
@@ -417,8 +387,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_base64_decoded_size - Calculate maximum decoded size @input_len: Length of Base64 string. </p>
+<p>SocketCrypto_base64_decoded_size - Calculate maximum decoded size @input_len: Length of Base64 string</p>
 <p>Returns: Maximum decoded size (actual may be less due to padding) Thread-safe: Yes </p>
 
 </div>
@@ -468,10 +437,9 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_base64_encode - Base64 encode data @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer for encoded string @output_size: Size of output buffer in bytes. </p>
+<p>SocketCrypto_base64_encode - Base64 encode data @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer for encoded string @output_size: Size of output buffer in bytes</p>
 <p>Encodes binary data as Base64 string. Output is null-terminated.</p>
-<p>Required buffer size: ((input_len + 2) / 3) * 4 + 1 Use <a class="el" href="SocketCrypto_8h.html#a0db3f49e65df22cd5824c3a65995800f" title="SocketCrypto_base64_encoded_size - Calculate required encoded buffer size @input_len: Length of input...">SocketCrypto_base64_encoded_size()</a> to calculate.</p>
+<p>Required buffer size: ((input_len + 2) / 3) * 4 + 1 Use <a class="el" href="SocketCrypto_8h.html#a0db3f49e65df22cd5824c3a65995800f">SocketCrypto_base64_encoded_size()</a> to calculate.</p>
 <p>Returns: Length of encoded string (excluding null terminator), or -1 on error Thread-safe: Yes </p>
 
 </div>
@@ -499,8 +467,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_base64_encoded_size - Calculate required encoded buffer size @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) </p>
+<p>SocketCrypto_base64_encoded_size - Calculate required encoded buffer size @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION)</p>
 <p>Returns: Required buffer size including null terminator Thread-safe: Yes </p>
 
 </div>
@@ -550,8 +517,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_hex_decode - Decode hexadecimal string @input: Hex string @input_len: Length of string (must be even) @output: Output buffer @output_capacity: Capacity of output buffer in bytes (must be at least input_len / 2) </p>
+<p>SocketCrypto_hex_decode - Decode hexadecimal string @input: Hex string @input_len: Length of string (must be even) @output: Output buffer @output_capacity: Capacity of output buffer in bytes (must be at least input_len / 2)</p>
 <p>Decodes hexadecimal string to binary data. Accepts both uppercase and lowercase hex digits.</p>
 <p>Returns: Decoded length (min(input_len / 2, output_capacity)), or -1 on error (invalid input, odd length, insufficient capacity) Thread-safe: Yes </p>
 
@@ -602,8 +568,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_hex_encode - Encode binary data as hexadecimal @input: Input data @input_len: Length of input in bytes @output: Output buffer (must be at least input_len * 2 + 1 bytes) @lowercase: Use lowercase hex digits (0) or uppercase (non-zero) </p>
+<p>SocketCrypto_hex_encode - Encode binary data as hexadecimal @input: Input data @input_len: Length of input in bytes @output: Output buffer (must be at least input_len * 2 + 1 bytes) @lowercase: Use lowercase hex digits (0) or uppercase (non-zero)</p>
 <p>Encodes binary data as hexadecimal string. Output is null-terminated.</p>
 <p>Thread-safe: Yes </p>
 
@@ -660,8 +625,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_hmac_sha256 - Compute HMAC-SHA256 @key: HMAC key @key_len: Key length in bytes @data: Input data @data_len: Data length in bytes @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes) </p>
+<p>SocketCrypto_hmac_sha256 - Compute HMAC-SHA256 @key: HMAC key @key_len: Key length in bytes @data: Input data @data_len: Data length in bytes @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)</p>
 <p>Computes HMAC-SHA256 message authentication code.</p>
 <p>Used for: Cookie signing, session tokens, message authentication</p>
 <p>Thread-safe: Yes Raises: SocketCrypto_Failed on error or if TLS not available </p>
@@ -707,8 +671,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_md5 - Compute MD5 hash (RFC 1321) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes) </p>
+<p>SocketCrypto_md5 - Compute MD5 hash (RFC 1321) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes)</p>
 <p>Computes the MD5 message digest of the input data.</p>
 <p>Security: MD5 is cryptographically broken. Only use where required by specification (e.g., HTTP Digest authentication RFC 7616).</p>
 <p>Thread-safe: Yes Raises: SocketCrypto_Failed on error or if TLS not available </p>
@@ -748,8 +711,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_random_bytes - Generate cryptographically secure random bytes @output: Output buffer @len: Number of bytes to generate. </p>
+<p>SocketCrypto_random_bytes - Generate cryptographically secure random bytes @output: Output buffer @len: Number of bytes to generate</p>
 <p>Generates cryptographically secure random bytes using OpenSSL RAND_bytes() or /dev/urandom fallback when TLS is not available.</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: Yes </p>
 
@@ -778,8 +740,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_random_uint32 - Generate random 32-bit integer. </p>
+<p>SocketCrypto_random_uint32 - Generate random 32-bit integer</p>
 <p>Returns: Random uint32_t value Thread-safe: Yes Raises: SocketCrypto_Failed on RNG failure </p>
 
 </div>
@@ -817,8 +778,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_secure_clear - Securely clear sensitive data @ptr: Buffer to clear @len: Length of buffer. </p>
+<p>SocketCrypto_secure_clear - Securely clear sensitive data @ptr: Buffer to clear @len: Length of buffer</p>
 <p>Clears memory in a way that won't be optimized away by the compiler. Use for clearing passwords, keys, and other sensitive data.</p>
 <p>Thread-safe: Yes </p>
 
@@ -863,8 +823,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_secure_compare - Constant-time memory comparison <em></em>: First buffer <b></b>: Second buffer @len: Length to compare. </p>
+<p>SocketCrypto_secure_compare - Constant-time memory comparison <em></em>: First buffer <b></b>: Second buffer @len: Length to compare</p>
 <p>Compares two buffers in constant time to prevent timing attacks. Use for comparing MACs, hashes, or other security-sensitive data.</p>
 <p>Returns: 0 if equal, non-zero if different Thread-safe: Yes </p>
 
@@ -909,8 +868,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_sha1 - Compute SHA-1 hash (RFC 3174) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes) </p>
+<p>SocketCrypto_sha1 - Compute SHA-1 hash (RFC 3174) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes)</p>
 <p>Computes the SHA-1 message digest of the input data.</p>
 <p>Security: SHA-1 is cryptographically broken for signatures but acceptable for WebSocket Sec-WebSocket-Accept computation per RFC 6455.</p>
 <p>Thread-safe: Yes Raises: SocketCrypto_Failed on error or if TLS not available </p>
@@ -956,8 +914,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_sha256 - Compute SHA-256 hash (FIPS 180-4) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes) </p>
+<p>SocketCrypto_sha256 - Compute SHA-256 hash (FIPS 180-4) @input: Input data @input_len: Length of input data in bytes (must not exceed SOCKET_SECURITY_MAX_ALLOCATION) @output: Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes)</p>
 <p>Computes the SHA-256 message digest of the input data.</p>
 <p>Thread-safe: Yes Raises: SocketCrypto_Failed on error or if TLS not available </p>
 
@@ -996,8 +953,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_websocket_accept - Compute Sec-WebSocket-Accept value @client_key: Sec-WebSocket-Key from client request (24 chars base64) @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes) </p>
+<p>SocketCrypto_websocket_accept - Compute Sec-WebSocket-Accept value @client_key: Sec-WebSocket-Key from client request (24 chars base64) @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes)</p>
 <p>Computes: base64(SHA1(client_key + GUID)) Per RFC 6455 Section 4.2.2</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: Yes </p>
 
@@ -1026,8 +982,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_websocket_key - Generate random Sec-WebSocket-Key @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes) </p>
+<p>SocketCrypto_websocket_key - Generate random Sec-WebSocket-Key @output: Output buffer (must be at least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes)</p>
 <p>Generates 16 random bytes and base64 encodes to 24 chars + null. Per RFC 6455 Section 4.1</p>
 <p>Returns: 0 on success, -1 on error Thread-safe: Yes </p>
 
@@ -1053,8 +1008,7 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketCrypto_Failed - General cryptographic operation failure. </p>
+<p>SocketCrypto_Failed - General cryptographic operation failure</p>
 <p>Raised when:</p><ul>
 <li>OpenSSL functions fail</li>
 <li>Invalid input parameters</li>

@@ -139,43 +139,30 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ad65971e86ea8dcbaa79e4e457612d3a6" id="r_ad65971e86ea8dcbaa79e4e457612d3a6"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#ad65971e86ea8dcbaa79e4e457612d3a6">socket_send_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const void *buf, size_t len, int flags)</td></tr>
-<tr class="memdesc:ad65971e86ea8dcbaa79e4e457612d3a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_send_internal - Internal send operation (TLS-aware) @socket: Socket instance @buf: Data to send @len: Length of data @flags: Send flags (MSG_NOSIGNAL, etc.) Returns: Bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) Routes through SSL_write() if TLS is enabled, otherwise uses send().  <br /></td></tr>
 <tr class="separator:ad65971e86ea8dcbaa79e4e457612d3a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12c16a6d184c96f82dd1185d315f29e2" id="r_a12c16a6d184c96f82dd1185d315f29e2"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a12c16a6d184c96f82dd1185d315f29e2">socket_recv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, void *buf, size_t len, int flags)</td></tr>
-<tr class="memdesc:a12c16a6d184c96f82dd1185d315f29e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_recv_internal - Internal receive operation (TLS-aware) @socket: Socket instance @buf: Buffer for received data @len: Buffer size @flags: Receive flags Returns: Bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) Routes through SSL_read() if TLS is enabled, otherwise uses recv().  <br /></td></tr>
 <tr class="separator:a12c16a6d184c96f82dd1185d315f29e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a714a501a951663d0248972ef6cc75818" id="r_a714a501a951663d0248972ef6cc75818"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a714a501a951663d0248972ef6cc75818">socket_sendv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, const struct iovec *iov, int iovcnt, int flags)</td></tr>
-<tr class="memdesc:a714a501a951663d0248972ef6cc75818"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_sendv_internal - Internal scatter/gather send (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Send flags Returns: Total bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) For TLS: Copies iov to temp buffer, calls SSL_write().  <br /></td></tr>
 <tr class="separator:a714a501a951663d0248972ef6cc75818"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7fc21bc639d4077480b1d2b7c2bef7e" id="r_aa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#aa7fc21bc639d4077480b1d2b7c2bef7e">socket_recvv_internal</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, struct iovec *iov, int iovcnt, int flags)</td></tr>
-<tr class="memdesc:aa7fc21bc639d4077480b1d2b7c2bef7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_recvv_internal - Internal scatter/gather receive (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Receive flags Returns: Total bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) For TLS: Calls SSL_read() into first iov, advances manually.  <br /></td></tr>
 <tr class="separator:aa7fc21bc639d4077480b1d2b7c2bef7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc70395a3d965153d4502752c496544e" id="r_abc70395a3d965153d4502752c496544e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#abc70395a3d965153d4502752c496544e">socket_is_tls_enabled</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:abc70395a3d965153d4502752c496544e"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_is_tls_enabled - Check if TLS is enabled on socket @socket: Socket instance (read-only) Returns: 1 if TLS is enabled, 0 otherwise Thread-safe: Yes (read-only flag)  <br /></td></tr>
 <tr class="separator:abc70395a3d965153d4502752c496544e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a665b41107ebf850f631386135fa58791" id="r_a665b41107ebf850f631386135fa58791"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a665b41107ebf850f631386135fa58791">socket_tls_want_read</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a665b41107ebf850f631386135fa58791"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_tls_want_read - Check if TLS operation wants read @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_READ pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake.  <br /></td></tr>
 <tr class="separator:a665b41107ebf850f631386135fa58791"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7a7fe487c65b17fdea95a118bc98a97" id="r_ae7a7fe487c65b17fdea95a118bc98a97"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#ae7a7fe487c65b17fdea95a118bc98a97">socket_tls_want_write</a> (const <a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:ae7a7fe487c65b17fdea95a118bc98a97"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_tls_want_write - Check if TLS operation wants write @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_WRITE pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake.  <br /></td></tr>
 <tr class="separator:ae7a7fe487c65b17fdea95a118bc98a97"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92f7b61974c6adb4ac454b4fb671c6b8" id="r_a92f7b61974c6adb4ac454b4fb671c6b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a92f7b61974c6adb4ac454b4fb671c6b8">socket_handle_ssl_error</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket, SSL *ssl, int ssl_result)</td></tr>
-<tr class="memdesc:a92f7b61974c6adb4ac454b4fb671c6b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_handle_ssl_error - Helper to handle SSL error codes @socket: Socket instance @ssl: SSL object @ssl_result: Result from SSL operation  <br /></td></tr>
 <tr class="separator:a92f7b61974c6adb4ac454b4fb671c6b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a326db6a48e839e56bd1599fc3a651723" id="r_a326db6a48e839e56bd1599fc3a651723"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a326db6a48e839e56bd1599fc3a651723">socket_get_ssl</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a326db6a48e839e56bd1599fc3a651723"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_get_ssl - Get SSL object from socket @socket: Socket instance Returns: SSL object or NULL if TLS not enabled Thread-safe: Yes (read-only access)  <br /></td></tr>
 <tr class="separator:a326db6a48e839e56bd1599fc3a651723"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a10ddc2a7b61b559013a79f7d1297d409" id="r_a10ddc2a7b61b559013a79f7d1297d409"><td class="memItemLeft" align="right" valign="top">SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a10ddc2a7b61b559013a79f7d1297d409">socket_validate_tls_ready</a> (<a class="el" href="Socket_8h.html#a1bcdb0c6d5827c2493bd622fa7751f14">Socket_T</a> socket)</td></tr>
-<tr class="memdesc:a10ddc2a7b61b559013a79f7d1297d409"><td class="mdescLeft">&#160;</td><td class="mdescRight">socket_validate_tls_ready - Validate TLS is ready for I/O @socket: Socket instance Returns: SSL pointer if ready Raises: Socket_Failed or SocketTLS_HandshakeFailed if not ready Thread-safe: Yes (operates on single socket) Shared helper for TLS I/O functions.  <br /></td></tr>
 <tr class="separator:a10ddc2a7b61b559013a79f7d1297d409"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acc6b10100f449aef91c884fcebc9f9a5" id="r_acc6b10100f449aef91c884fcebc9f9a5"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#acc6b10100f449aef91c884fcebc9f9a5">socketio_is_wouldblock</a> (void)</td></tr>
-<tr class="memdesc:acc6b10100f449aef91c884fcebc9f9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">socketio_is_wouldblock - Check if errno indicates operation would block Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise Thread-safe: Yes (reads errno) Use this instead of inline errno checks for consistency.  <br /></td></tr>
 <tr class="separator:acc6b10100f449aef91c884fcebc9f9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74bde3935e0a14d633eb374dada531d1" id="r_a74bde3935e0a14d633eb374dada531d1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a74bde3935e0a14d633eb374dada531d1">socketio_is_connection_closed_send</a> (void)</td></tr>
-<tr class="memdesc:a74bde3935e0a14d633eb374dada531d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">socketio_is_connection_closed_send - Check if send error indicates closed Returns: 1 if EPIPE/ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after send() failure to check for connection close.  <br /></td></tr>
 <tr class="separator:a74bde3935e0a14d633eb374dada531d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9ed3e966870af6d524f8956253594ef4" id="r_a9ed3e966870af6d524f8956253594ef4"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketIO_8h.html#a9ed3e966870af6d524f8956253594ef4">socketio_is_connection_closed_recv</a> (void)</td></tr>
-<tr class="memdesc:a9ed3e966870af6d524f8956253594ef4"><td class="mdescLeft">&#160;</td><td class="mdescRight">socketio_is_connection_closed_recv - Check if recv error indicates closed Returns: 1 if ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after recv() failure to check for connection close.  <br /></td></tr>
 <tr class="separator:a9ed3e966870af6d524f8956253594ef4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -219,7 +206,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socket_get_ssl - Get SSL object from socket @socket: Socket instance Returns: SSL object or NULL if TLS not enabled Thread-safe: Yes (read-only access) </p>
 
 </div>
@@ -263,9 +249,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>socket_handle_ssl_error - Helper to handle SSL error codes @socket: Socket instance @ssl: SSL object @ssl_result: Result from SSL operation </p>
-<dl class="section return"><dt>Returns</dt><dd>: 0 on success, -1 on error (sets errno) Thread-safe: Yes (operates on single socket) Maps SSL error codes to errno values and updates socket state. Used by TLS-aware I/O functions for consistent error handling. </dd></dl>
+<p>socket_handle_ssl_error - Helper to handle SSL error codes @socket: Socket instance @ssl: SSL object @ssl_result: Result from SSL operation </p><dl class="section return"><dt>Returns</dt><dd>: 0 on success, -1 on error (sets errno) Thread-safe: Yes (operates on single socket) Maps SSL error codes to errno values and updates socket state. Used by TLS-aware I/O functions for consistent error handling. </dd></dl>
 
 </div>
 </div>
@@ -292,7 +276,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socket_is_tls_enabled - Check if TLS is enabled on socket @socket: Socket instance (read-only) Returns: 1 if TLS is enabled, 0 otherwise Thread-safe: Yes (read-only flag) </p>
 
 </div>
@@ -342,9 +325,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>socket_recv_internal - Internal receive operation (TLS-aware) @socket: Socket instance @buf: Buffer for received data @len: Buffer size @flags: Receive flags Returns: Bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) Routes through SSL_read() if TLS is enabled, otherwise uses recv(). </p>
-<p>Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE). </p>
+<p>socket_recv_internal - Internal receive operation (TLS-aware) @socket: Socket instance @buf: Buffer for received data @len: Buffer size @flags: Receive flags Returns: Bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) Routes through SSL_read() if TLS is enabled, otherwise uses recv(). Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE). </p>
 
 </div>
 </div>
@@ -393,9 +374,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>socket_recvv_internal - Internal scatter/gather receive (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Receive flags Returns: Total bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) For TLS: Calls SSL_read() into first iov, advances manually. </p>
-<p>For non-TLS: Uses readv() directly. </p>
+<p>socket_recvv_internal - Internal scatter/gather receive (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Receive flags Returns: Total bytes received or 0 if would block Raises: Socket_Failed or SocketTLS_Failed, Socket_Closed on EOF Thread-safe: Yes (operates on single socket) For TLS: Calls SSL_read() into first iov, advances manually. For non-TLS: Uses readv() directly. </p>
 
 </div>
 </div>
@@ -444,9 +423,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>socket_send_internal - Internal send operation (TLS-aware) @socket: Socket instance @buf: Data to send @len: Length of data @flags: Send flags (MSG_NOSIGNAL, etc.) Returns: Bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) Routes through SSL_write() if TLS is enabled, otherwise uses send(). </p>
-<p>Handles partial sends and EAGAIN mapping. </p>
+<p>socket_send_internal - Internal send operation (TLS-aware) @socket: Socket instance @buf: Data to send @len: Length of data @flags: Send flags (MSG_NOSIGNAL, etc.) Returns: Bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) Routes through SSL_write() if TLS is enabled, otherwise uses send(). Handles partial sends and EAGAIN mapping. </p>
 
 </div>
 </div>
@@ -495,9 +472,7 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>socket_sendv_internal - Internal scatter/gather send (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Send flags Returns: Total bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) For TLS: Copies iov to temp buffer, calls SSL_write(). </p>
-<p>For non-TLS: Uses writev() directly. Allocates temp buffer via socket-&gt;arena if needed. </p>
+<p>socket_sendv_internal - Internal scatter/gather send (TLS-aware) @socket: Socket instance @iov: Array of iovec structures @iovcnt: Number of iovec structures @flags: Send flags Returns: Total bytes sent or 0 if would block Raises: Socket_Failed or SocketTLS_Failed Thread-safe: Yes (operates on single socket) For TLS: Copies iov to temp buffer, calls SSL_write(). For non-TLS: Uses writev() directly. Allocates temp buffer via socket-&gt;arena if needed. </p>
 
 </div>
 </div>
@@ -524,7 +499,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socket_tls_want_read - Check if TLS operation wants read @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_READ pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake. </p>
 
 </div>
@@ -552,7 +526,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socket_tls_want_write - Check if TLS operation wants write @socket: Socket instance (read-only) Returns: 1 if SSL_ERROR_WANT_WRITE pending, 0 otherwise Thread-safe: Yes (read last SSL error) Used by SocketPoll to adjust event masks during handshake. </p>
 
 </div>
@@ -580,7 +553,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socket_validate_tls_ready - Validate TLS is ready for I/O @socket: Socket instance Returns: SSL pointer if ready Raises: Socket_Failed or SocketTLS_HandshakeFailed if not ready Thread-safe: Yes (operates on single socket) Shared helper for TLS I/O functions. </p>
 
 </div>
@@ -608,7 +580,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socketio_is_connection_closed_recv - Check if recv error indicates closed Returns: 1 if ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after recv() failure to check for connection close. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00169">169</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
@@ -638,7 +609,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socketio_is_connection_closed_send - Check if send error indicates closed Returns: 1 if EPIPE/ECONNRESET, 0 otherwise Thread-safe: Yes (reads errno) Use after send() failure to check for connection close. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00157">157</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>
@@ -668,7 +638,6 @@ Functions</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
 <p>socketio_is_wouldblock - Check if errno indicates operation would block Returns: 1 if EAGAIN/EWOULDBLOCK, 0 otherwise Thread-safe: Yes (reads errno) Use this instead of inline errno checks for consistency. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketIO_8h_source.html#l00145">145</a> of file <a class="el" href="SocketIO_8h_source.html">SocketIO.h</a>.</p>

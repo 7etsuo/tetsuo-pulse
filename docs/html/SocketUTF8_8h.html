@@ -135,34 +135,25 @@ $(document).ready(function(){initNavTree('SocketUTF8_8h.html',''); initResizable
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketUTF8__State" id="r_structSocketUTF8__State"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#structSocketUTF8__State">SocketUTF8_State</a></td></tr>
-<tr class="memdesc:structSocketUTF8__State"><td class="mdescLeft">&#160;</td><td class="mdescRight">UTF-8 incremental validator state Public structure for stack allocation - initialized via <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5" title="SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be...">SocketUTF8_init()</a>  <a href="SocketUTF8_8h.html#structSocketUTF8__State">More...</a><br /></td></tr>
 <tr class="separator:structSocketUTF8__State"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ac2c24c8a574da982e47bc14c90c51fcb" id="r_ac2c24c8a574da982e47bc14c90c51fcb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#ac2c24c8a574da982e47bc14c90c51fcb">SOCKET_UTF8_MAX_BYTES</a>&#160;&#160;&#160;4</td></tr>
-<tr class="memdesc:ac2c24c8a574da982e47bc14c90c51fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="SocketUTF8_8h.html">SocketUTF8.h</a> - UTF-8 Validation for Socket Library.  <br /></td></tr>
 <tr class="separator:ac2c24c8a574da982e47bc14c90c51fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9c7795dd42c45a40d759b981ea2a124" id="r_aa9c7795dd42c45a40d759b981ea2a124"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#aa9c7795dd42c45a40d759b981ea2a124">SOCKET_UTF8_MAX_CODEPOINT</a>&#160;&#160;&#160;0x10FFFF</td></tr>
-<tr class="memdesc:aa9c7795dd42c45a40d759b981ea2a124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum valid Unicode code point.  <br /></td></tr>
 <tr class="separator:aa9c7795dd42c45a40d759b981ea2a124"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93252af0c4c16e848f1faad437679dea" id="r_a93252af0c4c16e848f1faad437679dea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a93252af0c4c16e848f1faad437679dea">SOCKET_UTF8_SURROGATE_MIN</a>&#160;&#160;&#160;0xD800</td></tr>
-<tr class="memdesc:a93252af0c4c16e848f1faad437679dea"><td class="mdescLeft">&#160;</td><td class="mdescRight">First UTF-16 surrogate code point (invalid in UTF-8)  <br /></td></tr>
 <tr class="separator:a93252af0c4c16e848f1faad437679dea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45fdc9df7fba5033d071135c934b8547" id="r_a45fdc9df7fba5033d071135c934b8547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a45fdc9df7fba5033d071135c934b8547">SOCKET_UTF8_SURROGATE_MAX</a>&#160;&#160;&#160;0xDFFF</td></tr>
-<tr class="memdesc:a45fdc9df7fba5033d071135c934b8547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Last UTF-16 surrogate code point (invalid in UTF-8)  <br /></td></tr>
 <tr class="separator:a45fdc9df7fba5033d071135c934b8547"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79465648f060b79ec961cc626975a533" id="r_a79465648f060b79ec961cc626975a533"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a79465648f060b79ec961cc626975a533">SOCKET_UTF8_1BYTE_MAX</a>&#160;&#160;&#160;0x7F</td></tr>
-<tr class="memdesc:a79465648f060b79ec961cc626975a533"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 1 byte (ASCII range)  <br /></td></tr>
 <tr class="separator:a79465648f060b79ec961cc626975a533"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a93e8c5ea6de08b28ab080057cd17423c" id="r_a93e8c5ea6de08b28ab080057cd17423c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a93e8c5ea6de08b28ab080057cd17423c">SOCKET_UTF8_2BYTE_MAX</a>&#160;&#160;&#160;0x7FF</td></tr>
-<tr class="memdesc:a93e8c5ea6de08b28ab080057cd17423c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 2 bytes.  <br /></td></tr>
 <tr class="separator:a93e8c5ea6de08b28ab080057cd17423c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02b7ac016b2dbc2c374081887ef684d5" id="r_a02b7ac016b2dbc2c374081887ef684d5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a02b7ac016b2dbc2c374081887ef684d5">SOCKET_UTF8_3BYTE_MAX</a>&#160;&#160;&#160;0xFFFF</td></tr>
-<tr class="memdesc:a02b7ac016b2dbc2c374081887ef684d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum code point encodable in 3 bytes.  <br /></td></tr>
 <tr class="separator:a02b7ac016b2dbc2c374081887ef684d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3cc04d775e04588a8446aedca62326f" id="r_ad3cc04d775e04588a8446aedca62326f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#ad3cc04d775e04588a8446aedca62326f">SOCKET_UTF8_4BYTE_MIN</a>&#160;&#160;&#160;0x10000</td></tr>
-<tr class="memdesc:ad3cc04d775e04588a8446aedca62326f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum code point requiring 4 bytes.  <br /></td></tr>
 <tr class="separator:ad3cc04d775e04588a8446aedca62326f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -181,52 +172,38 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0">UTF8_TOO_LARGE</a>
 <br />
  }</td></tr>
-<tr class="memdesc:ae8b6c527962e3019992746f49aac247b"><td class="mdescLeft">&#160;</td><td class="mdescRight">UTF-8 validation result codes.  <a href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">More...</a><br /></td></tr>
 <tr class="separator:ae8b6c527962e3019992746f49aac247b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:a68491b1f63c513ccc96a83a14d069e7b" id="r_a68491b1f63c513ccc96a83a14d069e7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a> (const unsigned char *data, size_t len)</td></tr>
-<tr class="memdesc:a68491b1f63c513ccc96a83a14d069e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_validate - Validate UTF-8 data (complete check) @data: Input data (may be NULL if len is 0) @len: Length of data in bytes.  <br /></td></tr>
 <tr class="separator:a68491b1f63c513ccc96a83a14d069e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a409d0ca4c468b8ca69e7b3b75c58841d" id="r_a409d0ca4c468b8ca69e7b3b75c58841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a> (const char *str)</td></tr>
-<tr class="memdesc:a409d0ca4c468b8ca69e7b3b75c58841d"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_validate_str - Validate null-terminated string @str: Null-terminated string (may be NULL)  <br /></td></tr>
 <tr class="separator:a409d0ca4c468b8ca69e7b3b75c58841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63e171e87998e78fb1398213e4ebc9a5" id="r_a63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="SocketUTF8_8h.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
-<tr class="memdesc:a63e171e87998e78fb1398213e4ebc9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be NULL)  <br /></td></tr>
 <tr class="separator:a63e171e87998e78fb1398213e4ebc9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac7bf6c0717c79f93d931fcd50bf04b60" id="r_ac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#ac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="SocketUTF8_8h.html#structSocketUTF8__State">SocketUTF8_State</a> *state, const unsigned char *data, size_t len)</td></tr>
-<tr class="memdesc:ac7bf6c0717c79f93d931fcd50bf04b60"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_update - Feed data to incremental validator @state: Validator state (must be initialized) @data: Input data chunk (may be NULL if len is 0) @len: Length of chunk in bytes.  <br /></td></tr>
 <tr class="separator:ac7bf6c0717c79f93d931fcd50bf04b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a388818b9081b6d4f7ad496c6f4a364ad" id="r_a388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="SocketUTF8_8h.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
-<tr class="memdesc:a388818b9081b6d4f7ad496c6f4a364ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_finish - Finalize incremental validation @state: Validator state (must not be NULL)  <br /></td></tr>
 <tr class="separator:a388818b9081b6d4f7ad496c6f4a364ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a46408361a51a348e46420dfeeb3cca5c" id="r_a46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="SocketUTF8_8h.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
-<tr class="memdesc:a46408361a51a348e46420dfeeb3cca5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_reset - Reset validator for reuse @state: Validator state (must not be NULL)  <br /></td></tr>
 <tr class="separator:a46408361a51a348e46420dfeeb3cca5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1563bde34c7c6e25d605d3d4d64ca103" id="r_a1563bde34c7c6e25d605d3d4d64ca103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a1563bde34c7c6e25d605d3d4d64ca103">SocketUTF8_codepoint_len</a> (uint32_t codepoint)</td></tr>
-<tr class="memdesc:a1563bde34c7c6e25d605d3d4d64ca103"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_codepoint_len - Get UTF-8 byte length for code point @codepoint: Unicode code point (U+0000 to U+10FFFF)  <br /></td></tr>
 <tr class="separator:a1563bde34c7c6e25d605d3d4d64ca103"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1544e5297cf89454b89912f8c8af9046" id="r_a1544e5297cf89454b89912f8c8af9046"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a1544e5297cf89454b89912f8c8af9046">SocketUTF8_sequence_len</a> (unsigned char first_byte)</td></tr>
-<tr class="memdesc:a1544e5297cf89454b89912f8c8af9046"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_sequence_len - Get length of UTF-8 sequence from first byte @first_byte: First byte of UTF-8 sequence.  <br /></td></tr>
 <tr class="separator:a1544e5297cf89454b89912f8c8af9046"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d7d4a24b88fb2a7add5dce1a5ffdecf" id="r_a0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a> (uint32_t codepoint, unsigned char *output)</td></tr>
-<tr class="memdesc:a0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_encode - Encode code point to UTF-8 @codepoint: Unicode code point (U+0000 to U+10FFFF, excluding surrogates) @output: Output buffer (must be at least SOCKET_UTF8_MAX_BYTES bytes)  <br /></td></tr>
 <tr class="separator:a0d7d4a24b88fb2a7add5dce1a5ffdecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa22db28501f980ac3124b9ec4986fdb8" id="r_aa22db28501f980ac3124b9ec4986fdb8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#aa22db28501f980ac3124b9ec4986fdb8">SocketUTF8_decode</a> (const unsigned char *data, size_t len, uint32_t *codepoint, size_t *consumed)</td></tr>
-<tr class="memdesc:aa22db28501f980ac3124b9ec4986fdb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_decode - Decode one code point from UTF-8 @data: Input data (must not be NULL) @len: Available bytes (must be &gt; 0) @codepoint: Output code point (may be NULL to skip) @consumed: Output bytes consumed (may be NULL to skip)  <br /></td></tr>
 <tr class="separator:aa22db28501f980ac3124b9ec4986fdb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a473245344234f9352a2b968201d39634" id="r_a473245344234f9352a2b968201d39634"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a> (const unsigned char *data, size_t len, size_t *count)</td></tr>
-<tr class="memdesc:a473245344234f9352a2b968201d39634"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_count_codepoints - Count code points in UTF-8 string @data: Input data (may be NULL if len is 0) @len: Length in bytes @count: Output code point count (must not be NULL)  <br /></td></tr>
 <tr class="separator:a473245344234f9352a2b968201d39634"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a305b150f1e0b525b236bf0a8952c5315" id="r_a305b150f1e0b525b236bf0a8952c5315"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a> (<a class="el" href="SocketUTF8_8h.html#ae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> result)</td></tr>
-<tr class="memdesc:a305b150f1e0b525b236bf0a8952c5315"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_result_string - Get human-readable result description.  <br /></td></tr>
 <tr class="separator:a305b150f1e0b525b236bf0a8952c5315"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:a96b509b874774db6b22b3f25438a21d2" id="r_a96b509b874774db6b22b3f25438a21d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="Except_8h.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketUTF8_8h.html#a96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></td></tr>
-<tr class="memdesc:a96b509b874774db6b22b3f25438a21d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketUTF8_Failed - UTF-8 operation failure.  <br /></td></tr>
 <tr class="separator:a96b509b874774db6b22b3f25438a21d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -241,7 +218,7 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="textblock"><p>UTF-8 incremental validator state Public structure for stack allocation - initialized via <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5" title="SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be...">SocketUTF8_init()</a> </p>
+<div class="textblock"><p>UTF-8 incremental validator state Public structure for stack allocation - initialized via <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init()</a></p>
 <p>This structure maintains validation state across multiple chunks of data, enabling streaming validation where multi-byte sequences may be split across chunk boundaries. </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00157">157</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
@@ -252,19 +229,22 @@ Variables</h2></td></tr>
 <td class="fieldname">
 bytes_needed</td>
 <td class="fielddoc">
-Remaining bytes in sequence. </td></tr>
+<p>Remaining bytes in sequence </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a216e9dcd5edcfb520dd193928984a537" name="a216e9dcd5edcfb520dd193928984a537"></a>uint8_t</td>
 <td class="fieldname">
 bytes_seen</td>
 <td class="fielddoc">
-Bytes seen in current sequence. </td></tr>
+<p>Bytes seen in current sequence </p>
+</td></tr>
 <tr><td class="fieldtype">
 <a id="a48fe27868c9570c5e60189e4c91dbd26" name="a48fe27868c9570c5e60189e4c91dbd26"></a>uint32_t</td>
 <td class="fieldname">
 state</td>
 <td class="fielddoc">
-DFA state (internal) </td></tr>
+<p>DFA state (internal) </p>
+</td></tr>
 </table>
 
 </div>
@@ -281,7 +261,6 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>Maximum code point encodable in 1 byte (ASCII range) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00058">58</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
@@ -299,8 +278,7 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Maximum code point encodable in 2 bytes. </p>
+<p>Maximum code point encodable in 2 bytes </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00063">63</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
@@ -317,8 +295,7 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Maximum code point encodable in 3 bytes. </p>
+<p>Maximum code point encodable in 3 bytes </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00068">68</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
@@ -335,8 +312,7 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Minimum code point requiring 4 bytes. </p>
+<p>Minimum code point requiring 4 bytes </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00073">73</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
@@ -353,8 +329,7 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p><a class="el" href="SocketUTF8_8h.html">SocketUTF8.h</a> - UTF-8 Validation for Socket Library. </p>
+<p><a class="el" href="SocketUTF8_8h.html">SocketUTF8.h</a> - UTF-8 Validation for Socket Library</p>
 <p>Part of the Socket Library</p>
 <p>Provides complete UTF-8 validation per Unicode Standard with incremental API for streaming. Required for WebSocket text frame validation (RFC 6455 Section 8.1).</p>
 <p>Features:</p><ul>
@@ -387,8 +362,7 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>Maximum valid Unicode code point. </p>
+<p>Maximum valid Unicode code point </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00043">43</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
@@ -405,7 +379,6 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>Last UTF-16 surrogate code point (invalid in UTF-8) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00049">49</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
@@ -423,7 +396,6 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
 <p>First UTF-16 surrogate code point (invalid in UTF-8) </p>
 
 <p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00046">46</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
@@ -442,21 +414,20 @@ DFA state (internal) </td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>UTF-8 validation result codes. </p>
+<p>UTF-8 validation result codes</p>
 <p>These codes indicate the result of UTF-8 validation operations. For security, invalid sequences are categorized by failure type. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71" name="ae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"></a>UTF8_VALID&#160;</td><td class="fielddoc"><p>Complete valid UTF-8 sequence. </p>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71" name="ae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"></a>UTF8_VALID&#160;</td><td class="fielddoc"><p>Complete valid UTF-8 sequence </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6" name="ae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6"></a>UTF8_INVALID&#160;</td><td class="fielddoc"><p>Invalid byte sequence detected. </p>
+<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6" name="ae8b6c527962e3019992746f49aac247ba5517838e6342334352553b1013ced8e6"></a>UTF8_INVALID&#160;</td><td class="fielddoc"><p>Invalid byte sequence detected </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402" name="ae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"></a>UTF8_INCOMPLETE&#160;</td><td class="fielddoc"><p>Valid prefix, needs more bytes. </p>
+<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402" name="ae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"></a>UTF8_INCOMPLETE&#160;</td><td class="fielddoc"><p>Valid prefix, needs more bytes </p>
 </td></tr>
 <tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247baa8dc4f40f8b669aaf6dcc16cf64c9b6c" name="ae8b6c527962e3019992746f49aac247baa8dc4f40f8b669aaf6dcc16cf64c9b6c"></a>UTF8_OVERLONG&#160;</td><td class="fielddoc"><p>Overlong encoding (security issue) </p>
 </td></tr>
 <tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba9b6f15c76888c3639b5d42aab0f8c26f" name="ae8b6c527962e3019992746f49aac247ba9b6f15c76888c3639b5d42aab0f8c26f"></a>UTF8_SURROGATE&#160;</td><td class="fielddoc"><p>UTF-16 surrogate (U+D800-U+DFFF) </p>
 </td></tr>
-<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0" name="ae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0"></a>UTF8_TOO_LARGE&#160;</td><td class="fielddoc"><p>Code point &gt; U+10FFFF. </p>
+<tr><td class="fieldname"><a id="ae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0" name="ae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0"></a>UTF8_TOO_LARGE&#160;</td><td class="fielddoc"><p>Code point &gt; U+10FFFF </p>
 </td></tr>
 </table>
 
@@ -488,8 +459,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_codepoint_len - Get UTF-8 byte length for code point @codepoint: Unicode code point (U+0000 to U+10FFFF) </p>
+<p>SocketUTF8_codepoint_len - Get UTF-8 byte length for code point @codepoint: Unicode code point (U+0000 to U+10FFFF)</p>
 <p>Calculates how many bytes are needed to encode the code point.</p>
 <p>Returns: 1-4 for valid code points, 0 for invalid (surrogates, &gt;U+10FFFF) Thread-safe: Yes </p>
 
@@ -534,8 +504,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_count_codepoints - Count code points in UTF-8 string @data: Input data (may be NULL if len is 0) @len: Length in bytes @count: Output code point count (must not be NULL) </p>
+<p>SocketUTF8_count_codepoints - Count code points in UTF-8 string @data: Input data (may be NULL if len is 0) @len: Length in bytes @count: Output code point count (must not be NULL)</p>
 <p>Counts the number of Unicode code points in the UTF-8 data. Also validates the UTF-8 encoding.</p>
 <p>Returns: UTF8_VALID if valid (count is set), error code otherwise Thread-safe: Yes </p>
 
@@ -586,8 +555,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_decode - Decode one code point from UTF-8 @data: Input data (must not be NULL) @len: Available bytes (must be &gt; 0) @codepoint: Output code point (may be NULL to skip) @consumed: Output bytes consumed (may be NULL to skip) </p>
+<p>SocketUTF8_decode - Decode one code point from UTF-8 @data: Input data (must not be NULL) @len: Available bytes (must be &gt; 0) @codepoint: Output code point (may be NULL to skip) @consumed: Output bytes consumed (may be NULL to skip)</p>
 <p>Decodes a single UTF-8 sequence to its Unicode code point.</p>
 <p>Returns:</p><ul>
 <li>UTF8_VALID: Successfully decoded, *consumed bytes used</li>
@@ -631,8 +599,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_encode - Encode code point to UTF-8 @codepoint: Unicode code point (U+0000 to U+10FFFF, excluding surrogates) @output: Output buffer (must be at least SOCKET_UTF8_MAX_BYTES bytes) </p>
+<p>SocketUTF8_encode - Encode code point to UTF-8 @codepoint: Unicode code point (U+0000 to U+10FFFF, excluding surrogates) @output: Output buffer (must be at least SOCKET_UTF8_MAX_BYTES bytes)</p>
 <p>Encodes a single Unicode code point as UTF-8.</p>
 <p>Returns: Number of bytes written (1-4), or 0 for invalid code point Thread-safe: Yes </p>
 
@@ -661,8 +628,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_finish - Finalize incremental validation @state: Validator state (must not be NULL) </p>
+<p>SocketUTF8_finish - Finalize incremental validation @state: Validator state (must not be NULL)</p>
 <p>Checks if the stream ended on a complete UTF-8 sequence. Must be called after all data has been fed to detect truncated sequences.</p>
 <p>Returns: UTF8_VALID if complete, UTF8_INCOMPLETE if truncated Thread-safe: Yes (state is caller-provided, read-only) </p>
 
@@ -691,9 +657,8 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be NULL) </p>
-<p>Initializes state for incremental validation. Must be called before first use of <a class="el" href="SocketUTF8_8h.html#ac7bf6c0717c79f93d931fcd50bf04b60" title="SocketUTF8_update - Feed data to incremental validator @state: Validator state (must be initialized) ...">SocketUTF8_update()</a>.</p>
+<p>SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be NULL)</p>
+<p>Initializes state for incremental validation. Must be called before first use of <a class="el" href="SocketUTF8_8h.html#ac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update()</a>.</p>
 <p>Thread-safe: Yes (state is caller-provided) </p>
 
 </div>
@@ -721,9 +686,8 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_reset - Reset validator for reuse @state: Validator state (must not be NULL) </p>
-<p>Equivalent to <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5" title="SocketUTF8_init - Initialize incremental validator @state: State structure to initialize (must not be...">SocketUTF8_init()</a> - resets state for new validation.</p>
+<p>SocketUTF8_reset - Reset validator for reuse @state: Validator state (must not be NULL)</p>
+<p>Equivalent to <a class="el" href="SocketUTF8_8h.html#a63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init()</a> - resets state for new validation.</p>
 <p>Thread-safe: Yes </p>
 
 </div>
@@ -751,9 +715,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_result_string - Get human-readable result description. </p>
-<dl class="section return"><dt>Returns</dt><dd>: Validation result code</dd></dl>
+<p>SocketUTF8_result_string - Get human-readable result description </p><dl class="section return"><dt>Returns</dt><dd>: Validation result code</dd></dl>
 <p>Returns: Static string describing the result (never NULL) Thread-safe: Yes </p>
 
 </div>
@@ -781,8 +743,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_sequence_len - Get length of UTF-8 sequence from first byte @first_byte: First byte of UTF-8 sequence. </p>
+<p>SocketUTF8_sequence_len - Get length of UTF-8 sequence from first byte @first_byte: First byte of UTF-8 sequence</p>
 <p>Determines sequence length from the leading byte pattern:</p><ul>
 <li>0xxxxxxx (0x00-0x7F): 1 byte (ASCII)</li>
 <li>110xxxxx (0xC2-0xDF): 2 bytes</li>
@@ -832,8 +793,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_update - Feed data to incremental validator @state: Validator state (must be initialized) @data: Input data chunk (may be NULL if len is 0) @len: Length of chunk in bytes. </p>
+<p>SocketUTF8_update - Feed data to incremental validator @state: Validator state (must be initialized) @data: Input data chunk (may be NULL if len is 0) @len: Length of chunk in bytes</p>
 <p>Validates a chunk of data, updating state for multi-byte sequences that span chunk boundaries.</p>
 <p>Returns:</p><ul>
 <li>UTF8_VALID: All bytes processed, no errors, complete sequences</li>
@@ -878,8 +838,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_validate - Validate UTF-8 data (complete check) @data: Input data (may be NULL if len is 0) @len: Length of data in bytes. </p>
+<p>SocketUTF8_validate - Validate UTF-8 data (complete check) @data: Input data (may be NULL if len is 0) @len: Length of data in bytes</p>
 <p>Validates that the entire input is well-formed UTF-8.</p>
 <p>Rejects:</p><ul>
 <li>Invalid continuation bytes</li>
@@ -915,9 +874,8 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_validate_str - Validate null-terminated string @str: Null-terminated string (may be NULL) </p>
-<p>Convenience wrapper for <a class="el" href="SocketUTF8_8h.html#a68491b1f63c513ccc96a83a14d069e7b" title="SocketUTF8_validate - Validate UTF-8 data (complete check) @data: Input data (may be NULL if len is 0...">SocketUTF8_validate()</a> that handles null-terminated strings.</p>
+<p>SocketUTF8_validate_str - Validate null-terminated string @str: Null-terminated string (may be NULL)</p>
+<p>Convenience wrapper for <a class="el" href="SocketUTF8_8h.html#a68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate()</a> that handles null-terminated strings.</p>
 <p>Returns: UTF8_VALID if valid UTF-8, error code otherwise Thread-safe: Yes </p>
 
 </div>
@@ -942,8 +900,7 @@ DFA state (internal) </td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-
-<p>SocketUTF8_Failed - UTF-8 operation failure. </p>
+<p>SocketUTF8_Failed - UTF-8 operation failure</p>
 <p>Raised when:</p><ul>
 <li>Invalid UTF-8 sequence detected during strict validation</li>
 <li>Invalid code point provided for encoding</li>
