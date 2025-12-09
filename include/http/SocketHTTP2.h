@@ -1,7 +1,7 @@
 /**
- * SocketHTTP2.h - HTTP/2 Protocol Implementation (RFC 9113)
- *
- * Part of the Socket Library
+ * @file SocketHTTP2.h
+ * @ingroup http
+ * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.
  *
  * Provides complete HTTP/2 implementation with:
  * - Binary framing layer (9-byte frame headers)
@@ -26,6 +26,10 @@
  * - HPACK bomb prevention via SocketHPACK limits
  * - Flow control window overflow prevention
  * - SETTINGS_TIMEOUT enforcement
+ *
+ * @see SocketHTTP2_Conn_new() for creating HTTP/2 connections.
+ * @see SocketHTTP2_Stream_send_headers() for stream operations.
+ * @see SocketHPACK.h for header compression integration.
  */
 
 #ifndef SOCKETHTTP2_INCLUDED

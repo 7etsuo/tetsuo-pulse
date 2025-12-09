@@ -7,9 +7,9 @@
 #include <sys/types.h>
 
 /**
- * SocketReconnect.h - Automatic Reconnection Framework
- *
- * Part of the Socket Library
+ * @file SocketReconnect.h
+ * @ingroup core_io
+ * @brief Automatic reconnection framework with exponential backoff and circuit breaker.
  *
  * Provides automatic reconnection with exponential backoff, circuit breaker
  * pattern, and health monitoring for resilient network connections.
@@ -33,21 +33,11 @@
  * - Multiple instances can be used from different threads
  * - Callbacks are invoked from the same thread that calls process/tick
  *
- * Usage (Event-driven):
- *   SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, callback, data);
- *   SocketReconnect_connect(conn);
- *   while (running) {
- *       int timeout = SocketReconnect_next_timeout_ms(conn);
- *       SocketPoll_wait(poll, &events, timeout);
- *       SocketReconnect_process(conn);  // On poll events
- *       SocketReconnect_tick(conn);     // Process timers
- *   }
- *   SocketReconnect_free(&conn);
- *
- * Usage (I/O Passthrough):
- *   SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL);
- *   SocketReconnect_connect(conn);
- *   // Use SocketReconnect_send/recv - auto-reconnects on error
+ * @see SocketReconnect_new() for creating reconnection instances.
+ * @see SocketReconnect_connect() for initiating connection.
+ * @see SocketReconnect_send() for transparent I/O operations.
+ * @see connection_mgmt for integration with connection pools.
+ */
  *   ssize_t n = SocketReconnect_send(conn, data, len);
  */
 

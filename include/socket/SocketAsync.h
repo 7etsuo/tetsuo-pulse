@@ -5,7 +5,9 @@
 #include "socket/Socket.h"
 
 /**
- * SocketAsync - Asynchronous I/O Operations
+ * @file SocketAsync.h
+ * @ingroup core_io
+ * @brief Asynchronous I/O operations using platform-optimized mechanisms.
  *
  * Provides non-blocking I/O operations using platform-optimized async
  * mechanisms:
@@ -19,26 +21,14 @@
  * - Integration with SocketPoll for event-driven completion
  * - Thread-safe operation
  *
- * PLATFORM REQUIREMENTS:
- * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if
- * unavailable)
+ * Platform Requirements:
+ * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if unavailable)
  * - macOS/BSD: kqueue with AIO support
  * - All platforms: Non-blocking sockets (automatically handled)
  *
- * Usage example:
- *   SocketPoll_T poll = SocketPoll_new(4096);
- *   SocketAsync_T async = SocketPoll_get_async(poll);
- *
- *   void send_callback(Socket_T sock, ssize_t bytes, int err, void *data) {
- *       if (err != 0) {
- *           // Handle error
- *           return;
- *       }
- *       // Process completion
- *   }
- *
- *   unsigned req_id = SocketAsync_send(sock, buf, len, send_callback,
- * user_data, 0);
+ * @see SocketPoll_get_async() for obtaining async interface.
+ * @see SocketAsync_send() for asynchronous send operations.
+ * @see SocketAsync_recv() for asynchronous receive operations.
  */
 
 #define T SocketAsync_T

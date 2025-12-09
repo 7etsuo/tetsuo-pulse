@@ -1,3 +1,5 @@
+#ifndef SOCKETUTIL_INCLUDED
+#define SOCKETUTIL_INCLUDED
 /**
  * @file SocketUtil.h
  * @ingroup foundation

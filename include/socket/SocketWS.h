@@ -1,7 +1,7 @@
 /**
- * SocketWS.h - WebSocket Protocol (RFC 6455)
- *
- * Part of the Socket Library
+ * @file SocketWS.h
+ * @ingroup core_io
+ * @brief WebSocket Protocol (RFC 6455) implementation with compression support.
  *
  * Complete WebSocket implementation with compression extension support.
  *
@@ -28,25 +28,11 @@
  * - Multiple instances can be used from different threads
  * - Use external synchronization if sharing an instance
  *
- * Usage (Client):
- *   Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
- *   Socket_connect(sock, "example.com", 80);
- *
- *   SocketWS_Config config;
- *   SocketWS_config_defaults(&config);
- *
- *   SocketWS_T ws = SocketWS_client_new(sock, "example.com", "/ws", &config);
- *   while (SocketWS_handshake(ws) > 0) { / * wait * / }
- *
- *   SocketWS_send_text(ws, "Hello", 5);
- *   SocketWS_Message msg;
- *   if (SocketWS_recv_message(ws, &msg) > 0) {
- *       // Process msg.data, msg.len
- *       free(msg.data);
- *   }
- *
- *   SocketWS_close(ws, 1000, "Goodbye");
- *   SocketWS_free(&ws);
+ * @see SocketWS_client_new() for client WebSocket creation.
+ * @see SocketWS_server_new() for server WebSocket creation.
+ * @see SocketWS_send_text() for sending text messages.
+ * @see SocketWS_recv_message() for receiving messages.
+ */
  *
  * Usage (Server):
  *   // After accepting connection and parsing HTTP request

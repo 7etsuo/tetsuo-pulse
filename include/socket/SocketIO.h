@@ -1,3 +1,17 @@
+/**
+ * @file SocketIO.h
+ * @ingroup core_io
+ * @brief Internal I/O abstraction layer for socket operations with TLS support.
+ *
+ * Provides internal I/O operations that automatically route through TLS
+ * when enabled, or use raw socket operations otherwise. This abstraction
+ * layer handles the complexity of TLS/non-TLS operation selection.
+ *
+ * @see Socket_send() for public send operations.
+ * @see Socket_recv() for public receive operations.
+ * @see SocketTLS_enable() for enabling TLS on sockets.
+ */
+
 #ifndef SOCKETIO_INCLUDED
 #define SOCKETIO_INCLUDED
 

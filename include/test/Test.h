@@ -5,7 +5,9 @@
 #include <stddef.h>
 
 /**
- * Test Framework
+ * @file Test.h
+ * @ingroup foundation
+ * @brief Exception-based test framework for unit and integration testing.
  *
  * Features:
  * - Exception-based test assertions
@@ -13,6 +15,7 @@
  * - Test result reporting (pass/fail counts)
  * - File/line tracking for failures
  * - Minimal API surface
+ *
  * Usage:
  *   TEST(test_name)
  *   {
@@ -25,6 +28,10 @@
  *       Test_run_all();
  *       return Test_get_failures() > 0 ? 1 : 0;
  *   }
+ *
+ * @see TEST() macro for test registration.
+ * @see ASSERT() macros for test assertions.
+ * @see Test_run_all() for running all tests.
  */
 
 #define T Test_T

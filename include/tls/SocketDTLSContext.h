@@ -2,7 +2,9 @@
 #define SOCKETDTLSCONTEXT_INCLUDED
 
 /**
- * SocketDTLSContext.h - DTLS Context Management Module
+ * @file SocketDTLSContext.h
+ * @ingroup security
+ * @brief DTLS context management with cookie protection and secure defaults.
  *
  * Manages OpenSSL SSL_CTX objects for DTLS with socket library integration.
  * Provides secure defaults (DTLS 1.2 minimum, modern ciphers), certificate
@@ -19,25 +21,17 @@
  * - Non-blocking compatible configuration
  * - Exception-based error handling with detailed OpenSSL error messages
  *
- * Usage:
- *   // Server context with cookie protection
- *   SocketDTLSContext_T server_ctx = SocketDTLSContext_new_server(
- *       "server.crt", "server.key", "ca-bundle.pem");
- *   SocketDTLSContext_enable_cookie_exchange(server_ctx);
- *   SocketDTLSContext_set_mtu(server_ctx, 1400);
- *
- *   // Client context
- *   SocketDTLSContext_T client_ctx = SocketDTLSContext_new_client("ca-bundle.pem");
- *   SocketDTLSContext_set_verify_mode(client_ctx, TLS_VERIFY_PEER);
- *
  * Thread safety: Contexts are not thread-safe for modification after creation.
  * Share read-only after full setup, or use per-thread contexts.
- * SSL objects created from context are per-connection and thread-safe for
- * their lifetime.
+ * SSL objects created from context are per-connection and thread-safe.
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - OpenSSL 1.1.1+ or LibreSSL with DTLS support
  * - POSIX threads (pthread) for thread-safe error reporting
+ *
+ * @see SocketDTLSContext_new_server() for server context creation.
+ * @see SocketDTLSContext_new_client() for client context creation.
+ * @see SocketDTLS_enable() for applying DTLS to UDP sockets.
  */
 
 #include "core/Arena.h"

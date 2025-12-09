@@ -893,57 +893,74 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
 }
 
 /**
+ * calculate_elapsed_ms - Calculate elapsed milliseconds between two monotonic timestamps
+ * @start: Starting timestamp (earlier in time)
+ * @end: Ending timestamp (later in time)
+ *
+ * Returns: Elapsed milliseconds, or LLONG_MAX on overflow/clock error (treat as timed out)
+ * Thread-safe: Yes - pure function, no shared state or side effects
+ *
+ * Computes precise elapsed time using secure arithmetic to prevent overflow.
+ * Assumes monotonic clock (end >= start). Handles nsec borrow from sec_delta.
+ * Uses SocketSecurity_check_multiply for safe sec * 1000 conversion.
+ * @see request_timed_out() for usage in timeout checks.
+ */
+static long long
+calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
+{
+  long long sec_delta = (long long)end->tv_sec - (long long)start->tv_sec;
+  long long nsec_delta = (long long)end->tv_nsec - (long long)start->tv_nsec;
+
+  if (sec_delta < 0) {
+    // Clock error (monotonic should not decrease)
+    return 0LL;
+  }
+
+  if (nsec_delta < 0) {
+    sec_delta--;
+    nsec_delta += SOCKET_NS_PER_SECOND;
+  }
+
+  size_t sec_delta_u = (size_t)sec_delta;
+  size_t sec_ms_u;
+  if (!SocketSecurity_check_multiply(sec_delta_u, (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u)) {
+    // Overflow: treat as very long elapsed time
+    return LLONG_MAX;
+  }
+  long long sec_ms = (long long)sec_ms_u;
+
+  long long nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
+  long long elapsed_ms = sec_ms + nsec_ms;
+
+  return elapsed_ms;
+}
+
+/**
  * request_timed_out - Check if request has timed out
  * @dns: DNS resolver instance (read-only for timeout config)
  * @req: Request to check (read-only)
  *
  * Returns: 1 if timed out, 0 otherwise (including when timeout disabled)
- * Thread-safe: Yes - read-only access to req state
+ * Thread-safe: Yes - read-only access to req state and pure elapsed calculation
  *
- * Uses CLOCK_MONOTONIC for reliable elapsed time calculation that is
- * immune to system clock adjustments. Returns 0 if effective timeout <= 0
- * (timeout disabled).
+ * Uses CLOCK_MONOTONIC via calculate_elapsed_ms() for reliable timing immune
+ * to system clock adjustments. Returns 0 if effective timeout <= 0 (disabled).
+ * Overflow or clock error treated as timeout for safety.
+ * @see calculate_elapsed_ms() for low-level time delta computation.
  */
 int
 request_timed_out (const struct SocketDNS_T *dns,
                    const struct SocketDNS_Request_T *req)
 {
   int timeout_ms = request_effective_timeout_ms (dns, req);
-  struct timespec now;
-  long long elapsed_ms = 0;
-  long long sec_delta;
-  long long nsec_delta;
-
   if (timeout_ms <= 0)
     return 0;
 
+  struct timespec now;
   clock_gettime (CLOCK_MONOTONIC, &now);
 
-  sec_delta = (long long)now.tv_sec - (long long)req->submit_time.tv_sec;
-  nsec_delta = (long long)now.tv_nsec - (long long)req->submit_time.tv_nsec;
-
-  if (sec_delta < 0) {
-    // Monotonic clock should not go backward
-    return 0;
-  }
-
-  if (nsec_delta < 0) {
-    sec_delta--;
-    nsec_delta += 1000000000LL;
-  }
-
-  size_t sec_delta_u = (size_t)sec_delta;
-  size_t sec_ms_u;
-  if (!SocketSecurity_check_multiply(sec_delta_u, (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u)) {
-    // Overflow: treat as very long elapsed time (timeout)
-    return 1;
-  }
-  long long sec_ms = (long long)sec_ms_u;
-
-  long long nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
-  elapsed_ms = sec_ms + nsec_ms;
-
-  return elapsed_ms >= (long long)timeout_ms;
+  long long elapsed_ms = calculate_elapsed_ms(&req->submit_time, &now);
+  return (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms) ? 1 : 0;
 }
 
 /**
@@ -1307,30 +1324,31 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   /* Invoke callback without mutex held (callback may take arbitrary time) */
   callback (req, result, error, callback_data);
 
-  /* Clear result pointer after callback to prevent use-after-free.
-   * Callback has taken ownership and freed it. */
+  /* Clear result and callback after invocation to prevent use-after-free or double invocation.
+   * Callback has taken ownership of result and freed it. Clearing callback prevents
+   * potential double calls in race conditions. */
   pthread_mutex_lock (&dns->mutex);
   req->result = NULL;
+  req->callback = NULL;
   pthread_mutex_unlock (&dns->mutex);
 }
 
 /**
- * process_single_request - Process one DNS resolution request
+ * check_pre_processing_timeout - Check timeout before starting DNS resolution processing
  * @dns: DNS resolver instance
- * @req: Request to process
- * @base_hints: Base getaddrinfo hints structure
- * Performs DNS resolution for one request: timeout check, hints prep,
- * resolution, result handling, callback invocation.
- * Thread-safe: No - called from worker thread, uses mutex for shared state.
+ * @req: Request to check
+ *
+ * Returns: 1 if timed out (marked and signaled), 0 if should proceed
+ * Thread-safe: Locks mutex internally, caller does not need to hold it
+ *
+ * Acquires mutex, checks timeout using request_timed_out(), marks/signals if timed out.
+ * Unlocks mutex before returning. Prevents race with SocketDNS_request_settimeout().
+ * Directly calls mark_request_timeout() to avoid deadlock (already holds mutex).
  */
-void
-process_single_request (struct SocketDNS_T *dns,
-                        struct SocketDNS_Request_T *req,
-                        const struct addrinfo *base_hints)
+static int
+check_pre_processing_timeout (struct SocketDNS_T *dns,
+                              struct SocketDNS_Request_T *req)
 {
-  /* Acquire mutex before checking timeout to prevent race with
-   * SocketDNS_request_settimeout() which modifies timeout_override_ms.
-   * The main thread writes under mutex, so we must also read under mutex. */
   pthread_mutex_lock (&dns->mutex);
   if (request_timed_out (dns, req))
     {
@@ -1338,9 +1356,30 @@ process_single_request (struct SocketDNS_T *dns,
        * (handle_request_timeout would deadlock by trying to lock again) */
       mark_request_timeout (dns, req);
       pthread_mutex_unlock (&dns->mutex);
-      return;
+      return 1;
     }
   pthread_mutex_unlock (&dns->mutex);
+  return 0;
+}
+
+/**
+ * process_single_request - Process one DNS resolution request
+ * @dns: DNS resolver instance
+ * @req: Request to process
+ * @base_hints: Base getaddrinfo hints structure
+ *
+ * Performs DNS resolution for one request: timeout check, hints prep,
+ * resolution, result handling, callback invocation.
+ * Thread-safe: No - called from worker thread, uses mutex for shared state.
+ * @see check_pre_processing_timeout() for initial timeout check.
+ */
+void
+process_single_request (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req,
+                        const struct addrinfo *base_hints)
+{
+  if (check_pre_processing_timeout (dns, req))
+    return;
 
   struct addrinfo local_hints;
   prepare_local_hints (&local_hints, base_hints, req);

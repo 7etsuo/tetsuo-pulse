@@ -2,15 +2,15 @@
 #define SOCKETMETRICS_INCLUDED
 
 /**
- * SocketMetrics.h - Production-Grade Metrics and Observability
- *
- * Part of the Socket Library
+ * @file SocketMetrics.h
+ * @ingroup foundation
+ * @brief Production-grade metrics collection and observability for monitoring.
  *
  * This header provides comprehensive metrics collection and export capabilities
  * for production monitoring and observability. It tracks performance metrics
  * across all major subsystems: connection pools, HTTP client/server, TLS, and DNS.
  *
- * FEATURES:
+ * Features:
  * - Counter metrics (monotonically increasing values)
  * - Gauge metrics (current value that can go up or down)
  * - Histogram metrics with percentile calculation (p50, p95, p99)
@@ -18,29 +18,20 @@
  * - Thread-safe atomic operations
  * - Multiple export formats (Prometheus, StatsD, JSON)
  *
- * THREAD SAFETY:
+ * Thread Safety:
  * - All operations are thread-safe using atomic operations or mutex protection
  * - Histogram operations use fine-grained locking for performance
  * - Snapshot operations provide consistent point-in-time views
  *
- * USAGE:
- *   // Record metrics
- *   SocketMetrics_counter_inc(SOCKET_METRIC_HTTP_REQUESTS_TOTAL);
- *   SocketMetrics_gauge_set(SOCKET_METRIC_POOL_ACTIVE_CONNECTIONS, 42);
- *   SocketMetrics_histogram_observe(SOCKET_METRIC_HTTP_REQUEST_LATENCY_MS, 125);
- *
- *   // Export to Prometheus format
- *   char buffer[65536];
- *   size_t len = SocketMetrics_export_prometheus(buffer, sizeof(buffer));
- *
- *   // Get percentiles
- *   double p50 = SocketMetrics_histogram_percentile(
- *                  SOCKET_METRIC_HTTP_REQUEST_LATENCY_MS, 50.0);
- *
- * MEMORY:
+ * Memory:
  * - Histograms use fixed-size circular buffers (configurable)
  * - No dynamic allocation after initialization
  * - Total memory usage: ~100KB for default configuration
+ *
+ * @see SocketMetrics_counter_inc() for recording counter metrics.
+ * @see SocketMetrics_gauge_set() for gauge metrics.
+ * @see SocketMetrics_histogram_observe() for histogram metrics.
+ * @see SocketMetrics_export_prometheus() for metric export.
  */
 
 #include <stddef.h>

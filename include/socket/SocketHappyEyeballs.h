@@ -2,9 +2,9 @@
 #define SOCKETHAPPYEYEBALLS_INCLUDED
 
 /**
- * SocketHappyEyeballs.h - Happy Eyeballs (RFC 8305) Implementation
- *
- * Part of the Socket Library
+ * @file SocketHappyEyeballs.h
+ * @ingroup core_io
+ * @brief Happy Eyeballs (RFC 8305) implementation for fast dual-stack connections.
  *
  * Implements the Happy Eyeballs algorithm for fast dual-stack connection
  * establishment. This algorithm races IPv6 and IPv4 connection attempts
@@ -19,7 +19,7 @@
  * 5. First successful connection wins; cancel and close others
  * 6. Return winning socket to caller
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - Non-blocking socket support (O_NONBLOCK)
  * - CLOCK_MONOTONIC for reliable timing
@@ -44,10 +44,10 @@
  * - Caller must call SocketHappyEyeballs_free() to release
  * - Result socket ownership transfers to caller
  *
- * Usage (Synchronous - Simple):
- *   Socket_T sock = SocketHappyEyeballs_connect("example.com", 443, NULL);
- *   // sock is connected via fastest address family
- *   // Use sock normally, then Socket_free(&sock)
+ * @see SocketHappyEyeballs_connect() for synchronous connection.
+ * @see SocketHappyEyeballs_new() for asynchronous connection setup.
+ * @see SocketHTTPClient.h for HTTP client integration.
+ */
  *
  * Usage (Asynchronous - Event-Driven):
  *   SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443,

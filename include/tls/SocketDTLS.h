@@ -2,7 +2,9 @@
 #define SOCKETDTLS_INCLUDED
 
 /**
- * SocketDTLS.h - DTLS/SSL Socket Integration (DTLS 1.2 Minimum)
+ * @file SocketDTLS.h
+ * @ingroup security
+ * @brief DTLS (Datagram TLS) encryption for UDP sockets with DTLS 1.2+ support.
  *
  * Provides DTLS (Datagram TLS) encryption for UDP sockets, enabling secure
  * communication over unreliable datagram transport. Mirrors the SocketTLS
@@ -17,24 +19,7 @@
  * - ALPN support for protocol negotiation
  * - Session resumption for reduced latency
  *
- * Usage:
- *   // Client
- *   SocketDgram_T sock = SocketDgram_new(AF_INET, 0);
- *   SocketDgram_connect(sock, "server.example.com", 5684);
- *   SocketDTLSContext_T ctx = SocketDTLSContext_new_client("ca.pem");
- *   SocketDTLS_enable(sock, ctx);
- *   SocketDTLS_handshake_loop(sock, 5000); // 5 second timeout
- *   SocketDTLS_send(sock, data, len);
- *
- *   // Server
- *   SocketDgram_T server = SocketDgram_new(AF_INET, 0);
- *   SocketDgram_bind(server, "0.0.0.0", 5684);
- *   SocketDTLSContext_T ctx = SocketDTLSContext_new_server("cert.pem", "key.pem", NULL);
- *   SocketDTLSContext_enable_cookie_exchange(ctx);
- *   SocketDTLS_enable(server, ctx);
- *   // Handle incoming with SocketDTLS_listen() + SocketDTLS_handshake()
- *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - OpenSSL 1.1.1+ or LibreSSL with DTLS support
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - POSIX threads (pthread) for thread-safe error reporting
@@ -42,6 +27,10 @@
  * References:
  * - RFC 6347: Datagram Transport Layer Security Version 1.2
  * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
+ *
+ * @see SocketDTLS_enable() for enabling DTLS on UDP sockets.
+ * @see SocketDTLS_handshake_loop() for DTLS handshake.
+ * @see SocketDgram_T for underlying UDP socket operations.
  */
 
 #include "core/Except.h"

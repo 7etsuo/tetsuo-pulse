@@ -1,7 +1,7 @@
 /**
- * SocketHTTPServer.h - HTTP Server API
- *
- * Part of the Socket Library
+ * @file SocketHTTPServer.h
+ * @ingroup http
+ * @brief High-level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.
  *
  * High-level HTTP server supporting HTTP/1.1 and HTTP/2:
  * - Event-driven request handling
@@ -28,10 +28,14 @@
  * Thread safety: Server instances are NOT thread-safe.
  * Use one server per thread or external synchronization.
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - pthread for mutex synchronization
  * - OpenSSL for TLS (optional, via SOCKET_HAS_TLS)
+ *
+ * @see SocketHTTPServer_new() for creating HTTP servers.
+ * @see SocketHTTPServer_listen() for starting the server.
+ * @see SocketHTTPServer_poll() for event loop integration.
  */
 
 #ifndef SOCKETHTTPSERVER_INCLUDED

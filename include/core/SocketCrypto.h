@@ -1,7 +1,7 @@
 /**
- * SocketCrypto.h - Cryptographic Utilities for Socket Library
- *
- * Part of the Socket Library
+ * @file SocketCrypto.h
+ * @ingroup foundation
+ * @brief Cryptographic utilities for HTTP/2, WebSocket, and security features.
  *
  * Provides cryptographic primitives required for HTTP/2, WebSocket, and
  * security features. Thin wrappers around OpenSSL with fallbacks when
@@ -24,6 +24,10 @@
  *   (RFC 7616) respectively, as required by those specifications.
  * - Use HMAC-SHA256 for new security-sensitive applications.
  * - All sensitive data is cleared from stack after use.
+ *
+ * @see SocketCrypto_sha256() for hashing operations.
+ * @see SocketCrypto_base64_encode() for encoding utilities.
+ * @see SocketCrypto_random() for secure random generation.
  */
 
 #ifndef SOCKETCRYPTO_INCLUDED

@@ -275,6 +275,86 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
   req->timeout_override_ms = -1;
 }
 
+/**
+ * @brief Fast-path synchronous resolution for IP addresses and wildcard binds.
+ *
+ * Performs direct getaddrinfo() call without involving the thread pool for cases
+ * where resolution can be done synchronously and immediately (IP addresses or
+ * NULL host for wildcard binding with AI_PASSIVE flag).
+ *
+ * @param host Hostname or IP address string (NULL for wildcard/AI_PASSIVE)
+ * @param port Port number to associate with addresses
+ * @param hints getaddrinfo() hints structure (may be NULL for defaults)
+ *
+ * @return Newly allocated addrinfo linked list (caller must free with
+ *         SocketCommon_free_addrinfo())
+ * @throws SocketDNS_Failed on resolution failure, memory allocation error, or
+ *         invalid parameters (via SocketCommon_resolve_address)
+ *
+ * @threadsafe Yes - no shared state modified
+ *
+ * @see SocketCommon_resolve_address() for underlying resolution logic
+ * @see SocketCommon_copy_addrinfo() for result duplication to transfer ownership
+ * @see SocketDNS_resolve_sync() for full synchronous API usage
+ */
+static struct addrinfo *
+dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
+{
+  struct addrinfo *tmp_res = NULL;
+  int family = hints ? hints->ai_family : AF_UNSPEC;
+
+  SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed, family, 1);
+
+  struct addrinfo *result = SocketCommon_copy_addrinfo (tmp_res);
+  SocketCommon_free_addrinfo (tmp_res);
+
+  return result;
+}
+
+/**
+ * @brief Wait for async request completion and retrieve result under mutex protection.
+ *
+ * Internal helper for synchronous resolution wrapper. Locks mutex, waits for
+ * completion or timeout, handles timeout/error cases by raising exceptions,
+ * transfers result ownership, removes request from hash table, and unlocks.
+ *
+ * @param dns DNS resolver instance
+ * @param req Request handle to wait for
+ * @param timeout_ms Timeout in milliseconds (0 = infinite wait)
+ * @param host Hostname for error messages (may be NULL)
+ *
+ * @return Resolved addrinfo (ownership transferred, caller must free)
+ * @throws SocketDNS_Failed on timeout or resolution error (unlocks before raise)
+ *
+ * @threadsafe Yes - acquires/releases mutex internally
+ *
+ * @note Called immediately after SocketDNS_resolve() in sync wrapper path.
+ * @note Uses wait_for_completion(), handle_sync_timeout(), handle_sync_error().
+ */
+static struct addrinfo *
+wait_and_retrieve_result (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
+                          int timeout_ms, const char *host)
+{
+  int error;
+  struct addrinfo *result;
+
+  pthread_mutex_lock (&dns->mutex);
+
+  if (wait_for_completion (dns, req, timeout_ms) == ETIMEDOUT)
+    handle_sync_timeout (dns, req, timeout_ms, host);
+
+  error = req->error;
+  if (error != 0)
+    handle_sync_error (dns, req, error, host);
+
+  result = req->result;
+  req->result = NULL;
+  hash_table_remove (dns, req);
+  pthread_mutex_unlock (&dns->mutex);
+
+  return result;
+}
+
 /*
  * =============================================================================
  * Public API - Lifecycle
@@ -1048,30 +1128,14 @@ static struct addrinfo *
 resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
                          int timeout_ms)
 {
-  struct addrinfo *result;
   Request_T req;
-  int error;
 
   req = SocketDNS_resolve (dns, host, port, NULL, NULL);
 
   if (timeout_ms > 0)
     SocketDNS_request_settimeout (dns, req, timeout_ms);
 
-  pthread_mutex_lock (&dns->mutex);
-
-  if (wait_for_completion (dns, req, timeout_ms) == ETIMEDOUT)
-    handle_sync_timeout (dns, req, timeout_ms, host);
-
-  error = req->error;
-  if (error != 0)
-    handle_sync_error (dns, req, error, host);
-
-  result = req->result;
-  req->result = NULL;
-  hash_table_remove (dns, req);
-  pthread_mutex_unlock (&dns->mutex);
-
-  return result;
+  return wait_and_retrieve_result (dns, req, timeout_ms, host);
 }
 
 /**
@@ -1116,16 +1180,9 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
-  /* Fast path: IP addresses and wildcard use SocketCommon synchronous resolution */
+  /* Fast path: IP addresses and wildcard use direct synchronous resolution via helper */
   if (host == NULL || socketcommon_is_ip_address (host))
-    {
-      struct addrinfo *tmp_res = NULL;
-      int family = hints ? hints->ai_family : AF_UNSPEC;
-      SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed, family, 1);
-      struct addrinfo *result = SocketCommon_copy_addrinfo (tmp_res);
-      SocketCommon_free_addrinfo (tmp_res);
-      return result;
-    }
+    return dns_sync_fast_path (host, port, hints);
 
   /* Hostname requires async resolution with timeout */
   return resolve_async_with_wait (dns, host, port, effective_timeout);

@@ -1,7 +1,7 @@
 /**
- * SocketProxy.h - Proxy Tunneling Support
- *
- * Part of the Socket Library
+ * @file SocketProxy.h
+ * @ingroup core_io
+ * @brief Proxy tunneling support for HTTP CONNECT and SOCKS protocols.
  *
  * Provides transparent proxy tunneling for TCP connections, supporting
  * HTTP CONNECT and SOCKS4/4a/5 protocols. The implementation follows
@@ -40,13 +40,10 @@
  * - HTTP response parsing uses strict mode to prevent smuggling
  * - All protocol responses are bounds-checked
  *
- * Usage (Synchronous):
- *   SocketProxy_Config proxy = {0};
- *   proxy.type = SOCKET_PROXY_SOCKS5;
- *   proxy.host = "proxy.example.com";
- *   proxy.port = 1080;
- *   proxy.username = "user";
- *   proxy.password = "pass";
+ * @see SocketProxy_connect() for synchronous proxy connection.
+ * @see SocketProxy_new() for asynchronous proxy connection setup.
+ * @see SocketHappyEyeballs.h for integration details.
+ */
  *
  *   SocketProxy_Result result = SocketProxy_connect(
  *       socket, &proxy, "target.example.com", 443);

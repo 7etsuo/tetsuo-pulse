@@ -5,8 +5,15 @@
 #include <pthread.h>
 
 /**
- * SocketCommon.h - Common utilities shared between Socket and SocketDgram
- * modules
+ * @file SocketCommon.h
+ * @ingroup core_io
+ * @brief Common utilities shared between Socket and SocketDgram modules.
+ *
+ * Provides shared functionality for both TCP and UDP socket implementations,
+ * including address resolution, timeout management, and socket configuration.
+ *
+ * @see Socket_T for TCP socket operations.
+ * @see SocketDgram_T for UDP socket operations.
  */
 
 #include <fcntl.h>

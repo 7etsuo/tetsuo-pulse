@@ -1,7 +1,7 @@
 /**
- * SocketSecurity.h - Centralized Security Configuration and Utilities
- *
- * Part of the Socket Library
+ * @file SocketSecurity.h
+ * @ingroup foundation
+ * @brief Centralized security configuration, limits, and validation utilities.
  *
  * This header consolidates all security-related configuration, limits,
  * and validation utilities from across the socket library into a single
@@ -23,17 +23,9 @@
  *
  * Thread safety: All functions are thread-safe (no global mutable state).
  *
- * Usage:
- *   #include "core/SocketSecurity.h"
- *
- *   // Query limits at runtime
- *   SocketSecurityLimits limits;
- *   SocketSecurity_get_limits(&limits);
- *
- *   // Validate allocation size
- *   if (!SocketSecurity_check_size(requested_size)) {
- *       // Reject oversized allocation
- *   }
+ * @see SocketSecurity_get_limits() for querying security limits.
+ * @see SocketSecurity_check_size() for size validation.
+ * @see SocketTLSContext_new_server() for TLS 1.3 enforcement.
  */
 
 #ifndef SOCKETSECURITY_INCLUDED

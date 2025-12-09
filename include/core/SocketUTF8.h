@@ -1,7 +1,7 @@
 /**
- * SocketUTF8.h - UTF-8 Validation for Socket Library
- *
- * Part of the Socket Library
+ * @file SocketUTF8.h
+ * @ingroup foundation
+ * @brief UTF-8 validation and utilities for WebSocket text frame validation.
  *
  * Provides complete UTF-8 validation per Unicode Standard with incremental
  * API for streaming. Required for WebSocket text frame validation
@@ -22,6 +22,10 @@
  * - Rejects UTF-16 surrogates (U+D800-U+DFFF) - invalid in UTF-8
  * - Rejects code points > U+10FFFF - beyond Unicode range
  * - No dynamic memory allocation - immune to allocation attacks
+ *
+ * @see SocketUTF8_validate() for one-shot validation.
+ * @see SocketUTF8_decoder_init() for incremental validation.
+ * @see SocketWS.h for WebSocket integration.
  */
 
 #ifndef SOCKETUTF8_INCLUDED

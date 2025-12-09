@@ -1,7 +1,7 @@
 /**
- * SocketHTTP1.h - HTTP/1.1 Message Syntax (RFC 9112)
- *
- * Part of the Socket Library
+ * @file SocketHTTP1.h
+ * @ingroup http
+ * @brief HTTP/1.1 message syntax parsing and serialization (RFC 9112).
  *
  * Provides HTTP/1.1 message parsing, serialization, and chunked encoding.
  * Builds on SocketHTTP.h for core types (methods, status codes, headers, URI).
@@ -23,6 +23,10 @@
  * - Rejects multiple differing Content-Length values
  * - Validates all header names/values for injection attacks
  * - Enforces configurable size limits
+ *
+ * @see SocketHTTP1_Parser_new() for creating parsers.
+ * @see SocketHTTP1_Parser_execute() for incremental parsing.
+ * @see SocketHTTP1_serialize_request() for message serialization.
  */
 
 #ifndef SOCKETHTTP1_INCLUDED

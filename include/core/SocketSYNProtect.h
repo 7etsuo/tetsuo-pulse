@@ -2,9 +2,9 @@
 #define SOCKETSYNPROTECT_INCLUDED
 
 /**
- * SocketSYNProtect.h - SYN Flood Protection Module
- *
- * Part of the Socket Library
+ * @file SocketSYNProtect.h
+ * @ingroup foundation
+ * @brief SYN flood protection with connection attempt tracking and IP reputation.
  *
  * Provides comprehensive SYN flood attack protection through:
  * - Connection attempt tracking (not just established connections)
@@ -14,7 +14,7 @@
  * - Whitelist/blacklist support with CIDR notation
  * - Integration with kernel-level socket options (TCP_DEFER_ACCEPT)
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - CLOCK_MONOTONIC support for timing
  * - POSIX threads (pthread) for thread safety
@@ -23,23 +23,10 @@
  * - All operations are thread-safe via internal mutex
  * - Safe to share a single instance across threads
  *
- * Usage:
- *   SocketSYNProtect_Config config;
- *   SocketSYNProtect_config_defaults(&config);
- *   config.max_attempts_per_window = 30;
- *
- *   SocketSYNProtect_T protect = SocketSYNProtect_new(arena, &config);
- *   SocketSYNProtect_whitelist_add_cidr(protect, "10.0.0.0/8");
- *
- *   // Before accept():
- *   SocketSYN_Action action = SocketSYNProtect_check(protect, client_ip, NULL);
- *   if (action == SYN_ACTION_BLOCK) {
- *       close(client_fd);
- *       continue;
- *   }
- *
- *   // After successful accept:
- *   SocketSYNProtect_report_success(protect, client_ip);
+ * @see SocketSYNProtect_new() for creating protection instances.
+ * @see SocketSYNProtect_check() for rate checking.
+ * @see SocketSYNProtect_whitelist_add_cidr() for whitelist management.
+ * @see SocketPool_set_syn_protection() for integration with connection pools.
  */
 
 #include "core/Arena.h"

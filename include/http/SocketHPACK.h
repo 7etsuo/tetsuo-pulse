@@ -1,7 +1,7 @@
 /**
- * SocketHPACK.h - HPACK Header Compression (RFC 7541)
- *
- * Part of the Socket Library
+ * @file SocketHPACK.h
+ * @ingroup http
+ * @brief HPACK header compression (RFC 7541) for HTTP/2.
  *
  * Provides HPACK header compression for HTTP/2, including:
  * - Static table (61 common headers per RFC 7541 Appendix A)
@@ -23,6 +23,10 @@
  * - Validates Huffman padding (max 7 bits of 1s)
  * - Limits dynamic table size updates per header block
  * - Never indexes sensitive headers marked with never_index
+ *
+ * @see SocketHTTP2.h for HTTP/2 integration.
+ * @see SocketHPACK_Encoder_new() for creating encoders.
+ * @see SocketHPACK_Decoder_new() for creating decoders.
  */
 
 #ifndef SOCKETHPACK_INCLUDED
