@@ -1026,8 +1026,6 @@ void ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...);
  */
 static inline int
 ws_is_control_opcode (SocketWS_Opcode opcode)
-static inline int
-ws_is_control_opcode (SocketWS_Opcode opcode)
 {
   return (opcode & 0x08) != 0;
 }
@@ -1045,8 +1043,6 @@ ws_is_control_opcode (SocketWS_Opcode opcode)
  * @see ws_is_control_opcode() for control frames.
  * @see RFC 6455 Section 5.2 for data opcodes.
  */
-static inline int
-ws_is_data_opcode (SocketWS_Opcode opcode)
 static inline int
 ws_is_data_opcode (SocketWS_Opcode opcode)
 {
@@ -1080,8 +1076,6 @@ ws_is_valid_opcode (SocketWS_Opcode opcode)
  * @see RFC 6455 Section 7.4.1 for defined codes and ranges.
  * @see SocketWS_CloseCode enum for common codes.
  */
-static inline int
-ws_is_valid_close_code (int code)
 static inline int
 ws_is_valid_close_code (int code)
 {

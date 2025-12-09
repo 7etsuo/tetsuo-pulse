@@ -21,11 +21,11 @@
 
 #include "core/SocketConfig.h"       /**< Global socket configuration and default timeouts. @see core/SocketConfig.h @ingroup core_io */
 
-#include "core/SocketRateLimit.h"    /**< Token bucket rate limiter for bandwidth control. @see core/SocketRateLimit.h @ingroup utilities */ */
+#include "core/SocketRateLimit.h"
 
-#include "socket/Socket.h"           /**< Public opaque Socket_T declaration and API. */ */
+#include "socket/Socket.h"
 
-#include "socket/SocketCommon-private.h" /**< Shared SocketBase_T structure for all socket types. @see socket/SocketCommon-private.h @private */ */
+#include "socket/SocketCommon-private.h"
 
 #include <stdatomic.h>               /**< C11 atomic operations for thread-safe state management (e.g., free flag). */
 

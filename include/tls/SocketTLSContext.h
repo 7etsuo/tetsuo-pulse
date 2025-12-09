@@ -108,7 +108,7 @@ extern T SocketTLSContext_new_client (const char *ca_file);
  * @throws SocketTLS_Failed on OpenSSL errors
  * @threadsafe Yes
  */
-extern T SocketTLSContext_new (const SocketTLSConfig_T *config);
+extern T SocketTLSContext_new (const struct SocketTLSConfig_T *config);
 
 /* Certificate management */
 /**

@@ -35,8 +35,6 @@
  * @see SocketTLS_config_defaults() for initialization.
  * @see SocketTLSContext_new() for creating contexts with custom config.
  */
-typedef struct SocketTLSConfig_T SocketTLSConfig_T;
-
 /**
  * @brief TLS configuration parameters.
  * @ingroup security
@@ -75,7 +73,7 @@ struct SocketTLSConfig_T
  * @see SocketTLSContext_new() to create a TLS context using this configuration.
  * @see @ref security "Security Modules" for overview.
  */
-extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
+extern void SocketTLS_config_defaults (struct SocketTLSConfig_T *config);
 
 #if SOCKET_HAS_TLS
 

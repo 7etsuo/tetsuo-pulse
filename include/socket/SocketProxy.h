@@ -138,50 +138,97 @@ extern const Except_T SocketProxy_Failed;
 
 /* ============================================================================
  * Configuration Constants
+ * @ingroup core_io
  * ============================================================================
  */
 
-/** Default timeout for connecting to proxy server (ms) */
+/**
+ * @brief Default timeout for establishing connection to proxy server.
+ * Value: 30000 ms (30 seconds).
+ * Used when config.connect_timeout_ms = 0.
+ * @see SocketProxy_Config::connect_timeout_ms
+ */
 #ifndef SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS
 #define SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS 30000
 #endif
 
-/** Default timeout for proxy handshake (ms) */
+/**
+ * @brief Default timeout for proxy protocol handshake and authentication.
+ * Value: 30000 ms (30 seconds).
+ * Covers TLS, request send/recv, auth subnegotiation.
+ * @see SocketProxy_Config::handshake_timeout_ms
+ */
 #ifndef SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS
 #define SOCKET_PROXY_DEFAULT_HANDSHAKE_TIMEOUT_MS 30000
 #endif
 
-/** Maximum hostname length for SOCKS5 (RFC 1928) */
+/**
+ * @brief Maximum allowed hostname/domain length in SOCKS5 requests (RFC 1928).
+ * Value: 255 bytes.
+ * Enforced for security against buffer overflows.
+ * @see SocketProxy_parse_url() for URL validation.
+ */
 #ifndef SOCKET_PROXY_MAX_HOSTNAME_LEN
 #define SOCKET_PROXY_MAX_HOSTNAME_LEN 255
 #endif
 
-/** Maximum username length for SOCKS5 (RFC 1929) */
+/**
+ * @brief Maximum username length for SOCKS5 authentication (RFC 1929).
+ * Value: 255 bytes.
+ * @see SocketProxy_Config::username
+ */
 #ifndef SOCKET_PROXY_MAX_USERNAME_LEN
 #define SOCKET_PROXY_MAX_USERNAME_LEN 255
 #endif
 
-/** Maximum password length for SOCKS5 (RFC 1929) */
+/**
+ * @brief Maximum password length for SOCKS5 authentication (RFC 1929).
+ * Value: 255 bytes.
+ * Handled securely with memory clearing.
+ * @see SocketProxy_Config::password
+ * @see SocketCrypto_secure_clear()
+ */
 #ifndef SOCKET_PROXY_MAX_PASSWORD_LEN
 #define SOCKET_PROXY_MAX_PASSWORD_LEN 255
 #endif
 
-/** Maximum userinfo length (user + : + pass + @) */
+/**
+ * @brief Maximum length for userinfo in proxy URLs (user:pass@).
+ * Value: 512 bytes (conservative for user + pass + delimiters).
+ * Used in parsing to prevent buffer issues.
+ * @see SocketProxy_parse_url()
+ */
 #ifndef SOCKET_PROXY_MAX_USERINFO_LEN
 #define SOCKET_PROXY_MAX_USERINFO_LEN 512
 #endif
 
-/** Default SOCKS port */
+/**
+ * @brief Default port for SOCKS proxies.
+ * Value: 1080 (standard IANA assignment).
+ * Used when config.port = 0 and type is SOCKS*.
+ * @see SocketProxyType
+ */
 #ifndef SOCKET_PROXY_DEFAULT_SOCKS_PORT
 #define SOCKET_PROXY_DEFAULT_SOCKS_PORT 1080
 #endif
 
-/** Default HTTP proxy port */
+/**
+ * @brief Default port for HTTP proxies.
+ * Value: 8080 (common convention).
+ * Used for SOCKET_PROXY_HTTP when port unspecified.
+ * @see SocketProxyType
+ */
 #ifndef SOCKET_PROXY_DEFAULT_HTTP_PORT
 #define SOCKET_PROXY_DEFAULT_HTTP_PORT 8080
 #endif
 
-/** Default HTTPS proxy port */
+/**
+ * @brief Default port for HTTPS proxies.
+ * Value: 8080 (same as HTTP; TLS on top).
+ * Used for SOCKET_PROXY_HTTPS when port unspecified.
+ * @see SocketProxyType
+ * @see SocketTLSContext_T for TLS config.
+ */
 #ifndef SOCKET_PROXY_DEFAULT_HTTPS_PORT
 #define SOCKET_PROXY_DEFAULT_HTTPS_PORT 8080
 #endif

@@ -65,6 +65,7 @@ show_help() {
     echo "  $0 -socket -tls -security       # security.md on socket+tls .c files"
     echo "  $0 -core -comment               # comment.md on core .c and .h files"
     echo "  $0 -core -comment -headers      # comment.md on core .h files only"
+    echo "  $0 -comment -headers            # comment.md on ALL .h files (all subdirs)"
     echo ""
 }
 
@@ -215,10 +216,27 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Special case: if -comment -headers is used without subdirs, select all subdirs
+if [ ${#SELECTED_SUBDIRS[@]} -eq 0 ] && [ "$HEADERS_ONLY" = true ]; then
+    has_comment=false
+    for tmpl in "${SELECTED_TEMPLATES[@]}"; do
+        if [ "$tmpl" = "comment" ]; then
+            has_comment=true
+            break
+        fi
+    done
+    if [ "$has_comment" = true ]; then
+        # Auto-select all subdirectories
+        SELECTED_SUBDIRS=("${SUBDIRS[@]}")
+        echo -e "${CYAN}Auto-selected all subdirectories for -comment -headers${NC}"
+    fi
+fi
+
 # Validate: need at least one subdir and one template
 if [ ${#SELECTED_SUBDIRS[@]} -eq 0 ]; then
     echo -e "${RED}Error: No subdirectory selected${NC}" >&2
     echo "Use at least one of: -core, -dns, -http, -poll, -pool, -socket, -tls" >&2
+    echo "Or use -comment -headers to process all header files" >&2
     echo "Use -h or --help for usage information" >&2
     exit 1
 fi

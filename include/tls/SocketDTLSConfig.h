@@ -345,6 +345,4 @@
 
 #endif /* SOCKET_HAS_TLS */
 
-/**
- * @}
- */
+#endif

@@ -218,15 +218,6 @@ typedef struct SocketEvent
  * @threadsafe Yes - each instance is independent.
  * @note Automatically selects and initializes platform-optimal backend (epoll/kqueue/poll) with edge-triggered mode where supported.
  * @note Allocates internal structures using caller's arena if provided; otherwise uses default.
- *
- * Example usage:
- * ~~~c
- * SocketPoll_T poll = SocketPoll_new(1024);
- * if (!poll) { /* handle error */ }
- * // Register sockets...
- * SocketPoll_free(&poll);
- * ~~~
- *
  * @see SocketPoll_free() for resource cleanup.
  * @see SocketPoll_setmaxregistered() for configuring registration limits.
  * @see SocketPoll_wait() for primary event loop integration.

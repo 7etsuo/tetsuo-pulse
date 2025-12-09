@@ -165,10 +165,20 @@ prepare_free_slot (T pool, Connection_T conn)
 {
   remove_from_free_list (pool, conn);
 
-  if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize, conn) != 0)
+  /* Reuse existing buffers if available, otherwise allocate new ones */
+  if (!conn->inbuf || !conn->outbuf)
     {
-      return_to_free_list (pool, conn);
-      return -1;
+      if (SocketPool_connections_alloc_buffers (pool->arena, pool->bufsize, conn) != 0)
+        {
+          return_to_free_list (pool, conn);
+          return -1;
+        }
+    }
+  else
+    {
+      /* Clear existing buffers for reuse */
+      SocketBuf_secureclear (conn->inbuf);
+      SocketBuf_secureclear (conn->outbuf);
     }
 
   return 0;
