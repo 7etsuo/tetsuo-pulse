@@ -52,152 +52,198 @@ extern const Except_T SocketBuf_Failed;
 extern T SocketBuf_new (Arena_T arena, size_t capacity);
 
 /**
- * SocketBuf_release - Release a buffer reference
- * @buf: Pointer to buffer (will be set to NULL)
- * Arena-based allocation means buffer memory persists until the arena is
- * disposed - individual buffers cannot be freed separately. This function
- * invalidates the buffer pointer to prevent accidental access through stale
- * pointers.
- * The buffer memory will be automatically freed when the arena is disposed.
- * This is the fundamental arena allocation pattern, not a limitation to work
- * around.
+ * @brief Release a buffer reference.
+ * @ingroup core_io
+ * @param buf Pointer to buffer (will be set to NULL).
+ * @note Arena-based allocation means buffer memory persists until the arena is disposed.
+ * @note Individual buffers cannot be freed separately.
+ * @note This function invalidates the buffer pointer to prevent accidental access through stale pointers.
+ * @note The buffer memory will be automatically freed when the arena is disposed.
+ * @note This is the fundamental arena allocation pattern, not a limitation to work around.
+ * @see SocketBuf_new() for buffer creation.
+ * @see Arena_dispose() for arena cleanup.
  */
 extern void SocketBuf_release (T *buf);
 
 /**
- * SocketBuf_write - Write data to buffer
- * @buf: Buffer instance
- * @data: Data to write
- * @len: Length of data
- * Returns: Bytes actually written (may be less if buffer fills)
- * Performance: O(n) where n is bytes written
+ * @brief Write data to buffer.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param data Data to write.
+ * @param len Length of data.
+ * @return Bytes actually written (may be less if buffer fills).
+ * @note Performance: O(n) where n is bytes written.
+ * @see SocketBuf_read() for reading data.
+ * @see SocketBuf_available() for checking available space.
  */
 extern size_t SocketBuf_write (T buf, const void *data, size_t len);
 
 /**
- * SocketBuf_read - Read and remove data from buffer
- * @buf: Buffer instance
- * @data: Destination buffer
- * @len: Maximum bytes to read
- * Returns: Bytes actually read
- * Performance: O(n) where n is bytes read
+ * @brief Read and remove data from buffer.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param data Destination buffer.
+ * @param len Maximum bytes to read.
+ * @return Bytes actually read.
+ * @note Performance: O(n) where n is bytes read.
+ * @see SocketBuf_peek() for reading without removing.
+ * @see SocketBuf_available() for checking available data.
  */
 extern size_t SocketBuf_read (T buf, void *data, size_t len);
 
 /**
- * SocketBuf_peek - Read data without removing it
- * @buf: Buffer instance
- * @data: Destination buffer
- * @len: Maximum bytes to peek
- * Returns: Bytes actually read
- * Performance: O(n) where n is bytes peeked
+ * @brief Read data without removing it.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param data Destination buffer.
+ * @param len Maximum bytes to peek.
+ * @return Bytes actually read.
+ * @note Performance: O(n) where n is bytes peeked.
+ * @see SocketBuf_read() for reading and removing data.
+ * @see SocketBuf_available() for checking available data.
  */
 extern size_t SocketBuf_peek (T buf, void *data, size_t len);
 
 /**
- * SocketBuf_consume - Remove data without reading
- * @buf: Buffer instance
- * @len: Bytes to remove
- * Asserts if len > available data
- * Performance: O(1)
+ * @brief Remove data without reading.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param len Bytes to remove.
+ * @note Asserts if len > available data.
+ * @note Performance: O(1).
+ * @see SocketBuf_read() for reading and removing data.
+ * @see SocketBuf_available() for checking available data.
  */
 extern void SocketBuf_consume (T buf, size_t len);
 
 /**
- * SocketBuf_available - Get available data size
- * @buf: Buffer instance
- * Returns: Bytes available for reading
- * Performance: O(1)
+ * @brief Get available data size.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @return Bytes available for reading.
+ * @note Performance: O(1).
+ * @see SocketBuf_space() for write space.
+ * @see SocketBuf_empty() for emptiness check.
  */
 extern size_t SocketBuf_available (const T buf);
 
 /**
- * SocketBuf_space - Get available space
- * @buf: Buffer instance
- * Returns: Bytes available for writing
- * Performance: O(1)
+ * @brief Get available space.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @return Bytes available for writing.
+ * @note Performance: O(1).
+ * @see SocketBuf_available() for readable data.
+ * @see SocketBuf_full() for fullness check.
  */
 extern size_t SocketBuf_space (const T buf);
 
 /**
- * SocketBuf_empty - Check if buffer is empty
- * @buf: Buffer instance
- * Returns: Non-zero if empty
+ * @brief Check if buffer is empty.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @return Non-zero if empty.
+ * @note Performance: O(1).
+ * @see SocketBuf_available() for available data count.
+ * @see SocketBuf_full() for opposite check.
  */
 extern int SocketBuf_empty (const T buf);
 
 /**
- * SocketBuf_full - Check if buffer is full
- * @buf: Buffer instance
- * Returns: Non-zero if full
+ * @brief Check if buffer is full.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @return Non-zero if full.
+ * @note Performance: O(1).
+ * @see SocketBuf_space() for available space count.
+ * @see SocketBuf_empty() for opposite check.
  */
 extern int SocketBuf_full (const T buf);
 
 /**
- * SocketBuf_clear - Clear all data
- * @buf: Buffer instance
- * Resets buffer pointers without clearing memory contents.
- * Fast operation suitable for non-sensitive data.
- * For security-sensitive data, use SocketBuf_secureclear() instead.
- * Performance: O(1)
+ * @brief Clear all data.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @note Resets buffer pointers without clearing memory contents.
+ * @note Fast operation suitable for non-sensitive data.
+ * @note For security-sensitive data, use SocketBuf_secureclear() instead.
+ * @note Performance: O(1).
+ * @see SocketBuf_secureclear() for secure clearing.
+ * @see SocketBuf_write() for adding new data.
  */
 extern void SocketBuf_clear (T buf);
 
 /**
- * SocketBuf_secureclear - Securely clear all data
- * @buf: Buffer instance
- * Zeros memory contents before resetting buffer pointers.
- * Use this for buffers containing sensitive data (passwords, keys, etc.)
- * Performance: O(n) where n is buffer capacity
- * Note: Always use secureclear when removing connections that may have
- * handled sensitive data to prevent information disclosure.
+ * @brief Securely clear all data.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @note Zeros memory contents before resetting buffer pointers.
+ * @note Use this for buffers containing sensitive data (passwords, keys, etc.).
+ * @note Performance: O(n) where n is buffer capacity.
+ * @note Always use secureclear when removing connections that may have handled sensitive data to prevent information disclosure.
+ * @see SocketBuf_clear() for fast non-secure clearing.
+ * @see SocketBuf_write() for adding new sensitive data.
  */
 extern void SocketBuf_secureclear (T buf);
 
 /**
- * SocketBuf_reserve - Ensure minimum available space (dynamic resize)
- * @buf: Buffer to resize
- * @min_space: Minimum space needed after resize
- * Raises: SocketBuf_Failed on realloc fail or overflow
- * Doubles capacity or sets to min_space, rebase circular data if needed
- * Runtime invariants checked before/after
+ * @brief Ensure minimum available space (dynamic resize).
+ * @ingroup core_io
+ * @param buf Buffer to resize.
+ * @param min_space Minimum space needed after resize.
+ * @throws SocketBuf_Failed on realloc fail or overflow.
+ * @note Doubles capacity or sets to min_space, rebase circular data if needed.
+ * @note Runtime invariants checked before/after.
+ * @see SocketBuf_space() for checking current space.
+ * @see SocketBuf_write() for operations that may trigger resizing.
  */
 extern void SocketBuf_reserve (T buf, size_t min_space);
 
 /**
- * SocketBuf_check_invariants - Runtime validation (no asserts)
- * @buf: Buffer to check (read-only)
- * Returns: true if valid invariants hold
- * Used for runtime security checks in production (rules preference)
+ * @brief Runtime validation (no asserts).
+ * @ingroup core_io
+ * @param buf Buffer to check (read-only).
+ * @return true if valid invariants hold.
+ * @note Used for runtime security checks in production (rules preference).
+ * @see SocketBuf_reserve() for operations that check invariants.
  */
 extern bool SocketBuf_check_invariants (const T buf);
 
 /**
- * SocketBuf_readptr - Get direct read pointer
- * @buf: Buffer instance
- * @len: Output - contiguous bytes available
- * Returns: Pointer to data or NULL if empty
- * Performance: O(1)
- * For zero-copy reads. Data remains in buffer until consumed.
+ * @brief Get direct read pointer.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param len Output - contiguous bytes available.
+ * @return Pointer to data or NULL if empty.
+ * @note Performance: O(1).
+ * @note For zero-copy reads. Data remains in buffer until consumed.
+ * @see SocketBuf_read() for consuming data.
+ * @see SocketBuf_consume() for removing data without reading.
  */
 extern const void *SocketBuf_readptr (T buf, size_t *len);
 
 /**
- * SocketBuf_writeptr - Get direct write pointer
- * @buf: Buffer instance
- * @len: Output - contiguous space available
- * Returns: Pointer to write location or NULL if full
- * Performance: O(1)
- * For zero-copy writes. Call SocketBuf_written() after writing.
+ * @brief Get direct write pointer.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param len Output - contiguous space available.
+ * @return Pointer to write location or NULL if full.
+ * @note Performance: O(1).
+ * @note For zero-copy writes. Call SocketBuf_written() after writing.
+ * @see SocketBuf_written() for committing written data.
+ * @see SocketBuf_write() for regular writing.
  */
 extern void *SocketBuf_writeptr (T buf, size_t *len);
 
 /**
- * SocketBuf_written - Commit written data
- * @buf: Buffer instance
- * @len: Bytes written to writeptr
- * Asserts if len > space available
- * Performance: O(1)
+ * @brief Commit written data.
+ * @ingroup core_io
+ * @param buf Buffer instance.
+ * @param len Bytes written to writeptr.
+ * @note Asserts if len > space available.
+ * @note Performance: O(1).
+ * @see SocketBuf_writeptr() for getting the write pointer.
+ * @see SocketBuf_write() for regular writing.
  */
 extern void SocketBuf_written (T buf, size_t len);
 

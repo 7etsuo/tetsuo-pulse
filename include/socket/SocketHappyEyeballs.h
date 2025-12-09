@@ -78,10 +78,12 @@ extern const Except_T SocketHE_Failed;
  */
 
 /**
- * SocketHE_State - State of Happy Eyeballs operation
+ * @brief SocketHE_State - State of Happy Eyeballs operation
+ * @ingroup core_io
  *
  * State machine transitions:
- *   IDLE -> RESOLVING -> CONNECTING -> CONNECTED (success)
+ *   @brief IDLE -> RESOLVING -> CONNECTING -> CONNECTED (success)
+ *   @ingroup core_io
  *                                  \-> FAILED (all attempts failed)
  *   Any state -> CANCELLED (explicit cancel)
  */
@@ -101,7 +103,8 @@ typedef enum
  */
 
 /**
- * SocketHE_Config_T - Happy Eyeballs configuration
+ * @brief SocketHE_Config_T - Happy Eyeballs configuration
+ * @ingroup core_io
  *
  * All time values are in milliseconds. Use 0 for defaults.
  * Call SocketHappyEyeballs_config_defaults() to initialize.
@@ -163,14 +166,16 @@ typedef struct SocketHE_Config
  */
 
 /**
- * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
+ * @brief SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
+ * @ingroup core_io
  * @host: Hostname or IP address to connect to
  * @port: Port number (1-65535)
  * @config: Configuration options (NULL for defaults)
  *
  * Returns: Connected socket (caller must Socket_free())
  * Raises: SocketHE_Failed on connection failure or timeout
- * Thread-safe: Yes (uses internal DNS resolver and poll)
+ * @note Thread-safe: Yes (uses internal DNS resolver and poll)
+ * @ingroup core_io
  *
  * Performs RFC 8305 Happy Eyeballs connection. Blocks until connected
  * or all attempts fail. The returned socket is in blocking mode.
@@ -188,7 +193,8 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
  */
 
 /**
- * SocketHappyEyeballs_start - Start async Happy Eyeballs connection
+ * @brief SocketHappyEyeballs_start - Start async Happy Eyeballs connection
+ * @ingroup core_io
  * @dns: DNS resolver instance (caller-owned, must outlive operation)
  * @poll: Poll instance for connection monitoring (caller-owned)
  * @host: Hostname or IP address to connect to
@@ -197,7 +203,8 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
  *
  * Returns: Happy Eyeballs context handle
  * Raises: SocketHE_Failed on initialization failure
- * Thread-safe: No (operate from single thread)
+ * @note Thread-safe: No (operate from single thread)
+ * @ingroup core_io
  *
  * Starts asynchronous Happy Eyeballs connection. Caller must:
  * 1. Call SocketHappyEyeballs_process() after each poll wait
@@ -210,22 +217,27 @@ extern T SocketHappyEyeballs_start (SocketDNS_T dns, SocketPoll_T poll,
                                     const SocketHE_Config_T *config);
 
 /**
- * SocketHappyEyeballs_poll - Check if operation is complete
+ * @brief SocketHappyEyeballs_poll - Check if operation is complete
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
  * Returns: 1 if complete (success, failure, or cancelled), 0 if in progress
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
- * Non-blocking check for completion. After this returns 1, call
+ * @brief Non-blocking check for completion. After this returns 1, call
+ * @ingroup core_io
  * SocketHappyEyeballs_state() to determine success or failure.
  */
 extern int SocketHappyEyeballs_poll (T he);
 
 /**
- * SocketHappyEyeballs_process - Process events and advance state machine
+ * @brief SocketHappyEyeballs_process - Process events and advance state machine
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Call after SocketPoll_wait() returns. This function:
  * - Checks DNS completion and processes results
@@ -236,11 +248,13 @@ extern int SocketHappyEyeballs_poll (T he);
 extern void SocketHappyEyeballs_process (T he);
 
 /**
- * SocketHappyEyeballs_result - Get connected socket from completed operation
+ * @brief SocketHappyEyeballs_result - Get connected socket from completed operation
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
  * Returns: Connected socket, or NULL if failed/cancelled/pending
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Transfers socket ownership to caller. Caller must Socket_free() when done.
  * The returned socket is in blocking mode. Can only be called once per
@@ -249,10 +263,12 @@ extern void SocketHappyEyeballs_process (T he);
 extern Socket_T SocketHappyEyeballs_result (T he);
 
 /**
- * SocketHappyEyeballs_cancel - Cancel in-progress operation
+ * @brief SocketHappyEyeballs_cancel - Cancel in-progress operation
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Cancels DNS requests and closes all pending connection attempts.
  * After cancel, state becomes HE_STATE_CANCELLED.
@@ -260,10 +276,12 @@ extern Socket_T SocketHappyEyeballs_result (T he);
 extern void SocketHappyEyeballs_cancel (T he);
 
 /**
- * SocketHappyEyeballs_free - Free Happy Eyeballs context
+ * @brief SocketHappyEyeballs_free - Free Happy Eyeballs context
+ * @ingroup core_io
  * @he: Pointer to context (will be set to NULL)
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Releases all resources. If operation is still in progress, it will
  * be cancelled first. Safe to call with NULL or *he == NULL.
@@ -276,20 +294,24 @@ extern void SocketHappyEyeballs_free (T *he);
  */
 
 /**
- * SocketHappyEyeballs_state - Get current operation state
+ * @brief SocketHappyEyeballs_state - Get current operation state
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
  * Returns: Current state (SocketHE_State enum)
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern SocketHE_State SocketHappyEyeballs_state (T he);
 
 /**
- * SocketHappyEyeballs_error - Get error message for failed operation
+ * @brief SocketHappyEyeballs_error - Get error message for failed operation
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
  * Returns: Error message string, or NULL if not in FAILED state
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * The returned string is valid until SocketHappyEyeballs_free() is called.
  */
@@ -301,10 +323,12 @@ extern const char *SocketHappyEyeballs_error (T he);
  */
 
 /**
- * SocketHappyEyeballs_config_defaults - Initialize config with defaults
+ * @brief SocketHappyEyeballs_config_defaults - Initialize config with defaults
+ * @ingroup core_io
  * @config: Configuration structure to initialize
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  *
  * Sets all fields to their default values as per RFC 8305 recommendations.
  */
@@ -316,11 +340,13 @@ extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
  */
 
 /**
- * SocketHappyEyeballs_next_timeout_ms - Get time until next timer expiry
+ * @brief SocketHappyEyeballs_next_timeout_ms - Get time until next timer expiry
+ * @ingroup core_io
  * @he: Happy Eyeballs context
  *
  * Returns: Milliseconds until next timeout, or -1 if no pending timers
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Use this as the timeout argument to SocketPoll_wait() for efficient
  * event loop integration. Returns the minimum of:

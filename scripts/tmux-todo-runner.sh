@@ -24,7 +24,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 SUBDIRS=("core" "dns" "http" "poll" "pool" "socket" "tls")
 
 # Available command templates
-CMD_TEMPLATES=("redundancy" "refactor" "security")
+CMD_TEMPLATES=("redundancy" "refactor" "security" "comment")
 
 # Selected filters and templates
 declare -a SELECTED_SUBDIRS=()
@@ -54,6 +54,7 @@ show_help() {
     echo "  -redundancy    Use @.cursor/commands/redundancy.md"
     echo "  -refactor      Use @.cursor/commands/refactor.md"
     echo "  -security      Use @.cursor/commands/security.md"
+    echo "  -comment       Use @.cursor/commands/comment.md"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
     echo "  $0 -core -security              # security.md on 7 core files"
@@ -167,6 +168,10 @@ while [[ $# -gt 0 ]]; do
             SELECTED_TEMPLATES+=("security")
             shift
             ;;
+        -comment)
+            SELECTED_TEMPLATES+=("comment")
+            shift
+            ;;
         *)
             echo -e "${RED}Error: Unknown option: $1${NC}" >&2
             echo "Use -h or --help for usage information" >&2
@@ -185,7 +190,7 @@ fi
 
 if [ ${#SELECTED_TEMPLATES[@]} -eq 0 ]; then
     echo -e "${RED}Error: No command template selected${NC}" >&2
-    echo "Use at least one of: -redundancy, -refactor, -security" >&2
+    echo "Use at least one of: -redundancy, -refactor, -security, -comment" >&2
     echo "Use -h or --help for usage information" >&2
     exit 1
 fi

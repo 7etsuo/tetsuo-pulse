@@ -76,7 +76,8 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
                                            size_t new_size, void *data);
 
 /**
- * SocketPool_ConnectCallback - Callback for async connection completion
+ * @brief SocketPool_ConnectCallback - Callback for async connection completion
+ * @ingroup connection_mgmt
  * @conn: Completed connection or NULL on error
  * @error: 0 on success, error code on failure
  * @data: User data from SocketPool_connect_async
@@ -108,7 +109,8 @@ typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error,
  */
 
 /**
- * SocketPool_Failed - Pool operation failure
+ * @brief SocketPool_Failed - Pool operation failure
+ * @ingroup connection_mgmt
  *
  * Category: RESOURCE or APPLICATION
  * Retryable: Depends on specific operation
@@ -124,19 +126,23 @@ typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error,
 extern const Except_T SocketPool_Failed;
 
 /**
- * SocketPool_new - Create a new connection pool
- * @arena: Arena for memory allocation
- * @maxconns: Maximum number of connections
- * @bufsize: Size of I/O buffers per connection
- * Returns: New pool instance (never returns NULL)
- * Raises: SocketPool_Failed on any allocation or initialization failure
- * Thread-safe: Yes - returns new instance
- * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
+ * @brief Create a new connection pool.
+ * @ingroup connection_mgmt
+ * @param arena Arena for memory allocation.
+ * @param maxconns Maximum number of connections.
+ * @param bufsize Size of I/O buffers per connection.
+ * @return New pool instance (never returns NULL).
+ * @throws SocketPool_Failed on any allocation or initialization failure.
+ * @threadsafe Yes - returns new instance.
+ * @note Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
+ * @see SocketPool_free() for cleanup.
+ * @see SocketPool_add() for adding connections.
  */
 extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
 
 /**
- * SocketPool_prepare_connection - Prepare async connection using DNS
+ * @brief SocketPool_prepare_connection - Prepare async connection using DNS
+ * @ingroup connection_mgmt
  * @pool: Pool instance (used for configuration and cleanup)
  * @dns: DNS resolver instance
  * @host: Remote hostname or IP
@@ -145,7 +151,8 @@ extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
  * @out_req: Output - SocketDNS_Request_T for monitoring
  * Returns: 0 on success, -1 on error (out_socket/out_req undefined)
  * Raises: SocketPool_Failed on error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Creates a new Socket_T, configures pool defaults (non-blocking, reuseaddr,
  * etc.), starts async DNS resolution + connect preparation via
  * Socket_connect_async. User must monitor out_req with SocketDNS
@@ -160,15 +167,19 @@ extern int SocketPool_prepare_connection (T pool, SocketDNS_T dns,
                                           Request_T *out_req);
 
 /**
- * SocketPool_free - Free a connection pool
- * @pool: Pointer to pool (will be set to NULL)
- * Note: Does not close sockets - caller must do that
- * Thread-safe: Yes
+ * @brief Free a connection pool.
+ * @ingroup connection_mgmt
+ * @param pool Pointer to pool (will be set to NULL).
+ * @threadsafe Yes.
+ * @note Does not close sockets - caller must do that.
+ * @see SocketPool_new() for creation.
+ * @see SocketPool_remove() for removing connections.
  */
 extern void SocketPool_free (T *pool);
 
 /**
- * SocketPool_connect_async - Create async connection to remote host
+ * @brief SocketPool_connect_async - Create async connection to remote host
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @host: Remote hostname or IP address
  * @port: Remote port number
@@ -200,27 +211,34 @@ SocketPool_connect_async (T pool, const char *host, int port,
                           SocketPool_ConnectCallback callback, void *data);
 
 /**
- * SocketPool_get - Look up connection by socket
- * @pool: Pool instance
- * @socket: Socket to find
- * Returns: Connection or NULL if not found
- * Thread-safe: Yes
- * O(1) hash lookup. Updates last_activity timestamp.
+ * @brief Look up connection by socket.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Socket to find.
+ * @return Connection or NULL if not found.
+ * @threadsafe Yes.
+ * @note O(1) hash lookup. Updates last_activity timestamp.
+ * @see SocketPool_add() for adding connections.
+ * @see Connection_T for connection accessors.
  */
 extern Connection_T SocketPool_get (T pool, Socket_T socket);
 
 /**
- * SocketPool_add - Add socket to pool
- * @pool: Pool instance
- * @socket: Socket to add
- * Returns: New connection or NULL if pool is full
- * Thread-safe: Yes
- * Allocates I/O buffers and initializes connection metadata.
+ * @brief Add socket to pool.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Socket to add.
+ * @return New connection or NULL if pool is full.
+ * @threadsafe Yes.
+ * @note Allocates I/O buffers and initializes connection metadata.
+ * @see SocketPool_get() for looking up connections.
+ * @see SocketPool_remove() for removing connections.
  */
 extern Connection_T SocketPool_add (T pool, Socket_T socket);
 
 /**
- * SocketPool_accept_batch - Accept multiple connections from server socket
+ * @brief SocketPool_accept_batch - Accept multiple connections from server socket
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
  * @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
@@ -236,7 +254,8 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  *
  * Returns: Number accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Efficient batch accept using accept4() where available.
  * Automatically adds accepted sockets to pool.
@@ -260,65 +279,82 @@ extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
                                     Socket_T *accepted);
 
 /**
- * SocketPool_remove - Remove socket from pool
- * @pool: Pool instance
- * @socket: Socket to remove
- * Clears buffers but does not close socket
- * Thread-safe: Yes
+ * @brief Remove socket from pool.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param socket Socket to remove.
+ * @threadsafe Yes.
+ * @note Clears buffers but does not close socket.
+ * @see SocketPool_add() for adding connections.
+ * @see SocketPool_cleanup() for bulk removal.
  */
 extern void SocketPool_remove (T pool, Socket_T socket);
 
 /**
- * SocketPool_cleanup - Remove idle connections
- * @pool: Pool instance
- * @idle_timeout: Seconds inactive before removal (0 = remove all)
- * Thread-safe: Yes
- * O(n) scan of all slots; closes/removes idle ones.
+ * @brief Remove idle connections.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @param idle_timeout Seconds inactive before removal (0 = remove all).
+ * @threadsafe Yes.
+ * @note O(n) scan of all slots; closes/removes idle ones.
+ * @see SocketPool_count() for counting connections.
+ * @see SocketPool_set_idle_timeout() for configuring timeout.
  */
 extern void SocketPool_cleanup (T pool, time_t idle_timeout);
 
 /**
- * SocketPool_count - Get active connection count
- * @pool: Pool instance
- * Returns: Number of active connections
- * Thread-safe: Yes
+ * @brief Get active connection count.
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return Number of active connections.
+ * @threadsafe Yes.
+ * @see SocketPool_resize() for changing capacity.
+ * @see SocketPool_cleanup() for removing idle connections.
  */
 extern size_t SocketPool_count (T pool);
 
 /**
- * SocketPool_resize - Resize pool capacity at runtime
+ * @brief SocketPool_resize - Resize pool capacity at runtime
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @new_maxconns: New maximum
  * Raises: SocketPool_Failed on error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Grows/shrinks pool; closes excess on shrink.
  */
 extern void SocketPool_resize (T pool, size_t new_maxconns);
 
 /**
- * SocketPool_prewarm - Pre-allocate buffers for % of free slots
+ * @brief SocketPool_prewarm - Pre-allocate buffers for % of free slots
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @percentage: % of free slots (0-100)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Reduces latency by pre-allocating buffers.
  */
 extern void SocketPool_prewarm (T pool, int percentage);
 
 /**
- * SocketPool_set_bufsize - Set buffer size for future connections
+ * @brief SocketPool_set_bufsize - Set buffer size for future connections
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @new_bufsize: New size
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Existing connections keep old size.
  */
 extern void SocketPool_set_bufsize (T pool, size_t new_bufsize);
 
 /**
- * SocketPool_foreach - Iterate over active connections
+ * @brief SocketPool_foreach - Iterate over active connections
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @func: Callback (Connection_T, void*)
  * @arg: User data
- * Thread-safe: Yes - holds mutex
+ * @note Thread-safe: Yes - holds mutex
+ * @ingroup connection_mgmt
  * O(n) scan; callback must not modify pool.
  */
 extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
@@ -327,39 +363,45 @@ extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
 /* Connection accessors */
 
 /**
- * Connection_socket - Get connection's socket
+ * @brief Connection_socket - Get connection's socket
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: Socket
  */
 extern Socket_T Connection_socket (const Connection_T conn);
 
 /**
- * Connection_inbuf - Get input buffer
+ * @brief Connection_inbuf - Get input buffer
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: Input buffer
  */
 extern SocketBuf_T Connection_inbuf (const Connection_T conn);
 
 /**
- * Connection_outbuf - Get output buffer
+ * @brief Connection_outbuf - Get output buffer
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: Output buffer
  */
 extern SocketBuf_T Connection_outbuf (const Connection_T conn);
 
 /**
- * Connection_data - Get user data
+ * @brief Connection_data - Get user data
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: User data
  */
 extern void *Connection_data (const Connection_T conn);
 
 /**
- * Connection_setdata - Set user data
+ * @brief Connection_setdata - Set user data
+ * @ingroup connection_mgmt
  * @conn: Connection (must not be NULL)
  * @data: Data pointer to store
  *
- * Thread-safe: NO - caller must synchronize access when multiple threads
+ * @note Thread-safe: NO - caller must synchronize access when multiple threads
+ * @ingroup connection_mgmt
  * may access the same connection simultaneously. Other Connection_*
  * accessor functions are read-only and thread-safe, but setdata modifies
  * state and requires external synchronization if called concurrently.
@@ -367,14 +409,16 @@ extern void *Connection_data (const Connection_T conn);
 extern void Connection_setdata (Connection_T conn, void *data);
 
 /**
- * Connection_lastactivity - Get last activity time
+ * @brief Connection_lastactivity - Get last activity time
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: time_t
  */
 extern time_t Connection_lastactivity (const Connection_T conn);
 
 /**
- * Connection_isactive - Check if active
+ * @brief Connection_isactive - Check if active
+ * @ingroup connection_mgmt
  * @conn: Connection
  * Returns: Non-zero if active
  */
@@ -386,11 +430,13 @@ extern int Connection_isactive (const Connection_T conn);
  */
 
 /**
- * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
+ * @brief SocketPool_set_reconnect_policy - Set default reconnection policy for pool
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @policy: Reconnection policy (NULL to disable auto-reconnect)
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Sets the default reconnection policy for connections in this pool.
  * Does not affect existing connections - use SocketPool_enable_reconnect()
@@ -401,13 +447,15 @@ SocketPool_set_reconnect_policy (T pool,
                                  const SocketReconnect_Policy_T *policy);
 
 /**
- * SocketPool_enable_reconnect - Enable auto-reconnect for a connection
+ * @brief SocketPool_enable_reconnect - Enable auto-reconnect for a connection
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @conn: Connection to enable reconnection for
  * @host: Original hostname for reconnection
  * @port: Original port for reconnection
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Enables automatic reconnection for the specified connection using
  * the pool's reconnection policy. When the connection fails, it will
@@ -420,21 +468,25 @@ extern void SocketPool_enable_reconnect (T pool, Connection_T conn,
                                          const char *host, int port);
 
 /**
- * SocketPool_disable_reconnect - Disable auto-reconnect for a connection
+ * @brief SocketPool_disable_reconnect - Disable auto-reconnect for a connection
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @conn: Connection to disable reconnection for
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Disables automatic reconnection for the specified connection.
  */
 extern void SocketPool_disable_reconnect (T pool, Connection_T conn);
 
 /**
- * SocketPool_process_reconnects - Process reconnection state machines
+ * @brief SocketPool_process_reconnects - Process reconnection state machines
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Must be called periodically (e.g., in event loop) to process
  * reconnection timers and state transitions for all connections
@@ -443,31 +495,37 @@ extern void SocketPool_disable_reconnect (T pool, Connection_T conn);
 extern void SocketPool_process_reconnects (T pool);
 
 /**
- * SocketPool_reconnect_timeout_ms - Get time until next reconnection action
+ * @brief SocketPool_reconnect_timeout_ms - Get time until next reconnection action
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Milliseconds until next timeout, or -1 if none pending
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Use as timeout hint for poll/select when reconnections are active.
  */
 extern int SocketPool_reconnect_timeout_ms (T pool);
 
 /**
- * Connection_reconnect - Get reconnection context for connection
+ * @brief Connection_reconnect - Get reconnection context for connection
+ * @ingroup connection_mgmt
  * @conn: Connection
  *
  * Returns: SocketReconnect_T context, or NULL if reconnection not enabled
- * Thread-safe: Yes (but returned context is not thread-safe)
+ * @note Thread-safe: Yes (but returned context is not thread-safe)
+ * @ingroup connection_mgmt
  */
 extern SocketReconnect_T Connection_reconnect (const Connection_T conn);
 
 /**
- * Connection_has_reconnect - Check if connection has auto-reconnect enabled
+ * @brief Connection_has_reconnect - Check if connection has auto-reconnect enabled
+ * @ingroup connection_mgmt
  * @conn: Connection
  *
  * Returns: Non-zero if auto-reconnect is enabled
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern int Connection_has_reconnect (const Connection_T conn);
 
@@ -477,12 +535,14 @@ extern int Connection_has_reconnect (const Connection_T conn);
  */
 
 /**
- * SocketPool_setconnrate - Set connection rate limit
+ * @brief SocketPool_setconnrate - Set connection rate limit
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @conns_per_sec: Maximum new connections per second (0 to disable)
  * @burst: Burst capacity (0 for default = conns_per_sec)
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Enables connection rate limiting using token bucket algorithm.
  * New connections via SocketPool_add() or SocketPool_accept_limited()
@@ -491,20 +551,24 @@ extern int Connection_has_reconnect (const Connection_T conn);
 extern void SocketPool_setconnrate (T pool, int conns_per_sec, int burst);
 
 /**
- * SocketPool_getconnrate - Get connection rate limit
+ * @brief SocketPool_getconnrate - Get connection rate limit
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Connections per second limit (0 if disabled)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern int SocketPool_getconnrate (T pool);
 
 /**
- * SocketPool_setmaxperip - Set maximum connections per IP
+ * @brief SocketPool_setmaxperip - Set maximum connections per IP
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @max_conns: Maximum connections per IP (0 = unlimited)
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Enables per-IP connection limiting to prevent single-source attacks.
  * New connections from IPs that exceed the limit will be rejected.
@@ -512,21 +576,25 @@ extern int SocketPool_getconnrate (T pool);
 extern void SocketPool_setmaxperip (T pool, int max_conns);
 
 /**
- * SocketPool_getmaxperip - Get maximum connections per IP
+ * @brief SocketPool_getmaxperip - Get maximum connections per IP
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Maximum connections per IP (0 = unlimited)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern int SocketPool_getmaxperip (T pool);
 
 /**
- * SocketPool_accept_allowed - Check if accepting is allowed
+ * @brief SocketPool_accept_allowed - Check if accepting is allowed
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @client_ip: Client IP address (NULL to skip IP check)
  *
  * Returns: 1 if allowed, 0 if rate limited or IP limit reached
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Checks both connection rate and per-IP limits.
  * Does NOT consume rate limit tokens - use SocketPool_accept_limited() for
@@ -535,7 +603,8 @@ extern int SocketPool_getmaxperip (T pool);
 extern int SocketPool_accept_allowed (T pool, const char *client_ip);
 
 /**
- * SocketPool_accept_limited - Rate-limited accept
+ * @brief SocketPool_accept_limited - Rate-limited accept
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @server: Server socket to accept from
  *
@@ -557,12 +626,14 @@ extern int SocketPool_accept_allowed (T pool, const char *client_ip);
 extern Socket_T SocketPool_accept_limited (T pool, Socket_T server);
 
 /**
- * SocketPool_track_ip - Manually track IP for per-IP limiting
+ * @brief SocketPool_track_ip - Manually track IP for per-IP limiting
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @ip: IP address to track
  *
  * Returns: 1 if under limit and tracked, 0 if limit reached
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Use when manually managing connections not via SocketPool_accept_limited().
  * Call SocketPool_release_ip() when connection closes.
@@ -570,11 +641,13 @@ extern Socket_T SocketPool_accept_limited (T pool, Socket_T server);
 extern int SocketPool_track_ip (T pool, const char *ip);
 
 /**
- * SocketPool_release_ip - Release tracked IP when connection closes
+ * @brief SocketPool_release_ip - Release tracked IP when connection closes
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @ip: IP address to release
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Decrements the connection count for the IP address.
  * Safe to call with NULL or untracked IP.
@@ -582,12 +655,14 @@ extern int SocketPool_track_ip (T pool, const char *ip);
 extern void SocketPool_release_ip (T pool, const char *ip);
 
 /**
- * SocketPool_ip_count - Get connection count for IP
+ * @brief SocketPool_ip_count - Get connection count for IP
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @ip: IP address to query
  *
  * Returns: Number of tracked connections from this IP
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern int SocketPool_ip_count (T pool, const char *ip);
 
@@ -597,11 +672,13 @@ extern int SocketPool_ip_count (T pool, const char *ip);
  */
 
 /**
- * SocketPool_set_syn_protection - Enable SYN flood protection for pool
+ * @brief SocketPool_set_syn_protection - Enable SYN flood protection for pool
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @protect: SYN protection instance (NULL to disable)
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * When enabled, SocketPool_accept_protected() will check with the
  * protection module and apply appropriate actions (throttle, challenge,
@@ -613,23 +690,27 @@ extern int SocketPool_ip_count (T pool, const char *ip);
 extern void SocketPool_set_syn_protection (T pool, SocketSYNProtect_T protect);
 
 /**
- * SocketPool_get_syn_protection - Get current SYN protection module
+ * @brief SocketPool_get_syn_protection - Get current SYN protection module
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Current SYN protection instance, or NULL if disabled
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern SocketSYNProtect_T SocketPool_get_syn_protection (T pool);
 
 /**
- * SocketPool_accept_protected - Accept with full SYN flood protection
+ * @brief SocketPool_accept_protected - Accept with full SYN flood protection
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @server: Server socket (listening, non-blocking)
  * @action_out: Output - action taken (optional, may be NULL)
  *
  * Returns: New socket if allowed, NULL if blocked/would block
  * Raises: SocketPool_Failed on actual errors (not protection blocking)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Combines rate limiting, per-IP limits, and SYN protection into a
  * single accept operation. Actions taken depend on SYN protection result:
@@ -696,33 +777,39 @@ typedef enum
 } SocketPool_Health;
 
 /**
- * SocketPool_DrainCallback - Callback invoked when drain completes
+ * @brief SocketPool_DrainCallback - Callback invoked when drain completes
+ * @ingroup connection_mgmt
  * @pool: Pool instance that completed draining
  * @timed_out: 1 if drain timed out and forced, 0 if graceful
  * @data: User data from SocketPool_set_drain_callback
  *
  * Called exactly once when pool transitions to STOPPED state.
  * Safe to call SocketPool_free() from within this callback.
- * Thread-safe: Invoked from the thread calling drain_poll/drain_wait.
+ * @note Thread-safe: Invoked from the thread calling drain_poll/drain_wait.
+ * @ingroup connection_mgmt
  */
 typedef void (*SocketPool_DrainCallback) (T pool, int timed_out, void *data);
 
 /**
- * SocketPool_state - Get current pool lifecycle state
+ * @brief SocketPool_state - Get current pool lifecycle state
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Current SocketPool_State
- * Thread-safe: Yes - atomic read
+ * @note Thread-safe: Yes - atomic read
+ * @ingroup connection_mgmt
  * Complexity: O(1)
  */
 extern SocketPool_State SocketPool_state (T pool);
 
 /**
- * SocketPool_health - Get pool health status for load balancers
+ * @brief SocketPool_health - Get pool health status for load balancers
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Current SocketPool_Health
- * Thread-safe: Yes - atomic read
+ * @note Thread-safe: Yes - atomic read
+ * @ingroup connection_mgmt
  * Complexity: O(1)
  *
  * Maps state to health:
@@ -733,32 +820,38 @@ extern SocketPool_State SocketPool_state (T pool);
 extern SocketPool_Health SocketPool_health (T pool);
 
 /**
- * SocketPool_is_draining - Check if pool is currently draining
+ * @brief SocketPool_is_draining - Check if pool is currently draining
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Non-zero if state is DRAINING
- * Thread-safe: Yes - atomic read
+ * @note Thread-safe: Yes - atomic read
+ * @ingroup connection_mgmt
  * Complexity: O(1)
  */
 extern int SocketPool_is_draining (T pool);
 
 /**
- * SocketPool_is_stopped - Check if pool is fully stopped
+ * @brief SocketPool_is_stopped - Check if pool is fully stopped
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Non-zero if state is STOPPED
- * Thread-safe: Yes - atomic read
+ * @note Thread-safe: Yes - atomic read
+ * @ingroup connection_mgmt
  * Complexity: O(1)
  */
 extern int SocketPool_is_stopped (T pool);
 
 /**
- * SocketPool_drain - Initiate graceful shutdown
+ * @brief SocketPool_drain - Initiate graceful shutdown
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @timeout_ms: Maximum time to wait for connections to close (milliseconds)
  *              Use 0 for immediate force-close, -1 for infinite wait
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Complexity: O(1)
  *
  * Transitions pool from RUNNING to DRAINING state:
@@ -775,7 +868,8 @@ extern int SocketPool_is_stopped (T pool);
 extern void SocketPool_drain (T pool, int timeout_ms);
 
 /**
- * SocketPool_drain_poll - Poll drain progress (non-blocking)
+ * @brief SocketPool_drain_poll - Poll drain progress (non-blocking)
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns:
@@ -783,7 +877,8 @@ extern void SocketPool_drain (T pool, int timeout_ms);
  *    0 - Drain complete, pool is STOPPED (graceful)
  *   -1 - Drain timed out, connections force-closed, pool is STOPPED
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Complexity: O(1) normally, O(n) on timeout (force close)
  *
  * Call periodically in event loop to:
@@ -796,7 +891,8 @@ extern void SocketPool_drain (T pool, int timeout_ms);
 extern int SocketPool_drain_poll (T pool);
 
 /**
- * SocketPool_drain_remaining_ms - Get time until forced shutdown
+ * @brief SocketPool_drain_remaining_ms - Get time until forced shutdown
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Milliseconds until timeout, 0 if already expired, -1 if not
@@ -807,10 +903,12 @@ extern int SocketPool_drain_poll (T pool);
 extern int64_t SocketPool_drain_remaining_ms (T pool);
 
 /**
- * SocketPool_drain_force - Force immediate shutdown
+ * @brief SocketPool_drain_force - Force immediate shutdown
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  * Complexity: O(n) where n = active connections
  *
  * Immediately closes all connections and transitions to STOPPED.
@@ -822,12 +920,14 @@ extern int64_t SocketPool_drain_remaining_ms (T pool);
 extern void SocketPool_drain_force (T pool);
 
 /**
- * SocketPool_drain_wait - Blocking drain with internal poll loop
+ * @brief SocketPool_drain_wait - Blocking drain with internal poll loop
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @timeout_ms: Maximum wait time (milliseconds), -1 for infinite
  *
  * Returns: 0 if graceful drain completed, -1 if timed out (forced)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Convenience function that:
  * 1. Calls SocketPool_drain(timeout_ms)
@@ -839,12 +939,14 @@ extern void SocketPool_drain_force (T pool);
 extern int SocketPool_drain_wait (T pool, int timeout_ms);
 
 /**
- * SocketPool_set_drain_callback - Register drain completion callback
+ * @brief SocketPool_set_drain_callback - Register drain completion callback
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @cb: Callback function (NULL to clear)
  * @data: User data passed to callback
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Callback is invoked exactly once when drain completes (transitions to
  * STOPPED). Safe to call SocketPool_free() from callback.
@@ -858,11 +960,13 @@ extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
  */
 
 /**
- * SocketPool_set_idle_timeout - Set idle connection timeout
+ * @brief SocketPool_set_idle_timeout - Set idle connection timeout
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @timeout_sec: Idle timeout in seconds (0 to disable automatic cleanup)
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * When enabled, connections idle longer than timeout_sec will be removed
  * during periodic cleanup. Use SocketPool_idle_cleanup_due_ms() to get
@@ -871,32 +975,39 @@ extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
 extern void SocketPool_set_idle_timeout (T pool, time_t timeout_sec);
 
 /**
- * SocketPool_get_idle_timeout - Get idle connection timeout
+ * @brief SocketPool_get_idle_timeout - Get idle connection timeout
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Current idle timeout in seconds (0 = disabled)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern time_t SocketPool_get_idle_timeout (T pool);
 
 /**
- * SocketPool_idle_cleanup_due_ms - Get time until next idle cleanup
+ * @brief SocketPool_idle_cleanup_due_ms - Get time until next idle cleanup
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Milliseconds until next cleanup, -1 if disabled
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Use as timeout hint for poll/select to ensure timely cleanup.
- * Returns -1 if idle timeout is disabled (timeout_sec == 0).
+ * @brief Returns -1 if idle timeout is disabled (timeout_sec == 0).
+ * @ingroup connection_mgmt
  */
 extern int64_t SocketPool_idle_cleanup_due_ms (T pool);
 
 /**
- * SocketPool_run_idle_cleanup - Run idle connection cleanup if due
+ * @brief SocketPool_run_idle_cleanup - Run idle connection cleanup if due
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
  * Returns: Number of connections cleaned up
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Call periodically (e.g., after each poll iteration) to remove
  * idle connections. Only performs cleanup if cleanup interval has passed.
@@ -921,12 +1032,14 @@ typedef enum
 } SocketPool_ConnHealth;
 
 /**
- * SocketPool_check_connection - Check health of a connection
+ * @brief SocketPool_check_connection - Check health of a connection
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @conn: Connection to check
  *
  * Returns: Health status of the connection
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Checks:
  * - Socket is still connected (SO_ERROR check)
@@ -942,7 +1055,8 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  */
 
 /**
- * SocketPool_ValidationCallback - Callback to validate connection before reuse
+ * @brief SocketPool_ValidationCallback - Callback to validate connection before reuse
+ * @ingroup connection_mgmt
  * (Type defined earlier in header)
  * @conn: Connection being validated
  * @data: User data from SocketPool_set_validation_callback
@@ -971,12 +1085,14 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  */
 
 /**
- * SocketPool_set_validation_callback - Set connection validation callback
+ * @brief SocketPool_set_validation_callback - Set connection validation callback
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @cb: Validation callback (NULL to disable)
  * @data: User data passed to callback
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * When set, callback is invoked during SocketPool_get() to validate
  * connections before reuse. Use for application-level health checks.
@@ -991,23 +1107,27 @@ SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
  */
 
 /**
- * SocketPool_ResizeCallback - Callback invoked after pool resize
+ * @brief SocketPool_ResizeCallback - Callback invoked after pool resize
+ * @ingroup connection_mgmt
  * (Type defined earlier in header)
  * @pool: Pool instance
  * @old_size: Previous maximum connections
  * @new_size: New maximum connections
  * @data: User data from SocketPool_set_resize_callback
  *
- * Thread-safe: Callback is invoked outside pool mutex.
+ * @note Thread-safe: Callback is invoked outside pool mutex.
+ * @ingroup connection_mgmt
  */
 
 /**
- * SocketPool_set_resize_callback - Register pool resize notification callback
+ * @brief SocketPool_set_resize_callback - Register pool resize notification callback
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @cb: Callback function (NULL to clear)
  * @data: User data passed to callback
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Callback is invoked after successful pool resize operations.
  */
@@ -1021,7 +1141,8 @@ extern void SocketPool_set_resize_callback (T pool,
  */
 
 /**
- * SocketPool_Stats - Pool statistics snapshot
+ * @brief SocketPool_Stats - Pool statistics snapshot
+ * @ingroup connection_mgmt
  *
  * All counters are cumulative since pool creation or last reset.
  * Rates are calculated over the configured statistics window.
@@ -1052,11 +1173,13 @@ typedef struct SocketPool_Stats
 } SocketPool_Stats;
 
 /**
- * SocketPool_get_stats - Get pool statistics snapshot
+ * @brief SocketPool_get_stats - Get pool statistics snapshot
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  * @stats: Output statistics structure
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Fills stats with current pool statistics. Calculated metrics
  * (reuse_rate, avg_connection_age, churn_rate) are computed at call time.
@@ -1064,10 +1187,12 @@ typedef struct SocketPool_Stats
 extern void SocketPool_get_stats (T pool, SocketPool_Stats *stats);
 
 /**
- * SocketPool_reset_stats - Reset pool statistics counters
+ * @brief SocketPool_reset_stats - Reset pool statistics counters
+ * @ingroup connection_mgmt
  * @pool: Pool instance
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  *
  * Resets all cumulative counters to zero and restarts the statistics window.
  * Current state values (active, idle, max) are not affected.
@@ -1075,11 +1200,13 @@ extern void SocketPool_get_stats (T pool, SocketPool_Stats *stats);
 extern void SocketPool_reset_stats (T pool);
 
 /**
- * Connection_created_at - Get connection creation timestamp
+ * @brief Connection_created_at - Get connection creation timestamp
+ * @ingroup connection_mgmt
  * @conn: Connection instance
  *
  * Returns: Creation timestamp (time_t)
- * Thread-safe: Yes - read-only access
+ * @note Thread-safe: Yes - read-only access
+ * @ingroup connection_mgmt
  */
 extern time_t Connection_created_at (const Connection_T conn);
 

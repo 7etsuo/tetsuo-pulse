@@ -2,7 +2,8 @@
 #define SOCKETCOMMON_PRIVATE_INCLUDED
 
 /**
- * SocketCommon-private.h - Private declarations for SocketCommon module
+ * @brief SocketCommon-private.h - Private declarations for SocketCommon module
+ * @ingroup core_io
  *
  * Includes internal structure definitions and static helper functions.
  * Include only from SocketCommon.c and related module .c files (Socket.c,

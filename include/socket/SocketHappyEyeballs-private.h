@@ -2,7 +2,8 @@
 #define SOCKETHAPPYEYEBALLS_PRIVATE_INCLUDED
 
 /**
- * SocketHappyEyeballs-private.h - Internal structures for Happy Eyeballs
+ * @brief SocketHappyEyeballs-private.h - Internal structures for Happy Eyeballs
+ * @ingroup core_io
  *
  * Part of the Socket Library
  *
@@ -44,7 +45,8 @@
  */
 
 /**
- * SocketHE_AttemptState - State of individual connection attempt
+ * @brief SocketHE_AttemptState - State of individual connection attempt
+ * @ingroup core_io
  *
  * Each connection attempt progresses through these states:
  * - IDLE -> CONNECTING (when connect() is called)
@@ -64,7 +66,8 @@ typedef enum
  */
 
 /**
- * SocketHE_Attempt - Single connection attempt
+ * @brief SocketHE_Attempt - Single connection attempt
+ * @ingroup core_io
  *
  * Tracks one address being tried for connection. Multiple attempts
  * may be active simultaneously (one per address family typically).
@@ -86,7 +89,8 @@ typedef struct SocketHE_Attempt
  */
 
 /**
- * SocketHE_AddressEntry - Entry in sorted address list
+ * @brief SocketHE_AddressEntry - Entry in sorted address list
+ * @ingroup core_io
  *
  * Per RFC 8305, addresses are sorted with the preferred family first,
  * then interleaved for resilience. This structure wraps addrinfo
@@ -106,7 +110,8 @@ typedef struct SocketHE_AddressEntry
  */
 
 /**
- * SocketHE_T - Happy Eyeballs connection context
+ * @brief SocketHE_T - Happy Eyeballs connection context
+ * @ingroup core_io
  *
  * Manages the full Happy Eyeballs connection process including:
  * - DNS resolution (async or blocking)

@@ -24,7 +24,8 @@
  * - Event loop integration via poll fd and timers
  *
  * State Machine:
- *   DISCONNECTED -> CONNECTING -> CONNECTED -> DISCONNECTED
+ *   @brief DISCONNECTED -> CONNECTING -> CONNECTED -> DISCONNECTED
+ *   @ingroup core_io
  *                       |              |
  *                       v              v
  *                 BACKOFF <-----> CIRCUIT_OPEN
@@ -58,7 +59,8 @@ extern const Except_T SocketReconnect_Failed;
  */
 
 /**
- * SocketReconnect_State - State of reconnection connection
+ * @brief SocketReconnect_State - State of reconnection connection
+ * @ingroup core_io
  */
 typedef enum
 {
@@ -75,7 +77,8 @@ typedef enum
  */
 
 /**
- * SocketReconnect_Policy_T - Reconnection policy configuration
+ * @brief SocketReconnect_Policy_T - Reconnection policy configuration
+ * @ingroup core_io
  *
  * Controls backoff timing, circuit breaker behavior, and health monitoring.
  */
@@ -145,7 +148,8 @@ typedef struct SocketReconnect_Policy
  */
 
 /**
- * SocketReconnect_Callback - State change callback function
+ * @brief SocketReconnect_Callback - State change callback function
+ * @ingroup core_io
  * @conn: Reconnection context
  * @old_state: Previous state
  * @new_state: New state
@@ -162,7 +166,8 @@ typedef void (*SocketReconnect_Callback) (T conn,
                                           void *userdata);
 
 /**
- * SocketReconnect_HealthCheck - Custom health check function
+ * @brief SocketReconnect_HealthCheck - Custom health check function
+ * @ingroup core_io
  * @conn: Reconnection context
  * @socket: Current connected socket
  * @timeout_ms: Maximum block time in ms (0=non-blocking check)
@@ -188,7 +193,8 @@ typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
  */
 
 /**
- * SocketReconnect_new - Create a new reconnecting connection
+ * @brief SocketReconnect_new - Create a new reconnecting connection
+ * @ingroup core_io
  * @host: Hostname or IP address to connect to
  * @port: Port number (1-65535)
  * @policy: Reconnection policy (NULL for defaults)
@@ -197,7 +203,8 @@ typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
  *
  * Returns: New reconnection context
  * Raises: SocketReconnect_Failed on initialization failure
- * Thread-safe: Yes (creates new instance)
+ * @note Thread-safe: Yes (creates new instance)
+ * @ingroup core_io
  *
  * Creates a reconnecting connection context. The connection is not
  * started automatically - call SocketReconnect_connect() to begin.
@@ -208,12 +215,13 @@ extern T SocketReconnect_new (const char *host, int port,
                               void *userdata);
 
 /**
- * SocketReconnect_free - Free a reconnecting connection
- * @conn: Pointer to context (will be set to NULL)
- *
- * Thread-safe: No
- *
- * Disconnects if connected and frees all resources.
+ * @brief Free a reconnecting connection.
+ * @ingroup core_io
+ * @param conn Pointer to context (will be set to NULL).
+ * @threadsafe No.
+ * @note Disconnects if connected and frees all resources.
+ * @see SocketReconnect_new() for creating connections.
+ * @see SocketReconnect_disconnect() for graceful disconnection.
  */
 extern void SocketReconnect_free (T *conn);
 
@@ -223,35 +231,39 @@ extern void SocketReconnect_free (T *conn);
  */
 
 /**
- * SocketReconnect_connect - Start connecting
- * @conn: Reconnection context
- *
- * Thread-safe: No
- *
- * Initiates connection. If already connected or connecting, this is a no-op.
- * If in backoff or circuit-open state, respects those constraints.
+ * @brief Start connecting.
+ * @ingroup core_io
+ * @param conn Reconnection context.
+ * @threadsafe No.
+ * @note Initiates connection. If already connected or connecting, this is a no-op.
+ * @note If in backoff or circuit-open state, respects those constraints.
+ * @see SocketReconnect_new() for creating connections.
+ * @see SocketReconnect_disconnect() for stopping connections.
+ * @see SocketReconnect_state() for current state.
  */
 extern void SocketReconnect_connect (T conn);
 
 /**
- * SocketReconnect_disconnect - Gracefully disconnect
- * @conn: Reconnection context
- *
- * Thread-safe: No
- *
- * Disconnects without triggering reconnection logic. Resets attempt counter.
- * Use this for intentional disconnection (e.g., shutdown).
+ * @brief Gracefully disconnect.
+ * @ingroup core_io
+ * @param conn Reconnection context.
+ * @threadsafe No.
+ * @note Disconnects without triggering reconnection logic. Resets attempt counter.
+ * @note Use this for intentional disconnection (e.g., shutdown).
+ * @see SocketReconnect_connect() for starting connections.
+ * @see SocketReconnect_free() for complete cleanup.
  */
 extern void SocketReconnect_disconnect (T conn);
 
 /**
- * SocketReconnect_reset - Reset backoff and circuit breaker state
- * @conn: Reconnection context
- *
- * Thread-safe: No
- *
- * Clears attempt counter, consecutive failures, and circuit breaker state.
- * Does not disconnect if connected. Use after external recovery.
+ * @brief Reset backoff and circuit breaker state.
+ * @ingroup core_io
+ * @param conn Reconnection context.
+ * @threadsafe No.
+ * @note Clears attempt counter, consecutive failures, and circuit breaker state.
+ * @note Does not disconnect if connected. Use after external recovery.
+ * @see SocketReconnect_connect() for initiating reconnection.
+ * @see SocketReconnect_state() for current state.
  */
 extern void SocketReconnect_reset (T conn);
 
@@ -261,14 +273,15 @@ extern void SocketReconnect_reset (T conn);
  */
 
 /**
- * SocketReconnect_socket - Get underlying socket
- * @conn: Reconnection context
- *
- * Returns: Connected socket, or NULL if not connected
- * Thread-safe: No
- *
- * Returns the underlying socket only when in RECONNECT_CONNECTED state.
- * Do not close or free the returned socket directly.
+ * @brief Get underlying socket.
+ * @ingroup core_io
+ * @param conn Reconnection context.
+ * @return Connected socket, or NULL if not connected.
+ * @threadsafe No.
+ * @note Returns the underlying socket only when in RECONNECT_CONNECTED state.
+ * @note Do not close or free the returned socket directly.
+ * @see SocketReconnect_state() for connection state.
+ * @see SocketReconnect_isconnected() for boolean check.
  */
 extern Socket_T SocketReconnect_socket (T conn);
 
@@ -278,38 +291,46 @@ extern Socket_T SocketReconnect_socket (T conn);
  */
 
 /**
- * SocketReconnect_state - Get current state
+ * @brief SocketReconnect_state - Get current state
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: Current reconnection state
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern SocketReconnect_State SocketReconnect_state (T conn);
 
 /**
- * SocketReconnect_isconnected - Check if currently connected
+ * @brief SocketReconnect_isconnected - Check if currently connected
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: 1 if connected, 0 otherwise
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketReconnect_isconnected (T conn);
 
 /**
- * SocketReconnect_attempts - Get current attempt count
+ * @brief SocketReconnect_attempts - Get current attempt count
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: Number of connection attempts since last success or reset
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketReconnect_attempts (T conn);
 
 /**
- * SocketReconnect_failures - Get consecutive failure count
+ * @brief SocketReconnect_failures - Get consecutive failure count
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: Number of consecutive failures (for circuit breaker)
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketReconnect_failures (T conn);
 
@@ -319,11 +340,13 @@ extern int SocketReconnect_failures (T conn);
  */
 
 /**
- * SocketReconnect_pollfd - Get file descriptor for poll integration
+ * @brief SocketReconnect_pollfd - Get file descriptor for poll integration
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: File descriptor to poll for read/write events, or -1 if none
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Returns the underlying socket fd when connecting or connected.
  * Add this to your poll set and call SocketReconnect_process() on events.
@@ -331,10 +354,12 @@ extern int SocketReconnect_failures (T conn);
 extern int SocketReconnect_pollfd (T conn);
 
 /**
- * SocketReconnect_process - Process poll events
+ * @brief SocketReconnect_process - Process poll events
+ * @ingroup core_io
  * @conn: Reconnection context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Call when SocketReconnect_pollfd() becomes readable/writable.
  * Handles connection completion, detects disconnection, etc.
@@ -342,11 +367,13 @@ extern int SocketReconnect_pollfd (T conn);
 extern void SocketReconnect_process (T conn);
 
 /**
- * SocketReconnect_next_timeout_ms - Get time until next action
+ * @brief SocketReconnect_next_timeout_ms - Get time until next action
+ * @ingroup core_io
  * @conn: Reconnection context
  *
  * Returns: Milliseconds until next timeout, or -1 if none pending
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Returns the time until:
  * - Next backoff retry
@@ -358,10 +385,12 @@ extern void SocketReconnect_process (T conn);
 extern int SocketReconnect_next_timeout_ms (T conn);
 
 /**
- * SocketReconnect_tick - Process timers
+ * @brief SocketReconnect_tick - Process timers
+ * @ingroup core_io
  * @conn: Reconnection context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Call periodically or when SocketReconnect_next_timeout_ms() expires.
  * Handles backoff retry, circuit breaker state transitions, health checks.
@@ -374,11 +403,13 @@ extern void SocketReconnect_tick (T conn);
  */
 
 /**
- * SocketReconnect_set_health_check - Set custom health check function
+ * @brief SocketReconnect_set_health_check - Set custom health check function
+ * @ingroup core_io
  * @conn: Reconnection context
  * @check: Health check function (NULL to use default)
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Sets a custom health check function. Custom checks must respect
  * policy.health_check_timeout_ms to avoid blocking the calling thread.
@@ -393,10 +424,12 @@ SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check);
  */
 
 /**
- * SocketReconnect_policy_defaults - Initialize policy with defaults
+ * @brief SocketReconnect_policy_defaults - Initialize policy with defaults
+ * @ingroup core_io
  * @policy: Policy structure to initialize
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  *
  * Fills policy with recommended defaults:
  * - initial_delay_ms: 100ms
@@ -417,13 +450,15 @@ extern void SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy);
  */
 
 /**
- * SocketReconnect_send - Send data with auto-reconnect on error
+ * @brief SocketReconnect_send - Send data with auto-reconnect on error
+ * @ingroup core_io
  * @conn: Reconnection context
  * @buf: Data buffer to send
  * @len: Number of bytes to send
  *
  * Returns: Bytes sent (>0), 0 if not connected, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Sends data if connected. On connection error, triggers reconnection
  * and returns -1 with errno set to ENOTCONN.
@@ -434,13 +469,15 @@ extern void SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy);
 extern ssize_t SocketReconnect_send (T conn, const void *buf, size_t len);
 
 /**
- * SocketReconnect_recv - Receive data with auto-reconnect on error
+ * @brief SocketReconnect_recv - Receive data with auto-reconnect on error
+ * @ingroup core_io
  * @conn: Reconnection context
  * @buf: Buffer to receive data into
  * @len: Maximum bytes to receive
  *
  * Returns: Bytes received (>0), 0 if EOF/disconnected, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Receives data if connected. On connection error or EOF, triggers
  * reconnection and returns 0.
@@ -456,11 +493,13 @@ extern ssize_t SocketReconnect_recv (T conn, void *buf, size_t len);
  */
 
 /**
- * SocketReconnect_state_name - Get string name for state
+ * @brief SocketReconnect_state_name - Get string name for state
+ * @ingroup core_io
  * @state: Reconnection state
  *
  * Returns: Static string with state name
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern const char *SocketReconnect_state_name (SocketReconnect_State state);
 

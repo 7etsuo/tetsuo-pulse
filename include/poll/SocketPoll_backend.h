@@ -45,7 +45,8 @@ typedef struct PollBackend_T *PollBackend_T;
 /* ==================== Common Backend Macros ==================== */
 
 /**
- * VALIDATE_FD - Validate file descriptor and return error if invalid
+ * @brief VALIDATE_FD - Validate file descriptor and return error if invalid
+ * @ingroup event_system
  * Used by all backends to eliminate duplicate fd validation code.
  */
 #define VALIDATE_FD(fd)                                                       \

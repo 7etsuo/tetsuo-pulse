@@ -1,5 +1,6 @@
 /**
- * SocketWS-private.h - Internal structures for WebSocket Support
+ * @brief SocketWS-private.h - Internal structures for WebSocket Support
+ * @ingroup core_io
  *
  * Part of the Socket Library
  *

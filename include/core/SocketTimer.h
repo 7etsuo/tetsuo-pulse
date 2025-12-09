@@ -54,57 +54,68 @@ extern const Except_T
     SocketTimer_Failed; /**< General timer operation failure */
 
 /**
- * SocketTimer_add - Add a one-shot timer
- * @poll: Event poll instance to associate timer with
- * @delay_ms: Delay in milliseconds (must be >= 0)
- * @callback: Function to call when timer expires
- * @userdata: User data passed to callback
- * Returns: Timer handle for cancellation, or NULL on error
- * Raises: SocketTimer_Failed on error
- * Thread-safe: Yes
- * Note: Timer fires once after delay_ms milliseconds. Callbacks execute
- * during SocketPoll_wait() in the calling thread.
+ * @brief Add a one-shot timer.
+ * @ingroup event_system
+ * @param poll Event poll instance to associate timer with.
+ * @param delay_ms Delay in milliseconds (must be >= 0).
+ * @param callback Function to call when timer expires.
+ * @param userdata User data passed to callback.
+ * @return Timer handle for cancellation, or NULL on error.
+ * @throws SocketTimer_Failed on error.
+ * @threadsafe Yes.
+ * @note Timer fires once after delay_ms milliseconds. Callbacks execute during SocketPoll_wait() in the calling thread.
+ * @see SocketTimer_add_repeating() for repeating timers.
+ * @see SocketTimer_cancel() for cancellation.
  */
 extern T SocketTimer_add (SocketPoll_T poll, int64_t delay_ms,
                           SocketTimerCallback callback, void *userdata);
 
 /**
- * SocketTimer_add_repeating - Add a repeating timer
- * @poll: Event poll instance to associate timer with
- * @interval_ms: Interval in milliseconds between firings (must be >= 1)
- * @callback: Function to call when timer expires
- * @userdata: User data passed to callback
- * Returns: Timer handle for cancellation, or NULL on error
- * Raises: SocketTimer_Failed on error
- * Thread-safe: Yes
- * Note: Timer fires repeatedly every interval_ms milliseconds. First firing
- * occurs after interval_ms milliseconds. Use SocketTimer_cancel() to stop.
+ * @brief Add a repeating timer.
+ * @ingroup event_system
+ * @param poll Event poll instance to associate timer with.
+ * @param interval_ms Interval in milliseconds between firings (must be >= 1).
+ * @param callback Function to call when timer expires.
+ * @param userdata User data passed to callback.
+ * @return Timer handle for cancellation, or NULL on error.
+ * @throws SocketTimer_Failed on error.
+ * @threadsafe Yes.
+ * @note Timer fires repeatedly every interval_ms milliseconds. First firing occurs after interval_ms milliseconds.
+ * @note Use SocketTimer_cancel() to stop.
+ * @see SocketTimer_add() for one-shot timers.
+ * @see SocketTimer_cancel() for cancellation.
  */
 extern T SocketTimer_add_repeating (SocketPoll_T poll, int64_t interval_ms,
                                     SocketTimerCallback callback,
                                     void *userdata);
 
 /**
- * SocketTimer_cancel - Cancel a pending timer
- * @poll: Event poll instance timer is associated with
- * @timer: Timer handle to cancel
- * Returns: 0 on success, -1 if timer already fired or invalid
- * Raises: SocketTimer_Failed on error
- * Thread-safe: Yes
- * Note: Safe to call on already-fired or cancelled timers.
- * Do not call from within a timer callback function.
+ * @brief Cancel a pending timer.
+ * @ingroup event_system
+ * @param poll Event poll instance timer is associated with.
+ * @param timer Timer handle to cancel.
+ * @return 0 on success, -1 if timer already fired or invalid.
+ * @throws SocketTimer_Failed on error.
+ * @threadsafe Yes.
+ * @note Safe to call on already-fired or cancelled timers.
+ * @note Do not call from within a timer callback function.
+ * @see SocketTimer_add() for creating timers.
+ * @see SocketTimer_add_repeating() for repeating timers.
  */
 extern int SocketTimer_cancel (SocketPoll_T poll, T timer);
 
 /**
- * SocketTimer_remaining - Get milliseconds until timer expiry
- * @poll: Event poll instance timer is associated with
- * @timer: Timer handle to query
- * Returns: Milliseconds until expiry (>= 0), or -1 if timer fired/cancelled
- * Raises: SocketTimer_Failed on error
- * Thread-safe: Yes
- * Note: Returns 0 if timer has already expired but not yet fired.
- * Useful for debugging and implementing timeout logic.
+ * @brief Get milliseconds until timer expiry.
+ * @ingroup event_system
+ * @param poll Event poll instance timer is associated with.
+ * @param timer Timer handle to query.
+ * @return Milliseconds until expiry (>= 0), or -1 if timer fired/cancelled.
+ * @throws SocketTimer_Failed on error.
+ * @threadsafe Yes.
+ * @note Returns 0 if timer has already expired but not yet fired.
+ * @note Useful for debugging and implementing timeout logic.
+ * @see SocketTimer_add() for creating timers.
+ * @see SocketTimer_cancel() for checking timer state.
  */
 extern int64_t SocketTimer_remaining (SocketPoll_T poll, T timer);
 

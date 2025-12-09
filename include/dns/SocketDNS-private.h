@@ -32,7 +32,8 @@ typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *, in
  */
 
 /**
- * RequestState - DNS request lifecycle states
+ * @brief RequestState - DNS request lifecycle states
+ * @ingroup core_io
  */
 typedef enum
 {
@@ -43,7 +44,8 @@ typedef enum
 } RequestState;
 
 /**
- * DnsCleanupLevel - Cleanup levels for partial initialization failure
+ * @brief DnsCleanupLevel - Cleanup levels for partial initialization failure
+ * @ingroup core_io
  *
  * Used by cleanup_on_init_failure() to know which resources need cleanup
  * when initialization fails partway through. Listed in initialization order.
@@ -64,7 +66,8 @@ enum DnsCleanupLevel
  */
 
 /**
- * SocketDNS_Request_T - DNS resolution request structure
+ * @brief SocketDNS_Request_T - DNS resolution request structure
+ * @ingroup core_io
  *
  * Represents a single DNS resolution request with all associated state.
  * Allocated from the resolver's arena and lives until result is retrieved
@@ -88,7 +91,8 @@ struct SocketDNS_Request_T
 };
 
 /**
- * SocketDNS_T - Async DNS resolver structure
+ * @brief SocketDNS_T - Async DNS resolver structure
+ * @ingroup core_io
  *
  * Thread pool-based DNS resolver with queue management, hash table lookup,
  * and pipe-based completion signaling for integration with SocketPoll.
@@ -124,7 +128,8 @@ struct SocketDNS_T
 #define COMPLETION_SIGNAL_BYTE SOCKET_DNS_COMPLETION_SIGNAL_BYTE
 
 /**
- * SIGNAL_DNS_COMPLETION - Signal completion and wake waiters
+ * @brief SIGNAL_DNS_COMPLETION - Signal completion and wake waiters
+ * @ingroup core_io
  * @dns: DNS resolver instance
  * Consolidates repeated signal_completion + pthread_cond_broadcast pattern.
  */
@@ -137,7 +142,8 @@ struct SocketDNS_T
   while (0)
 
 /**
- * SANITIZE_TIMEOUT_MS - Sanitize timeout value (negative -> 0)
+ * @brief SANITIZE_TIMEOUT_MS - Sanitize timeout value (negative -> 0)
+ * @ingroup core_io
  * @timeout_ms: Timeout in milliseconds
  * Returns: 0 if negative, otherwise original value
  */

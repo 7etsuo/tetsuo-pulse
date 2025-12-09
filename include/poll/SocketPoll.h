@@ -31,7 +31,8 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * @ingroup event_system
  * @brief High-level interface for monitoring multiple sockets for I/O events.
  *
- * High-level interface for monitoring multiple sockets for I/O events.
+ * @brief High-level interface for monitoring multiple sockets for I/O events.
+ * @ingroup event_system
  * Uses epoll on Linux for scalable event notification. Supports both
  * edge-triggered and level-triggered modes.
  *
@@ -66,7 +67,8 @@ typedef struct T *T;
  */
 
 /**
- * SocketPoll_Failed - Poll operation failure
+ * @brief SocketPoll_Failed - Poll operation failure
+ * @ingroup event_system
  *
  * Category: RESOURCE or PROTOCOL
  * Retryable: Depends on errno
@@ -172,72 +174,92 @@ extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
 extern void SocketPoll_del (T poll, Socket_T socket);
 
 /**
- * SocketPoll_getdefaulttimeout - Get default wait timeout in milliseconds
- * @poll: Poll instance
- * Returns: Default timeout in milliseconds
+ * @brief Get default wait timeout in milliseconds.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @return Default timeout in milliseconds.
+ * @threadsafe Yes.
+ * @see SocketPoll_setdefaulttimeout() for setting the timeout.
+ * @see SocketPoll_wait() for how the default timeout is used.
  */
 extern int SocketPoll_getdefaulttimeout (T poll);
 
 /**
- * SocketPoll_setdefaulttimeout - Set default wait timeout in milliseconds
- * @poll: Poll instance
- * @timeout: Timeout in milliseconds (0 = immediate, -1 = infinite)
- * Returns: Nothing
+ * @brief Set default wait timeout in milliseconds.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param timeout Timeout in milliseconds (0 = immediate, -1 = infinite).
+ * @threadsafe Yes.
+ * @see SocketPoll_getdefaulttimeout() for retrieving the current timeout.
+ * @see SocketPoll_wait() for how the default timeout is used.
  */
 extern void SocketPoll_setdefaulttimeout (T poll, int timeout);
 
 /**
- * SocketPoll_wait - Wait for events
- * @poll: Poll instance
- * @events: Output - array of events that occurred
- * @timeout: Timeout in milliseconds (-1 for infinite)
- * Returns: Number of events (0 on timeout)
- * Raises: SocketPoll_Failed on error
- * Thread-safe: Yes - event array is thread-local to poll instance
- * The events array points to internal memory - do not free
- * Note: Also processes async I/O completions automatically
+ * @brief Wait for events.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param events Output - array of events that occurred.
+ * @param timeout Timeout in milliseconds (-1 for infinite).
+ * @return Number of events (0 on timeout).
+ * @threadsafe Yes - event array is thread-local to poll instance.
+ * @throws SocketPoll_Failed on error.
+ * @note The events array points to internal memory - do not free.
+ * @note Also processes async I/O completions automatically.
+ * @see SocketPoll_add() for registering sockets to monitor.
+ * @see SocketEvent_T for event structure details.
  */
 extern int SocketPoll_wait (T poll, SocketEvent_T **events, int timeout);
 
 /**
- * SocketPoll_get_async - Get async I/O context from poll
- * @poll: Poll instance
- * Returns: Async context or NULL if unavailable
- * Thread-safe: Yes
- * Note: Returns NULL if async I/O is not available on this platform
+ * @brief Get async I/O context from poll.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @return Async context or NULL if unavailable.
+ * @threadsafe Yes.
+ * @note Returns NULL if async I/O is not available on this platform.
+ * @see SocketAsync_T for async I/O operations.
+ * @see SocketPoll_wait() for automatic async completion processing.
  */
 extern SocketAsync_T SocketPoll_get_async (T poll);
 
 /**
- * SocketPoll_getmaxregistered - Get maximum registered sockets limit
- * @poll: Poll instance
- * Returns: Maximum limit (0 = unlimited)
- * Thread-safe: Yes
- *
- * Defense-in-depth: Returns the configured limit on socket registrations.
- * Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled).
+ * @brief Get maximum registered sockets limit.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @return Maximum limit (0 = unlimited).
+ * @threadsafe Yes.
+ * @note Defense-in-depth: Returns the configured limit on socket registrations.
+ * @note Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled).
+ * @see SocketPoll_setmaxregistered() for setting the limit.
+ * @see SocketPoll_getregisteredcount() for current count.
  */
 extern int SocketPoll_getmaxregistered (T poll);
 
 /**
- * SocketPoll_setmaxregistered - Set maximum registered sockets limit
- * @poll: Poll instance
- * @max: Maximum limit (0 = unlimited)
- * Thread-safe: Yes
- *
- * Defense-in-depth: Limits the number of sockets that can be registered
- * to prevent resource exhaustion attacks. Set to 0 to disable.
- *
- * Note: Cannot set limit below current registered_count.
- * Raises: SocketPoll_Failed if max < registered_count and max > 0
+ * @brief Set maximum registered sockets limit.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param max Maximum limit (0 = unlimited).
+ * @threadsafe Yes.
+ * @throws SocketPoll_Failed if max < registered_count and max > 0.
+ * @note Defense-in-depth: Limits the number of sockets that can be registered to prevent resource exhaustion attacks.
+ * @note Set to 0 to disable limit.
+ * @note Cannot set limit below current registered_count.
+ * @see SocketPoll_getmaxregistered() for retrieving the current limit.
+ * @see SocketPoll_getregisteredcount() for current count.
  */
 extern void SocketPoll_setmaxregistered (T poll, int max);
 
 /**
- * SocketPoll_getregisteredcount - Get current registered socket count
- * @poll: Poll instance
- * Returns: Number of currently registered sockets
- * Thread-safe: Yes
+ * @brief Get current registered socket count.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @return Number of currently registered sockets.
+ * @threadsafe Yes.
+ * @see SocketPoll_getmaxregistered() for the maximum allowed.
+ * @see SocketPoll_add() for registering sockets.
+ * @see SocketPoll_del() for removing sockets.
  */
 extern int SocketPoll_getregisteredcount (T poll);
 

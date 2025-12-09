@@ -2,7 +2,8 @@
 #define SOCKETRECONNECT_PRIVATE_INCLUDED
 
 /**
- * SocketReconnect-private.h - Internal structures for Reconnection Framework
+ * @brief SocketReconnect-private.h - Internal structures for Reconnection Framework
+ * @ingroup core_io
  *
  * This header contains internal implementation details for the SocketReconnect
  * module. Not for public use.
@@ -36,7 +37,8 @@
  */
 
 /**
- * SocketReconnect_CircuitState - Internal circuit breaker state
+ * @brief SocketReconnect_CircuitState - Internal circuit breaker state
+ * @ingroup core_io
  */
 typedef enum
 {
@@ -51,7 +53,8 @@ typedef enum
  */
 
 /**
- * SocketReconnect_T - Reconnecting connection context
+ * @brief SocketReconnect_T - Reconnecting connection context
+ * @ingroup core_io
  *
  * Manages the full reconnection lifecycle including backoff timing,
  * circuit breaker state, and health monitoring.
@@ -136,7 +139,8 @@ socketreconnect_elapsed_ms (int64_t start_ms)
  *
  * Uses a simple xorshift-based PRNG for jitter calculation.
  * Not cryptographically secure, but sufficient for timing jitter.
- * Thread-safe: Uses thread-local storage for the PRNG seed.
+ * @note Thread-safe: Uses thread-local storage for the PRNG seed.
+ * @ingroup core_io
  */
 static inline double
 socketreconnect_random_double (void)

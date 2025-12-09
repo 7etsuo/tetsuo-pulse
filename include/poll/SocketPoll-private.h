@@ -2,12 +2,14 @@
 #define SOCKETPOLL_PRIVATE_INCLUDED
 
 /**
- * SocketPoll-private.h - Private internal definitions for SocketPoll module
+ * @brief SocketPoll-private.h - Private internal definitions for SocketPoll module
+ * @ingroup event_system
  *
  * This header defines internal types used by the SocketPoll implementation.
  * Not part of public API.
  *
- * Thread-safe where noted.
+ * @brief Thread-safe where noted.
+ * @ingroup event_system
  */
 
 #include <pthread.h>
@@ -29,7 +31,8 @@
 /* ==================== Internal Type Definitions ==================== */
 
 /**
- * SocketData - Socket to user data mapping entry
+ * @brief SocketData - Socket to user data mapping entry
+ * @ingroup event_system
  * Used in hash table for O(1) socket->data lookup.
  */
 typedef struct SocketData
@@ -40,7 +43,8 @@ typedef struct SocketData
 } SocketData;
 
 /**
- * FdSocketEntry - File descriptor to socket mapping entry
+ * @brief FdSocketEntry - File descriptor to socket mapping entry
+ * @ingroup event_system
  * Used for reverse lookup during event translation.
  */
 typedef struct FdSocketEntry
@@ -76,13 +80,15 @@ struct T
 /* ==================== Exception Handling ==================== */
 
 /**
- * RAISE_POLL_ERROR - Raise exception with detailed error message
+ * @brief RAISE_POLL_ERROR - Raise exception with detailed error message
+ * @ingroup event_system
  *
  * REFACTOR: Now uses centralized SOCKET_RAISE_MODULE_ERROR from SocketUtil.h
  * which handles thread-local exception copy with socket_error_buf reason.
  * Use SOCKET_ERROR_FMT/MSG macros to populate socket_error_buf first.
  *
- * Thread-safe: Creates thread-local copy of exception.
+ * @note Thread-safe: Creates thread-local copy of exception.
+ * @ingroup event_system
  *
  * NOTE: The thread-local exception SocketPoll_DetailedException is declared
  * in SocketPoll.c using SOCKET_DECLARE_MODULE_EXCEPTION(SocketPoll).
@@ -95,7 +101,8 @@ struct T
  * socketpoll_get_timer_heap - Get timer heap from poll (private function)
  * @poll: Poll instance
  * Returns: Timer heap pointer or NULL if not available
- * Thread-safe: No (internal use only)
+ * @note Thread-safe: No (internal use only)
+ * @ingroup event_system
  */
 extern SocketTimer_heap_T *socketpoll_get_timer_heap (T poll);
 

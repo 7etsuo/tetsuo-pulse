@@ -76,17 +76,20 @@ typedef struct SocketWS *T;
  */
 
 /**
- * SocketWS_Failed - General WebSocket operation failure
+ * @brief SocketWS_Failed - General WebSocket operation failure
+ * @ingroup core_io
  */
 extern const Except_T SocketWS_Failed;
 
 /**
- * SocketWS_ProtocolError - WebSocket protocol violation
+ * @brief SocketWS_ProtocolError - WebSocket protocol violation
+ * @ingroup core_io
  */
 extern const Except_T SocketWS_ProtocolError;
 
 /**
- * SocketWS_Closed - WebSocket connection closed
+ * @brief SocketWS_Closed - WebSocket connection closed
+ * @ingroup core_io
  */
 extern const Except_T SocketWS_Closed;
 
@@ -231,10 +234,12 @@ typedef struct
  */
 
 /**
- * SocketWS_config_defaults - Initialize configuration with defaults
+ * @brief SocketWS_config_defaults - Initialize configuration with defaults
+ * @ingroup core_io
  * @config: Configuration to initialize
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern void SocketWS_config_defaults (SocketWS_Config *config);
 
@@ -244,7 +249,8 @@ extern void SocketWS_config_defaults (SocketWS_Config *config);
  */
 
 /**
- * SocketWS_client_new - Create client WebSocket from connected socket
+ * @brief SocketWS_client_new - Create client WebSocket from connected socket
+ * @ingroup core_io
  * @socket: Connected TCP socket
  * @host: Host header value (required)
  * @path: Request path (e.g., "/ws", default: "/")
@@ -255,7 +261,8 @@ extern void SocketWS_config_defaults (SocketWS_Config *config);
  *
  * Returns: WebSocket instance
  * Raises: SocketWS_Failed on error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern T SocketWS_client_new (Socket_T socket, const char *host,
                               const char *path, const SocketWS_Config *config);
@@ -266,16 +273,19 @@ extern T SocketWS_client_new (Socket_T socket, const char *host,
  */
 
 /**
- * SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
+ * @brief SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
+ * @ingroup core_io
  * @request: Parsed HTTP request
  *
  * Returns: 1 if WebSocket upgrade request, 0 otherwise
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern int SocketWS_is_upgrade (const SocketHTTP_Request *request);
 
 /**
- * SocketWS_server_accept - Accept WebSocket upgrade
+ * @brief SocketWS_server_accept - Accept WebSocket upgrade
+ * @ingroup core_io
  * @socket: TCP socket with pending upgrade request
  * @request: Parsed HTTP upgrade request
  * @config: Configuration (NULL for defaults)
@@ -285,19 +295,22 @@ extern int SocketWS_is_upgrade (const SocketHTTP_Request *request);
  *
  * Returns: WebSocket instance
  * Raises: SocketWS_Failed on error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern T SocketWS_server_accept (Socket_T socket,
                                  const SocketHTTP_Request *request,
                                  const SocketWS_Config *config);
 
 /**
- * SocketWS_server_reject - Reject upgrade with HTTP response
+ * @brief SocketWS_server_reject - Reject upgrade with HTTP response
+ * @ingroup core_io
  * @socket: TCP socket
  * @status_code: HTTP status (e.g., 400, 403)
  * @reason: Rejection reason
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern void SocketWS_server_reject (Socket_T socket, int status_code,
                                     const char *reason);
@@ -308,58 +321,70 @@ extern void SocketWS_server_reject (Socket_T socket, int status_code,
  */
 
 /**
- * SocketWS_free - Free WebSocket connection
+ * @brief SocketWS_free - Free WebSocket connection
+ * @ingroup core_io
  * @ws: Pointer to WebSocket (set to NULL after free)
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern void SocketWS_free (T *ws);
 
 /**
- * SocketWS_handshake - Perform/continue handshake
+ * @brief SocketWS_handshake - Perform/continue handshake
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * For clients: Sends HTTP upgrade request, receives and validates response.
  * For servers: Sends HTTP 101 response.
  *
  * Returns: 0 if complete, 1 if in progress (call again), -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_handshake (T ws);
 
 /**
- * SocketWS_state - Get current state
+ * @brief SocketWS_state - Get current state
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Current state (CONNECTING, OPEN, CLOSING, CLOSED)
- * Thread-safe: No (read-only, safe for status checks)
+ * @note Thread-safe: No (read-only, safe for status checks)
+ * @ingroup core_io
  */
 extern SocketWS_State SocketWS_state (T ws);
 
 /**
- * SocketWS_socket - Get underlying socket
+ * @brief SocketWS_socket - Get underlying socket
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: TCP socket (do not close directly)
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern Socket_T SocketWS_socket (T ws);
 
 /**
- * SocketWS_selected_subprotocol - Get negotiated subprotocol
+ * @brief SocketWS_selected_subprotocol - Get negotiated subprotocol
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Selected subprotocol string, or NULL if none
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern const char *SocketWS_selected_subprotocol (T ws);
 
 /**
- * SocketWS_compression_enabled - Check if compression active
+ * @brief SocketWS_compression_enabled - Check if compression active
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: 1 if permessage-deflate enabled, 0 otherwise
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_compression_enabled (T ws);
 
@@ -369,7 +394,8 @@ extern int SocketWS_compression_enabled (T ws);
  */
 
 /**
- * SocketWS_send_text - Send text message
+ * @brief SocketWS_send_text - Send text message
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @data: UTF-8 text data
  * @len: Length in bytes
@@ -378,45 +404,53 @@ extern int SocketWS_compression_enabled (T ws);
  * Large messages are automatically fragmented.
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_send_text (T ws, const char *data, size_t len);
 
 /**
- * SocketWS_send_binary - Send binary message
+ * @brief SocketWS_send_binary - Send binary message
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @data: Binary data
  * @len: Length in bytes
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_send_binary (T ws, const void *data, size_t len);
 
 /**
- * SocketWS_ping - Send PING control frame
+ * @brief SocketWS_ping - Send PING control frame
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @data: Optional payload (max 125 bytes, may be NULL)
  * @len: Payload length
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_ping (T ws, const void *data, size_t len);
 
 /**
- * SocketWS_pong - Send unsolicited PONG
+ * @brief SocketWS_pong - Send unsolicited PONG
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @data: Payload (max 125 bytes, may be NULL)
  * @len: Payload length
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_pong (T ws, const void *data, size_t len);
 
 /**
- * SocketWS_close - Initiate close handshake
+ * @brief SocketWS_close - Initiate close handshake
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @code: Close status code (use WS_CLOSE_NORMAL for normal close)
  * @reason: Optional UTF-8 reason (max 123 bytes, may be NULL)
@@ -424,7 +458,8 @@ extern int SocketWS_pong (T ws, const void *data, size_t len);
  * Transitions to CLOSING state and sends CLOSE frame.
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_close (T ws, int code, const char *reason);
 
@@ -434,7 +469,8 @@ extern int SocketWS_close (T ws, int code, const char *reason);
  */
 
 /**
- * SocketWS_recv_message - Receive complete message
+ * @brief SocketWS_recv_message - Receive complete message
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @msg: Output message structure
  *
@@ -445,16 +481,19 @@ extern int SocketWS_close (T ws, int code, const char *reason);
  * Caller must free msg->data when done.
  *
  * Returns: 1 if message received, 0 if closed, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_recv_message (T ws, SocketWS_Message *msg);
 
 /**
- * SocketWS_recv_available - Check if data available
+ * @brief SocketWS_recv_available - Check if data available
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: 1 if data available, 0 otherwise
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_recv_available (T ws);
 
@@ -464,25 +503,30 @@ extern int SocketWS_recv_available (T ws);
  */
 
 /**
- * SocketWS_pollfd - Get file descriptor for polling
+ * @brief SocketWS_pollfd - Get file descriptor for polling
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Socket file descriptor
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_pollfd (T ws);
 
 /**
- * SocketWS_poll_events - Get events to poll for
+ * @brief SocketWS_poll_events - Get events to poll for
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Bitmask of POLL_READ, POLL_WRITE
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern unsigned SocketWS_poll_events (T ws);
 
 /**
- * SocketWS_process - Process poll events
+ * @brief SocketWS_process - Process poll events
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @events: Events from poll
  *
@@ -490,12 +534,14 @@ extern unsigned SocketWS_poll_events (T ws);
  * the socket is ready.
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_process (T ws, unsigned events);
 
 /**
- * SocketWS_enable_auto_ping - Enable automatic ping/pong
+ * @brief SocketWS_enable_auto_ping - Enable automatic ping/pong
+ * @ingroup core_io
  * @ws: WebSocket instance
  * @poll: SocketPoll instance for timer
  *
@@ -503,15 +549,18 @@ extern int SocketWS_process (T ws, unsigned events);
  * Requires SocketPoll for timer integration.
  *
  * Returns: 0 on success, -1 on error
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_enable_auto_ping (T ws, SocketPoll_T poll);
 
 /**
- * SocketWS_disable_auto_ping - Disable automatic ping/pong
+ * @brief SocketWS_disable_auto_ping - Disable automatic ping/pong
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern void SocketWS_disable_auto_ping (T ws);
 
@@ -521,20 +570,24 @@ extern void SocketWS_disable_auto_ping (T ws);
  */
 
 /**
- * SocketWS_close_code - Get peer's close code
+ * @brief SocketWS_close_code - Get peer's close code
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Close code, or 0 if not received
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketWS_close_code (T ws);
 
 /**
- * SocketWS_close_reason - Get peer's close reason
+ * @brief SocketWS_close_reason - Get peer's close reason
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Close reason string, or NULL if none
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern const char *SocketWS_close_reason (T ws);
 
@@ -544,20 +597,24 @@ extern const char *SocketWS_close_reason (T ws);
  */
 
 /**
- * SocketWS_last_error - Get last error code
+ * @brief SocketWS_last_error - Get last error code
+ * @ingroup core_io
  * @ws: WebSocket instance
  *
  * Returns: Last error code
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern SocketWS_Error SocketWS_last_error (T ws);
 
 /**
- * SocketWS_error_string - Get human-readable error description
+ * @brief SocketWS_error_string - Get human-readable error description
+ * @ingroup core_io
  * @error: Error code
  *
  * Returns: Static string describing error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern const char *SocketWS_error_string (SocketWS_Error error);
 

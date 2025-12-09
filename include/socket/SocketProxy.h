@@ -107,7 +107,8 @@ typedef struct T *T;
  */
 
 /**
- * SocketProxy_Failed - General proxy operation failure
+ * @brief SocketProxy_Failed - General proxy operation failure
+ * @ingroup core_io
  *
  * Raised when proxy connection or handshake fails.
  * Use SocketProxy_Conn_result() for specific error codes.
@@ -170,7 +171,8 @@ extern const Except_T SocketProxy_Failed;
  */
 
 /**
- * SocketProxyType - Supported proxy protocol types
+ * @brief SocketProxyType - Supported proxy protocol types
+ * @ingroup core_io
  */
 typedef enum
 {
@@ -189,7 +191,8 @@ typedef enum
  */
 
 /**
- * SocketProxy_Result - Proxy operation result codes
+ * @brief SocketProxy_Result - Proxy operation result codes
+ * @ingroup core_io
  *
  * Maps protocol-specific errors to unified result codes.
  */
@@ -218,10 +221,12 @@ typedef enum
  */
 
 /**
- * SocketProxy_State - Proxy connection state machine
+ * @brief SocketProxy_State - Proxy connection state machine
+ * @ingroup core_io
  *
  * State transitions:
- *   IDLE -> CONNECTING_PROXY -> HANDSHAKE_* -> CONNECTED (success)
+ *   @brief IDLE -> CONNECTING_PROXY -> HANDSHAKE_* -> CONNECTED (success)
+ *   @ingroup core_io
  *                                          \-> FAILED (error)
  *   Any state -> CANCELLED (explicit cancel)
  */
@@ -245,7 +250,8 @@ typedef enum
  */
 
 /**
- * SocketProxy_Config - Proxy configuration
+ * @brief SocketProxy_Config - Proxy configuration
+ * @ingroup core_io
  *
  * All strings are borrowed (not copied) - caller must ensure they remain
  * valid for the duration of the proxy operation.
@@ -281,23 +287,27 @@ typedef struct SocketProxy_Config
  */
 
 /**
- * SocketProxy_config_defaults - Initialize config with defaults
+ * @brief SocketProxy_config_defaults - Initialize config with defaults
+ * @ingroup core_io
  * @config: Configuration structure to initialize
  *
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  *
  * Sets all fields to zero/NULL except timeouts which get defaults.
  */
 extern void SocketProxy_config_defaults (SocketProxy_Config *config);
 
 /**
- * SocketProxy_parse_url - Parse proxy URL into config
+ * @brief SocketProxy_parse_url - Parse proxy URL into config
+ * @ingroup core_io
  * @url: Proxy URL (e.g., "socks5://user:pass@proxy:1080")
  * @config: Output configuration
  * @arena: Arena for string allocation (NULL to use static buffer)
  *
  * Returns: 0 on success, -1 on parse error
- * Thread-safe: Yes (if arena is thread-safe or NULL)
+ * @note Thread-safe: Yes (if arena is thread-safe or NULL)
+ * @ingroup core_io
  *
  * Supported URL formats:
  *   http://[user:pass@]host[:port]
@@ -320,14 +330,16 @@ extern int SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
  */
 
 /**
- * SocketProxy_connect - Connect to target through proxy (blocking)
+ * @brief SocketProxy_connect - Connect to target through proxy (blocking)
+ * @ingroup core_io
  * @proxy: Proxy configuration
  * @target_host: Target hostname or IP
  * @target_port: Target port (1-65535)
  *
  * Returns: Connected socket on success, NULL on failure
  * Raises: SocketProxy_Failed on error
- * Thread-safe: Yes (uses internal resources)
+ * @note Thread-safe: Yes (uses internal resources)
+ * @ingroup core_io
  *
  * Creates a new socket, connects to the proxy server using HappyEyeballs,
  * performs the proxy handshake, and returns the tunneled socket.
@@ -343,7 +355,8 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
                                      const char *target_host, int target_port);
 
 /**
- * SocketProxy_tunnel - Establish tunnel on existing socket (blocking)
+ * @brief SocketProxy_tunnel - Establish tunnel on existing socket (blocking)
+ * @ingroup core_io
  * @socket: Already-connected socket to proxy server
  * @proxy: Proxy configuration (type, auth, timeouts)
  * @target_host: Target hostname or IP
@@ -352,7 +365,8 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
  * HTTPS)
  *
  * Returns: PROXY_OK on success, error code on failure
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Performs proxy handshake on an already-connected socket. For HTTPS proxies,
  * performs TLS handshake if tls_ctx in config or auto-creates secure one using
@@ -373,7 +387,8 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
  */
 
 /**
- * SocketProxy_Conn_start - Start truly async proxy connection (event-driven)
+ * @brief SocketProxy_Conn_start - Start truly async proxy connection (event-driven)
+ * @ingroup core_io
  * @dns: DNS resolver instance (caller-owned, must outlive operation)
  * @poll: Poll instance for connection monitoring (caller-owned)
  * @proxy: Proxy configuration
@@ -382,7 +397,8 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
  *
  * Returns: Proxy connection context
  * Raises: SocketProxy_Failed on initialization failure
- * Thread-safe: No (operate from single thread)
+ * @note Thread-safe: No (operate from single thread)
+ * @ingroup core_io
  *
  * Starts fully asynchronous proxy connection using external DNS and poll
  * resources. This is the preferred API for event-driven applications.
@@ -410,14 +426,16 @@ extern T SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
                                  const char *target_host, int target_port);
 
 /**
- * SocketProxy_Conn_new - Start async proxy connection (blocking connect)
+ * @brief SocketProxy_Conn_new - Start async proxy connection (blocking connect)
+ * @ingroup core_io
  * @proxy: Proxy configuration
  * @target_host: Target hostname or IP
  * @target_port: Target port (1-65535)
  *
  * Returns: Proxy connection context
  * Raises: SocketProxy_Failed on initialization failure
- * Thread-safe: Yes (creates new instance)
+ * @note Thread-safe: Yes (creates new instance)
+ * @ingroup core_io
  *
  * NOTE: This function blocks during the initial proxy connection phase.
  * For fully non-blocking operation, use SocketProxy_Conn_start() instead.
@@ -436,19 +454,23 @@ extern T SocketProxy_Conn_new (const SocketProxy_Config *proxy,
                                const char *target_host, int target_port);
 
 /**
- * SocketProxy_Conn_poll - Check if operation is complete
+ * @brief SocketProxy_Conn_poll - Check if operation is complete
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: 1 if complete (success, failure, or cancelled), 0 if in progress
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketProxy_Conn_poll (T conn);
 
 /**
- * SocketProxy_Conn_process - Process async connection
+ * @brief SocketProxy_Conn_process - Process async connection
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Call after SocketPoll_wait() returns with events on the connection fd.
  * This advances the state machine and handles protocol I/O.
@@ -456,11 +478,13 @@ extern int SocketProxy_Conn_poll (T conn);
 extern void SocketProxy_Conn_process (T conn);
 
 /**
- * SocketProxy_Conn_socket - Get tunneled socket from completed operation
+ * @brief SocketProxy_Conn_socket - Get tunneled socket from completed operation
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Tunneled socket, or NULL if failed/cancelled/pending
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Transfers socket ownership to caller. Caller must Socket_free() when done.
  * Can only be called once per successful connection - subsequent calls
@@ -469,20 +493,24 @@ extern void SocketProxy_Conn_process (T conn);
 extern Socket_T SocketProxy_Conn_socket (T conn);
 
 /**
- * SocketProxy_Conn_cancel - Cancel in-progress operation
+ * @brief SocketProxy_Conn_cancel - Cancel in-progress operation
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Closes the connection and transitions to CANCELLED state.
  */
 extern void SocketProxy_Conn_cancel (T conn);
 
 /**
- * SocketProxy_Conn_free - Free proxy connection context
+ * @brief SocketProxy_Conn_free - Free proxy connection context
+ * @ingroup core_io
  * @conn: Pointer to context (will be set to NULL)
  *
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Releases all resources. If operation is still in progress, it will
  * be cancelled first. Safe to call with NULL or *conn == NULL.
@@ -495,29 +523,35 @@ extern void SocketProxy_Conn_free (T *conn);
  */
 
 /**
- * SocketProxy_Conn_state - Get current connection state
+ * @brief SocketProxy_Conn_state - Get current connection state
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Current state
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern SocketProxy_State SocketProxy_Conn_state (T conn);
 
 /**
- * SocketProxy_Conn_result - Get result after completion
+ * @brief SocketProxy_Conn_result - Get result after completion
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Result code (only valid after SocketProxy_Conn_poll() returns 1)
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern SocketProxy_Result SocketProxy_Conn_result (T conn);
 
 /**
- * SocketProxy_Conn_error - Get error message for failed operation
+ * @brief SocketProxy_Conn_error - Get error message for failed operation
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Error message string, or NULL if not in FAILED state
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * The returned string is valid until SocketProxy_Conn_free() is called.
  */
@@ -529,29 +563,35 @@ extern const char *SocketProxy_Conn_error (T conn);
  */
 
 /**
- * SocketProxy_Conn_fd - Get file descriptor for poll
+ * @brief SocketProxy_Conn_fd - Get file descriptor for poll
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: File descriptor to poll, or -1 if none active
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern int SocketProxy_Conn_fd (T conn);
 
 /**
- * SocketProxy_Conn_events - Get events to poll for
+ * @brief SocketProxy_Conn_events - Get events to poll for
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Poll events bitmask (POLL_READ, POLL_WRITE)
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  */
 extern unsigned SocketProxy_Conn_events (T conn);
 
 /**
- * SocketProxy_Conn_next_timeout_ms - Get time until next timeout
+ * @brief SocketProxy_Conn_next_timeout_ms - Get time until next timeout
+ * @ingroup core_io
  * @conn: Proxy connection context
  *
  * Returns: Milliseconds until timeout, or -1 if no pending timeout
- * Thread-safe: No
+ * @note Thread-safe: No
+ * @ingroup core_io
  *
  * Use as timeout argument to SocketPoll_wait().
  */
@@ -563,29 +603,35 @@ extern int SocketProxy_Conn_next_timeout_ms (T conn);
  */
 
 /**
- * SocketProxy_result_string - Get human-readable result description
+ * @brief SocketProxy_result_string - Get human-readable result description
+ * @ingroup core_io
  * @result: Result code
  *
  * Returns: Static string describing the result
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern const char *SocketProxy_result_string (SocketProxy_Result result);
 
 /**
- * SocketProxy_state_string - Get human-readable state name
+ * @brief SocketProxy_state_string - Get human-readable state name
+ * @ingroup core_io
  * @state: State value
  *
  * Returns: Static string with state name
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern const char *SocketProxy_state_string (SocketProxy_State state);
 
 /**
- * SocketProxy_type_string - Get human-readable proxy type name
+ * @brief SocketProxy_type_string - Get human-readable proxy type name
+ * @ingroup core_io
  * @type: Proxy type
  *
  * Returns: Static string (e.g., "SOCKS5", "HTTP CONNECT")
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 extern const char *SocketProxy_type_string (SocketProxyType type);
 

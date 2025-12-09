@@ -1,5 +1,6 @@
 /**
- * SocketProxy-private.h - Internal structures for Proxy Support
+ * @brief SocketProxy-private.h - Internal structures for Proxy Support
+ * @ingroup core_io
  *
  * Part of the Socket Library
  *
@@ -132,7 +133,8 @@
  */
 
 /**
- * SocketProxy_ProtoState - Protocol-specific sub-state
+ * @brief SocketProxy_ProtoState - Protocol-specific sub-state
+ * @ingroup core_io
  *
  * Tracks detailed state within each protocol's handshake.
  */
@@ -190,7 +192,8 @@ typedef enum
 #define PROXY_ERROR_MSG(fmt, ...) SOCKET_ERROR_MSG (fmt, ##__VA_ARGS__)
 
 /**
- * RAISE_PROXY_ERROR - Raise exception with detailed error message
+ * @brief RAISE_PROXY_ERROR - Raise exception with detailed error message
+ * @ingroup core_io
  *
  * Creates a thread-local copy of the exception with reason from
  * socket_error_buf. Thread-safe: prevents race conditions when
@@ -206,7 +209,8 @@ typedef enum
  */
 
 /**
- * SocketProxy_Conn_T - Proxy connection context
+ * @brief SocketProxy_Conn_T - Proxy connection context
+ * @ingroup core_io
  *
  * Manages the full proxy connection process including:
  * - Connection to proxy server via HappyEyeballs
@@ -281,7 +285,8 @@ struct SocketProxy_Conn_T
  * socketproxy_get_time_ms - Get monotonic time in milliseconds
  *
  * Returns: Current monotonic time in milliseconds
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 static inline int64_t
 socketproxy_get_time_ms (void)
@@ -300,7 +305,8 @@ socketproxy_get_time_ms (void)
  * @start_ms: Start time from socketproxy_get_time_ms()
  *
  * Returns: Elapsed milliseconds (always non-negative)
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup core_io
  */
 static inline int64_t
 socketproxy_elapsed_ms (int64_t start_ms)

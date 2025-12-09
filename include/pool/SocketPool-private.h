@@ -2,7 +2,8 @@
 #define SOCKETPOOL_PRIVATE_H_INCLUDED
 
 /**
- * SocketPool-private.h - Private implementation details for SocketPool
+ * @brief SocketPool-private.h - Private implementation details for SocketPool
+ * @ingroup connection_mgmt
  *
  * Part of the Socket Library
  *
@@ -58,7 +59,8 @@
  */
 
 /**
- * Thread-local exception for detailed error messages.
+ * @brief Thread-local exception for detailed error messages.
+ * @ingroup connection_mgmt
  * Extern declaration - defined in SocketPool-core.c.
  */
 #ifdef _WIN32
@@ -68,7 +70,8 @@ extern __thread Except_T SocketPool_DetailedException;
 #endif
 
 /**
- * RAISE_POOL_ERROR - Raise exception with detailed error message
+ * @brief RAISE_POOL_ERROR - Raise exception with detailed error message
+ * @ingroup connection_mgmt
  *
  * Creates a thread-local copy of the exception with reason from
  * socket_error_buf. Thread-safe: prevents race conditions when
@@ -84,10 +87,12 @@ extern __thread Except_T SocketPool_DetailedException;
   while (0)
 
 /**
- * RAISE_POOL_MSG - Format error message (without errno) and raise in one step
+ * @brief RAISE_POOL_MSG - Format error message (without errno) and raise in one step
+ * @ingroup connection_mgmt
  *
  * Combines SOCKET_ERROR_MSG + RAISE_POOL_ERROR for cleaner code.
- * Thread-safe: Yes (uses thread-local buffers)
+ * @note Thread-safe: Yes (uses thread-local buffers)
+ * @ingroup connection_mgmt
  */
 #define RAISE_POOL_MSG(exception, fmt, ...)                                   \
   do                                                                          \
@@ -98,10 +103,12 @@ extern __thread Except_T SocketPool_DetailedException;
   while (0)
 
 /**
- * RAISE_POOL_FMT - Format error message (with errno) and raise in one step
+ * @brief RAISE_POOL_FMT - Format error message (with errno) and raise in one step
+ * @ingroup connection_mgmt
  *
  * Combines SOCKET_ERROR_FMT + RAISE_POOL_ERROR for cleaner code.
- * Thread-safe: Yes (uses thread-local buffers)
+ * @note Thread-safe: Yes (uses thread-local buffers)
+ * @ingroup connection_mgmt
  */
 #define RAISE_POOL_FMT(exception, fmt, ...)                                   \
   do                                                                          \
@@ -147,7 +154,8 @@ typedef struct Connection *Connection_T;
  */
 
 /**
- * AsyncConnectContext - Context for tracking async connect operations
+ * @brief AsyncConnectContext - Context for tracking async connect operations
+ * @ingroup connection_mgmt
  *
  * Allocated from pool arena, linked in pool->async_ctx list.
  * Sockets in pending contexts must be freed when pool is freed.
@@ -304,7 +312,8 @@ extern unsigned socketpool_hash (const Socket_T socket);
  *
  * Returns: Current time
  * Raises: SocketPool_Failed on system error
- * Thread-safe: Yes
+ * @note Thread-safe: Yes
+ * @ingroup connection_mgmt
  */
 extern time_t safe_time (void);
 
@@ -320,7 +329,8 @@ extern time_t safe_time (void);
  * @maxv: Maximum allowed
  *
  * Returns: Clamped value
- * Thread-safe: Yes - pure function
+ * @note Thread-safe: Yes - pure function
+ * @ingroup connection_mgmt
  */
 static inline size_t
 socketpool_enforce_range (size_t val, size_t minv, size_t maxv)
