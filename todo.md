@@ -3,15 +3,15 @@
 ## Convenience Functions
 
 ### TCP/UDP One-Liners
-- [ ] `Socket_listen_tcp(host, port, backlog)` - Create listening server in one call
-- [ ] `Socket_connect_tcp(host, port, timeout_ms)` - Create connected client in one call
-- [ ] `SocketDgram_bind_udp(host, port)` - Create bound UDP socket in one call
-- [ ] `Socket_accept_timeout(socket, timeout_ms)` - Accept with explicit timeout
-- [ ] `Socket_connect_async(socket, host, port)` - Non-blocking connect initiation
+- [x] `Socket_listen_tcp(host, port, backlog)` - Create listening server in one call
+- [x] `Socket_connect_tcp(host, port, timeout_ms)` - Create connected client in one call
+- [x] `SocketDgram_bind_udp(host, port)` - Create bound UDP socket in one call
+- [x] `Socket_accept_timeout(socket, timeout_ms)` - Accept with explicit timeout
+- [x] `Socket_connect_nonblocking(socket, ip, port)` - Non-blocking connect initiation (IP only)
 
 ### Unix Domain Socket Helpers
-- [ ] `Socket_listen_unix(path, backlog)` - Create Unix domain listener in one call
-- [ ] `Socket_connect_unix_timeout(socket, path, timeout_ms)` - Connect with timeout
+- [x] `Socket_listen_unix(path, backlog)` - Create Unix domain listener in one call
+- [x] `Socket_connect_unix_timeout(socket, path, timeout_ms)` - Connect with timeout
 
 ---
 

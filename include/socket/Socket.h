@@ -1858,6 +1858,235 @@ extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
  */
 extern int Socket_ignore_sigpipe (void);
 
+/* ============================================================================
+ * Convenience Functions - One-Call Socket Setup
+ * ============================================================================
+ */
+
+/**
+ * @brief Create a listening TCP server socket in one call.
+ * @ingroup core_io
+ *
+ * Convenience function that combines Socket_new(), Socket_setreuseaddr(),
+ * Socket_bind(), and Socket_listen() into a single call. Creates a
+ * ready-to-accept TCP server socket.
+ *
+ * @param[in] host Local address to bind (NULL or "" for INADDR_ANY/all
+ * interfaces)
+ * @param[in] port Local port to bind (1-65535)
+ * @param[in] backlog Maximum pending connections (use SOMAXCONN for system max)
+ *
+ * @return New listening socket ready for Socket_accept()
+ *
+ * @throws Socket_Failed on socket creation, bind, or listen failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T server = Socket_listen_tcp("0.0.0.0", 8080, 128);
+ * while (running) {
+ *     Socket_T client = Socket_accept(server);
+ *     if (client) handle_client(client);
+ * }
+ * Socket_free(&server);
+ * @endcode
+ *
+ * @note Socket is created with SO_REUSEADDR enabled
+ * @note For IPv6, use "::" as host for dual-stack binding
+ *
+ * @see Socket_accept() for accepting connections
+ * @see Socket_listen_unix() for Unix domain sockets
+ */
+extern T Socket_listen_tcp (const char *host, int port, int backlog);
+
+/**
+ * @brief Create a connected TCP client socket in one call.
+ * @ingroup core_io
+ *
+ * Convenience function that combines Socket_new(), Socket_connect() with
+ * timeout support. Creates a connected TCP client socket ready for I/O.
+ *
+ * @param[in] host Remote address (IP or hostname)
+ * @param[in] port Remote port (1-65535)
+ * @param[in] timeout_ms Connection timeout in milliseconds (0 = no timeout)
+ *
+ * @return New connected socket ready for Socket_send()/Socket_recv()
+ *
+ * @throws Socket_Failed on socket creation, DNS resolution, or connect failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T client = Socket_connect_tcp("api.example.com", 443, 5000);
+ * Socket_sendall(client, request, len);
+ * ssize_t n = Socket_recv(client, response, sizeof(response));
+ * Socket_free(&client);
+ * @endcode
+ *
+ * @note DNS resolution uses synchronous getaddrinfo() which may block
+ * @note For non-blocking connect, use Socket_setnonblocking() + Socket_connect()
+ *
+ * @see Socket_connect_unix_timeout() for Unix domain sockets
+ * @see Socket_connect() for more control over socket options
+ */
+extern T Socket_connect_tcp (const char *host, int port, int timeout_ms);
+
+/**
+ * @brief Accept incoming connection with explicit timeout.
+ * @ingroup core_io
+ *
+ * Like Socket_accept() but with explicit timeout support. Useful for servers
+ * that need to periodically check for shutdown signals or perform maintenance.
+ *
+ * @param[in] socket Listening socket
+ * @param[in] timeout_ms Timeout in milliseconds (0 = return immediately if no
+ * connection, -1 = block indefinitely)
+ *
+ * @return New client socket, or NULL if timeout expired with no connection
+ *
+ * @throws Socket_Failed on accept error (not including timeout/EAGAIN)
+ *
+ * @threadsafe Yes - operates on listening socket
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * while (running) {
+ *     Socket_T client = Socket_accept_timeout(server, 1000);
+ *     if (client) {
+ *         handle_client(client);
+ *     }
+ *     // Check shutdown flag every second
+ * }
+ * @endcode
+ *
+ * @note Temporarily sets socket to non-blocking mode if needed
+ * @note Returns NULL (not exception) when timeout expires
+ *
+ * @see Socket_accept() for basic accept without timeout
+ * @see Socket_listen_tcp() for creating listening socket
+ */
+extern T Socket_accept_timeout (T socket, int timeout_ms);
+
+/**
+ * @brief Initiate non-blocking connect (no DNS, IP address only).
+ * @ingroup core_io
+ *
+ * Starts a non-blocking TCP connect operation. Unlike Socket_connect(),
+ * this function:
+ * - Only accepts IP addresses (no DNS resolution)
+ * - Returns immediately without blocking
+ * - Requires polling for completion via SocketPoll or select/poll
+ *
+ * After calling, poll the socket for writability. When writable, check
+ * SO_ERROR via getsockopt() or call Socket_isconnected().
+ *
+ * @param[in,out] socket Socket (will be set to non-blocking mode)
+ * @param[in] ip_address Remote IP address (IPv4 or IPv6, no hostnames)
+ * @param[in] port Remote port (1-65535)
+ *
+ * @return 0 if connect completed immediately, 1 if in progress (poll for
+ * completion)
+ *
+ * @throws Socket_Failed on invalid IP or immediate connect failure
+ *
+ * @threadsafe Yes - operates on single socket
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * int status = Socket_connect_nonblocking(sock, "192.168.1.1", 8080);
+ * if (status == 1) {
+ *     // In progress - add to poll
+ *     SocketPoll_add(poll, sock, POLL_WRITE, NULL);
+ *     // When writable, check Socket_isconnected()
+ * }
+ * @endcode
+ *
+ * @note For hostname resolution, use Socket_connect_async() with SocketDNS_T
+ * @note Socket is left in non-blocking mode after this call
+ *
+ * @see Socket_isconnected() to check connection status
+ * @see Socket_connect_async() for async DNS + connect
+ * @see SocketHappyEyeballs for RFC 8305 connection racing
+ */
+extern int Socket_connect_nonblocking (T socket, const char *ip_address,
+                                       int port);
+
+/**
+ * @brief Create a listening Unix domain socket in one call.
+ * @ingroup core_io
+ *
+ * Convenience function that combines Socket_new(AF_UNIX), Socket_bind_unix(),
+ * and Socket_listen() into a single call. Creates a ready-to-accept Unix
+ * domain socket server.
+ *
+ * @param[in] path Socket file path (max ~108 bytes, or '@' prefix for abstract)
+ * @param[in] backlog Maximum pending connections
+ *
+ * @return New listening Unix domain socket ready for Socket_accept()
+ *
+ * @throws SocketUnix_Failed on creation, bind, or listen failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T server = Socket_listen_unix("/var/run/myapp.sock", 128);
+ * while (running) {
+ *     Socket_T client = Socket_accept(server);
+ *     if (client) handle_client(client);
+ * }
+ * Socket_free(&server);
+ * unlink("/var/run/myapp.sock");  // Clean up socket file
+ * @endcode
+ *
+ * @note Existing socket file at path will cause EADDRINUSE - remove first
+ * @note Abstract sockets (Linux): prefix path with '@' (no file created)
+ *
+ * @see Socket_listen_tcp() for TCP sockets
+ * @see Socket_bind_unix() for more control
+ */
+extern T Socket_listen_unix (const char *path, int backlog);
+
+/**
+ * @brief Connect to Unix domain socket with timeout.
+ * @ingroup core_io
+ *
+ * Connects an existing Unix domain socket to a server path with timeout
+ * support. The socket must already be created with AF_UNIX domain.
+ *
+ * @param[in,out] socket Unix domain socket (AF_UNIX)
+ * @param[in] path Server socket path
+ * @param[in] timeout_ms Connection timeout in milliseconds (0 = no timeout)
+ *
+ * @throws SocketUnix_Failed on connect failure or timeout
+ *
+ * @threadsafe Yes - operates on single socket
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+ * Socket_connect_unix_timeout(sock, "/var/run/myapp.sock", 5000);
+ * Socket_sendall(sock, message, len);
+ * Socket_free(&sock);
+ * @endcode
+ *
+ * @note For one-call client creation, first create socket then call this
+ *
+ * @see Socket_connect_unix() for connect without timeout
+ * @see Socket_listen_unix() for creating Unix domain server
+ */
+extern void Socket_connect_unix_timeout (T socket, const char *path,
+                                         int timeout_ms);
+
 #undef T
 
 /** @} */ /* end of core_io group */

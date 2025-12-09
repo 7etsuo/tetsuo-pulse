@@ -1011,4 +1011,41 @@ SocketDgram_recvvall (T socket, struct iovec *iov, int iovcnt)
   return (ssize_t)total_received;
 }
 
+/* ==================== Convenience Functions ==================== */
+
+/**
+ * SocketDgram_bind_udp - Create a bound UDP socket in one call
+ * @host: Local address to bind (NULL or "" for INADDR_ANY)
+ * @port: Local port to bind (1-65535, or 0 for ephemeral)
+ *
+ * Returns: New bound UDP socket
+ * Raises: SocketDgram_Failed on error
+ * Thread-safe: Yes
+ */
+T
+SocketDgram_bind_udp (const char *host, int port)
+{
+  T server = NULL;
+
+  assert (port >= 0 && port <= SOCKET_MAX_PORT);
+
+  TRY
+  {
+    /* Create IPv4 UDP socket */
+    server = SocketDgram_new (AF_INET, 0);
+
+    /* Bind to address/port */
+    SocketDgram_bind (server, host, port);
+  }
+  EXCEPT (SocketDgram_Failed)
+  {
+    if (server)
+      SocketDgram_free (&server);
+    RERAISE;
+  }
+  END_TRY;
+
+  return server;
+}
+
 #undef T

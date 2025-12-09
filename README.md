@@ -180,6 +180,49 @@ int main(void)
 }
 ```
 
+### Convenience Functions (One-Call Setup)
+
+For common use cases, convenience functions simplify socket setup:
+
+```c
+#include "socket/Socket.h"
+#include "socket/SocketDgram.h"
+
+/* TCP Server - one call creates listening socket */
+Socket_T server = Socket_listen_tcp("0.0.0.0", 8080, 128);
+while (running) {
+    Socket_T client = Socket_accept_timeout(server, 1000);  // 1s timeout
+    if (client) handle_client(client);
+}
+Socket_free(&server);
+
+/* TCP Client with timeout - one call connects */
+Socket_T client = Socket_connect_tcp("api.example.com", 443, 5000);  // 5s timeout
+Socket_sendall(client, request, len);
+Socket_free(&client);
+
+/* UDP Server - one call binds */
+SocketDgram_T udp = SocketDgram_bind_udp("0.0.0.0", 5353);
+SocketDgram_recvfrom(udp, buf, sizeof(buf), sender_ip, sizeof(sender_ip), &sender_port);
+SocketDgram_free(&udp);
+
+/* Unix Domain Server */
+Socket_T unix_srv = Socket_listen_unix("/var/run/app.sock", 128);
+Socket_free(&unix_srv);
+
+/* Unix Domain Client with timeout */
+Socket_T unix_cli = Socket_new(AF_UNIX, SOCK_STREAM, 0);
+Socket_connect_unix_timeout(unix_cli, "/var/run/app.sock", 5000);
+Socket_free(&unix_cli);
+
+/* Non-blocking connect (for event loops) */
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+int status = Socket_connect_nonblocking(sock, "192.168.1.1", 8080);
+if (status == 1) {
+    /* In progress - poll for POLL_WRITE then check Socket_isconnected() */
+}
+```
+
 ## Usage Patterns
 
 ### Error Handling

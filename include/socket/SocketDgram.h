@@ -961,6 +961,57 @@ extern void SocketDgram_setcloexec (T socket, int enable);
  */
 extern int SocketDgram_debug_live_count (void);
 
+/* ============================================================================
+ * Convenience Functions - One-Call Socket Setup
+ * ============================================================================
+ */
+
+/**
+ * @ingroup socket_dgram
+ * @brief Create a bound UDP socket in one call.
+ *
+ * Convenience function that combines SocketDgram_new(), SocketDgram_bind()
+ * into a single call. Creates a UDP socket bound to the specified address
+ * and port, ready for sending/receiving datagrams.
+ *
+ * @param[in] host Local address to bind (NULL or "" for INADDR_ANY)
+ * @param[in] port Local port to bind (1-65535, or 0 for ephemeral port)
+ *
+ * @return New bound UDP socket ready for SocketDgram_sendto()/recvfrom()
+ *
+ * @throws SocketDgram_Failed on socket creation or bind failure
+ *
+ * @threadsafe Yes - creates new socket instance
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // UDP server
+ * SocketDgram_T server = SocketDgram_bind_udp("0.0.0.0", 5353);
+ * char buf[1024];
+ * char sender_ip[INET6_ADDRSTRLEN];
+ * int sender_port;
+ * while (running) {
+ *     ssize_t n = SocketDgram_recvfrom(server, buf, sizeof(buf),
+ *                                      sender_ip, sizeof(sender_ip),
+ *                                      &sender_port);
+ *     if (n > 0) {
+ *         // Echo back
+ *         SocketDgram_sendto(server, buf, n, sender_ip, sender_port);
+ *     }
+ * }
+ * SocketDgram_free(&server);
+ * @endcode
+ *
+ * @note Use port 0 to let the OS assign an ephemeral port
+ * @note For IPv6, use "::" as host for dual-stack binding
+ *
+ * @see SocketDgram_bind() for separate bind operation
+ * @see SocketDgram_sendto(), SocketDgram_recvfrom() for I/O
+ * @see Socket_listen_tcp() for TCP server convenience function
+ */
+extern T SocketDgram_bind_udp (const char *host, int port);
+
 /** @} */
 
 #undef T
