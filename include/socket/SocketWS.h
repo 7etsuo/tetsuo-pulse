@@ -1034,6 +1034,203 @@ extern SocketWS_Error SocketWS_last_error (T ws);
  */
 extern const char *SocketWS_error_string (SocketWS_Error error);
 
+/* ============================================================================
+ * Convenience Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief One-liner WebSocket client connection
+ * @ingroup websocket
+ * @param[in] url WebSocket URL (ws:// or wss://)
+ * @param[in] protocols Optional comma-separated subprotocols (may be NULL)
+ *
+ * Parses URL, creates socket, performs TLS handshake if wss://, creates
+ * WebSocket, and completes the opening handshake. Returns fully connected
+ * WebSocket in OPEN state.
+ *
+ * @return WebSocket in OPEN state, or NULL on error
+ *
+ * @throws SocketWS_Failed on connection or handshake failure
+ * @threadsafe No
+ *
+ * ## URL Format
+ *
+ * ```
+ * ws://host[:port][/path]     - Unencrypted WebSocket
+ * wss://host[:port][/path]    - TLS-encrypted WebSocket
+ * ```
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Simple connection
+ * SocketWS_T ws = SocketWS_connect("wss://echo.websocket.org", NULL);
+ * if (ws) {
+ *     SocketWS_send_text(ws, "Hello!", 6);
+ *     // ... receive ...
+ *     SocketWS_close(ws, WS_CLOSE_NORMAL, NULL);
+ *     SocketWS_free(&ws);
+ * }
+ *
+ * // With subprotocol
+ * SocketWS_T ws = SocketWS_connect("ws://api.example.com/ws", "graphql-ws");
+ * @endcode
+ *
+ * @note For more control, use Socket_new + Socket_connect + SocketWS_client_new
+ * @see SocketWS_client_new() for manual connection setup
+ * @see SocketWS_free() for cleanup
+ */
+extern T SocketWS_connect (const char *url, const char *protocols);
+
+/**
+ * @brief Send JSON as text frame
+ * @ingroup websocket
+ * @param[in] ws WebSocket instance in OPEN state
+ * @param[in] json JSON string to send (must be valid UTF-8)
+ *
+ * Convenience wrapper around SocketWS_send_text() that sends JSON data.
+ * Validates UTF-8 if config.validate_utf8 is enabled.
+ *
+ * @return 0 on success, -1 on error
+ *
+ * @throws SocketWS_Closed if not open
+ * @throws SocketWS_Invalid_UTF8 if validation fails
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * const char *msg = "{\"type\": \"ping\", \"id\": 123}";
+ * SocketWS_send_json(ws, msg);
+ * @endcode
+ *
+ * @see SocketWS_send_text() for raw text sending
+ * @see SocketWS_recv_json() for receiving JSON
+ */
+extern int SocketWS_send_json (T ws, const char *json);
+
+/**
+ * @brief Receive and return JSON string
+ * @ingroup websocket
+ * @param[in] ws WebSocket instance in OPEN state
+ * @param[out] json_out Output: received JSON string (caller must free)
+ * @param[out] json_len Output: length of JSON string
+ *
+ * Receives a complete text message and returns it as a JSON string.
+ * Only accepts TEXT frames; returns error for BINARY.
+ *
+ * @return WS_OK on success, error code on failure
+ *
+ * @throws SocketWS_Closed if connection closes
+ * @throws SocketWS_Failed on receive error
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * char *json = NULL;
+ * size_t len;
+ * if (SocketWS_recv_json(ws, &json, &len) == WS_OK) {
+ *     printf("Received: %s\n", json);
+ *     // Parse with your JSON library
+ *     free(json);
+ * }
+ * @endcode
+ *
+ * @note Caller must free(json_out) on success
+ * @see SocketWS_recv_message() for full message control
+ * @see SocketWS_send_json() for sending JSON
+ */
+extern SocketWS_Error SocketWS_recv_json (T ws, char **json_out,
+                                          size_t *json_len);
+
+/**
+ * @brief Get ping/pong round-trip time
+ * @ingroup websocket
+ * @param[in] ws WebSocket instance
+ *
+ * Returns the latency (RTT) of the most recent completed PING/PONG cycle.
+ * If no ping has been sent or pong not yet received, returns -1.
+ *
+ * @return RTT in milliseconds (>= 0), or -1 if no data available
+ *
+ * @threadsafe No - reads internal timestamps
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Send ping and wait for pong
+ * SocketWS_ping(ws, "test", 4);
+ * // ... process events until pong received ...
+ * int64_t rtt = SocketWS_get_ping_latency(ws);
+ * if (rtt >= 0) {
+ *     printf("Latency: %lld ms\n", (long long)rtt);
+ * }
+ * @endcode
+ *
+ * @see SocketWS_ping() to send PING
+ * @see SocketWS_enable_auto_ping() for automatic keepalive
+ */
+extern int64_t SocketWS_get_ping_latency (T ws);
+
+/**
+ * @brief WebSocket compression options
+ * @ingroup websocket
+ */
+typedef struct SocketWS_CompressionOptions
+{
+  int level;                  /**< zlib compression level (1-9, default 6) */
+  int server_no_context_takeover; /**< Server resets context per message */
+  int client_no_context_takeover; /**< Client resets context per message */
+  int server_max_window_bits; /**< Server LZ77 window (8-15, default 15) */
+  int client_max_window_bits; /**< Client LZ77 window (8-15, default 15) */
+} SocketWS_CompressionOptions;
+
+/**
+ * @brief Initialize compression options with defaults
+ * @ingroup websocket
+ * @param[out] options Options structure to initialize
+ */
+extern void SocketWS_compression_options_defaults (
+    SocketWS_CompressionOptions *options);
+
+/**
+ * @brief Enable permessage-deflate compression
+ * @ingroup websocket
+ * @param[in] ws WebSocket instance (before handshake)
+ * @param[in] options Compression options (NULL for defaults)
+ *
+ * Enables RFC 7692 permessage-deflate compression for this WebSocket.
+ * Must be called before the handshake completes. The server may
+ * negotiate different parameters.
+ *
+ * @return 0 on success, -1 if compression not supported or already connected
+ *
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketWS_T ws = SocketWS_client_new(sock, host, path, &config);
+ *
+ * // Enable compression before handshake
+ * SocketWS_CompressionOptions opts;
+ * SocketWS_compression_options_defaults(&opts);
+ * opts.level = 9;  // Maximum compression
+ * SocketWS_enable_compression(ws, &opts);
+ *
+ * // Now complete handshake
+ * SocketWS_handshake(ws);
+ * @endcode
+ *
+ * @note Requires zlib; returns -1 if compiled without SOCKETWS_HAS_DEFLATE
+ * @see SocketWS_compression_enabled() to check if active
+ * @see SocketWS_Config.enable_compression for config-based setup
+ */
+extern int SocketWS_enable_compression (T ws,
+                                        const SocketWS_CompressionOptions *options);
+
 #undef T
 /** @} */ /* websocket group */
 

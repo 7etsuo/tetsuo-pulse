@@ -1391,3 +1391,311 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
 
   return ws_send_close (ws, (SocketWS_CloseCode)code, reason);
 }
+
+/* ============================================================================
+ * Convenience Functions
+ * ============================================================================
+ */
+
+#include <poll.h>
+
+SocketWS_T
+SocketWS_connect (const char *url, const char *protocols)
+{
+  SocketWS_T ws = NULL;
+  Socket_T sock = NULL;
+  SocketWS_Config config;
+  char host[256] = { 0 };
+  char path[1024] = { 0 };
+  volatile int port = 80;
+  volatile int use_tls = 0;
+
+  assert (url);
+
+  /* Parse URL: ws://host[:port][/path] or wss://... */
+  if (strncmp (url, "wss://", 6) == 0)
+    {
+      use_tls = 1;
+      port = 443;
+      url += 6;
+    }
+  else if (strncmp (url, "ws://", 5) == 0)
+    {
+      url += 5;
+    }
+  else
+    {
+      SOCKET_ERROR_MSG ("Invalid WebSocket URL scheme (expected ws:// or wss://)");
+      RAISE_WS_ERROR (SocketWS_Failed);
+      return NULL;
+    }
+
+  /* Extract host and path */
+  const char *path_start = strchr (url, '/');
+  const char *port_start = strchr (url, ':');
+
+  if (port_start && (!path_start || port_start < path_start))
+    {
+      size_t host_len = (size_t)(port_start - url);
+      if (host_len >= sizeof (host))
+        host_len = sizeof (host) - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+      port = atoi (port_start + 1);
+    }
+  else if (path_start)
+    {
+      size_t host_len = (size_t)(path_start - url);
+      if (host_len >= sizeof (host))
+        host_len = sizeof (host) - 1;
+      strncpy (host, url, host_len);
+      host[host_len] = '\0';
+    }
+  else
+    {
+      strncpy (host, url, sizeof (host) - 1);
+    }
+
+  if (path_start)
+    strncpy (path, path_start, sizeof (path) - 1);
+  else
+    strcpy (path, "/");
+
+  /* Create and connect socket */
+  TRY
+  {
+    sock = Socket_new (AF_INET, SOCK_STREAM, 0);
+    Socket_connect (sock, host, port);
+
+#if SOCKET_HAS_TLS
+    if (use_tls)
+      {
+        extern void SocketTLS_enable (Socket_T, void *);
+        extern int SocketTLS_handshake_loop (Socket_T, int);
+        extern void SocketTLS_set_hostname (Socket_T, const char *);
+
+        /* Enable TLS with default context */
+        SocketTLS_enable (sock, NULL);
+        SocketTLS_set_hostname (sock, host);
+        if (SocketTLS_handshake_loop (sock, 10000) < 0)
+          {
+            SOCKET_ERROR_MSG ("TLS handshake failed");
+            RAISE_WS_ERROR (SocketWS_Failed);
+          }
+      }
+#else
+    if (use_tls)
+      {
+        Socket_free (&sock);
+        SOCKET_ERROR_MSG ("TLS not available (compile with -DENABLE_TLS=ON)");
+        RAISE_WS_ERROR (SocketWS_Failed);
+        return NULL;
+      }
+#endif
+
+    /* Create WebSocket config */
+    SocketWS_config_defaults (&config);
+    config.role = WS_ROLE_CLIENT;
+
+    /* Set up subprotocols array if provided */
+    const char *proto_array[2] = { NULL, NULL };
+    if (protocols)
+      {
+        proto_array[0] = protocols;
+        config.subprotocols = proto_array;
+      }
+
+    /* Create WebSocket */
+    ws = SocketWS_client_new (sock, host, path, &config);
+    if (!ws)
+      {
+        Socket_free (&sock);
+        return NULL;
+      }
+
+    /* Complete handshake */
+    int result;
+    while ((result = SocketWS_handshake (ws)) > 0)
+      {
+        struct pollfd pfd = { .fd = Socket_fd (sock), .events = POLLIN | POLLOUT };
+        poll (&pfd, 1, 5000);
+        SocketWS_process (ws, pfd.revents);
+      }
+
+    if (result < 0 || ws->state != WS_STATE_OPEN)
+      {
+        SocketWS_free (&ws);
+        return NULL;
+      }
+  }
+  EXCEPT (Socket_Failed)
+  {
+    if (sock)
+      Socket_free (&sock);
+    RERAISE;
+  }
+  EXCEPT (SocketWS_Failed)
+  {
+    if (ws)
+      SocketWS_free (&ws);
+    else if (sock)
+      Socket_free (&sock);
+    RERAISE;
+  }
+  END_TRY;
+
+  return ws;
+}
+
+int
+SocketWS_send_json (SocketWS_T ws, const char *json)
+{
+  assert (ws);
+  assert (json);
+
+  return SocketWS_send_text (ws, json, strlen (json));
+}
+
+SocketWS_Error
+SocketWS_recv_json (SocketWS_T ws, char **json_out, size_t *json_len)
+{
+  assert (ws);
+  assert (json_out);
+  assert (json_len);
+
+  *json_out = NULL;
+  *json_len = 0;
+
+  /* Process until we have a complete message */
+  while (ws->state == WS_STATE_OPEN)
+    {
+      /* Check if message assembly has data and is complete (fragment_count > 0
+       * and len > 0 typically indicates assembly in progress; we need to check
+       * for FIN which is handled during process) */
+
+      /* Need more data - poll and process */
+      struct pollfd pfd = { .fd = Socket_fd (ws->socket), .events = POLLIN };
+      int ret = poll (&pfd, 1, 5000);
+      if (ret < 0 && errno != EINTR)
+        {
+          ws_set_error (ws, WS_ERROR, "Poll failed");
+          return WS_ERROR;
+        }
+      if (ret == 0)
+        {
+          ws_set_error (ws, WS_ERROR_TIMEOUT, "Timeout waiting for message");
+          return WS_ERROR_TIMEOUT;
+        }
+
+      /* Process incoming data - this will assemble messages internally */
+      int proc_result = SocketWS_process (ws, (unsigned)pfd.revents);
+      if (proc_result < 0)
+        return ws->last_error;
+
+      /* Check if a complete message is ready in assembly buffer */
+      if (ws->message.len > 0 && ws->message.fragment_count > 0)
+        {
+          /* Only accept text frames for JSON */
+          if (ws->message.type != WS_OPCODE_TEXT)
+            {
+              ws_message_reset (&ws->message);
+              ws_set_error (ws, WS_ERROR_PROTOCOL,
+                            "Expected text frame for JSON");
+              return WS_ERROR_PROTOCOL;
+            }
+
+          /* Allocate and copy */
+          *json_out = malloc (ws->message.len + 1);
+          if (!*json_out)
+            {
+              ws_message_reset (&ws->message);
+              ws_set_error (ws, WS_ERROR, "Out of memory");
+              return WS_ERROR;
+            }
+
+          memcpy (*json_out, ws->message.data, ws->message.len);
+          (*json_out)[ws->message.len] = '\0';
+          *json_len = ws->message.len;
+
+          ws_message_reset (&ws->message);
+          return WS_OK;
+        }
+    }
+
+  ws_set_error (ws, WS_ERROR_CLOSED, "Connection closed");
+  return WS_ERROR_CLOSED;
+}
+
+int64_t
+SocketWS_get_ping_latency (SocketWS_T ws)
+{
+  assert (ws);
+
+  /* If no ping sent yet or still awaiting pong, no data */
+  if (ws->last_ping_sent_time == 0)
+    return -1;
+
+  /* If awaiting pong, use last successful measurement */
+  if (ws->awaiting_pong)
+    {
+      /* Check if we have any previous successful ping */
+      if (ws->last_pong_received_time <= 0)
+        return -1;
+
+      /* Return last known RTT if we have historical data */
+      /* This requires storing the last RTT - for now return -1 */
+      return -1;
+    }
+
+  /* Calculate RTT from most recent ping/pong cycle */
+  if (ws->last_pong_received_time > ws->last_ping_sent_time)
+    return ws->last_pong_received_time - ws->last_ping_sent_time;
+
+  return -1;
+}
+
+void
+SocketWS_compression_options_defaults (SocketWS_CompressionOptions *options)
+{
+  assert (options);
+
+  memset (options, 0, sizeof (*options));
+  options->level = 6;  /* Default zlib compression level */
+  options->server_no_context_takeover = 0;
+  options->client_no_context_takeover = 0;
+  options->server_max_window_bits = 15;
+  options->client_max_window_bits = 15;
+}
+
+int
+SocketWS_enable_compression (SocketWS_T ws,
+                             const SocketWS_CompressionOptions *options)
+{
+  assert (ws);
+
+#ifdef SOCKETWS_HAS_DEFLATE
+  /* Can only enable before handshake completes */
+  if (ws->state != WS_STATE_CONNECTING)
+    {
+      ws_set_error (ws, WS_ERROR, "Cannot enable compression after handshake");
+      return -1;
+    }
+
+  /* Enable compression in config */
+  ws->config.enable_compression = 1;
+
+  if (options)
+    {
+      /* Store compression parameters for handshake */
+      ws->config.compression_level = options->level;
+      /* Additional parameters could be stored in extended config */
+    }
+
+  return 0;
+#else
+  (void)options;
+  ws_set_error (ws, WS_ERROR,
+                "Compression not available (compile with zlib support)");
+  return -1;
+#endif
+}

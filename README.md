@@ -496,33 +496,56 @@ printf("Peer allows %u concurrent streams\n", peer_max);
 ```c
 #include "socket/SocketWS.h"
 
+/* One-liner WebSocket connection (new convenience API) */
+SocketWS_T ws = SocketWS_connect("wss://echo.websocket.org", NULL);
+if (ws) {
+    /* Send and receive JSON messages */
+    SocketWS_send_json(ws, "{\"type\": \"hello\", \"data\": \"world\"}");
+    
+    char *json = NULL;
+    size_t len;
+    if (SocketWS_recv_json(ws, &json, &len) == WS_OK) {
+        printf("Received: %s\n", json);
+        free(json);
+    }
+    
+    /* Check ping latency */
+    SocketWS_ping(ws, "test", 4);
+    SocketWS_process(ws, POLLIN);  /* Wait for pong */
+    int64_t rtt = SocketWS_get_ping_latency(ws);
+    printf("Latency: %lld ms\n", (long long)rtt);
+    
+    SocketWS_close(ws, WS_CLOSE_NORMAL, "Goodbye", 7);
+    SocketWS_free(&ws);
+}
+
+/* Traditional multi-step connection */
 Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
 Socket_connect(sock, "echo.websocket.org", 80);
 
 SocketWS_Config ws_config = SOCKETWS_CONFIG_DEFAULTS;
-SocketWS_T ws = SocketWS_client_new(sock, "echo.websocket.org", "/", &ws_config);
+SocketWS_T ws2 = SocketWS_client_new(sock, "echo.websocket.org", "/", &ws_config);
+
+/* Enable compression before handshake */
+SocketWS_CompressionOptions comp_opts;
+SocketWS_compression_options_defaults(&comp_opts);
+comp_opts.level = 9;  /* Maximum compression */
+SocketWS_enable_compression(ws2, &comp_opts);
 
 /* Perform handshake */
 TRY
-    SocketWS_handshake(ws);
+    SocketWS_handshake(ws2);
     
     /* Send text message */
-    SocketWS_send_text(ws, "Hello, WebSocket!", 17);
-    
-    /* Receive message */
-    SocketWS_Message msg;
-    if (SocketWS_recv_message(ws, &msg) == WS_OK) {
-        printf("Received: %.*s\n", (int)msg.len, msg.data);
-        SocketWS_Message_free(&msg);
-    }
+    SocketWS_send_text(ws2, "Hello, WebSocket!", 17);
     
     /* Graceful close */
-    SocketWS_close(ws, WS_CLOSE_NORMAL, "Goodbye", 7);
+    SocketWS_close(ws2, WS_CLOSE_NORMAL, "Goodbye", 7);
 EXCEPT(SocketWS_Failed)
-    fprintf(stderr, "WebSocket error: %s\n", Socket_Failed.reason);
+    fprintf(stderr, "WebSocket error: %s\n", SocketWS_Failed.reason);
 END_TRY;
 
-SocketWS_free(&ws);
+SocketWS_free(&ws2);
 Socket_free(&sock);
 ```
 

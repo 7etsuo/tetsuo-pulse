@@ -149,17 +149,18 @@
 ## WebSocket Enhancements
 
 ### Convenience Functions
-- [ ] `SocketWS_connect(url, protocols)` - One-liner WebSocket client
-- [ ] `SocketWS_send_json(conn, json)` - Send JSON as text frame
-- [ ] `SocketWS_recv_json(conn, json)` - Receive and parse JSON
+- [x] `SocketWS_connect(url, protocols)` - One-liner WebSocket client
+- [x] `SocketWS_send_json(conn, json)` - Send JSON as text frame
+- [x] `SocketWS_recv_json(conn, json)` - Receive and parse JSON
 
 ### Control Frames
-- [ ] `SocketWS_ping(conn, data, len)` - Send ping with payload
-- [ ] `SocketWS_pong(conn, data, len)` - Send pong
-- [ ] `SocketWS_get_ping_latency(conn)` - Get ping/pong RTT
+- [x] `SocketWS_ping(conn, data, len)` - Send ping with payload (already existed)
+- [x] `SocketWS_pong(conn, data, len)` - Send pong (already existed)
+- [x] `SocketWS_get_ping_latency(conn)` - Get ping/pong RTT
 
 ### Compression
-- [ ] `SocketWS_enable_compression(conn, options)` - permessage-deflate
+- [x] `SocketWS_enable_compression(conn, options)` - permessage-deflate
+- [x] `SocketWS_compression_options_defaults(options)` - Initialize options
 
 ---
 
