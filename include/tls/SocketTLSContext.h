@@ -43,8 +43,6 @@ typedef struct T *T; /* Opaque pointer to TLS context */
  * @see SocketTLSContext_new_client() for client context creation.
  * @see SocketTLS_enable() for applying TLS to sockets.
  */
- * their lifetime.
- */
 
 /* TLS context creation */
 /**

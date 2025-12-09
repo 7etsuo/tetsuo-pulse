@@ -44,11 +44,6 @@
  * - Caller must call SocketHappyEyeballs_free() to release
  * - Result socket ownership transfers to caller
  *
- * @see SocketHappyEyeballs_connect() for synchronous connection.
- * @see SocketHappyEyeballs_new() for asynchronous connection setup.
- * @see SocketHTTPClient.h for HTTP client integration.
- */
- *
  * Usage (Asynchronous - Event-Driven):
  *   SocketHE_T he = SocketHappyEyeballs_start(dns, poll, "example.com", 443,
  *                                              NULL);
@@ -59,6 +54,10 @@
  *   }
  *   Socket_T sock = SocketHappyEyeballs_result(he);
  *   SocketHappyEyeballs_free(&he);
+ *
+ * @see SocketHappyEyeballs_connect() for synchronous connection.
+ * @see SocketHappyEyeballs_new() for asynchronous connection setup.
+ * @see SocketHTTPClient.h for HTTP client integration.
  */
 
 #include "core/Except.h"

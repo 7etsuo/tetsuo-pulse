@@ -28,12 +28,6 @@
  * - Multiple instances can be used from different threads
  * - Use external synchronization if sharing an instance
  *
- * @see SocketWS_client_new() for client WebSocket creation.
- * @see SocketWS_server_new() for server WebSocket creation.
- * @see SocketWS_send_text() for sending text messages.
- * @see SocketWS_recv_message() for receiving messages.
- */
- *
  * Usage (Server):
  *   // After accepting connection and parsing HTTP request
  *   if (SocketWS_is_upgrade(request)) {
@@ -42,10 +36,15 @@
  *       // Now in OPEN state
  *   }
  *
- * PLATFORM REQUIREMENTS:
+ * Platform Requirements:
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - OpenSSL/LibreSSL for TLS WebSocket (wss://)
  * - zlib for permessage-deflate compression (optional)
+ *
+ * @see SocketWS_client_new() for client WebSocket creation.
+ * @see SocketWS_server_new() for server WebSocket creation.
+ * @see SocketWS_send_text() for sending text messages.
+ * @see SocketWS_recv_message() for receiving messages.
  */
 
 #ifndef SOCKETWS_INCLUDED
