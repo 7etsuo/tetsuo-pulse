@@ -2388,3 +2388,253 @@ SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms)
 
   return completed;
 }
+
+/* ============================================================================
+ * Convenience Functions
+ * ============================================================================
+ */
+
+#include <errno.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+int
+SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
+                           const char *filepath)
+{
+  SocketHTTPClient_Response response = { 0 };
+  int fd = -1;
+  int result = -1;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (filepath != NULL);
+
+  /* Perform GET request */
+  if (SocketHTTPClient_get (client, url, &response) != 0)
+    return -1;
+
+  /* Check for success status */
+  if (response.status_code < 200 || response.status_code >= 300)
+    {
+      SocketHTTPClient_Response_free (&response);
+      return -1;
+    }
+
+  /* Open file for writing */
+  fd = open (filepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd < 0)
+    {
+      SocketHTTPClient_Response_free (&response);
+      return -2; /* File error */
+    }
+
+  /* Write body to file */
+  if (response.body && response.body_len > 0)
+    {
+      ssize_t written = 0;
+      while ((size_t)written < response.body_len)
+        {
+          ssize_t n
+              = write (fd, response.body + written, response.body_len - written);
+          if (n <= 0)
+            {
+              if (n < 0 && errno == EINTR)
+                continue;
+              close (fd);
+              SocketHTTPClient_Response_free (&response);
+              return -2;
+            }
+          written += n;
+        }
+    }
+
+  result = 0;
+  close (fd);
+  SocketHTTPClient_Response_free (&response);
+  return result;
+}
+
+int
+SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
+                         const char *filepath)
+{
+  SocketHTTPClient_Response response = { 0 };
+  struct stat st;
+  int fd = -1;
+  char *buffer = NULL;
+  int result = -2;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (filepath != NULL);
+
+  /* Open and stat file */
+  fd = open (filepath, O_RDONLY);
+  if (fd < 0)
+    return -2;
+
+  if (fstat (fd, &st) < 0)
+    {
+      close (fd);
+      return -2;
+    }
+
+  /* Read file into memory */
+  buffer = malloc (st.st_size);
+  if (!buffer)
+    {
+      close (fd);
+      return -2;
+    }
+
+  ssize_t total_read = 0;
+  while (total_read < st.st_size)
+    {
+      ssize_t n = read (fd, buffer + total_read, st.st_size - total_read);
+      if (n <= 0)
+        {
+          if (n < 0 && errno == EINTR)
+            continue;
+          free (buffer);
+          close (fd);
+          return -2;
+        }
+      total_read += n;
+    }
+  close (fd);
+
+  /* Perform PUT request */
+  if (SocketHTTPClient_put (client, url, "application/octet-stream", buffer,
+                            st.st_size, &response)
+      != 0)
+    {
+      free (buffer);
+      return -1;
+    }
+
+  result = response.status_code;
+  free (buffer);
+  SocketHTTPClient_Response_free (&response);
+  return result;
+}
+
+int
+SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
+                           char **json_out, size_t *json_len)
+{
+  SocketHTTPClient_Request_T req = NULL;
+  SocketHTTPClient_Response response = { 0 };
+  int status = -1;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (json_out != NULL);
+  assert (json_len != NULL);
+
+  *json_out = NULL;
+  *json_len = 0;
+
+  /* Build GET request with JSON accept header */
+  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET, url);
+  if (!req)
+    return -1;
+
+  SocketHTTPClient_Request_header (req, "Accept", "application/json");
+
+  if (SocketHTTPClient_Request_execute (req, &response) != 0)
+    {
+      SocketHTTPClient_Request_free (&req);
+      return -1;
+    }
+
+  SocketHTTPClient_Request_free (&req);
+  status = response.status_code;
+
+  /* Check content type */
+  const char *content_type = SocketHTTP_Headers_get (response.headers,
+                                                     "Content-Type");
+  if (content_type && strstr (content_type, "application/json") == NULL)
+    {
+      SocketHTTPClient_Response_free (&response);
+      return -2; /* Content-type mismatch */
+    }
+
+  /* Copy body to output */
+  if (response.body && response.body_len > 0)
+    {
+      *json_out = malloc (response.body_len + 1);
+      if (*json_out)
+        {
+          memcpy (*json_out, response.body, response.body_len);
+          (*json_out)[response.body_len] = '\0';
+          *json_len = response.body_len;
+        }
+    }
+
+  SocketHTTPClient_Response_free (&response);
+  return status;
+}
+
+int
+SocketHTTPClient_json_post (SocketHTTPClient_T client, const char *url,
+                            const char *json_body, char **json_out,
+                            size_t *json_len)
+{
+  SocketHTTPClient_Request_T req = NULL;
+  SocketHTTPClient_Response response = { 0 };
+  int status = -1;
+
+  assert (client != NULL);
+  assert (url != NULL);
+  assert (json_body != NULL);
+  assert (json_out != NULL);
+  assert (json_len != NULL);
+
+  *json_out = NULL;
+  *json_len = 0;
+
+  /* Build POST request with JSON headers */
+  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_POST, url);
+  if (!req)
+    return -1;
+
+  SocketHTTPClient_Request_header (req, "Content-Type", "application/json");
+  SocketHTTPClient_Request_header (req, "Accept", "application/json");
+  SocketHTTPClient_Request_body (req, json_body, strlen (json_body));
+
+  if (SocketHTTPClient_Request_execute (req, &response) != 0)
+    {
+      SocketHTTPClient_Request_free (&req);
+      return -1;
+    }
+
+  SocketHTTPClient_Request_free (&req);
+  status = response.status_code;
+
+  /* Check content type if we have a body */
+  if (response.body && response.body_len > 0)
+    {
+      const char *content_type = SocketHTTP_Headers_get (response.headers,
+                                                         "Content-Type");
+      if (content_type && strstr (content_type, "application/json") == NULL)
+        {
+          SocketHTTPClient_Response_free (&response);
+          return -2; /* Content-type mismatch */
+        }
+
+      /* Copy body to output */
+      *json_out = malloc (response.body_len + 1);
+      if (*json_out)
+        {
+          memcpy (*json_out, response.body, response.body_len);
+          (*json_out)[response.body_len] = '\0';
+          *json_len = response.body_len;
+        }
+    }
+
+  SocketHTTPClient_Response_free (&response);
+  return status;
+}

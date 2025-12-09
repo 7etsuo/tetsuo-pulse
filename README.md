@@ -324,6 +324,56 @@ SocketHTTPClient_set_cookie_jar(client, jar);
 SocketHTTPClient_free(&client);
 ```
 
+### HTTP Client Convenience Functions
+
+```c
+#include "http/SocketHTTPClient.h"
+
+SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
+
+/* Download file from URL */
+int ret = SocketHTTPClient_download(client, 
+    "https://example.com/file.zip", "/tmp/file.zip");
+if (ret == 0) {
+    printf("Download complete\n");
+} else if (ret == -1) {
+    printf("HTTP error\n");
+} else {
+    printf("File error: %s\n", strerror(errno));
+}
+
+/* Upload file to URL */
+int status = SocketHTTPClient_upload(client,
+    "https://storage.example.com/files/upload.dat",
+    "/path/to/local/file.dat");
+if (status >= 200 && status < 300) {
+    printf("Upload successful (HTTP %d)\n", status);
+}
+
+/* JSON API calls */
+char *json_response = NULL;
+size_t json_len;
+
+/* GET JSON */
+status = SocketHTTPClient_json_get(client,
+    "https://api.example.com/users/123", &json_response, &json_len);
+if (status == 200 && json_response) {
+    printf("User data: %s\n", json_response);
+    free(json_response);
+}
+
+/* POST JSON */
+const char *request_body = "{\"name\": \"John\", \"email\": \"john@example.com\"}";
+status = SocketHTTPClient_json_post(client,
+    "https://api.example.com/users", request_body, &json_response, &json_len);
+if (status == 201 && json_response) {
+    printf("Created: %s\n", json_response);
+    free(json_response);
+}
+
+SocketHTTPClient_free(&client);
+```
+
 ### HTTP Server
 
 ```c
@@ -361,6 +411,84 @@ while (running) {
 
 SocketHTTPServer_stop(server);
 SocketHTTPServer_free(&server);
+```
+
+### HTTP Server Middleware & Static Files
+
+```c
+#include "http/SocketHTTPServer.h"
+
+/* Logging middleware */
+int log_middleware(SocketHTTPServer_Request_T req, void *data) {
+    printf("[%s] %s\n",
+           SocketHTTP_method_name(SocketHTTPServer_Request_method(req)),
+           SocketHTTPServer_Request_path(req));
+    return 0;  /* Continue to next middleware/handler */
+}
+
+/* Authentication middleware */
+int auth_middleware(SocketHTTPServer_Request_T req, void *data) {
+    const char *token = SocketHTTPServer_Request_header(req, "Authorization");
+    if (!token) {
+        SocketHTTPServer_Request_status(req, 401);
+        SocketHTTPServer_Request_body_data(req, "Unauthorized", 12);
+        SocketHTTPServer_Request_finish(req);
+        return 1;  /* Stop chain - request handled */
+    }
+    return 0;  /* Continue */
+}
+
+/* Custom error handler */
+void error_handler(SocketHTTPServer_Request_T req, int code, void *data) {
+    char body[256];
+    snprintf(body, sizeof(body),
+             "<html><body><h1>Error %d</h1></body></html>", code);
+    SocketHTTPServer_Request_header(req, "Content-Type", "text/html");
+    SocketHTTPServer_Request_body_data(req, body, strlen(body));
+    SocketHTTPServer_Request_finish(req);
+}
+
+SocketHTTPServer_T server = SocketHTTPServer_new(NULL, &config);
+
+/* Add middleware chain */
+SocketHTTPServer_add_middleware(server, log_middleware, NULL);
+SocketHTTPServer_add_middleware(server, auth_middleware, &auth_config);
+
+/* Serve static files */
+SocketHTTPServer_add_static_dir(server, "/static", "./public");
+SocketHTTPServer_add_static_dir(server, "/assets", "/var/www/assets");
+
+/* Set custom error pages */
+SocketHTTPServer_set_error_handler(server, error_handler, NULL);
+
+SocketHTTPServer_set_handler(server, handle_request, NULL);
+SocketHTTPServer_start(server);
+```
+
+### HTTP/2 Stream Management
+
+```c
+#include "http/SocketHTTP2.h"
+
+/* Check connection health with PING */
+int rtt = SocketHTTP2_Conn_ping_wait(conn, 5000);
+if (rtt >= 0) {
+    printf("Connection alive, RTT: %d ms\n", rtt);
+} else {
+    printf("Connection dead or timeout\n");
+}
+
+/* Monitor concurrent streams */
+uint32_t active = SocketHTTP2_Conn_get_concurrent_streams(conn);
+printf("Active streams: %u\n", active);
+
+/* Limit concurrent streams (sends SETTINGS frame) */
+SocketHTTP2_Conn_set_max_concurrent(conn, 50);
+
+/* Check peer's stream limit */
+uint32_t peer_max = SocketHTTP2_Conn_get_peer_setting(conn, 
+    SETTINGS_IDX_MAX_CONCURRENT_STREAMS);
+printf("Peer allows %u concurrent streams\n", peer_max);
 ```
 
 ### WebSocket Client

@@ -1347,6 +1347,164 @@ SocketHTTPClient_last_error (SocketHTTPClient_T client);
 extern const char *
 SocketHTTPClient_error_string (SocketHTTPClient_Error error);
 
+/* ============================================================================
+ * Convenience Functions
+ * ============================================================================
+ */
+
+/**
+ * @brief Download URL content to a file
+ * @ingroup http_client
+ * @param[in] client HTTP client instance
+ * @param[in] url URL to download from
+ * @param[in] filepath Path to destination file
+ *
+ * Downloads the response body to the specified file. Uses streaming to
+ * efficiently handle large files without loading entire content into memory.
+ * Creates the file if it doesn't exist, overwrites if it does.
+ *
+ * @return 0 on success, -1 on HTTP error, -2 on file error
+ *
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed,
+ *         SocketHTTPClient_Timeout, SocketHTTPClient_ProtocolError
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketHTTPClient_T client = SocketHTTPClient_new(NULL);
+ * int ret = SocketHTTPClient_download(client, "https://example.com/file.zip",
+ *                                     "/tmp/file.zip");
+ * if (ret == 0) {
+ *     printf("Download complete\n");
+ * } else if (ret == -1) {
+ *     printf("HTTP error: %s\n",
+ *            SocketHTTPClient_error_string(SocketHTTPClient_last_error(client)));
+ * } else {
+ *     printf("File error: %s\n", strerror(errno));
+ * }
+ * SocketHTTPClient_free(&client);
+ * @endcode
+ *
+ * @see SocketHTTPClient_upload() for uploading files
+ * @see SocketHTTPClient_get() for in-memory downloads
+ */
+extern int SocketHTTPClient_download (SocketHTTPClient_T client, const char *url,
+                                      const char *filepath);
+
+/**
+ * @brief Upload a file to URL
+ * @ingroup http_client
+ * @param[in] client HTTP client instance
+ * @param[in] url URL to upload to
+ * @param[in] filepath Path to source file
+ *
+ * Uploads the specified file using PUT request with streaming. The Content-Type
+ * is set to application/octet-stream unless overridden. Efficiently handles
+ * large files without loading entire content into memory.
+ *
+ * @return HTTP status code on success (2xx), -1 on HTTP error, -2 on file error
+ *
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed,
+ *         SocketHTTPClient_Timeout, SocketHTTPClient_ProtocolError
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int status = SocketHTTPClient_upload(client,
+ *     "https://storage.example.com/files/myfile.dat",
+ *     "/path/to/local/file.dat");
+ * if (status >= 200 && status < 300) {
+ *     printf("Upload successful (HTTP %d)\n", status);
+ * }
+ * @endcode
+ *
+ * @see SocketHTTPClient_download() for downloading files
+ * @see SocketHTTPClient_post() for custom uploads
+ */
+extern int SocketHTTPClient_upload (SocketHTTPClient_T client, const char *url,
+                                    const char *filepath);
+
+/**
+ * @brief GET request with JSON response parsing
+ * @ingroup http_client
+ * @param[in] client HTTP client instance
+ * @param[in] url URL to fetch
+ * @param[out] json_out Output: JSON string (caller must free)
+ * @param[out] json_len Output: JSON string length
+ *
+ * Performs GET request with Accept: application/json header. Validates
+ * that response Content-Type is application/json. Returns the raw JSON
+ * string which can be parsed by your preferred JSON library.
+ *
+ * @return HTTP status code on success, -1 on HTTP error, -2 on content-type
+ * mismatch
+ *
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed,
+ *         SocketHTTPClient_Timeout, SocketHTTPClient_ProtocolError
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * char *json = NULL;
+ * size_t len;
+ * int status = SocketHTTPClient_json_get(client,
+ *     "https://api.example.com/data", &json, &len);
+ * if (status == 200 && json) {
+ *     // Parse with your JSON library (cJSON, json-c, etc.)
+ *     printf("Got JSON (%zu bytes): %.100s...\n", len, json);
+ *     free(json);
+ * }
+ * @endcode
+ *
+ * @note Caller must free(json_out) on success
+ * @see SocketHTTPClient_json_post() for POST with JSON
+ */
+extern int SocketHTTPClient_json_get (SocketHTTPClient_T client, const char *url,
+                                      char **json_out, size_t *json_len);
+
+/**
+ * @brief POST JSON and receive JSON response
+ * @ingroup http_client
+ * @param[in] client HTTP client instance
+ * @param[in] url URL to POST to
+ * @param[in] json_body JSON string to send
+ * @param[out] json_out Output: JSON response (caller must free, may be NULL)
+ * @param[out] json_len Output: JSON response length
+ *
+ * Performs POST request with Content-Type: application/json and
+ * Accept: application/json. Validates response content type if body returned.
+ *
+ * @return HTTP status code on success, -1 on HTTP error, -2 on content-type
+ * mismatch
+ *
+ * @throws SocketHTTPClient_DNSFailed, SocketHTTPClient_ConnectFailed,
+ *         SocketHTTPClient_Timeout, SocketHTTPClient_ProtocolError
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * const char *request = "{\"name\": \"test\", \"value\": 42}";
+ * char *response = NULL;
+ * size_t len;
+ * int status = SocketHTTPClient_json_post(client,
+ *     "https://api.example.com/create", request, &response, &len);
+ * if (status == 201 && response) {
+ *     printf("Created: %s\n", response);
+ *     free(response);
+ * }
+ * @endcode
+ *
+ * @note Caller must free(json_out) on success
+ * @see SocketHTTPClient_json_get() for GET with JSON
+ */
+extern int SocketHTTPClient_json_post (SocketHTTPClient_T client,
+                                       const char *url, const char *json_body,
+                                       char **json_out, size_t *json_len);
+
 /** @} */
 
 #endif /* SOCKETHTTPCLIENT_INCLUDED */

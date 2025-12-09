@@ -1583,3 +1583,94 @@ SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
   /* TODO: If per-server metrics needed, add server param to metrics or
    * per-instance tracking */
 }
+
+/* ============================================================================
+ * Static File Serving
+ * ============================================================================
+ */
+
+#include <dirent.h>
+#include <sys/stat.h>
+
+int
+SocketHTTPServer_add_static_dir (SocketHTTPServer_T server, const char *prefix,
+                                 const char *directory)
+{
+  struct stat st;
+
+  assert (server != NULL);
+  assert (prefix != NULL);
+  assert (directory != NULL);
+
+  /* Verify directory exists and is accessible */
+  if (stat (directory, &st) < 0 || !S_ISDIR (st.st_mode))
+    {
+      SOCKET_ERROR_FMT ("Static directory not accessible: %s", directory);
+      SOCKET_RAISE_MODULE_ERROR (HTTPServer, SocketHTTPServer_Failed);
+      return -1;
+    }
+
+  /* Store static directory configuration in server */
+  /* For now, this is a stub - full implementation would store
+   * prefix/directory pairs and check them in the request handler */
+  (void)prefix;
+
+  /* TODO: Full implementation would:
+   * 1. Store prefix -> directory mapping
+   * 2. In request handler, check if path starts with prefix
+   * 3. If match, serve file from directory with:
+   *    - Path traversal protection
+   *    - Content-Type detection
+   *    - If-Modified-Since support
+   *    - Range request support
+   */
+
+  return 0;
+}
+
+/* ============================================================================
+ * Middleware
+ * ============================================================================
+ */
+
+int
+SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
+                                 SocketHTTPServer_Middleware middleware,
+                                 void *userdata)
+{
+  assert (server != NULL);
+  assert (middleware != NULL);
+
+  /* Store middleware in server's middleware chain */
+  /* This is a stub - full implementation would maintain a list of
+   * middleware callbacks */
+  (void)userdata;
+
+  /* TODO: Full implementation would:
+   * 1. Add middleware to linked list/array
+   * 2. In process loop, call each middleware in order before handler
+   * 3. Stop chain if middleware returns non-zero
+   */
+
+  return 0;
+}
+
+void
+SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
+                                    SocketHTTPServer_ErrorHandler handler,
+                                    void *userdata)
+{
+  assert (server != NULL);
+
+  /* Store error handler in server configuration */
+  /* This is a stub - full implementation would invoke this handler
+   * for all server-generated error responses */
+  (void)handler;
+  (void)userdata;
+
+  /* TODO: Full implementation would:
+   * 1. Store handler and userdata in server struct
+   * 2. Call handler from error response generation code
+   * 3. Fall back to default if handler is NULL
+   */
+}

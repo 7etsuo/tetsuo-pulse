@@ -1697,3 +1697,108 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
 
   return conn;
 }
+
+/* ============================================================================
+ * Extended PING and Stream Management
+ * ============================================================================
+ */
+
+#include <poll.h>
+
+int
+SocketHTTP2_Conn_ping_wait (SocketHTTP2_Conn_T conn, int timeout_ms)
+{
+  int64_t start_ms;
+  int64_t deadline_ms;
+  int64_t remaining;
+
+  assert (conn);
+
+  start_ms = Socket_get_monotonic_ms ();
+  deadline_ms = start_ms + timeout_ms;
+
+  /* Send PING */
+  if (SocketHTTP2_Conn_ping (conn, NULL) < 0)
+    return -1;
+
+  /* Wait for ACK */
+  while (conn->ping_pending)
+    {
+      remaining = deadline_ms - Socket_get_monotonic_ms ();
+      if (remaining <= 0)
+        {
+          conn->ping_pending = 0;
+          return -1; /* Timeout */
+        }
+
+      /* Poll for readability */
+      struct pollfd pfd;
+      pfd.fd = Socket_fd (conn->socket);
+      pfd.events = POLLIN;
+      pfd.revents = 0;
+
+      int ret = poll (&pfd, 1, (int)remaining);
+      if (ret < 0 && errno != EINTR)
+        {
+          conn->ping_pending = 0;
+          return -1;
+        }
+      if (ret <= 0)
+        continue;
+
+      /* Process incoming frames to receive PING ACK */
+      /* SOCKETPOLL_EVENTS_READ = 1 */
+      if (SocketHTTP2_Conn_process (conn, 1) < 0)
+        {
+          conn->ping_pending = 0;
+          return -1;
+        }
+    }
+
+  /* Return RTT in milliseconds */
+  return (int)(Socket_get_monotonic_ms () - start_ms);
+}
+
+uint32_t
+SocketHTTP2_Conn_get_concurrent_streams (SocketHTTP2_Conn_T conn)
+{
+  uint32_t count = 0;
+
+  assert (conn);
+
+  /* Count active streams (non-idle, non-closed) */
+  for (uint32_t i = 0; i < conn->stream_count; i++)
+    {
+      if (conn->streams[i] != NULL)
+        {
+          SocketHTTP2_StreamState state = conn->streams[i]->state;
+          if (state != HTTP2_STREAM_STATE_IDLE
+              && state != HTTP2_STREAM_STATE_CLOSED)
+            {
+              count++;
+            }
+        }
+    }
+
+  return count;
+}
+
+int
+SocketHTTP2_Conn_set_max_concurrent (SocketHTTP2_Conn_T conn, uint32_t max)
+{
+  SocketHTTP2_Setting setting;
+
+  assert (conn);
+
+  if (max == 0 || max > 0x7FFFFFFF)
+    return -1;
+
+  /* Update local setting (index is id - 1) */
+  conn->local_settings[SETTINGS_IDX_MAX_CONCURRENT_STREAMS] = max;
+
+  /* Send SETTINGS frame to peer */
+  setting.id = HTTP2_SETTINGS_MAX_CONCURRENT_STREAMS;
+  setting.value = max;
+
+  return SocketHTTP2_Conn_settings (conn, &setting, 1);
+}

@@ -129,20 +129,20 @@
 ## HTTP Enhancements
 
 ### HTTP Client Convenience
-- [ ] `SocketHTTPClient_download(client, url, filepath)` - Download to file
-- [ ] `SocketHTTPClient_upload(client, url, filepath)` - Upload from file
-- [ ] `SocketHTTPClient_json_get(client, url, response)` - GET with JSON parsing
-- [ ] `SocketHTTPClient_json_post(client, url, json, response)` - POST JSON
+- [x] `SocketHTTPClient_download(client, url, filepath)` - Download to file
+- [x] `SocketHTTPClient_upload(client, url, filepath)` - Upload from file
+- [x] `SocketHTTPClient_json_get(client, url, response)` - GET with JSON parsing
+- [x] `SocketHTTPClient_json_post(client, url, json, response)` - POST JSON
 
 ### HTTP Server
-- [ ] `SocketHTTPServer_add_static_dir(server, prefix, directory)` - Serve static files
-- [ ] `SocketHTTPServer_add_middleware(server, middleware)` - Request middleware
-- [ ] `SocketHTTPServer_set_error_handler(server, handler)` - Custom error pages
+- [x] `SocketHTTPServer_add_static_dir(server, prefix, directory)` - Serve static files
+- [x] `SocketHTTPServer_add_middleware(server, middleware)` - Request middleware
+- [x] `SocketHTTPServer_set_error_handler(server, handler)` - Custom error pages
 
 ### HTTP/2 Specific
-- [ ] `SocketHTTP2_get_concurrent_streams(conn)` - Current stream count
-- [ ] `SocketHTTP2_set_max_concurrent(conn, max)` - Limit streams
-- [ ] `SocketHTTP2_ping(conn, timeout_ms)` - Send PING frame
+- [x] `SocketHTTP2_Conn_get_concurrent_streams(conn)` - Current stream count
+- [x] `SocketHTTP2_Conn_set_max_concurrent(conn, max)` - Limit streams
+- [x] `SocketHTTP2_Conn_ping_wait(conn, timeout_ms)` - Send PING and wait for ACK
 
 ---
 

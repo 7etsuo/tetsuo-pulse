@@ -1072,6 +1072,88 @@ extern int SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn,
                                   const unsigned char opaque[8]);
 
 /**
+ * @brief Send PING and wait for response with timeout
+ * @ingroup http2
+ * @param[in] conn HTTP/2 connection
+ * @param[in] timeout_ms Maximum time to wait for PING ACK (milliseconds)
+ *
+ * Sends a PING frame and blocks until the ACK is received or timeout expires.
+ * Useful for measuring RTT and verifying connection liveness.
+ *
+ * @return RTT in milliseconds on success, -1 on timeout or error
+ *
+ * @threadsafe No - modifies connection state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int rtt = SocketHTTP2_Conn_ping_wait(conn, 5000);
+ * if (rtt >= 0) {
+ *     printf("Connection alive, RTT: %d ms\n", rtt);
+ * } else {
+ *     printf("Connection dead or timeout\n");
+ * }
+ * @endcode
+ *
+ * @note For non-blocking ping, use SocketHTTP2_Conn_ping() and check
+ *       HTTP2_EVENT_PING_ACK event
+ *
+ * @see SocketHTTP2_Conn_ping() for async version
+ * @see SocketHTTP2_Conn_is_closed() to check connection state
+ */
+extern int SocketHTTP2_Conn_ping_wait (SocketHTTP2_Conn_T conn, int timeout_ms);
+
+/**
+ * @brief Get current number of active streams
+ * @ingroup http2
+ * @param conn HTTP/2 connection
+ *
+ * Returns the number of streams currently in non-closed states (open,
+ * half-closed local, half-closed remote, reserved). Does not count
+ * idle or closed streams.
+ *
+ * @return Number of concurrent active streams (>= 0)
+ *
+ * @threadsafe Yes - reads atomic counter
+ *
+ * @see SocketHTTP2_Conn_set_max_concurrent() to limit streams
+ * @see SocketHTTP2_Conn_get_peer_setting() to check peer's limit
+ */
+extern uint32_t SocketHTTP2_Conn_get_concurrent_streams (SocketHTTP2_Conn_T conn);
+
+/**
+ * @brief Set maximum concurrent streams limit
+ * @ingroup http2
+ * @param[in] conn HTTP/2 connection
+ * @param[in] max Maximum concurrent streams (1 to 2^31-1)
+ *
+ * Updates the SETTINGS_MAX_CONCURRENT_STREAMS value and sends a SETTINGS
+ * frame to the peer. New streams exceeding this limit will receive
+ * REFUSED_STREAM.
+ *
+ * @return 0 on success, -1 on error (invalid value or send failed)
+ *
+ * @threadsafe No - modifies settings
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Limit to 50 concurrent streams
+ * SocketHTTP2_Conn_set_max_concurrent(conn, 50);
+ *
+ * // Check current active
+ * uint32_t active = SocketHTTP2_Conn_get_concurrent_streams(conn);
+ * printf("Active: %u / %u streams\n", active, 50);
+ * @endcode
+ *
+ * @note Change takes effect after peer acknowledges SETTINGS
+ * @see SocketHTTP2_Conn_get_concurrent_streams() to check usage
+ * @see SocketHTTP2_Config.max_concurrent_streams for initial value
+ */
+extern int SocketHTTP2_Conn_set_max_concurrent (SocketHTTP2_Conn_T conn,
+                                                uint32_t max);
+
+/**
  * @brief Send GOAWAY frame
  * @ingroup http2
  * @param conn  Connection

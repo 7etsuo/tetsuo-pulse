@@ -1916,4 +1916,179 @@ extern void SocketHTTPServer_stats (SocketHTTPServer_T server,
  */
 extern void SocketHTTPServer_stats_reset (SocketHTTPServer_T server);
 
+/* ============================================================================
+ * Static File Serving
+ * ============================================================================
+ */
+
+/**
+ * @brief Add static file serving for a directory
+ * @ingroup http
+ * @param[in] server Server instance
+ * @param[in] prefix URL prefix to match (e.g., "/static")
+ * @param[in] directory Filesystem directory to serve from
+ *
+ * Configures the server to serve static files from the specified directory
+ * for requests matching the URL prefix. Supports common content types,
+ * conditional requests (If-Modified-Since), and range requests.
+ *
+ * @return 0 on success, -1 on error (directory not accessible)
+ *
+ * @throws SocketHTTPServer_Failed if directory invalid
+ * @threadsafe No - modifies server configuration
+ *
+ * ## Security Notes
+ *
+ * - Path traversal attacks prevented (.. normalized)
+ * - Symlinks followed only within directory (configurable)
+ * - No directory listing by default
+ * - Hidden files (dot-files) not served by default
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Serve /static/foo.js from ./public/foo.js
+ * SocketHTTPServer_add_static_dir(server, "/static", "./public");
+ *
+ * // Serve /assets/* from /var/www/assets/
+ * SocketHTTPServer_add_static_dir(server, "/assets", "/var/www/assets");
+ * @endcode
+ *
+ * @note Requests not matching static files fall through to handler
+ * @see SocketHTTPServer_set_handler() for dynamic handling
+ */
+extern int SocketHTTPServer_add_static_dir (SocketHTTPServer_T server,
+                                            const char *prefix,
+                                            const char *directory);
+
+/* ============================================================================
+ * Middleware
+ * ============================================================================
+ */
+
+/**
+ * @brief Middleware callback type
+ * @ingroup http
+ *
+ * Middleware functions are called before the main handler for each request.
+ * They can inspect/modify the request, set response headers, or short-circuit
+ * by returning non-zero.
+ *
+ * @param req Request context
+ * @param userdata Middleware-specific data
+ * @return 0 to continue to next middleware/handler, non-zero to stop
+ *         (request considered handled)
+ */
+typedef int (*SocketHTTPServer_Middleware) (SocketHTTPServer_Request_T req,
+                                            void *userdata);
+
+/**
+ * @brief Add request middleware
+ * @ingroup http
+ * @param[in] server Server instance
+ * @param[in] middleware Middleware callback
+ * @param[in] userdata User data passed to callback
+ *
+ * Adds middleware to the processing chain. Middleware is executed in order
+ * of addition, before the main request handler. Common uses:
+ * - Logging and metrics
+ * - Authentication/authorization
+ * - CORS headers
+ * - Request validation
+ * - Rate limiting
+ *
+ * @return 0 on success, -1 on error (too many middleware)
+ *
+ * @threadsafe No - modifies server configuration
+ *
+ * ## Execution Order
+ *
+ * ```
+ * Request → Middleware 1 → Middleware 2 → ... → Handler → Response
+ *                ↓             ↓
+ *           (can short-circuit and send response)
+ * ```
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int log_middleware(SocketHTTPServer_Request_T req, void *data) {
+ *     printf("[%s] %s\n",
+ *            SocketHTTP_method_name(SocketHTTPServer_Request_method(req)),
+ *            SocketHTTPServer_Request_path(req));
+ *     return 0;  // Continue to next
+ * }
+ *
+ * int auth_middleware(SocketHTTPServer_Request_T req, void *data) {
+ *     const char *token = SocketHTTPServer_Request_header(req, "Authorization");
+ *     if (!token || !validate_token(token)) {
+ *         SocketHTTPServer_Request_status(req, 401);
+ *         SocketHTTPServer_Request_body_data(req, "Unauthorized", 12);
+ *         SocketHTTPServer_Request_finish(req);
+ *         return 1;  // Stop processing
+ *     }
+ *     return 0;  // Continue
+ * }
+ *
+ * SocketHTTPServer_add_middleware(server, log_middleware, NULL);
+ * SocketHTTPServer_add_middleware(server, auth_middleware, &auth_config);
+ * @endcode
+ *
+ * @see SocketHTTPServer_set_handler() for main handler
+ * @see SocketHTTPServer_Validator for validation-only middleware
+ */
+extern int SocketHTTPServer_add_middleware (SocketHTTPServer_T server,
+                                            SocketHTTPServer_Middleware middleware,
+                                            void *userdata);
+
+/**
+ * @brief Error handler callback type
+ * @ingroup http
+ *
+ * Called when the server generates an error response (4xx, 5xx).
+ * Allows customization of error pages.
+ *
+ * @param req Request context (status already set)
+ * @param status_code HTTP status code (400-599)
+ * @param userdata Handler-specific data
+ */
+typedef void (*SocketHTTPServer_ErrorHandler) (SocketHTTPServer_Request_T req,
+                                               int status_code, void *userdata);
+
+/**
+ * @brief Set custom error page handler
+ * @ingroup http
+ * @param[in] server Server instance
+ * @param[in] handler Error handler callback (NULL to reset to default)
+ * @param[in] userdata User data passed to callback
+ *
+ * Sets a custom handler for generating error responses. Called for all
+ * server-generated errors (not application-generated via handler).
+ *
+ * @threadsafe No - modifies server configuration
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * void custom_error(SocketHTTPServer_Request_T req, int code, void *data) {
+ *     char body[256];
+ *     snprintf(body, sizeof(body),
+ *              "<html><body><h1>Error %d</h1>"
+ *              "<p>%s</p></body></html>",
+ *              code, http_status_message(code));
+ *     SocketHTTPServer_Request_header(req, "Content-Type", "text/html");
+ *     SocketHTTPServer_Request_body_data(req, body, strlen(body));
+ *     SocketHTTPServer_Request_finish(req);
+ * }
+ *
+ * SocketHTTPServer_set_error_handler(server, custom_error, NULL);
+ * @endcode
+ *
+ * @note Default handler sends minimal text/plain response
+ * @see SocketHTTPServer_Request_status() to check/set status
+ */
+extern void SocketHTTPServer_set_error_handler (SocketHTTPServer_T server,
+                                                SocketHTTPServer_ErrorHandler handler,
+                                                void *userdata);
+
 #endif /* SOCKETHTTPSERVER_INCLUDED */
