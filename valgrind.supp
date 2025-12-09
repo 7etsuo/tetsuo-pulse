@@ -2,6 +2,28 @@
 # These suppress known false positives from third-party libraries
 
 # =============================================================================
+# Exception handling (setjmp/longjmp) suppressions
+# =============================================================================
+
+# The exception system uses setjmp/longjmp for non-local jumps. When longjmp
+# unwinds the stack, Valgrind may report reads "below the stack pointer" as
+# invalid. These are false positives - the reads are from the Except_frame
+# structure which is valid until the TRY block ends.
+{
+   exception_handling_stack_access
+   Memcheck:Addr8
+   fun:Test_run_all
+   ...
+}
+
+{
+   exception_handling_cond_jump
+   Memcheck:Cond
+   fun:Test_run_all
+   ...
+}
+
+# =============================================================================
 # OpenSSL / LibreSSL suppressions
 # =============================================================================
 

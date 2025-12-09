@@ -2034,6 +2034,7 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
   if (auth == NULL)
     {
       client->default_auth = NULL;
+      pthread_mutex_unlock(&client->mutex);
       return;
     }
 
