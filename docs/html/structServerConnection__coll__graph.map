@@ -1,14 +1,8 @@
 <map id="ServerConnection" name="ServerConnection">
-<area shape="rect" id="Node000001" title="Core internal structure representing an active HTTP client connection." alt="" coords="164,271,291,297"/>
-<area shape="poly" id="edge6_Node000001_Node000001" title=" " alt="" coords="306,275,317,284,309,292,291,295,291,290,307,287,312,284,303,280"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="117,181,196,207"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,216,220,269,216,273,172,219"/>
-<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,133,159,181,154,181,154,133"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
-<area shape="rect" id="Node000006" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="221,181,375,207"/>
-<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="282,219,239,273,235,269,278,216"/>
+<area shape="rect" id="Node000001" title="Core internal structure representing an active HTTP client connection." alt="" coords="52,95,179,121"/>
+<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="194,99,205,108,197,116,179,119,179,114,195,111,200,108,191,104"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,84,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="65,40,108,93,104,97,60,43"/>
+<area shape="rect" id="Node000003" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="109,5,263,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="170,43,127,97,123,93,166,40"/>
 </map>

@@ -236,6 +236,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Private declarations for SocketCommon module providing shared socket infrastructure. </p>
 <p>This private header defines internal structures, helper functions, and exception forward declarations shared between Socket and SocketDgram implementations. It enables code reuse for common operations like base initialization, option setting, and endpoint caching while maintaining opaque public API.</p>
+<p>Architecture Overview</p>
 <div class="fragment"><div class="line">┌─────────────────────────────┐</div>
 <div class="line">│   Public API (Socket.h)     │</div>
 <div class="line">│   ├── Socket_T (opaque)     │</div>
@@ -254,29 +255,24 @@ Variables</h2></td></tr>
 <div class="line">┌─────────▼───────────────────┐</div>
 <div class="line">│   SocketCommon.c            │</div>
 <div class="line">└─────────────────────────────┘</div>
-<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00041">SocketDgram-private.h:42</a></div></div>
-<div class="ttc" id="agroup__core__io_html_structSocketBase__T"><div class="ttname"><a href="group__core__io.html#structSocketBase__T">SocketBase_T</a></div><div class="ttdoc">Internal implementation of SocketBase_T opaque type.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon-private_8h_source.html#l00124">SocketCommon-private.h:125</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md536"></a>
-Features</h2>
+<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00043">SocketDgram-private.h:44</a></div></div>
+<div class="ttc" id="agroup__core__io_html_structSocketBase__T"><div class="ttname"><a href="group__core__io.html#structSocketBase__T">SocketBase_T</a></div><div class="ttdoc">Internal implementation of SocketBase_T opaque type.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon-private_8h_source.html#l00141">SocketCommon-private.h:142</a></div></div>
+</div><!-- fragment --><p>Features</p>
 <ul>
 <li><b>Shared Base Structure</b>: <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> provides common fields (fd, arena, endpoints, timeouts, metrics) embedded in subtypes.</li>
 <li><b>Thread-Safe Accessors</b>: Controlled getters/setters with mutex protection documentation.</li>
 <li><b>Unified Option Setting</b>: Common implementations for SO_REUSEADDR, SO_REUSEPORT, timeouts, CLOEXEC, SIGPIPE handling.</li>
 <li><b>Address Resolution Helpers</b>: Internal validation, normalization, caching for endpoints.</li>
 <li><b>Exception Forwarding</b>: Module exceptions declared for consistent error handling across files.</li>
-<li><b>Platform Abstraction</b>: Handles differences (e.g., SO_DOMAIN on Linux, getsockname fallback).</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md537"></a>
-Platform Requirements</h2>
-<ul>
+<li><p class="startli"><b>Platform Abstraction</b>: Handles differences (e.g., SO_DOMAIN on Linux, getsockname fallback).</p>
+<p class="startli">Platform Requirements</p>
+</li>
 <li>POSIX-compliant system with socket(), setsockopt(), fcntl(), getaddrinfo().</li>
 <li>pthreads for mutex-based thread safety in base access.</li>
 <li>CLOCK_MONOTONIC for timing (via SocketUtil).</li>
-<li>No TLS dependencies (pure socket layer).</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md538"></a>
-Usage Guidelines</h2>
-<ul>
+<li><p class="startli">No TLS dependencies (pure socket layer).</p>
+<p class="startli">Usage Guidelines</p>
+</li>
 <li>Include only from .c implementation files, never public headers or user code.</li>
 <li>Use accessors instead of direct field access for encapsulation.</li>
 <li>Always acquire base-&gt;mutex for multi-threaded modifications.</li>
@@ -332,9 +328,9 @@ docs/ERROR_HANDLING.md for exception patterns. </dd>
 <dl class="section note"><dt>Note</dt><dd>Updated after bind(); format depends on domain. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon-private_8h.html#ac5739d7239856359495b02e1f79f9835" title="Get local port number.">SocketBase_localport()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00330">330</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00358">358</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00137">SocketBase_T::localaddr</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00154">SocketBase_T::localaddr</a>.</p>
 
 </div>
 </div>
@@ -372,9 +368,9 @@ docs/ERROR_HANDLING.md for exception patterns. </dd>
 <dl class="section return"><dt>Returns</dt><dd>Local port (0 if unbound). </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon-private_8h.html#ac7b31f6b6d7969c6f037154c54e9872e" title="Get cached local address string representation.">SocketBase_localaddr()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00343">343</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00371">371</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00139">SocketBase_T::localport</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00156">SocketBase_T::localport</a>.</p>
 
 </div>
 </div>
@@ -413,9 +409,9 @@ docs/ERROR_HANDLING.md for exception patterns. </dd>
 <dl class="section note"><dt>Note</dt><dd>Allows modification; caller should lock mutex if threaded. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketCommon_set_timeouts() for global defaults. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00357">357</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00385">385</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00147">SocketBase_T::timeouts</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00164">SocketBase_T::timeouts</a>.</p>
 
 </div>
 </div>
@@ -679,7 +675,7 @@ Unifies family detection across modules. </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if parses as IP, false otherwise. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>No allocation; fast string check. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf8d4b6a3c291b6ebbb73c13743304b42" title="Validate and parse IP address string.">SocketCommon_parse_ip()</a> for <a class="el" href="group__async__io.html#ga4417150d9f858949bd9ea8794995ebcc" title="Wrapper structure for resolved addresses in Happy Eyeballs address preference ordering.">family</a> extraction. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf8d4b6a3c291b6ebbb73c13743304b42" title="Validate and parse IP address string.">SocketCommon_parse_ip()</a> for family extraction. </dd></dl>
 
 </div>
 </div>

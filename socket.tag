@@ -3408,13 +3408,63 @@
     <name>SocketRetry.h</name>
     <path>include/core/</path>
     <filename>SocketRetry_8h.html</filename>
+    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
     <class kind="struct">SocketRetry_Policy</class>
     <class kind="struct">SocketRetry_Stats</class>
-    <member kind="typedef">
-      <type>struct T *</type>
+    <member kind="define">
+      <type>#define</type>
       <name>T</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga24514489b0962fafe8414bfae95aa268</anchor>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga9e4c6bdc5f6ab59683cef18bb3f58211</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga1b9f06edcbcdd60e892086a4b8c2b9ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gae4c30a1ed41ff40ca11fbdb21c2ec947</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MULTIPLIER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga2addc89cb7a7a9b6e75f3cd51eef65ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_JITTER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gafbe9a9852b0477755c295af74aa0f2c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_MAX_ATTEMPTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga6245d4aca908bb154e7cd34f6a36d8dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct SocketRetry_T *</type>
+      <name>SocketRetry_T</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga419cec86f54612ef9204c059be3ec0a9</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -5727,6 +5777,13 @@
       <anchorfile>group__dns.html</anchorfile>
       <anchor>gabac4f41fc92ef0aec184eb3c8e6e10cb</anchor>
       <arglist>(const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>struct SocketDNS_T *</type>
+      <name>allocate_dns_resolver</name>
+      <anchorfile>SocketDNS-private_8h.html</anchorfile>
+      <anchor>a0c5a84436f8b4c2c2159a9ae95ec6e6f</anchor>
+      <arglist>(void)</arglist>
     </member>
     <member kind="variable">
       <type>const Except_T</type>
@@ -11527,6 +11584,13 @@
       <anchor>gga2f08f039d21b354ac9e74c026ffa84a6a789a51a79c10caae10604554eb601e74</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function">
+      <type></type>
+      <name>SOCKET_DECLARE_MODULE_EXCEPTION</name>
+      <anchorfile>SocketHTTPServer-private_8h.html</anchorfile>
+      <anchor>a414a240e03c5900e3e14930b208125d3</anchor>
+      <arglist>(SocketHTTPServer)</arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketHTTPServer.h</name>
@@ -12125,10 +12189,13 @@
     <includes id="SocketPoll__backend_8h" name="SocketPoll_backend.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll_backend.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketAsync_8h" name="SocketAsync.h" local="yes" import="no" module="no" objc="no">socket/SocketAsync.h</includes>
+    <class kind="struct">SocketData</class>
+    <class kind="struct">FdSocketEntry</class>
+    <class kind="struct">SocketPoll_T</class>
     <member kind="define">
       <type>#define</type>
       <name>T</name>
-      <anchorfile>group__poll__private.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
     </member>
@@ -12146,12 +12213,12 @@
       <anchor>ga55f5cf0f097a98b03e1511d1b6bd91b2</anchor>
       <arglist>(e)</arglist>
     </member>
-    <member kind="variable">
-      <type>*Ensures ABI</type>
-      <name>stability</name>
+    <member kind="function">
+      <type>SocketTimer_heap_T *</type>
+      <name>socketpoll_get_timer_heap</name>
       <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gac76e53ad178174f0f70747acfc5f83a2</anchor>
-      <arglist></arglist>
+      <anchor>gaf791d7d3363309127dbdd94e4181b8c3</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -14912,6 +14979,8 @@
     <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketHappyEyeballs_8h" name="SocketHappyEyeballs.h" local="yes" import="no" module="no" objc="no">socket/SocketHappyEyeballs.h</includes>
+    <class kind="struct">SocketHE_AddressEntry_T</class>
+    <class kind="struct">SocketHE_Attempt_T</class>
     <class kind="struct">SocketHE_T</class>
     <member kind="define">
       <type>#define</type>
@@ -14926,6 +14995,13 @@
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gaa146f664c1a8f3c05b5aa72766bc9c90</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HE_FOREACH_ATTEMPT</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>gabbef7b94e157f9c32222e8176b395da4</anchor>
+      <arglist>(he, iter)</arglist>
     </member>
     <member kind="enumeration">
       <type></type>
@@ -14956,69 +15032,6 @@
       <name>HE_ATTEMPT_FAILED</name>
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gga9ceb0606fea5b72366bbd21ff047c84faefa9d91f6d5fa3393216eaefc01af056</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct addrinfo *</type>
-      <name>addr</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>gabf6dc3901a5139f2f7f093db3003b798</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketHE_AttemptState</type>
-      <name>state</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>a701136b6320d53560cfe228535884502</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>error</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>a11614f44ef4d939bdd984953346a7572</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>start_time_ms</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>ad2a2dd6f82dee045d069868263a0081f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct SocketHE_Attempt *</type>
-      <name>next</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>a8cfef7a67b323a611a42e8eab03eed22</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>SocketHE_Attempt_T</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>af65fb424e04e284ceab8f880af2832ff</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>family</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>ga4417150d9f858949bd9ea8794995ebcc</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>tried</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>aac39ea8065d9b2b99c2b8a4a7c4ca130</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>SocketHE_AddressEntry_T</name>
-      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
-      <anchor>af903d297eea34d40f3c6459193a0d080</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -16450,47 +16463,26 @@
       <anchor>ggad94358cbf0bb7d00f70705a6c5245433a41651f787427ec87c589c4c5c912a6f9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="function">
-      <type></type>
-      <name>if</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga0450dbfcd56214ed2989e6ff4d97b25d</anchor>
-      <arglist>(SocketCrypto_random_bytes(&amp;value, sizeof(value))==0)</arglist>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>socketreconnect_now_ms</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga8e2e9cd2b8dd8294f175991957b1b37b</anchor>
+      <arglist>(void)</arglist>
     </member>
-    <member kind="function">
-      <type></type>
-      <name>if</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>gaab33e6c19aa5cf524e12e3c40b50574a</anchor>
-      <arglist>(seed==0)</arglist>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>socketreconnect_elapsed_ms</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga8bb049b5716726216dec25cd2dfa2380</anchor>
+      <arglist>(int64_t start_ms)</arglist>
     </member>
-    <member kind="function">
-      <type></type>
-      <name>return</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga230fd1711fa730b54c9262bf533767f6</anchor>
-      <arglist>(double) seed/(double) 0xFFFFFFFFU</arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>delta</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga7a21408446fbd8c658853d5f53e2c76f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>else</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga0544c3fe466e421738dae463968b70ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>seed</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>gab31f6ed1e7e88c7cca70910409c6bbee</anchor>
-      <arglist></arglist>
+    <member kind="function" static="yes">
+      <type>static double</type>
+      <name>reconnect_jitter</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga768e9347e53fcf121c747b2430cdef40</anchor>
+      <arglist>(void)</arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -18661,41 +18653,6 @@
     <class kind="struct">SocketTLSContext_T</class>
     <member kind="define">
       <type>#define</type>
-      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
-      <anchorfile>SocketTLS-private_8h.html</anchorfile>
-      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
-      <anchorfile>SocketTLS-private_8h.html</anchorfile>
-      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
-      <anchorfile>SocketTLS-private_8h.html</anchorfile>
-      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
-      <anchorfile>SocketTLS-private_8h.html</anchorfile>
-      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
-      <anchorfile>SocketTLS-private_8h.html</anchorfile>
-      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
       <name>RAISE_TLS_ERROR</name>
       <anchorfile>group__security.html</anchorfile>
       <anchor>gaaa5d5a165d617e880e0761f54333d859</anchor>
@@ -20271,6 +20228,32 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>FdSocketEntry</name>
+    <filename>group__poll__private.html</filename>
+    <anchor>structFdSocketEntry</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>fd</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a6e281de117ccb3201b590ba4184adb62</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Socket_T</type>
+      <name>socket</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>adf65761f33705691e1fdae79ae0e8f24</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct FdSocketEntry *</type>
+      <name>next</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>aec49f71e7b318291b9270ff95811c7b9</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>HeaderEntry</name>
     <filename>group__http.html</filename>
     <anchor>structHeaderEntry</anchor>
@@ -21151,6 +21134,32 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketData</name>
+    <filename>group__poll__private.html</filename>
+    <anchor>structSocketData</anchor>
+    <member kind="variable">
+      <type>Socket_T</type>
+      <name>socket</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a235a818367962ab1444d564fc9ecb733</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>data</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a942b54345de6283838d63e9de0378440</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct SocketData *</type>
+      <name>next</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a60a4b17af0ea783aea433d16a8f1767b</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketDgram_T</name>
     <filename>SocketDgram-private_8h.html</filename>
     <anchor>structSocketDgram__T</anchor>
@@ -21747,6 +21756,114 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketHE_AddressEntry_T</name>
+    <filename>group__async__io.html</filename>
+    <anchor>structSocketHE__AddressEntry__T</anchor>
+    <member kind="variable">
+      <type>Socket_T</type>
+      <name>socket</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>a94ef82d024230605e05d0cf61b6da18d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct addrinfo *</type>
+      <name>addr</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>a27515d0d3a60d3d5790e582ce1b6432d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>family</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>a62b62e50bd95cd705cce6d0681180963</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>tried</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>ad9b187dc05cf715fccd015f990e3ea72</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHE_AttemptState</type>
+      <name>state</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>aa08e25b471e5beb67f36cf2477fa5a95</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>error</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>af9fe36a24c3b96572be7aac044ad8936</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>start_time_ms</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>a73d82cb6fe7307300c3b7e8cc5ec0540</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct SocketHE_AddressEntry *</type>
+      <name>next</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>a81c5f63f206f0bd49c39409a2043f65f</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketHE_Attempt_T</name>
+    <filename>SocketHappyEyeballs-private_8h.html</filename>
+    <anchor>structSocketHE__Attempt__T</anchor>
+    <member kind="variable">
+      <type>Socket_T</type>
+      <name>socket</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a6d7c20ae3edf7159f276525c8f4b90bc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct addrinfo *</type>
+      <name>addr</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>ab02a910ca4b1f3516cd1a7e91b93c5b9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHE_AttemptState</type>
+      <name>state</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a6a8a1e41faa0a08ba7cc5a368d177d75</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>error</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a500878af707470819de9519582e95aaa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>start_time_ms</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a276531d1271e611910bd33f70fe32ed4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct SocketHE_Attempt *</type>
+      <name>next</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a12005585efa1da9b04101a452aa2eb4d</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketHE_Config_T</name>
     <filename>group__async__io.html</filename>
     <anchor>structSocketHE__Config__T</anchor>
@@ -21962,8 +22079,8 @@
       <type>char</type>
       <name>error_buf</name>
       <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a53be6d234730141d247e0e078dbf266c</anchor>
-      <arglist>[SOCKET_HE_ERROR_BUFSIZE]</arglist>
+      <anchor>ad658a91e1c063809e9d8c33d9669cbb1</anchor>
+      <arglist>[256]</arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -23727,35 +23844,35 @@
       <type>SocketHTTPClient_AuthType</type>
       <name>type</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aea321b9aeb6d8d36babd95cd7af87d35</anchor>
+      <anchor>gaea321b9aeb6d8d36babd95cd7af87d35</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>username</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aebecaec836c2d21aeb36c83c6a037b58</anchor>
+      <anchor>gaebecaec836c2d21aeb36c83c6a037b58</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>password</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a709145c7dcf32bbfbdbc68da8da0842f</anchor>
+      <anchor>ga709145c7dcf32bbfbdbc68da8da0842f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>token</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a75371d88c2cb09feb95620c237b37882</anchor>
+      <anchor>ga75371d88c2cb09feb95620c237b37882</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>realm</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a89774175b3f815b3c17b8b150347b453</anchor>
+      <anchor>ga89774175b3f815b3c17b8b150347b453</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -23767,196 +23884,196 @@
       <type>SocketHTTP_Version</type>
       <name>max_version</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aeeeb2ea03d33db0ba500da1c7782f7f3</anchor>
+      <anchor>gaeeeb2ea03d33db0ba500da1c7782f7f3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>allow_http2_cleartext</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a9a480ef82e914f17714c7c57d12f88af</anchor>
+      <anchor>ga9a480ef82e914f17714c7c57d12f88af</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>enable_connection_pool</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ac81b35696b105b13f703c5d71f5c5692</anchor>
+      <anchor>gac81b35696b105b13f703c5d71f5c5692</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_connections_per_host</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ad87a23b29168c1a6a738bd07268247de</anchor>
+      <anchor>gad87a23b29168c1a6a738bd07268247de</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_total_connections</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aacd5591ab8f36783e6f759052439eb30</anchor>
+      <anchor>gaacd5591ab8f36783e6f759052439eb30</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>idle_timeout_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a867974712621670ef1dc975b2b396f84</anchor>
+      <anchor>ga867974712621670ef1dc975b2b396f84</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>max_connection_age_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a82bcf56254c541ebd8fbdbba0a7ba7bb</anchor>
+      <anchor>ga82bcf56254c541ebd8fbdbba0a7ba7bb</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>acquire_timeout_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a12094d3f2718443658de2cab3f8873b4</anchor>
+      <anchor>ga12094d3f2718443658de2cab3f8873b4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>connect_timeout_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ad0964ac6e0738a3c4914054529bb51a7</anchor>
+      <anchor>gad0964ac6e0738a3c4914054529bb51a7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>request_timeout_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a5d89d81bfb2401b06059048425fafb93</anchor>
+      <anchor>ga5d89d81bfb2401b06059048425fafb93</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>dns_timeout_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a6e7fd7c2a4f862fc8d613d4662a7e2e1</anchor>
+      <anchor>ga6e7fd7c2a4f862fc8d613d4662a7e2e1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>follow_redirects</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a1e5a28b4e256802af5f979726c728553</anchor>
+      <anchor>ga1e5a28b4e256802af5f979726c728553</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>redirect_on_post</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a847eaef5232b2ada9149eea8aa9d4d4c</anchor>
+      <anchor>ga847eaef5232b2ada9149eea8aa9d4d4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>accept_encoding</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aa6bd2632f03fadb8a08f023e641c2c64</anchor>
+      <anchor>gaa6bd2632f03fadb8a08f023e641c2c64</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>auto_decompress</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a39d5d74dbbdec57ac84fed12f747e299</anchor>
+      <anchor>ga39d5d74dbbdec57ac84fed12f747e299</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketTLSContext_T</type>
       <name>tls_context</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a30f979d083088bc46c8c7de3bc37a3db</anchor>
+      <anchor>ga30f979d083088bc46c8c7de3bc37a3db</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>verify_ssl</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aa5c6daa6286ff5a701a804da14108a4c</anchor>
+      <anchor>gaa5c6daa6286ff5a701a804da14108a4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketProxy_Config *</type>
       <name>proxy</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>af1c22aca38ea27645e9400fe42680bdf</anchor>
+      <anchor>gaf1c22aca38ea27645e9400fe42680bdf</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>user_agent</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a0d03d16dc3eae06b6ab0b89b288c44df</anchor>
+      <anchor>ga0d03d16dc3eae06b6ab0b89b288c44df</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_response_size</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aa26d176771f3b6ddee9a2d95142e9c46</anchor>
+      <anchor>gaa26d176771f3b6ddee9a2d95142e9c46</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>enable_retry</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>adb6071171fe058cbc1c221e1b0d6ec98</anchor>
+      <anchor>gadb6071171fe058cbc1c221e1b0d6ec98</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>max_retries</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ad8b244df21d9337ed74c872e694d10ba</anchor>
+      <anchor>gad8b244df21d9337ed74c872e694d10ba</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>retry_initial_delay_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a1b02030b2c83c6e7bd1812de2362ede3</anchor>
+      <anchor>ga1b02030b2c83c6e7bd1812de2362ede3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>retry_max_delay_ms</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>afd505949c45d0fb48c0810759cb66176</anchor>
+      <anchor>gafd505949c45d0fb48c0810759cb66176</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>retry_on_connection_error</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a6355fa7fdfcc9db5d6069189aef62928</anchor>
+      <anchor>ga6355fa7fdfcc9db5d6069189aef62928</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>retry_on_timeout</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a58a60bcfb2edaa6accced6acd52191ad</anchor>
+      <anchor>ga58a60bcfb2edaa6accced6acd52191ad</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>retry_on_5xx</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a86ed34fbe021d156e6ee5ac2bc8e9b6e</anchor>
+      <anchor>ga86ed34fbe021d156e6ee5ac2bc8e9b6e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>enforce_samesite</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ae9bb372f96fd426c9fcf729fa78f26e3</anchor>
+      <anchor>gae9bb372f96fd426c9fcf729fa78f26e3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -23968,56 +24085,56 @@
       <type>const char *</type>
       <name>name</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ae7076917489dca85561ff672d120551c</anchor>
+      <anchor>gae7076917489dca85561ff672d120551c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>value</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a21b390a321565e4ebf8be575550c1498</anchor>
+      <anchor>ga21b390a321565e4ebf8be575550c1498</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>domain</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a0dc75016531006762afa85a21130ac13</anchor>
+      <anchor>ga0dc75016531006762afa85a21130ac13</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>path</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a7259b82f78dc6e60c52ef6c5d741ca06</anchor>
+      <anchor>ga7259b82f78dc6e60c52ef6c5d741ca06</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>time_t</type>
       <name>expires</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a76752117eaf672a88292a3c7c250b52d</anchor>
+      <anchor>ga76752117eaf672a88292a3c7c250b52d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>secure</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a3300f627ad07cd15a596451a41dc4b69</anchor>
+      <anchor>ga3300f627ad07cd15a596451a41dc4b69</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>http_only</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ae47a67be4b88e83dd7c877f63af2ae8a</anchor>
+      <anchor>gae47a67be4b88e83dd7c877f63af2ae8a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTPClient_SameSite</type>
       <name>same_site</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ad1fc2e3ea45172e27a07aaacfe3c7eeb</anchor>
+      <anchor>gad1fc2e3ea45172e27a07aaacfe3c7eeb</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24083,63 +24200,63 @@
       <type>size_t</type>
       <name>active_connections</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a102cdd1136d87673c4eb8ca42cd64942</anchor>
+      <anchor>ga102cdd1136d87673c4eb8ca42cd64942</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>idle_connections</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aaab49cd26a75dd2f3f7ed96eafc09a25</anchor>
+      <anchor>gaaab49cd26a75dd2f3f7ed96eafc09a25</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>total_requests</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>acbe290157d79e718d8397a6d7078487c</anchor>
+      <anchor>gacbe290157d79e718d8397a6d7078487c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>reused_connections</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a0bb94abb8c7aa981d1aae1d47469b316</anchor>
+      <anchor>ga0bb94abb8c7aa981d1aae1d47469b316</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>connections_created</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a9a5d4cac43fdb9d880edef1dc778273a</anchor>
+      <anchor>ga9a5d4cac43fdb9d880edef1dc778273a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>connections_failed</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a1dfc46ee0c2d61f3facd7daf0d93f0a0</anchor>
+      <anchor>ga1dfc46ee0c2d61f3facd7daf0d93f0a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>connections_timed_out</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ac9548fe3f865ed4d99c7366b0f64937d</anchor>
+      <anchor>gac9548fe3f865ed4d99c7366b0f64937d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>stale_connections_removed</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a822cd3674285e9ee5a3e541b42cc8f9a</anchor>
+      <anchor>ga822cd3674285e9ee5a3e541b42cc8f9a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>pool_exhausted_waits</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a2388e92ca44d26b70ce6904abbcf0d13</anchor>
+      <anchor>ga2388e92ca44d26b70ce6904abbcf0d13</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24232,42 +24349,42 @@
       <type>int</type>
       <name>status_code</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a0baa2f233436d7bb00f28214d6382542</anchor>
+      <anchor>ga0baa2f233436d7bb00f28214d6382542</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP_Headers_T</type>
       <name>headers</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>a8b459516887245f8e4b77f8d8517ede1</anchor>
+      <anchor>ga8b459516887245f8e4b77f8d8517ede1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>void *</type>
       <name>body</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ab7f8558743b64c751b64ac26231dca31</anchor>
+      <anchor>gab7f8558743b64c751b64ac26231dca31</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>body_len</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>aae64f48637811f9ddbc8e12aea55e0e6</anchor>
+      <anchor>gaae64f48637811f9ddbc8e12aea55e0e6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP_Version</type>
       <name>version</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>accda45708658a8ada478121524f85e5e</anchor>
+      <anchor>gaccda45708658a8ada478121524f85e5e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
       <anchorfile>group__http__client.html</anchorfile>
-      <anchor>ab3f98045a2f32cb3249ee62d036654c3</anchor>
+      <anchor>gab3f98045a2f32cb3249ee62d036654c3</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24830,77 +24947,77 @@
       <type>uint64_t</type>
       <name>count</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae65da7d40c1b636bd5d688c6ab36176a</anchor>
+      <anchor>ae65da7d40c1b636bd5d688c6ab36176a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>sum</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga4088038d1883a118b9818b15772582b0</anchor>
+      <anchor>a4088038d1883a118b9818b15772582b0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>min</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gad353d502eaa2af3ba9f5027c024bdad1</anchor>
+      <anchor>ad353d502eaa2af3ba9f5027c024bdad1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>max</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga92aa2bf4c9b19983fa3417159929df81</anchor>
+      <anchor>a92aa2bf4c9b19983fa3417159929df81</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>mean</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga39b4ba97214ae557d6664a60881731ee</anchor>
+      <anchor>a39b4ba97214ae557d6664a60881731ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p50</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga8b172fd16d7a741708785715acde4b57</anchor>
+      <anchor>a8b172fd16d7a741708785715acde4b57</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p75</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga86b3fe4f2f16158efcd05739be0be2c7</anchor>
+      <anchor>a86b3fe4f2f16158efcd05739be0be2c7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p90</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae642be44e4add2bc25d809c22cf75a28</anchor>
+      <anchor>ae642be44e4add2bc25d809c22cf75a28</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p95</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga5009b287c8bfd50a87d3278be6b76d6b</anchor>
+      <anchor>a5009b287c8bfd50a87d3278be6b76d6b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p99</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
+      <anchor>a4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p999</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga117aeb2403d9212a3476a0f5f506d1ba</anchor>
+      <anchor>a117aeb2403d9212a3476a0f5f506d1ba</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24912,28 +25029,28 @@
       <type>uint64_t</type>
       <name>timestamp_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaf00d4802f4ec042ec70c2b6cca0ef439</anchor>
+      <anchor>af00d4802f4ec042ec70c2b6cca0ef439</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>counters</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac3d167ae7fb495b924c2b9ace863445a</anchor>
+      <anchor>ac3d167ae7fb495b924c2b9ace863445a</anchor>
       <arglist>[SOCKET_COUNTER_METRIC_COUNT]</arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>gauges</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga052116cbac741e511d1354dcee03aa14</anchor>
+      <anchor>a052116cbac741e511d1354dcee03aa14</anchor>
       <arglist>[SOCKET_GAUGE_METRIC_COUNT]</arglist>
     </member>
     <member kind="variable">
       <type>SocketMetrics_HistogramSnapshot</type>
       <name>histograms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga2df8269ceffa8db53191bb61ce5a4e08</anchor>
+      <anchor>a2df8269ceffa8db53191bb61ce5a4e08</anchor>
       <arglist>[SOCKET_HISTOGRAM_METRIC_COUNT]</arglist>
     </member>
   </compound>
@@ -24947,6 +25064,102 @@
       <anchorfile>group__foundation.html</anchorfile>
       <anchor>ad4bec382c27642da1ce45dcf676684e6</anchor>
       <arglist>[SOCKET_METRIC_COUNT]</arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketPoll_T</name>
+    <filename>group__poll__private.html</filename>
+    <anchor>structSocketPoll__T</anchor>
+    <member kind="variable">
+      <type>PollBackend_T</type>
+      <name>backend</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a88a87bcdd916ff495a756adc1e9f06d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>maxevents</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a658db3993da32f677a948cd36d276a83</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>default_timeout_ms</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a5aeb90d7138a60d98bcf5948da12e9f5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>registered_count</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a2fa65b0698266106795cd06f53b277a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_registered</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>afd944e224b0b04685b0e0b94716965be</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketEvent_T *</type>
+      <name>socketevents</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>aef3fbc97c09600c5f16b65d2bdbda6f0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Arena_T</type>
+      <name>arena</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a31237bda8b145cd7a4c4b1b2591ee3dc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketData *</type>
+      <name>socket_data_map</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a80bda4f02a183fc02340510cc79b5112</anchor>
+      <arglist>[1021]</arglist>
+    </member>
+    <member kind="variable">
+      <type>FdSocketEntry *</type>
+      <name>fd_to_socket_map</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a5a9bf570afcf7c0d4ac9a9311f3a27b0</anchor>
+      <arglist>[1021]</arglist>
+    </member>
+    <member kind="variable">
+      <type>pthread_mutex_t</type>
+      <name>mutex</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a56fa157efc7ff3aa02cdb75e57ee2f89</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketAsync_T</type>
+      <name>async</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a33dcc6465ff521360c191ee1b699fc47</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketTimer_heap_T *</type>
+      <name>timer_heap</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>a377ea71b38ec41e5e223d479077024e2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>unsigned</type>
+      <name>hash_seed</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>af8c9fe4c2e7f12115a135c69c9e7fbdb</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -25923,35 +26136,35 @@
       <type>int</type>
       <name>max_attempts</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae4fc9812297db12344b02e21d638a618</anchor>
+      <anchor>ae4fc9812297db12344b02e21d638a618</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>initial_delay_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga3738bc8ccc78b3f879df09d685494714</anchor>
+      <anchor>a3738bc8ccc78b3f879df09d685494714</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>max_delay_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaa9acfb8be959ffd198d16e2446a30710</anchor>
+      <anchor>aa9acfb8be959ffd198d16e2446a30710</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>multiplier</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae292a46f8c68e19cb29e72d49b48317e</anchor>
+      <anchor>ae292a46f8c68e19cb29e72d49b48317e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>jitter</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac44aa265265c65b8c29fd80aa3e0f61d</anchor>
+      <anchor>ac44aa265265c65b8c29fd80aa3e0f61d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -25963,28 +26176,28 @@
       <type>int</type>
       <name>attempts</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga7b978de556278e018fccc199dadd4a7d</anchor>
+      <anchor>a7b978de556278e018fccc199dadd4a7d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>last_error</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga560a11b7408ab6b745312cc2552aa387</anchor>
+      <anchor>a560a11b7408ab6b745312cc2552aa387</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>total_delay_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaba725a298fa2b675bcdc8ea77ba8b27e</anchor>
+      <anchor>aba725a298fa2b675bcdc8ea77ba8b27e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>total_time_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga939cbbd0e2c2537391a2e970991a1c9d</anchor>
+      <anchor>a939cbbd0e2c2537391a2e970991a1c9d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -26851,7 +27064,7 @@
       <type>struct SocketTimer_T **</type>
       <name>timers</name>
       <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a546b1db23427498d6d17f913a203c683</anchor>
+      <anchor>a86436ac08a9314c2b013eea054c473ad</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -27282,7 +27495,7 @@
       <type>const char **</type>
       <name>subprotocols</name>
       <anchorfile>group__websocket.html</anchorfile>
-      <anchor>a72bb5bfa2a49c7bdd770303635e0e49d</anchor>
+      <anchor>a2ff17028ab5d54be79108495bf1c4512</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -29809,6 +30022,55 @@
     </member>
     <member kind="define">
       <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga9e4c6bdc5f6ab59683cef18bb3f58211</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga1b9f06edcbcdd60e892086a4b8c2b9ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gae4c30a1ed41ff40ca11fbdb21c2ec947</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_MULTIPLIER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga2addc89cb7a7a9b6e75f3cd51eef65ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_DEFAULT_JITTER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gafbe9a9852b0477755c295af74aa0f2c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RETRY_MAX_ATTEMPTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga6245d4aca908bb154e7cd34f6a36d8dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>SOCKET_UTF8_MAX_BYTES</name>
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>gac2c24c8a574da982e47bc14c90c51fcb</anchor>
@@ -29864,10 +30126,10 @@
       <arglist></arglist>
     </member>
     <member kind="typedef">
-      <type>struct T *</type>
-      <name>T</name>
+      <type>struct SocketRetry_T *</type>
+      <name>SocketRetry_T</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga24514489b0962fafe8414bfae95aa268</anchor>
+      <anchor>ga419cec86f54612ef9204c059be3ec0a9</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -30646,690 +30908,6 @@
       <anchor>ggae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0</anchor>
       <arglist></arglist>
     </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_TYPE_COUNTER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga15ccb5af3b5e42916f5a329763c5b73da3b97886e5e49aa6cd10fbecc97717a23</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_TYPE_GAUGE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga15ccb5af3b5e42916f5a329763c5b73dae412561b9220367088fbc0b4badbb54d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_TYPE_HISTOGRAM</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga15ccb5af3b5e42916f5a329763c5b73daf4eb6f92091cf411d473f95656d5ffea</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_POOL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a5c4b42ef28417b53a62e04c52ed9102c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_HTTP_CLIENT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a13c2a6f9a020cfb48e871fad684c67b2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_HTTP_SERVER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a1efa2be51eaef017fa79e7ab729c6058</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_TLS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a512451cf5b9457ed15e4433001c3afb0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_DNS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66ac4e87e55794a5eda33f91a320d85d2ac</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_SOCKET</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66aaedb13c47c45a45c7414ed6eb2985a2f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_POLL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66aad530adfdedefa080ca04f67a5154581</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_METRIC_CAT_COUNT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a48dd3ffeeff316169d3afead7dd7f5ff</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_CONNECTIONS_CREATED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea23bac1496677cbfff2ead8150ad6c67b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_CONNECTIONS_DESTROYED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0b0528da3ffe7351fa991416ab138ad9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_CONNECTIONS_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea49233167e0dcbfa60f3ca6d980e76e44</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_CONNECTIONS_REUSED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea70f4cf0b9927a60fedbeff0cc47ac25c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_CONNECTIONS_EVICTED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa7076d6bed0ebfc621bbbaa8eb373ae6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_DRAIN_STARTED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6bca8daae014fc82bb7b7b08c12d744a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POOL_DRAIN_COMPLETED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9760372f2bb1ab740a09959e21a99802</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaf1511efc40227013ff639abf4f4d9b13</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6528013f375d126375f32f18bdf25222</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea507a12413d55f789ffe5e9c565dd99e9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_SENT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea47ea62eaadbbbb19ebbea31ef087f01c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea55ecbc6f23460ffb5901a53f8b2ad5e3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_CLIENT_RETRIES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea091def884e648a2cedaacaff2dd6cec6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead8207230f2d1b6bd84abe11c6be841f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea137f714bad61f63fbb3a6b70ac730363</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_SERVER_BYTES_SENT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea8147ac333d05a2289a840bc971df80e8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea488ec1787e7822bba4dbe180a2f4b324</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea82505a4094f64e44e3efaebb91dcdcd7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_RESPONSES_1XX</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_RESPONSES_2XX</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_RESPONSES_3XX</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_RESPONSES_4XX</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_HTTP_RESPONSES_5XX</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_HANDSHAKES_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaaf7d0baea6e4e3930da7314edbfa7bb6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_HANDSHAKES_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac310776f7b4aae593e90730f0e213d2b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_SESSION_REUSE_COUNT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_CERT_VERIFY_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea2b3cf1bb5dcf3df362a38b24521eda00</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_RENEGOTIATIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_PINNING_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea1123d27ca90ba8abe74f33cd98e3385c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9708c06f97d86ece5ebfca3baf3a7f7e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_TLS_CRL_CHECK_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6e4638e88f27c45dca6b2c0b1b27ef27</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_HANDSHAKES_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3a29654ecced6f3de9989af568f8d592</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_HANDSHAKES_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa8976118ea565782357f220d181dbd34</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_COOKIES_GENERATED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea515eb7dc187e9a2746c17c6309bf5281</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea11af47970a03a26c436ef1bc616485e9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea4ecac180c7f1bff26623a21bdf276e63</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DTLS_FRAGMENT_FAILURES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead4c08a4071bac7bc3be7021dcded790f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_QUERIES_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac8439ab5fccc233ac13d82aaff13f42d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_QUERIES_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea14e93ae606e4404c3b3e9183126a67ae</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_QUERIES_TIMEOUT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea763f84409208d14e38c7c586263b7e7e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_QUERIES_CANCELLED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac504adb93c00ae711283026876673d40</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_CACHE_HITS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea1cde4dca10c4717a6e50c171ac14f70a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_DNS_CACHE_MISSES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea19512f0a4c325655cce541b490c62b3d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SOCKET_CREATED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeab856f40396326b740f635ecdec4b78cb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SOCKET_CLOSED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeacc9f32e8a51e4720b53f2f4c6018c055</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SOCKET_CONNECT_SUCCESS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea4d7c9119fae6202cf8c5bcc1f6cf32ef</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SOCKET_CONNECT_FAILED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea012e33d28bff41de7468fbb3099c6f9a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SOCKET_ACCEPT_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea8748be5c6643b3ebccebb8e3b0c9efaf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POLL_WAKEUPS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead596032b7866cc489959efe27c8a161c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POLL_EVENTS_DISPATCHED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa519ace23a45810a059ff78ea83f242b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea33ddef985af75f21110138587921557b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea87c5cab0d076faf0d8545269857630c0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea469ad98c6f71e2eb6108ebc62901782e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaefa721fc08c63dceb684b172e52db5e7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_MEMORY_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeab6e4bc443557892912c5bfe9d9f841bb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea229217bf0b8e0b6f3de27e979cf7ef79</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_STREAMS_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6ccae8e4b2e293d7e632a18173313ed4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3978f99611080420a4340adb5651ddbd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea114c39672ec4a163cdf4098cf8a0a6eb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_ALLOWED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa2bdcf00107013bb1ad170891a037fe0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_THROTTLED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa59d06736065393b3eb7dc485f908731</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_CHALLENGED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea249dcb3f8a49e03f275b8ce71919e339</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_BLOCKED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead26d8e35ef134d11c6b749b3129ee546</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_WHITELISTED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea13baf5d07c8a93a675dcfef0abe26b98</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_BLACKLISTED</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea108cb443d96bcb01a2befa326f800baa</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea49e65f7d780e8f5b401428c372738ca1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_COUNTER_METRIC_COUNT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POOL_ACTIVE_CONNECTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa446185d2f544667977af003ef330602a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POOL_IDLE_CONNECTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac47f1bdaf5d0df3ffae6504fbe1884d6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POOL_PENDING_CONNECTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa984ad78555d7b236536ee2311528a4b4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POOL_SIZE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffade5a4447463c80b1cf103c0e4474b38d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffabb4d6a47fdc81281817010e07eb1bab8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffaea6ddc03976de41a6a7aa39a90cea006</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffad93011513d4df141b8a1c75c061eb601</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa46d69a1bc861fd2e34b032d700d60d47</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa701762a5f2fe51a57539f8368e40fdd4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_TLS_ACTIVE_SESSIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa42520d99aa0fce9b66eee159a3fcb9bd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_TLS_CACHED_SESSIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa6a3c6ce4d17be23ecb15647fc6fb950a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_DTLS_ACTIVE_SESSIONS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa30428b3ed5b61e0877f63406775e9713</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_DNS_PENDING_QUERIES</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffaabcab9f22c06831d559b83e6195b66ae</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_DNS_WORKER_THREADS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa9fe5f07b11823411a057ec5f61f26c9d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_DNS_CACHE_SIZE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffade63dd14fcf55271418604c47509c3f1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_SOCKET_OPEN_FDS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa5597c8e13a2ae6ea7f622fab80e00fa3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POLL_REGISTERED_FDS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa49bc0db3a4078ebb6dfc37dbf2fa5e2d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_POLL_ACTIVE_TIMERS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac5f5f50c18cbd1e4df4c6f566520b865</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_SYNPROTECT_TRACKED_IPS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa2ac4f038181ceef8dd45e2b9fd680156</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAU_SYNPROTECT_BLOCKED_IPS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac6f8904f525325cef938129163b2f0c9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_GAUGE_METRIC_COUNT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_POOL_ACQUIRE_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ead858cc3443872f53a524e2a285b9ca07</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_POOL_CONNECTION_AGE_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea5572c534600bddc6ca7fbb15691343aa</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_POOL_IDLE_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1eadfcc746d42cc93726a3af20e9fefe517</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea197f63027af31a6a5783184aa9ae4fbd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1eabb53719cb13c0d7cf1836a5797224335</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_CLIENT_TTFB_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea99e50c80c5ed5aba18f505ab29941e01</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1eae6a142e47042024c332d29373618dadf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea6bbd73226e6de01dad82d740f3285e15</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea8709b38d3289c4c5953d05c883a422ef</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_TLS_HANDSHAKE_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ead64e5997211c75d4abaa90cd98b8ab39</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea60c53d1297cc720618318af476b452d1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_DNS_QUERY_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1ea1f82aed60677494fd74769d1b2c975b7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HIST_SOCKET_CONNECT_TIME_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1eafff7ca822fdc69eb6319d04487b88e63</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>SOCKET_HISTOGRAM_METRIC_COUNT</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="function">
       <type>int</type>
       <name>SocketMetrics_init</name>
@@ -31688,111 +31266,6 @@
       <arglist>(SocketUTF8_Result result)</arglist>
     </member>
     <member kind="variable">
-      <type>uint64_t</type>
-      <name>SocketMetrics_HistogramSnapshot::count</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae65da7d40c1b636bd5d688c6ab36176a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::sum</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga4088038d1883a118b9818b15772582b0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::min</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gad353d502eaa2af3ba9f5027c024bdad1</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::max</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga92aa2bf4c9b19983fa3417159929df81</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::mean</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga39b4ba97214ae557d6664a60881731ee</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p50</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga8b172fd16d7a741708785715acde4b57</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p75</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga86b3fe4f2f16158efcd05739be0be2c7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p90</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae642be44e4add2bc25d809c22cf75a28</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p95</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga5009b287c8bfd50a87d3278be6b76d6b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p99</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketMetrics_HistogramSnapshot::p999</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga117aeb2403d9212a3476a0f5f506d1ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>uint64_t</type>
-      <name>SocketMetrics_Snapshot::timestamp_ms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaf00d4802f4ec042ec70c2b6cca0ef439</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>uint64_t</type>
-      <name>SocketMetrics_Snapshot::counters</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac3d167ae7fb495b924c2b9ace863445a</anchor>
-      <arglist>[SOCKET_COUNTER_METRIC_COUNT]</arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>SocketMetrics_Snapshot::gauges</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga052116cbac741e511d1354dcee03aa14</anchor>
-      <arglist>[SOCKET_GAUGE_METRIC_COUNT]</arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketMetrics_HistogramSnapshot</type>
-      <name>SocketMetrics_Snapshot::histograms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga2df8269ceffa8db53191bb61ce5a4e08</anchor>
-      <arglist>[SOCKET_HISTOGRAM_METRIC_COUNT]</arglist>
-    </member>
-    <member kind="variable">
       <type>const Except_T</type>
       <name>SocketRateLimit_Failed</name>
       <anchorfile>group__utilities.html</anchorfile>
@@ -31804,69 +31277,6 @@
       <name>SocketRetry_Failed</name>
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>gaee6d3d64f3c5b84ac6bbf38c67834fc4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketRetry_Policy::max_attempts</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae4fc9812297db12344b02e21d638a618</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketRetry_Policy::initial_delay_ms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga3738bc8ccc78b3f879df09d685494714</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketRetry_Policy::max_delay_ms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaa9acfb8be959ffd198d16e2446a30710</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketRetry_Policy::multiplier</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae292a46f8c68e19cb29e72d49b48317e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>double</type>
-      <name>SocketRetry_Policy::jitter</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac44aa265265c65b8c29fd80aa3e0f61d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketRetry_Stats::attempts</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga7b978de556278e018fccc199dadd4a7d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketRetry_Stats::last_error</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga560a11b7408ab6b745312cc2552aa387</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>SocketRetry_Stats::total_delay_ms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaba725a298fa2b675bcdc8ea77ba8b27e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>SocketRetry_Stats::total_time_ms</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga939cbbd0e2c2537391a2e970991a1c9d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -33806,6 +33216,9 @@
     <file>SocketPoll.h</file>
     <class kind="struct">SocketTimer_T</class>
     <class kind="struct">SocketTimer_heap_T</class>
+    <class kind="struct">SocketData</class>
+    <class kind="struct">FdSocketEntry</class>
+    <class kind="struct">SocketPoll_T</class>
     <class kind="struct">SocketEvent_T</class>
     <member kind="define">
       <type>#define</type>
@@ -33917,6 +33330,13 @@
       <name>SOCKET_TIMER_INVALID_HEAP_INDEX</name>
       <anchorfile>group__event__system.html</anchorfile>
       <anchor>ga2829aac1405cdf86f8ef8b6eb3ecf365</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -34084,6 +33504,13 @@
       <arglist>(SocketPoll_T poll, SocketTimer_T timer)</arglist>
     </member>
     <member kind="function">
+      <type>SocketTimer_heap_T *</type>
+      <name>socketpoll_get_timer_heap</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gaf791d7d3363309127dbdd94e4181b8c3</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
       <type>SocketPoll_T</type>
       <name>SocketPoll_new</name>
       <anchorfile>group__event__system.html</anchorfile>
@@ -34200,13 +33627,6 @@
       <name>SocketTimer_Failed</name>
       <anchorfile>group__event__system.html</anchorfile>
       <anchor>ga2f0acf311c238671c6d9d14d4cc7c158</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>*Ensures ABI</type>
-      <name>stability</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gac76e53ad178174f0f70747acfc5f83a2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -39843,8 +39263,6 @@
     <name>http_client_auth</name>
     <title>Authentication Buffer Constants</title>
     <filename>group__http__client__auth.html</filename>
-    <subgroup>http_client_buffers</subgroup>
-    <subgroup>http_client_encoding</subgroup>
   </compound>
   <compound kind="group">
     <name>http_client_buffers</name>
@@ -39871,6 +39289,8 @@
     <subgroup>http_client_retry</subgroup>
     <subgroup>http_client_cookie</subgroup>
     <subgroup>http_client_auth</subgroup>
+    <subgroup>http_client_buffers</subgroup>
+    <subgroup>http_client_encoding</subgroup>
     <file>SocketHTTPClient-config.h</file>
     <file>SocketHTTPClient.h</file>
     <class kind="struct">SocketHTTPClient_Auth</class>
@@ -40294,6 +39714,114 @@
       <anchor>gga5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_OK</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a0d7b07825c19819fb9d1adbe3f28fd7d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_DNS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75ae1f6869bacb82ecbe3914f3d52a7c5ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_CONNECT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75aa0a0bf606da8e46eba8cf29cec56bd25</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_TLS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75abea0c5bb21ff179f4bff79115f26a9a5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_TIMEOUT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a5099780b4bb3fee36f2432496843bac8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_PROTOCOL</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a3a208d6e1419093b96cb8335741f2abe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a178aabd112e942f1ce3c9c9e92d8f657</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a686c1f9288cfc49b1f887b1786ea85e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_CANCELLED</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75aa1effb555a4ca8cb0f483adf8319eea8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_OUT_OF_MEMORY</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75aeb7ea1f2504e427a5e5d962af382dd1c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTPCLIENT_ERROR_LIMIT_EXCEEDED</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP_AUTH_NONE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP_AUTH_BASIC</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP_AUTH_DIGEST</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP_AUTH_BEARER</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>COOKIE_SAMESITE_NONE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga5a9d40d261a12f620aba6b26e8fb714baa133f9bf67acb51315ada8cd26d83946</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>COOKIE_SAMESITE_LAX</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga5a9d40d261a12f620aba6b26e8fb714ba9360362eafff108453d53fe004670bb5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>COOKIE_SAMESITE_STRICT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gga5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>int</type>
       <name>SocketHTTPClient_error_is_retryable</name>
@@ -40546,6 +40074,398 @@
       <anchor>ga4ed14f04119b1dec3cb25c432b7a383d</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>SocketHTTPClient_AuthType</type>
+      <name>SocketHTTPClient_Auth::type</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaea321b9aeb6d8d36babd95cd7af87d35</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Auth::username</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaebecaec836c2d21aeb36c83c6a037b58</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Auth::password</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga709145c7dcf32bbfbdbc68da8da0842f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Auth::token</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga75371d88c2cb09feb95620c237b37882</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Auth::realm</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga89774175b3f815b3c17b8b150347b453</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHTTP_Version</type>
+      <name>SocketHTTPClient_Config::max_version</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaeeeb2ea03d33db0ba500da1c7782f7f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::allow_http2_cleartext</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga9a480ef82e914f17714c7c57d12f88af</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::enable_connection_pool</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gac81b35696b105b13f703c5d71f5c5692</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_Config::max_connections_per_host</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad87a23b29168c1a6a738bd07268247de</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_Config::max_total_connections</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaacd5591ab8f36783e6f759052439eb30</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::idle_timeout_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga867974712621670ef1dc975b2b396f84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::max_connection_age_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga82bcf56254c541ebd8fbdbba0a7ba7bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::acquire_timeout_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga12094d3f2718443658de2cab3f8873b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::connect_timeout_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad0964ac6e0738a3c4914054529bb51a7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::request_timeout_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga5d89d81bfb2401b06059048425fafb93</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::dns_timeout_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga6e7fd7c2a4f862fc8d613d4662a7e2e1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::follow_redirects</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1e5a28b4e256802af5f979726c728553</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::redirect_on_post</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga847eaef5232b2ada9149eea8aa9d4d4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::accept_encoding</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaa6bd2632f03fadb8a08f023e641c2c64</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::auto_decompress</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga39d5d74dbbdec57ac84fed12f747e299</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketTLSContext_T</type>
+      <name>SocketHTTPClient_Config::tls_context</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga30f979d083088bc46c8c7de3bc37a3db</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::verify_ssl</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaa5c6daa6286ff5a701a804da14108a4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketProxy_Config *</type>
+      <name>SocketHTTPClient_Config::proxy</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaf1c22aca38ea27645e9400fe42680bdf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Config::user_agent</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga0d03d16dc3eae06b6ab0b89b288c44df</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_Config::max_response_size</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaa26d176771f3b6ddee9a2d95142e9c46</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::enable_retry</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gadb6071171fe058cbc1c221e1b0d6ec98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::max_retries</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad8b244df21d9337ed74c872e694d10ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::retry_initial_delay_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1b02030b2c83c6e7bd1812de2362ede3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::retry_max_delay_ms</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gafd505949c45d0fb48c0810759cb66176</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::retry_on_connection_error</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga6355fa7fdfcc9db5d6069189aef62928</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::retry_on_timeout</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga58a60bcfb2edaa6accced6acd52191ad</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::retry_on_5xx</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga86ed34fbe021d156e6ee5ac2bc8e9b6e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Config::enforce_samesite</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae9bb372f96fd426c9fcf729fa78f26e3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Response::status_code</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga0baa2f233436d7bb00f28214d6382542</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHTTP_Headers_T</type>
+      <name>SocketHTTPClient_Response::headers</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga8b459516887245f8e4b77f8d8517ede1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketHTTPClient_Response::body</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gab7f8558743b64c751b64ac26231dca31</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_Response::body_len</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaae64f48637811f9ddbc8e12aea55e0e6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHTTP_Version</type>
+      <name>SocketHTTPClient_Response::version</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaccda45708658a8ada478121524f85e5e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>Arena_T</type>
+      <name>SocketHTTPClient_Response::arena</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gab3f98045a2f32cb3249ee62d036654c3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Cookie::name</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae7076917489dca85561ff672d120551c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Cookie::value</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga21b390a321565e4ebf8be575550c1498</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Cookie::domain</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga0dc75016531006762afa85a21130ac13</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const char *</type>
+      <name>SocketHTTPClient_Cookie::path</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga7259b82f78dc6e60c52ef6c5d741ca06</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>time_t</type>
+      <name>SocketHTTPClient_Cookie::expires</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga76752117eaf672a88292a3c7c250b52d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Cookie::secure</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga3300f627ad07cd15a596451a41dc4b69</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketHTTPClient_Cookie::http_only</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae47a67be4b88e83dd7c877f63af2ae8a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHTTPClient_SameSite</type>
+      <name>SocketHTTPClient_Cookie::same_site</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad1fc2e3ea45172e27a07aaacfe3c7eeb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::active_connections</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga102cdd1136d87673c4eb8ca42cd64942</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::idle_connections</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaaab49cd26a75dd2f3f7ed96eafc09a25</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::total_requests</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gacbe290157d79e718d8397a6d7078487c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::reused_connections</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga0bb94abb8c7aa981d1aae1d47469b316</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::connections_created</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga9a5d4cac43fdb9d880edef1dc778273a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::connections_failed</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1dfc46ee0c2d61f3facd7daf0d93f0a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::connections_timed_out</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gac9548fe3f865ed4d99c7366b0f64937d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::stale_connections_removed</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga822cd3674285e9ee5a3e541b42cc8f9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketHTTPClient_PoolStats::pool_exhausted_waits</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga2388e92ca44d26b70ce6904abbcf0d13</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>const SocketHTTPClient_Cookie *</type>
       <name>SocketHTTPClient_CookieJar_get</name>
@@ -40645,20 +40565,16 @@
   </compound>
   <compound kind="group">
     <name>http_server_connection_mgmt</name>
-    <title>Internal HTTP Server Connection Management Helpers</title>
+    <title>Internal HTTP Server Connection</title>
     <filename>group__http__server__connection__mgmt.html</filename>
   </compound>
   <compound kind="group">
     <name>poll_private</name>
     <title>SocketPoll Private Implementation Details</title>
     <filename>group__poll__private.html</filename>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__poll__private.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
+    <class kind="struct">SocketData</class>
+    <class kind="struct">FdSocketEntry</class>
+    <class kind="struct">SocketPoll_T</class>
   </compound>
   <compound kind="group">
     <name>event_system_backend</name>
@@ -41605,6 +41521,27 @@
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>gadeb31a2cef7f4d6b590baf9c3e4fd048</anchor>
       <arglist>(const Connection_T conn)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>socketreconnect_now_ms</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga8e2e9cd2b8dd8294f175991957b1b37b</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>socketreconnect_elapsed_ms</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga8bb049b5716726216dec25cd2dfa2380</anchor>
+      <arglist>(int64_t start_ms)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static double</type>
+      <name>reconnect_jitter</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga768e9347e53fcf121c747b2430cdef40</anchor>
+      <arglist>(void)</arglist>
     </member>
     <member kind="function">
       <type>SocketReconnect_T</type>
@@ -44054,6 +43991,7 @@
     <file>SocketHappyEyeballs.h</file>
     <class kind="struct">AsyncRequest</class>
     <class kind="struct">SocketAsync_T</class>
+    <class kind="struct">SocketHE_AddressEntry_T</class>
     <class kind="struct">SocketHE_T</class>
     <class kind="struct">SocketHE_Config_T</class>
     <member kind="define">
@@ -44090,6 +44028,13 @@
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gaa146f664c1a8f3c05b5aa72766bc9c90</anchor>
       <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HE_FOREACH_ATTEMPT</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>gabbef7b94e157f9c32222e8176b395da4</anchor>
+      <arglist>(he, iter)</arglist>
     </member>
     <member kind="define">
       <type>#define</type>
@@ -44342,20 +44287,6 @@
       <name>SocketAsync_Failed</name>
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>ga55b9b96eff9c17f45ff5bfb37f431075</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct addrinfo *</type>
-      <name>addr</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>gabf6dc3901a5139f2f7f093db3003b798</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>family</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>ga4417150d9f858949bd9ea8794995ebcc</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
@@ -45281,48 +45212,6 @@
     <filename>group__reconnect__private.html</filename>
     <file>SocketReconnect-private.h</file>
     <class kind="struct">SocketReconnect_T</class>
-    <member kind="function">
-      <type></type>
-      <name>if</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga0450dbfcd56214ed2989e6ff4d97b25d</anchor>
-      <arglist>(SocketCrypto_random_bytes(&amp;value, sizeof(value))==0)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>if</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>gaab33e6c19aa5cf524e12e3c40b50574a</anchor>
-      <arglist>(seed==0)</arglist>
-    </member>
-    <member kind="function">
-      <type></type>
-      <name>return</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga230fd1711fa730b54c9262bf533767f6</anchor>
-      <arglist>(double) seed/(double) 0xFFFFFFFFU</arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>delta</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga7a21408446fbd8c658853d5f53e2c76f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>else</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>ga0544c3fe466e421738dae463968b70ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type></type>
-      <name>seed</name>
-      <anchorfile>group__reconnect__private.html</anchorfile>
-      <anchor>gab31f6ed1e7e88c7cca70910409c6bbee</anchor>
-      <arglist></arglist>
-    </member>
   </compound>
   <compound kind="group">
     <name>websocket</name>

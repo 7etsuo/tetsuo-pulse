@@ -1,18 +1,12 @@
 <map id="SocketHTTP2_Conn_T" name="SocketHTTP2_Conn_T">
-<area shape="rect" id="Node000001" title="Internal structure for HTTP/2 connection management." alt="" coords="233,299,392,324"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="123,196,201,221"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="192,227,297,296,294,301,189,231"/>
-<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="161,132,164,196,159,196,155,133"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
-<area shape="rect" id="Node000006" href="$group__http2__private.html#structSocketHTTP2__Stream" title="Internal structure for managing an HTTP/2 stream." alt="" coords="228,196,397,221"/>
-<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="315,235,315,299,310,299,310,235"/>
-<area shape="poly" id="edge7_Node000006_Node000006" title=" " alt="" coords="412,200,424,208,416,217,398,220,397,215,414,212,419,209,409,204"/>
-<area shape="rect" id="Node000007" href="$group__hpack.html#structSocketHPACK__Header" title="HPACK header field representation." alt="" coords="235,93,393,119"/>
-<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="316,133,315,196,310,196,311,133"/>
-<area shape="rect" id="Node000008" href="$group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter." alt="" coords="511,196,645,221"/>
-<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="536,229,344,301,342,296,534,224"/>
+<area shape="rect" id="Node000001" title="Internal structure for HTTP/2 connection management." alt="" coords="113,211,272,236"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,108,84,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,139,177,208,174,213,71,143"/>
+<area shape="rect" id="Node000003" href="$group__http2__private.html#structSocketHTTP2__Stream" title="Internal structure for managing an HTTP/2 stream." alt="" coords="108,108,277,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="195,147,195,211,190,211,190,147"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="292,112,304,120,296,129,278,132,277,127,294,124,299,121,289,116"/>
+<area shape="rect" id="Node000004" href="$group__hpack.html#structSocketHPACK__Header" title="HPACK header field representation." alt="" coords="114,5,271,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="195,45,195,108,190,108,190,45"/>
+<area shape="rect" id="Node000005" href="$group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter." alt="" coords="391,108,525,133"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="416,141,224,213,222,208,414,136"/>
 </map>

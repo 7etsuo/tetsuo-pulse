@@ -20,7 +20,32 @@ var group__event__system =
       [ "count", "group__event__system.html#a5f7e444e7943597fa7d510072da85559", null ],
       [ "mutex", "group__event__system.html#a698e2aa8ebea1e347733059e4de77665", null ],
       [ "next_id", "group__event__system.html#aef1a8571b21ab39180d69365a8bbb0a2", null ],
-      [ "timers", "group__event__system.html#a546b1db23427498d6d17f913a203c683", null ]
+      [ "timers", "group__event__system.html#a86436ac08a9314c2b013eea054c473ad", null ]
+    ] ],
+    [ "SocketData", "group__poll__private.html#structSocketData", [
+      [ "data", "group__poll__private.html#a942b54345de6283838d63e9de0378440", null ],
+      [ "next", "group__poll__private.html#a60a4b17af0ea783aea433d16a8f1767b", null ],
+      [ "socket", "group__poll__private.html#a235a818367962ab1444d564fc9ecb733", null ]
+    ] ],
+    [ "FdSocketEntry", "group__poll__private.html#structFdSocketEntry", [
+      [ "fd", "group__poll__private.html#a6e281de117ccb3201b590ba4184adb62", null ],
+      [ "next", "group__poll__private.html#aec49f71e7b318291b9270ff95811c7b9", null ],
+      [ "socket", "group__poll__private.html#adf65761f33705691e1fdae79ae0e8f24", null ]
+    ] ],
+    [ "SocketPoll_T", "group__poll__private.html#structSocketPoll__T", [
+      [ "arena", "group__poll__private.html#a31237bda8b145cd7a4c4b1b2591ee3dc", null ],
+      [ "async", "group__poll__private.html#a33dcc6465ff521360c191ee1b699fc47", null ],
+      [ "backend", "group__poll__private.html#a88a87bcdd916ff495a756adc1e9f06d7", null ],
+      [ "default_timeout_ms", "group__poll__private.html#a5aeb90d7138a60d98bcf5948da12e9f5", null ],
+      [ "fd_to_socket_map", "group__poll__private.html#a5a9bf570afcf7c0d4ac9a9311f3a27b0", null ],
+      [ "hash_seed", "group__poll__private.html#af8c9fe4c2e7f12115a135c69c9e7fbdb", null ],
+      [ "max_registered", "group__poll__private.html#afd944e224b0b04685b0e0b94716965be", null ],
+      [ "maxevents", "group__poll__private.html#a658db3993da32f677a948cd36d276a83", null ],
+      [ "mutex", "group__poll__private.html#a56fa157efc7ff3aa02cdb75e57ee2f89", null ],
+      [ "registered_count", "group__poll__private.html#a2fa65b0698266106795cd06f53b277a2", null ],
+      [ "socket_data_map", "group__poll__private.html#a80bda4f02a183fc02340510cc79b5112", null ],
+      [ "socketevents", "group__poll__private.html#aef3fbc97c09600c5f16b65d2bdbda6f0", null ],
+      [ "timer_heap", "group__poll__private.html#a377ea71b38ec41e5e223d479077024e2", null ]
     ] ],
     [ "SocketEvent_T", "group__event__system.html#structSocketEvent__T", [
       [ "data", "group__event__system.html#acb5b92ec2f2954ee3baa024a74ce4655", null ],
@@ -48,6 +73,7 @@ var group__event__system =
     [ "SOCKET_TIMER_MIN_INTERVAL_MS", "group__event__system.html#ga59221d1781370448def350dafb2d7e24", null ],
     [ "T", "group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "T", "group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
+    [ "T", "group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketTimerCallback", "group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7", null ],
     [ "SocketPoll_Events", "group__event__system.html#ga9e8943c9cb47aba63dda4ad9083142b6", [
       [ "POLL_READ", "group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8", null ],
@@ -63,6 +89,7 @@ var group__event__system =
     [ "SocketPoll_del", "group__event__system.html#ga3074c5a225a7c49880951ecfb984498f", null ],
     [ "SocketPoll_free", "group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2", null ],
     [ "SocketPoll_get_async", "group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0", null ],
+    [ "socketpoll_get_timer_heap", "group__event__system.html#gaf791d7d3363309127dbdd94e4181b8c3", null ],
     [ "SocketPoll_getdefaulttimeout", "group__event__system.html#ga1bb5e288308c3de5a479b27366bba257", null ],
     [ "SocketPoll_getmaxregistered", "group__event__system.html#ga16688a9e444183863bab8051f57fe688", null ],
     [ "SocketPoll_getregisteredcount", "group__event__system.html#gac79e719de24f09f84eb3816b3ab60c65", null ],
@@ -85,6 +112,5 @@ var group__event__system =
     [ "SocketTimer_process_expired", "group__event__system.html#ga888ed4acbf5d1ca29bdafc07f346566e", null ],
     [ "SocketTimer_remaining", "group__event__system.html#ga4c5519b89e0bba69f26d03b6893ba779", null ],
     [ "SocketPoll_Failed", "group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0", null ],
-    [ "SocketTimer_Failed", "group__event__system.html#ga2f0acf311c238671c6d9d14d4cc7c158", null ],
-    [ "stability", "group__event__system.html#gac76e53ad178174f0f70747acfc5f83a2", null ]
+    [ "SocketTimer_Failed", "group__event__system.html#ga2f0acf311c238671c6d9d14d4cc7c158", null ]
 ];

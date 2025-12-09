@@ -18,6 +18,7 @@ var SocketDNS_private_8h =
       [ "REQ_COMPLETE", "group__dns.html#ggabbf149223655194c14baa78907cb2daba5018b6008cd3f54493a3eab0c3e29016", null ],
       [ "REQ_CANCELLED", "group__dns.html#ggabbf149223655194c14baa78907cb2daba8ee12f04250be78e34a7bdf0f08f2111", null ]
     ] ],
+    [ "allocate_dns_resolver", "SocketDNS-private_8h.html#a0c5a84436f8b4c2c2159a9ae95ec6e6f", null ],
     [ "allocate_request", "group__dns.html#ga5bac854631773fa0c56cd5e965cef525", null ],
     [ "allocate_request_hostname", "group__dns.html#gacae541ca39283e052d84495e5201a6fd", null ],
     [ "allocate_request_structure", "group__dns.html#ga5021646b59321cc2b5ab7ca06895f7ed", null ],

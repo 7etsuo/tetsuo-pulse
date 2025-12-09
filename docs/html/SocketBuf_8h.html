@@ -224,7 +224,7 @@ Variables</h2></td></tr>
 <li>Automatic wraparound handling - no manual offset management needed</li>
 <li>Arena-based memory management for efficient allocation/deallocation</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md531"></a>
+<h2><a class="anchor" id="autotoc_md415"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketBuf_8h.html">socket/SocketBuf.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Arena_8h.html">core/Arena.h</a>&quot;</span></div>
@@ -272,17 +272,17 @@ Basic Usage</h2>
 <div class="ttc" id="agroup__core__io_html_gabad296e666bf8d65669ab7c71d6b8d97"><div class="ttname"><a href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a></div><div class="ttdeci">size_t SocketBuf_write(SocketBuf_T buf, const void *data, size_t len)</div><div class="ttdoc">Write data into the buffer.</div></div>
 <div class="ttc" id="agroup__core__io_html_gac82b13f33ba79d9fa97582a64654e8ef"><div class="ttname"><a href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a></div><div class="ttdeci">SocketBuf_T SocketBuf_new(Arena_T arena, size_t capacity)</div><div class="ttdoc">Create a new circular buffer with specified initial capacity.</div></div>
 <div class="ttc" id="agroup__core__io_html_gad11c3dede8563afbb1a3e9b9f4e936e6"><div class="ttname"><a href="group__core__io.html#gad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a></div><div class="ttdeci">void SocketBuf_consume(SocketBuf_T buf, size_t len)</div><div class="ttdoc">Discard data from the front of the buffer without reading it.</div></div>
-<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00113">SocketBuf.h:113</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00114">SocketBuf.h:114</a></div></div>
 <div class="ttc" id="agroup__core__io_html_gae4d5d95ed126030f6414b7f607cd555e"><div class="ttname"><a href="group__core__io.html#gae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a></div><div class="ttdeci">const void * SocketBuf_readptr(SocketBuf_T buf, size_t *len)</div><div class="ttdoc">Obtain a direct pointer to readable data for zero-copy access.</div></div>
-<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
 <div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md532"></a>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md416"></a>
 Security Considerations</h2>
 <p>For buffers holding sensitive data (e.g., TLS keys, passwords):</p>
 <div class="fragment"><div class="line"><span class="comment">// Before reuse or disposal</span></div>
@@ -314,12 +314,12 @@ SocketPool_T for pool usage. </dd>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00092">92</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00093">93</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>

@@ -8,5 +8,5 @@
 <area shape="rect" id="Node000004" href="$group__http2__private.html" title=" " alt="" coords="353,472,559,512"/>
 <area shape="rect" id="Node000006" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="385,542,527,568"/>
 <area shape="rect" id="Node000007" href="$group__http__error__macros.html" title="Migration guide for deprecated HTTP server statistics macros." alt="" coords="363,592,549,632"/>
-<area shape="rect" id="Node000008" href="$group__http__server__connection__mgmt.html" title="Helper functions for managing individual HTTP server connections." alt="" coords="371,657,541,712"/>
+<area shape="rect" id="Node000008" href="$group__http__server__connection__mgmt.html" title="Helper functions for managing individual HTTP server connections." alt="" coords="383,656,529,696"/>
 </map>

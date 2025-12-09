@@ -1016,4 +1016,6 @@ extern const char *SocketMetrics_category_name (SocketMetricCategory category);
     }                                                                         \
   while (0)
 
+/** @} */
+
 #endif /* SOCKETMETRICS_INCLUDED */

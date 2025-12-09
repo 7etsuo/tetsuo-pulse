@@ -1248,10 +1248,6 @@ extern DTLSHandshakeState SocketDTLS_get_last_state (SocketDgram_T socket);
 
 #endif /* SOCKET_HAS_TLS */
 
-/**
- * @}
- * @}  // security (parent group)
- */
+/** @} */
 
-/* SOCKETDTLS_INCLUDED guards the entire module */
 #endif /* SOCKETDTLS_INCLUDED */

@@ -197,7 +197,7 @@ HTTP Module for high-level overview. </dd></dl>
 <p>HTTP/2 stream (opaque type)</p>
 <p>Tracks stream ID, state, flow control windows, received DATA buffering, header/trailer decoding state, and user data. Supports split headers via CONTINUATION frames and distinguishes push vs. regular streams.</p>
 <dl class="section note"><dt>Note</dt><dd>Fields are subject to change; use public API functions for access.</dd></dl>
-<dl class="section user"><dt>Thread Safety\n No - internal fields modified by protocol processing; direct access unsafe in multi-threaded contexts without external synchronization</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - internal fields modified by protocol processing; direct</dt><dd>access unsafe in multi-threaded contexts without external synchronization</dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketHTTP2_Stream_T for opaque public handle. </dd>
 <dd>
 <a class="el" href="group__http.html#ga002456110497e7d02e0f0261a777d5a2" title="Create and initialize a new HTTP/2 stream structure.">http2_stream_create()</a> for instantiation. </dd>
@@ -211,7 +211,7 @@ RFC 9113 Section 5.1 for stream lifecycle.</dd></dl>
 <dd>
 <a class="el" href="group__http2.html#gab70f7e768dd89aca7fd859aae33c74a1" title="Send HEADERS frame.">SocketHTTP2_Stream_send_headers()</a> and <a class="el" href="group__http2.html#ga1daa1717c92531030eef02f38035103b" title="Send DATA frame.">SocketHTTP2_Stream_send_data()</a> for sending. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00177">177</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00182">182</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP2_Stream_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -407,7 +407,7 @@ userdata</td>
 <p>Central state holder for an HTTP/2 connection: underlying socket, memory arena, role (client/server), HPACK encoder/decoder, I/O buffers, settings (local/peer), flow control, stream hash table with counts and rate limits, frame state (e.g., CONTINUATION, GOAWAY, PING), callbacks, timeouts, and DoS protections (RST/PING/ SETTINGS rate limiting per CVE-2023-44487 and similar).</p>
 <p>Handles protocol compliance, security hardening, and event emission.</p>
 <dl class="section note"><dt>Note</dt><dd>Internal fields; access via public SocketHTTP2_Conn_T functions.</dd></dl>
-<dl class="section user"><dt>Thread Safety\n No - shared connection state modified without internal mutex; applications must serialize calls to connection functions (e.g., via external locking or single-threaded event loop)</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - shared connection state modified without internal mutex;</dt><dd>applications must serialize calls to connection functions (e.g., via external locking or single-threaded event loop)</dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketHTTP2_Conn_T opaque public type. </dd>
 <dd>
 <a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for public creation. </dd>
@@ -421,13 +421,13 @@ SocketHPACK_Encoder_T and SocketHPACK_Decoder_T for header compression.</dd></dl
 <dd>
 <a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b" title="Process socket events and HTTP/2 frames.">SocketHTTP2_Conn_process()</a> for event-driven processing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00251">251</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00259">259</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP2_Conn_T:</div>
 <div id="dynsection-2-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-2-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTP2__Conn__coll__graph.svg" width="651" height="330"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTP2__Conn__coll__graph.svg" width="531" height="242"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -763,7 +763,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00084">84</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00088">88</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -779,7 +779,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00083">83</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00087">87</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -795,7 +795,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00086">86</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00090">90</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -811,7 +811,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00085">85</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00089">89</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -827,7 +827,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00087">87</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00091">91</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -843,7 +843,7 @@ streams</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00088">88</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00092">92</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>

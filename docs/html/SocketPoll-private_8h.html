@@ -113,7 +113,7 @@ $(document).ready(function(){initNavTree('SocketPoll-private_8h.html',''); initR
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">SocketPoll-private.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -136,9 +136,22 @@ $(document).ready(function(){initNavTree('SocketPoll-private_8h.html',''); initR
 </div>
 <p><a href="SocketPoll-private_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketData" id="r_structSocketData"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structSocketData">SocketData</a></td></tr>
+<tr class="memdesc:structSocketData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linked-list node for socket-to-userdata mapping in internal hash table.  <a href="group__poll__private.html#structSocketData">More...</a><br /></td></tr>
+<tr class="separator:structSocketData"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structFdSocketEntry" id="r_structFdSocketEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a></td></tr>
+<tr class="memdesc:structFdSocketEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linked-list node for FD-to-socket reverse mapping in internal hash table.  <a href="group__poll__private.html#structFdSocketEntry">More...</a><br /></td></tr>
+<tr class="separator:structFdSocketEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketPoll__T" id="r_structSocketPoll__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></td></tr>
+<tr class="memdesc:structSocketPoll__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque internal state structure for SocketPoll instance.  <a href="group__poll__private.html#structSocketPoll__T">More...</a><br /></td></tr>
+<tr class="separator:structSocketPoll__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;SocketPoll_T</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type alias macro enabling private struct definition.  <br /></td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c0e59971e52bc0a110b2a7066ea2732" id="r_ga7c0e59971e52bc0a110b2a7066ea2732"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga7c0e59971e52bc0a110b2a7066ea2732">SOCKET_DATA_HASH_SIZE</a>&#160;&#160;&#160;<a class="el" href="group__foundation.html#ga9aab9f1282519c6c66aca1271deffe84">SOCKET_HASH_TABLE_SIZE</a></td></tr>
 <tr class="memdesc:ga7c0e59971e52bc0a110b2a7066ea2732"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compile-time constant for hash table capacity in socket mappings.  <br /></td></tr>
@@ -147,11 +160,11 @@ Macros</h2></td></tr>
 <tr class="memdesc:ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Module-specific exception raising macro for SocketPoll errors.  <br /></td></tr>
 <tr class="separator:ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:gac76e53ad178174f0f70747acfc5f83a2" id="r_gac76e53ad178174f0f70747acfc5f83a2"><td class="memItemLeft" align="right" valign="top">*Ensures ABI&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gac76e53ad178174f0f70747acfc5f83a2">stability</a></td></tr>
-<tr class="memdesc:gac76e53ad178174f0f70747acfc5f83a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type alias macro enabling private struct definition.  <br /></td></tr>
-<tr class="separator:gac76e53ad178174f0f70747acfc5f83a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:gaf791d7d3363309127dbdd94e4181b8c3" id="r_gaf791d7d3363309127dbdd94e4181b8c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaf791d7d3363309127dbdd94e4181b8c3">socketpoll_get_timer_heap</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:gaf791d7d3363309127dbdd94e4181b8c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve integrated timer heap from SocketPoll instance.  <br /></td></tr>
+<tr class="separator:gaf791d7d3363309127dbdd94e4181b8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 </div><!-- contents -->
 </div><!-- doc-content -->

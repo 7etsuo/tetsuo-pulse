@@ -189,18 +189,17 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal implementation details for the high-performance SocketTimer module. </p>
 <p>This private header provides the core structures and functions implementing the timer subsystem's binary min-heap management, timer state tracking, and thread-safe operations. It is <b>not part of the public API</b> and should never be included directly in application code. Use only for library maintenance, debugging, or advanced internal customization.</p>
-<h2><a class="anchor" id="autotoc_md204"></a>
-Features</h2>
+<p>Features</p>
 <ul>
 <li>Efficient binary min-heap for O(log n) insert, delete, and minimum operations</li>
 <li>Lazy cancellation mechanism for pending timers (marked invalid, removed on pop)</li>
 <li>Unique 64-bit timer identifiers to prevent collisions and aid debugging</li>
 <li>Mutex-protected thread safety for concurrent access from multiple threads</li>
 <li>Arena-based memory allocation for predictable lifecycle management</li>
-<li>Monotonic clock integration (CLOCK_MONOTONIC) for reliable timing unaffected by system time changes</li>
+<li><p class="startli">Monotonic clock integration (CLOCK_MONOTONIC) for reliable timing unaffected by system time changes</p>
+<p class="startli">Architecture Overview</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md205"></a>
-Architecture Overview</h2>
 <div class="fragment"><div class="line">┌──────────────────────────────────────┐</div>
 <div class="line">│          Public SocketTimer API      │</div>
 <div class="line">│   <a class="code hl_function" href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a>(), cancel(), etc.  │</div>
@@ -217,25 +216,20 @@ Architecture Overview</h2>
 <div class="line">│     <a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> (memory), pthread mutex  │</div>
 <div class="line">└──────────────────────────────────────┘</div>
 <div class="ttc" id="agroup__event__system_html_ga2537cebf106e583079ec472086a26d65"><div class="ttname"><a href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a></div><div class="ttdeci">SocketTimer_T SocketTimer_add(SocketPoll_T poll, int64_t delay_ms, SocketTimerCallback callback, void *userdata)</div><div class="ttdoc">Add a one-shot timer to the event poll.</div></div>
-<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md206"></a>
-Module Relationships</h2>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
+</div><!-- fragment --><p>Module Relationships</p>
 <ul>
 <li><b>Depends on</b>: Foundation modules (<a class="el" href="group__foundation.html">Core Foundation Modules</a>) including Arena_T for allocations and pthread for synchronization</li>
-<li><b>Used internally by</b>: SocketTimer public functions and SocketPoll_T event loop integration for automatic timer firing</li>
-<li><b>Provides support for</b>: Event system (<a class="el" href="group__event__system.html">Event System Modules</a>) components requiring precise, scalable timer scheduling</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md207"></a>
-Platform Requirements</h2>
-<ul>
+<li><b>Used internally by</b>: SocketTimer public functions and <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> event loop integration for automatic timer firing</li>
+<li><p class="startli"><b>Provides support for</b>: Event system (<a class="el" href="group__event__system.html">Event System Modules</a>) components requiring precise, scalable timer scheduling</p>
+<p class="startli">Platform Requirements</p>
+</li>
 <li>POSIX-compliant OS with support for CLOCK_MONOTONIC (Linux, BSD, macOS)</li>
 <li>pthreads library for mutex operations (enabled via SOCKET_HAS_PTHREADS)</li>
 <li>C11 compiler with _GNU_SOURCE defined for clock_gettime() and related functions</li>
-<li>64-bit integers (int64_t, uint64_t) for timestamps and IDs</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md208"></a>
-Important Notes</h2>
-<ul>
+<li><p class="startli">64-bit integers (int64_t, uint64_t) for timestamps and IDs</p>
+<p class="startli">Important Notes</p>
+</li>
 <li>All heap operations are thread-safe via internal mutex, but callbacks in process_expired() execute outside the lock to avoid deadlocks</li>
 <li>Timers use lazy deletion: cancelled timers are marked but physically removed only when popped from heap</li>
 <li>Memory management: Heap and timers allocated from provided Arena_T; dispose arena to free all</li>

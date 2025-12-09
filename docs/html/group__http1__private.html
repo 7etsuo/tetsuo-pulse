@@ -258,14 +258,15 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Contains low-level DFA tables, token buffers, parser state machine, and helpers for the HTTP/1.1 parser in SocketHTTP1.c. Enables efficient, secure parsing of HTTP/1.1 messages with single-pass validation and limit enforcement.</p>
+<p>Core Components</p>
 <ul>
 <li><b>DFA Tables</b>: Char classification, state transitions, actions for O(n) parsing</li>
 <li><b>TokenBuf</b>: Resizable buffers for accumulating strings (methods, URIs, etc.)</li>
 <li><b>Parser Struct</b>: Manages state, buffers, headers, body tracking</li>
-<li><b>Helpers</b>: Inline funcs for buffer management, validation macros</li>
+<li><p class="startli"><b>Helpers</b>: Inline funcs for buffer management, validation macros</p>
+<p class="startli">Architecture Diagram</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md307"></a>
-Architecture Diagram</h2>
 <div class="fragment"><div class="line">Input Bytes --&gt; Char Class [<a class="code hl_variable" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17">http1_char_class</a>]</div>
 <div class="line">               --&gt; State Transition [*_state tables]</div>
 <div class="line">               --&gt; Execute Action [*_action tables]</div>
@@ -273,7 +274,7 @@ Architecture Diagram</h2>
 <div class="line">                   --&gt; Field Complete --&gt; Add to Headers/Request</div>
 <div class="line">               --&gt; Error/Complete States</div>
 <div class="ttc" id="agroup__http1__private_html_ga8132b7d377746bbf6e235a4d127deb17"><div class="ttname"><a href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17">http1_char_class</a></div><div class="ttdeci">const uint8_t http1_char_class[256]</div><div class="ttdoc">Precomputed character classification table for HTTP/1.1 DFA.</div></div>
-<div class="ttc" id="agroup__http1__private_html_structHTTP1__TokenBuf"><div class="ttname"><a href="group__http1__private.html#structHTTP1__TokenBuf">HTTP1_TokenBuf</a></div><div class="ttdoc">Dynamic resizable buffer for accumulating parsed HTTP tokens.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00443">SocketHTTP1-private.h:444</a></div></div>
+<div class="ttc" id="agroup__http1__private_html_structHTTP1__TokenBuf"><div class="ttname"><a href="group__http1__private.html#structHTTP1__TokenBuf">HTTP1_TokenBuf</a></div><div class="ttdoc">Dynamic resizable buffer for accumulating parsed HTTP tokens.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00463">SocketHTTP1-private.h:464</a></div></div>
 </div><!-- fragment --><p>Thread Safety: Internal functions not thread-safe; use mutexes if shared.</p>
 <dl class="section note"><dt>Note</dt><dd>Opaque to public; changes don't affect <a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> API. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html">HTTP/1.1 Parser and Serializer Module</a> for public HTTP/1.1 module </dd>
@@ -312,7 +313,7 @@ SocketHTTP1_Parser_T for public opaque handle </dd>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for max sizes enforced during append/terminate. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00443">443</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00463">463</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -388,7 +389,7 @@ SocketHTTP_Headers_T for header handling. </dd>
 <dd>
 RFC 7230 for HTTP/1.1 specification compliance details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00495">495</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP1_Parser_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -612,7 +613,7 @@ version_minor</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00510">510</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00536">536</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -646,7 +647,7 @@ response</td>
 
 <p>Default initial capacity for HTTP header name buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00844">844</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00902">902</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -664,7 +665,7 @@ response</td>
 
 <p>Default initial capacity for HTTP header value buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00849">849</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00907">907</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -682,7 +683,7 @@ response</td>
 
 <p>Default initial capacity for HTTP status reason-phrase buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00839">839</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00897">897</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -700,7 +701,7 @@ response</td>
 
 <p>Default initial capacity for request-target/URI buffer. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00834">834</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00892">892</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -721,6 +722,7 @@ response</td>
 <p>Actions to execute on state transitions </p>
 <p>Side effects triggered by specific character class matches in state tables. Enables efficient single-pass parsing with minimal conditional branching. Actions handle token buffering, field completion, header addition, and errors.</p>
 <p>Actions are indexed via http1_*_action[state][char_class] tables and executed in the main parsing loop. Most actions update internal buffers or flags.</p>
+<p>Action Categories</p>
 <ul>
 <li><b>Storage Actions</b>: Append bytes to token buffers (method, URI, etc.)</li>
 <li><b>Completion Actions</b>: Finalize tokens, add headers, complete lines</li>
@@ -769,7 +771,7 @@ response</td>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00166">166</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00172">172</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -796,16 +798,15 @@ response</td>
 <li>VCHAR and obs-text for values</li>
 </ul>
 <p>The http1_char_class[256] table maps bytes to these classes for O(1) classification. Invalid classes trigger error actions.</p>
+<p>Usage in DFA</p>
 <p>In <a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a>: </p><div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__http1__private.html#ga7159889d7065ff0d078e4b7170bc522d">HTTP1_CharClass</a> cls = <a class="code hl_variable" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17">http1_char_class</a>[(uint8_t)*p];</div>
-<div class="line"><a class="code hl_enumeration" href="group__http.html#ga8cc947a0df8404588ec5ca3e179d4e57">HTTP1_InternalState</a> <a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a8cfef7a67b323a611a42e8eab03eed22">next</a> = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];  <span class="comment">// or resp</span></div>
-<div class="line"><a class="code hl_enumeration" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a> act = <a class="code hl_variable" href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92">http1_req_action</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];         <span class="comment">// execute act</span></div>
-<div class="ttc" id="aSocketHappyEyeballs-private_8h_html_a701136b6320d53560cfe228535884502"><div class="ttname"><a href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a></div><div class="ttdeci">SocketHE_AttemptState state</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00151">SocketHappyEyeballs-private.h:151</a></div></div>
-<div class="ttc" id="aSocketHappyEyeballs-private_8h_html_a8cfef7a67b323a611a42e8eab03eed22"><div class="ttname"><a href="SocketHappyEyeballs-private_8h.html#a8cfef7a67b323a611a42e8eab03eed22">next</a></div><div class="ttdeci">struct SocketHE_Attempt * next</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00154">SocketHappyEyeballs-private.h:154</a></div></div>
-<div class="ttc" id="agroup__http1__private_html_ga7159889d7065ff0d078e4b7170bc522d"><div class="ttname"><a href="group__http1__private.html#ga7159889d7065ff0d078e4b7170bc522d">HTTP1_CharClass</a></div><div class="ttdeci">HTTP1_CharClass</div><div class="ttdoc">Character classes used in the table-driven DFA for HTTP/1.1 parsing.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00114">SocketHTTP1-private.h:115</a></div></div>
+<div class="line"><a class="code hl_enumeration" href="group__http.html#ga8cc947a0df8404588ec5ca3e179d4e57">HTTP1_InternalState</a> next = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[state][cls];  <span class="comment">// or resp</span></div>
+<div class="line"><a class="code hl_enumeration" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a> act = <a class="code hl_variable" href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92">http1_req_action</a>[state][cls];         <span class="comment">// execute act</span></div>
+<div class="ttc" id="agroup__http1__private_html_ga7159889d7065ff0d078e4b7170bc522d"><div class="ttname"><a href="group__http1__private.html#ga7159889d7065ff0d078e4b7170bc522d">HTTP1_CharClass</a></div><div class="ttdeci">HTTP1_CharClass</div><div class="ttdoc">Character classes used in the table-driven DFA for HTTP/1.1 parsing.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00118">SocketHTTP1-private.h:119</a></div></div>
 <div class="ttc" id="agroup__http1__private_html_ga75ad7bc5978265a3fab598023b737c92"><div class="ttname"><a href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92">http1_req_action</a></div><div class="ttdeci">const uint8_t http1_req_action[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</div><div class="ttdoc">DFA action table for HTTP request parsing.</div></div>
 <div class="ttc" id="agroup__http1__private_html_gad7f1459235d97c9cb2f1c4960a7dbc30"><div class="ttname"><a href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a></div><div class="ttdeci">const uint8_t http1_req_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</div><div class="ttdoc">DFA state transition table for HTTP request parsing.</div></div>
-<div class="ttc" id="agroup__http1__private_html_gaf958f972f68a3e764050f88c3475f37e"><div class="ttname"><a href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a></div><div class="ttdeci">HTTP1_Action</div><div class="ttdoc">Actions executed during DFA state transitions in HTTP/1.1 parser.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00166">SocketHTTP1-private.h:167</a></div></div>
-<div class="ttc" id="agroup__http_html_ga8cc947a0df8404588ec5ca3e179d4e57"><div class="ttname"><a href="group__http.html#ga8cc947a0df8404588ec5ca3e179d4e57">HTTP1_InternalState</a></div><div class="ttdeci">HTTP1_InternalState</div><div class="ttdoc">Low-level internal parser states for the DFA-based HTTP/1.1 parser.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00219">SocketHTTP1-private.h:220</a></div></div>
+<div class="ttc" id="agroup__http1__private_html_gaf958f972f68a3e764050f88c3475f37e"><div class="ttname"><a href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a></div><div class="ttdeci">HTTP1_Action</div><div class="ttdoc">Actions executed during DFA state transitions in HTTP/1.1 parser.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00172">SocketHTTP1-private.h:173</a></div></div>
+<div class="ttc" id="agroup__http_html_ga8cc947a0df8404588ec5ca3e179d4e57"><div class="ttname"><a href="group__http.html#ga8cc947a0df8404588ec5ca3e179d4e57">HTTP1_InternalState</a></div><div class="ttdeci">HTTP1_InternalState</div><div class="ttdoc">Low-level internal parser states for the DFA-based HTTP/1.1 parser.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00233">SocketHTTP1-private.h:234</a></div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a> for the classification table </dd>
 <dd>
 <a class="el" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e" title="Actions executed during DFA state transitions in HTTP/1.1 parser.">HTTP1_Action</a> for actions triggered by classes </dd>
@@ -856,7 +857,7 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00114">114</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00118">118</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -884,7 +885,7 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 <p>Precomputed character classification table for HTTP/1.1 DFA. </p>
 <p>Lookup table mapping every possible byte (0-255) to its HTTP1_CharClass. Enables O(1) classification during parsing without runtime conditionals. Size: exactly 256 bytes (uint8_t array).</p>
 <p>Usage: </p><div class="fragment"><div class="line">uint8_t cls = <a class="code hl_variable" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17">http1_char_class</a>[(uint8_t)<span class="keywordtype">byte</span>];  <span class="comment">// Classify input byte</span></div>
-<div class="line">uint8_t next_state = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];  <span class="comment">// Transition</span></div>
+<div class="line">uint8_t next_state = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[state][cls];  <span class="comment">// Transition</span></div>
 </div><!-- fragment --><p>Table generated at compile-time based on RFC 9112 ABNF rules and legacy obs-text. Covers controls, whitespace, separators, digits, tokens, VCHAR, obs-text.</p>
 <dl class="section note"><dt>Note</dt><dd>Accessed frequently in hot parsing loop; kept in data segment for speed. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) lookup</dt><dd></dd></dl>
@@ -919,18 +920,19 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 <p>DFA action table for HTTP request parsing. </p>
 <p>2D table specifying actions to execute alongside state transitions for requests. Paired with http1_req_state table; looked up simultaneously for each input byte.</p>
 <p>Actions include buffering tokens (method, URI), completing fields, adding headers, and error handling. Enables complete parsing in single loop pass.</p>
-<div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a> act = <a class="code hl_variable" href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92">http1_req_action</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];</div>
+<div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e">HTTP1_Action</a> act = <a class="code hl_variable" href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92">http1_req_action</a>[state][cls];</div>
 <div class="line"><span class="keywordflow">switch</span> (act) {</div>
-<div class="line">  <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7">HTTP1_ACT_STORE_METHOD</a>: <a class="code hl_function" href="group__http.html#ga5487c78dd04b035e7acc9637725342da">http1_tokenbuf_append</a>(&amp;method_buf, <span class="keywordtype">byte</span>); <span class="keywordflow">break</span>;</div>
+<div class="line">  <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7">HTTP1_ACT_STORE_METHOD</a>: <a class="code hl_function" href="group__http.html#ga5487c78dd04b035e7acc9637725342da">http1_tokenbuf_append</a>(&amp;method_buf, <span class="keywordtype">byte</span>);</div>
+<div class="line"><span class="keywordflow">break</span>;</div>
 <div class="line">  <span class="comment">// ... other cases</span></div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__http1__private_html_ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7"><div class="ttname"><a href="group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7">HTTP1_ACT_STORE_METHOD</a></div><div class="ttdeci">@ HTTP1_ACT_STORE_METHOD</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00169">SocketHTTP1-private.h:169</a></div></div>
-<div class="ttc" id="agroup__http_html_ga5487c78dd04b035e7acc9637725342da"><div class="ttname"><a href="group__http.html#ga5487c78dd04b035e7acc9637725342da">http1_tokenbuf_append</a></div><div class="ttdeci">static int http1_tokenbuf_append(HTTP1_TokenBuf *buf, Arena_T arena, char c, size_t max_size)</div><div class="ttdoc">Append a single character to the token buffer, growing capacity if necessary.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00630">SocketHTTP1-private.h:630</a></div></div>
+<div class="ttc" id="agroup__http1__private_html_ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7"><div class="ttname"><a href="group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7">HTTP1_ACT_STORE_METHOD</a></div><div class="ttdeci">@ HTTP1_ACT_STORE_METHOD</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00175">SocketHTTP1-private.h:175</a></div></div>
+<div class="ttc" id="agroup__http_html_ga5487c78dd04b035e7acc9637725342da"><div class="ttname"><a href="group__http.html#ga5487c78dd04b035e7acc9637725342da">http1_tokenbuf_append</a></div><div class="ttdeci">static int http1_tokenbuf_append(HTTP1_TokenBuf *buf, Arena_T arena, char c, size_t max_size)</div><div class="ttdoc">Append a single character to the token buffer, growing capacity if necessary.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00663">SocketHTTP1-private.h:663</a></div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1__private.html#ga9c08453987f874f606969a88b5d593ca" title="DFA action table for HTTP response parsing.">http1_resp_action</a> for response actions </dd>
 <dd>
 <a class="el" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e" title="Actions executed during DFA state transitions in HTTP/1.1 parser.">HTTP1_Action</a> for enumerated actions </dd>
 <dd>
-<a class="el" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30" title="DFA state transition table for HTTP request parsing.">http1_req_state</a> for concurrent <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> transitions </dd></dl>
+<a class="el" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30" title="DFA state transition table for HTTP request parsing.">http1_req_state</a> for concurrent state transitions </dd></dl>
 
 </div>
 </div>
@@ -958,9 +960,9 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 <p>2D table defining next state for each current state and input char class. Size: HTTP1_NUM_STATES * HTTP1_NUM_CLASSES bytes (~300 bytes). Drives deterministic parsing of request lines, headers, body directives.</p>
 <p>Transitions enforce HTTP/1.1 syntax: method SP request-target SP version CRLF headers, chunked encoding, etc. Invalid transitions lead to error state.</p>
 <p>Usage in parser loop: </p><div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__http1__private.html#ga7159889d7065ff0d078e4b7170bc522d">HTTP1_CharClass</a> cls = <a class="code hl_variable" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17">http1_char_class</a>[(uint8_t)*p];</div>
-<div class="line"><a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];</div>
-<div class="line"><span class="keywordflow">if</span> (<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> == <a class="code hl_enumvalue" href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203">HTTP1_PS_ERROR</a>) { <span class="comment">// handle error }</span></div>
-<div class="ttc" id="agroup__http_html_gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203"><div class="ttname"><a href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203">HTTP1_PS_ERROR</a></div><div class="ttdeci">@ HTTP1_PS_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00283">SocketHTTP1-private.h:283</a></div></div>
+<div class="line">state = <a class="code hl_variable" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30">http1_req_state</a>[state][cls];</div>
+<div class="line"><span class="keywordflow">if</span> (state == <a class="code hl_enumvalue" href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203">HTTP1_PS_ERROR</a>) { <span class="comment">// handle error }</span></div>
+<div class="ttc" id="agroup__http_html_gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203"><div class="ttname"><a href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57a1d1519c48b14bc3ed50449cddc3e5203">HTTP1_PS_ERROR</a></div><div class="ttdeci">@ HTTP1_PS_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1-private_8h_source.html#l00297">SocketHTTP1-private.h:297</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Compile-time constant; optimized for cache locality in inner loop. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) per byte parsed</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f" title="DFA state transition table for HTTP response parsing.">http1_resp_state</a> for response variant </dd>
@@ -1000,7 +1002,7 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e" title="Actions executed during DFA state transitions in HTTP/1.1 parser.">HTTP1_Action</a> for action details </dd>
 <dd>
-<a class="el" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f" title="DFA state transition table for HTTP response parsing.">http1_resp_state</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> transitions </dd></dl>
+<a class="el" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f" title="DFA state transition table for HTTP response parsing.">http1_resp_state</a> for state transitions </dd></dl>
 
 </div>
 </div>
@@ -1028,7 +1030,7 @@ SocketUTF8_CharClass for similar pattern in UTF-8 validation </dd></dl>
 <p>Companion to req_state table, specialized for response messages. Handles status line: version SP status-code SP reason-phrase CRLF then headers, body, etc. Shares states but differs in start transitions.</p>
 <p>Size and usage identical to request table.</p>
 <div class="fragment"><div class="line"><span class="comment">// In response-mode parser</span></div>
-<div class="line"><a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> = <a class="code hl_variable" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f">http1_resp_state</a>[<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>][cls];</div>
+<div class="line">state = <a class="code hl_variable" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f">http1_resp_state</a>[state][cls];</div>
 <div class="ttc" id="agroup__http1__private_html_ga11bb00a4258fe1bb4ece5df41c2c9d3f"><div class="ttname"><a href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f">http1_resp_state</a></div><div class="ttdeci">const uint8_t http1_resp_state[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</div><div class="ttdoc">DFA state transition table for HTTP response parsing.</div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30" title="DFA state transition table for HTTP request parsing.">http1_req_state</a> for request variant </dd>
 <dd>

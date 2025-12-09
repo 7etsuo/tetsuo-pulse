@@ -204,7 +204,7 @@ Macros</h2></td></tr>
 <dd>
 <a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490" title="Parse proxy URL string into configuration structure.">SocketProxy_parse_url()</a> URL parsing. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes. </dd>
+<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for error codes. </dd>
 <dd>
 <a class="el" href="group__async__io.html">Async I/O Modules</a> for event integration. </dd>
 <dd>
@@ -258,9 +258,9 @@ SocketPool for management. </dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html">Connection Management</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">details</a>. </dd>
 <dd>
-<a class="el" href="SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols.">include/socket/SocketProxy.h</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">full</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> API. </dd></dl>
+<a class="el" href="SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols.">include/socket/SocketProxy.h</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">full</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">API</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00360">360</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00379">379</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketProxy_Config:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -317,7 +317,7 @@ port</td>
 <td class="fieldname">
 tls_ctx</td>
 <td class="fielddoc">
-TLS configuration for HTTPS proxies (TLS to proxy server). <p>TLS context. NULL uses secure system defaults if available. Requires <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> SOCKET_HAS_TLS. </p>
+TLS configuration for HTTPS proxies (TLS to proxy server). <p>TLS context. NULL uses secure system defaults if available. Requires <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">if</a> SOCKET_HAS_TLS. </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="aa04cfa88d52d6c1f889f9f936a141141" name="aa04cfa88d52d6c1f889f9f936a141141"></a><a class="el" href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a></td>
@@ -352,7 +352,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Default timeout for establishing connection to proxy server. Value: 30000 ms (30 seconds). Used when config.connect_timeout_ms = 0. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy.html#aa761e79e5c6644f3ccb22a4c0300105a" title="Timeout configuration (0 = use module defaults).">SocketProxy_Config::connect_timeout_ms</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00148">148</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00153">153</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -371,7 +371,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Default timeout for proxy protocol handshake and authentication. Value: 30000 ms (30 seconds). Covers TLS, request send/recv, auth subnegotiation. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy.html#aaefad91d7469f34f214a7fac5e1779d6">SocketProxy_Config::handshake_timeout_ms</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00158">158</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00163">163</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -390,7 +390,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Default port for HTTP proxies. Value: 8080 (common convention). Used for SOCKET_PROXY_HTTP when port unspecified. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132" title="Enumeration of supported proxy protocol types.">SocketProxyType</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00218">218</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00223">223</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -411,7 +411,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <dd>
 <a class="el" href="group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...">SocketTLSContext_T</a> for TLS config. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00229">229</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00234">234</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -430,7 +430,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Default port for SOCKS proxies. Value: 1080 (standard IANA assignment). Used when config.port = 0 and type is SOCKS*. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132" title="Enumeration of supported proxy protocol types.">SocketProxyType</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00208">208</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00213">213</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -449,7 +449,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Maximum allowed hostname/domain length in SOCKS5 requests (RFC 1928). Value: 255 bytes. Enforced for security against buffer overflows. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490" title="Parse proxy URL string into configuration structure.">SocketProxy_parse_url()</a> for URL validation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00168">168</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00173">173</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -470,7 +470,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <dd>
 <a class="el" href="group__foundation.html#ga00f94677d393f24e0b0c549be7bbcdf2" title="Securely clear sensitive data from memory.">SocketCrypto_secure_clear()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00188">188</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00193">193</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -489,7 +489,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Maximum length for userinfo in proxy URLs (user:pass@). Value: 512 bytes (conservative for user + pass + delimiters). Used in parsing to prevent buffer issues. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490" title="Parse proxy URL string into configuration structure.">SocketProxy_parse_url()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00198">198</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00203">203</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>
@@ -508,7 +508,7 @@ Optional authentication credentials for SOCKS5 or HTTP Basic auth. <p>Username s
 <p>Maximum username length for SOCKS5 authentication (RFC 1929). Value: 255 bytes. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy.html#a579714517d79e28bb9b03190d67158d5" title="Optional authentication credentials for SOCKS5 or HTTP Basic auth.">SocketProxy_Config::username</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00177">177</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00182">182</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 
 </div>
 </div>

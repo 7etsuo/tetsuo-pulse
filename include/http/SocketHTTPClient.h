@@ -1347,16 +1347,6 @@ SocketHTTPClient_last_error (SocketHTTPClient_T client);
 extern const char *
 SocketHTTPClient_error_string (SocketHTTPClient_Error error);
 
-/** @} http_client */
-
-/* ============================================================================
- * Related Configuration Headers
- * ============================================================================
- * For compile-time constants and flags, see SocketHTTPClient-config.h
- * - @ref http_client_cookie Cookie constants
- * - @ref http_client_encoding Encoding flags
- */
-
-/** @} http_client */
+/** @} */
 
 #endif /* SOCKETHTTPCLIENT_INCLUDED */

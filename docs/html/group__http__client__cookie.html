@@ -192,7 +192,7 @@ Netscape cookie file format spec for structure. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#gae4c2b4b036298405fa4df86655f40da0" title="Maximum allowed length for cookie names (256 bytes).">HTTPCLIENT_COOKIE_MAX_NAME_LEN</a> etc. for field limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00661">661</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00700">700</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -216,7 +216,7 @@ Netscape cookie file format spec for structure. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga7f6bd73797f507766f9edc1242b9772e" title="Create cookie jar.">SocketHTTPClient_CookieJar_new()</a> jar initialization. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00574">574</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00610">610</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -234,13 +234,13 @@ Netscape cookie file format spec for structure. </dd>
 
 <p>Maximum length for Max-Age attribute string parsing (32 bytes). </p>
 <p>Buffer size for parsing Max-Age= value in Set-Cookie (seconds until expiry). Supports large values up to HTTPCLIENT_MAX_COOKIE_AGE_SEC; 32 chars for digits + sign. Used during attribute parsing to prevent overflow.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a76752117eaf672a88292a3c7c250b52d">SocketHTTPClient_Cookie::expires</a> computed from Max-Age or Expires. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga76752117eaf672a88292a3c7c250b52d">SocketHTTPClient_Cookie::expires</a> computed from Max-Age or Expires. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#ga560da3bb4151944df985b9975287edfe" title="Absolute maximum cookie lifetime in seconds (10 years).">HTTPCLIENT_MAX_COOKIE_AGE_SEC</a> absolute max age limit. </dd>
 <dd>
 RFC 6265 section 5.2.2 Set-Cookie syntax. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00678">678</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00717">717</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -267,7 +267,7 @@ RFC 6265 section 5.2.2 Set-Cookie syntax. </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga9fdc2111b7d6f5bce04dce7a5af67dea" title="Hash string using DJB2 algorithm.">socket_util_hash_djb2()</a> hash function used for domain keys. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00735">735</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00776">776</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -285,13 +285,13 @@ RFC 6265 section 5.2.2 Set-Cookie syntax. </dd></dl>
 
 <p>Maximum allowed length for cookie domain attributes (256 bytes). </p>
 <p>Limits Domain= attribute in Set-Cookie for scope matching. Domains typically short (e.g., example.com); 256 covers FQDNs with paths. Used for exact/subdomain matching per RFC 6265. Exceeding rejects cookie.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a0dc75016531006762afa85a21130ac13">SocketHTTPClient_Cookie::domain</a> field. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga0dc75016531006762afa85a21130ac13">SocketHTTPClient_Cookie::domain</a> field. </dd>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTP__URI" title="Parsed URI components according to RFC 3986.">SocketHTTP_URI</a> for domain parsing from requests. </dd>
 <dd>
 RFC 6265 section 5.2.3 domain matching rules. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00626">626</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00665">665</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -309,13 +309,13 @@ RFC 6265 section 5.2.3 domain matching rules. </dd></dl>
 
 <p>Maximum allowed length for cookie names (256 bytes). </p>
 <p>Limits cookie name strings during parsing and storage from Set-Cookie headers. Exceeding truncates or rejects cookie, preventing buffer overflows and DoS. 256 bytes ample for standard names; RFC 6265 recommends short names.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ae7076917489dca85561ff672d120551c">SocketHTTPClient_Cookie::name</a> field. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gae7076917489dca85561ff672d120551c">SocketHTTPClient_Cookie::name</a> field. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#ga865ebc94fbbecd210790ee6724f25ad0" title="Maximum allowed length for cookie values (4096 bytes).">HTTPCLIENT_COOKIE_MAX_VALUE_LEN</a> for value limit. </dd>
 <dd>
 <a class="el" href="group__http.html#ga14656f39c3a134218da1afd58407bda1" title="Get first header value (case-insensitive).">SocketHTTP_Headers_get()</a> header parsing integration. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00591">591</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00628">628</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -333,13 +333,13 @@ RFC 6265 section 5.2.3 domain matching rules. </dd></dl>
 
 <p>Maximum allowed length for cookie path attributes (1024 bytes). </p>
 <p>Limits Path= attribute in Set-Cookie for URI path matching. Paths can be longer for deep hierarchies; 1KB sufficient. Prefix matching used: cookie path must be prefix of request path. Exceeding rejects cookie.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a7259b82f78dc6e60c52ef6c5d741ca06">SocketHTTPClient_Cookie::path</a> field. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga7259b82f78dc6e60c52ef6c5d741ca06">SocketHTTPClient_Cookie::path</a> field. </dd>
 <dd>
 <a class="el" href="group__http.html#accdc0435b134ed82254c5fe37b8a7419">SocketHTTP_URI::path</a> for request path extraction. </dd>
 <dd>
 RFC 6265 section 5.2.4 path matching rules. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00644">644</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00683">683</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -357,13 +357,13 @@ RFC 6265 section 5.2.4 path matching rules. </dd></dl>
 
 <p>Maximum allowed length for cookie values (4096 bytes). </p>
 <p>Limits cookie value strings to prevent memory exhaustion from large/malicious cookies. Values may contain session data or tokens; 4KB sufficient for most use cases. Exceeding rejects or truncates during Set-Cookie parsing.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a21b390a321565e4ebf8be575550c1498">SocketHTTPClient_Cookie::value</a> field. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga21b390a321565e4ebf8be575550c1498">SocketHTTPClient_Cookie::value</a> field. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#gae4c2b4b036298405fa4df86655f40da0" title="Maximum allowed length for cookie names (256 bytes).">HTTPCLIENT_COOKIE_MAX_NAME_LEN</a> for name limit. </dd>
 <dd>
 RFC 6265 section 5.1.1 for value syntax (octets excluding control chars). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00608">608</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00647">647</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -383,13 +383,13 @@ RFC 6265 section 5.1.1 for value syntax (octets excluding control chars). </dd><
 <p>Buffer for parsing SameSite=[Strict|Lax|None] from Set-Cookie. Values are short enums; 16 allows variants or future extensions + null terminator. Case-insensitive matching per spec.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b" title="Cookie SameSite attribute values (RFC 6265bis draft).">SocketHTTPClient_SameSite</a> enum mapping. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ad1fc2e3ea45172e27a07aaacfe3c7eeb">SocketHTTPClient_Cookie::same_site</a> parsed value. </dd>
+<a class="el" href="group__http__client.html#gad1fc2e3ea45172e27a07aaacfe3c7eeb">SocketHTTPClient_Cookie::same_site</a> parsed value. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#gab32a3ecd078fc6919d2f5e0a06d12388" title="Default flag to enforce SameSite cookie attribute in matching logic (1 = enabled).">HTTPCLIENT_DEFAULT_ENFORCE_SAMESITE</a> enforcement flag. </dd>
 <dd>
 RFC 6265bis draft for SameSite specification. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00696">696</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00735">735</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -407,16 +407,16 @@ RFC 6265bis draft for SameSite specification. </dd></dl>
 
 <p>Default flag to enforce SameSite cookie attribute in matching logic (1 = enabled). </p>
 <p>When enabled, respects SameSite=Strict/Lax/None attributes per RFC 6265bis during cookie inclusion in requests. Enhances security against CSRF attacks. Strict: No cross-site cookies; Lax: Safe methods on top-level; None: All (requires Secure).</p>
-<p>Disabled allows legacy cookies but reduces security. Modern browsers enforce by default. Runtime override via <a class="el" href="group__http__client.html#ae9bb372f96fd426c9fcf729fa78f26e3">SocketHTTPClient_Config.enforce_samesite</a>.</p>
+<p>Disabled allows legacy cookies but reduces security. Modern browsers enforce by default. Runtime override via <a class="el" href="group__http__client.html#gae9bb372f96fd426c9fcf729fa78f26e3">SocketHTTPClient_Config.enforce_samesite</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b" title="Cookie SameSite attribute values (RFC 6265bis draft).">SocketHTTPClient_SameSite</a> enum values. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ad1fc2e3ea45172e27a07aaacfe3c7eeb">SocketHTTPClient_Cookie::same_site</a> cookie attribute. </dd>
+<a class="el" href="group__http__client.html#gad1fc2e3ea45172e27a07aaacfe3c7eeb">SocketHTTPClient_Cookie::same_site</a> cookie attribute. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ae9bb372f96fd426c9fcf729fa78f26e3">SocketHTTPClient_Config::enforce_samesite</a> runtime flag. </dd>
+<a class="el" href="group__http__client.html#gae9bb372f96fd426c9fcf729fa78f26e3">SocketHTTPClient_Config::enforce_samesite</a> runtime flag. </dd>
 <dd>
 docs/SECURITY_GUIDE.md for SameSite best practices and CSRF protection. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00500">500</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00531">531</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -434,7 +434,7 @@ docs/SECURITY_GUIDE.md for SameSite best practices and CSRF protection. </dd></d
 
 <p>Absolute maximum cookie lifetime in seconds (10 years). </p>
 <p>Hard cap on cookie expiry from Max-Age or Expires attributes to prevent near-permanent cookies causing storage bloat or security issues. 10 years (~315360000 seconds) far exceeds typical session/persistent needs. Exceeding clamped to this value; rejects invalid negative/zero ages appropriately.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a76752117eaf672a88292a3c7c250b52d">SocketHTTPClient_Cookie::expires</a> absolute expiry time. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga76752117eaf672a88292a3c7c250b52d">SocketHTTPClient_Cookie::expires</a> absolute expiry time. </dd>
 <dd>
 <a class="el" href="group__http__client__cookie.html#gab56546d633bcdabb80f6fa61ad4f3c3f" title="Maximum length for Max-Age attribute string parsing (32 bytes).">HTTPCLIENT_COOKIE_MAX_AGE_SIZE</a> parsing buffer. </dd>
 <dd>
@@ -442,7 +442,7 @@ RFC 6265 section 5.3 expiry time calculation. </dd>
 <dd>
 time_t for underlying time representation limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00715">715</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00755">755</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -469,7 +469,7 @@ time_t for underlying time representation limits. </dd></dl>
 <dd>
 <a class="el" href="group__http__client__cookie.html" title="Limits and buffer sizes for HTTP client cookie handling and jar management.">Cookie Configuration Constants</a> group for related constants. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00554">554</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>

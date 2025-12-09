@@ -126,15 +126,13 @@ $(document).ready(function(){initNavTree('group__socket__tls__utils.html',''); i
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Utilities for initializing and managing TLS state in Socket_T. </p>
 <p>These functions handle TLS-specific initialization and cleanup within the Socket_T structure. Only compiled and available when SOCKET_HAS_TLS == 1.</p>
-<h2><a class="anchor" id="autotoc_md451"></a>
-Purpose</h2>
-<ul>
+<p>Purpose</p><ul>
 <li>Zero-initialize TLS fields to prevent use of uninitialized state</li>
 <li>Called during socket creation paths to ensure safe defaults</li>
-<li>Supports conditional compilation for non-TLS builds</li>
+<li><p class="startli">Supports conditional compilation for non-TLS builds</p>
+<p class="startli">TLS Integration Flow</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md452"></a>
-TLS Integration Flow</h2>
 <ol type="1">
 <li><a class="el" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1" title="Create a new socket with specified domain, type, and protocol.">Socket_new()</a> or <a class="el" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15" title="Accept incoming connection.">Socket_accept()</a> calls socket_init_tls_fields()</li>
 <li><a class="el" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f" title="Enable TLS on a socket using the provided context.">SocketTLS_enable()</a> populates tls_ssl, tls_ctx from shared context</li>

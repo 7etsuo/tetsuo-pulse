@@ -7,7 +7,7 @@ var searchData=
   ['last_5fattempt_5fms_4',['last_attempt_ms',['../group__security.html#a7b49dd6e199c1e1e91b1eb71fc245509',1,'SocketSYN_IPState']]],
   ['last_5fattempt_5ftime_5fms_5',['last_attempt_time_ms',['../group__reconnect__private.html#a54ee3868401a010bbeeca9679a842537',1,'SocketReconnect_T']]],
   ['last_5fcleanup_5fms_6',['last_cleanup_ms',['../SocketPool-private_8h.html#a4aa52b23aceb8ec9648e2907f756fe3a',1,'SocketPool_T']]],
-  ['last_5ferror_7',['last_error',['../group__utilities.html#ga560a11b7408ab6b745312cc2552aa387',1,'SocketRetry_Stats::last_error'],['../group__http.html#aee4eeaa23057ac8e1230e9fa66e5a8d3',1,'SocketHTTPClient::last_error'],['../group__reconnect__private.html#a52dfbb00e9f5b907cb163d55418fa039',1,'SocketReconnect_T::last_error'],['../group__websocket.html#a3e6c78c0e878d6b3fa505d14420b1bb3',1,'SocketWS::last_error']]],
+  ['last_5ferror_7',['last_error',['../group__utilities.html#a560a11b7408ab6b745312cc2552aa387',1,'SocketRetry_Stats::last_error'],['../group__http.html#aee4eeaa23057ac8e1230e9fa66e5a8d3',1,'SocketHTTPClient::last_error'],['../group__reconnect__private.html#a52dfbb00e9f5b907cb163d55418fa039',1,'SocketReconnect_T::last_error'],['../group__websocket.html#a3e6c78c0e878d6b3fa505d14420b1bb3',1,'SocketWS::last_error']]],
   ['last_5fhealth_5fcheck_5fms_8',['last_health_check_ms',['../group__reconnect__private.html#a38bbb8f63052882c9251d6fb641c7b3f',1,'SocketReconnect_T']]],
   ['last_5fpeer_5fstream_5fid_9',['last_peer_stream_id',['../group__http2__private.html#a6559127fe5c148680edfbb8c7f1cb367',1,'SocketHTTP2_Conn']]],
   ['last_5fping_5fsent_5ftime_10',['last_ping_sent_time',['../group__websocket.html#a05d1f55f1818f78d88e2b51b8ecc4695',1,'SocketWS']]],

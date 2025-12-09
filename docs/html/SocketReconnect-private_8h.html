@@ -114,8 +114,7 @@ $(document).ready(function(){initNavTree('SocketReconnect-private_8h.html',''); 
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">SocketReconnect-private.h File Reference<div class="ingroups"><a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> &raquo; <a class="el" href="group__reconnect__private.html">SocketReconnect Private Implementation Details</a> &#124; <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -168,45 +167,34 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga0450dbfcd56214ed2989e6ff4d97b25d" id="r_ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d">if</a> (<a class="el" href="group__foundation.html#gae153fb5408e633479d6a61ac233d3676">SocketCrypto_random_bytes</a>(&amp;value, sizeof(value))==0)</td></tr>
-<tr class="memdesc:ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.  <br /></td></tr>
-<tr class="separator:ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaab33e6c19aa5cf524e12e3c40b50574a" id="r_gaab33e6c19aa5cf524e12e3c40b50574a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#gaab33e6c19aa5cf524e12e3c40b50574a">if</a> (<a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>==0)</td></tr>
-<tr class="separator:gaab33e6c19aa5cf524e12e3c40b50574a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga230fd1711fa730b54c9262bf533767f6" id="r_ga230fd1711fa730b54c9262bf533767f6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> (double) <a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>/(double) 0xFFFFFFFFU</td></tr>
-<tr class="separator:ga230fd1711fa730b54c9262bf533767f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga7a21408446fbd8c658853d5f53e2c76f" id="r_ga7a21408446fbd8c658853d5f53e2c76f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a> = now - start_ms</td></tr>
-<tr class="memdesc:ga7a21408446fbd8c658853d5f53e2c76f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve current monotonic time in milliseconds for internal timing.  <br /></td></tr>
-<tr class="separator:ga7a21408446fbd8c658853d5f53e2c76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0544c3fe466e421738dae463968b70ba" id="r_ga0544c3fe466e421738dae463968b70ba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga0544c3fe466e421738dae463968b70ba">else</a></td></tr>
-<tr class="separator:ga0544c3fe466e421738dae463968b70ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab31f6ed1e7e88c7cca70910409c6bbee" id="r_gab31f6ed1e7e88c7cca70910409c6bbee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a> = seed &lt;&lt; 13</td></tr>
-<tr class="separator:gab31f6ed1e7e88c7cca70910409c6bbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8e2e9cd2b8dd8294f175991957b1b37b" id="r_ga8e2e9cd2b8dd8294f175991957b1b37b"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga8e2e9cd2b8dd8294f175991957b1b37b">socketreconnect_now_ms</a> (void)</td></tr>
+<tr class="memdesc:ga8e2e9cd2b8dd8294f175991957b1b37b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve current monotonic time in milliseconds for internal timing.  <br /></td></tr>
+<tr class="separator:ga8e2e9cd2b8dd8294f175991957b1b37b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8bb049b5716726216dec25cd2dfa2380" id="r_ga8bb049b5716726216dec25cd2dfa2380"><td class="memItemLeft" align="right" valign="top">static int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga8bb049b5716726216dec25cd2dfa2380">socketreconnect_elapsed_ms</a> (int64_t start_ms)</td></tr>
+<tr class="memdesc:ga8bb049b5716726216dec25cd2dfa2380"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute elapsed monotonic time since provided start timestamp.  <br /></td></tr>
+<tr class="separator:ga8bb049b5716726216dec25cd2dfa2380"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga768e9347e53fcf121c747b2430cdef40" id="r_ga768e9347e53fcf121c747b2430cdef40"><td class="memItemLeft" align="right" valign="top">static double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga768e9347e53fcf121c747b2430cdef40">reconnect_jitter</a> (void)</td></tr>
+<tr class="memdesc:ga768e9347e53fcf121c747b2430cdef40"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.  <br /></td></tr>
+<tr class="separator:ga768e9347e53fcf121c747b2430cdef40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Private header for SocketReconnect module internals. </p>
 <p>Defines internal data structures and utility functions not exposed publicly. Use only within SocketReconnect.c implementation.</p>
+<p>Features</p>
 <ul>
 <li>Opaque context structure for all reconnection state</li>
 <li>Internal circuit breaker state machine</li>
 <li>Monotonic time helpers for accurate timing</li>
-<li>Secure random jitter for backoff (with fallback)</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md613"></a>
-Usage Notes</h2>
-<ul>
+<li><p class="startli">Secure random jitter for backoff (with fallback)</p>
+<p class="startli">Usage Notes</p>
+</li>
 <li>All functions and types marked </li>
 </ul>
 <ul>
 <li>No direct inclusion from application code</li>
-<li>Thread safety varies; check individual docs</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md614"></a>
-Compilation</h2>
-<ul>
+<li><p class="startli">Thread safety varies; check individual docs</p>
+<p class="startli">Compilation</p>
+</li>
 <li>Included automatically via <a class="el" href="SocketReconnect_8h.html" title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">SocketReconnect.h</a> when building libsocket</li>
 <li>Requires C11 with _GNU_SOURCE for system features</li>
 </ul>

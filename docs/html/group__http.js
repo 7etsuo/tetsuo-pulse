@@ -6,7 +6,7 @@ var group__http =
     [ "HTTP/2 Protocol Implementation", "group__http2.html", "group__http2" ],
     [ "HTTP Client Module", "group__http__client.html", "group__http__client" ],
     [ "HTTP Server Error Handling Macros", "group__http__error__macros.html", "group__http__error__macros" ],
-    [ "Internal HTTP Server Connection Management Helpers", "group__http__server__connection__mgmt.html", null ],
+    [ "Internal HTTP Server Connection", "group__http__server__connection__mgmt.html", null ],
     [ "SocketHPACK-private.h", "SocketHPACK-private_8h.html", null ],
     [ "SocketHPACK.h", "SocketHPACK_8h.html", null ],
     [ "SocketHTTP-private.h", "SocketHTTP-private_8h.html", null ],

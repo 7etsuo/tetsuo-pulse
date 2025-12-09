@@ -126,7 +126,7 @@ $(document).ready(function(){initNavTree('structAsyncRequest.html',''); initResi
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structAsyncRequest__coll__graph.svg" width="328" height="315"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structAsyncRequest__coll__graph.svg" width="172" height="139"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
@@ -192,7 +192,9 @@ Data Fields</h2></td></tr>
 <dl class="section note"><dt>Note</dt><dd><ul>
 <li>Buffers (send_buf for REQ_SEND, recv_buf for REQ_RECV) must remain pinned/valid until callback invocation, cancellation, or explicit removal.</li>
 <li>For sensitive data (e.g., keys, tokens), use <a class="el" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7" title="Securely erase all data by zeroing memory contents.">SocketBuf_secureclear()</a> post-completion.</li>
-<li>In fallback mode, buffers may be accessed synchronously during process_completions().</li>
+<li><p class="startli">In fallback mode, buffers may be accessed synchronously during process_completions().</p>
+<p class="startli">Lifecycle Management</p>
+</li>
 </ul>
 </dd></dl>
 <p>Typical flow for a request:</p><ol type="1">
@@ -200,15 +202,14 @@ Data Fields</h2></td></tr>
 <li><b>Initialization</b>: Populate fields, generate unique request_id</li>
 <li><b>Insertion</b>: Hashed into <a class="el" href="group__async__io.html#aac8070e36e54bb9ad8147e45d8b75575" title="Hash table for fast request lookup by ID.">SocketAsync_T::requests</a>[] via request_hash()</li>
 <li><b>Submission</b>: Backend prepares (e.g., io_uring sqe setup)</li>
-<li><b>Completion/Cancellation</b>:<ul>
+<li><p class="startli"><b>Completion/Cancellation</b>:</p><ul>
 <li>find_and_remove_request() extracts from hash chain</li>
 <li>Callback invoked with results</li>
 <li>socket_async_free_request() clears for arena reuse</li>
 </ul>
+<p class="startli">Partial Transfer Support</p>
 </li>
 </ol>
-<h2><a class="anchor" id="autotoc_md493"></a>
-Partial Transfer Support</h2>
 <p>Enables handling of large or interrupted transfers:</p><ul>
 <li>completed accumulates bytes across multiple backend invocations</li>
 <li>Remaining data: send_buf + completed, length (len - completed)</li>
@@ -226,12 +227,11 @@ Partial Transfer Support</h2>
 <div class="line">    }</div>
 <div class="line">  }</div>
 <div class="line">}</div>
-<div class="ttc" id="astructAsyncRequest_html"><div class="ttname"><a href="structAsyncRequest.html">AsyncRequest</a></div><div class="ttdoc">Internal structure for tracking asynchronous I/O requests.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00112">SocketAsync-private.h:113</a></div></div>
-<div class="ttc" id="astructAsyncRequest_html_a1e4187db497a0c1a6a5bfc33c3263922"><div class="ttname"><a href="structAsyncRequest.html#a1e4187db497a0c1a6a5bfc33c3263922">AsyncRequest::request_id</a></div><div class="ttdeci">unsigned request_id</div><div class="ttdoc">Unique request identifier.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00121">SocketAsync-private.h:121</a></div></div>
-<div class="ttc" id="astructAsyncRequest_html_a97ce18b35bfe90ed417444a26204ae42"><div class="ttname"><a href="structAsyncRequest.html#a97ce18b35bfe90ed417444a26204ae42">AsyncRequest::completed</a></div><div class="ttdeci">size_t completed</div><div class="ttdoc">Bytes transferred so far in this request.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00202">SocketAsync-private.h:202</a></div></div>
-<div class="ttc" id="astructAsyncRequest_html_aad2756b33edeb735ce95bdf649436557"><div class="ttname"><a href="structAsyncRequest.html#aad2756b33edeb735ce95bdf649436557">AsyncRequest::len</a></div><div class="ttdeci">size_t len</div><div class="ttdoc">Original requested transfer length.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00186">SocketAsync-private.h:186</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md494"></a>
-Timeout Integration</h2>
+<div class="ttc" id="astructAsyncRequest_html"><div class="ttname"><a href="structAsyncRequest.html">AsyncRequest</a></div><div class="ttdoc">Internal structure for tracking asynchronous I/O requests.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00120">SocketAsync-private.h:121</a></div></div>
+<div class="ttc" id="astructAsyncRequest_html_a1e4187db497a0c1a6a5bfc33c3263922"><div class="ttname"><a href="structAsyncRequest.html#a1e4187db497a0c1a6a5bfc33c3263922">AsyncRequest::request_id</a></div><div class="ttdeci">unsigned request_id</div><div class="ttdoc">Unique request identifier.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00129">SocketAsync-private.h:129</a></div></div>
+<div class="ttc" id="astructAsyncRequest_html_a97ce18b35bfe90ed417444a26204ae42"><div class="ttname"><a href="structAsyncRequest.html#a97ce18b35bfe90ed417444a26204ae42">AsyncRequest::completed</a></div><div class="ttdeci">size_t completed</div><div class="ttdoc">Bytes transferred so far in this request.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00215">SocketAsync-private.h:215</a></div></div>
+<div class="ttc" id="astructAsyncRequest_html_aad2756b33edeb735ce95bdf649436557"><div class="ttname"><a href="structAsyncRequest.html#aad2756b33edeb735ce95bdf649436557">AsyncRequest::len</a></div><div class="ttdeci">size_t len</div><div class="ttdoc">Original requested transfer length.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00198">SocketAsync-private.h:198</a></div></div>
+</div><!-- fragment --><p>Timeout Integration</p>
 <p>submitted_at enables per-request timeouts: </p><div class="fragment"><div class="line">int64_t now = <a class="code hl_function" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a>();</div>
 <div class="line">int64_t age_ms = now - req-&gt;<a class="code hl_variable" href="structAsyncRequest.html#a92413df1e46f462915a2f6bfb4b68793">submitted_at</a>;</div>
 <div class="line"><span class="keywordflow">if</span> (age_ms &gt; REQUEST_TIMEOUT_MS) {</div>
@@ -240,8 +240,8 @@ Timeout Integration</h2>
 <div class="line">}</div>
 <div class="ttc" id="agroup__async__io_html_ga275aefb76cdeb48b9b9330a777a2bb8c"><div class="ttname"><a href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a></div><div class="ttdeci">int SocketAsync_cancel(SocketAsync_T async, unsigned request_id)</div><div class="ttdoc">Cancel a pending asynchronous I/O operation by request ID.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga264bfa9d1cf07aa22446a4df6c4936bf"><div class="ttname"><a href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a></div><div class="ttdeci">int64_t Socket_get_monotonic_ms(void)</div><div class="ttdoc">Socket_get_monotonic_ms - Get current monotonic time in milliseconds.</div></div>
-<div class="ttc" id="astructAsyncRequest_html_a92413df1e46f462915a2f6bfb4b68793"><div class="ttname"><a href="structAsyncRequest.html#a92413df1e46f462915a2f6bfb4b68793">AsyncRequest::submitted_at</a></div><div class="ttdeci">int64_t submitted_at</div><div class="ttdoc">Monotonic timestamp of request submission (milliseconds).</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00219">SocketAsync-private.h:219</a></div></div>
-</div><!-- fragment --><dl class="section user"><dt>Complexity\n </dt><dd><ul>
+<div class="ttc" id="astructAsyncRequest_html_a92413df1e46f462915a2f6bfb4b68793"><div class="ttname"><a href="structAsyncRequest.html#a92413df1e46f462915a2f6bfb4b68793">AsyncRequest::submitted_at</a></div><div class="ttdeci">int64_t submitted_at</div><div class="ttdoc">Monotonic timestamp of request submission (milliseconds).</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00232">SocketAsync-private.h:232</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n</dt><dd><ul>
 <li>Allocation: O(1) arena alloc</li>
 <li>Hash operations: O(1) avg, O(n) worst (collisions)</li>
 <li>Lookup/removal: Same as hash</li>
@@ -265,7 +265,7 @@ socket_async_allocate_request() / socket_async_free_request() internal helpers <
 <dd>
 handle_completion() for processing logic </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00112">112</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00120">120</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="ab9d05308faa0dbde36947041cae9b557" name="ab9d05308faa0dbde36947041cae9b557"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab9d05308faa0dbde36947041cae9b557">&#9670;&#160;</a></span>AsyncRequestType</h2>
@@ -288,7 +288,7 @@ handle_completion() for processing logic </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00151">151</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00161">161</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -308,7 +308,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Completion callback function. </p>
 <p>Invoked upon operation completion or error, from poll context. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9" title="Completion callback invoked when an async I/O operation finishes.">SocketAsync_Callback</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00137">137</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00146">146</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -330,7 +330,7 @@ handle_completion() for processing logic </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Enables future SocketAsync_send_continue() and SocketAsync_recv_continue() for automatic handling without application offset tracking. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketAsync_send_continue() (planned) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00202">202</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00215">215</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -349,7 +349,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Operation flags. </p>
 <p>Controls backend behavior (e.g., zero-copy, priority). </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf" title="Bit flags to control behavior of asynchronous I/O operations.">SocketAsync_Flags</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00227">227</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00240">240</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -368,7 +368,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Original requested transfer length. </p>
 <p>Total bytes to send/recv as submitted by caller. Used to track partial completions. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00186">186</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00198">198</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -387,7 +387,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Pointer to next request in hash chain. </p>
 <p>For collision resolution in requests[] hash table. </p><dl class="section see"><dt>See also</dt><dd>request_hash() </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00235">235</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00248">248</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -406,7 +406,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Output buffer for recv operations. </p>
 <p>Buffer to receive data into (REQ_RECV only). Must remain valid until callback invocation. Data is written here by kernel or driver. </p><dl class="section warning"><dt>Warning</dt><dd>Do not access or free until callback completes the request. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00178">178</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00190">190</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -425,7 +425,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Unique request identifier. </p>
 <p>Assigned sequentially by SocketAsync_new_request_id(). Used for cancellation via <a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c" title="Cancel a pending asynchronous I/O operation by request ID.">SocketAsync_cancel()</a> and internal hashing. 0 is invalid. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00121">121</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00129">129</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +444,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Input buffer for send operations. </p>
 <p>Pointer to data to send (REQ_SEND only). Must remain valid and unmodified until callback. </p><dl class="section note"><dt>Note</dt><dd>For zero-copy modes, this may reference file mappings or other kernel-accessible memory. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00169">169</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00181">181</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -463,7 +463,7 @@ handle_completion() for processing logic </dd></dl>
 <p>Socket associated with this request. </p>
 <p>The target socket for the I/O operation. Must remain valid until completion. </p><dl class="section see"><dt>See also</dt><dd>Socket_T </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00129">129</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00138">138</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -491,7 +491,7 @@ handle_completion() for processing logic </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga199880a57fe7bebb439b5d1f1aa967c7" title="Calculate remaining time until deadline.">SocketTimeout_remaining_ms()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00219">219</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00232">232</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>
@@ -524,7 +524,7 @@ handle_completion() for processing logic </dd></dl>
 <p>User data passed to the callback. </p>
 <p>Opaque data provided by caller, forwarded unchanged to <a class="el" href="structAsyncRequest.html#a12f4e9eea9831ce68a7d5fe3f2d95299" title="Completion callback function.">cb()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00144">144</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketAsync-private_8h_source.html#l00153">153</a> of file <a class="el" href="SocketAsync-private_8h_source.html">SocketAsync-private.h</a>.</p>
 
 </div>
 </div>

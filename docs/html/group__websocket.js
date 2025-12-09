@@ -82,7 +82,7 @@ var group__websocket =
       [ "ping_interval_ms", "group__websocket.html#a376fe666ac3f3654087792edae1ce054", null ],
       [ "ping_timeout_ms", "group__websocket.html#a4ca65b7722835ec62374763fa625596f", null ],
       [ "role", "group__websocket.html#aa895fa89617603768d89d043b41b3bc9", null ],
-      [ "subprotocols", "group__websocket.html#a72bb5bfa2a49c7bdd770303635e0e49d", null ],
+      [ "subprotocols", "group__websocket.html#a2ff17028ab5d54be79108495bf1c4512", null ],
       [ "validate_utf8", "group__websocket.html#a1873fe17fa2f2d2d3c0d16cbfbcfc3f1", null ]
     ] ],
     [ "SocketWS_Frame", "group__websocket.html#structSocketWS__Frame", [

@@ -168,7 +168,7 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga3cb9ba239e5a623795bae1ddfd084201" id="r_ga3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, void *userdata)</td></tr>
+<tr class="memitem:ga3cb9ba239e5a623795bae1ddfd084201" id="r_ga3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td></tr>
 <tr class="separator:ga3cb9ba239e5a623795bae1ddfd084201"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -224,7 +224,7 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaf69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:gaf69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if error code is retryable.  <br /></td></tr>
 <tr class="separator:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaad5ad81c60bb230588b5f660a834f40e" id="r_gaad5ad81c60bb230588b5f660a834f40e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a> (<a class="el" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
@@ -347,7 +347,7 @@ Functions</h2></td></tr>
 <tr class="memitem:gac8680d78a9d70c7662d39466c63aab72" id="r_gac8680d78a9d70c7662d39466c63aab72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a> (SocketHTTPClient_T client)</td></tr>
 <tr class="memdesc:gac8680d78a9d70c7662d39466c63aab72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get last error code.  <br /></td></tr>
 <tr class="separator:gac8680d78a9d70c7662d39466c63aab72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:ga859120de13b0764564f3c1ce111b3379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
 <tr class="separator:ga859120de13b0764564f3c1ce111b3379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -380,29 +380,38 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Public API for the HTTP client module, including types, functions, and configuration. </p>
-<p>This header defines the high-level interface for HTTP requests and responses. See module brief for features and <a class="el" href="group__http__client.html">group documentation</a> for details.</p>
-<p>Provides a robust HTTP client supporting HTTP/1.1 and HTTP/2 with advanced features:</p><ul>
-<li><a class="el" href="group__connection__mgmt.html">Connection pooling</a> with per-host limits and idle timeouts</li>
-<li>Automatic protocol negotiation via ALPN (h2 preferred)</li>
-<li>RFC 6265 cookie handling with SameSite support</li>
-<li>Multiple authentication schemes: Basic (RFC 7617), Digest (RFC 7616), Bearer (RFC 6750)</li>
-<li>Compression support: Accept gzip/deflate/brotli with auto-decompression</li>
-<li>Configurable redirect following with loop detection</li>
-<li>Synchronous and asynchronous APIs with event integration</li>
-<li>Integration with <a class="el" href="group__security.html">TLS</a> for HTTPS (OpenSSL/LibreSSL)</li>
-<li>Proxy support via <a class="el" href="group__core__io.html">SocketProxy</a></li>
-</ul>
-<p>Underlying dependencies:</p><ul>
-<li><a class="el" href="group__http.html">SocketHTTP</a> / SocketHTTP1 / SocketHTTP2 for protocol handling</li>
-<li><a class="el" href="group__async__io.html">SocketHappyEyeballs</a> for IPv6-preferred connections</li>
-<li>SocketDNS for async resolution</li>
-<li><a class="el" href="group__foundation.html">Arena</a> for memory management</li>
-</ul>
-<p>Thread safety: Instances are NOT thread-safe. Use one per thread or synchronize externally.</p>
-<p>Platform: POSIX (Linux/BSD/macOS), requires pthread. TLS optional via CMake -DENABLE_TLS=ON.</p>
-<p>Example usage: </p><div class="fragment"></div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html">HTTP Client Module</a> for full API reference. </dd>
-<dd>
-<a class="el" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205" title="Create new HTTP client instance.">SocketHTTPClient_new()</a> for instantiation. </dd>
+<p>This header defines the high-level interface for HTTP requests and responses. See module brief for features and <a class="el" href="group__http__client.html">group</a>documentation" for details.
+
+Provides a robust HTTP client supporting HTTP/1.1 and HTTP/2 with advanced
+features:
+- @ref connection_mgmt "<a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> pooling" with per-host limits and idle
+timeouts
+- Automatic protocol negotiation via ALPN (h2 preferred)
+- RFC 6265 cookie handling with SameSite support
+- Multiple authentication schemes: Basic (RFC 7617), Digest (RFC 7616),
+Bearer (RFC 6750)
+- Compression support: Accept gzip/deflate/brotli with auto-decompression
+- Configurable redirect following with loop detection
+- Synchronous and asynchronous APIs with event integration
+- Integration with @ref security "TLS" for HTTPS (OpenSSL/LibreSSL)
+- Proxy support via @ref core_io "SocketProxy"
+
+Underlying dependencies:
+- @ref http "SocketHTTP" / SocketHTTP1 / SocketHTTP2 for protocol handling
+- @ref async_io "SocketHappyEyeballs" for IPv6-preferred connections
+- @ref core_io::dns "SocketDNS" for async resolution
+- @ref foundation "Arena" for memory management
+
+Thread safety: Instances are NOT thread-safe. Use one per thread or
+synchronize externally.
+
+Platform: POSIX (Linux/BSD/macOS), requires pthread. TLS optional via CMake
+-DENABLE_TLS=ON.
+
+Example usage:
+@include examples/http_get.c
+
+@see @ref http_client "HTTP Client Module" for full API reference. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205" title="Create new HTTP client instance.">SocketHTTPClient_new()</a> for instantiation. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gafef425814e66932f7cf1f36e9356b70e" title="Perform synchronous GET request.">SocketHTTPClient_get()</a> / <a class="el" href="group__http__client.html#ga887d2e7f1b676b7a1bd44de4a2964e03" title="Start async GET.">SocketHTTPClient_get_async()</a> for requests. </dd>
 <dd>

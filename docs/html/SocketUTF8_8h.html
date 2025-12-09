@@ -202,16 +202,16 @@ Functions</h2></td></tr>
 <tr class="memitem:ga409d0ca4c468b8ca69e7b3b75c58841d" id="r_ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a> (const char *str)</td></tr>
 <tr class="memdesc:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate a null-terminated C string as UTF-8.  <br /></td></tr>
 <tr class="separator:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga63e171e87998e78fb1398213e4ebc9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize UTF-8 incremental validation state.  <br /></td></tr>
 <tr class="separator:ga63e171e87998e78fb1398213e4ebc9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>, const unsigned char *data, size_t len)</td></tr>
+<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state, const unsigned char *data, size_t len)</td></tr>
 <tr class="memdesc:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a chunk of data through incremental UTF-8 validator.  <br /></td></tr>
 <tr class="separator:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalize incremental UTF-8 validation and check completeness.  <br /></td></tr>
 <tr class="separator:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga46408361a51a348e46420dfeeb3cca5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset incremental validator state for reuse.  <br /></td></tr>
 <tr class="separator:ga46408361a51a348e46420dfeeb3cca5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1563bde34c7c6e25d605d3d4d64ca103" id="r_ga1563bde34c7c6e25d605d3d4d64ca103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103">SocketUTF8_codepoint_len</a> (uint32_t codepoint)</td></tr>
@@ -254,71 +254,73 @@ Variables</h2></td></tr>
 <li>Prevents canonical equivalence attacks and decoding bombs</li>
 <li>Thread-safe pure functions (no globals)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md235"></a>
+<h2><a class="anchor" id="autotoc_md223"></a>
 Usage Examples</h2>
-<h3><a class="anchor" id="autotoc_md236"></a>
+<h3><a class="anchor" id="autotoc_md224"></a>
 One-Shot Validation (Complete Buffers)</h3>
-<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketUTF8_8h.html">core/SocketUTF8.h</a>&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
-<div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
+<div class="fragment"><div class="line"><span class="preprocessor">  #include &quot;<a class="code" href="SocketUTF8_8h.html">core/SocketUTF8.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">  #include &lt;stdio.h&gt;</span></div>
+<div class="line"><span class="preprocessor">  #include &lt;string.h&gt;</span></div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>() {</div>
-<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *valid = <span class="stringliteral">&quot;Valid UTF-8: café, 世界, 😊&quot;</span>;</div>
-<div class="line">    <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a>(valid);</div>
-<div class="line">    <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
-<div class="line">        <span class="keywordtype">size_t</span> cps;</div>
-<div class="line">        <a class="code hl_function" href="group__utilities.html#ga473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a>((<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)valid, strlen(valid), &amp;cps);</div>
-<div class="line">        printf(<span class="stringliteral">&quot;Valid, %zu code points\n&quot;</span>, cps);</div>
-<div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        printf(<span class="stringliteral">&quot;Invalid: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
-<div class="line">    }</div>
-<div class="line">    <span class="keywordflow">return</span> 0;</div>
-<div class="line">}</div>
+<div class="line">  <span class="keywordtype">int</span> <a class="code hl_function" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a>() {</div>
+<div class="line">      <span class="keyword">const</span> <span class="keywordtype">char</span> *valid = <span class="stringliteral">&quot;Valid UTF-8: café, 世界, 😊&quot;</span>;</div>
+<div class="line">      <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a>(valid);</div>
+<div class="line">      <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
+<div class="line">          <span class="keywordtype">size_t</span> cps;</div>
+<div class="line">          <a class="code hl_function" href="group__utilities.html#ga473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a>((<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)valid,</div>
+<div class="line">strlen(valid), &amp;cps);</div>
+<div class="line">          printf(<span class="stringliteral">&quot;Valid, %zu code points\n&quot;</span>, cps);</div>
+<div class="line">      } <span class="keywordflow">else</span> {</div>
+<div class="line">          printf(<span class="stringliteral">&quot;Invalid: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
+<div class="line">      }</div>
+<div class="line">      <span class="keywordflow">return</span> 0;</div>
+<div class="line">  }</div>
 <div class="ttc" id="aSocketUTF8_8h_html"><div class="ttname"><a href="SocketUTF8_8h.html">SocketUTF8.h</a></div><div class="ttdoc">Strict UTF-8 validation and encoding utilities.</div></div>
-<div class="ttc" id="agraceful__shutdown_8c_html_a0ddf1224851353fc92bfbff6f499fa97"><div class="ttname"><a href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a></div><div class="ttdeci">int main(int argc, char *argv[])</div><div class="ttdef"><b>Definition</b> <a href="graceful__shutdown_8c_source.html#l00235">graceful_shutdown.c:235</a></div></div>
+<div class="ttc" id="agraceful__shutdown_8c_html_a0ddf1224851353fc92bfbff6f499fa97"><div class="ttname"><a href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a></div><div class="ttdeci">int main(int argc, char *argv[])</div><div class="ttdef"><b>Definition</b> <a href="graceful__shutdown_8c_source.html#l00241">graceful_shutdown.c:241</a></div></div>
 <div class="ttc" id="agroup__utilities_html_ga305b150f1e0b525b236bf0a8952c5315"><div class="ttname"><a href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a></div><div class="ttdeci">const char * SocketUTF8_result_string(SocketUTF8_Result result)</div><div class="ttdoc">Retrieve descriptive string for a UTF-8 validation result code.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga409d0ca4c468b8ca69e7b3b75c58841d"><div class="ttname"><a href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_validate_str(const char *str)</div><div class="ttdoc">Validate a null-terminated C string as UTF-8.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga473245344234f9352a2b968201d39634"><div class="ttname"><a href="group__utilities.html#ga473245344234f9352a2b968201d39634">SocketUTF8_count_codepoints</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_count_codepoints(const unsigned char *data, size_t len, size_t *count)</div><div class="ttdoc">Count the number of Unicode code points in a UTF-8 buffer while validating.</div></div>
-<div class="ttc" id="agroup__utilities_html_gae8b6c527962e3019992746f49aac247b"><div class="ttname"><a href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a></div><div class="ttdeci">SocketUTF8_Result</div><div class="ttdoc">Enumeration of UTF-8 validation results.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00215">SocketUTF8.h:216</a></div></div>
-<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a></div><div class="ttdeci">@ UTF8_VALID</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00217">SocketUTF8.h:217</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md237"></a>
+<div class="ttc" id="agroup__utilities_html_gae8b6c527962e3019992746f49aac247b"><div class="ttname"><a href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a></div><div class="ttdeci">SocketUTF8_Result</div><div class="ttdoc">Enumeration of UTF-8 validation results.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00230">SocketUTF8.h:231</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a></div><div class="ttdeci">@ UTF8_VALID</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00232">SocketUTF8.h:232</a></div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md225"></a>
 Incremental Validation (Streaming)</h3>
-<div class="fragment"><div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> <a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>;</div>
-<div class="line"><a class="code hl_function" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>);</div>
-<div class="line"><span class="comment">// Simulate chunks from network/file</span></div>
-<div class="line"><span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *chunks[] = { (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;Hello&quot;</span>, (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot; &quot;</span>, (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;World 你好&quot;</span> };</div>
-<div class="line"><span class="keywordtype">int</span> num_chunks = 3;</div>
-<div class="line"><a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res;</div>
-<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_chunks; ++i) {</div>
-<div class="line">    <span class="keywordtype">size_t</span> chunk_len = strlen((<span class="keyword">const</span> <span class="keywordtype">char</span>*)chunks[i]);</div>
-<div class="line">    res = <a class="code hl_function" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>, chunks[i], chunk_len);</div>
-<div class="line">    <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> &amp;&amp; res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>) {</div>
-<div class="line">        <span class="comment">// Handle error</span></div>
-<div class="line">        <span class="keywordflow">break</span>;</div>
-<div class="line">    }</div>
-<div class="line">}</div>
-<div class="line">res = <a class="code hl_function" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>);</div>
-<div class="line"><span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
-<div class="line">    <span class="comment">// Stream valid</span></div>
-<div class="line">}</div>
-<div class="ttc" id="aSocketHappyEyeballs-private_8h_html_a701136b6320d53560cfe228535884502"><div class="ttname"><a href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a></div><div class="ttdeci">SocketHE_AttemptState state</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00151">SocketHappyEyeballs-private.h:151</a></div></div>
+<div class="fragment"><div class="line">  <a class="code hl_struct" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> state;</div>
+<div class="line">  <a class="code hl_function" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a>(&amp;state);</div>
+<div class="line">  <span class="comment">// Simulate chunks from network/file</span></div>
+<div class="line">  <span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *chunks[] = { (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;Hello&quot;</span>, (<span class="keyword">const</span></div>
+<div class="line"><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot; &quot;</span>, (<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)<span class="stringliteral">&quot;World 你好&quot;</span> };</div>
+<div class="line">  <span class="keywordtype">int</span> num_chunks = 3;</div>
+<div class="line">  <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res;</div>
+<div class="line">  <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; num_chunks; ++i) {</div>
+<div class="line">      <span class="keywordtype">size_t</span> chunk_len = strlen((<span class="keyword">const</span> <span class="keywordtype">char</span>*)chunks[i]);</div>
+<div class="line">      res = <a class="code hl_function" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a>(&amp;state, chunks[i], chunk_len);</div>
+<div class="line">      <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> &amp;&amp; res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>) {</div>
+<div class="line">          <span class="comment">// Handle error</span></div>
+<div class="line">          <span class="keywordflow">break</span>;</div>
+<div class="line">      }</div>
+<div class="line">  }</div>
+<div class="line">  res = <a class="code hl_function" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a>(&amp;state);</div>
+<div class="line">  <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
+<div class="line">      <span class="comment">// Stream valid</span></div>
+<div class="line">  }</div>
 <div class="ttc" id="agroup__utilities_html_ga388818b9081b6d4f7ad496c6f4a364ad"><div class="ttname"><a href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_finish(const SocketUTF8_State *state)</div><div class="ttdoc">Finalize incremental UTF-8 validation and check completeness.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga63e171e87998e78fb1398213e4ebc9a5"><div class="ttname"><a href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a></div><div class="ttdeci">void SocketUTF8_init(SocketUTF8_State *state)</div><div class="ttdoc">Initialize UTF-8 incremental validation state.</div></div>
 <div class="ttc" id="agroup__utilities_html_gac7bf6c0717c79f93d931fcd50bf04b60"><div class="ttname"><a href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_update(SocketUTF8_State *state, const unsigned char *data, size_t len)</div><div class="ttdoc">Process a chunk of data through incremental UTF-8 validator.</div></div>
-<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a></div><div class="ttdeci">@ UTF8_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00219">SocketUTF8.h:219</a></div></div>
-<div class="ttc" id="agroup__utilities_html_structSocketUTF8__State"><div class="ttname"><a href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a></div><div class="ttdoc">State structure for incremental UTF-8 validation.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00334">SocketUTF8.h:335</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md238"></a>
+<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a></div><div class="ttdeci">@ UTF8_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00234">SocketUTF8.h:234</a></div></div>
+<div class="ttc" id="agroup__utilities_html_structSocketUTF8__State"><div class="ttname"><a href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a></div><div class="ttdoc">State structure for incremental UTF-8 validation.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00357">SocketUTF8.h:358</a></div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md226"></a>
 Encoding a Code Point</h3>
-<div class="fragment"><div class="line">uint32_t emoji = 0x1F600;  <span class="comment">// 😀</span></div>
-<div class="line"><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> utf8[4];</div>
-<div class="line"><span class="keywordtype">int</span> bytes = <a class="code hl_function" href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a>(emoji, utf8);</div>
-<div class="line"><span class="keywordflow">if</span> (bytes &gt; 0) {</div>
-<div class="line">    <span class="comment">// utf8 now contains F0 9F 98 80 (valid 4-byte sequence)</span></div>
-<div class="line">    <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> check = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>(utf8, bytes);  <span class="comment">// Should be VALID</span></div>
-<div class="line">}</div>
+<div class="fragment"><div class="line">  uint32_t emoji = 0x1F600;  <span class="comment">// 😀</span></div>
+<div class="line">  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> utf8[4];</div>
+<div class="line">  <span class="keywordtype">int</span> bytes = <a class="code hl_function" href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a>(emoji, utf8);</div>
+<div class="line">  <span class="keywordflow">if</span> (bytes &gt; 0) {</div>
+<div class="line">      <span class="comment">// utf8 now contains F0 9F 98 80 (valid 4-byte sequence)</span></div>
+<div class="line">      <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> check = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>(utf8, bytes);  <span class="comment">// Should</span></div>
+<div class="line">be VALID</div>
+<div class="line">  }</div>
 <div class="ttc" id="agroup__utilities_html_ga0d7d4a24b88fb2a7add5dce1a5ffdecf"><div class="ttname"><a href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf">SocketUTF8_encode</a></div><div class="ttdeci">int SocketUTF8_encode(uint32_t codepoint, unsigned char *output)</div><div class="ttdoc">Encode a single Unicode code point into UTF-8 bytes.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga68491b1f63c513ccc96a83a14d069e7b"><div class="ttname"><a href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_validate(const unsigned char *data, size_t len)</div><div class="ttdoc">Perform one-shot validation of complete UTF-8 data buffer.</div></div>
-</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html">Core Foundation Modules</a> for related <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a> (e.g., Except, Arena <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> needed). </dd>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html">Core Foundation Modules</a> for related <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a> (e.g., Except, Arena if needed). </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> primary one-shot entry point. </dd>
 <dd>

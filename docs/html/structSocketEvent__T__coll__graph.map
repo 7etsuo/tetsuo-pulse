@@ -1,11 +1,5 @@
 <map id="SocketEvent_T" name="SocketEvent_T">
-<area shape="rect" id="Node000001" title="Event notification structure returned by polling operations." alt="" coords="101,269,213,295"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="117,181,196,207"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,221,159,269,154,269,154,221"/>
-<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,133,159,181,154,181,154,133"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
+<area shape="rect" id="Node000001" title="Event notification structure returned by polling operations." alt="" coords="5,93,117,119"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="22,5,101,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="64,45,64,93,59,93,59,45"/>
 </map>

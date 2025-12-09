@@ -768,4 +768,6 @@ extern int backend_get_event (const PollBackend_T backend, int index,
  */
 extern const char *backend_name (void);
 
+/** @} */
+
 #endif /* SOCKETPOLL_BACKEND_INCLUDED */

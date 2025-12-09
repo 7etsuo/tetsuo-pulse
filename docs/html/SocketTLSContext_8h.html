@@ -345,36 +345,37 @@ Variables</h2></td></tr>
 <li>Advanced: OCSP stapling, certificate pinning (SPKI), Certificate Transparency (CT), CRL auto-refresh</li>
 </ul>
 <p>Thread safety: Contexts are not thread-safe for modification after creation. Share read-only after full setup, or use per-thread contexts. SSL objects created from context are per-connection and thread-safe.</p>
-<h2><a class="anchor" id="autotoc_md789"></a>
+<h2><a class="anchor" id="autotoc_md578"></a>
 Platform Requirements</h2>
 <ul>
 <li>OpenSSL 1.1.1+ or LibreSSL (TLS1.3, OCSP, CT)</li>
 <li>POSIX system with threads (pthreads)</li>
 <li>File system access for cert/CA/CRL loading</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md790"></a>
+<h2><a class="anchor" id="autotoc_md579"></a>
 Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md791"></a>
+<h3><a class="anchor" id="autotoc_md580"></a>
 Server Context</h3>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
-<div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx = <a class="code hl_function" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a>(<span class="stringliteral">&quot;server.crt&quot;</span>, <span class="stringliteral">&quot;server.key&quot;</span>, <span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
+<div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx = <a class="code hl_function" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a>(<span class="stringliteral">&quot;server.crt&quot;</span>,</div>
+<div class="line"><span class="stringliteral">&quot;server.key&quot;</span>, <span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
 <div class="line">    <span class="comment">// Optional: SocketTLSContext_load_crl(ctx, &quot;crl-dir/&quot;);</span></div>
-<div class="line">    <span class="comment">// Optional: SocketTLSContext_add_pin_from_cert(ctx, &quot;backup-server.crt&quot;);</span></div>
-<div class="line">    <a class="code hl_function" href="group__security.html#ga414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a>(ctx);</div>
+<div class="line">    <span class="comment">// Optional: SocketTLSContext_add_pin_from_cert(ctx,</span></div>
+<div class="line"><span class="stringliteral">&quot;backup-server.crt&quot;</span>); <a class="code hl_function" href="group__security.html#ga414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a>(ctx);</div>
 <div class="line">    <span class="comment">// Apply to listening socket</span></div>
 <div class="line">    <a class="code hl_function" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a>(server_sock, ctx);</div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__security.html#gabc011202dd4f2e080b6ea8eb0f24287e">SocketTLS_Failed</a>) {</div>
 <div class="line">    <span class="comment">// Handle error: invalid cert, OpenSSL init fail</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
 <div class="ttc" id="agroup__security_html_ga414fb627189037256afd8c4e015b74d1"><div class="ttname"><a href="group__security.html#ga414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a></div><div class="ttdeci">void SocketTLSContext_enable_ocsp_stapling(SocketTLSContext_T ctx)</div><div class="ttdoc">Enable OCSP stapling request (client).</div></div>
 <div class="ttc" id="agroup__security_html_ga79a403f2f54f21c90a92e9cb73e24cbc"><div class="ttname"><a href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div><div class="ttdoc">Create server TLS context with cert/key.</div></div>
 <div class="ttc" id="agroup__security_html_gab9a8fb788aa1f0d21b5773bc43a48d6f"><div class="ttname"><a href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a></div><div class="ttdeci">void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)</div><div class="ttdoc">Enable TLS on a socket using the provided context.</div></div>
 <div class="ttc" id="agroup__security_html_gabc011202dd4f2e080b6ea8eb0f24287e"><div class="ttname"><a href="group__security.html#gabc011202dd4f2e080b6ea8eb0f24287e">SocketTLS_Failed</a></div><div class="ttdeci">const Except_T SocketTLS_Failed</div><div class="ttdoc">General TLS operation failure.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00678">SocketTLS-private.h:679</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md792"></a>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md581"></a>
 Client Context with Pinning</h3>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx = <a class="code hl_function" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a>(<span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
@@ -397,11 +398,11 @@ Client Context with Pinning</h3>
 <div class="ttc" id="agroup__security_html_ga8a972b0da962c5515936444b6921182d"><div class="ttname"><a href="group__security.html#ga8a972b0da962c5515936444b6921182d">SocketTLSContext_set_pin_enforcement</a></div><div class="ttdeci">void SocketTLSContext_set_pin_enforcement(SocketTLSContext_T ctx, int enforce)</div><div class="ttdoc">Set pin enforcement mode.</div></div>
 <div class="ttc" id="agroup__security_html_gaf27bede9402c6c8c7541143e019c635f"><div class="ttname"><a href="group__security.html#gaf27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a></div><div class="ttdeci">void SocketTLSContext_enable_ct(SocketTLSContext_T ctx, CTValidationMode mode)</div><div class="ttdoc">Enable Certificate Transparency verification.</div></div>
 <div class="ttc" id="agroup__security_html_gafd50881da0db97098204ff6fa920bb26"><div class="ttname"><a href="group__security.html#gafd50881da0db97098204ff6fa920bb26">SocketTLSContext_add_pin_hex</a></div><div class="ttdeci">void SocketTLSContext_add_pin_hex(SocketTLSContext_T ctx, const char *hex_hash)</div><div class="ttdoc">Add SPKI SHA256 pin (hex string).</div></div>
-<div class="ttc" id="agroup__security_html_gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"><div class="ttname"><a href="group__security.html#gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a></div><div class="ttdeci">@ CT_VALIDATION_STRICT</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l01163">SocketTLSContext.h:1162</a></div></div>
+<div class="ttc" id="agroup__security_html_gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"><div class="ttname"><a href="group__security.html#gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a></div><div class="ttdeci">@ CT_VALIDATION_STRICT</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l01228">SocketTLSContext.h:1227</a></div></div>
 </div><!-- fragment --><dl class="section warning"><dt>Warning</dt><dd>Always load trusted CAs; disabling verification (TLS_VERIFY_NONE) exposes to MITM </dd>
 <dd>
 Configure pins before production; test with <a class="el" href="group__security.html#gac051204c676250b114e00af223055686" title="Check if hash matches any pin.">SocketTLSContext_verify_pin()</a> </dd></dl>
-<dl class="section user"><dt>Complexity\n Context creation O(1) + cert parse time; verification O(chain length)</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n Context creation O(1) + cert parse time; verification O(chain</dt><dd>length)</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc" title="Create server TLS context with cert/key.">SocketTLSContext_new_server()</a> for server setup </dd>
 <dd>
 <a class="el" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022" title="Create client TLS context.">SocketTLSContext_new_client()</a> for client setup </dd>
@@ -425,7 +426,7 @@ Configure pins before production; test with <a class="el" href="group__security.
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">

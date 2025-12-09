@@ -113,8 +113,7 @@ $(document).ready(function(){initNavTree('SocketHappyEyeballs-private_8h.html','
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#enum-members">Enumerations</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#enum-members">Enumerations</a>  </div>
   <div class="headertitle"><div class="title">SocketHappyEyeballs-private.h File Reference<div class="ingroups"><a class="el" href="group__async__io.html">Async I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -142,8 +141,13 @@ $(document).ready(function(){initNavTree('SocketHappyEyeballs-private_8h.html','
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
+<tr class="memitem:structSocketHE__AddressEntry__T" id="r_structSocketHE__AddressEntry__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketHE__AddressEntry__T">SocketHE_AddressEntry_T</a></td></tr>
+<tr class="memdesc:structSocketHE__AddressEntry__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single connection attempt structure in Happy Eyeballs racing.  <a href="group__async__io.html#structSocketHE__AddressEntry__T">More...</a><br /></td></tr>
+<tr class="separator:structSocketHE__AddressEntry__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketHE__Attempt__T" id="r_structSocketHE__Attempt__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#structSocketHE__Attempt__T">SocketHE_Attempt_T</a></td></tr>
+<tr class="separator:structSocketHE__Attempt__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketHE__T" id="r_structSocketHE__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketHE__T">SocketHE_T</a></td></tr>
-<tr class="memdesc:structSocketHE__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main opaque context for Happy Eyeballs (RFC 8305) dual-stack connection racing.  <a href="group__async__io.html#structSocketHE__T">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketHE__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper structure for resolved addresses in Happy Eyeballs address preference ordering.  <a href="group__async__io.html#structSocketHE__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketHE__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -154,6 +158,9 @@ Macros</h2></td></tr>
 <tr class="memitem:gaa146f664c1a8f3c05b5aa72766bc9c90" id="r_gaa146f664c1a8f3c05b5aa72766bc9c90"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gaa146f664c1a8f3c05b5aa72766bc9c90">SOCKET_HE_ERROR_BUFSIZE</a>&#160;&#160;&#160;256</td></tr>
 <tr class="memdesc:gaa146f664c1a8f3c05b5aa72766bc9c90"><td class="mdescLeft">&#160;</td><td class="mdescRight">Size of internal error message buffer in bytes.  <br /></td></tr>
 <tr class="separator:gaa146f664c1a8f3c05b5aa72766bc9c90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabbef7b94e157f9c32222e8176b395da4" id="r_gabbef7b94e157f9c32222e8176b395da4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gabbef7b94e157f9c32222e8176b395da4">HE_FOREACH_ATTEMPT</a>(he,  iter)&#160;&#160;&#160;  for (<a class="el" href="SocketHappyEyeballs-private_8h.html#structSocketHE__Attempt__T">SocketHE_Attempt_T</a> *iter = (he)-&gt;attempts; iter; iter = iter-&gt;next)</td></tr>
+<tr class="memdesc:gabbef7b94e157f9c32222e8176b395da4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safe iteration macro over linked list of connection attempts.  <br /></td></tr>
+<tr class="separator:gabbef7b94e157f9c32222e8176b395da4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -169,29 +176,6 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ga9ceb0606fea5b72366bbd21ff047c84f"><td class="mdescLeft">&#160;</td><td class="mdescRight">State enumeration for individual Happy Eyeballs connection attempts.  <a href="group__async__io.html#ga9ceb0606fea5b72366bbd21ff047c84f">More...</a><br /></td></tr>
 <tr class="separator:ga9ceb0606fea5b72366bbd21ff047c84f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:gabf6dc3901a5139f2f7f093db3003b798" id="r_gabf6dc3901a5139f2f7f093db3003b798"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gabf6dc3901a5139f2f7f093db3003b798">addr</a></td></tr>
-<tr class="memdesc:gabf6dc3901a5139f2f7f093db3003b798"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single connection attempt structure in Happy Eyeballs racing.  <br /></td></tr>
-<tr class="separator:gabf6dc3901a5139f2f7f093db3003b798"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a701136b6320d53560cfe228535884502" id="r_a701136b6320d53560cfe228535884502"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__async__io.html#ga9ceb0606fea5b72366bbd21ff047c84f">SocketHE_AttemptState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a></td></tr>
-<tr class="separator:a701136b6320d53560cfe228535884502"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a11614f44ef4d939bdd984953346a7572" id="r_a11614f44ef4d939bdd984953346a7572"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a></td></tr>
-<tr class="separator:a11614f44ef4d939bdd984953346a7572"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad2a2dd6f82dee045d069868263a0081f" id="r_ad2a2dd6f82dee045d069868263a0081f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#ad2a2dd6f82dee045d069868263a0081f">start_time_ms</a></td></tr>
-<tr class="separator:ad2a2dd6f82dee045d069868263a0081f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8cfef7a67b323a611a42e8eab03eed22" id="r_a8cfef7a67b323a611a42e8eab03eed22"><td class="memItemLeft" align="right" valign="top">struct SocketHE_Attempt *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#a8cfef7a67b323a611a42e8eab03eed22">next</a></td></tr>
-<tr class="separator:a8cfef7a67b323a611a42e8eab03eed22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af65fb424e04e284ceab8f880af2832ff" id="r_af65fb424e04e284ceab8f880af2832ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#af65fb424e04e284ceab8f880af2832ff">SocketHE_Attempt_T</a></td></tr>
-<tr class="separator:af65fb424e04e284ceab8f880af2832ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4417150d9f858949bd9ea8794995ebcc" id="r_ga4417150d9f858949bd9ea8794995ebcc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga4417150d9f858949bd9ea8794995ebcc">family</a></td></tr>
-<tr class="memdesc:ga4417150d9f858949bd9ea8794995ebcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wrapper structure for resolved addresses in Happy Eyeballs address preference ordering.  <br /></td></tr>
-<tr class="separator:ga4417150d9f858949bd9ea8794995ebcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac39ea8065d9b2b99c2b8a4a7c4ca130" id="r_aac39ea8065d9b2b99c2b8a4a7c4ca130"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#aac39ea8065d9b2b99c2b8a4a7c4ca130">tried</a></td></tr>
-<tr class="separator:aac39ea8065d9b2b99c2b8a4a7c4ca130"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af903d297eea34d40f3c6459193a0d080" id="r_af903d297eea34d40f3c6459193a0d080"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHappyEyeballs-private_8h.html#af903d297eea34d40f3c6459193a0d080">SocketHE_AddressEntry_T</a></td></tr>
-<tr class="separator:af903d297eea34d40f3c6459193a0d080"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal structures and state for Happy Eyeballs connection racing (RFC 8305). </p>
@@ -205,122 +189,72 @@ Variables</h2></td></tr>
 <a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for asynchronous DNS resolution used in racing. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-</div><h2 class="groupheader">Variable Documentation</h2>
-<a id="a11614f44ef4d939bdd984953346a7572" name="a11614f44ef4d939bdd984953346a7572"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a11614f44ef4d939bdd984953346a7572">&#9670;&#160;</a></span>error</h2>
+</div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
+<a name="structSocketHE__Attempt__T" id="structSocketHE__Attempt__T"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketHE__Attempt__T">&#9670;&#160;</a></span>SocketHE_Attempt_T</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int error</td>
+          <td class="memname">struct SocketHE_Attempt_T</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="textblock">
+<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00192">192</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
+</div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHE_Attempt_T:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHE__Attempt__T__coll__graph.svg" width="162" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="ab02a910ca4b1f3516cd1a7e91b93c5b9" name="ab02a910ca4b1f3516cd1a7e91b93c5b9"></a>struct addrinfo *</td>
+<td class="fieldname">
+addr</td>
+<td class="fielddoc">
+<p>Target address (borrowed reference from DNS results). </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a500878af707470819de9519582e95aaa" name="a500878af707470819de9519582e95aaa"></a>int</td>
+<td class="fieldname">
+error</td>
+<td class="fielddoc">
 <p>Saved errno on failure (0 if not failed). </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00152">152</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="a8cfef7a67b323a611a42e8eab03eed22" name="a8cfef7a67b323a611a42e8eab03eed22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8cfef7a67b323a611a42e8eab03eed22">&#9670;&#160;</a></span>next</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketHE_AddressEntry * next</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Next attempt in singly-linked list.</p>
-<p>Next entry in preference-sorted list. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00154">154</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="af903d297eea34d40f3c6459193a0d080" name="af903d297eea34d40f3c6459193a0d080"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af903d297eea34d40f3c6459193a0d080">&#9670;&#160;</a></span>SocketHE_AddressEntry_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">SocketHE_AddressEntry_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00205">205</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="af65fb424e04e284ceab8f880af2832ff" name="af65fb424e04e284ceab8f880af2832ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af65fb424e04e284ceab8f880af2832ff">&#9670;&#160;</a></span>SocketHE_Attempt_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">SocketHE_Attempt_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00155">155</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="ad2a2dd6f82dee045d069868263a0081f" name="ad2a2dd6f82dee045d069868263a0081f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad2a2dd6f82dee045d069868263a0081f">&#9670;&#160;</a></span>start_time_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t start_time_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a12005585efa1da9b04101a452aa2eb4d" name="a12005585efa1da9b04101a452aa2eb4d"></a>struct SocketHE_Attempt *</td>
+<td class="fieldname">
+next</td>
+<td class="fielddoc">
+<p>Next attempt in singly-linked list. </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6d7c20ae3edf7159f276525c8f4b90bc" name="a6d7c20ae3edf7159f276525c8f4b90bc"></a>Socket_T</td>
+<td class="fieldname">
+socket</td>
+<td class="fielddoc">
+<p>Socket instance (NULL if failed or completed). </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a276531d1271e611910bd33f70fe32ed4" name="a276531d1271e611910bd33f70fe32ed4"></a>int64_t</td>
+<td class="fieldname">
+start_time_ms</td>
+<td class="fielddoc">
 <p>Monotonic timestamp when connect() started (ms). </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00153">153</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="a701136b6320d53560cfe228535884502" name="a701136b6320d53560cfe228535884502"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a701136b6320d53560cfe228535884502">&#9670;&#160;</a></span>state</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__async__io.html#ga9ceb0606fea5b72366bbd21ff047c84f">SocketHE_AttemptState</a> state</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6a8a1e41faa0a08ba7cc5a368d177d75" name="a6a8a1e41faa0a08ba7cc5a368d177d75"></a><a class="el" href="group__async__io.html#ga9ceb0606fea5b72366bbd21ff047c84f">SocketHE_AttemptState</a></td>
+<td class="fieldname">
+state</td>
+<td class="fielddoc">
 <p>Current state of the attempt. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00151">151</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-
-</div>
-</div>
-<a id="aac39ea8065d9b2b99c2b8a4a7c4ca130" name="aac39ea8065d9b2b99c2b8a4a7c4ca130"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac39ea8065d9b2b99c2b8a4a7c4ca130">&#9670;&#160;</a></span>tried</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int tried</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Flag: 1 if connection attempt started for this address. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00203">203</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
+</td></tr>
+</table>
 
 </div>
 </div>

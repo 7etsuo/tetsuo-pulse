@@ -961,7 +961,7 @@ extern void SocketDgram_setcloexec (T socket, int enable);
  */
 extern int SocketDgram_debug_live_count (void);
 
-/* End SocketDgram group */
+/** @} */
 
 #undef T
 #endif

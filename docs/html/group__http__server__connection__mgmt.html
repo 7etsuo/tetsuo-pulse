@@ -7,7 +7,7 @@
 <meta name="keywords" content="socket, networking, C, POSIX, TCP, UDP, TLS, async, high-performance, library">
 <meta name="author" content="Tetsuo Corporation">
 <meta name="theme-color" content="#3b82f6">
-<title>Internal HTTP Server Connection Management Helpers</title>
+<title>Internal HTTP Server Connection</title>
 <link href="navtree.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="resize.js"></script>
 <script type="text/javascript" src="navtreedata.js"></script>
@@ -110,20 +110,21 @@ $(document).ready(function(){initNavTree('group__http__server__connection__mgmt.
 </div>
 
 <div class="header">
-  <div class="headertitle"><div class="title">Internal HTTP Server Connection Management Helpers<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">Internal HTTP Server Connection<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
 <p>Helper functions for managing individual HTTP server connections.  
 </p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Internal HTTP Server Connection Management Helpers:</div>
+  <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for Internal HTTP Server Connection:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="group__http__server__connection__mgmt.svg" width="340" height="66"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="group__http__server__connection__mgmt.svg" width="316" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <p>Helper functions for managing individual HTTP server connections. </p>
+<p>Management Helpers</p>
 <p>These functions implement core connection lifecycle logic: creation, I/O handling, request parsing, response generation, and cleanup. Designed for use in split implementation files (src/http/ *.c). All functions assume single-threaded access via the server's poll loop and are not thread-safe.</p>
 <p>Key areas:</p><ul>
 <li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> allocation and teardown (connection_new, connection_close)</li>
@@ -131,11 +132,11 @@ $(document).ready(function(){initNavTree('group__http__server__connection__mgmt.
 <li>HTTP request parsing and validation (connection_parse_request)</li>
 <li>Response serialization and error handling (connection_send_response, connection_send_error)</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> structure for connection <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> details. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> structure for connection state details. </dd>
 <dd>
 SocketHTTPServer_T for server-level management and integration. </dd>
 <dd>
-SocketPoll_T for event-driven I/O multiplexing. </dd>
+<a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> for event-driven I/O multiplexing. </dd>
 <dd>
 <a class="el" href="group__event__system.html">Event System Group</a> for polling integration. </dd>
 <dd>

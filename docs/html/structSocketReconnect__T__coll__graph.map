@@ -1,14 +1,8 @@
 <map id="SocketReconnect_T" name="SocketReconnect_T">
-<area shape="rect" id="Node000001" title="Opaque internal context for reconnecting socket management." alt="" coords="61,271,203,297"/>
-<area shape="poly" id="edge6_Node000001_Node000001" title=" " alt="" coords="218,275,229,284,221,292,203,295,203,289,219,287,224,284,215,280"/>
-<area shape="rect" id="Node000002" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet..." alt="" coords="5,181,189,207"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,218,130,270,125,272,104,220"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="214,181,293,207"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="228,217,149,273,146,269,225,212"/>
-<area shape="rect" id="Node000004" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="199,93,307,119"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="256,133,256,181,251,181,251,133"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="102,5,234,31"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="191,39,243,91,240,95,187,43"/>
-<area shape="rect" id="Node000006" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="258,5,419,31"/>
-<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="319,43,267,95,263,91,315,39"/>
+<area shape="rect" id="Node000001" title="Opaque internal context for reconnecting socket management." alt="" coords="104,95,245,121"/>
+<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="261,99,272,108,264,116,246,119,245,113,262,111,267,108,258,104"/>
+<area shape="rect" id="Node000002" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet..." alt="" coords="5,5,189,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="118,39,166,93,162,97,114,43"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="214,5,293,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="236,43,187,97,183,93,232,39"/>
 </map>

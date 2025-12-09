@@ -180,14 +180,14 @@ Sockets use Arena_T internally if passed during advanced config (future extensio
 <dl class="section warning"><dt>Warning</dt><dd>Freeing while in use by poll or timer callbacks leads to crashes; remove from loops first. </dd>
 <dd>
 FD is closed on free; do not use raw fd after free.</dd></dl>
-<h2><a class="anchor" id="autotoc_md577"></a>
+<h2><a class="anchor" id="autotoc_md438"></a>
 Example Declaration and Use</h2>
 <div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> *<a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a>;  <span class="comment">// Opaque pointer</span></div>
 <div class="line"><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock;  <span class="comment">// Declare</span></div>
 <div class="line">sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(...);  <span class="comment">// Initialize</span></div>
 <div class="line"><span class="comment">// Accessors: SocketDgram_fd(sock), SocketDgram_getlocaladdr(sock)</span></div>
 <div class="line"><a class="code hl_function" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a>(&amp;sock);  <span class="comment">// Cleanup</span></div>
-<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00041">SocketDgram-private.h:42</a></div></div>
+<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00043">SocketDgram-private.h:44</a></div></div>
 <div class="ttc" id="agroup__socket__dgram_html_ga020169c79640786afa4c36fd1dc965e4"><div class="ttname"><a href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a></div><div class="ttdeci">void SocketDgram_free(SocketDgram_T *socket)</div><div class="ttdoc">Dispose of a datagram socket, closing the underlying file descriptor and freeing resources.</div></div>
 <div class="ttc" id="agroup__socket__dgram_html_gad6902c87ab5883f155dab2adfa950c52"><div class="ttname"><a href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a></div><div class="ttdeci">SocketDgram_T SocketDgram_new(int domain, int protocol)</div><div class="ttdoc">Create a new UDP/datagram socket with specified domain and protocol.</div></div>
 </div><!-- fragment --><dl class="section user"><dt>Complexity\n Accessors O(1); creation O(1)</dt><dd></dd></dl>
@@ -197,7 +197,7 @@ Example Declaration and Use</h2>
 <dd>
 <a class="el" href="group__socket__dgram.html#ga54e91e6824df0c114a5e6a4d79e5c6fb" title="Get underlying file descriptor.">SocketDgram_fd()</a> for underlying descriptor </dd>
 <dd>
-<a class="el" href="group__socket__dgram.html#ga06d3085b3b7287330e8cb49d6d9a4da1" title="Check if datagram socket is bound to an address.">SocketDgram_isbound()</a> / <a class="el" href="group__socket__dgram.html#ga73455982ede6d44649f85adb25c4bda2" title="Check if datagram socket is connected.">SocketDgram_isconnected()</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> queries </dd>
+<a class="el" href="group__socket__dgram.html#ga06d3085b3b7287330e8cb49d6d9a4da1" title="Check if datagram socket is bound to an address.">SocketDgram_isbound()</a> / <a class="el" href="group__socket__dgram.html#ga73455982ede6d44649f85adb25c4bda2" title="Check if datagram socket is connected.">SocketDgram_isconnected()</a> state queries </dd>
 <dd>
 <a class="el" href="group__socket__dgram.html">Datagram Sockets</a> for full API </dd>
 <dd>
@@ -208,7 +208,7 @@ docs/MODULE-PATTERNS.md for opaque type patterns</dd></dl>
 <dd>
 <a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a> for enabling DTLS on UDP sockets. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketDgram-private_8h_source.html#l00041">41</a> of file <a class="el" href="SocketDgram-private_8h_source.html">SocketDgram-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDgram-private_8h_source.html#l00043">43</a> of file <a class="el" href="SocketDgram-private_8h_source.html">SocketDgram-private.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketDgram_T:</div>
 <div id="dynsection-2-summary" class="dynsummary" style="display:block;">
@@ -234,7 +234,7 @@ base</td>
 <dd>
 <a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> for stream socket equivalent. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> enabled).  </dd></dl>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (if enabled).  </dd></dl>
 <p>Embeds <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> for common socket fields (fd, arena, endpoints, timeouts, metrics). Includes conditional DTLS fields when #SOCKET_HAS_TLS is enabled, providing support for secure datagram encryption parallel to TLS in Socket_T.</p>
 <p>Common base structure shared with other socket types. Contains file descriptor, memory arena, local/remote addresses, timeouts, and metrics tracking.</p>
 <dl class="section note"><dt>Note</dt><dd>This structure is not part of the public API and may change without notice. Additional datagram-specific fields (e.g., multicast state) can be added here.</dd></dl>
@@ -244,7 +244,7 @@ base</td>
 <dd>
 <a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> for stream socket equivalent. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> enabled). </dd></dl>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (if enabled). </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="ga1189362a5c97fc90222e06232de1bdfe" name="ga1189362a5c97fc90222e06232de1bdfe"></a>void *</td>
@@ -315,10 +315,10 @@ dtls_last_handshake_state</td>
 <p>Records the last DTLS handshake state from the TLS library. Stores the result of the most recent DTLS handshake operation (e.g., DTLS_HANDSHAKE_WANT_READ). Used for resuming or error recovery in non-blocking handshake loops.</p>
 <dl class="section see"><dt>See also</dt><dd>SocketDTLSHandshakeState for possible values. </dd>
 <dd>
-<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>.  </dd></dl>
+<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this state.  </dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketDTLSHandshakeState for possible values. </dd>
 <dd>
-<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd></dl>
+<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this state. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="gab4c14b4e6c07e5f1ff646987622a611a" name="gab4c14b4e6c07e5f1ff646987622a611a"></a>size_t</td>
@@ -327,10 +327,10 @@ dtls_mtu</td>
 <td class="fielddoc">
 <p>Configured Maximum Transmission Unit (MTU) for DTLS packets. Specifies the maximum size of DTLS records to avoid IP fragmentation. Typically set to path MTU minus DTLS overhead (e.g., 1200-1400 bytes).</p>
 <p>Configured Maximum Transmission Unit (MTU) for DTLS packets. Specifies the maximum size of DTLS records to avoid IP fragmentation. Typically set to path MTU minus DTLS overhead (e.g., 1200-1400 bytes).</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> public API exists, or configuration functions. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> if public API exists, or configuration functions. </dd>
 <dd>
 <a class="el" href="group__security.html#ga1189362a5c97fc90222e06232de1bdfe">dtls_ctx</a> for context where MTU is applied.  </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> public API exists, or configuration functions. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> if public API exists, or configuration functions. </dd>
 <dd>
 <a class="el" href="group__security.html#ga1189362a5c97fc90222e06232de1bdfe">dtls_ctx</a> for context where MTU is applied. </dd></dl>
 </td></tr>

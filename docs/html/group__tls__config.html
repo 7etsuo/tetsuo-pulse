@@ -228,36 +228,36 @@ Macros</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers, and security limits. </p>
 <p>These constants define secure defaults for TLS operations and can be overridden before including this header. Enforces TLS 1.3-only policy, modern ciphers, and protection against common attacks (DoS, overflows). Provides stubs when TLS support is disabled (SOCKET_HAS_TLS).</p>
-<h2><a class="anchor" id="autotoc_md773"></a>
+<h2><a class="anchor" id="autotoc_md562"></a>
 Key Categories</h2>
-<h3><a class="anchor" id="autotoc_md774"></a>
+<h3><a class="anchor" id="autotoc_md563"></a>
 Protocol Control</h3>
 <ul>
 <li>Protocol versions pinned to TLS 1.3 for forward secrecy and anti-downgrade protection</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md775"></a>
+<h3><a class="anchor" id="autotoc_md564"></a>
 Cipher Security</h3>
 <ul>
 <li>Modern AEAD+PFS cipher suites (ECDHE with AES-GCM/ChaCha20-Poly1305)</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md776"></a>
+<h3><a class="anchor" id="autotoc_md565"></a>
 Timeout &amp; Resource Limits</h3>
 <ul>
 <li>Defaults prevent slowloris attacks, buffer overflows, excessive memory use</li>
 <li>Configurable via #define overrides</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md777"></a>
+<h3><a class="anchor" id="autotoc_md566"></a>
 Customization</h3>
 <ul>
 <li>Override constants before #include for environment-specific tuning</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md778"></a>
+<h2><a class="anchor" id="autotoc_md567"></a>
 Override Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// Example: Faster handshake for internal networks, prefer ChaCha20</span></div>
 <div class="line"><span class="preprocessor">#define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 10000</span></div>
-<div class="line"><span class="preprocessor">#define SOCKET_TLS13_CIPHERSUITES &quot;TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256&quot;</span></div>
-<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a>&quot;</span></div>
-<div class="ttc" id="aSocketTLSConfig_8h_html"><div class="ttname"><a href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a></div><div class="ttdoc">TLS configuration constants, structure, and secure defaults.</div></div>
+<div class="line"><span class="preprocessor">#define SOCKET_TLS13_CIPHERSUITES</span></div>
+<div class="line"><span class="stringliteral">&quot;TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256&quot;</span> #include</div>
+<div class="line"><span class="stringliteral">&quot;SocketTLSConfig.h&quot;</span></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Overrides are compile-time; changes require recompilation. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Validate custom settings with tools like testssl.sh or Qualys SSL Labs; improper config weakens security. </dd></dl>
 <dl class="section user"><dt>Complexity\n Compile-time constants - no runtime overhead</dt><dd></dd></dl>
@@ -285,18 +285,11 @@ Individual <a class="el" href="group__tls__config.html">TLS Configuration Consta
 <div class="textblock"><p>TLS configuration parameters for customizing TLS protocol versions and other settings. </p>
 <p>This structure allows fine-grained control over TLS behavior, starting with protocol version limits. Additional fields for cipher suites, timeouts, certificate policies, etc., will be added in future releases. Always initialize with <a class="el" href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b" title="Initialize the TLS configuration with secure library defaults.">SocketTLS_config_defaults()</a> before use to ensure secure defaults.</p>
 <p>Fields are set to secure defaults by <a class="el" href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b" title="Initialize the TLS configuration with secure library defaults.">SocketTLS_config_defaults()</a>, but can be overridden for custom policies. Use with <a class="el" href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234" title="Create client TLS context with custom config.">SocketTLSContext_new()</a> for applying to new contexts.</p>
-<dl class="section user"><dt>Thread Safety\n Yes - plain value struct; safe to read, copy, or assign between threads.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md779"></a>
+<dl class="section user"><dt>Thread Safety\n Yes - plain value struct; safe to read, copy, or assign between</dt><dd>threads.</dd></dl>
+<h2><a class="anchor" id="autotoc_md568"></a>
 Fields</h2>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Description   </th><th class="markdownTableHeadNone">Default    </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">min_version   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Minimum supported TLS protocol version (OpenSSL constant like TLS1_3_VERSION)   </td><td class="markdownTableBodyNone">SOCKET_TLS_MIN_VERSION    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">max_version   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Maximum supported TLS protocol version   </td><td class="markdownTableBodyNone">SOCKET_TLS_MAX_VERSION   </td></tr>
-</table>
-<h2><a class="anchor" id="autotoc_md780"></a>
+<p>| Field | Type | Description | Default | |----------&mdash;|---&mdash;|-----------------------------------------------&mdash;|-------------------------------&mdash;| | min_version | int | Minimum supported TLS protocol version (OpenSSL constant like TLS1_3_VERSION) | SOCKET_TLS_MIN_VERSION | | max_version | int | Maximum supported TLS protocol version | SOCKET_TLS_MAX_VERSION |</p>
+<h2><a class="anchor" id="autotoc_md569"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Secure defaults (recommended)</span></div>
 <div class="line"><a class="code hl_struct" href="group__tls__config.html#structSocketTLSConfig__T">SocketTLSConfig_T</a> config;</div>
@@ -311,8 +304,8 @@ Usage Example</h2>
 <div class="ttc" id="agroup__security_html_ga122ad62f86b4477f7be54d55b769d58b"><div class="ttname"><a href="group__security.html#ga122ad62f86b4477f7be54d55b769d58b">SocketTLS_config_defaults</a></div><div class="ttdeci">void SocketTLS_config_defaults(SocketTLSConfig_T *config)</div><div class="ttdoc">Initialize the TLS configuration with secure library defaults.</div></div>
 <div class="ttc" id="agroup__security_html_ga69b7880fa99df9a39b4db5259a9e1234"><div class="ttname"><a href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new(const SocketTLSConfig_T *config)</div><div class="ttdoc">Create client TLS context with custom config.</div></div>
 <div class="ttc" id="agroup__security_html_gaea7ca3e656e9b58706fafc3232147203"><div class="ttname"><a href="group__security.html#gaea7ca3e656e9b58706fafc3232147203">SocketTLSContext_free</a></div><div class="ttdeci">void SocketTLSContext_free(SocketTLSContext_T *ctx_p)</div><div class="ttdoc">Dispose of TLS context and resources.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00678">SocketTLS-private.h:679</a></div></div>
-<div class="ttc" id="agroup__tls__config_html_structSocketTLSConfig__T"><div class="ttname"><a href="group__tls__config.html#structSocketTLSConfig__T">SocketTLSConfig_T</a></div><div class="ttdoc">TLS configuration parameters for customizing TLS protocol versions and other settings.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSConfig_8h_source.html#l00147">SocketTLSConfig.h:147</a></div></div>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
+<div class="ttc" id="agroup__tls__config_html_structSocketTLSConfig__T"><div class="ttname"><a href="group__tls__config.html#structSocketTLSConfig__T">SocketTLSConfig_T</a></div><div class="ttdoc">TLS configuration parameters for customizing TLS protocol versions and other settings.</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSConfig_8h_source.html#l00168">SocketTLSConfig.h:169</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Current API focuses on protocol versions; expansions planned for ciphers, timeouts, etc. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Lowering version limits exposes to known vulnerabilities; maintain TLS1.3 where possible. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - simple struct assignment</dt><dd></dd></dl>
@@ -324,7 +317,7 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__security.html">Security Modules</a> for comprehensive TLS <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> features. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00147">147</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00168">168</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -371,23 +364,16 @@ min_version</td>
 <li>Weak hashes (MD5, SHA1)</li>
 </ul>
 <p>Used internally by SocketTLSContext_new*() functions as default cipher list.</p>
-<h2><a class="anchor" id="autotoc_md785"></a>
+<h2><a class="anchor" id="autotoc_md574"></a>
 Override Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Prefer ChaCha20 for non-AES hardware (e.g., embedded/mobile)</span></div>
-<div class="line"><span class="preprocessor">#define SOCKET_TLS13_CIPHERSUITES &quot;TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384&quot;</span></div>
+<div class="line"><span class="preprocessor">#define SOCKET_TLS13_CIPHERSUITES</span></div>
+<div class="line"><span class="stringliteral">&quot;TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a>&quot;</span></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md786"></a>
+<div class="ttc" id="aSocketTLSConfig_8h_html"><div class="ttname"><a href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a></div><div class="ttdoc">TLS configuration constants, structure, and secure defaults.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md575"></a>
 Security Properties Table</h2>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Suite   </th><th class="markdownTableHeadNone">Key Exchange   </th><th class="markdownTableHeadNone">Encryption   </th><th class="markdownTableHeadNone">Integrity   </th><th class="markdownTableHeadNone">Notes    </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">TLS_AES_256_GCM_SHA384   </td><td class="markdownTableBodyNone">ECDHE   </td><td class="markdownTableBodyNone">AES-256-GCM   </td><td class="markdownTableBodyNone">GCM   </td><td class="markdownTableBodyNone">Highest security, AES-NI accelerated    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">TLS_CHACHA20_POLY1305_SHA256   </td><td class="markdownTableBodyNone">ECDHE   </td><td class="markdownTableBodyNone">ChaCha20   </td><td class="markdownTableBodyNone">Poly1305   </td><td class="markdownTableBodyNone">Software-friendly, resistant to timing attacks    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">TLS_AES_128_GCM_SHA256   </td><td class="markdownTableBodyNone">ECDHE   </td><td class="markdownTableBodyNone">AES-128-GCM   </td><td class="markdownTableBodyNone">GCM   </td><td class="markdownTableBodyNone">Good balance, widely supported   </td></tr>
-</table>
+<p>| Suite | Key Exchange | Encryption | Integrity | Notes | |-------------------------&mdash;|-----------&mdash;|---------&mdash;|--------&mdash;|----&mdash;| | TLS_AES_256_GCM_SHA384 | ECDHE | AES-256-GCM| GCM | Highest security, AES-NI accelerated | | TLS_CHACHA20_POLY1305_SHA256 | ECDHE | ChaCha20 | Poly1305 | Software-friendly, resistant to timing attacks | | TLS_AES_128_GCM_SHA256 | ECDHE | AES-128-GCM| GCM | Good balance, widely supported |</p>
 <dl class="section warning"><dt>Warning</dt><dd>Custom orders/lists must maintain PFS+AEAD; validate with openssl ciphers -v or ssllabs.com. Removing suites may reduce compatibility; adding insecure ones compromises security. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>TLS1.3 mandates PFS and AEAD, eliminating many legacy issues. </dd></dl>
 <dl class="section user"><dt>Complexity\n Compile-time string constant</dt><dd></dd></dl>
@@ -401,7 +387,7 @@ Security Properties Table</h2>
 <dd>
 <a class="el" href="group__tls__config.html">TLS Configuration Constants</a> for related constants like timeouts and buffers. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00337">337</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00384">384</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -420,7 +406,7 @@ Security Properties Table</h2>
 <p>TLS read/write buffer size. </p>
 <p>Buffer size for TLS record I/O operations. Set to maximum TLS record size (16384 bytes) to ensure complete records can be processed in single operations. Larger buffers don't provide benefit since TLS records cannot exceed this size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00393">393</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00441">441</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -439,7 +425,7 @@ Security Properties Table</h2>
 <p>Maximum CRL path length. </p>
 <p>Maximum length for CRL file paths. Same as certificate paths for consistency. 4096 bytes accommodates complex directory structures. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00673">673</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00721">721</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -458,7 +444,7 @@ Security Properties Table</h2>
 <p>Maximum CRL refresh interval in seconds. </p>
 <p>Maximum time between CRL refresh attempts. 1 year (365*24*3600 seconds) ensures CRLs don't become stale even with very long intervals. Applications should use shorter intervals for better security. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00645">645</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00693">693</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -478,7 +464,7 @@ Security Properties Table</h2>
 <p>Minimum CRL refresh interval in seconds</p>
 <p>Minimum time between CRL refresh attempts. 60 seconds prevents excessive refresh attempts that could overwhelm CRL distribution points or cause performance issues. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00633">633</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00681">681</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -498,7 +484,7 @@ Security Properties Table</h2>
 <p>Maximum time allowed for TLS handshake completion. 30 seconds provides reasonable security (prevents slowloris-style attacks) while allowing for network latency and certificate validation time.</p>
 <p>Override before including this header to customize for your environment. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00356">356</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00404">404</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -517,7 +503,7 @@ Security Properties Table</h2>
 <p>Default TLS shutdown timeout in milliseconds. </p>
 <p>Maximum time to wait for graceful TLS connection shutdown. Shorter than handshake timeout since shutdown should complete quickly. 5 seconds prevents hanging on non-responsive peers. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00368">368</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00416">416</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -536,7 +522,7 @@ Security Properties Table</h2>
 <p>TLS error buffer size for detailed error messages. </p>
 <p>Buffer size for thread-local error messages used in exception handling. Must accommodate detailed OpenSSL error strings and context information. 512 bytes provides ample space for comprehensive error reporting. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00466">466</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00514">514</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -555,7 +541,7 @@ Security Properties Table</h2>
 <p>Maximum ALPN protocol name length. </p>
 <p>Maximum length for individual ALPN protocol names in bytes. Conforms to RFC 7301 Section 3.2 protocol identifier limits. 255 bytes provides ample space for protocol names. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00417">417</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00465">465</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -574,7 +560,7 @@ Security Properties Table</h2>
 <p>Maximum number of ALPN protocols per context. </p>
 <p>Maximum number of Application-Layer Protocol Negotiation (ALPN) protocols that can be advertised. 16 protocols covers all typical use cases (HTTP/1.1, HTTP/2, WebSocket, etc.). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00514">514</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00562">562</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -593,7 +579,7 @@ Security Properties Table</h2>
 <p>Maximum total bytes for ALPN protocol list. </p>
 <p>Maximum total size of ALPN protocol list to prevent DoS attacks during parsing. Limits memory allocation and processing time. 1024 bytes allows reasonable number of protocols. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00429">429</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00477">477</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -612,7 +598,7 @@ Security Properties Table</h2>
 <p>Maximum certificate chain depth for verification. </p>
 <p>Maximum depth of certificate chains accepted during verification. Prevents excessive memory usage from maliciously long chains. 10 levels allows for typical commercial CA hierarchies. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00405">405</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00453">453</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -628,7 +614,7 @@ Security Properties Table</h2>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00661">661</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00709">709</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -649,7 +635,7 @@ Security Properties Table</h2>
 <p>Maximum CRL file size. </p>
 <p>Maximum size allowed for Certificate Revocation List (CRL) files. 10MB accommodates large CRLs from major CAs while preventing memory exhaustion attacks. Also limits number of CRL files in directories to prevent exhaustion. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00659">659</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00707">707</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -668,7 +654,7 @@ Security Properties Table</h2>
 <p>Maximum DNS label length per RFC 1035. </p>
 <p>Maximum length for individual DNS hostname labels. RFC 1035 specifies 63 characters maximum for DNS labels. Enforced during hostname validation for security. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00575">575</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00623">623</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -687,7 +673,7 @@ Security Properties Table</h2>
 <p>Maximum OCSP response size. </p>
 <p>Maximum size for Online Certificate Status Protocol (OCSP) responses. 64KB accommodates large OCSP responses while preventing memory exhaustion. Typical responses are much smaller (&lt; 4KB) but this provides safety margin. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00551">551</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00599">599</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -706,7 +692,7 @@ Security Properties Table</h2>
 <p>Maximum file path length for certificates/keys. </p>
 <p>Maximum length for certificate and key file paths. 4096 bytes accommodates long paths in complex directory structures while preventing buffer overflow in path processing. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00563">563</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00611">611</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +712,7 @@ Security Properties Table</h2>
 <p>Maximum number of certificate pins per context</p>
 <p>Maximum number of Subject Public Key Info (SPKI) SHA256 pins that can be configured per TLS context. 32 pins supports complex pinning policies for enterprise deployments. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00592">592</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00640">640</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -745,7 +731,7 @@ Security Properties Table</h2>
 <p>Maximum number of SNI certificates per context. </p>
 <p>Maximum number of certificate/key pairs that can be configured for Server Name Indication (SNI) virtual hosting. 100 certificates supports large-scale virtual hosting deployments. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00490">490</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00538">538</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -764,7 +750,7 @@ Security Properties Table</h2>
 <p>SNI hostname length limit. </p>
 <p>Maximum length for Server Name Indication hostnames. Conforms to DNS hostname limits (253 chars) with padding. Prevents buffer overflow in SNI processing. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00441">441</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00489">489</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -783,7 +769,7 @@ Security Properties Table</h2>
 <p>Maximum TLS protocol version - STRICT TLS 1.3 ONLY. </p>
 <p>Limits maximum protocol to TLS 1.3 to ensure consistent security and prevent use of future potentially insecure versions until vetted. Currently TLS 1.4 is undefined in OpenSSL. Paired with min_version for strict TLS1.3-only enforcement by default.</p>
 <p>Used as default for <a class="el" href="group__tls__config.html#a5d3105c29493e11690b519dce33267a1">SocketTLSConfig_T::max_version</a> and applied via <a class="el" href="group__security.html#gad094c4db92c9979bcde108166193abee" title="Set maximum supported TLS version.">SocketTLSContext_set_max_protocol()</a>.</p>
-<h2><a class="anchor" id="autotoc_md784"></a>
+<h2><a class="anchor" id="autotoc_md573"></a>
 Override Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Not typically needed, but for future-proofing (hypothetical)</span></div>
 <div class="line"><span class="preprocessor">#define SOCKET_TLS_MAX_VERSION 0x0304  </span><span class="comment">// TLS 1.4 if defined later</span></div>
@@ -799,7 +785,7 @@ Override Example</h2>
 <dd>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a>#tls-versions for version policy recommendations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00284">284</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00323">323</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -818,7 +804,7 @@ Override Example</h2>
 <p>Minimum TLS protocol version - STRICT TLS 1.3 ONLY. </p>
 <p>Enforces TLS 1.3 minimum for perfect forward secrecy (PFS) and modern cryptographic primitives. Legacy protocols (SSL 2.0/3.0, TLS 1.0/1.1/1.2) are explicitly disabled to prevent downgrade attacks (e.g., Logjam, FREAK) and ensure high security posture against known vulnerabilities.</p>
 <p>Used as default for <a class="el" href="group__tls__config.html#a670bdce01faa6f2ff73dc3ce67b14db5">SocketTLSConfig_T::min_version</a> and applied via <a class="el" href="group__security.html#gaa7703e1d2c80b49601af8237e81729ef" title="Set minimum supported TLS version.">SocketTLSContext_set_min_protocol()</a>.</p>
-<h2><a class="anchor" id="autotoc_md783"></a>
+<h2><a class="anchor" id="autotoc_md572"></a>
 Override Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Allow TLS 1.2+ for legacy server compatibility (less secure)</span></div>
 <div class="line"><span class="preprocessor">#define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION</span></div>
@@ -836,7 +822,7 @@ Override Example</h2>
 <dd>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a>#tls-versions for detailed version <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> analysis. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00255">255</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00290">290</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -855,7 +841,7 @@ Override Example</h2>
 <p>OpenSSL error string buffer size for temporary formatting. </p>
 <p>Temporary buffer for formatting individual OpenSSL error strings. Used during error queue processing. 256 bytes accommodates typical OpenSSL error message lengths with room for formatting. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00478">478</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00526">526</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -874,7 +860,7 @@ Override Example</h2>
 <p>Certificate pin hash length (SHA256) </p>
 <p>Length of SHA256 hash used for certificate pinning. SHA256 produces 32-byte (256-bit) hashes for strong collision resistance and security. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00604">604</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00652">652</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -893,7 +879,7 @@ Override Example</h2>
 <p>Initial certificate pin array capacity. </p>
 <p>Starting capacity for pin array. Array doubles when capacity is exceeded. 4 provides reasonable starting point for most applications that use 1-2 pins. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00616">616</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00664">664</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -912,7 +898,7 @@ Override Example</h2>
 <p>TLS handshake poll interval for non-blocking operations. </p>
 <p>Polling interval used by <a class="el" href="group__security.html#ga439248f2ff7b87470520de0607569d06" title="Complete handshake with timeout (non-blocking)">SocketTLS_handshake_loop()</a> for event-driven handshake completion. 100ms balances responsiveness with CPU usage. Smaller values increase responsiveness but consume more CPU. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00380">380</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00428">428</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -931,7 +917,7 @@ Override Example</h2>
 <p>TLS session cache size (number of cached sessions) </p>
 <p>Maximum number of TLS sessions to cache for resumption. Larger caches improve performance for frequent reconnections but consume more memory. 1000 sessions is reasonable for moderate-traffic servers. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00454">454</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00502">502</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -950,7 +936,7 @@ Override Example</h2>
 <p>Default TLS session cache timeout in seconds. </p>
 <p>Default lifetime for cached TLS sessions. 300 seconds (5 minutes) balances security (prevents stale sessions) with performance (allows reasonable session reuse window). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00539">539</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00587">587</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -969,7 +955,7 @@ Override Example</h2>
 <p>Initial SNI certificate array capacity. </p>
 <p>Starting capacity for SNI certificate array. Array doubles in size when capacity is exceeded. 4 provides reasonable starting point with minimal memory overhead. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00502">502</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00550">550</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>
@@ -988,7 +974,7 @@ Override Example</h2>
 <p>Session ticket encryption key length. </p>
 <p>Length of the key used for encrypting TLS session tickets. OpenSSL uses 80 bytes: 16 bytes for name, 32 bytes AES key, 32 bytes HMAC key. This provides strong encryption for stateless session resumption. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00527">527</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLSConfig_8h_source.html#l00575">575</a> of file <a class="el" href="SocketTLSConfig_8h_source.html">SocketTLSConfig.h</a>.</p>
 
 </div>
 </div>

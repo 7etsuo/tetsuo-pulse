@@ -1,5 +1,17 @@
 var NAVTREEINDEX8 =
 {
+"group__http.html#gad444bc6faa547e95f0b7ed31dc886e11":[14,5,188],
+"group__http.html#gad46ef6fbf9994cc55c982d507ce473eb":[14,5,196],
+"group__http.html#gad50a7909f8ca5a476579ad3f4d985546":[14,5,126],
+"group__http.html#gad77418b9eae24b504a03e6d1021e46fe":[14,5,191],
+"group__http.html#gad7f287bb56689764edd68fd52d8f6177":[14,5,141],
+"group__http.html#gada5478cfca166a354a76529faf4f7a40":[14,5,116],
+"group__http.html#gadc66dc775243c9466070358778fe7afd":[14,5,275],
+"group__http.html#gadd54bf8828aec9d319682da54106537b":[14,5,197],
+"group__http.html#gadea7c22d784dde56835abffcd57ee516":[14,5,271],
+"group__http.html#gae09fc6308bb228c3eb507ec485846076":[14,5,57],
+"group__http.html#gae1f8127d7a7541fb20f280f60b3dc308":[14,5,84],
+"group__http.html#gae2473667b51ae19f1d86127b49a23341":[14,5,151],
 "group__http.html#gae26015dc94d7a799afa06e5af4a06028":[14,5,168],
 "group__http.html#gae2bcff50ded7d328aed7ec535d9a047b":[14,5,139],
 "group__http.html#gae2f0b8ff528dfcd4951ea76392f84f9c":[14,5,155],
@@ -237,17 +249,5 @@ var NAVTREEINDEX8 =
 "group__http.html#structSocketHTTPServer__Stats":[14,5,52],
 "group__http.html#structSocketHTTP__Header":[14,5,30],
 "group__http.html#structSocketHTTP__Headers":[14,5,28],
-"group__http.html#structSocketHTTP__MediaType":[14,5,32],
-"group__http.html#structSocketHTTP__MethodProperties":[14,5,29],
-"group__http.html#structSocketHTTP__QualityValue":[14,5,33],
-"group__http.html#structSocketHTTP__Request":[14,5,34],
-"group__http.html#structSocketHTTP__Response":[14,5,35],
-"group__http.html#structSocketHTTP__URI":[14,5,31],
-"group__http.html#unionHTTPPoolEntry_8proto":[14,5,54],
-"group__http1.html":[14,5,1],
-"group__http1.html#a108f87a5b1d893862a9a53da200141b2":[14,5,1,1,6],
-"group__http1.html#a210e4001f9c4495e5e59ec63992fafcf":[14,5,1,1,2],
-"group__http1.html#a8672fe4cd385d1f07f2a28af17f2bb33":[14,5,1,1,5],
-"group__http1.html#a88447b7bd33d2baa80abe9ee97c64b21":[14,5,1,1,7],
-"group__http1.html#a8f681f902def11b16a7eea20eb7f8e08":[14,5,1,1,9]
+"group__http.html#structSocketHTTP__MediaType":[14,5,32]
 };

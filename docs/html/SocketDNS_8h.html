@@ -152,7 +152,7 @@ Typedefs</h2></td></tr>
 <tr class="memitem:gaec7a4f82232cde2b125b4b1e1df03b1f" id="r_gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f">Request_T</a></td></tr>
 <tr class="memdesc:gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to DNS resolution request structure.  <br /></td></tr>
 <tr class="separator:gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga88905fdf7322b96426e000683280445d" id="r_ga88905fdf7322b96426e000683280445d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga88905fdf7322b96426e000683280445d">SocketDNS_Callback</a>) (<a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, void *data)</td></tr>
+<tr class="memitem:ga88905fdf7322b96426e000683280445d" id="r_ga88905fdf7322b96426e000683280445d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga88905fdf7322b96426e000683280445d">SocketDNS_Callback</a>) (<a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int error, void *data)</td></tr>
 <tr class="memdesc:ga88905fdf7322b96426e000683280445d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback function for async DNS resolution.  <br /></td></tr>
 <tr class="separator:ga88905fdf7322b96426e000683280445d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -213,7 +213,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Asynchronous DNS resolution API for non-blocking network applications. </p>
 <p>Header for the SocketDNS module providing thread-pool based async getaddrinfo() replacement. Eliminates blocking DNS lookups that can hang applications for 30+ seconds, with built-in DoS protection, timeout guarantees, and SocketPoll integration.</p>
-<h2><a class="anchor" id="autotoc_md258"></a>
+<h2><a class="anchor" id="autotoc_md240"></a>
 Features</h2>
 <ul>
 <li>Async resolution via worker threads (no main thread block)</li>
@@ -223,18 +223,18 @@ Features</h2>
 <li>Sync wrapper with guaranteed timeout</li>
 <li>Thread-safe; integrates with event loops</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md259"></a>
+<h2><a class="anchor" id="autotoc_md241"></a>
 Typical Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md260"></a>
+<h3><a class="anchor" id="autotoc_md242"></a>
 Async with Callback</h3>
 <p>Submit requests; callback handles result in worker thread (thread-safe impl required).</p>
-<h3><a class="anchor" id="autotoc_md261"></a>
+<h3><a class="anchor" id="autotoc_md243"></a>
 Async Polling</h3>
 <p>Submit, monitor pollfd, drain check(), fetch results.</p>
-<h3><a class="anchor" id="autotoc_md262"></a>
+<h3><a class="anchor" id="autotoc_md244"></a>
 Sync with Timeout</h3>
 <p>Use resolve_sync for blocking but protected calls.</p>
-<h2><a class="anchor" id="autotoc_md263"></a>
+<h2><a class="anchor" id="autotoc_md245"></a>
 Platform Requirements</h2>
 <ul>
 <li>POSIX threads (pthreads)</li>
@@ -242,7 +242,7 @@ Platform Requirements</h2>
 <li>CLOCK_MONOTONIC for timeouts</li>
 <li>Unix-like pipe for signaling</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md264"></a>
+<h2><a class="anchor" id="autotoc_md246"></a>
 Related Headers</h2>
 <ul>
 <li><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">core/Except.h</a>: Exception handling</li>

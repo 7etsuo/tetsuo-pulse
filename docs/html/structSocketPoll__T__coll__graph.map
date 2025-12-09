@@ -1,0 +1,25 @@
+<map id="SocketPoll_T" name="SocketPoll_T">
+<area shape="rect" id="Node000001" title="Opaque internal state structure for SocketPoll instance." alt="" coords="287,295,387,320"/>
+<area shape="rect" id="Node000002" href="$group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations." alt="" coords="5,157,117,183"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,192,96,212,118,230,160,253,205,271,288,294,286,299,203,276,157,258,114,234,92,216,75,195"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="239,5,318,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="227,34,199,44,173,57,141,82,112,110,71,159,67,156,108,106,137,78,171,52,197,39,225,29"/>
+<area shape="rect" id="Node000004" href="$group__poll__private.html#structSocketData" title="Linked&#45;list node for socket&#45;to&#45;userdata mapping in internal hash table." alt="" coords="133,157,224,183"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="256,42,242,56,207,112,186,158,181,156,203,109,238,53,252,38"/>
+<area shape="rect" id="Node000005" href="$group__poll__private.html#structFdSocketEntry" title="Linked&#45;list node for FD&#45;to&#45;socket reverse mapping in internal hash table." alt="" coords="284,157,393,183"/>
+<area shape="poly" id="edge7_Node000005_Node000003" title=" " alt="" coords="288,43,301,83,335,156,330,158,296,85,283,45"/>
+<area shape="rect" id="Node000007" href="$structAsyncRequest.html" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="410,108,518,133"/>
+<area shape="poly" id="edge11_Node000007_Node000003" title=" " alt="" coords="315,35,349,52,445,106,443,110,347,57,313,39"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="196,193,227,230,274,266,317,292,314,297,271,270,223,234,192,196"/>
+<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="238,160,247,163,251,170,242,179,224,182,224,176,240,174,245,170,243,167,237,165"/>
+<area shape="poly" id="edge6_Node000001_Node000005" title=" " alt="" coords="341,196,340,295,335,295,336,196"/>
+<area shape="poly" id="edge8_Node000005_Node000005" title=" " alt="" coords="408,160,416,164,420,170,412,179,394,182,393,176,409,174,415,170,413,168,406,165"/>
+<area shape="rect" id="Node000006" href="$group__async__io.html#structSocketAsync__T" title="Core structure for asynchronous I/O context management." alt="" coords="473,207,588,232"/>
+<area shape="poly" id="edge9_Node000001_Node000006" title=" " alt="" coords="493,240,365,297,363,292,491,235"/>
+<area shape="poly" id="edge10_Node000006_Node000007" title=" " alt="" coords="482,143,525,205,521,208,478,146"/>
+<area shape="poly" id="edge12_Node000007_Node000007" title=" " alt="" coords="533,111,541,114,545,121,536,129,519,132,518,127,534,124,539,120,538,118,531,116"/>
+<area shape="rect" id="Node000008" href="$group__event__system.html#structSocketTimer__heap__T" title="Binary min&#45;heap container for managing multiple SocketTimer_T instances." alt="" coords="612,207,759,232"/>
+<area shape="poly" id="edge13_Node000001_Node000008" title=" " alt="" coords="630,238,493,273,388,298,387,292,491,268,629,233"/>
+<area shape="rect" id="Node000009" href="$group__event__system.html#structSocketTimer__T" title="Internal representation of a single scheduled timer event." alt="" coords="630,108,741,133"/>
+<area shape="poly" id="edge14_Node000008_Node000009" title=" " alt="" coords="688,147,688,207,683,207,683,147"/>
+</map>

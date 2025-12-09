@@ -117,7 +117,6 @@ $(document).ready(function(){initNavTree('group__utilities.html',''); initResiza
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#enumval-members">Enumerator</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">Utilities</div></div>
@@ -259,6 +258,27 @@ Macros</h2></td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td></tr>
 <tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque token bucket rate limiter instance.  <br /></td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td></tr>
+<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for a retry context.  <br /></td></tr>
+<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9e4c6bdc5f6ab59683cef18bb3f58211" id="r_ga9e4c6bdc5f6ab59683cef18bb3f58211"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga9e4c6bdc5f6ab59683cef18bb3f58211">SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</a>&#160;&#160;&#160;3</td></tr>
+<tr class="memdesc:ga9e4c6bdc5f6ab59683cef18bb3f58211"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compile-time configurable default values for <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> fields.  <br /></td></tr>
+<tr class="separator:ga9e4c6bdc5f6ab59683cef18bb3f58211"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1b9f06edcbcdd60e892086a4b8c2b9ba" id="r_ga1b9f06edcbcdd60e892086a4b8c2b9ba"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1b9f06edcbcdd60e892086a4b8c2b9ba">SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga1b9f06edcbcdd60e892086a4b8c2b9ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default initial backoff delay in milliseconds.  <br /></td></tr>
+<tr class="separator:ga1b9f06edcbcdd60e892086a4b8c2b9ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae4c30a1ed41ff40ca11fbdb21c2ec947" id="r_gae4c30a1ed41ff40ca11fbdb21c2ec947"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae4c30a1ed41ff40ca11fbdb21c2ec947">SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</a>&#160;&#160;&#160;30000</td></tr>
+<tr class="memdesc:gae4c30a1ed41ff40ca11fbdb21c2ec947"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum backoff delay cap in milliseconds.  <br /></td></tr>
+<tr class="separator:gae4c30a1ed41ff40ca11fbdb21c2ec947"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2addc89cb7a7a9b6e75f3cd51eef65ac" id="r_ga2addc89cb7a7a9b6e75f3cd51eef65ac"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga2addc89cb7a7a9b6e75f3cd51eef65ac">SOCKET_RETRY_DEFAULT_MULTIPLIER</a>&#160;&#160;&#160;2.0</td></tr>
+<tr class="memdesc:ga2addc89cb7a7a9b6e75f3cd51eef65ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default exponential backoff multiplier.  <br /></td></tr>
+<tr class="separator:ga2addc89cb7a7a9b6e75f3cd51eef65ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafbe9a9852b0477755c295af74aa0f2c7" id="r_gafbe9a9852b0477755c295af74aa0f2c7"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gafbe9a9852b0477755c295af74aa0f2c7">SOCKET_RETRY_DEFAULT_JITTER</a>&#160;&#160;&#160;0.25</td></tr>
+<tr class="memdesc:gafbe9a9852b0477755c295af74aa0f2c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default jitter factor for randomized backoff (0.0 to 1.0).  <br /></td></tr>
+<tr class="separator:gafbe9a9852b0477755c295af74aa0f2c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6245d4aca908bb154e7cd34f6a36d8dd" id="r_ga6245d4aca908bb154e7cd34f6a36d8dd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga6245d4aca908bb154e7cd34f6a36d8dd">SOCKET_RETRY_MAX_ATTEMPTS</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:ga6245d4aca908bb154e7cd34f6a36d8dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hard maximum attempts limit to prevent infinite retries.  <br /></td></tr>
+<tr class="separator:ga6245d4aca908bb154e7cd34f6a36d8dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac2c24c8a574da982e47bc14c90c51fcb" id="r_gac2c24c8a574da982e47bc14c90c51fcb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac2c24c8a574da982e47bc14c90c51fcb">SOCKET_UTF8_MAX_BYTES</a>&#160;&#160;&#160;4</td></tr>
 <tr class="memdesc:gac2c24c8a574da982e47bc14c90c51fcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum bytes required to encode any single Unicode code point in UTF-8.  <br /></td></tr>
 <tr class="separator:gac2c24c8a574da982e47bc14c90c51fcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -286,12 +306,12 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga24514489b0962fafe8414bfae95aa268" id="r_ga24514489b0962fafe8414bfae95aa268"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a></td></tr>
-<tr class="separator:ga24514489b0962fafe8414bfae95aa268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga419cec86f54612ef9204c059be3ec0a9" id="r_ga419cec86f54612ef9204c059be3ec0a9"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td></tr>
+<tr class="separator:ga419cec86f54612ef9204c059be3ec0a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga683a32a8d8f572bacd7470f3d386a445" id="r_ga683a32a8d8f572bacd7470f3d386a445"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445">SocketRetry_Operation</a>) (void *context, int attempt)</td></tr>
 <tr class="memdesc:ga683a32a8d8f572bacd7470f3d386a445"><td class="mdescLeft">&#160;</td><td class="mdescRight">User-defined callback implementing the core retryable operation.  <br /></td></tr>
 <tr class="separator:ga683a32a8d8f572bacd7470f3d386a445"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaebff54019f122cf3c0cb72a8ec2ed1b8" id="r_gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a>) (int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, int attempt, void *context)</td></tr>
+<tr class="memitem:gaebff54019f122cf3c0cb72a8ec2ed1b8" id="r_gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry_ShouldRetry</a>) (int error, int attempt, void *context)</td></tr>
 <tr class="memdesc:gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback type to decide whether to retry after an operation failure.  <br /></td></tr>
 <tr class="separator:gaebff54019f122cf3c0cb72a8ec2ed1b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -686,16 +706,16 @@ Functions</h2></td></tr>
 <tr class="memitem:ga409d0ca4c468b8ca69e7b3b75c58841d" id="r_ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d">SocketUTF8_validate_str</a> (const char *str)</td></tr>
 <tr class="memdesc:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate a null-terminated C string as UTF-8.  <br /></td></tr>
 <tr class="separator:ga409d0ca4c468b8ca69e7b3b75c58841d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga63e171e87998e78fb1398213e4ebc9a5" id="r_ga63e171e87998e78fb1398213e4ebc9a5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga63e171e87998e78fb1398213e4ebc9a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize UTF-8 incremental validation state.  <br /></td></tr>
 <tr class="separator:ga63e171e87998e78fb1398213e4ebc9a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>, const unsigned char *data, size_t len)</td></tr>
+<tr class="memitem:gac7bf6c0717c79f93d931fcd50bf04b60" id="r_gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state, const unsigned char *data, size_t len)</td></tr>
 <tr class="memdesc:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a chunk of data through incremental UTF-8 validator.  <br /></td></tr>
 <tr class="separator:gac7bf6c0717c79f93d931fcd50bf04b60"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga388818b9081b6d4f7ad496c6f4a364ad" id="r_ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a> (const <a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalize incremental UTF-8 validation and check completeness.  <br /></td></tr>
 <tr class="separator:ga388818b9081b6d4f7ad496c6f4a364ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *<a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga46408361a51a348e46420dfeeb3cca5c" id="r_ga46408361a51a348e46420dfeeb3cca5c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a> (<a class="el" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> *state)</td></tr>
 <tr class="memdesc:ga46408361a51a348e46420dfeeb3cca5c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset incremental validator state for reuse.  <br /></td></tr>
 <tr class="separator:ga46408361a51a348e46420dfeeb3cca5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1563bde34c7c6e25d605d3d4d64ca103" id="r_ga1563bde34c7c6e25d605d3d4d64ca103"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103">SocketUTF8_codepoint_len</a> (uint32_t codepoint)</td></tr>
@@ -719,69 +739,12 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:gae65da7d40c1b636bd5d688c6ab36176a" id="r_gae65da7d40c1b636bd5d688c6ab36176a"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae65da7d40c1b636bd5d688c6ab36176a">SocketMetrics_HistogramSnapshot::count</a></td></tr>
-<tr class="separator:gae65da7d40c1b636bd5d688c6ab36176a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4088038d1883a118b9818b15772582b0" id="r_ga4088038d1883a118b9818b15772582b0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga4088038d1883a118b9818b15772582b0">SocketMetrics_HistogramSnapshot::sum</a></td></tr>
-<tr class="separator:ga4088038d1883a118b9818b15772582b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad353d502eaa2af3ba9f5027c024bdad1" id="r_gad353d502eaa2af3ba9f5027c024bdad1"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gad353d502eaa2af3ba9f5027c024bdad1">SocketMetrics_HistogramSnapshot::min</a></td></tr>
-<tr class="separator:gad353d502eaa2af3ba9f5027c024bdad1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga92aa2bf4c9b19983fa3417159929df81" id="r_ga92aa2bf4c9b19983fa3417159929df81"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga92aa2bf4c9b19983fa3417159929df81">SocketMetrics_HistogramSnapshot::max</a></td></tr>
-<tr class="separator:ga92aa2bf4c9b19983fa3417159929df81"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga39b4ba97214ae557d6664a60881731ee" id="r_ga39b4ba97214ae557d6664a60881731ee"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga39b4ba97214ae557d6664a60881731ee">SocketMetrics_HistogramSnapshot::mean</a></td></tr>
-<tr class="separator:ga39b4ba97214ae557d6664a60881731ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8b172fd16d7a741708785715acde4b57" id="r_ga8b172fd16d7a741708785715acde4b57"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga8b172fd16d7a741708785715acde4b57">SocketMetrics_HistogramSnapshot::p50</a></td></tr>
-<tr class="separator:ga8b172fd16d7a741708785715acde4b57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga86b3fe4f2f16158efcd05739be0be2c7" id="r_ga86b3fe4f2f16158efcd05739be0be2c7"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga86b3fe4f2f16158efcd05739be0be2c7">SocketMetrics_HistogramSnapshot::p75</a></td></tr>
-<tr class="separator:ga86b3fe4f2f16158efcd05739be0be2c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae642be44e4add2bc25d809c22cf75a28" id="r_gae642be44e4add2bc25d809c22cf75a28"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae642be44e4add2bc25d809c22cf75a28">SocketMetrics_HistogramSnapshot::p90</a></td></tr>
-<tr class="separator:gae642be44e4add2bc25d809c22cf75a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5009b287c8bfd50a87d3278be6b76d6b" id="r_ga5009b287c8bfd50a87d3278be6b76d6b"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga5009b287c8bfd50a87d3278be6b76d6b">SocketMetrics_HistogramSnapshot::p95</a></td></tr>
-<tr class="separator:ga5009b287c8bfd50a87d3278be6b76d6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4d8eaa0353371329afd9e8ebc7cd5fd0" id="r_ga4d8eaa0353371329afd9e8ebc7cd5fd0"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga4d8eaa0353371329afd9e8ebc7cd5fd0">SocketMetrics_HistogramSnapshot::p99</a></td></tr>
-<tr class="separator:ga4d8eaa0353371329afd9e8ebc7cd5fd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga117aeb2403d9212a3476a0f5f506d1ba" id="r_ga117aeb2403d9212a3476a0f5f506d1ba"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga117aeb2403d9212a3476a0f5f506d1ba">SocketMetrics_HistogramSnapshot::p999</a></td></tr>
-<tr class="separator:ga117aeb2403d9212a3476a0f5f506d1ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf00d4802f4ec042ec70c2b6cca0ef439" id="r_gaf00d4802f4ec042ec70c2b6cca0ef439"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaf00d4802f4ec042ec70c2b6cca0ef439">SocketMetrics_Snapshot::timestamp_ms</a></td></tr>
-<tr class="separator:gaf00d4802f4ec042ec70c2b6cca0ef439"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac3d167ae7fb495b924c2b9ace863445a" id="r_gac3d167ae7fb495b924c2b9ace863445a"><td class="memItemLeft" align="right" valign="top">uint64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac3d167ae7fb495b924c2b9ace863445a">SocketMetrics_Snapshot::counters</a> [<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3">SOCKET_COUNTER_METRIC_COUNT</a>]</td></tr>
-<tr class="separator:gac3d167ae7fb495b924c2b9ace863445a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga052116cbac741e511d1354dcee03aa14" id="r_ga052116cbac741e511d1354dcee03aa14"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga052116cbac741e511d1354dcee03aa14">SocketMetrics_Snapshot::gauges</a> [<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4">SOCKET_GAUGE_METRIC_COUNT</a>]</td></tr>
-<tr class="separator:ga052116cbac741e511d1354dcee03aa14"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga2df8269ceffa8db53191bb61ce5a4e08" id="r_ga2df8269ceffa8db53191bb61ce5a4e08"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga2df8269ceffa8db53191bb61ce5a4e08">SocketMetrics_Snapshot::histograms</a> [<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7">SOCKET_HISTOGRAM_METRIC_COUNT</a>]</td></tr>
-<tr class="separator:ga2df8269ceffa8db53191bb61ce5a4e08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf06f7fa3fe589c3d406f8f12cbc4e59e" id="r_gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaf06f7fa3fe589c3d406f8f12cbc4e59e">SocketRateLimit_Failed</a></td></tr>
 <tr class="memdesc:gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception type for rate limiter operation failures.  <br /></td></tr>
 <tr class="separator:gaf06f7fa3fe589c3d406f8f12cbc4e59e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaee6d3d64f3c5b84ac6bbf38c67834fc4" id="r_gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a></td></tr>
 <tr class="memdesc:gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on critical retry operation failures.  <br /></td></tr>
 <tr class="separator:gaee6d3d64f3c5b84ac6bbf38c67834fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae4fc9812297db12344b02e21d638a618" id="r_gae4fc9812297db12344b02e21d638a618"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae4fc9812297db12344b02e21d638a618">SocketRetry_Policy::max_attempts</a></td></tr>
-<tr class="memdesc:gae4fc9812297db12344b02e21d638a618"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of retry attempts before giving up.  <br /></td></tr>
-<tr class="separator:gae4fc9812297db12344b02e21d638a618"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3738bc8ccc78b3f879df09d685494714" id="r_ga3738bc8ccc78b3f879df09d685494714"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga3738bc8ccc78b3f879df09d685494714">SocketRetry_Policy::initial_delay_ms</a></td></tr>
-<tr class="memdesc:ga3738bc8ccc78b3f879df09d685494714"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial backoff delay in milliseconds for the first retry.  <br /></td></tr>
-<tr class="separator:ga3738bc8ccc78b3f879df09d685494714"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa9acfb8be959ffd198d16e2446a30710" id="r_gaa9acfb8be959ffd198d16e2446a30710"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaa9acfb8be959ffd198d16e2446a30710">SocketRetry_Policy::max_delay_ms</a></td></tr>
-<tr class="memdesc:gaa9acfb8be959ffd198d16e2446a30710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum cap for backoff delays in milliseconds.  <br /></td></tr>
-<tr class="separator:gaa9acfb8be959ffd198d16e2446a30710"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae292a46f8c68e19cb29e72d49b48317e" id="r_gae292a46f8c68e19cb29e72d49b48317e"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae292a46f8c68e19cb29e72d49b48317e">SocketRetry_Policy::multiplier</a></td></tr>
-<tr class="memdesc:gae292a46f8c68e19cb29e72d49b48317e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Multiplier for exponential backoff (recommended &gt;1.0).  <br /></td></tr>
-<tr class="separator:gae292a46f8c68e19cb29e72d49b48317e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac44aa265265c65b8c29fd80aa3e0f61d" id="r_gac44aa265265c65b8c29fd80aa3e0f61d"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gac44aa265265c65b8c29fd80aa3e0f61d">SocketRetry_Policy::jitter</a></td></tr>
-<tr class="memdesc:gac44aa265265c65b8c29fd80aa3e0f61d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Jitter factor for randomizing delays (0.0=no jitter, 1.0=full).  <br /></td></tr>
-<tr class="separator:gac44aa265265c65b8c29fd80aa3e0f61d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7b978de556278e018fccc199dadd4a7d" id="r_ga7b978de556278e018fccc199dadd4a7d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga7b978de556278e018fccc199dadd4a7d">SocketRetry_Stats::attempts</a></td></tr>
-<tr class="memdesc:ga7b978de556278e018fccc199dadd4a7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total operation invocations during the retry sequence.  <br /></td></tr>
-<tr class="separator:ga7b978de556278e018fccc199dadd4a7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga560a11b7408ab6b745312cc2552aa387" id="r_ga560a11b7408ab6b745312cc2552aa387"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga560a11b7408ab6b745312cc2552aa387">SocketRetry_Stats::last_error</a></td></tr>
-<tr class="memdesc:ga560a11b7408ab6b745312cc2552aa387"><td class="mdescLeft">&#160;</td><td class="mdescRight">Final error code from last operation call.  <br /></td></tr>
-<tr class="separator:ga560a11b7408ab6b745312cc2552aa387"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaba725a298fa2b675bcdc8ea77ba8b27e" id="r_gaba725a298fa2b675bcdc8ea77ba8b27e"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaba725a298fa2b675bcdc8ea77ba8b27e">SocketRetry_Stats::total_delay_ms</a></td></tr>
-<tr class="memdesc:gaba725a298fa2b675bcdc8ea77ba8b27e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Aggregate backoff delay time across all retries (ms).  <br /></td></tr>
-<tr class="separator:gaba725a298fa2b675bcdc8ea77ba8b27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga939cbbd0e2c2537391a2e970991a1c9d" id="r_ga939cbbd0e2c2537391a2e970991a1c9d"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga939cbbd0e2c2537391a2e970991a1c9d">SocketRetry_Stats::total_time_ms</a></td></tr>
-<tr class="memdesc:ga939cbbd0e2c2537391a2e970991a1c9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Total wall-clock duration of entire execution (ms).  <br /></td></tr>
-<tr class="separator:ga939cbbd0e2c2537391a2e970991a1c9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga96b509b874774db6b22b3f25438a21d2" id="r_ga96b509b874774db6b22b3f25438a21d2"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></td></tr>
 <tr class="memdesc:ga96b509b874774db6b22b3f25438a21d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception for UTF-8 validation and encoding failures.  <br /></td></tr>
 <tr class="separator:ga96b509b874774db6b22b3f25438a21d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -806,7 +769,7 @@ Architecture Overview</h2>
 <div class="line">│              Foundation Layer                             │</div>
 <div class="line">│  Arena, Except, SocketUtil (legacy compat)                │</div>
 <div class="line">└───────────────────────────────────────────────────────────┘</div>
-<div class="ttc" id="agroup__connection__mgmt_html_structConnection"><div class="ttname"><a href="group__connection__mgmt.html#structConnection">Connection</a></div><div class="ttdoc">Internal structure representing a pooled connection slot.</div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00251">SocketPool-private.h:252</a></div></div>
+<div class="ttc" id="agroup__connection__mgmt_html_structConnection"><div class="ttname"><a href="group__connection__mgmt.html#structConnection">Connection</a></div><div class="ttdoc">Internal structure representing a pooled connection slot.</div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00268">SocketPool-private.h:269</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md89"></a>
 Module Relationships</h2>
 <ul>
@@ -828,7 +791,7 @@ Module Relationships</h2>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for token bucket implementation. </dd>
 <dd>
-SocketRetry_T for retry logic.</dd></dl>
+<a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> for retry logic.</dd></dl>
 <p>This group encompasses helper functionalities essential for robust network applications:</p><ul>
 <li>Retry Framework (SocketRetry): Exponential backoff with jitter for transient failures.</li>
 <li>Rate Limiting (SocketRateLimit): Token bucket for connection/byte throttling.</li>
@@ -890,83 +853,83 @@ docs/ERROR_HANDLING.md Exception usage in <a class="el" href="group__utilities.h
 <p>Contains count, sum, min/max, mean, and common percentiles (p50, p95, etc.). </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga4276215e9db206451d0bf5c0277895a2" title="Get histogram snapshot.">SocketMetrics_histogram_snapshot()</a> to populate this structure. </dd>
 <dd>
-<a class="el" href="group__utilities.html#ga2df8269ceffa8db53191bb61ce5a4e08">SocketMetrics_Snapshot::histograms</a> for integration in full snapshot. </dd></dl>
+<a class="el" href="group__utilities.html#a2df8269ceffa8db53191bb61ce5a4e08">SocketMetrics_Snapshot::histograms</a> for integration in full snapshot. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00515">515</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00542">542</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="gae65da7d40c1b636bd5d688c6ab36176a" name="gae65da7d40c1b636bd5d688c6ab36176a"></a>uint64_t</td>
+<a id="ae65da7d40c1b636bd5d688c6ab36176a" name="ae65da7d40c1b636bd5d688c6ab36176a"></a>uint64_t</td>
 <td class="fieldname">
 count</td>
 <td class="fielddoc">
 <p>Total observations </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga92aa2bf4c9b19983fa3417159929df81" name="ga92aa2bf4c9b19983fa3417159929df81"></a>double</td>
+<a id="a92aa2bf4c9b19983fa3417159929df81" name="a92aa2bf4c9b19983fa3417159929df81"></a>double</td>
 <td class="fieldname">
 max</td>
 <td class="fielddoc">
 <p>Maximum observed value </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga39b4ba97214ae557d6664a60881731ee" name="ga39b4ba97214ae557d6664a60881731ee"></a>double</td>
+<a id="a39b4ba97214ae557d6664a60881731ee" name="a39b4ba97214ae557d6664a60881731ee"></a>double</td>
 <td class="fieldname">
 mean</td>
 <td class="fielddoc">
 <p>Mean value </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gad353d502eaa2af3ba9f5027c024bdad1" name="gad353d502eaa2af3ba9f5027c024bdad1"></a>double</td>
+<a id="ad353d502eaa2af3ba9f5027c024bdad1" name="ad353d502eaa2af3ba9f5027c024bdad1"></a>double</td>
 <td class="fieldname">
 min</td>
 <td class="fielddoc">
 <p>Minimum observed value </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga8b172fd16d7a741708785715acde4b57" name="ga8b172fd16d7a741708785715acde4b57"></a>double</td>
+<a id="a8b172fd16d7a741708785715acde4b57" name="a8b172fd16d7a741708785715acde4b57"></a>double</td>
 <td class="fieldname">
 p50</td>
 <td class="fielddoc">
 <p>50th percentile (median) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga86b3fe4f2f16158efcd05739be0be2c7" name="ga86b3fe4f2f16158efcd05739be0be2c7"></a>double</td>
+<a id="a86b3fe4f2f16158efcd05739be0be2c7" name="a86b3fe4f2f16158efcd05739be0be2c7"></a>double</td>
 <td class="fieldname">
 p75</td>
 <td class="fielddoc">
 <p>75th percentile </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gae642be44e4add2bc25d809c22cf75a28" name="gae642be44e4add2bc25d809c22cf75a28"></a>double</td>
+<a id="ae642be44e4add2bc25d809c22cf75a28" name="ae642be44e4add2bc25d809c22cf75a28"></a>double</td>
 <td class="fieldname">
 p90</td>
 <td class="fielddoc">
 <p>90th percentile </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga5009b287c8bfd50a87d3278be6b76d6b" name="ga5009b287c8bfd50a87d3278be6b76d6b"></a>double</td>
+<a id="a5009b287c8bfd50a87d3278be6b76d6b" name="a5009b287c8bfd50a87d3278be6b76d6b"></a>double</td>
 <td class="fieldname">
 p95</td>
 <td class="fielddoc">
 <p>95th percentile </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga4d8eaa0353371329afd9e8ebc7cd5fd0" name="ga4d8eaa0353371329afd9e8ebc7cd5fd0"></a>double</td>
+<a id="a4d8eaa0353371329afd9e8ebc7cd5fd0" name="a4d8eaa0353371329afd9e8ebc7cd5fd0"></a>double</td>
 <td class="fieldname">
 p99</td>
 <td class="fielddoc">
 <p>99th percentile </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga117aeb2403d9212a3476a0f5f506d1ba" name="ga117aeb2403d9212a3476a0f5f506d1ba"></a>double</td>
+<a id="a117aeb2403d9212a3476a0f5f506d1ba" name="a117aeb2403d9212a3476a0f5f506d1ba"></a>double</td>
 <td class="fieldname">
 p999</td>
 <td class="fielddoc">
 <p>99.9th percentile </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga4088038d1883a118b9818b15772582b0" name="ga4088038d1883a118b9818b15772582b0"></a>double</td>
+<a id="a4088038d1883a118b9818b15772582b0" name="a4088038d1883a118b9818b15772582b0"></a>double</td>
 <td class="fieldname">
 sum</td>
 <td class="fielddoc">
@@ -992,7 +955,7 @@ sum</td>
 <dd>
 <a class="el" href="group__utilities.html#gad2d2769789054962f81f3212df75ef35" title="Export metrics in Prometheus text format.">SocketMetrics_export_prometheus()</a> for Prometheus format export. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00539">539</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00567">567</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketMetrics_Snapshot:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -1003,27 +966,27 @@ sum</td>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="gac3d167ae7fb495b924c2b9ace863445a" name="gac3d167ae7fb495b924c2b9ace863445a"></a>uint64_t</td>
+<a id="ac3d167ae7fb495b924c2b9ace863445a" name="ac3d167ae7fb495b924c2b9ace863445a"></a>uint64_t</td>
 <td class="fieldname">
 counters[<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3">SOCKET_COUNTER_METRIC_COUNT</a>]</td>
 <td class="fielddoc">
 <p>Counter values </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga052116cbac741e511d1354dcee03aa14" name="ga052116cbac741e511d1354dcee03aa14"></a>int64_t</td>
+<a id="a052116cbac741e511d1354dcee03aa14" name="a052116cbac741e511d1354dcee03aa14"></a>int64_t</td>
 <td class="fieldname">
 gauges[<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4">SOCKET_GAUGE_METRIC_COUNT</a>]</td>
 <td class="fielddoc">
 <p>Gauge values </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga2df8269ceffa8db53191bb61ce5a4e08" name="ga2df8269ceffa8db53191bb61ce5a4e08"></a><a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a></td>
+<a id="a2df8269ceffa8db53191bb61ce5a4e08" name="a2df8269ceffa8db53191bb61ce5a4e08"></a><a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a></td>
 <td class="fieldname">
 histograms[<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7">SOCKET_HISTOGRAM_METRIC_COUNT</a>]</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gaf00d4802f4ec042ec70c2b6cca0ef439" name="gaf00d4802f4ec042ec70c2b6cca0ef439"></a>uint64_t</td>
+<a id="af00d4802f4ec042ec70c2b6cca0ef439" name="af00d4802f4ec042ec70c2b6cca0ef439"></a>uint64_t</td>
 <td class="fieldname">
 timestamp_ms</td>
 <td class="fielddoc">
@@ -1054,7 +1017,7 @@ timestamp_ms</td>
 <dd>
 SocketRateLimit.c for static internal helper functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00126">126</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00129">129</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1128,11 +1091,11 @@ tokens_per_sec</td>
 <dd>
 SocketRetry_set_policy() to update policy on existing context. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00146">146</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00130">130</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="ga3738bc8ccc78b3f879df09d685494714" name="ga3738bc8ccc78b3f879df09d685494714"></a>int</td>
+<a id="a3738bc8ccc78b3f879df09d685494714" name="a3738bc8ccc78b3f879df09d685494714"></a>int</td>
 <td class="fieldname">
 initial_delay_ms</td>
 <td class="fielddoc">
@@ -1140,7 +1103,7 @@ Initial backoff delay in milliseconds for the first retry. <p>Default: SOCKET_RE
 <dl class="section note"><dt>Note</dt><dd>Must be positive; 0 disables delays (immediate retries). </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gac44aa265265c65b8c29fd80aa3e0f61d" name="gac44aa265265c65b8c29fd80aa3e0f61d"></a>double</td>
+<a id="ac44aa265265c65b8c29fd80aa3e0f61d" name="ac44aa265265c65b8c29fd80aa3e0f61d"></a>double</td>
 <td class="fieldname">
 jitter</td>
 <td class="fielddoc">
@@ -1149,7 +1112,7 @@ Jitter factor for randomizing delays (0.0=no jitter, 1.0=full). <p>Default: SOCK
 <dl class="section warning"><dt>Warning</dt><dd>High jitter (&gt;0.5) may cause unpredictable timing. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gae4fc9812297db12344b02e21d638a618" name="gae4fc9812297db12344b02e21d638a618"></a>int</td>
+<a id="ae4fc9812297db12344b02e21d638a618" name="ae4fc9812297db12344b02e21d638a618"></a>int</td>
 <td class="fieldname">
 max_attempts</td>
 <td class="fielddoc">
@@ -1157,7 +1120,7 @@ Maximum number of retry attempts before giving up. <p>Default: SOCKET_RETRY_DEFA
 <dl class="section note"><dt>Note</dt><dd>Values &lt;=0 are treated as unlimited but hard-capped for safety. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gaa9acfb8be959ffd198d16e2446a30710" name="gaa9acfb8be959ffd198d16e2446a30710"></a>int</td>
+<a id="aa9acfb8be959ffd198d16e2446a30710" name="aa9acfb8be959ffd198d16e2446a30710"></a>int</td>
 <td class="fieldname">
 max_delay_ms</td>
 <td class="fielddoc">
@@ -1165,7 +1128,7 @@ Maximum cap for backoff delays in milliseconds. <p>Default: SOCKET_RETRY_DEFAULT
 <dl class="section note"><dt>Note</dt><dd>Must be &gt;= initial_delay_ms; larger values allow longer waits. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gae292a46f8c68e19cb29e72d49b48317e" name="gae292a46f8c68e19cb29e72d49b48317e"></a>double</td>
+<a id="ae292a46f8c68e19cb29e72d49b48317e" name="ae292a46f8c68e19cb29e72d49b48317e"></a>double</td>
 <td class="fieldname">
 multiplier</td>
 <td class="fielddoc">
@@ -1196,14 +1159,9 @@ Fields Table</h2>
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Description    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">attempts   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Total calls to operation (includes final success; min=1 if executed)    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">last_error   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Final operation return (0=success, else errno-like code)    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">total_delay_ms   </td><td class="markdownTableBodyNone">int64_t   </td><td class="markdownTableBodyNone">Sum of all backoff sleeps (monotonic ms; excludes op time)    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">total_time_ms   </td><td class="markdownTableBodyNone">int64_t   </td><td class="markdownTableBodyNone">Wall-clock from start to end (ops + delays + overhead)   </td></tr>
+<td class="markdownTableBodyNone">attempts   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Total calls to operation (includes final success; min=1   </td></tr>
 </table>
+<p>if executed) | | last_error | int | Final operation return (0=success, else errno-like code) | | total_delay_ms | int64_t | Sum of all backoff sleeps (monotonic ms; excludes op time) | | total_time_ms | int64_t | Wall-clock from start to end (ops + delays + overhead) |</p>
 <p>Usage: Retrieve via get_stats(), analyze for high retry rates or long delays.</p>
 <h2><a class="anchor" id="autotoc_md109"></a>
 Interpretation Notes</h2>
@@ -1220,38 +1178,38 @@ int64_t timings use <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa
 <dl class="section user"><dt>Thread Safety\n Read: Yes (atomic snapshot via get_stats()); Write: No</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketRetry_get_stats() accessor function. </dd>
 <dd>
-SocketRetry_execute()/*simple() updating fields. </dd>
+SocketRetry_execute() or SocketRetry_simple() for updating fields. </dd>
 <dd>
 SocketRetry_reset() clears to zero. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> influencing attempt counts/delays. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00419">419</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00416">416</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="ga7b978de556278e018fccc199dadd4a7d" name="ga7b978de556278e018fccc199dadd4a7d"></a>int</td>
+<a id="a7b978de556278e018fccc199dadd4a7d" name="a7b978de556278e018fccc199dadd4a7d"></a>int</td>
 <td class="fieldname">
 attempts</td>
 <td class="fielddoc">
 Total operation invocations during the retry sequence. <p>Includes initial attempt + retries up to success or limit. Range: 1+ (if executed); 0 (pre-execution or reset). High values indicate persistent failures or conservative policy. </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga560a11b7408ab6b745312cc2552aa387" name="ga560a11b7408ab6b745312cc2552aa387"></a>int</td>
+<a id="a560a11b7408ab6b745312cc2552aa387" name="a560a11b7408ab6b745312cc2552aa387"></a>int</td>
 <td class="fieldname">
 last_error</td>
 <td class="fielddoc">
 Final error code from last operation call. <p>0 on success; non-zero errno-like value on exhaustion/failure. Use strerror() or <a class="el" href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9" title="Provides a thread-safe and bounds-checked implementation of strerror().">Socket_safe_strerror()</a> for human-readable. </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="gaba725a298fa2b675bcdc8ea77ba8b27e" name="gaba725a298fa2b675bcdc8ea77ba8b27e"></a>int64_t</td>
+<a id="aba725a298fa2b675bcdc8ea77ba8b27e" name="aba725a298fa2b675bcdc8ea77ba8b27e"></a>int64_t</td>
 <td class="fieldname">
 total_delay_ms</td>
 <td class="fielddoc">
 Aggregate backoff delay time across all retries (ms). <p>Sum of jittered exponential delays slept between attempts. Monotonic clock; excludes operation execution time. Useful for latency attribution to retries. </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ga939cbbd0e2c2537391a2e970991a1c9d" name="ga939cbbd0e2c2537391a2e970991a1c9d"></a>int64_t</td>
+<a id="a939cbbd0e2c2537391a2e970991a1c9d" name="a939cbbd0e2c2537391a2e970991a1c9d"></a>int64_t</td>
 <td class="fieldname">
 total_time_ms</td>
 <td class="fielddoc">
@@ -1282,7 +1240,7 @@ Total wall-clock duration of entire execution (ms). <p>From execute() entry to r
 <a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad" title="Finalize incremental UTF-8 validation and check completeness.">SocketUTF8_finish()</a> to finalize validation. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Thread-safe when not shared across threads without synchronization. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00334">334</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00357">357</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1326,7 +1284,7 @@ state</td>
 <p>Maximum IP address string length. </p>
 <p>IPv6 with scope ID. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00829">829</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00837">837</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1346,7 +1304,7 @@ state</td>
 <p>Prime number for good distribution.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for IP tracking implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00818">818</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00826">826</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1365,7 +1323,7 @@ state</td>
 <p>Buffer size for formatted log messages. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01068">1068</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01076">1076</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1384,7 +1342,7 @@ state</td>
 <p>Default timestamp for formatting errors. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01098">1098</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01106">1106</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1403,7 +1361,7 @@ state</td>
 <p>Timestamp formatting buffer size. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01078">1078</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01086">1086</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1422,7 +1380,7 @@ state</td>
 <p>Timestamp format string. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01088">1088</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01096">1096</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1441,7 +1399,7 @@ state</td>
 <p>Log truncation suffix. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01108">1108</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01116">1116</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1460,7 +1418,7 @@ state</td>
 <p>Length of log truncation suffix. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga2d9c77a58bc1bafac674a2f3e7fd6110" title="Log truncation suffix.">SOCKET_LOG_TRUNCATION_SUFFIX</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01118">1118</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01126">1126</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1478,7 +1436,7 @@ state</td>
 
 <p>SOCKET_METRICS_EXPORT_BUFFER_SIZE - Default export buffer size. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00183">183</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00187">187</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1497,7 +1455,7 @@ state</td>
 <p>SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir. </p>
 <p>Higher values give more accurate percentiles but use more memory. Default: 1024 samples per histogram (~8KB per histogram) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00175">175</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00179">179</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1539,11 +1497,11 @@ state</td>
 <div class="line">        }                                                                     \</div>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
-<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1">SOCKET_CTR_HTTP_RESPONSES_2XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_2XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00338">SocketMetrics.h:338</a></div></div>
-<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02">SOCKET_CTR_HTTP_RESPONSES_1XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_1XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00337">SocketMetrics.h:337</a></div></div>
-<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831">SOCKET_CTR_HTTP_RESPONSES_3XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_3XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00339">SocketMetrics.h:339</a></div></div>
-<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72">SOCKET_CTR_HTTP_RESPONSES_5XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_5XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00341">SocketMetrics.h:341</a></div></div>
-<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5">SOCKET_CTR_HTTP_RESPONSES_4XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_4XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00340">SocketMetrics.h:340</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1">SOCKET_CTR_HTTP_RESPONSES_2XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_2XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00365">SocketMetrics.h:365</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02">SOCKET_CTR_HTTP_RESPONSES_1XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_1XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00364">SocketMetrics.h:364</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831">SOCKET_CTR_HTTP_RESPONSES_3XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_3XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00366">SocketMetrics.h:366</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72">SOCKET_CTR_HTTP_RESPONSES_5XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_5XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00368">SocketMetrics.h:368</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5"><div class="ttname"><a href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5">SOCKET_CTR_HTTP_RESPONSES_4XX</a></div><div class="ttdeci">@ SOCKET_CTR_HTTP_RESPONSES_4XX</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00367">SocketMetrics.h:367</a></div></div>
 </div><!-- fragment -->
 <p>SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class. </p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -1553,7 +1511,7 @@ state</td>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00956">956</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00994">994</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1571,7 +1529,7 @@ state</td>
 
 <p>SOCKET_METRICS_MAX_HELP_LEN - Maximum length for metric help text. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00199">199</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00203">203</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1589,7 +1547,7 @@ state</td>
 
 <p>SOCKET_METRICS_MAX_LABEL_LEN - Maximum length for metric labels. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00191">191</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00195">195</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1625,7 +1583,7 @@ state</td>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00942">942</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00979">979</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1646,7 +1604,7 @@ state</td>
 
 <p>SOCKET_METRICS_TIME_START - Start timing an operation. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00934">934</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00971">971</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1666,7 +1624,7 @@ state</td>
 <p>0 = unlimited.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for bandwidth limiting. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00806">806</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00814">814</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1685,7 +1643,7 @@ state</td>
 <p>Default burst capacity for connection rate limiter. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for rate limiting implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00782">782</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00790">790</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1705,7 +1663,7 @@ state</td>
 <p>New connections per second.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for rate limiting implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00772">772</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00780">780</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1725,7 +1683,7 @@ state</td>
 <p>0 = unlimited.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pool rate limiting. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00794">794</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00802">802</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1746,7 +1704,7 @@ state</td>
 <dd>
 <a class="el" href="group__utilities.html#gab29dadd4e6a32a10eb577cf6f1399994" title="Get the configured maximum bucket capacity (burst size).">SocketRateLimit_get_bucket_size()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00066">66</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00068">68</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 
 </div>
 </div>
@@ -1768,7 +1726,7 @@ Rate Limiter Constants</h1>
 <p>Defines internal constants used by the token bucket algorithm, including wait values, state flags, and mutex states. </p>
 <p>When tokens are needed but calculated wait is zero, return this minimum to ensure callers always wait at least a small amount. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms()</a> in <a class="el" href="SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates.">SocketRateLimit.h</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00052">52</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00054">54</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 
 </div>
 </div>
@@ -1787,7 +1745,7 @@ Rate Limiter Constants</h1>
 <p>Internal flag indicating mutex is initialized and ready. </p>
 <p>Value 1 in initialized field after successful mutex_init(). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00095">95</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00097">97</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 
 </div>
 </div>
@@ -1806,7 +1764,7 @@ Rate Limiter Constants</h1>
 <p>Internal flag indicating mutex is not yet initialized. </p>
 <p>Value 0 in initialized field before mutex creation. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00086">86</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00088">88</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 
 </div>
 </div>
@@ -1825,7 +1783,134 @@ Rate Limiter Constants</h1>
 <p>Internal flag indicating rate limiter instance is shutdown. </p>
 <p>Used in initialized field: -1 means being freed, do not use after this. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gac871476460ec6f0eeea5ecea0b9e8747" title="Dispose of a rate limiter instance.">SocketRateLimit_free()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00077">77</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00079">79</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ga1b9f06edcbcdd60e892086a4b8c2b9ba" name="ga1b9f06edcbcdd60e892086a4b8c2b9ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1b9f06edcbcdd60e892086a4b8c2b9ba">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS&#160;&#160;&#160;100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default initial backoff delay in milliseconds. </p>
+<dl class="section note"><dt>Note</dt><dd>Conservative starting delay for first retry. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#a3738bc8ccc78b3f879df09d685494714" title="Initial backoff delay in milliseconds for the first retry.">SocketRetry_Policy::initial_delay_ms</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00217">217</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+
+</div>
+</div>
+<a id="gafbe9a9852b0477755c295af74aa0f2c7" name="gafbe9a9852b0477755c295af74aa0f2c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafbe9a9852b0477755c295af74aa0f2c7">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_JITTER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_DEFAULT_JITTER&#160;&#160;&#160;0.25</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default jitter factor for randomized backoff (0.0 to 1.0). </p>
+<dl class="section note"><dt>Note</dt><dd>0.25 provides moderate randomization to avoid thundering herd. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ac44aa265265c65b8c29fd80aa3e0f61d" title="Jitter factor for randomizing delays (0.0=no jitter, 1.0=full).">SocketRetry_Policy::jitter</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00247">247</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+
+</div>
+</div>
+<a id="ga9e4c6bdc5f6ab59683cef18bb3f58211" name="ga9e4c6bdc5f6ab59683cef18bb3f58211"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9e4c6bdc5f6ab59683cef18bb3f58211">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS&#160;&#160;&#160;3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Compile-time configurable default values for <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> fields. </p>
+<p>These macros allow customization of retry policy defaults without modifying source code. Override them before including <a class="el" href="SocketRetry_8h.html" title="Generic retry framework with exponential backoff and jitter for transient failures.">SocketRetry.h</a>.</p>
+<dl class="section see"><dt>See also</dt><dd>SocketRetry_policy_defaults() which uses these values. </dd>
+<dd>
+<a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> for structure details.</dd></dl>
+<p>Default maximum number of retry attempts.</p>
+<dl class="section note"><dt>Note</dt><dd>Override before inclusion to change default in SocketRetry_new(NULL) and policy_defaults(). </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618" title="Maximum number of retry attempts before giving up.">SocketRetry_Policy::max_attempts</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00207">207</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+
+</div>
+</div>
+<a id="gae4c30a1ed41ff40ca11fbdb21c2ec947" name="gae4c30a1ed41ff40ca11fbdb21c2ec947"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae4c30a1ed41ff40ca11fbdb21c2ec947">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_DEFAULT_MAX_DELAY_MS&#160;&#160;&#160;30000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default maximum backoff delay cap in milliseconds. </p>
+<dl class="section note"><dt>Note</dt><dd>Prevents excessively long delays in prolonged failure scenarios. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#aa9acfb8be959ffd198d16e2446a30710" title="Maximum cap for backoff delays in milliseconds.">SocketRetry_Policy::max_delay_ms</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00227">227</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+
+</div>
+</div>
+<a id="ga2addc89cb7a7a9b6e75f3cd51eef65ac" name="ga2addc89cb7a7a9b6e75f3cd51eef65ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2addc89cb7a7a9b6e75f3cd51eef65ac">&#9670;&#160;</a></span>SOCKET_RETRY_DEFAULT_MULTIPLIER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_DEFAULT_MULTIPLIER&#160;&#160;&#160;2.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default exponential backoff multiplier. </p>
+<dl class="section note"><dt>Note</dt><dd>Standard value of 2.0 for doubling delay per attempt. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ae292a46f8c68e19cb29e72d49b48317e" title="Multiplier for exponential backoff (recommended &gt;1.0).">SocketRetry_Policy::multiplier</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00237">237</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+
+</div>
+</div>
+<a id="ga6245d4aca908bb154e7cd34f6a36d8dd" name="ga6245d4aca908bb154e7cd34f6a36d8dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6245d4aca908bb154e7cd34f6a36d8dd">&#9670;&#160;</a></span>SOCKET_RETRY_MAX_ATTEMPTS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_RETRY_MAX_ATTEMPTS&#160;&#160;&#160;10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Hard maximum attempts limit to prevent infinite retries. </p>
+<dl class="section note"><dt>Note</dt><dd>Internal safety cap; policy max_attempts cannot exceed this. Used in validation and delay calculations. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd>SocketRetry_calculate_delay() </dd>
+<dd>
+<a class="el" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618" title="Maximum number of retry attempts before giving up.">SocketRetry_Policy::max_attempts</a> </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00259">259</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -1844,7 +1929,7 @@ Rate Limiter Constants</h1>
 <p>Maximum code point encodable in a single UTF-8 byte.Corresponds to 7-bit ASCII range (U+0000 to U+007F); lead byte 0xxxxxxx. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103" title="Determine byte length required to encode a Unicode code point in UTF-8.">SocketUTF8_codepoint_len()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00152">152</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00164">164</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1863,7 +1948,7 @@ Rate Limiter Constants</h1>
 <p>Maximum code point encodable in two UTF-8 bytes.Range U+0080 to U+07FF; lead byte 110xxxxx followed by continuation byte. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103" title="Determine byte length required to encode a Unicode code point in UTF-8.">SocketUTF8_codepoint_len()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00160">160</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00172">172</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1882,7 +1967,7 @@ Rate Limiter Constants</h1>
 <p>Maximum code point encodable in three UTF-8 bytes.Range U+0800 to U+FFFF (excluding surrogates); lead byte 1110xxxx. Note: U+D800–U+DFFF invalid surrogates not encodable. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103" title="Determine byte length required to encode a Unicode code point in UTF-8.">SocketUTF8_codepoint_len()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00169">169</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00181">181</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1901,7 +1986,7 @@ Rate Limiter Constants</h1>
 <p>Minimum code point requiring four UTF-8 bytes.Start of 4-byte encodings for supplementary planes (U+10000+); lead byte 11110xxx. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103" title="Determine byte length required to encode a Unicode code point in UTF-8.">SocketUTF8_codepoint_len()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00177">177</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00190">190</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1920,7 +2005,7 @@ Rate Limiter Constants</h1>
 <p>Maximum bytes required to encode any single Unicode code point in UTF-8. </p>
 <p>All valid UTF-8 sequences are 1-4 bytes long; buffers should accommodate this maximum. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga0d7d4a24b88fb2a7add5dce1a5ffdecf" title="Encode a single Unicode code point into UTF-8 bytes.">SocketUTF8_encode()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00110">110</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00120">120</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1941,7 +2026,7 @@ Rate Limiter Constants</h1>
 <dd>
 <a class="el" href="group__utilities.html#ga1563bde34c7c6e25d605d3d4d64ca103" title="Determine byte length required to encode a Unicode code point in UTF-8.">SocketUTF8_codepoint_len()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00121">121</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00132">132</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1960,7 +2045,7 @@ Rate Limiter Constants</h1>
 <p>End of UTF-16 surrogate range (invalid in pure UTF-8). </p>
 <p>Low surrogates U+DC00–U+DFFF rejected for security and standard compliance. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00139">139</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00151">151</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -1979,18 +2064,18 @@ Rate Limiter Constants</h1>
 <p>Start of UTF-16 surrogate range (invalid in pure UTF-8). </p>
 <p>High surrogates U+D800–U+DBFF are rejected to prevent mixed UTF-8/UTF-16 issues. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00130">130</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00142">142</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
 <a id="ga0acb682b8260ab1c60b918599864e2e5" name="ga0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2018,18 +2103,18 @@ SocketRetry_execute() for usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00108">108</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00110">110</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
 
 </div>
 </div>
 <a id="ga0acb682b8260ab1c60b918599864e2e5" name="ga0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2053,7 +2138,32 @@ SocketRetry_execute() for usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit_8h_source.html#l00105">105</a> of file <a class="el" href="SocketRateLimit_8h_source.html">SocketRateLimit.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRateLimit_8h_source.html#l00106">106</a> of file <a class="el" href="SocketRateLimit_8h_source.html">SocketRateLimit.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0acb682b8260ab1c60b918599864e2e5" name="ga0acb682b8260ab1c60b918599864e2e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Opaque handle for a retry context. </p>
+<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via SocketRetry_new(), used in execute() functions, and freed with SocketRetry_free().</p>
+<p>Internal implementation uses Arena for memory management and tracks execution metrics. Not thread-safe; designed for single-threaded use per instance.</p>
+<dl class="section see"><dt>See also</dt><dd>SocketRetry_new() for allocation. </dd>
+<dd>
+SocketRetry_execute() for usage. </dd>
+<dd>
+<a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00093">93</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -2091,7 +2201,8 @@ Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// TCP connect with logging</span></div>
 <div class="line"><span class="keyword">static</span> <span class="keywordtype">int</span> tcp_connect_op(<span class="keywordtype">void</span> *ctx_, <span class="keywordtype">int</span> attempt) {</div>
 <div class="line">    ConnectCtx *ctx = (ConnectCtx*)ctx_;</div>
-<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a>(<span class="stringliteral">&quot;Connect attempt %d for %s:%d&quot;</span>, attempt, ctx-&gt;host, ctx-&gt;port);</div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a>(<span class="stringliteral">&quot;Connect attempt %d for %s:%d&quot;</span>, attempt, ctx-&gt;host,</div>
+<div class="line">ctx-&gt;port);</div>
 <div class="line"> </div>
 <div class="line">    Socket_T sock = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line">    <span class="keywordflow">if</span> (!sock) <span class="keywordflow">return</span> ENOMEM;</div>
@@ -2113,7 +2224,7 @@ Usage Example</h2>
 <div class="line"><span class="keywordflow">if</span> (res == 0 &amp;&amp; ctx.socket) {</div>
 <div class="line">    <span class="comment">// Use ctx.socket...</span></div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketUtil_8h_html_a7853a630bcaead9d41536ccbfd598f6d"><div class="ttname"><a href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_DEBUG_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00490">SocketUtil.h:490</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_a7853a630bcaead9d41536ccbfd598f6d"><div class="ttname"><a href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_DEBUG_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00536">SocketUtil.h:536</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket with specified domain, type, and protocol.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
 <div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
@@ -2128,15 +2239,15 @@ Advanced: Progressive Timeouts</h2>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Non-idempotent ops risk data corruption/duplication; prefer stateless. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Returning 0 prematurely aborts retries; ensure true completion. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n Caller ensures; context may need locks if shared.</dt><dd></dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8" title="Callback type to decide whether to retry after an operation failure.">SocketRetry_ShouldRetry</a> pairing for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> decisions. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8" title="Callback type to decide whether to retry after an operation failure.">SocketRetry_ShouldRetry</a> pairing for error decisions. </dd>
 <dd>
 SocketRetry_execute() invoker and loop logic. </dd>
 <dd>
 <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> common retryable codes. </dd>
 <dd>
-docs/ERROR_HANDLING.md <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> code conventions. </dd></dl>
+docs/ERROR_HANDLING.md error code conventions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00348">348</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00340">340</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -2147,7 +2258,7 @@ docs/ERROR_HANDLING.md <a class="el" href="SocketHappyEyeballs-private_8h.html#a
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef int(* SocketRetry_ShouldRetry) (int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, int attempt, void *context)</td>
+          <td class="memname">typedef int(* SocketRetry_ShouldRetry) (int error, int attempt, void *context)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2175,23 +2286,23 @@ SocketRetry_execute() for integration. </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445" title="User-defined callback implementing the core retryable operation.">SocketRetry_Operation</a> for the operation being retried. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00376">376</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00370">370</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
-<a id="ga24514489b0962fafe8414bfae95aa268" name="ga24514489b0962fafe8414bfae95aa268"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga24514489b0962fafe8414bfae95aa268">&#9670;&#160;</a></span>T</h2>
+<a id="ga419cec86f54612ef9204c059be3ec0a9" name="ga419cec86f54612ef9204c059be3ec0a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga419cec86f54612ef9204c059be3ec0a9">&#9670;&#160;</a></span>SocketRetry_T</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef struct <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>* <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a></td>
+          <td class="memname">typedef struct <a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a>* <a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00111">111</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00094">94</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>
@@ -2347,7 +2458,7 @@ SocketRetry_execute() for integration. </dd>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00309">309</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00336">336</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -2410,7 +2521,7 @@ SocketRetry_execute() for integration. </dd>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00419">419</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00446">446</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -2461,7 +2572,7 @@ SocketRetry_execute() for integration. </dd>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00472">472</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00499">499</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -2482,24 +2593,7 @@ SocketRetry_execute() for integration. </dd>
 <p>Categories are used internally for metric naming and documentation but exposed via <a class="el" href="group__utilities.html#ga6991175422fbbdf883b75713242b0e0f" title="Get the name of a metric category as a static string.">SocketMetrics_category_name()</a> for dynamic tools.</p>
 <h2><a class="anchor" id="autotoc_md97"></a>
 Categories Overview Table</h2>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Category   </th><th class="markdownTableHeadNone">Subsystem   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Example Metrics    </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">POOL   </td><td class="markdownTableBodyNone"><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> Pooling   </td><td class="markdownTableBodyNone">Track pool health, efficiency, and lifecycle   </td><td class="markdownTableBodyNone">connections_active, acquire_time_ms    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">HTTP_CLIENT   </td><td class="markdownTableBodyNone">HTTP Client   </td><td class="markdownTableBodyNone">Monitor outbound requests and performance   </td><td class="markdownTableBodyNone">requests_total, latency_ms, bytes_sent    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">HTTP_SERVER   </td><td class="markdownTableBodyNone">HTTP Server   </td><td class="markdownTableBodyNone">Server request handling and throughput   </td><td class="markdownTableBodyNone">requests_total, response_size, errors    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">TLS   </td><td class="markdownTableBodyNone">TLS/SSL Security   </td><td class="markdownTableBodyNone">Handshake success, verification, sessions   </td><td class="markdownTableBodyNone">handshakes_total, cert_failures    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">DNS   </td><td class="markdownTableBodyNone">DNS Resolution   </td><td class="markdownTableBodyNone">Query performance and cache effectiveness   </td><td class="markdownTableBodyNone">queries_total, cache_hits, query_time_ms    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">SOCKET   </td><td class="markdownTableBodyNone">Core Socket I/O   </td><td class="markdownTableBodyNone">Basic socket creation, connect/accept stats   </td><td class="markdownTableBodyNone">connect_success, accept_total    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">POLL   </td><td class="markdownTableBodyNone">Event Loop   </td><td class="markdownTableBodyNone">Polling efficiency and event processing   </td><td class="markdownTableBodyNone">wakeups, events_dispatched   </td></tr>
-</table>
+<p>| Category | Subsystem | Purpose | Example Metrics | |-------------&mdash;|---------------------&mdash;|-------------------------------------------&mdash;|---------------------------------------&mdash;| | POOL | <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> Pooling | Track pool health, efficiency, and lifecycle | connections_active, acquire_time_ms | | HTTP_CLIENT | HTTP Client | Monitor outbound requests and performance | requests_total, latency_ms, bytes_sent | | HTTP_SERVER | HTTP Server | Server request handling and throughput | requests_total, response_size, errors | | TLS | TLS/SSL Security | Handshake success, verification, sessions | handshakes_total, cert_failures | | DNS | DNS Resolution | Query performance and cache effectiveness | queries_total, cache_hits, query_time_ms | | SOCKET | Core Socket I/O | Basic socket creation, connect/accept stats | connect_success, accept_total | | POLL | Event Loop | Polling efficiency and event processing | wakeups, events_dispatched |</p>
 <h2><a class="anchor" id="autotoc_md98"></a>
 Best Practices</h2>
 <ul>
@@ -2531,7 +2625,7 @@ docs/METRICS.md#categories for dashboard examples </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00285">285</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00304">304</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -2558,19 +2652,10 @@ Usage Patterns</h2>
 </ul>
 <h2><a class="anchor" id="autotoc_md96"></a>
 Metric Types Table</h2>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key Operations   </th><th class="markdownTableHeadNone">StatsD Suffix   </th><th class="markdownTableHeadNone">Prometheus Type    </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">COUNTER   </td><td class="markdownTableBodyNone">Cumulative event counts   </td><td class="markdownTableBodyNone">inc(), add(value)   </td><td class="markdownTableBodyNone">|c   </td><td class="markdownTableBodyNone">counter    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">GAUGE   </td><td class="markdownTableBodyNone">Current value snapshots   </td><td class="markdownTableBodyNone">set(value), inc(), dec()   </td><td class="markdownTableBodyNone">|g   </td><td class="markdownTableBodyNone">gauge    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">HISTOGRAM   </td><td class="markdownTableBodyNone">Value distributions &amp; percentiles   </td><td class="markdownTableBodyNone">observe(value), percentile(p)   </td><td class="markdownTableBodyNone">|ms or |h   </td><td class="markdownTableBodyNone">histogram   </td></tr>
-</table>
+<p>| Type | Purpose | Key Operations | StatsD Suffix | Prometheus Type | |---------&mdash;|-------------------------------&mdash;|------------------------------&mdash;|------------&mdash;|--------------&mdash;| | COUNTER | Cumulative event counts | inc(), add(value) | |c | counter | | GAUGE | Current value snapshots | set(value), inc(), dec() | |g | gauge | | HISTOGRAM | Value distributions &amp; percentiles| observe(value), percentile(p) | |ms or |h | histogram |</p>
 <dl class="section note"><dt>Note</dt><dd>Counters wrap around on overflow (uint64_t, ~584 years at 1/sec rate). </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Gauges should be updated frequently for accurate monitoring. </dd></dl>
-<dl class="section user"><dt>Complexity\n All type-specific ops are O(1) except histogram percentiles O(n log n).</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n All type-specific ops are O(1) except histogram percentiles O(n</dt><dd>log n).</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga051f576075a7c5fa39982fc3256127db" title="Increment a counter metric by 1 atomically.">SocketMetrics_counter_inc()</a> for counter examples </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga136f209696f9bc3f2fc3ad47cdac0458" title="Set gauge to specific value.">SocketMetrics_gauge_set()</a> for gauge examples </dd>
@@ -2587,7 +2672,7 @@ docs/METRICS.md#metric-types for best practices </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00243">243</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00252">252</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -2625,7 +2710,7 @@ docs/METRICS.md#metric-types for best practices </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00215">215</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUTF8_8h_source.html#l00230">230</a> of file <a class="el" href="SocketUTF8_8h_source.html">SocketUTF8.h</a>.</p>
 
 </div>
 </div>
@@ -2904,7 +2989,7 @@ docs/METRICS.md#metric-types for best practices </dd></dl>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of bytes written (excluding NUL), or required size if too small. </dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for consistency.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for</dt><dd>consistency.</dd></dl>
 <p>Exports metrics as JSON object.</p>
 <p>Example output: { "timestamp_ms": 1699876543210, "counters": { "pool_connections_created": 1234, ... }, "gauges": { "pool_active_connections": 42, ... }, "histograms": { "http_client_request_latency_ms": { "count": 1000, "sum": 125000.0, "p50": 100.0, "p95": 250.0, "p99": 500.0 }, ... } } </p>
 
@@ -2953,7 +3038,7 @@ docs/METRICS.md#metric-types for best practices </dd></dl>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of bytes written (excluding NUL), or required size if too small. </dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for consistency.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for</dt><dd>consistency.</dd></dl>
 <p>Exports metrics in Prometheus exposition format (text/plain). Format: <a href="https://prometheus.io/docs/instrumenting/exposition_formats/">https://prometheus.io/docs/instrumenting/exposition_formats/</a></p>
 <p>Example output: </p>
 <h1><a class="anchor" id="autotoc_md99"></a>
@@ -3014,7 +3099,7 @@ TYPE socket_pool_connections_created counter</h1>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of bytes written (excluding NUL), or required size if too small. </dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for consistency.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot acquisition with mutex protection for</dt><dd>consistency.</dd></dl>
 <p>Exports metrics in StatsD line format. Format: <a href="https://github.com/statsd/statsd/blob/master/docs/metric_types.md">https://github.com/statsd/statsd/blob/master/docs/metric_types.md</a></p>
 <p>Example output: myapp.socket.pool.connections_created:1234|c myapp.socket.pool.active_connections:42|g </p>
 
@@ -3321,7 +3406,7 @@ TYPE socket_pool_connections_created counter</h1>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes - provides consistent view without blocking other operations.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - provides consistent view without blocking other</dt><dd>operations. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gad2d2769789054962f81f3212df75ef35" title="Export metrics in Prometheus text format.">SocketMetrics_export_prometheus()</a> to export the snapshot. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketMetrics__Snapshot" title="Complete point-in-time snapshot of all metrics for export and analysis.">SocketMetrics_Snapshot</a> for structure details. </dd>
@@ -3762,10 +3847,10 @@ TYPE socket_pool_connections_created counter</h1>
 </div><div class="memdoc">
 
 <p>Shut down the metrics subsystem, releasing all resources. </p>
-<dl class="section user"><dt>Thread Safety\n Yes - idempotent, safe to call multiple times even if not initialized.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - idempotent, safe to call multiple times even if not</dt><dd>initialized. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gaeefb37a161dced1c0dcf35cb8c472977" title="Initialize the metrics subsystem.">SocketMetrics_init()</a> for subsystem initialization. </dd>
 <dd>
-<a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47" title="Reset all metrics to initial values.">SocketMetrics_reset()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> reset needed before shutdown. </dd></dl>
+<a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47" title="Reset all metrics to initial values.">SocketMetrics_reset()</a> if reset needed before shutdown. </dd></dl>
 
 </div>
 </div>
@@ -3812,7 +3897,7 @@ TYPE socket_pool_connections_created counter</h1>
 <dl class="section note"><dt>Note</dt><dd>Value may change immediately after due to concurrent acquires. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7" title="Non-blocking attempt to acquire and consume tokens.">SocketRateLimit_try_acquire()</a> to consume tokens. </dd>
 <dd>
-<a class="el" href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> you need to wait for more. </dd>
+<a class="el" href="group__utilities.html#ga5a231dd056cc866fc7652660374e3e3f">SocketRateLimit_wait_time_ms()</a> if you need to wait for more. </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga33a8790eeb8ee8f3f2cb7f9c8e7d16c9" title="Get the configured token refill rate in tokens per second.">SocketRateLimit_get_rate()</a> for refill rate. </dd></dl>
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2home_2tetsuo_2git_2tetsuo-socket_2include_2core_2SocketRateLimit_8h-example.html#a7">/home/tetsuo/git/tetsuo-socket/include/core/SocketRateLimit.h</a>.</dd>
@@ -3967,7 +4052,7 @@ TYPE socket_pool_connections_created counter</h1>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Conditional - safe from one thread at a time; acquires internal mutex for cleanup.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Conditional - safe from one thread at a time; acquires internal</dt><dd>mutex for cleanup.</dd></dl>
 <p>Releases resources held by the limiter, including the internal mutex. If the instance was allocated via malloc (arena==NULL in new()), memory is freed; otherwise, only the handle is cleared (arena will free on dispose).</p>
 <dl class="section note"><dt>Note</dt><dd>Always call after use to prevent resource leaks and allow accurate live count debugging. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f" title="Create a new token bucket rate limiter.">SocketRateLimit_new()</a> for allocation details. </dd>
@@ -4584,7 +4669,7 @@ Does not modify input buffer.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Always call after final <a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> call, even if expecting completeness.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> for feeding data. </dd>
 <dd>
-<a class="el" href="group__utilities.html#structSocketUTF8__State" title="State structure for incremental UTF-8 validation.">SocketUTF8_State</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> details. </dd>
+<a class="el" href="group__utilities.html#structSocketUTF8__State" title="State structure for incremental UTF-8 validation.">SocketUTF8_State</a> for state details. </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> for single-call validation of complete data. </dd></dl>
 
@@ -4634,7 +4719,7 @@ Does not modify input buffer.</dd></dl>
 <dd>
 <a class="el" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c" title="Reset incremental validator state for reuse.">SocketUTF8_reset()</a> equivalent for reuse. </dd>
 <dd>
-<a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a8cfef7a67b323a611a42e8eab03eed22">next</a> step after initialization. </dd></dl>
+<a class="el" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60" title="Process a chunk of data through incremental UTF-8 validator.">SocketUTF8_update()</a> next step after initialization. </dd></dl>
 
 </div>
 </div>
@@ -4840,52 +4925,56 @@ Does not modify input buffer.</dd></dl>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - safe for single-threaded use per state instance.</dt><dd></dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Call <a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad" title="Finalize incremental UTF-8 validation and check completeness.">SocketUTF8_finish()</a> after all chunks to check final completeness. State remains valid for reset/reuse.</dd></dl>
-<h2><a class="anchor" id="autotoc_md241"></a>
+<h2><a class="anchor" id="autotoc_md229"></a>
 Usage Example</h2>
-<div class="fragment"><div class="line"><span class="comment">// Example: Validate streaming data from socket recv (non-blocking)</span></div>
-<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> <a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>;</div>
-<div class="line"><a class="code hl_function" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>);</div>
+<div class="fragment"><div class="line">  <span class="comment">// Example: Validate streaming data from socket recv (non-blocking)</span></div>
+<div class="line">  <a class="code hl_struct" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> state;</div>
+<div class="line">  <a class="code hl_function" href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a>(&amp;state);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> buf[4096];</div>
-<div class="line">ssize_t received;</div>
-<div class="line"><a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res;</div>
-<div class="line"><span class="keywordtype">bool</span> complete = <span class="keyword">false</span>;</div>
+<div class="line">  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> buf[4096];</div>
+<div class="line">  ssize_t received;</div>
+<div class="line">  <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res;</div>
+<div class="line">  <span class="keywordtype">bool</span> complete = <span class="keyword">false</span>;</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (!complete) {</div>
-<div class="line">    received = <a class="code hl_function" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a>(socket, buf, <span class="keyword">sizeof</span>(buf));  <span class="comment">// May return partial</span></div>
-<div class="line">    <span class="keywordflow">if</span> (received &lt;= 0) { <span class="comment">/* handle EOF/error */</span> <span class="keywordflow">break</span>; }</div>
+<div class="line">  <span class="keywordflow">while</span> (!complete) {</div>
+<div class="line">      received = <a class="code hl_function" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a>(socket, buf, <span class="keyword">sizeof</span>(buf));  <span class="comment">// May return partial</span></div>
+<div class="line">      <span class="keywordflow">if</span> (received &lt;= 0) {</div>
+<div class="line">          <span class="comment">// handle EOF/error (e.g., close connection, log)</span></div>
+<div class="line">          <span class="keywordflow">break</span>;</div>
+<div class="line">      }</div>
 <div class="line"> </div>
-<div class="line">    res = <a class="code hl_function" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>, buf, received);</div>
-<div class="line">    <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> &amp;&amp; res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>) {</div>
-<div class="line">        <span class="comment">// Malformed UTF-8 detected</span></div>
-<div class="line">        fprintf(stderr, <span class="stringliteral">&quot;UTF-8 error: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
-<div class="line">        Socket_close(socket);</div>
-<div class="line">        <span class="keywordflow">break</span>;</div>
-<div class="line">    }</div>
+<div class="line">      res = <a class="code hl_function" href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a>(&amp;state, buf, received);</div>
+<div class="line">      <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a> &amp;&amp; res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a>) {</div>
+<div class="line">          <span class="comment">// Malformed UTF-8 detected</span></div>
+<div class="line">          fprintf(stderr, <span class="stringliteral">&quot;UTF-8 error: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
+<div class="line">          Socket_close(socket);</div>
+<div class="line">          <span class="keywordflow">break</span>;</div>
+<div class="line">      }</div>
 <div class="line"> </div>
-<div class="line">    <span class="comment">// Check if message complete (e.g., WebSocket frame end or \0)</span></div>
-<div class="line">    <span class="keywordflow">if</span> (<span class="comment">/* message boundary detected */</span>) {</div>
-<div class="line">        complete = <span class="keyword">true</span>;</div>
-<div class="line">    }</div>
-<div class="line">}</div>
+<div class="line">      <span class="comment">// Check if message complete (e.g., WebSocket frame end or \0)</span></div>
+<div class="line">      <span class="keywordflow">if</span> (message boundary detected) {  <span class="comment">// e.g., WebSocket FIN==1 &amp;&amp; opcode !=</span></div>
+<div class="line">CONT, HTTP \r\n\r\n, etc.</div>
+<div class="line">          complete = <span class="keyword">true</span>;</div>
+<div class="line">      }</div>
+<div class="line">  }</div>
 <div class="line"> </div>
-<div class="line">res = <a class="code hl_function" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>);</div>
-<div class="line"><span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
-<div class="line">    <span class="comment">// Truncated or invalid end</span></div>
-<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Stream incomplete: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
-<div class="line">}</div>
-<div class="line"><a class="code hl_function" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a>(&amp;<a class="code hl_variable" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>);  <span class="comment">// Ready for next message</span></div>
-<div class="ttc" id="aSocketHappyEyeballs-private_8h_html_a701136b6320d53560cfe228535884502"><div class="ttname"><a href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a></div><div class="ttdeci">SocketHE_AttemptState state</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00151">SocketHappyEyeballs-private.h:151</a></div></div>
+<div class="line">  res = <a class="code hl_function" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a>(&amp;state);</div>
+<div class="line">  <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
+<div class="line">      <span class="comment">// Truncated or invalid end</span></div>
+<div class="line">      fprintf(stderr, <span class="stringliteral">&quot;Stream incomplete: %s\n&quot;</span>,</div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
+<div class="line">  }</div>
+<div class="line">  <a class="code hl_function" href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a>(&amp;state);  <span class="comment">// Ready for next message</span></div>
 <div class="ttc" id="agroup__core__io_html_ga95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Receive data.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga305b150f1e0b525b236bf0a8952c5315"><div class="ttname"><a href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a></div><div class="ttdeci">const char * SocketUTF8_result_string(SocketUTF8_Result result)</div><div class="ttdoc">Retrieve descriptive string for a UTF-8 validation result code.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga388818b9081b6d4f7ad496c6f4a364ad"><div class="ttname"><a href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad">SocketUTF8_finish</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_finish(const SocketUTF8_State *state)</div><div class="ttdoc">Finalize incremental UTF-8 validation and check completeness.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga46408361a51a348e46420dfeeb3cca5c"><div class="ttname"><a href="group__utilities.html#ga46408361a51a348e46420dfeeb3cca5c">SocketUTF8_reset</a></div><div class="ttdeci">void SocketUTF8_reset(SocketUTF8_State *state)</div><div class="ttdoc">Reset incremental validator state for reuse.</div></div>
 <div class="ttc" id="agroup__utilities_html_ga63e171e87998e78fb1398213e4ebc9a5"><div class="ttname"><a href="group__utilities.html#ga63e171e87998e78fb1398213e4ebc9a5">SocketUTF8_init</a></div><div class="ttdeci">void SocketUTF8_init(SocketUTF8_State *state)</div><div class="ttdoc">Initialize UTF-8 incremental validation state.</div></div>
 <div class="ttc" id="agroup__utilities_html_gac7bf6c0717c79f93d931fcd50bf04b60"><div class="ttname"><a href="group__utilities.html#gac7bf6c0717c79f93d931fcd50bf04b60">SocketUTF8_update</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_update(SocketUTF8_State *state, const unsigned char *data, size_t len)</div><div class="ttdoc">Process a chunk of data through incremental UTF-8 validator.</div></div>
-<div class="ttc" id="agroup__utilities_html_gae8b6c527962e3019992746f49aac247b"><div class="ttname"><a href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a></div><div class="ttdeci">SocketUTF8_Result</div><div class="ttdoc">Enumeration of UTF-8 validation results.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00215">SocketUTF8.h:216</a></div></div>
-<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a></div><div class="ttdeci">@ UTF8_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00219">SocketUTF8.h:219</a></div></div>
-<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a></div><div class="ttdeci">@ UTF8_VALID</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00217">SocketUTF8.h:217</a></div></div>
-<div class="ttc" id="agroup__utilities_html_structSocketUTF8__State"><div class="ttname"><a href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a></div><div class="ttdoc">State structure for incremental UTF-8 validation.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00334">SocketUTF8.h:335</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gae8b6c527962e3019992746f49aac247b"><div class="ttname"><a href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a></div><div class="ttdeci">SocketUTF8_Result</div><div class="ttdoc">Enumeration of UTF-8 validation results.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00230">SocketUTF8.h:231</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba4d8dbfb5b4a4d95abd8662b58f0ec402">UTF8_INCOMPLETE</a></div><div class="ttdeci">@ UTF8_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00234">SocketUTF8.h:234</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71"><div class="ttname"><a href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a></div><div class="ttdeci">@ UTF8_VALID</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00232">SocketUTF8.h:232</a></div></div>
+<div class="ttc" id="agroup__utilities_html_structSocketUTF8__State"><div class="ttname"><a href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a></div><div class="ttdoc">State structure for incremental UTF-8 validation.</div><div class="ttdef"><b>Definition</b> <a href="SocketUTF8_8h_source.html#l00357">SocketUTF8.h:358</a></div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1" title="Create a new socket with specified domain, type, and protocol.">Socket_new()</a> and <a class="el" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9" title="Receive data.">Socket_recv()</a> for socket I/O integration. </dd>
 <dd>
 <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module for full WebSocket frame handling with UTF-8 validation. </dd></dl>
@@ -4894,7 +4983,7 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad" title="Finalize incremental UTF-8 validation and check completeness.">SocketUTF8_finish()</a> to complete validation. </dd>
 <dd>
-<a class="el" href="group__utilities.html#structSocketUTF8__State" title="State structure for incremental UTF-8 validation.">SocketUTF8_State</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> management. </dd>
+<a class="el" href="group__utilities.html#structSocketUTF8__State" title="State structure for incremental UTF-8 validation.">SocketUTF8_State</a> for state management. </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> for non-incremental alternative. </dd></dl>
 
@@ -4967,34 +5056,37 @@ Usage Example</h2>
 <dl class="section note"><dt>Note</dt><dd>No dynamic allocation; suitable for embedded or high-performance use. </dd>
 <dd>
 Intended for WebSocket text frame validation (RFC 6455 §8.1).</dd></dl>
-<h2><a class="anchor" id="autotoc_md239"></a>
+<h2><a class="anchor" id="autotoc_md227"></a>
 Usage Example</h2>
-<div class="fragment"><div class="line"><span class="comment">// One-shot validation for complete buffers (e.g., WebSocket text frames, HTTP headers)</span></div>
-<div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *text = <span class="stringliteral">&quot;Hello, UTF-8! 世界 😊&quot;</span>;  <span class="comment">// Multi-byte example</span></div>
-<div class="line"><span class="keywordtype">size_t</span> len = strlen(text);</div>
-<div class="line"><a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>((<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)text, len);</div>
-<div class="line"><span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
-<div class="line">    <span class="comment">// Safe to process</span></div>
-<div class="line">    printf(<span class="stringliteral">&quot;Valid UTF-8\n&quot;</span>);</div>
-<div class="line">} <span class="keywordflow">else</span> {</div>
-<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Invalid: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
-<div class="line">    <span class="comment">// e.g., reject frame or sanitize</span></div>
-<div class="line">}</div>
+<div class="fragment"><div class="line">  <span class="comment">// One-shot validation for complete buffers (e.g., WebSocket text frames,</span></div>
+<div class="line">HTTP headers)</div>
+<div class="line">  <span class="keyword">const</span> <span class="keywordtype">char</span> *text = <span class="stringliteral">&quot;Hello, UTF-8! 世界 😊&quot;</span>;  <span class="comment">// Multi-byte example</span></div>
+<div class="line">  <span class="keywordtype">size_t</span> len = strlen(text);</div>
+<div class="line">  <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>((<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span>*)text,</div>
+<div class="line">len);</div>
+<div class="line">  <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
+<div class="line">      <span class="comment">// Safe to process</span></div>
+<div class="line">      printf(<span class="stringliteral">&quot;Valid UTF-8\n&quot;</span>);</div>
+<div class="line">  } <span class="keywordflow">else</span> {</div>
+<div class="line">      fprintf(stderr, <span class="stringliteral">&quot;Invalid: %s\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
+<div class="line">      <span class="comment">// e.g., reject frame or sanitize</span></div>
+<div class="line">  }</div>
 <div class="ttc" id="agroup__utilities_html_ga68491b1f63c513ccc96a83a14d069e7b"><div class="ttname"><a href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_validate(const unsigned char *data, size_t len)</div><div class="ttdoc">Perform one-shot validation of complete UTF-8 data buffer.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md240"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md228"></a>
 With Exception Handling</h2>
-<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
-<div class="line">    <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>(payload, payload_len);</div>
-<div class="line">    <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
-<div class="line">        RAISE_FMT(<a class="code hl_variable" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a>, <span class="stringliteral">&quot;UTF-8 error: %s&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
-<div class="line">    }</div>
-<div class="line">    <span class="comment">// Process valid text</span></div>
-<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a>) {</div>
-<div class="line">    <span class="comment">// Protocol error handling (e.g., close connection)</span></div>
-<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+<div class="fragment"><div class="line">  <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">      <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>(payload, payload_len);</div>
+<div class="line">      <span class="keywordflow">if</span> (res != <a class="code hl_enumvalue" href="group__utilities.html#ggae8b6c527962e3019992746f49aac247ba99d5b2d72aaf988d870a6d9528251f71">UTF8_VALID</a>) {</div>
+<div class="line">          RAISE_FMT(<a class="code hl_variable" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a>, <span class="stringliteral">&quot;UTF-8 error: %s&quot;</span>,</div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#ga305b150f1e0b525b236bf0a8952c5315">SocketUTF8_result_string</a>(res));</div>
+<div class="line">      }</div>
+<div class="line">      <span class="comment">// Process valid text</span></div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a>) {</div>
+<div class="line">      <span class="comment">// Protocol error handling (e.g., close connection)</span></div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
 <div class="ttc" id="agroup__utilities_html_ga96b509b874774db6b22b3f25438a21d2"><div class="ttname"><a href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></div><div class="ttdeci">const Except_T SocketUTF8_Failed</div><div class="ttdoc">Exception for UTF-8 validation and encoding failures.</div></div>
 </div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) time, O(1) space - single pass DFA validation.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d" title="Validate a null-terminated C string as UTF-8.">SocketUTF8_validate_str()</a> convenience for null-terminated C strings. </dd>
@@ -5003,7 +5095,7 @@ With Exception Handling</h2>
 <dd>
 <a class="el" href="group__utilities.html#gaa22db28501f980ac3124b9ec4986fdb8" title="Decode the next complete UTF-8 sequence to a Unicode code point.">SocketUTF8_decode()</a> for single code point decoding. </dd>
 <dd>
-<a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b" title="Enumeration of UTF-8 validation results.">SocketUTF8_Result</a> enumeration for detailed <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes. </dd>
+<a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b" title="Enumeration of UTF-8 validation results.">SocketUTF8_Result</a> enumeration for detailed error codes. </dd>
 <dd>
 <a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h</a> WebSocket module which requires this validation. </dd></dl>
 
@@ -5045,371 +5137,11 @@ With Exception Handling</h2>
 <dl class="section user"><dt>Thread Safety\n Yes - pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> underlying validation function. </dd>
 <dd>
-<a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b" title="Enumeration of UTF-8 validation results.">SocketUTF8_Result</a> for possible <a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> values. </dd></dl>
+<a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b" title="Enumeration of UTF-8 validation results.">SocketUTF8_Result</a> for possible return values. </dd></dl>
 
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="ga7b978de556278e018fccc199dadd4a7d" name="ga7b978de556278e018fccc199dadd4a7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7b978de556278e018fccc199dadd4a7d">&#9670;&#160;</a></span>attempts</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_Stats::attempts</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Total operation invocations during the retry sequence. </p>
-<p>Includes initial attempt + retries up to success or limit. Range: 1+ (if executed); 0 (pre-execution or reset). High values indicate persistent failures or conservative policy. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00428">428</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="gae65da7d40c1b636bd5d688c6ab36176a" name="gae65da7d40c1b636bd5d688c6ab36176a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae65da7d40c1b636bd5d688c6ab36176a">&#9670;&#160;</a></span>count</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint64_t SocketMetrics_HistogramSnapshot::count</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Total observations </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00517">517</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gac3d167ae7fb495b924c2b9ace863445a" name="gac3d167ae7fb495b924c2b9ace863445a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac3d167ae7fb495b924c2b9ace863445a">&#9670;&#160;</a></span>counters</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint64_t SocketMetrics_Snapshot::counters[<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3">SOCKET_COUNTER_METRIC_COUNT</a>]</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Counter values </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00542">542</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga052116cbac741e511d1354dcee03aa14" name="ga052116cbac741e511d1354dcee03aa14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga052116cbac741e511d1354dcee03aa14">&#9670;&#160;</a></span>gauges</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t SocketMetrics_Snapshot::gauges[<a class="el" href="group__utilities.html#gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4">SOCKET_GAUGE_METRIC_COUNT</a>]</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Gauge values </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00543">543</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga2df8269ceffa8db53191bb61ce5a4e08" name="ga2df8269ceffa8db53191bb61ce5a4e08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga2df8269ceffa8db53191bb61ce5a4e08">&#9670;&#160;</a></span>histograms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__utilities.html#structSocketMetrics__HistogramSnapshot">SocketMetrics_HistogramSnapshot</a> SocketMetrics_Snapshot::histograms[<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7">SOCKET_HISTOGRAM_METRIC_COUNT</a>]</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00544">544</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga3738bc8ccc78b3f879df09d685494714" name="ga3738bc8ccc78b3f879df09d685494714"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga3738bc8ccc78b3f879df09d685494714">&#9670;&#160;</a></span>initial_delay_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_Policy::initial_delay_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Initial backoff delay in milliseconds for the first retry. </p>
-<p>Default: SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS (100 ms). Subsequent delays grow exponentially via multiplier.</p>
-<dl class="section note"><dt>Note</dt><dd>Must be positive; 0 disables delays (immediate retries). </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00166">166</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="gac44aa265265c65b8c29fd80aa3e0f61d" name="gac44aa265265c65b8c29fd80aa3e0f61d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gac44aa265265c65b8c29fd80aa3e0f61d">&#9670;&#160;</a></span>jitter</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketRetry_Policy::jitter</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Jitter factor for randomizing delays (0.0=no jitter, 1.0=full). </p>
-<p>Default: SOCKET_RETRY_DEFAULT_JITTER (0.25). jittered = capped * (1 + jitter * (2*uniform_rand() - 1)) Prevents synchronized retries (thundering herd).</p>
-<dl class="section note"><dt>Note</dt><dd>0.0-1.0 range; values outside clamped. </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>High jitter (&gt;0.5) may cause unpredictable timing. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00199">199</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="ga560a11b7408ab6b745312cc2552aa387" name="ga560a11b7408ab6b745312cc2552aa387"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga560a11b7408ab6b745312cc2552aa387">&#9670;&#160;</a></span>last_error</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_Stats::last_error</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Final error code from last operation call. </p>
-<p>0 on success; non-zero errno-like value on exhaustion/failure. Use strerror() or <a class="el" href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9" title="Provides a thread-safe and bounds-checked implementation of strerror().">Socket_safe_strerror()</a> for human-readable. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00436">436</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="ga92aa2bf4c9b19983fa3417159929df81" name="ga92aa2bf4c9b19983fa3417159929df81"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga92aa2bf4c9b19983fa3417159929df81">&#9670;&#160;</a></span>max</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::max</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Maximum observed value </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00520">520</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gae4fc9812297db12344b02e21d638a618" name="gae4fc9812297db12344b02e21d638a618"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae4fc9812297db12344b02e21d638a618">&#9670;&#160;</a></span>max_attempts</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_Policy::max_attempts</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Maximum number of retry attempts before giving up. </p>
-<p>Default: SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS (3). Set to 0 for unlimited (but capped internally by SOCKET_RETRY_MAX_ATTEMPTS).</p>
-<dl class="section note"><dt>Note</dt><dd>Values &lt;=0 are treated as unlimited but hard-capped for safety. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00156">156</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="gaa9acfb8be959ffd198d16e2446a30710" name="gaa9acfb8be959ffd198d16e2446a30710"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaa9acfb8be959ffd198d16e2446a30710">&#9670;&#160;</a></span>max_delay_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int SocketRetry_Policy::max_delay_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Maximum cap for backoff delays in milliseconds. </p>
-<p>Default: SOCKET_RETRY_DEFAULT_MAX_DELAY_MS (30 seconds). Exponential growth is capped at this value.</p>
-<dl class="section note"><dt>Note</dt><dd>Must be &gt;= initial_delay_ms; larger values allow longer waits. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00176">176</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="ga39b4ba97214ae557d6664a60881731ee" name="ga39b4ba97214ae557d6664a60881731ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga39b4ba97214ae557d6664a60881731ee">&#9670;&#160;</a></span>mean</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::mean</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Mean value </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00521">521</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gad353d502eaa2af3ba9f5027c024bdad1" name="gad353d502eaa2af3ba9f5027c024bdad1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gad353d502eaa2af3ba9f5027c024bdad1">&#9670;&#160;</a></span>min</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::min</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Minimum observed value </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00519">519</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gae292a46f8c68e19cb29e72d49b48317e" name="gae292a46f8c68e19cb29e72d49b48317e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae292a46f8c68e19cb29e72d49b48317e">&#9670;&#160;</a></span>multiplier</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketRetry_Policy::multiplier</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Multiplier for exponential backoff (recommended &gt;1.0). </p>
-<p>Default: SOCKET_RETRY_DEFAULT_MULTIPLIER (2.0). Formula: delay_n = initial * pow(multiplier, n-1)</p>
-<dl class="section note"><dt>Note</dt><dd>Values &lt;=1.0 disable exponential growth (constant delay). </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>multiplier &gt;10 may lead to excessively long delays quickly. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00187">187</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="ga8b172fd16d7a741708785715acde4b57" name="ga8b172fd16d7a741708785715acde4b57"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8b172fd16d7a741708785715acde4b57">&#9670;&#160;</a></span>p50</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p50</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>50th percentile (median) </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00522">522</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga86b3fe4f2f16158efcd05739be0be2c7" name="ga86b3fe4f2f16158efcd05739be0be2c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga86b3fe4f2f16158efcd05739be0be2c7">&#9670;&#160;</a></span>p75</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p75</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>75th percentile </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00523">523</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gae642be44e4add2bc25d809c22cf75a28" name="gae642be44e4add2bc25d809c22cf75a28"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gae642be44e4add2bc25d809c22cf75a28">&#9670;&#160;</a></span>p90</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p90</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>90th percentile </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00524">524</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga5009b287c8bfd50a87d3278be6b76d6b" name="ga5009b287c8bfd50a87d3278be6b76d6b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga5009b287c8bfd50a87d3278be6b76d6b">&#9670;&#160;</a></span>p95</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p95</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>95th percentile </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00525">525</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga4d8eaa0353371329afd9e8ebc7cd5fd0" name="ga4d8eaa0353371329afd9e8ebc7cd5fd0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4d8eaa0353371329afd9e8ebc7cd5fd0">&#9670;&#160;</a></span>p99</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p99</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>99th percentile </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00526">526</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="ga117aeb2403d9212a3476a0f5f506d1ba" name="ga117aeb2403d9212a3476a0f5f506d1ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga117aeb2403d9212a3476a0f5f506d1ba">&#9670;&#160;</a></span>p999</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::p999</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>99.9th percentile </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00527">527</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
 <a id="gaf06f7fa3fe589c3d406f8f12cbc4e59e" name="gaf06f7fa3fe589c3d406f8f12cbc4e59e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaf06f7fa3fe589c3d406f8f12cbc4e59e">&#9670;&#160;</a></span>SocketRateLimit_Failed</h2>
 
@@ -5507,78 +5239,6 @@ docs/ERROR_HANDLING.md for handling patterns. </dd></dl>
 <a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b" title="Perform one-shot validation of complete UTF-8 data buffer.">SocketUTF8_validate()</a> where validation errors may propagate as exceptions internally. </dd>
 <dd>
 docs/ERROR_HANDLING.md "Error Handling Guide" for TRY/EXCEPT patterns. </dd></dl>
-
-</div>
-</div>
-<a id="ga4088038d1883a118b9818b15772582b0" name="ga4088038d1883a118b9818b15772582b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga4088038d1883a118b9818b15772582b0">&#9670;&#160;</a></span>sum</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">double SocketMetrics_HistogramSnapshot::sum</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Sum of all observations </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00518">518</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gaf00d4802f4ec042ec70c2b6cca0ef439" name="gaf00d4802f4ec042ec70c2b6cca0ef439"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaf00d4802f4ec042ec70c2b6cca0ef439">&#9670;&#160;</a></span>timestamp_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint64_t SocketMetrics_Snapshot::timestamp_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Snapshot time </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00541">541</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
-
-</div>
-</div>
-<a id="gaba725a298fa2b675bcdc8ea77ba8b27e" name="gaba725a298fa2b675bcdc8ea77ba8b27e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaba725a298fa2b675bcdc8ea77ba8b27e">&#9670;&#160;</a></span>total_delay_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t SocketRetry_Stats::total_delay_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Aggregate backoff delay time across all retries (ms). </p>
-<p>Sum of jittered exponential delays slept between attempts. Monotonic clock; excludes operation execution time. Useful for latency attribution to retries. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00445">445</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
-
-</div>
-</div>
-<a id="ga939cbbd0e2c2537391a2e970991a1c9d" name="ga939cbbd0e2c2537391a2e970991a1c9d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga939cbbd0e2c2537391a2e970991a1c9d">&#9670;&#160;</a></span>total_time_ms</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int64_t SocketRetry_Stats::total_time_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Total wall-clock duration of entire execution (ms). </p>
-<p>From execute() entry to return: ops time + delays + overhead. Monotonic; accounts for real-world variability. Compare to policy expectations for performance tuning. </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00454">454</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 
 </div>
 </div>

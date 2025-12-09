@@ -573,11 +573,6 @@ extern SocketTimer_heap_T *socketpoll_get_timer_heap (T poll);
 
 #undef T
 
-/**
- * @} */ /* poll_private */
-
-/* ==================== End of Private Implementation ==================== */
-
-/** @} */ /* end of poll_private group - internal details */
+/** @} */
 
 #endif /* SOCKETPOLL_PRIVATE_INCLUDED */

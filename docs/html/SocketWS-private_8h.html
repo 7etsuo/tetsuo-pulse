@@ -338,7 +338,7 @@ Functions</h2></td></tr>
 <tr class="memitem:gad66f78da53262b5c3047bb39ad410a32" id="r_gad66f78da53262b5c3047bb39ad410a32"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gad66f78da53262b5c3047bb39ad410a32">ws_message_finalize</a> (SocketWS_T ws)</td></tr>
 <tr class="memdesc:gad66f78da53262b5c3047bb39ad410a32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalizes message assembly on last fragment and delivers to user.  <br /></td></tr>
 <tr class="separator:gad66f78da53262b5c3047bb39ad410a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga894fa2a0c6b617c386a9c3a462d5782c" id="r_ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga894fa2a0c6b617c386a9c3a462d5782c">ws_auto_ping_start</a> (SocketWS_T ws, SocketPoll_T poll)</td></tr>
+<tr class="memitem:ga894fa2a0c6b617c386a9c3a462d5782c" id="r_ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga894fa2a0c6b617c386a9c3a462d5782c">ws_auto_ping_start</a> (SocketWS_T ws, <a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
 <tr class="memdesc:ga894fa2a0c6b617c386a9c3a462d5782c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Starts the automatic PING timer for keepalive.  <br /></td></tr>
 <tr class="separator:ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8b50ea33ceb9a7b2b23a060c88dafe65" id="r_ga8b50ea33ceb9a7b2b23a060c88dafe65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga8b50ea33ceb9a7b2b23a060c88dafe65">ws_auto_ping_stop</a> (SocketWS_T ws)</td></tr>
@@ -353,7 +353,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga434b1ea5d42a6c1be49a4f9e054453a0" id="r_ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga434b1ea5d42a6c1be49a4f9e054453a0">ws_fill_recv_buffer</a> (SocketWS_T ws)</td></tr>
 <tr class="memdesc:ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills the receive buffer from the underlying socket.  <br /></td></tr>
 <tr class="separator:ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab26b26aa679375629c245be95eaaf222" id="r_gab26b26aa679375629c245be95eaaf222"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gab26b26aa679375629c245be95eaaf222">ws_set_error</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, const char *fmt,...)</td></tr>
+<tr class="memitem:gab26b26aa679375629c245be95eaaf222" id="r_gab26b26aa679375629c245be95eaaf222"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gab26b26aa679375629c245be95eaaf222">ws_set_error</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> error, const char *fmt,...)</td></tr>
 <tr class="memdesc:gab26b26aa679375629c245be95eaaf222"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the last error code and formats error message.  <br /></td></tr>
 <tr class="separator:gab26b26aa679375629c245be95eaaf222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf415773c31b2c3cd0c3b2635c22dd567" id="r_gaf415773c31b2c3cd0c3b2635c22dd567"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaf415773c31b2c3cd0c3b2635c22dd567">ws_is_control_opcode</a> (<a class="el" href="group__websocket.html#ga174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a> opcode)</td></tr>
@@ -384,7 +384,7 @@ Variables</h2></td></tr>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h</a> for public API. </dd>
 <dd>
-<a class="el" href="group__websocket.html">WebSocket Modules</a> for module overview (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> defined). </dd></dl>
+<a class="el" href="group__websocket.html">WebSocket Modules</a> for module overview (if defined). </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -404,7 +404,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00677">677</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00701">701</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -438,7 +438,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Default deflate window bits </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00261">261</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00262">262</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -489,7 +489,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Default ping interval (0 = disabled) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00255">255</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00256">256</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -506,7 +506,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Default ping timeout </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00258">258</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00259">259</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -523,7 +523,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Error buffer size </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00249">249</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00250">250</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -659,7 +659,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>MASK bit: indicates payload is masked (second byte, bit 7) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00197">197</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00198">198</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -744,7 +744,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum close reason length (125 - 2 bytes for code) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00236">236</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00237">237</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -761,7 +761,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum control frame payload (RFC 6455 mandates 125) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00233">233</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00234">234</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -778,7 +778,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum fragments per message </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00229">229</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00230">230</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -795,7 +795,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum frame header size (2 + 8 + 4 = 14 bytes) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00252">252</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00253">253</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -812,7 +812,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Maximum reassembled message size (default 64MB) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00224">224</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00225">225</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -846,7 +846,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Opcode mask: lower 4 bits of first byte </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00194">194</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00195">195</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -863,7 +863,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Payload length mask: lower 7 bits of second byte </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00200">200</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00201">201</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -880,7 +880,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Internal receive buffer size </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00240">240</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00241">241</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -897,7 +897,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>RSV1 bit: used for permessage-deflate compression </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00185">185</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00186">186</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -914,7 +914,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>RSV2 bit: reserved, must be 0 </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00188">188</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00189">189</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -931,7 +931,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>RSV3 bit: reserved, must be 0 </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00191">191</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00192">192</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -948,7 +948,7 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>Internal send buffer size </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00245">245</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00246">246</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>

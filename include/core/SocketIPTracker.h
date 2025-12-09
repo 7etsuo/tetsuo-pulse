@@ -627,9 +627,8 @@ extern size_t SocketIPTracker_unique_ips (T tracker);
 extern void SocketIPTracker_clear (T tracker);
 
 /**
- * @} */   /* End ip_tracker group */
-
-/** @} */ /* End security group if nested */
+ * @}
+ */
 
 #undef T
 #endif /* SOCKETIPTRACKER_INCLUDED */

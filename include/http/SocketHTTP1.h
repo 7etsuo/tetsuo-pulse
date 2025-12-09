@@ -124,8 +124,8 @@
 #define SOCKETHTTP1_MAX_REQUEST_LINE (8 * 1024)
 #endif
 
-/** @brief Maximum HTTP method length (longest standard: OPTIONS = 7). @ingroup
- * http1 */
+/** @brief Maximum HTTP method length (longest standard: OPTIONS = 7).
+ *  @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_METHOD_LEN
 #define SOCKETHTTP1_MAX_METHOD_LEN 16
 #endif

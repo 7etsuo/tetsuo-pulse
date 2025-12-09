@@ -138,11 +138,11 @@ Macros</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Parameters for automatic retry logic on transient failures. </p>
 <p>Enables resilient client behavior with configurable backoff and conditions. Disabled by default; exponential backoff with jitter for safety. Only retry idempotent operations to avoid side effects.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#adb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> master switch. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gadb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> master switch. </dd>
 <dd>
-<a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9" title="Check if error code is retryable.">SocketHTTPClient_error_is_retryable()</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> classification.</dd></dl>
+<a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9" title="Check if error code is retryable.">SocketHTTPClient_error_is_retryable()</a> error classification.</dd></dl>
 <hr  />
- <h1><a class="anchor" id="autotoc_md339"></a>
+ <h1><a class="anchor" id="autotoc_md305"></a>
 Retry Configuration</h1>
 <p>Automatic retry for transient failures (DNS, connect, timeout). Uses exponential backoff with jitter to prevent thundering herd.</p>
 <p>SAFETY: Only idempotent requests should enable retry_on_5xx. Non-idempotent requests (POST/PUT/DELETE) may cause duplicate actions. </p>
@@ -162,11 +162,11 @@ Retry Configuration</h1>
 <p>Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compatibility. When enabled, client retries on connect errors, timeouts, and optionally 5xx responses. Uses configured backoff parameters for exponential retry with jitter. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gafe6a8409016e05e46305b9f7042c7c7a" title="Default flag to retry on connection establishment errors (1 = enabled).">HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</a> connection-specific flag. </dd>
 <dd>
-<a class="el" href="group__http__client.html#adb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> runtime master switch. </dd>
+<a class="el" href="group__http__client.html#gadb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> runtime master switch. </dd>
 <dd>
 <a class="el" href="group__http__client__retry.html">Retry Configuration Constants</a> for details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00352">352</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00376">376</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -184,17 +184,17 @@ Retry Configuration</h1>
 
 <p>Default flag to retry on 5xx server errors (0 = disabled). </p>
 <p>When enabled (with overall retry), retries requests receiving 5xx status codes (500 Internal Server Error, 503 Service Unavailable, etc.) indicating server-side issues. Disabled by default due to risk of duplicate side effects on non-idempotent methods (POST).</p>
-<p>Only recommended for safe methods: GET, HEAD, OPTIONS, PUT, DELETE. Servers may recover from temporary overload or bugs. Override via <a class="el" href="group__http__client.html#a86ed34fbe021d156e6ee5ac2bc8e9b6e">SocketHTTPClient_Config.retry_on_5xx</a>.</p>
+<p>Only recommended for safe methods: GET, HEAD, OPTIONS, PUT, DELETE. Servers may recover from temporary overload or bugs. Override via <a class="el" href="group__http__client.html#ga86ed34fbe021d156e6ee5ac2bc8e9b6e">SocketHTTPClient_Config.retry_on_5xx</a>.</p>
 <dl class="section warning"><dt>Warning</dt><dd>Enabling for POST/PATCH may cause unintended duplicate actions. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gafa90f0cd5d3fa4e281b6debe6fed8fe6" title="Get status code category.">SocketHTTP_status_category()</a> for 5xx classification. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a86ed34fbe021d156e6ee5ac2bc8e9b6e">SocketHTTPClient_Config::retry_on_5xx</a> runtime flag. </dd>
+<a class="el" href="group__http__client.html#ga86ed34fbe021d156e6ee5ac2bc8e9b6e">SocketHTTPClient_Config::retry_on_5xx</a> runtime flag. </dd>
 <dd>
 <a class="el" href="group__http__client__retry.html#ga66d096fe772967107d0642d303b1a51c" title="Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compat...">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a> prerequisite. </dd>
 <dd>
 docs/SECURITY_GUIDE.md idempotency considerations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00477">477</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00506">506</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>

@@ -117,6 +117,7 @@ $(document).ready(function(){initNavTree('group__http__client.html',''); initRes
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
+<a href="#enumval-members">Enumerator</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
   <div class="headertitle"><div class="title">HTTP Client Module<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
@@ -130,7 +131,7 @@ $(document).ready(function(){initNavTree('group__http__client.html',''); initRes
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="group__http__client.svg" width="532" height="243"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="group__http__client.svg" width="532" height="358"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="groups" name="groups"></a>
@@ -146,6 +147,12 @@ Modules</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:group__http__client__auth" id="r_group__http__client__auth"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__auth.html">Authentication Buffer Constants</a></td></tr>
 <tr class="memdesc:group__http__client__auth"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal buffer sizes for HTTP authentication header generation and computation. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__http__client__buffers" id="r_group__http__client__buffers"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__buffers.html">Request/Response Buffer Constants</a></td></tr>
+<tr class="memdesc:group__http__client__buffers"><td class="mdescLeft">&#160;</td><td class="mdescRight">Buffer sizes for HTTP request serialization, response reading, and headers. <br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:group__http__client__encoding" id="r_group__http__client__encoding"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client__encoding.html">Content-Encoding Flags</a></td></tr>
+<tr class="memdesc:group__http__client__encoding"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags indicating supported Content-Encoding methods for HTTP client. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="files" name="files"></a>
@@ -193,7 +200,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:ga51703354cc9bc0603b78726aefab346f"><td class="mdescLeft">&#160;</td><td class="mdescRight">I/O buffer size for pooled connections in HTTP client.  <br /></td></tr>
 <tr class="separator:ga51703354cc9bc0603b78726aefab346f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad6976b035b7becf34c067ecbfe122a99" id="r_gad6976b035b7becf34c067ecbfe122a99"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad6976b035b7becf34c067ecbfe122a99">HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</a>&#160;&#160;&#160;30000</td></tr>
-<tr class="memdesc:gad6976b035b7becf34c067ecbfe122a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http__client.html#ad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request.  <br /></td></tr>
+<tr class="memdesc:gad6976b035b7becf34c067ecbfe122a99"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request.  <br /></td></tr>
 <tr class="separator:gad6976b035b7becf34c067ecbfe122a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga86b91e7fbe633ea8ca189984af9b3547" id="r_ga86b91e7fbe633ea8ca189984af9b3547"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga86b91e7fbe633ea8ca189984af9b3547">HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</a>&#160;&#160;&#160;60000</td></tr>
 <tr class="memdesc:ga86b91e7fbe633ea8ca189984af9b3547"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default timeout for full HTTP request completion (60 seconds).  <br /></td></tr>
@@ -300,7 +307,7 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:ga3cb9ba239e5a623795bae1ddfd084201" id="r_ga3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, void *userdata)</td></tr>
+<tr class="memitem:ga3cb9ba239e5a623795bae1ddfd084201" id="r_ga3cb9ba239e5a623795bae1ddfd084201"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a>) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td></tr>
 <tr class="separator:ga3cb9ba239e5a623795bae1ddfd084201"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -356,7 +363,7 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaf69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:gaf69fc4efa6d5b4df9cdf207cfa05b6b9" id="r_gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient_error_is_retryable</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if error code is retryable.  <br /></td></tr>
 <tr class="separator:gaf69fc4efa6d5b4df9cdf207cfa05b6b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaad5ad81c60bb230588b5f660a834f40e" id="r_gaad5ad81c60bb230588b5f660a834f40e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a> (<a class="el" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> *config)</td></tr>
@@ -467,6 +474,118 @@ Variables</h2></td></tr>
 <tr class="memitem:ga4ed14f04119b1dec3cb25c432b7a383d" id="r_ga4ed14f04119b1dec3cb25c432b7a383d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga4ed14f04119b1dec3cb25c432b7a383d">SocketHTTPClient_ResponseTooLarge</a></td></tr>
 <tr class="memdesc:ga4ed14f04119b1dec3cb25c432b7a383d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Response body exceeds limit.  <br /></td></tr>
 <tr class="separator:ga4ed14f04119b1dec3cb25c432b7a383d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea321b9aeb6d8d36babd95cd7af87d35" id="r_gaea321b9aeb6d8d36babd95cd7af87d35"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http__client.html#ga720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaea321b9aeb6d8d36babd95cd7af87d35">SocketHTTPClient_Auth::type</a></td></tr>
+<tr class="separator:gaea321b9aeb6d8d36babd95cd7af87d35"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaebecaec836c2d21aeb36c83c6a037b58" id="r_gaebecaec836c2d21aeb36c83c6a037b58"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaebecaec836c2d21aeb36c83c6a037b58">SocketHTTPClient_Auth::username</a></td></tr>
+<tr class="separator:gaebecaec836c2d21aeb36c83c6a037b58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga709145c7dcf32bbfbdbc68da8da0842f" id="r_ga709145c7dcf32bbfbdbc68da8da0842f"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga709145c7dcf32bbfbdbc68da8da0842f">SocketHTTPClient_Auth::password</a></td></tr>
+<tr class="separator:ga709145c7dcf32bbfbdbc68da8da0842f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga75371d88c2cb09feb95620c237b37882" id="r_ga75371d88c2cb09feb95620c237b37882"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga75371d88c2cb09feb95620c237b37882">SocketHTTPClient_Auth::token</a></td></tr>
+<tr class="separator:ga75371d88c2cb09feb95620c237b37882"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89774175b3f815b3c17b8b150347b453" id="r_ga89774175b3f815b3c17b8b150347b453"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga89774175b3f815b3c17b8b150347b453">SocketHTTPClient_Auth::realm</a></td></tr>
+<tr class="separator:ga89774175b3f815b3c17b8b150347b453"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaeeeb2ea03d33db0ba500da1c7782f7f3" id="r_gaeeeb2ea03d33db0ba500da1c7782f7f3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaeeeb2ea03d33db0ba500da1c7782f7f3">SocketHTTPClient_Config::max_version</a></td></tr>
+<tr class="separator:gaeeeb2ea03d33db0ba500da1c7782f7f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9a480ef82e914f17714c7c57d12f88af" id="r_ga9a480ef82e914f17714c7c57d12f88af"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga9a480ef82e914f17714c7c57d12f88af">SocketHTTPClient_Config::allow_http2_cleartext</a></td></tr>
+<tr class="separator:ga9a480ef82e914f17714c7c57d12f88af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac81b35696b105b13f703c5d71f5c5692" id="r_gac81b35696b105b13f703c5d71f5c5692"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gac81b35696b105b13f703c5d71f5c5692">SocketHTTPClient_Config::enable_connection_pool</a></td></tr>
+<tr class="separator:gac81b35696b105b13f703c5d71f5c5692"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad87a23b29168c1a6a738bd07268247de" id="r_gad87a23b29168c1a6a738bd07268247de"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad87a23b29168c1a6a738bd07268247de">SocketHTTPClient_Config::max_connections_per_host</a></td></tr>
+<tr class="separator:gad87a23b29168c1a6a738bd07268247de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaacd5591ab8f36783e6f759052439eb30" id="r_gaacd5591ab8f36783e6f759052439eb30"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a></td></tr>
+<tr class="separator:gaacd5591ab8f36783e6f759052439eb30"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga867974712621670ef1dc975b2b396f84" id="r_ga867974712621670ef1dc975b2b396f84"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga867974712621670ef1dc975b2b396f84">SocketHTTPClient_Config::idle_timeout_ms</a></td></tr>
+<tr class="separator:ga867974712621670ef1dc975b2b396f84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga82bcf56254c541ebd8fbdbba0a7ba7bb" id="r_ga82bcf56254c541ebd8fbdbba0a7ba7bb"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga82bcf56254c541ebd8fbdbba0a7ba7bb">SocketHTTPClient_Config::max_connection_age_ms</a></td></tr>
+<tr class="separator:ga82bcf56254c541ebd8fbdbba0a7ba7bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga12094d3f2718443658de2cab3f8873b4" id="r_ga12094d3f2718443658de2cab3f8873b4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga12094d3f2718443658de2cab3f8873b4">SocketHTTPClient_Config::acquire_timeout_ms</a></td></tr>
+<tr class="separator:ga12094d3f2718443658de2cab3f8873b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad0964ac6e0738a3c4914054529bb51a7" id="r_gad0964ac6e0738a3c4914054529bb51a7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config::connect_timeout_ms</a></td></tr>
+<tr class="separator:gad0964ac6e0738a3c4914054529bb51a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5d89d81bfb2401b06059048425fafb93" id="r_ga5d89d81bfb2401b06059048425fafb93"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga5d89d81bfb2401b06059048425fafb93">SocketHTTPClient_Config::request_timeout_ms</a></td></tr>
+<tr class="separator:ga5d89d81bfb2401b06059048425fafb93"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6e7fd7c2a4f862fc8d613d4662a7e2e1" id="r_ga6e7fd7c2a4f862fc8d613d4662a7e2e1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga6e7fd7c2a4f862fc8d613d4662a7e2e1">SocketHTTPClient_Config::dns_timeout_ms</a></td></tr>
+<tr class="separator:ga6e7fd7c2a4f862fc8d613d4662a7e2e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1e5a28b4e256802af5f979726c728553" id="r_ga1e5a28b4e256802af5f979726c728553"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config::follow_redirects</a></td></tr>
+<tr class="separator:ga1e5a28b4e256802af5f979726c728553"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga847eaef5232b2ada9149eea8aa9d4d4c" id="r_ga847eaef5232b2ada9149eea8aa9d4d4c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga847eaef5232b2ada9149eea8aa9d4d4c">SocketHTTPClient_Config::redirect_on_post</a></td></tr>
+<tr class="separator:ga847eaef5232b2ada9149eea8aa9d4d4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa6bd2632f03fadb8a08f023e641c2c64" id="r_gaa6bd2632f03fadb8a08f023e641c2c64"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaa6bd2632f03fadb8a08f023e641c2c64">SocketHTTPClient_Config::accept_encoding</a></td></tr>
+<tr class="separator:gaa6bd2632f03fadb8a08f023e641c2c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga39d5d74dbbdec57ac84fed12f747e299" id="r_ga39d5d74dbbdec57ac84fed12f747e299"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga39d5d74dbbdec57ac84fed12f747e299">SocketHTTPClient_Config::auto_decompress</a></td></tr>
+<tr class="separator:ga39d5d74dbbdec57ac84fed12f747e299"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga30f979d083088bc46c8c7de3bc37a3db" id="r_ga30f979d083088bc46c8c7de3bc37a3db"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga30f979d083088bc46c8c7de3bc37a3db">SocketHTTPClient_Config::tls_context</a></td></tr>
+<tr class="separator:ga30f979d083088bc46c8c7de3bc37a3db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa5c6daa6286ff5a701a804da14108a4c" id="r_gaa5c6daa6286ff5a701a804da14108a4c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaa5c6daa6286ff5a701a804da14108a4c">SocketHTTPClient_Config::verify_ssl</a></td></tr>
+<tr class="separator:gaa5c6daa6286ff5a701a804da14108a4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf1c22aca38ea27645e9400fe42680bdf" id="r_gaf1c22aca38ea27645e9400fe42680bdf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf1c22aca38ea27645e9400fe42680bdf">SocketHTTPClient_Config::proxy</a></td></tr>
+<tr class="separator:gaf1c22aca38ea27645e9400fe42680bdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0d03d16dc3eae06b6ab0b89b288c44df" id="r_ga0d03d16dc3eae06b6ab0b89b288c44df"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config::user_agent</a></td></tr>
+<tr class="separator:ga0d03d16dc3eae06b6ab0b89b288c44df"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa26d176771f3b6ddee9a2d95142e9c46" id="r_gaa26d176771f3b6ddee9a2d95142e9c46"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaa26d176771f3b6ddee9a2d95142e9c46">SocketHTTPClient_Config::max_response_size</a></td></tr>
+<tr class="separator:gaa26d176771f3b6ddee9a2d95142e9c46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadb6071171fe058cbc1c221e1b0d6ec98" id="r_gadb6071171fe058cbc1c221e1b0d6ec98"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gadb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a></td></tr>
+<tr class="separator:gadb6071171fe058cbc1c221e1b0d6ec98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad8b244df21d9337ed74c872e694d10ba" id="r_gad8b244df21d9337ed74c872e694d10ba"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config::max_retries</a></td></tr>
+<tr class="separator:gad8b244df21d9337ed74c872e694d10ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1b02030b2c83c6e7bd1812de2362ede3" id="r_ga1b02030b2c83c6e7bd1812de2362ede3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga1b02030b2c83c6e7bd1812de2362ede3">SocketHTTPClient_Config::retry_initial_delay_ms</a></td></tr>
+<tr class="separator:ga1b02030b2c83c6e7bd1812de2362ede3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd505949c45d0fb48c0810759cb66176" id="r_gafd505949c45d0fb48c0810759cb66176"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gafd505949c45d0fb48c0810759cb66176">SocketHTTPClient_Config::retry_max_delay_ms</a></td></tr>
+<tr class="separator:gafd505949c45d0fb48c0810759cb66176"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6355fa7fdfcc9db5d6069189aef62928" id="r_ga6355fa7fdfcc9db5d6069189aef62928"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga6355fa7fdfcc9db5d6069189aef62928">SocketHTTPClient_Config::retry_on_connection_error</a></td></tr>
+<tr class="separator:ga6355fa7fdfcc9db5d6069189aef62928"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga58a60bcfb2edaa6accced6acd52191ad" id="r_ga58a60bcfb2edaa6accced6acd52191ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga58a60bcfb2edaa6accced6acd52191ad">SocketHTTPClient_Config::retry_on_timeout</a></td></tr>
+<tr class="separator:ga58a60bcfb2edaa6accced6acd52191ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga86ed34fbe021d156e6ee5ac2bc8e9b6e" id="r_ga86ed34fbe021d156e6ee5ac2bc8e9b6e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga86ed34fbe021d156e6ee5ac2bc8e9b6e">SocketHTTPClient_Config::retry_on_5xx</a></td></tr>
+<tr class="separator:ga86ed34fbe021d156e6ee5ac2bc8e9b6e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae9bb372f96fd426c9fcf729fa78f26e3" id="r_gae9bb372f96fd426c9fcf729fa78f26e3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gae9bb372f96fd426c9fcf729fa78f26e3">SocketHTTPClient_Config::enforce_samesite</a></td></tr>
+<tr class="separator:gae9bb372f96fd426c9fcf729fa78f26e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0baa2f233436d7bb00f28214d6382542" id="r_ga0baa2f233436d7bb00f28214d6382542"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga0baa2f233436d7bb00f28214d6382542">SocketHTTPClient_Response::status_code</a></td></tr>
+<tr class="separator:ga0baa2f233436d7bb00f28214d6382542"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8b459516887245f8e4b77f8d8517ede1" id="r_ga8b459516887245f8e4b77f8d8517ede1"><td class="memItemLeft" align="right" valign="top">SocketHTTP_Headers_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga8b459516887245f8e4b77f8d8517ede1">SocketHTTPClient_Response::headers</a></td></tr>
+<tr class="separator:ga8b459516887245f8e4b77f8d8517ede1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab7f8558743b64c751b64ac26231dca31" id="r_gab7f8558743b64c751b64ac26231dca31"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gab7f8558743b64c751b64ac26231dca31">SocketHTTPClient_Response::body</a></td></tr>
+<tr class="separator:gab7f8558743b64c751b64ac26231dca31"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaae64f48637811f9ddbc8e12aea55e0e6" id="r_gaae64f48637811f9ddbc8e12aea55e0e6"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaae64f48637811f9ddbc8e12aea55e0e6">SocketHTTPClient_Response::body_len</a></td></tr>
+<tr class="separator:gaae64f48637811f9ddbc8e12aea55e0e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaccda45708658a8ada478121524f85e5e" id="r_gaccda45708658a8ada478121524f85e5e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaccda45708658a8ada478121524f85e5e">SocketHTTPClient_Response::version</a></td></tr>
+<tr class="separator:gaccda45708658a8ada478121524f85e5e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab3f98045a2f32cb3249ee62d036654c3" id="r_gab3f98045a2f32cb3249ee62d036654c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gab3f98045a2f32cb3249ee62d036654c3">SocketHTTPClient_Response::arena</a></td></tr>
+<tr class="separator:gab3f98045a2f32cb3249ee62d036654c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae7076917489dca85561ff672d120551c" id="r_gae7076917489dca85561ff672d120551c"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gae7076917489dca85561ff672d120551c">SocketHTTPClient_Cookie::name</a></td></tr>
+<tr class="separator:gae7076917489dca85561ff672d120551c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga21b390a321565e4ebf8be575550c1498" id="r_ga21b390a321565e4ebf8be575550c1498"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga21b390a321565e4ebf8be575550c1498">SocketHTTPClient_Cookie::value</a></td></tr>
+<tr class="separator:ga21b390a321565e4ebf8be575550c1498"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0dc75016531006762afa85a21130ac13" id="r_ga0dc75016531006762afa85a21130ac13"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga0dc75016531006762afa85a21130ac13">SocketHTTPClient_Cookie::domain</a></td></tr>
+<tr class="separator:ga0dc75016531006762afa85a21130ac13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7259b82f78dc6e60c52ef6c5d741ca06" id="r_ga7259b82f78dc6e60c52ef6c5d741ca06"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga7259b82f78dc6e60c52ef6c5d741ca06">SocketHTTPClient_Cookie::path</a></td></tr>
+<tr class="separator:ga7259b82f78dc6e60c52ef6c5d741ca06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga76752117eaf672a88292a3c7c250b52d" id="r_ga76752117eaf672a88292a3c7c250b52d"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga76752117eaf672a88292a3c7c250b52d">SocketHTTPClient_Cookie::expires</a></td></tr>
+<tr class="separator:ga76752117eaf672a88292a3c7c250b52d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3300f627ad07cd15a596451a41dc4b69" id="r_ga3300f627ad07cd15a596451a41dc4b69"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga3300f627ad07cd15a596451a41dc4b69">SocketHTTPClient_Cookie::secure</a></td></tr>
+<tr class="separator:ga3300f627ad07cd15a596451a41dc4b69"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae47a67be4b88e83dd7c877f63af2ae8a" id="r_gae47a67be4b88e83dd7c877f63af2ae8a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gae47a67be4b88e83dd7c877f63af2ae8a">SocketHTTPClient_Cookie::http_only</a></td></tr>
+<tr class="separator:gae47a67be4b88e83dd7c877f63af2ae8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad1fc2e3ea45172e27a07aaacfe3c7eeb" id="r_gad1fc2e3ea45172e27a07aaacfe3c7eeb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad1fc2e3ea45172e27a07aaacfe3c7eeb">SocketHTTPClient_Cookie::same_site</a></td></tr>
+<tr class="separator:gad1fc2e3ea45172e27a07aaacfe3c7eeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga102cdd1136d87673c4eb8ca42cd64942" id="r_ga102cdd1136d87673c4eb8ca42cd64942"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga102cdd1136d87673c4eb8ca42cd64942">SocketHTTPClient_PoolStats::active_connections</a></td></tr>
+<tr class="separator:ga102cdd1136d87673c4eb8ca42cd64942"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaab49cd26a75dd2f3f7ed96eafc09a25" id="r_gaaab49cd26a75dd2f3f7ed96eafc09a25"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaaab49cd26a75dd2f3f7ed96eafc09a25">SocketHTTPClient_PoolStats::idle_connections</a></td></tr>
+<tr class="separator:gaaab49cd26a75dd2f3f7ed96eafc09a25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacbe290157d79e718d8397a6d7078487c" id="r_gacbe290157d79e718d8397a6d7078487c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gacbe290157d79e718d8397a6d7078487c">SocketHTTPClient_PoolStats::total_requests</a></td></tr>
+<tr class="separator:gacbe290157d79e718d8397a6d7078487c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0bb94abb8c7aa981d1aae1d47469b316" id="r_ga0bb94abb8c7aa981d1aae1d47469b316"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga0bb94abb8c7aa981d1aae1d47469b316">SocketHTTPClient_PoolStats::reused_connections</a></td></tr>
+<tr class="separator:ga0bb94abb8c7aa981d1aae1d47469b316"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9a5d4cac43fdb9d880edef1dc778273a" id="r_ga9a5d4cac43fdb9d880edef1dc778273a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga9a5d4cac43fdb9d880edef1dc778273a">SocketHTTPClient_PoolStats::connections_created</a></td></tr>
+<tr class="separator:ga9a5d4cac43fdb9d880edef1dc778273a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1dfc46ee0c2d61f3facd7daf0d93f0a0" id="r_ga1dfc46ee0c2d61f3facd7daf0d93f0a0"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga1dfc46ee0c2d61f3facd7daf0d93f0a0">SocketHTTPClient_PoolStats::connections_failed</a></td></tr>
+<tr class="separator:ga1dfc46ee0c2d61f3facd7daf0d93f0a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac9548fe3f865ed4d99c7366b0f64937d" id="r_gac9548fe3f865ed4d99c7366b0f64937d"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gac9548fe3f865ed4d99c7366b0f64937d">SocketHTTPClient_PoolStats::connections_timed_out</a></td></tr>
+<tr class="separator:gac9548fe3f865ed4d99c7366b0f64937d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga822cd3674285e9ee5a3e541b42cc8f9a" id="r_ga822cd3674285e9ee5a3e541b42cc8f9a"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga822cd3674285e9ee5a3e541b42cc8f9a">SocketHTTPClient_PoolStats::stale_connections_removed</a></td></tr>
+<tr class="separator:ga822cd3674285e9ee5a3e541b42cc8f9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2388e92ca44d26b70ce6904abbcf0d13" id="r_ga2388e92ca44d26b70ce6904abbcf0d13"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga2388e92ca44d26b70ce6904abbcf0d13">SocketHTTPClient_PoolStats::pool_exhausted_waits</a></td></tr>
+<tr class="separator:ga2388e92ca44d26b70ce6904abbcf0d13"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader">Cookie name</h2></td></tr>
 <tr><td class="ititle" colspan="2"><p>Get cookie by name</p>
@@ -507,7 +626,7 @@ Variables</h2></td></tr>
 <tr class="memitem:gac8680d78a9d70c7662d39466c63aab72" id="r_gac8680d78a9d70c7662d39466c63aab72"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a> (SocketHTTPClient_T client)</td></tr>
 <tr class="memdesc:gac8680d78a9d70c7662d39466c63aab72"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get last error code.  <br /></td></tr>
 <tr class="separator:gac8680d78a9d70c7662d39466c63aab72"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:ga859120de13b0764564f3c1ce111b3379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
 <tr class="separator:ga859120de13b0764564f3c1ce111b3379"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -599,38 +718,38 @@ Basic auth sends credentials with every request; prefer over HTTPS only. </dd></
 <dd>
 docs/SECURITY_GUIDE.md for best practices. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00404">404</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00433">433</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="a709145c7dcf32bbfbdbc68da8da0842f" name="a709145c7dcf32bbfbdbc68da8da0842f"></a>const char *</td>
+<a id="ga709145c7dcf32bbfbdbc68da8da0842f" name="ga709145c7dcf32bbfbdbc68da8da0842f"></a>const char *</td>
 <td class="fieldname">
 password</td>
 <td class="fielddoc">
 <p>For Basic, Digest </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a89774175b3f815b3c17b8b150347b453" name="a89774175b3f815b3c17b8b150347b453"></a>const char *</td>
+<a id="ga89774175b3f815b3c17b8b150347b453" name="ga89774175b3f815b3c17b8b150347b453"></a>const char *</td>
 <td class="fieldname">
 realm</td>
 <td class="fielddoc">
 <p>Optional realm filter </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a75371d88c2cb09feb95620c237b37882" name="a75371d88c2cb09feb95620c237b37882"></a>const char *</td>
+<a id="ga75371d88c2cb09feb95620c237b37882" name="ga75371d88c2cb09feb95620c237b37882"></a>const char *</td>
 <td class="fieldname">
 token</td>
 <td class="fielddoc">
 <p>For Bearer </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aea321b9aeb6d8d36babd95cd7af87d35" name="aea321b9aeb6d8d36babd95cd7af87d35"></a><a class="el" href="group__http__client.html#ga720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a></td>
+<a id="gaea321b9aeb6d8d36babd95cd7af87d35" name="gaea321b9aeb6d8d36babd95cd7af87d35"></a><a class="el" href="group__http__client.html#ga720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a></td>
 <td class="fieldname">
 type</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aebecaec836c2d21aeb36c83c6a037b58" name="aebecaec836c2d21aeb36c83c6a037b58"></a>const char *</td>
+<a id="gaebecaec836c2d21aeb36c83c6a037b58" name="gaebecaec836c2d21aeb36c83c6a037b58"></a>const char *</td>
 <td class="fieldname">
 username</td>
 <td class="fielddoc">
@@ -672,7 +791,7 @@ username</td>
 <dl class="section note"><dt>Note</dt><dd>Changes take effect on next <a class="el" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205" title="Create new HTTP client instance.">SocketHTTPClient_new()</a>. Existing clients unaffected. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes - structure is plain data, no methods.</dt><dd></dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00455">455</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00486">486</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPClient_Config:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -683,196 +802,196 @@ username</td>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="aa6bd2632f03fadb8a08f023e641c2c64" name="aa6bd2632f03fadb8a08f023e641c2c64"></a>int</td>
+<a id="gaa6bd2632f03fadb8a08f023e641c2c64" name="gaa6bd2632f03fadb8a08f023e641c2c64"></a>int</td>
 <td class="fieldname">
 accept_encoding</td>
 <td class="fielddoc">
 <p>Bitmask: GZIP | DEFLATE | BR </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a12094d3f2718443658de2cab3f8873b4" name="a12094d3f2718443658de2cab3f8873b4"></a>int</td>
+<a id="ga12094d3f2718443658de2cab3f8873b4" name="ga12094d3f2718443658de2cab3f8873b4"></a>int</td>
 <td class="fieldname">
 acquire_timeout_ms</td>
 <td class="fielddoc">
 <p>Timeout waiting for pool slot </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a9a480ef82e914f17714c7c57d12f88af" name="a9a480ef82e914f17714c7c57d12f88af"></a>int</td>
+<a id="ga9a480ef82e914f17714c7c57d12f88af" name="ga9a480ef82e914f17714c7c57d12f88af"></a>int</td>
 <td class="fieldname">
 allow_http2_cleartext</td>
 <td class="fielddoc">
 <p>Allow h2c upgrade (default: 0) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a39d5d74dbbdec57ac84fed12f747e299" name="a39d5d74dbbdec57ac84fed12f747e299"></a>int</td>
+<a id="ga39d5d74dbbdec57ac84fed12f747e299" name="ga39d5d74dbbdec57ac84fed12f747e299"></a>int</td>
 <td class="fieldname">
 auto_decompress</td>
 <td class="fielddoc">
 <p>Auto-decompress responses (default: 1) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ad0964ac6e0738a3c4914054529bb51a7" name="ad0964ac6e0738a3c4914054529bb51a7"></a>int</td>
+<a id="gad0964ac6e0738a3c4914054529bb51a7" name="gad0964ac6e0738a3c4914054529bb51a7"></a>int</td>
 <td class="fieldname">
 connect_timeout_ms</td>
 <td class="fielddoc">
 <p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> timeout </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a6e7fd7c2a4f862fc8d613d4662a7e2e1" name="a6e7fd7c2a4f862fc8d613d4662a7e2e1"></a>int</td>
+<a id="ga6e7fd7c2a4f862fc8d613d4662a7e2e1" name="ga6e7fd7c2a4f862fc8d613d4662a7e2e1"></a>int</td>
 <td class="fieldname">
 dns_timeout_ms</td>
 <td class="fielddoc">
 <p>DNS resolution timeout </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ac81b35696b105b13f703c5d71f5c5692" name="ac81b35696b105b13f703c5d71f5c5692"></a>int</td>
+<a id="gac81b35696b105b13f703c5d71f5c5692" name="gac81b35696b105b13f703c5d71f5c5692"></a>int</td>
 <td class="fieldname">
 enable_connection_pool</td>
 <td class="fielddoc">
 <p>Enable pooling (default: 1) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="adb6071171fe058cbc1c221e1b0d6ec98" name="adb6071171fe058cbc1c221e1b0d6ec98"></a>int</td>
+<a id="gadb6071171fe058cbc1c221e1b0d6ec98" name="gadb6071171fe058cbc1c221e1b0d6ec98"></a>int</td>
 <td class="fieldname">
 enable_retry</td>
 <td class="fielddoc">
 <p>Enable automatic retry (default: 0) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ae9bb372f96fd426c9fcf729fa78f26e3" name="ae9bb372f96fd426c9fcf729fa78f26e3"></a>int</td>
+<a id="gae9bb372f96fd426c9fcf729fa78f26e3" name="gae9bb372f96fd426c9fcf729fa78f26e3"></a>int</td>
 <td class="fieldname">
 enforce_samesite</td>
 <td class="fielddoc">
 <p>Security configuration Enforce SameSite attribute (default: 1) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a1e5a28b4e256802af5f979726c728553" name="a1e5a28b4e256802af5f979726c728553"></a>int</td>
+<a id="ga1e5a28b4e256802af5f979726c728553" name="ga1e5a28b4e256802af5f979726c728553"></a>int</td>
 <td class="fieldname">
 follow_redirects</td>
 <td class="fielddoc">
 <p>Max redirects (0 = disabled) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a867974712621670ef1dc975b2b396f84" name="a867974712621670ef1dc975b2b396f84"></a>int</td>
+<a id="ga867974712621670ef1dc975b2b396f84" name="ga867974712621670ef1dc975b2b396f84"></a>int</td>
 <td class="fieldname">
 idle_timeout_ms</td>
 <td class="fielddoc">
 <p>Idle connection timeout </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a82bcf56254c541ebd8fbdbba0a7ba7bb" name="a82bcf56254c541ebd8fbdbba0a7ba7bb"></a>int</td>
+<a id="ga82bcf56254c541ebd8fbdbba0a7ba7bb" name="ga82bcf56254c541ebd8fbdbba0a7ba7bb"></a>int</td>
 <td class="fieldname">
 max_connection_age_ms</td>
 <td class="fielddoc">
 <p>Max connection age (0 = unlimited) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ad87a23b29168c1a6a738bd07268247de" name="ad87a23b29168c1a6a738bd07268247de"></a>size_t</td>
+<a id="gad87a23b29168c1a6a738bd07268247de" name="gad87a23b29168c1a6a738bd07268247de"></a>size_t</td>
 <td class="fieldname">
 max_connections_per_host</td>
 <td class="fielddoc">
 <p>Per-host limit (default: 6) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aa26d176771f3b6ddee9a2d95142e9c46" name="aa26d176771f3b6ddee9a2d95142e9c46"></a>size_t</td>
+<a id="gaa26d176771f3b6ddee9a2d95142e9c46" name="gaa26d176771f3b6ddee9a2d95142e9c46"></a>size_t</td>
 <td class="fieldname">
 max_response_size</td>
 <td class="fielddoc">
 <p>Max response body (0 = unlimited) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ad8b244df21d9337ed74c872e694d10ba" name="ad8b244df21d9337ed74c872e694d10ba"></a>int</td>
+<a id="gad8b244df21d9337ed74c872e694d10ba" name="gad8b244df21d9337ed74c872e694d10ba"></a>int</td>
 <td class="fieldname">
 max_retries</td>
 <td class="fielddoc">
 <p>Max retry attempts (default: 3) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aacd5591ab8f36783e6f759052439eb30" name="aacd5591ab8f36783e6f759052439eb30"></a>size_t</td>
+<a id="gaacd5591ab8f36783e6f759052439eb30" name="gaacd5591ab8f36783e6f759052439eb30"></a>size_t</td>
 <td class="fieldname">
 max_total_connections</td>
 <td class="fielddoc">
 <p>Total limit (default: 100) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aeeeb2ea03d33db0ba500da1c7782f7f3" name="aeeeb2ea03d33db0ba500da1c7782f7f3"></a><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
+<a id="gaeeeb2ea03d33db0ba500da1c7782f7f3" name="gaeeeb2ea03d33db0ba500da1c7782f7f3"></a><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
 <td class="fieldname">
 max_version</td>
 <td class="fielddoc">
 <p>Max HTTP version (default: HTTP/2) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="af1c22aca38ea27645e9400fe42680bdf" name="af1c22aca38ea27645e9400fe42680bdf"></a><a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *</td>
+<a id="gaf1c22aca38ea27645e9400fe42680bdf" name="gaf1c22aca38ea27645e9400fe42680bdf"></a><a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a> *</td>
 <td class="fieldname">
 proxy</td>
 <td class="fielddoc">
 <p>Default proxy (NULL for none) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a847eaef5232b2ada9149eea8aa9d4d4c" name="a847eaef5232b2ada9149eea8aa9d4d4c"></a>int</td>
+<a id="ga847eaef5232b2ada9149eea8aa9d4d4c" name="ga847eaef5232b2ada9149eea8aa9d4d4c"></a>int</td>
 <td class="fieldname">
 redirect_on_post</td>
 <td class="fielddoc">
 <p>Follow redirects for POST (default: 0) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a5d89d81bfb2401b06059048425fafb93" name="a5d89d81bfb2401b06059048425fafb93"></a>int</td>
+<a id="ga5d89d81bfb2401b06059048425fafb93" name="ga5d89d81bfb2401b06059048425fafb93"></a>int</td>
 <td class="fieldname">
 request_timeout_ms</td>
 <td class="fielddoc">
 <p>Request timeout </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a1b02030b2c83c6e7bd1812de2362ede3" name="a1b02030b2c83c6e7bd1812de2362ede3"></a>int</td>
+<a id="ga1b02030b2c83c6e7bd1812de2362ede3" name="ga1b02030b2c83c6e7bd1812de2362ede3"></a>int</td>
 <td class="fieldname">
 retry_initial_delay_ms</td>
 <td class="fielddoc">
 <p>Initial backoff delay (default: 100ms) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="afd505949c45d0fb48c0810759cb66176" name="afd505949c45d0fb48c0810759cb66176"></a>int</td>
+<a id="gafd505949c45d0fb48c0810759cb66176" name="gafd505949c45d0fb48c0810759cb66176"></a>int</td>
 <td class="fieldname">
 retry_max_delay_ms</td>
 <td class="fielddoc">
 <p>Max backoff delay (default: 10s) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a86ed34fbe021d156e6ee5ac2bc8e9b6e" name="a86ed34fbe021d156e6ee5ac2bc8e9b6e"></a>int</td>
+<a id="ga86ed34fbe021d156e6ee5ac2bc8e9b6e" name="ga86ed34fbe021d156e6ee5ac2bc8e9b6e"></a>int</td>
 <td class="fieldname">
 retry_on_5xx</td>
 <td class="fielddoc">
 <p>Retry on 5xx responses (default: 0) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a6355fa7fdfcc9db5d6069189aef62928" name="a6355fa7fdfcc9db5d6069189aef62928"></a>int</td>
+<a id="ga6355fa7fdfcc9db5d6069189aef62928" name="ga6355fa7fdfcc9db5d6069189aef62928"></a>int</td>
 <td class="fieldname">
 retry_on_connection_error</td>
 <td class="fielddoc">
 <p>Retry on connect failures (default: 1) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a58a60bcfb2edaa6accced6acd52191ad" name="a58a60bcfb2edaa6accced6acd52191ad"></a>int</td>
+<a id="ga58a60bcfb2edaa6accced6acd52191ad" name="ga58a60bcfb2edaa6accced6acd52191ad"></a>int</td>
 <td class="fieldname">
 retry_on_timeout</td>
 <td class="fielddoc">
 <p>Retry on timeouts (default: 1) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a30f979d083088bc46c8c7de3bc37a3db" name="a30f979d083088bc46c8c7de3bc37a3db"></a><a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
+<a id="ga30f979d083088bc46c8c7de3bc37a3db" name="ga30f979d083088bc46c8c7de3bc37a3db"></a><a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
 <td class="fieldname">
 tls_context</td>
 <td class="fielddoc">
 <p>Custom TLS context (NULL for default) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a0d03d16dc3eae06b6ab0b89b288c44df" name="a0d03d16dc3eae06b6ab0b89b288c44df"></a>const char *</td>
+<a id="ga0d03d16dc3eae06b6ab0b89b288c44df" name="ga0d03d16dc3eae06b6ab0b89b288c44df"></a>const char *</td>
 <td class="fieldname">
 user_agent</td>
 <td class="fielddoc">
 <p>User-Agent header </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aa5c6daa6286ff5a701a804da14108a4c" name="aa5c6daa6286ff5a701a804da14108a4c"></a>int</td>
+<a id="gaa5c6daa6286ff5a701a804da14108a4c" name="gaa5c6daa6286ff5a701a804da14108a4c"></a>int</td>
 <td class="fieldname">
 verify_ssl</td>
 <td class="fielddoc">
@@ -910,42 +1029,42 @@ For large responses, consider streaming APIs to avoid memory usage. </dd></dl>
 <dd>
 <a class="el" href="group__http__client.html#ga826bca53483c23de2c8b03d456010149" title="Free response resources.">SocketHTTPClient_Response_free()</a> for cleanup. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00570">570</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00601">601</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="ab3f98045a2f32cb3249ee62d036654c3" name="ab3f98045a2f32cb3249ee62d036654c3"></a><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
+<a id="gab3f98045a2f32cb3249ee62d036654c3" name="gab3f98045a2f32cb3249ee62d036654c3"></a><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
 <td class="fieldname">
 arena</td>
 <td class="fielddoc">
 <p>For cleanup - caller must dispose </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ab7f8558743b64c751b64ac26231dca31" name="ab7f8558743b64c751b64ac26231dca31"></a>void *</td>
+<a id="gab7f8558743b64c751b64ac26231dca31" name="gab7f8558743b64c751b64ac26231dca31"></a>void *</td>
 <td class="fieldname">
 body</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aae64f48637811f9ddbc8e12aea55e0e6" name="aae64f48637811f9ddbc8e12aea55e0e6"></a>size_t</td>
+<a id="gaae64f48637811f9ddbc8e12aea55e0e6" name="gaae64f48637811f9ddbc8e12aea55e0e6"></a>size_t</td>
 <td class="fieldname">
 body_len</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a8b459516887245f8e4b77f8d8517ede1" name="a8b459516887245f8e4b77f8d8517ede1"></a>SocketHTTP_Headers_T</td>
+<a id="ga8b459516887245f8e4b77f8d8517ede1" name="ga8b459516887245f8e4b77f8d8517ede1"></a>SocketHTTP_Headers_T</td>
 <td class="fieldname">
 headers</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a0baa2f233436d7bb00f28214d6382542" name="a0baa2f233436d7bb00f28214d6382542"></a>int</td>
+<a id="ga0baa2f233436d7bb00f28214d6382542" name="ga0baa2f233436d7bb00f28214d6382542"></a>int</td>
 <td class="fieldname">
 status_code</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="accda45708658a8ada478121524f85e5e" name="accda45708658a8ada478121524f85e5e"></a><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
+<a id="gaccda45708658a8ada478121524f85e5e" name="gaccda45708658a8ada478121524f85e5e"></a><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a></td>
 <td class="fieldname">
 version</td>
 <td class="fielddoc">
@@ -980,53 +1099,53 @@ version</td>
 <dd>
 docs/SECURITY_GUIDE.md for SameSite and <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> considerations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01062">1062</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01121">1121</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="a0dc75016531006762afa85a21130ac13" name="a0dc75016531006762afa85a21130ac13"></a>const char *</td>
+<a id="ga0dc75016531006762afa85a21130ac13" name="ga0dc75016531006762afa85a21130ac13"></a>const char *</td>
 <td class="fieldname">
 domain</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a76752117eaf672a88292a3c7c250b52d" name="a76752117eaf672a88292a3c7c250b52d"></a>time_t</td>
+<a id="ga76752117eaf672a88292a3c7c250b52d" name="ga76752117eaf672a88292a3c7c250b52d"></a>time_t</td>
 <td class="fieldname">
 expires</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ae47a67be4b88e83dd7c877f63af2ae8a" name="ae47a67be4b88e83dd7c877f63af2ae8a"></a>int</td>
+<a id="gae47a67be4b88e83dd7c877f63af2ae8a" name="gae47a67be4b88e83dd7c877f63af2ae8a"></a>int</td>
 <td class="fieldname">
 http_only</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ae7076917489dca85561ff672d120551c" name="ae7076917489dca85561ff672d120551c"></a>const char *</td>
+<a id="gae7076917489dca85561ff672d120551c" name="gae7076917489dca85561ff672d120551c"></a>const char *</td>
 <td class="fieldname">
 name</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a7259b82f78dc6e60c52ef6c5d741ca06" name="a7259b82f78dc6e60c52ef6c5d741ca06"></a>const char *</td>
+<a id="ga7259b82f78dc6e60c52ef6c5d741ca06" name="ga7259b82f78dc6e60c52ef6c5d741ca06"></a>const char *</td>
 <td class="fieldname">
 path</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ad1fc2e3ea45172e27a07aaacfe3c7eeb" name="ad1fc2e3ea45172e27a07aaacfe3c7eeb"></a><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a></td>
+<a id="gad1fc2e3ea45172e27a07aaacfe3c7eeb" name="gad1fc2e3ea45172e27a07aaacfe3c7eeb"></a><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a></td>
 <td class="fieldname">
 same_site</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a3300f627ad07cd15a596451a41dc4b69" name="a3300f627ad07cd15a596451a41dc4b69"></a>int</td>
+<a id="ga3300f627ad07cd15a596451a41dc4b69" name="ga3300f627ad07cd15a596451a41dc4b69"></a>int</td>
 <td class="fieldname">
 secure</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a21b390a321565e4ebf8be575550c1498" name="a21b390a321565e4ebf8be575550c1498"></a>const char *</td>
+<a id="ga21b390a321565e4ebf8be575550c1498" name="ga21b390a321565e4ebf8be575550c1498"></a>const char *</td>
 <td class="fieldname">
 value</td>
 <td class="fielddoc">
@@ -1057,67 +1176,67 @@ value</td>
 <dd>
 <a class="el" href="group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> for pool configuration. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01224">1224</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01283">1283</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
-<a id="a102cdd1136d87673c4eb8ca42cd64942" name="a102cdd1136d87673c4eb8ca42cd64942"></a>size_t</td>
+<a id="ga102cdd1136d87673c4eb8ca42cd64942" name="ga102cdd1136d87673c4eb8ca42cd64942"></a>size_t</td>
 <td class="fieldname">
 active_connections</td>
 <td class="fielddoc">
 <p>Connections currently in use </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a9a5d4cac43fdb9d880edef1dc778273a" name="a9a5d4cac43fdb9d880edef1dc778273a"></a>size_t</td>
+<a id="ga9a5d4cac43fdb9d880edef1dc778273a" name="ga9a5d4cac43fdb9d880edef1dc778273a"></a>size_t</td>
 <td class="fieldname">
 connections_created</td>
 <td class="fielddoc">
 <p>Total connections created </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a1dfc46ee0c2d61f3facd7daf0d93f0a0" name="a1dfc46ee0c2d61f3facd7daf0d93f0a0"></a>size_t</td>
+<a id="ga1dfc46ee0c2d61f3facd7daf0d93f0a0" name="ga1dfc46ee0c2d61f3facd7daf0d93f0a0"></a>size_t</td>
 <td class="fieldname">
 connections_failed</td>
 <td class="fielddoc">
 <p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> attempts that failed </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ac9548fe3f865ed4d99c7366b0f64937d" name="ac9548fe3f865ed4d99c7366b0f64937d"></a>size_t</td>
+<a id="gac9548fe3f865ed4d99c7366b0f64937d" name="gac9548fe3f865ed4d99c7366b0f64937d"></a>size_t</td>
 <td class="fieldname">
 connections_timed_out</td>
 <td class="fielddoc">
 <p>Connections that timed out waiting </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="aaab49cd26a75dd2f3f7ed96eafc09a25" name="aaab49cd26a75dd2f3f7ed96eafc09a25"></a>size_t</td>
+<a id="gaaab49cd26a75dd2f3f7ed96eafc09a25" name="gaaab49cd26a75dd2f3f7ed96eafc09a25"></a>size_t</td>
 <td class="fieldname">
 idle_connections</td>
 <td class="fielddoc">
 <p>Connections available for reuse </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a2388e92ca44d26b70ce6904abbcf0d13" name="a2388e92ca44d26b70ce6904abbcf0d13"></a>size_t</td>
+<a id="ga2388e92ca44d26b70ce6904abbcf0d13" name="ga2388e92ca44d26b70ce6904abbcf0d13"></a>size_t</td>
 <td class="fieldname">
 pool_exhausted_waits</td>
 <td class="fielddoc">
 <p>Times we waited for pool slot </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a0bb94abb8c7aa981d1aae1d47469b316" name="a0bb94abb8c7aa981d1aae1d47469b316"></a>size_t</td>
+<a id="ga0bb94abb8c7aa981d1aae1d47469b316" name="ga0bb94abb8c7aa981d1aae1d47469b316"></a>size_t</td>
 <td class="fieldname">
 reused_connections</td>
 <td class="fielddoc">
 <p>Times a pooled connection was reused </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a822cd3674285e9ee5a3e541b42cc8f9a" name="a822cd3674285e9ee5a3e541b42cc8f9a"></a>size_t</td>
+<a id="ga822cd3674285e9ee5a3e541b42cc8f9a" name="ga822cd3674285e9ee5a3e541b42cc8f9a"></a>size_t</td>
 <td class="fieldname">
 stale_connections_removed</td>
 <td class="fielddoc">
 <p>Stale/dead connections cleaned up </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="acbe290157d79e718d8397a6d7078487c" name="acbe290157d79e718d8397a6d7078487c"></a>size_t</td>
+<a id="gacbe290157d79e718d8397a6d7078487c" name="gacbe290157d79e718d8397a6d7078487c"></a>size_t</td>
 <td class="fieldname">
 total_requests</td>
 <td class="fielddoc">
@@ -1144,11 +1263,11 @@ total_requests</td>
 <p>Builds "Accept-Encoding: gzip, deflate, br" based on config flags. Small size sufficient for standard encodings; extensible.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client__encoding.html">Content-Encoding Flags</a>: GZIP, DEFLATE, BR. </dd>
 <dd>
-<a class="el" href="group__http__client.html#aa6bd2632f03fadb8a08f023e641c2c64">SocketHTTPClient_Config::accept_encoding</a> bitmask. </dd>
+<a class="el" href="group__http__client.html#gaa6bd2632f03fadb8a08f023e641c2c64">SocketHTTPClient_Config::accept_encoding</a> bitmask. </dd>
 <dd>
 RFC 9110 Content-Encoding and Accept-Encoding. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01017">1017</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01073">1073</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1166,13 +1285,13 @@ RFC 9110 Content-Encoding and Accept-Encoding. </dd></dl>
 
 <p>Buffer size for Basic auth credentials string (username:password, 512 bytes). </p>
 <p>Temporary buffer for concatenating username:password before Base64 encoding in Basic auth. 512 bytes accommodates long usernames/passwords with margin; prevents overflows. Used in <a class="el" href="group__http__client.html#structSocketHTTPClient__Auth" title="Authentication credentials structure.">SocketHTTPClient_Auth</a> for header generation.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#aebecaec836c2d21aeb36c83c6a037b58">SocketHTTPClient_Auth::username</a> and ::password fields. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gaebecaec836c2d21aeb36c83c6a037b58">SocketHTTPClient_Auth::username</a> and ::password fields. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gae0d219a3146b29914fb7f7169c6aa566" title="Buffer size for standard Authorization headers (Basic/Digest/Bearer, 512 bytes).">HTTPCLIENT_AUTH_HEADER_SIZE</a> encoded header buffer. </dd>
 <dd>
 RFC 7617 Basic Authentication scheme. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00774">774</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00818">818</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1196,7 +1315,7 @@ RFC 7617 Basic Authentication scheme. </dd></dl>
 <dd>
 RFC 7616 Digest auth header format. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00970">970</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01025">1025</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1213,14 +1332,15 @@ RFC 7616 Digest auth header format. </dd></dl>
 </div><div class="memdoc">
 
 <p>Buffer size for standard Authorization headers (Basic/Digest/Bearer, 512 bytes). </p>
-<p>For Basic: "Basic base64(creds)"; Digest: full params; Bearer: "Bearer token". 512 bytes covers typical cases; see LARGE variant for complex Digest.</p>
+<p>For Basic: "Basic base64(creds)"; Digest: full params; Bearer: "Bearer
+token". 512 bytes covers typical cases; see LARGE variant for complex Digest.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#structSocketHTTPClient__Auth" title="Authentication credentials structure.">SocketHTTPClient_Auth</a> for credential types. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga81ac4eefb96b3c919042f5fdd1ea361d" title="Larger buffer for complex Authorization headers, e.g., Digest with long nonces (1024 bytes).">HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</a> for extended Digest params. </dd>
 <dd>
 RFC 7235 HTTP Authentication framework. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00954">954</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01008">1008</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1243,9 +1363,9 @@ RFC 7235 HTTP Authentication framework. </dd></dl>
 <dd>
 <a class="el" href="group__core__io.html#gabb1c8e39587d4ea5e3ffe4b06dcaca0f" title="Scatter/gather receive (readv wrapper).">Socket_recvv()</a> or similar for underlying I/O. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ab7f8558743b64c751b64ac26231dca31">SocketHTTPClient_Response::body</a> accumulated result. </dd></dl>
+<a class="el" href="group__http__client.html#gab7f8558743b64c751b64ac26231dca31">SocketHTTPClient_Response::body</a> accumulated result. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00907">907</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00958">958</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1269,7 +1389,7 @@ RFC 7235 HTTP Authentication framework. </dd></dl>
 <dd>
 <a class="el" href="group__http__client.html#ga3de25c3d345626920f73bd6ceb4faefe" title="Buffer size for serializing HTTP request lines and headers (8192 bytes).">HTTPCLIENT_REQUEST_BUFFER_SIZE</a> including this in request. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01032">1032</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01088">1088</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1293,7 +1413,7 @@ RFC 7235 HTTP Authentication framework. </dd></dl>
 <dd>
 RFC 6265 section 5.4 Cookie header format. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00939">939</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00991">991</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1309,14 +1429,14 @@ RFC 6265 section 5.4 Cookie header format. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p>Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http__client.html#ad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request. </p>
+<p>Default timeout for establishing new connections (30 seconds).Applies to TCP connect, TLS handshake, and proxy connections. Override via <a class="el" href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config.connect_timeout_ms</a> or per-request. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a> </dd>
 <dd>
 <a class="el" href="group__security.html#gaeaa77dd7852b535baf17b53ee2518454" title="Perform non-blocking TLS handshake.">SocketTLS_handshake()</a> </dd>
 <dd>
 <a class="el" href="group__http__client.html#gabe918e0dacc9d507f1ad288a399dfca6" title="Set per-request timeout.">SocketHTTPClient_Request_timeout()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00155">155</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00170">170</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1334,16 +1454,16 @@ RFC 6265 section 5.4 Cookie header format. </dd></dl>
 
 <p>Default timeout for DNS resolution (10 seconds). </p>
 <p>Maximum time allowed for hostname resolution via SocketDNS. Includes query submission, worker thread processing, and result retrieval. Exceeding this raises SocketHTTPClient_DNSFailed or contributes to overall timeout.</p>
-<p>10s accommodates slow DNS servers or network latency; reduce for faster failure detection. Override via <a class="el" href="group__http__client.html#a6e7fd7c2a4f862fc8d613d4662a7e2e1">SocketHTTPClient_Config.dns_timeout_ms</a>.</p>
+<p>10s accommodates slow DNS servers or network latency; reduce for faster failure detection. Override via <a class="el" href="group__http__client.html#ga6e7fd7c2a4f862fc8d613d4662a7e2e1">SocketHTTPClient_Config.dns_timeout_ms</a>.</p>
 <dl class="section see"><dt>See also</dt><dd>SocketDNS for underlying async DNS implementation. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga50039c8c595271d7d51b28ed5a4e7196" title="DNS resolution failure.">SocketHTTPClient_DNSFailed</a> exception on resolution failure. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a6e7fd7c2a4f862fc8d613d4662a7e2e1">SocketHTTPClient_Config::dns_timeout_ms</a> for runtime configuration. </dd>
+<a class="el" href="group__http__client.html#ga6e7fd7c2a4f862fc8d613d4662a7e2e1">SocketHTTPClient_Config::dns_timeout_ms</a> for runtime configuration. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga86b91e7fbe633ea8ca189984af9b3547" title="Default timeout for full HTTP request completion (60 seconds).">HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</a> includes this timeout. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00195">195</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00212">212</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1361,14 +1481,14 @@ RFC 6265 section 5.4 Cookie header format. </dd></dl>
 
 <p>Default idle timeout for pooled connections (60 seconds). </p>
 <p>Time after which idle (unused) connections in the pool are closed and removed. Prevents resource leaks from stale connections and reduces server load. 60s allows reuse for typical web browsing patterns while reclaiming unused slots.</p>
-<p>Override via <a class="el" href="group__http__client.html#a867974712621670ef1dc975b2b396f84">SocketHTTPClient_Config.idle_timeout_ms</a>. Set to 0 to disable (not recommended). Affects pool efficiency and memory usage.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ac81b35696b105b13f703c5d71f5c5692">SocketHTTPClient_Config::enable_connection_pool</a> must be enabled. </dd>
+<p>Override via <a class="el" href="group__http__client.html#ga867974712621670ef1dc975b2b396f84">SocketHTTPClient_Config.idle_timeout_ms</a>. Set to 0 to disable (not recommended). Affects pool efficiency and memory usage.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gac81b35696b105b13f703c5d71f5c5692">SocketHTTPClient_Config::enable_connection_pool</a> must be enabled. </dd>
 <dd>
-<a class="el" href="group__http__client.html#aacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> pool limits. </dd>
+<a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> pool limits. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gab2a7df0479b8f9ac899672afdb488b94" title="Remove idle connections.">SocketPool_cleanup()</a> underlying pool maintenance. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00214">214</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00232">232</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1386,14 +1506,14 @@ RFC 6265 section 5.4 Cookie header format. </dd></dl>
 
 <p>Default maximum concurrent connections per host (6). </p>
 <p>Limits parallel connections to a single host to prevent overwhelming servers and respect typical server connection limits. Matches common browser behavior (Chrome/Firefox default ~6 per domain).</p>
-<p>Exceeding limit blocks new requests until connections free up or timeout. Helps with fair resource sharing in multi-host scenarios. Override via <a class="el" href="group__http__client.html#ad87a23b29168c1a6a738bd07268247de">SocketHTTPClient_Config.max_connections_per_host</a>.</p>
+<p>Exceeding limit blocks new requests until connections free up or timeout. Helps with fair resource sharing in multi-host scenarios. Override via <a class="el" href="group__http__client.html#gad87a23b29168c1a6a738bd07268247de">SocketHTTPClient_Config.max_connections_per_host</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga48547cb7f217429e34d7fa5c925d9dea" title="Default total maximum connections across all hosts (100).">HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</a> global limit. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ad87a23b29168c1a6a738bd07268247de">SocketHTTPClient_Config::max_connections_per_host</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#gad87a23b29168c1a6a738bd07268247de">SocketHTTPClient_Config::max_connections_per_host</a> runtime override. </dd>
 <dd>
 SocketPool for underlying connection pooling mechanics. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00270">270</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00291">291</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1411,14 +1531,14 @@ SocketPool for underlying connection pooling mechanics. </dd></dl>
 
 <p>Default maximum number of redirects to follow (10). </p>
 <p>Limits automatic redirect following to prevent infinite loops or excessive hops. Exceeding this raises SocketHTTPClient_TooManyRedirects exception. 10 allows for common redirect chains (e.g., www -&gt; non-www -&gt; https) with margin.</p>
-<p>Only follows 3xx status codes (301, 302, 303, 307, 308) per RFC 7231. POST redirects converted to GET unless redirect_on_post configured. Override via <a class="el" href="group__http__client.html#a1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config.follow_redirects</a> (0 to disable).</p>
+<p>Only follows 3xx status codes (301, 302, 303, 307, 308) per RFC 7231. POST redirects converted to GET unless redirect_on_post configured. Override via <a class="el" href="group__http__client.html#ga1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config.follow_redirects</a> (0 to disable).</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gafd7d2611128ad32cc65cb256403c671f" title="Redirect limit exceeded.">SocketHTTPClient_TooManyRedirects</a> exception on limit exceed. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config::follow_redirects</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#ga1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config::follow_redirects</a> runtime override. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a847eaef5232b2ada9149eea8aa9d4d4c">SocketHTTPClient_Config::redirect_on_post</a> for POST handling. </dd></dl>
+<a class="el" href="group__http__client.html#ga847eaef5232b2ada9149eea8aa9d4d4c">SocketHTTPClient_Config::redirect_on_post</a> for POST handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00250">250</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00271">271</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1437,14 +1557,14 @@ SocketPool for underlying connection pooling mechanics. </dd></dl>
 <p>Default maximum size for HTTP response bodies (10MB). </p>
 <p>0 in <a class="el" href="group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> allows unlimited, but compile-time default is 10MB to mitigate DoS.</p>
 <p>ENFORCEMENT: During response body accumulation in HTTP/1.1 parsing. If exceeded, raises SocketHTTPClient_ResponseTooLarge exception. Increments SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED metric for monitoring.</p>
-<p>Recommendation: Keep non-zero in production; adjust based on expected payload sizes (e.g., 1MB for APIs, larger for file downloads). Override at runtime via <a class="el" href="group__http__client.html#aa26d176771f3b6ddee9a2d95142e9c46">SocketHTTPClient_Config.max_response_size</a>.</p>
+<p>Recommendation: Keep non-zero in production; adjust based on expected payload sizes (e.g., 1MB for APIs, larger for file downloads). Override at runtime via <a class="el" href="group__http__client.html#gaa26d176771f3b6ddee9a2d95142e9c46">SocketHTTPClient_Config.max_response_size</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga4ed14f04119b1dec3cb25c432b7a383d" title="Response body exceeds limit.">SocketHTTPClient_ResponseTooLarge</a> </dd>
 <dd>
-<a class="el" href="group__http__client.html#aa26d176771f3b6ddee9a2d95142e9c46">SocketHTTPClient_Config::max_response_size</a> </dd>
+<a class="el" href="group__http__client.html#gaa26d176771f3b6ddee9a2d95142e9c46">SocketHTTPClient_Config::max_response_size</a> </dd>
 <dd>
 SocketMetrics for counter details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00542">542</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00576">576</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1462,16 +1582,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default maximum number of retry attempts for transient failures (3). </p>
 <p>Limits retries for retryable errors (connect, timeout, DNS) when enable_retry is true. Prevents excessive retries on persistent failures. 3 attempts with exponential backoff provides good balance of resilience and efficiency.</p>
-<p>Total attempts = 1 initial + max_retries. Does not retry non-retryable errors (TLS, protocol, redirects, size limits). Override via <a class="el" href="group__http__client.html#ad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config.max_retries</a>.</p>
+<p>Total attempts = 1 initial + max_retries. Does not retry non-retryable errors (TLS, protocol, redirects, size limits). Override via <a class="el" href="group__http__client.html#gad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config.max_retries</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client__retry.html#ga66d096fe772967107d0642d303b1a51c" title="Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compat...">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a> to enable retry logic. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9" title="Check if error code is retryable.">SocketHTTPClient_error_is_retryable()</a> determines retry eligibility. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config::max_retries</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#gad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config::max_retries</a> runtime override. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga1827f78650d15ca622a674b130a2b926" title="Default initial backoff delay for retries (100ms).">HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</a> backoff configuration. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00373">373</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00398">398</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1489,14 +1609,14 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default total maximum connections across all hosts (100). </p>
 <p>Global limit on pooled connections regardless of host. Prevents uncontrolled memory and FD growth when connecting to many different hosts. 100 suitable for client applications; servers may need higher.</p>
-<p>When reached, new connections block or fail based on acquire_timeout_ms. Influences hash table resize via HTTPCLIENT_POOL_LARGE_THRESHOLD. Override via <a class="el" href="group__http__client.html#aacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config.max_total_connections</a>.</p>
+<p>When reached, new connections block or fail based on acquire_timeout_ms. Influences hash table resize via HTTPCLIENT_POOL_LARGE_THRESHOLD. Override via <a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config.max_total_connections</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga6495bfe151f30ebab1389fa05229498d" title="Default maximum concurrent connections per host (6).">HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</a> per-host sub-limit. </dd>
 <dd>
-<a class="el" href="group__http__client.html#aacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> runtime override. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gafaff4a2f91f9687bf4149fde554c11b8" title="Threshold for switching to larger hash table in connection pool.">HTTPCLIENT_POOL_LARGE_THRESHOLD</a> related pool performance tuning. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00311">311</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1514,16 +1634,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default timeout for full HTTP request completion (60 seconds). </p>
 <p>Total time allowed from request start to final response receipt, including DNS, connect, TLS handshake, sending request, and receiving response. Exceeding this raises SocketHTTPClient_Timeout exception.</p>
-<p>Override via <a class="el" href="group__http__client.html#a5d89d81bfb2401b06059048425fafb93">SocketHTTPClient_Config.request_timeout_ms</a> or per-request timeout. 60s suitable for most APIs; reduce for latency-sensitive operations.</p>
+<p>Override via <a class="el" href="group__http__client.html#ga5d89d81bfb2401b06059048425fafb93">SocketHTTPClient_Config.request_timeout_ms</a> or per-request timeout. 60s suitable for most APIs; reduce for latency-sensitive operations.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gad6976b035b7becf34c067ecbfe122a99" title="Default timeout for establishing new connections (30 seconds).Applies to TCP connect,...">HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</a> for connect-only timeout. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gaa0847dd6efa2f627e07173f29b29c8ae" title="Request timeout exceeded.">SocketHTTPClient_Timeout</a> exception details. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a5d89d81bfb2401b06059048425fafb93">SocketHTTPClient_Config::request_timeout_ms</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#ga5d89d81bfb2401b06059048425fafb93">SocketHTTPClient_Config::request_timeout_ms</a> runtime override. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gabe918e0dacc9d507f1ad288a399dfca6" title="Set per-request timeout.">SocketHTTPClient_Request_timeout()</a> per-request override. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00175">175</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00191">191</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1541,16 +1661,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default initial backoff delay for retries (100ms). </p>
 <p>Starting delay before first retry attempt. Subsequent retries use exponential backoff: delay *= HTTPCLIENT_RETRY_MULTIPLIER + jitter. Short initial delay (100ms) allows quick recovery from transient issues without overwhelming servers.</p>
-<p>Jitter (HTTPCLIENT_RETRY_JITTER_FACTOR) adds randomness to prevent thundering herd. Override via <a class="el" href="group__http__client.html#a1b02030b2c83c6e7bd1812de2362ede3">SocketHTTPClient_Config.retry_initial_delay_ms</a>.</p>
+<p>Jitter (HTTPCLIENT_RETRY_JITTER_FACTOR) adds randomness to prevent thundering herd. Override via <a class="el" href="group__http__client.html#ga1b02030b2c83c6e7bd1812de2362ede3">SocketHTTPClient_Config.retry_initial_delay_ms</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gaf7e91b18a488977f7e7d333f0f7c0611" title="Default maximum backoff delay between retries (10 seconds).">HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</a> upper bound on backoff. </dd>
 <dd>
 <a class="el" href="group__http__client__buffers.html#ga5f5f7ee22b430f5cb019b8b0a6803348">HTTPCLIENT_RETRY_MULTIPLIER</a> backoff factor (2.0). </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga441f1405cd4774e167f08b83b3b1e117" title="Default retry backoff parameters: jitter factor (0.25) and multiplier (2.0).">HTTPCLIENT_RETRY_JITTER_FACTOR</a> randomization (0.25). </dd>
 <dd>
-<a class="el" href="group__http__client.html#a1b02030b2c83c6e7bd1812de2362ede3">SocketHTTPClient_Config::retry_initial_delay_ms</a> runtime override. </dd></dl>
+<a class="el" href="group__http__client.html#ga1b02030b2c83c6e7bd1812de2362ede3">SocketHTTPClient_Config::retry_initial_delay_ms</a> runtime override. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00394">394</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00420">420</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1568,16 +1688,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default maximum backoff delay between retries (10 seconds). </p>
 <p>Caps exponential backoff to prevent excessively long waits on repeated failures. After reaching this, further retries use this fixed delay (no further increase). 10s prevents client from hanging indefinitely while allowing recovery time.</p>
-<p>Combined with initial delay and multiplier, provides graceful degradation. Override via <a class="el" href="group__http__client.html#afd505949c45d0fb48c0810759cb66176">SocketHTTPClient_Config.retry_max_delay_ms</a>.</p>
+<p>Combined with initial delay and multiplier, provides graceful degradation. Override via <a class="el" href="group__http__client.html#gafd505949c45d0fb48c0810759cb66176">SocketHTTPClient_Config.retry_max_delay_ms</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga1827f78650d15ca622a674b130a2b926" title="Default initial backoff delay for retries (100ms).">HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</a> starting delay. </dd>
 <dd>
 <a class="el" href="group__http__client__buffers.html#ga5f5f7ee22b430f5cb019b8b0a6803348">HTTPCLIENT_RETRY_MULTIPLIER</a> exponential factor. </dd>
 <dd>
-<a class="el" href="group__http__client.html#afd505949c45d0fb48c0810759cb66176">SocketHTTPClient_Config::retry_max_delay_ms</a> runtime override. </dd>
+<a class="el" href="group__http__client.html#gafd505949c45d0fb48c0810759cb66176">SocketHTTPClient_Config::retry_max_delay_ms</a> runtime override. </dd>
 <dd>
 <a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9" title="Check if error code is retryable.">SocketHTTPClient_error_is_retryable()</a> for retry conditions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00414">414</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00441">441</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1595,16 +1715,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default flag to retry on connection establishment errors (1 = enabled). </p>
 <p>When enabled (and overall retry enabled), retries on TCP connect failures like ECONNREFUSED (server down), ENETUNREACH (network issue), ETIMEDOUT. Common transient errors where server/network may recover quickly.</p>
-<p>Does not retry permanent errors (e.g., invalid address). Uses backoff logic. Override via <a class="el" href="group__http__client.html#a6355fa7fdfcc9db5d6069189aef62928">SocketHTTPClient_Config.retry_on_connection_error</a>.</p>
+<p>Does not retry permanent errors (e.g., invalid address). Uses backoff logic. Override via <a class="el" href="group__http__client.html#ga6355fa7fdfcc9db5d6069189aef62928">SocketHTTPClient_Config.retry_on_connection_error</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga83bda6e77bc5fb165e4e7fead483094b" title="TCP connection failure.">SocketHTTPClient_ConnectFailed</a> underlying exception. </dd>
 <dd>
 <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> for errno classification. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a6355fa7fdfcc9db5d6069189aef62928">SocketHTTPClient_Config::retry_on_connection_error</a> runtime flag. </dd>
+<a class="el" href="group__http__client.html#ga6355fa7fdfcc9db5d6069189aef62928">SocketHTTPClient_Config::retry_on_connection_error</a> runtime flag. </dd>
 <dd>
 <a class="el" href="group__http__client__retry.html#ga66d096fe772967107d0642d303b1a51c" title="Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compat...">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a> master retry switch. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00434">434</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00462">462</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1622,16 +1742,16 @@ SocketMetrics for counter details. </dd></dl>
 
 <p>Default flag to retry on request timeouts (1 = enabled). </p>
 <p>When enabled (with overall retry), retries requests that exceed request_timeout_ms. Timeouts often transient due to network congestion, slow servers, or temporary load. Uses backoff to avoid immediate re-failure.</p>
-<p>Caution: May amplify load on struggling servers. Monitor metrics for retry loops. Override via <a class="el" href="group__http__client.html#a58a60bcfb2edaa6accced6acd52191ad">SocketHTTPClient_Config.retry_on_timeout</a>.</p>
+<p>Caution: May amplify load on struggling servers. Monitor metrics for retry loops. Override via <a class="el" href="group__http__client.html#ga58a60bcfb2edaa6accced6acd52191ad">SocketHTTPClient_Config.retry_on_timeout</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gaa0847dd6efa2f627e07173f29b29c8ae" title="Request timeout exceeded.">SocketHTTPClient_Timeout</a> exception triggered by timeout. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga86b91e7fbe633ea8ca189984af9b3547" title="Default timeout for full HTTP request completion (60 seconds).">HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</a> configurable timeout. </dd>
 <dd>
-<a class="el" href="group__http__client.html#a58a60bcfb2edaa6accced6acd52191ad">SocketHTTPClient_Config::retry_on_timeout</a> runtime flag. </dd>
+<a class="el" href="group__http__client.html#ga58a60bcfb2edaa6accced6acd52191ad">SocketHTTPClient_Config::retry_on_timeout</a> runtime flag. </dd>
 <dd>
 <a class="el" href="group__http__client__retry.html#ga66d096fe772967107d0642d303b1a51c" title="Flag to enable automatic retry logic for transient failures.Default: 0 (disabled) for backward compat...">HTTPCLIENT_DEFAULT_ENABLE_RETRY</a> required for any retries. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00454">454</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00482">482</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1648,14 +1768,14 @@ SocketMetrics for counter details. </dd></dl>
 </div><div class="memdoc">
 
 <p>Default User-Agent header string sent in requests. </p>
-<p>Simple identifier "SocketHTTPClient/1.0" for library requests. Servers may use for rate limiting or logging; override for application-specific ID. Includes version for compatibility tracking. Configurable via <a class="el" href="group__http__client.html#a0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config.user_agent</a> (NULL uses default).</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config::user_agent</a> runtime override. </dd>
+<p>Simple identifier "SocketHTTPClient/1.0" for library requests. Servers may use for rate limiting or logging; override for application-specific ID. Includes version for compatibility tracking. Configurable via <a class="el" href="group__http__client.html#ga0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config.user_agent</a> (NULL uses default).</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config::user_agent</a> runtime override. </dd>
 <dd>
 RFC 7231 section 5.5.3 User-Agent header. </dd>
 <dd>
 <a class="el" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb" title="Add header (null-terminated strings).">SocketHTTP_Headers_add()</a> header insertion. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01079">1079</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01138">1138</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1679,7 +1799,7 @@ RFC 7231 section 5.5.3 User-Agent header. </dd>
 <dd>
 RFC 7616 Digest Access Authentication. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00790">790</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00835">835</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1703,7 +1823,7 @@ RFC 7616 section 3.2.1 nonce format (hex lowercase recommended). </dd>
 <dd>
 <a class="el" href="group__http__client.html#gae0d219a3146b29914fb7f7169c6aa566" title="Buffer size for standard Authorization headers (Basic/Digest/Bearer, 512 bytes).">HTTPCLIENT_AUTH_HEADER_SIZE</a> overall auth header buffer. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00838">838</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00885">885</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1725,9 +1845,9 @@ RFC 7616 section 3.2.1 nonce format (hex lowercase recommended). </dd>
 <dd>
 RFC 7616 section 3.2.1 client nonce requirement. </dd>
 <dd>
-SocketCrypto for random generation (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> available). </dd></dl>
+SocketCrypto for random generation (if available). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00822">822</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00868">868</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1749,9 +1869,9 @@ SocketCrypto for random generation (<a class="el" href="group__reconnect__privat
 <dd>
 <a class="el" href="group__http__client.html#gae0d219a3146b29914fb7f7169c6aa566" title="Buffer size for standard Authorization headers (Basic/Digest/Bearer, 512 bytes).">HTTPCLIENT_AUTH_HEADER_SIZE</a> including nc in header. </dd>
 <dd>
-Digest auth <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> management for rollover handling. </dd></dl>
+Digest auth state management for rollover handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00854">854</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00901">901</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1775,7 +1895,7 @@ Digest auth <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320
 <dd>
 RFC 7616 section 3.4 response computation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00806">806</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00851">851</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1795,7 +1915,7 @@ RFC 7616 section 3.4 response computation. </dd></dl>
 <p>Bit value 0x04. Supports Brotli compression (RFC 7932). Advertises "br" in Accept-Encoding header. Modern, efficient for text; requires Brotli library support. Client decompresses br-encoded responses if enabled. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client__encoding.html">Content-Encoding Flags</a> </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Brotli support may require additional dependencies or conditional compilation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01134">1134</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01199">1199</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1816,7 +1936,7 @@ RFC 7616 section 3.4 response computation. </dd></dl>
 <dd>
 SocketHTTPClient.c line ~918 for Accept-Encoding handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01124">1124</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01187">1187</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1837,7 +1957,7 @@ SocketHTTPClient.c line ~918 for Accept-Encoding handling. </dd></dl>
 <dd>
 SocketHTTPClient.c for header construction and decompression logic. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01114">1114</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01176">1176</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1856,7 +1976,7 @@ SocketHTTPClient.c for header construction and decompression logic. </dd></dl>
 <p>Identity (no compression) encoding flag. </p>
 <p>Bit value 0x00. Represents uncompressed data transfer. Used as base flag or when no encoding is applied. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client__encoding.html">Content-Encoding Flags</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01105">1105</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01166">1166</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1875,7 +1995,7 @@ SocketHTTPClient.c for header construction and decompression logic. </dd></dl>
 <p>Size of internal buffer for formatting HTTP client error messages.Used in SocketHTTPClient_error_format() and related functions to prevent buffer overflows. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75" title="Error codes for HTTP client operations.">SocketHTTPClient_Error</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00066">66</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00073">73</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1899,7 +2019,7 @@ SocketHTTPClient.c for header construction and decompression logic. </dd></dl>
 <dd>
 RFC 7230 section 5.4 Host header requirements. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00923">923</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00974">974</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1918,13 +2038,13 @@ RFC 7230 section 5.4 Host header requirements. </dd></dl>
 <p>I/O buffer size for pooled connections in HTTP client. </p>
 <p>Size of read/write buffers allocated per connection in the pool. 8KB (8192 bytes) chosen as efficient size for typical HTTP requests/responses while minimizing memory overhead. Affects performance for small vs. large payloads.</p>
 <p>Larger buffers reduce system call overhead for large transfers but increase memory usage per connection. Adjustable at compile-time for tuning.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ac81b35696b105b13f703c5d71f5c5692">SocketHTTPClient_Config::enable_connection_pool</a> to enable pooling. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gac81b35696b105b13f703c5d71f5c5692">SocketHTTPClient_Config::enable_connection_pool</a> to enable pooling. </dd>
 <dd>
 <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c" title="Opaque handle to a circular buffer instance.">SocketBuf_T</a> underlying buffer implementation in core I/O. </dd>
 <dd>
 <a class="el" href="group__http__client.html#ga3de25c3d345626920f73bd6ceb4faefe" title="Buffer size for serializing HTTP request lines and headers (8192 bytes).">HTTPCLIENT_REQUEST_BUFFER_SIZE</a> for request serialization buffer. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00137">137</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00152">152</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1950,7 +2070,7 @@ RFC 7230 section 5.4 Host header requirements. </dd></dl>
 <dd>
 RFC 6265 multiple Set-Cookie handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01002">1002</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01057">1057</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1971,7 +2091,7 @@ RFC 6265 multiple Set-Cookie handling. </dd></dl>
 <dd>
 SocketHTTPClient_pool_init() </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00083">83</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00091">91</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -1993,11 +2113,11 @@ SocketHTTPClient_pool_init() </dd></dl>
 <dd>
 <a class="el" href="group__http__client.html#gafaff4a2f91f9687bf4149fde554c11b8" title="Threshold for switching to larger hash table in connection pool.">HTTPCLIENT_POOL_LARGE_THRESHOLD</a> for automatic resize trigger. </dd>
 <dd>
-<a class="el" href="group__http__client.html#aacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> for pool capacity configuration. </dd>
+<a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> for pool capacity configuration. </dd>
 <dd>
 SocketHTTPClient_pool_init() internal pool initialization (implementation detail). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00100">100</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00112">112</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -2020,9 +2140,9 @@ SocketHTTPClient_pool_init() internal pool initialization (implementation detail
 <dd>
 <a class="el" href="group__http__client.html#gae7f6a04a117e98e557b38a582158c4bb" title="Larger hash table size for HTTP client connection pools exceeding 100 connections.">HTTPCLIENT_POOL_LARGE_HASH_SIZE</a> enlarged table size. </dd>
 <dd>
-<a class="el" href="group__http__client.html#aacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> influences when resize occurs. </dd></dl>
+<a class="el" href="group__http__client.html#gaacd5591ab8f36783e6f759052439eb30">SocketHTTPClient_Config::max_total_connections</a> influences when resize occurs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00118">118</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00132">132</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -2046,7 +2166,7 @@ SocketHTTPClient_pool_init() internal pool initialization (implementation detail
 <dd>
 <a class="el" href="group__http__client.html#ga8a7c54a81dc916af60f9747162e844a2" title="Add header.">SocketHTTPClient_Request_header()</a> adding custom headers. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00888">888</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00939">939</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -2070,11 +2190,11 @@ SocketHTTPClient_pool_init() internal pool initialization (implementation detail
 <dd>
 <a class="el" href="group__http__client.html#gaf7e91b18a488977f7e7d333f0f7c0611" title="Default maximum backoff delay between retries (10 seconds).">HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</a> cap. </dd>
 <dd>
-<a class="el" href="group__http__client.html#adb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> prerequisite. </dd>
+<a class="el" href="group__http__client.html#gadb6071171fe058cbc1c221e1b0d6ec98">SocketHTTPClient_Config::enable_retry</a> prerequisite. </dd>
 <dd>
 Exponential backoff with jitter best practices. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01054">1054</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01113">1113</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -2098,7 +2218,7 @@ Exponential backoff with jitter best practices. </dd></dl>
 <dd>
 RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l00985">985</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-config_8h_source.html#l01040">1040</a> of file <a class="el" href="SocketHTTPClient-config_8h_source.html">SocketHTTPClient-config.h</a>.</p>
 
 </div>
 </div>
@@ -2110,13 +2230,13 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">typedef void(* SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, void *userdata)</td>
+          <td class="memname">typedef void(* SocketHTTPClient_Callback) (SocketHTTPClient_AsyncRequest_T req, <a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error, void *userdata)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <p>Async completion callback </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00966">966</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01024">1024</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 
 </div>
 </div>
@@ -2153,7 +2273,7 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00378">378</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00405">405</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 
 </div>
 </div>
@@ -2200,7 +2320,7 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 <tr><td class="fieldname"><a id="gga6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb" name="gga6b0f544308db17e698b4c05ac3358b75a40c972700be18d6b9c5d6c1db5cec9fb"></a>HTTPCLIENT_ERROR_LIMIT_EXCEEDED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00295">295</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00323">323</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 
 </div>
 </div>
@@ -2231,7 +2351,7 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 <tr><td class="fieldname"><a id="gga5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80" name="gga5a9d40d261a12f620aba6b26e8fb714ba1f862e6251a539d010cf430eb0052f80"></a>COOKIE_SAMESITE_STRICT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01036">1036</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01094">1094</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
 
 </div>
 </div>
@@ -2310,55 +2430,55 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 </dl>
 <p>This function modifies the structure in place, setting all fields to defaults. No allocation performed; pure data initialization.</p>
 <dl class="section user"><dt>Thread Safety\n Yes - pure function with no side effects or shared state access.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md347"></a>
+<h2><a class="anchor" id="autotoc_md310"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> config;</div>
 <div class="line"><a class="code hl_function" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;config);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Override for custom needs</span></div>
-<div class="line">config.<a class="code hl_variable" href="group__http__client.html#ad0964ac6e0738a3c4914054529bb51a7">connect_timeout_ms</a> = 5000;  <span class="comment">// 5s for faster failure</span></div>
-<div class="line">config.<a class="code hl_variable" href="group__http__client.html#a1e5a28b4e256802af5f979726c728553">follow_redirects</a> = 5;       <span class="comment">// Limit redirects</span></div>
-<div class="line">config.<a class="code hl_variable" href="group__http__client.html#a0d03d16dc3eae06b6ab0b89b288c44df">user_agent</a> = <span class="stringliteral">&quot;MyApp/1.0&quot;</span>;   <span class="comment">// Custom UA</span></div>
+<div class="line">config.<a class="code hl_variable" href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">connect_timeout_ms</a> = 5000;  <span class="comment">// 5s for faster failure</span></div>
+<div class="line">config.<a class="code hl_variable" href="group__http__client.html#ga1e5a28b4e256802af5f979726c728553">follow_redirects</a> = 5;       <span class="comment">// Limit redirects</span></div>
+<div class="line">config.<a class="code hl_variable" href="group__http__client.html#ga0d03d16dc3eae06b6ab0b89b288c44df">user_agent</a> = <span class="stringliteral">&quot;MyApp/1.0&quot;</span>;   <span class="comment">// Custom UA</span></div>
 <div class="line"> </div>
 <div class="line">SocketHTTPClient_T client = <a class="code hl_function" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
 <div class="line"><span class="keywordflow">if</span> (client) {</div>
 <div class="line">    <span class="comment">// Use client...</span></div>
 <div class="line">    <a class="code hl_function" href="group__http__client.html#ga01d6c9bebdcda63949ba9af698f8e7e5">SocketHTTPClient_free</a>(&amp;client);</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__http__client_html_a0d03d16dc3eae06b6ab0b89b288c44df"><div class="ttname"><a href="group__http__client.html#a0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config::user_agent</a></div><div class="ttdeci">const char * user_agent</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00490">SocketHTTPClient.h:490</a></div></div>
-<div class="ttc" id="agroup__http__client_html_a1e5a28b4e256802af5f979726c728553"><div class="ttname"><a href="group__http__client.html#a1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config::follow_redirects</a></div><div class="ttdeci">int follow_redirects</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00475">SocketHTTPClient.h:475</a></div></div>
-<div class="ttc" id="agroup__http__client_html_ad0964ac6e0738a3c4914054529bb51a7"><div class="ttname"><a href="group__http__client.html#ad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config::connect_timeout_ms</a></div><div class="ttdeci">int connect_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00470">SocketHTTPClient.h:470</a></div></div>
 <div class="ttc" id="agroup__http__client_html_ga01d6c9bebdcda63949ba9af698f8e7e5"><div class="ttname"><a href="group__http__client.html#ga01d6c9bebdcda63949ba9af698f8e7e5">SocketHTTPClient_free</a></div><div class="ttdeci">void SocketHTTPClient_free(SocketHTTPClient_T *client)</div><div class="ttdoc">Destroy HTTP client and release all resources.</div></div>
+<div class="ttc" id="agroup__http__client_html_ga0d03d16dc3eae06b6ab0b89b288c44df"><div class="ttname"><a href="group__http__client.html#ga0d03d16dc3eae06b6ab0b89b288c44df">SocketHTTPClient_Config::user_agent</a></div><div class="ttdeci">const char * user_agent</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00521">SocketHTTPClient.h:521</a></div></div>
+<div class="ttc" id="agroup__http__client_html_ga1e5a28b4e256802af5f979726c728553"><div class="ttname"><a href="group__http__client.html#ga1e5a28b4e256802af5f979726c728553">SocketHTTPClient_Config::follow_redirects</a></div><div class="ttdeci">int follow_redirects</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00506">SocketHTTPClient.h:506</a></div></div>
 <div class="ttc" id="agroup__http__client_html_ga2d57db3a9a6388315f253caa099e4205"><div class="ttname"><a href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a></div><div class="ttdeci">SocketHTTPClient_T SocketHTTPClient_new(const SocketHTTPClient_Config *config)</div><div class="ttdoc">Create new HTTP client instance.</div></div>
 <div class="ttc" id="agroup__http__client_html_gaad5ad81c60bb230588b5f660a834f40e"><div class="ttname"><a href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a></div><div class="ttdeci">void SocketHTTPClient_config_defaults(SocketHTTPClient_Config *config)</div><div class="ttdoc">Initialize SocketHTTPClient_Config structure with production-safe defaults.</div></div>
-<div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00455">SocketHTTPClient.h:456</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md348"></a>
+<div class="ttc" id="agroup__http__client_html_gad0964ac6e0738a3c4914054529bb51a7"><div class="ttname"><a href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config::connect_timeout_ms</a></div><div class="ttdeci">int connect_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00501">SocketHTTPClient.h:501</a></div></div>
+<div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00486">SocketHTTPClient.h:487</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md311"></a>
 Advanced Usage with TLS</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> tls_ctx = <a class="code hl_function" href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a>(); <span class="comment">// Custom TLS</span></div>
 <div class="line">    SocketTLSContext_load_certs(tls_ctx, <span class="stringliteral">&quot;ca.pem&quot;</span>);</div>
-<div class="line">    </div>
+<div class="line"> </div>
 <div class="line">    <a class="code hl_struct" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> config;</div>
 <div class="line">    <a class="code hl_function" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;config);</div>
-<div class="line">    config.<a class="code hl_variable" href="group__http__client.html#a30f979d083088bc46c8c7de3bc37a3db">tls_context</a> = tls_ctx;</div>
-<div class="line">    config.<a class="code hl_variable" href="group__http__client.html#aa5c6daa6286ff5a701a804da14108a4c">verify_ssl</a> = 1; <span class="comment">// Strict verify</span></div>
-<div class="line">    </div>
+<div class="line">    config.<a class="code hl_variable" href="group__http__client.html#ga30f979d083088bc46c8c7de3bc37a3db">tls_context</a> = tls_ctx;</div>
+<div class="line">    config.<a class="code hl_variable" href="group__http__client.html#gaa5c6daa6286ff5a701a804da14108a4c">verify_ssl</a> = 1; <span class="comment">// Strict verify</span></div>
+<div class="line"> </div>
 <div class="line">    SocketHTTPClient_T client = <a class="code hl_function" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
 <div class="line">    <span class="comment">// HTTPS requests will use custom TLS</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__http__client.html#ga5dc1b9ac7f30436bc422f312cd6db709">SocketHTTPClient_Failed</a>) {</div>
 <div class="line">    <span class="comment">// Handle config error</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
-<div class="ttc" id="agroup__http__client_html_a30f979d083088bc46c8c7de3bc37a3db"><div class="ttname"><a href="group__http__client.html#a30f979d083088bc46c8c7de3bc37a3db">SocketHTTPClient_Config::tls_context</a></div><div class="ttdeci">SocketTLSContext_T tls_context</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00483">SocketHTTPClient.h:483</a></div></div>
-<div class="ttc" id="agroup__http__client_html_aa5c6daa6286ff5a701a804da14108a4c"><div class="ttname"><a href="group__http__client.html#aa5c6daa6286ff5a701a804da14108a4c">SocketHTTPClient_Config::verify_ssl</a></div><div class="ttdeci">int verify_ssl</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00484">SocketHTTPClient.h:484</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+<div class="ttc" id="agroup__http__client_html_ga30f979d083088bc46c8c7de3bc37a3db"><div class="ttname"><a href="group__http__client.html#ga30f979d083088bc46c8c7de3bc37a3db">SocketHTTPClient_Config::tls_context</a></div><div class="ttdeci">SocketTLSContext_T tls_context</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00514">SocketHTTPClient.h:514</a></div></div>
 <div class="ttc" id="agroup__http__client_html_ga5dc1b9ac7f30436bc422f312cd6db709"><div class="ttname"><a href="group__http__client.html#ga5dc1b9ac7f30436bc422f312cd6db709">SocketHTTPClient_Failed</a></div><div class="ttdeci">const Except_T SocketHTTPClient_Failed</div><div class="ttdoc">General client failure.</div></div>
+<div class="ttc" id="agroup__http__client_html_gaa5c6daa6286ff5a701a804da14108a4c"><div class="ttname"><a href="group__http__client.html#gaa5c6daa6286ff5a701a804da14108a4c">SocketHTTPClient_Config::verify_ssl</a></div><div class="ttdeci">int verify_ssl</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00515">SocketHTTPClient.h:515</a></div></div>
 <div class="ttc" id="agroup__security_html_ga69b7880fa99df9a39b4db5259a9e1234"><div class="ttname"><a href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new(const SocketTLSConfig_T *config)</div><div class="ttdoc">Create client TLS context with custom config.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00678">SocketTLS-private.h:679</a></div></div>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Defaults assume SOCKET_HAS_TLS=1 for HTTPS; disable via config.verify_ssl=0 for testing (insecure!). </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Unlimited max_response_size can lead to memory exhaustion on large responses; set limit for untrusted servers. </dd></dl>
-<dl class="section user"><dt>Complexity\n O(1) - constant time structure initialization, no loops or allocations.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - constant time structure initialization, no loops or</dt><dd>allocations.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205" title="Create new HTTP client instance.">SocketHTTPClient_new()</a> to create client from config. </dd>
 <dd>
 <a class="el" href="group__http__client.html#structSocketHTTPClient__Config" title="HTTP client configuration structure.">SocketHTTPClient_Config</a> for all field descriptions and valid ranges. </dd>
@@ -4173,6 +4293,771 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
+<a id="gaa6bd2632f03fadb8a08f023e641c2c64" name="gaa6bd2632f03fadb8a08f023e641c2c64"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa6bd2632f03fadb8a08f023e641c2c64">&#9670;&#160;</a></span>accept_encoding</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::accept_encoding</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Bitmask: GZIP | DEFLATE | BR </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00510">510</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga12094d3f2718443658de2cab3f8873b4" name="ga12094d3f2718443658de2cab3f8873b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga12094d3f2718443658de2cab3f8873b4">&#9670;&#160;</a></span>acquire_timeout_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::acquire_timeout_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Timeout waiting for pool slot </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00498">498</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga102cdd1136d87673c4eb8ca42cd64942" name="ga102cdd1136d87673c4eb8ca42cd64942"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga102cdd1136d87673c4eb8ca42cd64942">&#9670;&#160;</a></span>active_connections</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::active_connections</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Connections currently in use </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01285">1285</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga9a480ef82e914f17714c7c57d12f88af" name="ga9a480ef82e914f17714c7c57d12f88af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9a480ef82e914f17714c7c57d12f88af">&#9670;&#160;</a></span>allow_http2_cleartext</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::allow_http2_cleartext</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Allow h2c upgrade (default: 0) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00490">490</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gab3f98045a2f32cb3249ee62d036654c3" name="gab3f98045a2f32cb3249ee62d036654c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab3f98045a2f32cb3249ee62d036654c3">&#9670;&#160;</a></span>arena</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> SocketHTTPClient_Response::arena</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>For cleanup - caller must dispose </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00608">608</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga39d5d74dbbdec57ac84fed12f747e299" name="ga39d5d74dbbdec57ac84fed12f747e299"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga39d5d74dbbdec57ac84fed12f747e299">&#9670;&#160;</a></span>auto_decompress</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::auto_decompress</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Auto-decompress responses (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00511">511</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gab7f8558743b64c751b64ac26231dca31" name="gab7f8558743b64c751b64ac26231dca31"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab7f8558743b64c751b64ac26231dca31">&#9670;&#160;</a></span>body</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void* SocketHTTPClient_Response::body</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00605">605</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="gaae64f48637811f9ddbc8e12aea55e0e6" name="gaae64f48637811f9ddbc8e12aea55e0e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaae64f48637811f9ddbc8e12aea55e0e6">&#9670;&#160;</a></span>body_len</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_Response::body_len</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00606">606</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="gad0964ac6e0738a3c4914054529bb51a7" name="gad0964ac6e0738a3c4914054529bb51a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad0964ac6e0738a3c4914054529bb51a7">&#9670;&#160;</a></span>connect_timeout_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::connect_timeout_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> timeout </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00501">501</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga9a5d4cac43fdb9d880edef1dc778273a" name="ga9a5d4cac43fdb9d880edef1dc778273a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9a5d4cac43fdb9d880edef1dc778273a">&#9670;&#160;</a></span>connections_created</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::connections_created</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Total connections created </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01289">1289</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga1dfc46ee0c2d61f3facd7daf0d93f0a0" name="ga1dfc46ee0c2d61f3facd7daf0d93f0a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1dfc46ee0c2d61f3facd7daf0d93f0a0">&#9670;&#160;</a></span>connections_failed</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::connections_failed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> attempts that failed </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01290">1290</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gac9548fe3f865ed4d99c7366b0f64937d" name="gac9548fe3f865ed4d99c7366b0f64937d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac9548fe3f865ed4d99c7366b0f64937d">&#9670;&#160;</a></span>connections_timed_out</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::connections_timed_out</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Connections that timed out waiting </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01291">1291</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga6e7fd7c2a4f862fc8d613d4662a7e2e1" name="ga6e7fd7c2a4f862fc8d613d4662a7e2e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6e7fd7c2a4f862fc8d613d4662a7e2e1">&#9670;&#160;</a></span>dns_timeout_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::dns_timeout_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>DNS resolution timeout </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00503">503</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0dc75016531006762afa85a21130ac13" name="ga0dc75016531006762afa85a21130ac13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0dc75016531006762afa85a21130ac13">&#9670;&#160;</a></span>domain</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Cookie::domain</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01125">1125</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gac81b35696b105b13f703c5d71f5c5692" name="gac81b35696b105b13f703c5d71f5c5692"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac81b35696b105b13f703c5d71f5c5692">&#9670;&#160;</a></span>enable_connection_pool</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::enable_connection_pool</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Enable pooling (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00493">493</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="gadb6071171fe058cbc1c221e1b0d6ec98" name="gadb6071171fe058cbc1c221e1b0d6ec98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadb6071171fe058cbc1c221e1b0d6ec98">&#9670;&#160;</a></span>enable_retry</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::enable_retry</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Enable automatic retry (default: 0) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00534">534</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gae9bb372f96fd426c9fcf729fa78f26e3" name="gae9bb372f96fd426c9fcf729fa78f26e3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae9bb372f96fd426c9fcf729fa78f26e3">&#9670;&#160;</a></span>enforce_samesite</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::enforce_samesite</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Security configuration Enforce SameSite attribute (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00543">543</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga76752117eaf672a88292a3c7c250b52d" name="ga76752117eaf672a88292a3c7c250b52d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga76752117eaf672a88292a3c7c250b52d">&#9670;&#160;</a></span>expires</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">time_t SocketHTTPClient_Cookie::expires</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01127">1127</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga1e5a28b4e256802af5f979726c728553" name="ga1e5a28b4e256802af5f979726c728553"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1e5a28b4e256802af5f979726c728553">&#9670;&#160;</a></span>follow_redirects</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::follow_redirects</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max redirects (0 = disabled) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00506">506</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga8b459516887245f8e4b77f8d8517ede1" name="ga8b459516887245f8e4b77f8d8517ede1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8b459516887245f8e4b77f8d8517ede1">&#9670;&#160;</a></span>headers</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">SocketHTTP_Headers_T SocketHTTPClient_Response::headers</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00604">604</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gae47a67be4b88e83dd7c877f63af2ae8a" name="gae47a67be4b88e83dd7c877f63af2ae8a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae47a67be4b88e83dd7c877f63af2ae8a">&#9670;&#160;</a></span>http_only</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Cookie::http_only</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01129">1129</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaaab49cd26a75dd2f3f7ed96eafc09a25" name="gaaab49cd26a75dd2f3f7ed96eafc09a25"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaaab49cd26a75dd2f3f7ed96eafc09a25">&#9670;&#160;</a></span>idle_connections</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::idle_connections</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Connections available for reuse </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01286">1286</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga867974712621670ef1dc975b2b396f84" name="ga867974712621670ef1dc975b2b396f84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga867974712621670ef1dc975b2b396f84">&#9670;&#160;</a></span>idle_timeout_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::idle_timeout_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Idle connection timeout </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00496">496</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga82bcf56254c541ebd8fbdbba0a7ba7bb" name="ga82bcf56254c541ebd8fbdbba0a7ba7bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga82bcf56254c541ebd8fbdbba0a7ba7bb">&#9670;&#160;</a></span>max_connection_age_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::max_connection_age_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max connection age (0 = unlimited) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00497">497</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gad87a23b29168c1a6a738bd07268247de" name="gad87a23b29168c1a6a738bd07268247de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad87a23b29168c1a6a738bd07268247de">&#9670;&#160;</a></span>max_connections_per_host</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_Config::max_connections_per_host</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Per-host limit (default: 6) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00494">494</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="gaa26d176771f3b6ddee9a2d95142e9c46" name="gaa26d176771f3b6ddee9a2d95142e9c46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa26d176771f3b6ddee9a2d95142e9c46">&#9670;&#160;</a></span>max_response_size</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_Config::max_response_size</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max response body (0 = unlimited) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00524">524</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gad8b244df21d9337ed74c872e694d10ba" name="gad8b244df21d9337ed74c872e694d10ba"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad8b244df21d9337ed74c872e694d10ba">&#9670;&#160;</a></span>max_retries</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::max_retries</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max retry attempts (default: 3) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00535">535</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaacd5591ab8f36783e6f759052439eb30" name="gaacd5591ab8f36783e6f759052439eb30"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaacd5591ab8f36783e6f759052439eb30">&#9670;&#160;</a></span>max_total_connections</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_Config::max_total_connections</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Total limit (default: 100) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00495">495</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaeeeb2ea03d33db0ba500da1c7782f7f3" name="gaeeeb2ea03d33db0ba500da1c7782f7f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaeeeb2ea03d33db0ba500da1c7782f7f3">&#9670;&#160;</a></span>max_version</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> SocketHTTPClient_Config::max_version</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max HTTP version (default: HTTP/2) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00489">489</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="gae7076917489dca85561ff672d120551c" name="gae7076917489dca85561ff672d120551c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae7076917489dca85561ff672d120551c">&#9670;&#160;</a></span>name</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Cookie::name</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01123">1123</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga709145c7dcf32bbfbdbc68da8da0842f" name="ga709145c7dcf32bbfbdbc68da8da0842f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga709145c7dcf32bbfbdbc68da8da0842f">&#9670;&#160;</a></span>password</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Auth::password</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>For Basic, Digest </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00437">437</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga7259b82f78dc6e60c52ef6c5d741ca06" name="ga7259b82f78dc6e60c52ef6c5d741ca06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7259b82f78dc6e60c52ef6c5d741ca06">&#9670;&#160;</a></span>path</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Cookie::path</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01126">1126</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga2388e92ca44d26b70ce6904abbcf0d13" name="ga2388e92ca44d26b70ce6904abbcf0d13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2388e92ca44d26b70ce6904abbcf0d13">&#9670;&#160;</a></span>pool_exhausted_waits</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::pool_exhausted_waits</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Times we waited for pool slot </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01293">1293</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaf1c22aca38ea27645e9400fe42680bdf" name="gaf1c22aca38ea27645e9400fe42680bdf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf1c22aca38ea27645e9400fe42680bdf">&#9670;&#160;</a></span>proxy</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a>* SocketHTTPClient_Config::proxy</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Default proxy (NULL for none) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00518">518</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga89774175b3f815b3c17b8b150347b453" name="ga89774175b3f815b3c17b8b150347b453"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga89774175b3f815b3c17b8b150347b453">&#9670;&#160;</a></span>realm</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Auth::realm</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Optional realm filter </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00439">439</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga847eaef5232b2ada9149eea8aa9d4d4c" name="ga847eaef5232b2ada9149eea8aa9d4d4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga847eaef5232b2ada9149eea8aa9d4d4c">&#9670;&#160;</a></span>redirect_on_post</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::redirect_on_post</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Follow redirects for POST (default: 0) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00507">507</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga5d89d81bfb2401b06059048425fafb93" name="ga5d89d81bfb2401b06059048425fafb93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga5d89d81bfb2401b06059048425fafb93">&#9670;&#160;</a></span>request_timeout_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::request_timeout_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Request timeout </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00502">502</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga1b02030b2c83c6e7bd1812de2362ede3" name="ga1b02030b2c83c6e7bd1812de2362ede3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1b02030b2c83c6e7bd1812de2362ede3">&#9670;&#160;</a></span>retry_initial_delay_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::retry_initial_delay_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Initial backoff delay (default: 100ms) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00536">536</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gafd505949c45d0fb48c0810759cb66176" name="gafd505949c45d0fb48c0810759cb66176"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafd505949c45d0fb48c0810759cb66176">&#9670;&#160;</a></span>retry_max_delay_ms</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::retry_max_delay_ms</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Max backoff delay (default: 10s) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00537">537</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga86ed34fbe021d156e6ee5ac2bc8e9b6e" name="ga86ed34fbe021d156e6ee5ac2bc8e9b6e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga86ed34fbe021d156e6ee5ac2bc8e9b6e">&#9670;&#160;</a></span>retry_on_5xx</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::retry_on_5xx</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Retry on 5xx responses (default: 0) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00540">540</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga6355fa7fdfcc9db5d6069189aef62928" name="ga6355fa7fdfcc9db5d6069189aef62928"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6355fa7fdfcc9db5d6069189aef62928">&#9670;&#160;</a></span>retry_on_connection_error</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::retry_on_connection_error</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Retry on connect failures (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00538">538</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga58a60bcfb2edaa6accced6acd52191ad" name="ga58a60bcfb2edaa6accced6acd52191ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga58a60bcfb2edaa6accced6acd52191ad">&#9670;&#160;</a></span>retry_on_timeout</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::retry_on_timeout</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Retry on timeouts (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00539">539</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0bb94abb8c7aa981d1aae1d47469b316" name="ga0bb94abb8c7aa981d1aae1d47469b316"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0bb94abb8c7aa981d1aae1d47469b316">&#9670;&#160;</a></span>reused_connections</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::reused_connections</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Times a pooled connection was reused </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01288">1288</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gad1fc2e3ea45172e27a07aaacfe3c7eeb" name="gad1fc2e3ea45172e27a07aaacfe3c7eeb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad1fc2e3ea45172e27a07aaacfe3c7eeb">&#9670;&#160;</a></span>same_site</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__http__client.html#ga5a9d40d261a12f620aba6b26e8fb714b">SocketHTTPClient_SameSite</a> SocketHTTPClient_Cookie::same_site</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01130">1130</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga3300f627ad07cd15a596451a41dc4b69" name="ga3300f627ad07cd15a596451a41dc4b69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3300f627ad07cd15a596451a41dc4b69">&#9670;&#160;</a></span>secure</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Cookie::secure</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01128">1128</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
 <a id="ga83bda6e77bc5fb165e4e7fead483094b" name="ga83bda6e77bc5fb165e4e7fead483094b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga83bda6e77bc5fb165e4e7fead483094b">&#9670;&#160;</a></span>SocketHTTPClient_ConnectFailed</h2>
 
@@ -4402,6 +5287,193 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 <p>Redirect limit exceeded. </p>
 <p>Category: APPLICATION Retryable: NO - Indicates redirect loop or misconfiguration</p>
 <p>Raised when redirect count exceeds max_redirects config. Usually indicates server misconfiguration (redirect loop). </p>
+
+</div>
+</div>
+<a id="ga822cd3674285e9ee5a3e541b42cc8f9a" name="ga822cd3674285e9ee5a3e541b42cc8f9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga822cd3674285e9ee5a3e541b42cc8f9a">&#9670;&#160;</a></span>stale_connections_removed</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::stale_connections_removed</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Stale/dead connections cleaned up </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01292">1292</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0baa2f233436d7bb00f28214d6382542" name="ga0baa2f233436d7bb00f28214d6382542"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0baa2f233436d7bb00f28214d6382542">&#9670;&#160;</a></span>status_code</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Response::status_code</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00603">603</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga30f979d083088bc46c8c7de3bc37a3db" name="ga30f979d083088bc46c8c7de3bc37a3db"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga30f979d083088bc46c8c7de3bc37a3db">&#9670;&#160;</a></span>tls_context</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> SocketHTTPClient_Config::tls_context</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Custom TLS context (NULL for default) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00514">514</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga75371d88c2cb09feb95620c237b37882" name="ga75371d88c2cb09feb95620c237b37882"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga75371d88c2cb09feb95620c237b37882">&#9670;&#160;</a></span>token</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Auth::token</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>For Bearer </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00438">438</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gacbe290157d79e718d8397a6d7078487c" name="gacbe290157d79e718d8397a6d7078487c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacbe290157d79e718d8397a6d7078487c">&#9670;&#160;</a></span>total_requests</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketHTTPClient_PoolStats::total_requests</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Total requests made </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01287">1287</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaea321b9aeb6d8d36babd95cd7af87d35" name="gaea321b9aeb6d8d36babd95cd7af87d35"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaea321b9aeb6d8d36babd95cd7af87d35">&#9670;&#160;</a></span>type</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__http__client.html#ga720036180c834b3f4b41f437d0ce1f30">SocketHTTPClient_AuthType</a> SocketHTTPClient_Auth::type</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00435">435</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0d03d16dc3eae06b6ab0b89b288c44df" name="ga0d03d16dc3eae06b6ab0b89b288c44df"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0d03d16dc3eae06b6ab0b89b288c44df">&#9670;&#160;</a></span>user_agent</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Config::user_agent</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>User-Agent header </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaebecaec836c2d21aeb36c83c6a037b58" name="gaebecaec836c2d21aeb36c83c6a037b58"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaebecaec836c2d21aeb36c83c6a037b58">&#9670;&#160;</a></span>username</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Auth::username</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>For Basic, Digest </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00436">436</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="ga21b390a321565e4ebf8be575550c1498" name="ga21b390a321565e4ebf8be575550c1498"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga21b390a321565e4ebf8be575550c1498">&#9670;&#160;</a></span>value</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">const char* SocketHTTPClient_Cookie::value</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l01124">1124</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaa5c6daa6286ff5a701a804da14108a4c" name="gaa5c6daa6286ff5a701a804da14108a4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa5c6daa6286ff5a701a804da14108a4c">&#9670;&#160;</a></span>verify_ssl</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_Config::verify_ssl</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Verify certificates (default: 1) </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00515">515</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+</div>
+</div>
+<a id="gaccda45708658a8ada478121524f85e5e" name="gaccda45708658a8ada478121524f85e5e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaccda45708658a8ada478121524f85e5e">&#9670;&#160;</a></span>version</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__http.html#gac46610efb2f138f9f5c58f9134f11a78">SocketHTTP_Version</a> SocketHTTPClient_Response::version</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient_8h_source.html#l00607">607</a> of file <a class="el" href="SocketHTTPClient_8h_source.html">SocketHTTPClient.h</a>.</p>
+
+<p class="reference">Referenced by <a class="el" href="http2__client_8c_source.html#l00044">main()</a>.</p>
 
 </div>
 </div>

@@ -1,34 +1,28 @@
 <map id="Connection_T" name="Connection_T">
-<area shape="rect" id="Node000001" title="Internal structure representing a pooled connection slot." alt="" coords="1217,151,1320,176"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="511,153,590,179"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="586,145,659,112,703,96,748,85,818,76,889,76,960,81,1029,92,1149,121,1235,148,1233,153,1148,126,1028,97,960,87,889,81,818,81,748,90,704,101,661,117,588,149"/>
-<area shape="rect" id="Node000006" href="$group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot." alt="" coords="1005,236,1108,261"/>
-<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="604,175,748,203,1006,240,1005,245,748,209,603,180"/>
-<area shape="rect" id="Node000007" href="$group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management." alt="" coords="751,153,893,179"/>
-<area shape="poly" id="edge10_Node000007_Node000002" title=" " alt="" coords="604,163,751,163,751,169,604,169"/>
-<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="269,153,377,179"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="391,163,511,163,511,169,391,169"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="20,129,152,155"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="166,147,270,158,269,163,165,153"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="5,179,167,204"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="180,181,245,174,269,171,270,176,246,179,181,186"/>
-<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="1101,228,1235,174,1237,179,1103,233"/>
-<area shape="poly" id="edge7_Node000006_Node000006" title=" " alt="" coords="1035,221,1042,213,1057,209,1069,212,1077,218,1079,228,1075,237,1070,235,1073,227,1072,221,1067,217,1057,215,1045,217,1040,224"/>
-<area shape="poly" id="edge18_Node000001_Node000007" title=" " alt="" coords="907,158,920,158,1057,156,1193,158,1217,159,1217,164,1193,163,1057,161,920,163,907,164"/>
-<area shape="poly" id="edge8_Node000006_Node000007" title=" " alt="" coords="907,175,945,184,982,197,1015,215,1041,234,1038,238,1012,219,980,202,943,189,905,180"/>
-<area shape="poly" id="edge11_Node000007_Node000007" title=" " alt="" coords="797,138,805,130,822,127,837,129,846,135,848,145,844,154,839,152,843,144,841,138,835,134,822,132,807,135,801,142"/>
-<area shape="rect" id="Node000008" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet..." alt="" coords="459,5,643,31"/>
-<area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="588,35,799,151,796,156,586,40"/>
-<area shape="rect" id="Node000009" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="748,305,896,331"/>
-<area shape="poly" id="edge19_Node000001_Node000009" title=" " alt="" coords="910,319,1007,312,1058,302,1107,286,1153,262,1195,230,1254,174,1258,178,1199,235,1156,266,1109,291,1059,307,1007,317,910,324"/>
-<area shape="poly" id="edge12_Node000006_Node000009" title=" " alt="" coords="875,299,919,285,1009,259,1010,264,921,290,876,304"/>
-<area shape="poly" id="edge15_Node000009_Node000009" title=" " alt="" coords="797,290,805,282,822,279,837,281,846,287,848,297,844,306,839,304,843,296,841,290,835,286,822,284,807,287,801,294"/>
-<area shape="rect" id="Node000010" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="477,305,624,331"/>
-<area shape="poly" id="edge13_Node000009_Node000010" title=" " alt="" coords="638,315,748,315,748,321,638,321"/>
-<area shape="rect" id="Node000011" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="487,355,614,380"/>
-<area shape="poly" id="edge14_Node000009_Node000011" title=" " alt="" coords="627,352,724,335,760,328,761,333,724,341,628,358"/>
-<area shape="rect" id="Node000012" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="483,256,618,281"/>
-<area shape="poly" id="edge16_Node000009_Node000012" title=" " alt="" coords="632,280,724,297,756,303,755,308,724,302,631,285"/>
-<area shape="rect" id="Node000013" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="278,256,369,281"/>
-<area shape="poly" id="edge17_Node000012_Node000013" title=" " alt="" coords="383,266,483,266,483,271,383,271"/>
+<area shape="rect" id="Node000001" title="Internal structure representing a pooled connection slot." alt="" coords="116,380,219,405"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,93,84,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="45,133,45,143,47,177,55,210,68,255,83,288,103,318,132,354,156,378,152,382,128,358,99,321,78,290,63,256,50,211,42,177,39,143,40,132"/>
+<area shape="rect" id="Node000003" href="$group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot." alt="" coords="208,275,311,301"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="48,132,56,171,64,191,76,209,100,226,138,243,222,273,220,278,136,248,97,230,72,213,59,194,51,173,43,133"/>
+<area shape="rect" id="Node000004" href="$group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management." alt="" coords="130,183,271,209"/>
+<area shape="poly" id="edge7_Node000004_Node000002" title=" " alt="" coords="78,123,182,181,179,186,76,128"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="242,313,180,382,176,378,238,309"/>
+<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="325,279,333,282,337,288,329,296,311,299,310,294,327,292,332,288,330,286,323,284"/>
+<area shape="poly" id="edge15_Node000001_Node000004" title=" " alt="" coords="177,220,154,244,137,274,133,303,139,332,150,358,162,378,157,381,145,361,133,334,127,303,131,272,150,241,173,216"/>
+<area shape="poly" id="edge5_Node000003_Node000004" title=" " alt="" coords="218,219,254,274,250,277,214,222"/>
+<area shape="poly" id="edge8_Node000004_Node000004" title=" " alt="" coords="287,187,298,196,290,204,272,207,271,201,288,199,293,196,284,192"/>
+<area shape="rect" id="Node000005" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet..." alt="" coords="109,93,293,119"/>
+<area shape="poly" id="edge6_Node000004_Node000005" title=" " alt="" coords="203,132,203,183,198,183,198,132"/>
+<area shape="rect" id="Node000006" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="397,183,545,209"/>
+<area shape="poly" id="edge16_Node000001_Node000006" title=" " alt="" coords="464,223,442,264,427,285,409,305,364,336,314,360,264,376,220,386,218,381,262,371,312,355,361,332,406,301,423,282,438,261,459,220"/>
+<area shape="poly" id="edge9_Node000003_Node000006" title=" " alt="" coords="433,216,288,278,285,273,431,212"/>
+<area shape="poly" id="edge12_Node000006_Node000006" title=" " alt="" coords="561,188,572,196,564,204,546,207,545,201,562,199,567,196,558,192"/>
+<area shape="rect" id="Node000007" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="317,93,463,119"/>
+<area shape="poly" id="edge10_Node000006_Node000007" title=" " alt="" coords="412,127,462,181,458,185,408,131"/>
+<area shape="rect" id="Node000008" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="488,93,615,119"/>
+<area shape="poly" id="edge11_Node000006_Node000008" title=" " alt="" coords="534,131,484,185,480,181,530,127"/>
+<area shape="rect" id="Node000009" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="639,93,773,119"/>
+<area shape="poly" id="edge13_Node000006_Node000009" title=" " alt="" coords="663,126,503,186,501,181,661,121"/>
+<area shape="rect" id="Node000010" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="661,5,751,31"/>
+<area shape="poly" id="edge14_Node000009_Node000010" title=" " alt="" coords="709,45,709,93,703,93,703,45"/>
 </map>

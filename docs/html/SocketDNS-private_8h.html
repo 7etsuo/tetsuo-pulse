@@ -349,7 +349,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga01e5cc089ceff56a8558e455b94c8254" id="r_ga01e5cc089ceff56a8558e455b94c8254"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga01e5cc089ceff56a8558e455b94c8254">signal_completion</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
 <tr class="memdesc:ga01e5cc089ceff56a8558e455b94c8254"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signal completion of DNS request to waiting threads/polls.  <br /></td></tr>
 <tr class="separator:ga01e5cc089ceff56a8558e455b94c8254"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadbc14c60ccd56fe1f73c7d52b04d0664" id="r_gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gadbc14c60ccd56fe1f73c7d52b04d0664">store_resolution_result</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:gadbc14c60ccd56fe1f73c7d52b04d0664" id="r_gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gadbc14c60ccd56fe1f73c7d52b04d0664">store_resolution_result</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int error)</td></tr>
 <tr class="memdesc:gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store DNS resolution result in request structure.  <br /></td></tr>
 <tr class="separator:gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga08d853b1c769338c43c424a51f071876" id="r_ga08d853b1c769338c43c424a51f071876"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga08d853b1c769338c43c424a51f071876">dns_cancellation_error</a> (void)</td></tr>
@@ -364,6 +364,8 @@ Functions</h2></td></tr>
 <tr class="memitem:gabac4f41fc92ef0aec184eb3c8e6e10cb" id="r_gabac4f41fc92ef0aec184eb3c8e6e10cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gabac4f41fc92ef0aec184eb3c8e6e10cb">validate_resolve_params</a> (const char *host, int port)</td></tr>
 <tr class="memdesc:gabac4f41fc92ef0aec184eb3c8e6e10cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate hostname and port parameters for DNS resolution.  <br /></td></tr>
 <tr class="separator:gabac4f41fc92ef0aec184eb3c8e6e10cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c5a84436f8b4c2c2159a9ae95ec6e6f" id="r_a0c5a84436f8b4c2c2159a9ae95ec6e6f"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDNS-private_8h.html#a0c5a84436f8b4c2c2159a9ae95ec6e6f">allocate_dns_resolver</a> (void)</td></tr>
+<tr class="separator:a0c5a84436f8b4c2c2159a9ae95ec6e6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -418,7 +420,34 @@ Callback functions must be reentrant and fast; see SocketDNS_Callback documentat
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00241">241</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00262">262</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a0c5a84436f8b4c2c2159a9ae95ec6e6f" name="a0c5a84436f8b4c2c2159a9ae95ec6e6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c5a84436f8b4c2c2159a9ae95ec6e6f">&#9670;&#160;</a></span>allocate_dns_resolver()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> * allocate_dns_resolver </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
 
 </div>
 </div>

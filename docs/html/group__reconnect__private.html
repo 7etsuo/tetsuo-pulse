@@ -112,9 +112,7 @@ $(document).ready(function(){initNavTree('group__reconnect__private.html',''); i
 <div class="header">
   <div class="summary">
 <a href="#files">Files</a> &#124;
-<a href="#nested-classes">Data Structures</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#nested-classes">Data Structures</a>  </div>
   <div class="headertitle"><div class="title">SocketReconnect Private Implementation Details<div class="ingroups"><a class="el" href="group__connection__mgmt.html">Connection Management Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -140,30 +138,11 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketReconnect__T" id="r_structSocketReconnect__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></td></tr>
 <tr class="memdesc:structSocketReconnect__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque internal context for reconnecting socket management.  <a href="group__reconnect__private.html#structSocketReconnect__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketReconnect__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:ga0450dbfcd56214ed2989e6ff4d97b25d" id="r_ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d">if</a> (<a class="el" href="group__foundation.html#gae153fb5408e633479d6a61ac233d3676">SocketCrypto_random_bytes</a>(&amp;value, sizeof(value))==0)</td></tr>
-<tr class="memdesc:ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.  <br /></td></tr>
-<tr class="separator:ga0450dbfcd56214ed2989e6ff4d97b25d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaab33e6c19aa5cf524e12e3c40b50574a" id="r_gaab33e6c19aa5cf524e12e3c40b50574a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#gaab33e6c19aa5cf524e12e3c40b50574a">if</a> (<a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>==0)</td></tr>
-<tr class="separator:gaab33e6c19aa5cf524e12e3c40b50574a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga230fd1711fa730b54c9262bf533767f6" id="r_ga230fd1711fa730b54c9262bf533767f6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> (double) <a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>/(double) 0xFFFFFFFFU</td></tr>
-<tr class="separator:ga230fd1711fa730b54c9262bf533767f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga7a21408446fbd8c658853d5f53e2c76f" id="r_ga7a21408446fbd8c658853d5f53e2c76f"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a> = now - start_ms</td></tr>
-<tr class="memdesc:ga7a21408446fbd8c658853d5f53e2c76f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve current monotonic time in milliseconds for internal timing.  <br /></td></tr>
-<tr class="separator:ga7a21408446fbd8c658853d5f53e2c76f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0544c3fe466e421738dae463968b70ba" id="r_ga0544c3fe466e421738dae463968b70ba"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#ga0544c3fe466e421738dae463968b70ba">else</a></td></tr>
-<tr class="separator:ga0544c3fe466e421738dae463968b70ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab31f6ed1e7e88c7cca70910409c6bbee" id="r_gab31f6ed1e7e88c7cca70910409c6bbee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a> = seed &lt;&lt; 13</td></tr>
-<tr class="separator:gab31f6ed1e7e88c7cca70910409c6bbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Internal structures and utilities for reconnection logic. </p>
 <p>Contains opaque type definitions, internal enums, and utility functions used exclusively by the SocketReconnect implementation.</p>
+<p>Internal Architecture Overview</p>
 <p>The private API supports the public reconnection framework through:</p>
 <ul>
 <li>State tracking in <a class="el" href="group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management.">SocketReconnect_T</a> (timers, counters, error state)</li>
@@ -186,28 +165,23 @@ Variables</h2></td></tr>
 <div class="line">          | implements</div>
 <div class="line">          v</div>
 <div class="line">SocketReconnect.c (internal functions)</div>
-<div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00278">SocketReconnect-private.h:279</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md609"></a>
-Module Relationships</h2>
+<div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00296">SocketReconnect-private.h:297</a></div></div>
+</div><!-- fragment --><p>Module Relationships</p>
 <ul>
 <li><b>Depends on</b>: Foundation (Arena, Except, SocketUtil, SocketCrypto)</li>
 <li><b>Used by</b>: SocketReconnect.c implementation only</li>
-<li><b>Exposes</b>: No public symbols; internal use only</li>
+<li><p class="startli"><b>Exposes</b>: No public symbols; internal use only</p>
+<p class="startli">Key Internal Components</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md610"></a>
-Key Internal Components</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Component   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Thread Safety    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management.">SocketReconnect_T</a>   </td><td class="markdownTableBodyNone">State and config storage   </td><td class="markdownTableBodyNone">No (single-threaded access)    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">CircuitState   </td><td class="markdownTableBodyNone">Internal circuit breaker FSM   </td><td class="markdownTableBodyNone">Internal only    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">socketreconnect_* helpers   </td><td class="markdownTableBodyNone">Time, random, elapsed calcs   </td><td class="markdownTableBodyNone">Yes (reentrant/static)   </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management.">SocketReconnect_T</a>   </td><td class="markdownTableBodyNone">State and config storage   </td><td class="markdownTableBodyNone">No (single-threaded access)   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md611"></a>
-Platform Requirements</h2>
+<p>| | CircuitState | Internal circuit breaker FSM | Internal only | | socketreconnect_* helpers | Time, random, elapsed calcs | Yes (reentrant/static) |</p>
+<p>Platform Requirements</p>
 <ul>
 <li>POSIX with CLOCK_MONOTONIC for reliable timing</li>
 <li>Thread-local storage support (__thread or TLS)</li>
@@ -231,15 +205,16 @@ Platform Requirements</h2>
 <div class="textblock"><p>Opaque internal context for reconnecting socket management. </p>
 <p>Opaque handle for a reconnecting socket connection.</p>
 <p>Core data structure holding all configuration, state, timers, and resources for a single reconnection instance. Supports exponential backoff with jitter, circuit breaker pattern, periodic health checks, and automatic I/O recovery.</p>
+<p>Key Responsibilities</p>
 <ul>
 <li>State machine transitions (connect, backoff, circuit states)</li>
 <li>Timer management (backoff delays, health intervals, circuit timeouts)</li>
 <li>Failure counting and retry limits</li>
 <li>Error logging and last-error tracking</li>
-<li>Resource ownership (arena, socket, callbacks)</li>
+<li><p class="startli">Resource ownership (arena, socket, callbacks)</p>
+<p class="startli">Field Groups Overview</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md619"></a>
-Field Groups Overview</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Group   </th><th class="markdownTableHeadNone">Fields   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
@@ -248,20 +223,10 @@ Field Groups Overview</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Resources   </td><td class="markdownTableBodyNone">arena, socket   </td><td class="markdownTableBodyNone">Memory and current connection handle    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Callbacks   </td><td class="markdownTableBodyNone">callback, health_check, userdata   </td><td class="markdownTableBodyNone">Event notifications and custom checks    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">State   </td><td class="markdownTableBodyNone">state, circuit_state   </td><td class="markdownTableBodyNone">Current FSM and breaker status    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Tracking   </td><td class="markdownTableBodyNone">attempt_*, failures, successes   </td><td class="markdownTableBodyNone">Metrics for retries and reliability    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Timing   </td><td class="markdownTableBodyNone">*_time_ms, backoff_until_ms, etc.   </td><td class="markdownTableBodyNone">Monotonic timestamps for scheduling    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a>   </td><td class="markdownTableBodyNone">connect_in_progress   </td><td class="markdownTableBodyNone">Async connect flags    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Errors   </td><td class="markdownTableBodyNone">error_buf, last_error   </td><td class="markdownTableBodyNone">Diagnostic information   </td></tr>
+<td class="markdownTableBodyNone">Callbacks   </td><td class="markdownTableBodyNone">callback, health_check, userdata   </td><td class="markdownTableBodyNone">Event notifications and   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md620"></a>
-Lifecycle</h2>
+<p>custom checks | | State | state, circuit_state | Current FSM and breaker status | | Tracking | attempt_*, failures, successes | Metrics for retries and reliability | | Timing | *_time_ms, backoff_until_ms, etc. | Monotonic timestamps for scheduling | | <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> | connect_in_progress | Async connect flags | | Errors | error_buf, last_error | Diagnostic information |</p>
+<p>Lifecycle</p>
 <ol type="1">
 <li><b>Creation</b>: <a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082" title="Create a new SocketReconnect_T instance configured for a specific host and port.">SocketReconnect_new()</a> allocates via arena, initializes policy, copies host/port</li>
 <li><b>Operation</b>: Public functions update fields atomically (e.g., connect starts async, updates timers)</li>
@@ -271,23 +236,21 @@ Lifecycle</h2>
 <li>arena always valid until free</li>
 <li>socket NULL when not CONNECTED</li>
 <li>Timestamps use monotonic ms (non-decreasing)</li>
-<li>error_buf null-terminated, sized to SOCKET_RECONNECT_ERROR_BUFSIZE</li>
+<li><p class="startli">error_buf null-terminated, sized to SOCKET_RECONNECT_ERROR_BUFSIZE</p>
+<p class="startli">Thread Safety</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md621"></a>
-Thread Safety</h2>
 <dl class="section user"><dt>Thread Safety\n No - Designed for single-threaded access from event loop</dt><dd><ul>
 <li>All modifications via public API calls</li>
 <li>Internal helpers (time, random) are thread-safe</li>
-<li>Callbacks invoked from caller's thread context</li>
-</ul>
-</dd></dl>
-<h2><a class="anchor" id="autotoc_md622"></a>
-Performance Notes</h2>
-<ul>
+<li><p class="startli">Callbacks invoked from caller's thread context</p>
+<p class="startli">Performance Notes</p>
+</li>
 <li><a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">O(1)</a> most operations (state checks, timer updates)</li>
 <li>Minimal allocations (arena-backed)</li>
 <li>Low memory footprint (~200-300 bytes + socket/arena)</li>
 </ul>
+</dd></dl>
 <dl class="section user"><dt>Complexity\n Varies by operation; generally O(1)</dt><dd></dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Host string copied to arena for lifetime management </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Direct field access undefined; use accessors where public </dd></dl>
@@ -307,8 +270,6 @@ Performance Notes</h2>
 <li>Statistics for attempts and failures</li>
 <li>Optional callbacks for state changes and custom health checks</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md635"></a>
-Lifecycle Management</h2>
 <ol type="1">
 <li>Create with <a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082" title="Create a new SocketReconnect_T instance configured for a specific host and port.">SocketReconnect_new()</a></li>
 <li>Configure policy, callbacks, health check if needed</li>
@@ -317,8 +278,8 @@ Lifecycle Management</h2>
 <li>Call <a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91" title="Destroy a SocketReconnect_T instance and release all associated resources.">SocketReconnect_free()</a> to cleanup</li>
 </ol>
 <div class="fragment"><div class="line"><span class="comment">// Full lifecycle</span></div>
-<div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(<a class="code hl_variable" href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">host</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">port</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">NULL</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">state_cb</a>, <a class="code hl_variable" href="group__reconnect__private.html#a31140778b660ef58bf93500821501979">userdata</a>);</div>
-<div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a>(conn);</div>
+<div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(<a class="code hl_variable" href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">host</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">port</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">NULL</a>, <a class="code hl_variable" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">state_cb</a>,</div>
+<div class="line"><a class="code hl_variable" href="group__reconnect__private.html#a31140778b660ef58bf93500821501979">userdata</a>); <a class="code hl_function" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a>(conn);</div>
 <div class="line"> </div>
 <div class="line"><span class="keywordflow">while</span> (<a class="code hl_function" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a>(conn)) {</div>
 <div class="line">    <span class="comment">// Use conn...</span></div>
@@ -329,17 +290,17 @@ Lifecycle Management</h2>
 <div class="ttc" id="agroup__connection__mgmt_html_ga2669844f3ad8a19649f2bc204eee8401"><div class="ttname"><a href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a></div><div class="ttdeci">void SocketReconnect_connect(SocketReconnect_T conn)</div><div class="ttdoc">Initiate or queue a connection attempt according to current state and policy.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga490043a4bfaba8214f5d10a3c7b956de"><div class="ttname"><a href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a></div><div class="ttdeci">int SocketReconnect_isconnected(SocketReconnect_T conn)</div><div class="ttdoc">Check if reconnection is currently in connected state.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga9d8b4dd4a693ba7acb20ff8e78defe91"><div class="ttname"><a href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a></div><div class="ttdeci">void SocketReconnect_free(SocketReconnect_T *conn)</div><div class="ttdoc">Destroy a SocketReconnect_T instance and release all associated resources.</div></div>
-<div class="ttc" id="agroup__reconnect__private_html_a31140778b660ef58bf93500821501979"><div class="ttname"><a href="group__reconnect__private.html#a31140778b660ef58bf93500821501979">SocketReconnect_T::userdata</a></div><div class="ttdeci">void * userdata</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00307">SocketReconnect-private.h:307</a></div></div>
-<div class="ttc" id="agroup__reconnect__private_html_a84b94071188ac92ecae8453cdbe0a604"><div class="ttname"><a href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">SocketReconnect_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00285">SocketReconnect-private.h:285</a></div></div>
-<div class="ttc" id="agroup__reconnect__private_html_a9e409328803ca46c73908e0f6b35b275"><div class="ttname"><a href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">SocketReconnect_T::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00288">SocketReconnect-private.h:288</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md636"></a>
+<div class="ttc" id="agroup__reconnect__private_html_a31140778b660ef58bf93500821501979"><div class="ttname"><a href="group__reconnect__private.html#a31140778b660ef58bf93500821501979">SocketReconnect_T::userdata</a></div><div class="ttdeci">void * userdata</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00328">SocketReconnect-private.h:328</a></div></div>
+<div class="ttc" id="agroup__reconnect__private_html_a84b94071188ac92ecae8453cdbe0a604"><div class="ttname"><a href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">SocketReconnect_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00304">SocketReconnect-private.h:304</a></div></div>
+<div class="ttc" id="agroup__reconnect__private_html_a9e409328803ca46c73908e0f6b35b275"><div class="ttname"><a href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">SocketReconnect_T::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00307">SocketReconnect-private.h:307</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md461"></a>
 Thread Safety Characteristics</h2>
 <ul>
 <li>Not thread-safe: All operations must occur from the same thread</li>
 <li>Callbacks execute in the caller's thread context</li>
 <li>Internal state protected by non-reentrant design</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md637"></a>
+<h2><a class="anchor" id="autotoc_md462"></a>
 Integration Notes</h2>
 <ul>
 <li>For event-driven apps: Use <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">pollfd()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">process()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">tick()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">next_timeout_ms()</a></li>
@@ -349,7 +310,7 @@ Integration Notes</h2>
 </ul>
 <dl class="section note"><dt>Note</dt><dd>Underlying socket is created/destroyed internally; do not access directly except via <a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5" title="Get the underlying Socket_T when connected.">SocketReconnect_socket()</a> </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Frequent state changes may indicate network issues; monitor via callbacks and statistics </dd></dl>
-<dl class="section user"><dt>Complexity\n State queries and timers O(1); connection establishment depends on network latency</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n State queries and timers O(1); connection establishment depends</dt><dd>on network latency</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082" title="Create a new SocketReconnect_T instance configured for a specific host and port.">SocketReconnect_new()</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Creation</a> </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91" title="Destroy a SocketReconnect_T instance and release all associated resources.">SocketReconnect_free()</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Destruction</a> </dd>
@@ -360,13 +321,13 @@ Integration Notes</h2>
 <dd>
 <a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...">SocketReconnect_Policy_T</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Configuration</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">options</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00278">278</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00296">296</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketReconnect_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketReconnect__T__coll__graph.svg" width="426" height="304"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketReconnect__T__coll__graph.svg" width="352" height="128"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -438,7 +399,8 @@ current_backoff_delay_ms</td>
 <td class="fieldname">
 error_buf[256]</td>
 <td class="fielddoc">
-<p>Fixed-size buffer for formatted last error (e.g., "connect failed: Connection refused"); Null-terminated; overwritten on new errors </p>
+<p>Fixed-size buffer for formatted last error (e.g., "connect failed:
+Connection refused"); Null-terminated; overwritten on new errors </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="a9cca95f98967cbc2c1884604c38fe53a" name="a9cca95f98967cbc2c1884604c38fe53a"></a><a class="el" href="group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3">SocketReconnect_HealthCheck</a></td>
@@ -539,192 +501,6 @@ userdata</td>
 <p>Opaque user data forwarded to callbacks; stored as-is, no ownership </p>
 </td></tr>
 </table>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="gaab33e6c19aa5cf524e12e3c40b50574a" name="gaab33e6c19aa5cf524e12e3c40b50574a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gaab33e6c19aa5cf524e12e3c40b50574a">&#9670;&#160;</a></span>if() <span class="overload">[1/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">if </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>&#160;</td>
-          <td class="paramname"> = <code>=&#160;0</code></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00490">490</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketReconnect-private_8h_source.html#l00494">seed</a>, and <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms()</a>.</p>
-
-</div>
-</div>
-<a id="ga0450dbfcd56214ed2989e6ff4d97b25d" name="ga0450dbfcd56214ed2989e6ff4d97b25d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0450dbfcd56214ed2989e6ff4d97b25d">&#9670;&#160;</a></span>if() <span class="overload">[2/2]</span></h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">if </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__foundation.html#gae153fb5408e633479d6a61ac233d3676">SocketCrypto_random_bytes</a>(&amp;,&#160;</td>
-          <td class="paramname"><em>value</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations. </p>
-<p>Produces randomness for exponential backoff jitter to avoid thundering herd (synchronized retries). Prioritizes secure crypto RNG, falls back to fast thread-local PRNG for performance.</p>
-<dl class="section return"><dt>Returns</dt><dd>double uniformly distributed in [0.0, 1.0)</dd></dl>
-<p>Jitter applied as: delay *= (1.0 + jitter_factor * (2*rand - 1)) Where jitter_factor from policy (0.0-1.0).</p>
-<div class="fragment"><div class="line"><span class="keywordtype">double</span> r = socketreconnect_random_double();</div>
-<div class="line">int64_t jittered_delay = base_delay * (1.0 + policy.jitter * (2*r - 1.0));</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md626"></a>
-Implementation Details</h2>
-<ol type="1">
-<li><b>Primary</b>: <a class="el" href="group__foundation.html#gae153fb5408e633479d6a61ac233d3676" title="Generate cryptographically secure random bytes.">SocketCrypto_random_bytes()</a> for 32-bit uint → normalized double</li>
-<li><b>Fallback</b>: Thread-local xorshift32 PRNG, seeded once by monotonic time<ul>
-<li>xorshift: seed ^= seed &lt;&lt;13; ^= &gt;&gt;17; ^= &lt;&lt;5</li>
-<li>Period: 2^32 -1; good for non-crypto use</li>
-</ul>
-</li>
-</ol>
-<p>Secure source preferred but not required; fallback ensures availability.</p>
-<dl class="section user"><dt>Complexity\n O(1) amortized - crypto may block briefly, PRNG instant</dt><dd></dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - crypto reentrant, PRNG per-thread (__thread static)</dt><dd></dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Fallback seeded lazily on first call per thread </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>NON-CRYPTO: Do not use for keys, nonces, or security decisions </dd></dl>
-<dl class="section note"><dt>Note</dt><dd>If crypto fails (e.g., /dev/urandom unavailable), logs warning internally</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gae153fb5408e633479d6a61ac233d3676" title="Generate cryptographically secure random bytes.">SocketCrypto_random_bytes()</a> primary secure source </dd>
-<dd>
-<a class="el" href="group__connection__mgmt.html#a803e0eaa631385205819346d33db4974" title="Jitter factor for randomization (default: 0.25 / 25%). Adds +/- jitter * delay randomness to avoid sy...">SocketReconnect_Policy_T::jitter</a> usage context </dd>
-<dd>
-xorshift algorithm for PRNG details </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00481">481</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
-
-</div>
-</div>
-<a id="ga230fd1711fa730b54c9262bf533767f6" name="ga230fd1711fa730b54c9262bf533767f6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga230fd1711fa730b54c9262bf533767f6">&#9670;&#160;</a></span>return()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">return </td>
-          <td>(</td>
-          <td class="paramtype">double&#160;</td>
-          <td class="paramname"></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<h2 class="groupheader">Variable Documentation</h2>
-<a id="ga7a21408446fbd8c658853d5f53e2c76f" name="ga7a21408446fbd8c658853d5f53e2c76f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga7a21408446fbd8c658853d5f53e2c76f">&#9670;&#160;</a></span>delta</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> delta delta = now - start_ms</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Retrieve current monotonic time in milliseconds for internal timing. </p>
-<p>Provides a consistent, non-decreasing timestamp resistant to system clock changes (e.g., NTP adjustments). Used for all backoff, timeout, and health check calculations.</p>
-<dl class="section return"><dt>Returns</dt><dd>int64_t milliseconds since arbitrary fixed epoch (monotonic).</dd></dl>
-<div class="fragment"><div class="line">int64_t now = socketreconnect_get_time_ms();</div>
-<div class="line"><span class="keywordflow">if</span> (socketreconnect_elapsed_ms(start) &gt; timeout_ms) {</div>
-<div class="line">    <span class="comment">// Handle timeout</span></div>
-<div class="line">}</div>
-</div><!-- fragment --><p>Always prefer this over system time for scheduling to avoid jumps backward/forward.</p>
-<dl class="section user"><dt>Complexity\n O(1) - thin wrapper over system clock query</dt><dd></dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - reentrant with no shared mutable state</dt><dd></dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Backed by CLOCK_MONOTONIC or platform equivalent </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>Value wraps after ~292 years; handle int64_t overflow in long-running apps</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> core implementation </dd>
-<dd>
-socketreconnect_elapsed_ms() for computing durations</dd></dl>
-<p>Compute elapsed monotonic time since provided start timestamp. </p>
-<p>Calculates duration between start_ms and current time, clamping to 0 if anomalous (e.g., clock adjustment). Essential for timeout checks and delay validation.</p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramdir">[in]</td><td class="paramname">start_ms</td><td>Starting timestamp from socketreconnect_get_time_ms()</td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Non-negative int64_t milliseconds elapsed; 0 if start_ms &gt;= now</dd></dl>
-<div class="fragment"><div class="line">int64_t start = socketreconnect_get_time_ms();</div>
-<div class="line"><span class="comment">// ... some operation ...</span></div>
-<div class="line">int64_t elapsed = socketreconnect_elapsed_ms(start);</div>
-<div class="line"><span class="keywordflow">if</span> (elapsed &gt; policy.max_delay_ms) {</div>
-<div class="line">    <span class="comment">// Timeout handling</span></div>
-<div class="line">}</div>
-</div><!-- fragment --><p>Guarantees non-negative result for safe comparisons.</p>
-<dl class="section user"><dt>Complexity\n O(1) - arithmetic only (calls get_time_ms inline)</dt><dd></dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - pure function, no side effects</dt><dd></dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Clamps to 0 on underflow to handle rare clock issues </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>Input must be valid monotonic timestamp; invalid values may yield large positives</dd></dl>
-<dl class="section see"><dt>See also</dt><dd>socketreconnect_get_time_ms() to obtain start_ms </dd>
-<dd>
-<a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> underlying time source </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00434">434</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
-
-</div>
-</div>
-<a id="ga0544c3fe466e421738dae463968b70ba" name="ga0544c3fe466e421738dae463968b70ba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0544c3fe466e421738dae463968b70ba">&#9670;&#160;</a></span>else</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">else</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">    </div>
-<div class="line"> </div>
-<div class="line"> </div>
-<div class="line"> </div>
-<div class="line">    <span class="keyword">static</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code hl_variable" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a> = 0</div>
-<div class="ttc" id="agroup__reconnect__private_html_gab31f6ed1e7e88c7cca70910409c6bbee"><div class="ttname"><a href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a></div><div class="ttdeci">seed</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00494">SocketReconnect-private.h:494</a></div></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00483">483</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
-
-</div>
-</div>
-<a id="gab31f6ed1e7e88c7cca70910409c6bbee" name="gab31f6ed1e7e88c7cca70910409c6bbee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#gab31f6ed1e7e88c7cca70910409c6bbee">&#9670;&#160;</a></span>seed</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">seed = seed &lt;&lt; 13</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00494">494</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
-
-<p class="reference">Referenced by <a class="el" href="SocketReconnect-private_8h_source.html#l00490">if()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01749">socket_util_hash_uint_seeded()</a>.</p>
 
 </div>
 </div>

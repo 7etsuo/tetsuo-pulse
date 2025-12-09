@@ -1,6 +1,4 @@
 <map id="Authentication Buffer Constants" name="Authentication Buffer Constants">
-<area shape="rect" id="Node000002" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="5,42,147,67"/>
-<area shape="rect" id="Node000001" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="195,35,339,75"/>
-<area shape="rect" id="Node000003" href="$group__http__client__buffers.html" title="Buffer sizes for HTTP request serialization, response reading, and headers." alt="" coords="387,5,560,45"/>
-<area shape="rect" id="Node000004" href="$group__http__client__encoding.html" title="Bit flags indicating supported Content&#45;Encoding methods for HTTP client." alt="" coords="392,70,555,95"/>
+<area shape="rect" id="Node000002" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="5,13,147,38"/>
+<area shape="rect" id="Node000001" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="195,5,339,45"/>
 </map>

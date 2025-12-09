@@ -113,7 +113,8 @@ $(document).ready(function(){initNavTree('SocketHTTPServer-private_8h.html','');
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#enum-members">Enumerations</a>  </div>
+<a href="#enum-members">Enumerations</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">SocketHTTPServer-private.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -159,7 +160,7 @@ Macros</h2></td></tr>
 <tr class="memitem:ga338d36d654219bcef4bee535511e70cb" id="r_ga338d36d654219bcef4bee535511e70cb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__error__macros.html#ga338d36d654219bcef4bee535511e70cb">HTTPSERVER_ERROR_MSG</a>(fmt, ...)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#a1feea47474a6b6e939c442cdd7c42fdb">SOCKET_ERROR_MSG</a> (fmt, ##__VA_ARGS__)</td></tr>
 <tr class="memdesc:ga338d36d654219bcef4bee535511e70cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error formatting macro without errno for HTTP server errors.  <br /></td></tr>
 <tr class="separator:ga338d36d654219bcef4bee535511e70cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga50e17ee85c1ae1373fd84c980dc5e399" id="r_ga50e17ee85c1ae1373fd84c980dc5e399"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__error__macros.html#ga50e17ee85c1ae1373fd84c980dc5e399">RAISE_HTTPSERVER_ERROR</a>(e)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (HTTPServer, e)</td></tr>
+<tr class="memitem:ga50e17ee85c1ae1373fd84c980dc5e399" id="r_ga50e17ee85c1ae1373fd84c980dc5e399"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__error__macros.html#ga50e17ee85c1ae1373fd84c980dc5e399">RAISE_HTTPSERVER_ERROR</a>(e)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__http.html#structSocketHTTPServer">SocketHTTPServer</a>, e)</td></tr>
 <tr class="memdesc:ga50e17ee85c1ae1373fd84c980dc5e399"><td class="mdescLeft">&#160;</td><td class="mdescRight">Raise module-specific HTTP server exception.  <br /></td></tr>
 <tr class="separator:ga50e17ee85c1ae1373fd84c980dc5e399"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -181,10 +182,15 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:ga2f08f039d21b354ac9e74c026ffa84a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal states tracking the processing pipeline of a server connection.  <a href="group__http.html#ga2f08f039d21b354ac9e74c026ffa84a6">More...</a><br /></td></tr>
 <tr class="separator:ga2f08f039d21b354ac9e74c026ffa84a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a414a240e03c5900e3e14930b208125d3" id="r_a414a240e03c5900e3e14930b208125d3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHTTPServer-private_8h.html#a414a240e03c5900e3e14930b208125d3">SOCKET_DECLARE_MODULE_EXCEPTION</a> (<a class="el" href="group__http.html#structSocketHTTPServer">SocketHTTPServer</a>)</td></tr>
+<tr class="separator:a414a240e03c5900e3e14930b208125d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Private implementation details for HTTP server connection and state management. </p>
-<p>Internal header exposing structures and helpers for HTTP server implementation. <b>Not part of public API</b> - intended for use only within C implementation files (src/http/ *.c). For public interface, include <a class="el" href="SocketHTTPServer_8h.html" title="High-level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">SocketHTTPServer.h</a>.</p>
+<p>Internal header exposing structures and helpers for HTTP server implementation. Not part of public API** - intended for use only within C implementation files (src/http/ *.c). For public interface, include <a class="el" href="SocketHTTPServer_8h.html" title="High-level HTTP server supporting HTTP/1.1 and HTTP/2 protocols.">SocketHTTPServer.h</a>.</p>
 <p>Key internals documented here:</p><ul>
 <li><a class="el" href="group__http.html#structServerConnection">ServerConnection</a> active connection state and buffers</li>
 <li><a class="el" href="group__http.html#ga2f08f039d21b354ac9e74c026ffa84a6">ServerConnState</a> processing pipeline states</li>
@@ -204,10 +210,29 @@ Enumerations</h2></td></tr>
 <dd>
 <a class="el" href="group__utilities.html">Utilities</a> for rate limiting and metrics. </dd>
 <dd>
-docs/HTTP-REFACTOR.md for design rationale (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> exists). </dd></dl>
+docs/HTTP-REFACTOR.md for design rationale (if exists). </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
-</div></div><!-- contents -->
+</div><h2 class="groupheader">Function Documentation</h2>
+<a id="a414a240e03c5900e3e14930b208125d3" name="a414a240e03c5900e3e14930b208125d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a414a240e03c5900e3e14930b208125d3">&#9670;&#160;</a></span>SOCKET_DECLARE_MODULE_EXCEPTION()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">SOCKET_DECLARE_MODULE_EXCEPTION </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__http.html#structSocketHTTPServer">SocketHTTPServer</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+</div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

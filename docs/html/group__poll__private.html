@@ -111,8 +111,7 @@ $(document).ready(function(){initNavTree('group__poll__private.html',''); initRe
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a> &#124;
-<a href="#define-members">Macros</a>  </div>
+<a href="#nested-classes">Data Structures</a>  </div>
   <div class="headertitle"><div class="title">SocketPoll Private Implementation Details<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -127,49 +126,47 @@ $(document).ready(function(){initNavTree('group__poll__private.html',''); initRe
 <div class="center"><iframe scrolling="no" frameborder="0" src="group__poll__private.svg" width="466" height="72"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
-Macros</h2></td></tr>
-<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;SocketPoll_T</td></tr>
-<tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketData" id="r_structSocketData"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structSocketData">SocketData</a></td></tr>
+<tr class="memdesc:structSocketData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linked-list node for socket-to-userdata mapping in internal hash table.  <a href="group__poll__private.html#structSocketData">More...</a><br /></td></tr>
+<tr class="separator:structSocketData"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structFdSocketEntry" id="r_structFdSocketEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a></td></tr>
+<tr class="memdesc:structFdSocketEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Linked-list node for FD-to-socket reverse mapping in internal hash table.  <a href="group__poll__private.html#structFdSocketEntry">More...</a><br /></td></tr>
+<tr class="separator:structFdSocketEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketPoll__T" id="r_structSocketPoll__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></td></tr>
+<tr class="memdesc:structSocketPoll__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque internal state structure for SocketPoll instance.  <a href="group__poll__private.html#structSocketPoll__T">More...</a><br /></td></tr>
+<tr class="separator:structSocketPoll__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Internal structures and utilities for cross-platform event polling. </p>
 <p>This header exposes private implementation details for the SocketPoll module, enabling efficient event multiplexing across platforms (epoll/kqueue/poll). Includes hash tables for fast socket/FD mappings, internal state structure, exception macros, and integration points for timers and async I/O.</p>
 <p>Not part of the public API - for module-internal use and maintenance only. Subject to change without notice; use public <a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">SocketPoll.h</a> for API.</p>
+<p>Key Components</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Component   </th><th class="markdownTableHeadNone">Purpose   </th><th class="markdownTableHeadNone">Key Features    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">SocketData   </td><td class="markdownTableBodyNone">Socket-to-userdata hash mapping   </td><td class="markdownTableBodyNone">O(1) lookup, chained collisions, arena-allocated    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">FdSocketEntry   </td><td class="markdownTableBodyNone">FD-to-socket reverse mapping   </td><td class="markdownTableBodyNone">Event translation from backend FDs to Socket_T    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">SocketPoll_T   </td><td class="markdownTableBodyNone">Core instance state   </td><td class="markdownTableBodyNone">Backend, mutex, hash tables, event arrays, extensions    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">RAISE_POLL_ERROR   </td><td class="markdownTableBodyNone">Exception macro   </td><td class="markdownTableBodyNone">Thread-safe error raising with detailed messages    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">socketpoll_get_timer_heap   </td><td class="markdownTableBodyNone">Timer integration   </td><td class="markdownTableBodyNone">Access to internal timer heap for SocketTimer   </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="group__poll__private.html#structSocketData" title="Linked-list node for socket-to-userdata mapping in internal hash table.">SocketData</a>   </td><td class="markdownTableBodyNone">Socket-to-userdata hash mapping   </td><td class="markdownTableBodyNone">O(1) lookup, chained   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md361"></a>
-Hash Table Design</h2>
+<p>collisions, arena-allocated | | <a class="el" href="group__poll__private.html#structFdSocketEntry" title="Linked-list node for FD-to-socket reverse mapping in internal hash table.">FdSocketEntry</a> | FD-to-socket reverse mapping | Event translation from backend FDs to Socket_T | | <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> | Core instance state | Backend, mutex, hash tables, event arrays, extensions | | RAISE_POLL_ERROR | Exception macro | Thread-safe error raising with detailed messages | | socketpoll_get_timer_heap | Timer integration | Access to internal timer heap for SocketTimer |</p>
+<p>Hash Table Design</p>
 <ul>
 <li><b>Algorithm</b>: Golden ratio multiplication hash with random seed for security</li>
 <li><b>Tables</b>: Separate chains for socket_data_map (Socket_T -&gt; userdata) and fd_to_socket_map (fd -&gt; Socket_T)</li>
 <li><b>Size</b>: SOCKET_DATA_HASH_SIZE (prime for distribution, default 1021)</li>
 <li><b>Performance</b>: O(1) average lookup/insert/delete; mutex-protected for concurrency</li>
-<li><b>Security</b>: Hash seed mitigates DoS via predictable collisions</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md362"></a>
-Thread Safety Model</h2>
-<ul>
+<li><p class="startli"><b>Security</b>: Hash seed mitigates DoS via predictable collisions</p>
+<p class="startli">Thread Safety Model</p>
+</li>
 <li><b>Public API</b>: Fully thread-safe; acquires/releases instance mutex</li>
 <li><b>Internal Functions</b>: Assume caller holds poll-&gt;mutex; not safe otherwise</li>
 <li><b>Data Structures</b>: Hash tables and arrays protected by mutex</li>
 <li><b>Memory</b>: Arena allocations safe within mutex scope; no external locking needed</li>
-<li><b>Backends</b>: Serialized via mutex; <a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> exclusive</li>
+<li><p class="startli"><b>Backends</b>: Serialized via mutex; <a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> exclusive</p>
+<p class="startli">Architecture Integration</p>
+</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md363"></a>
-Architecture Integration</h2>
 <div class="fragment"><div class="line">Application --&gt; <a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>/mod/del/wait (<span class="keyword">public</span> API)</div>
 <div class="line">                 |</div>
 <div class="line">                 v (mutex lock)</div>
@@ -179,7 +176,7 @@ Architecture Integration</h2>
 <div class="line">Event Translation: FD events -&gt; <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> -&gt; user callbacks</div>
 <div class="line">Extensions: Timer heap processing during wait(), async I/O delegation</div>
 <div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for I/O event monitoring within the poll instance.</div></div>
-<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00187">SocketPoll.h:188</a></div></div>
+<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00205">SocketPoll.h:206</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Use only within SocketPoll and dependent modules (e.g., SocketTimer) </dd>
 <dd>
 All allocations from poll-&gt;arena for lifecycle management </dd>
@@ -200,20 +197,406 @@ Compile with -DSOCKET_DATA_HASH_SIZE=N to tune table size </dd></dl>
 docs/cross-platform-backends.md for backend details </dd>
 <dd>
 <a class="el" href="group__foundation.html#ga62f7a03bb960ab153cb4b8dd0f114980" title="Hash file descriptor using golden ratio multiplicative.">socket_util_hash_fd()</a> for underlying hash implementation </dd></dl>
-<h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="ga0acb682b8260ab1c60b918599864e2e5" name="ga0acb682b8260ab1c60b918599864e2e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
+<hr/><h2 class="groupheader">Data Structure Documentation</h2>
+<a name="structSocketData" id="structSocketData"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketData">&#9670;&#160;</a></span>SocketData</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;SocketPoll_T</td>
+          <td class="memname">struct SocketData</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<div class="textblock"><p>Linked-list node for socket-to-userdata mapping in internal hash table. </p>
+<p>Represents a single entry in the socket_data_map hash table, enabling O(1) average-case lookup of user data during event delivery. Each entry chains via 'next' for collision resolution using open hashing.</p>
+<p>The mapping is essential for translating backend events (fd + events) to user-facing <a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> (socket + data + events), preserving userdata registered via <a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" title="Register a socket for I/O event monitoring within the poll instance.">SocketPoll_add()</a>.</p>
+<p>Thread Safety: All access (read/write) protected by poll-&gt;mutex. Memory Management: Arena-allocated; no manual free, cleaned via <a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d" title="Dispose of an arena and all its allocations, freeing underlying memory chunks.">Arena_dispose()</a>.</p>
+<p>Structure Fields</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">socket   </td><td class="markdownTableBodyNone">Socket_T   </td><td class="markdownTableBodyNone">Registered socket identifier for matching   </td></tr>
+</table>
+<p>events | | data | void * | Userdata payload from <a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" title="Register a socket for I/O event monitoring within the poll instance.">SocketPoll_add()</a>/mod() | | next | struct <a class="el" href="group__poll__private.html#structSocketData" title="Linked-list node for socket-to-userdata mapping in internal hash table.">SocketData</a> * | Chain pointer for hash collisions |</p>
+<p>Internal Usage Pattern</p>
+<div class="fragment"><div class="line"><span class="comment">// Simplified insertion (internal, mutex-held)</span></div>
+<div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketData">SocketData</a> *entry = <a class="code hl_define" href="group__foundation.html#gaf5249a1778cd6cf5db0e2e410b292934">CALLOC</a>(poll-&gt;arena, 1, <span class="keyword">sizeof</span>(*entry));</div>
+<div class="line">entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">socket</a> = <a class="code hl_variable" href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">socket</a>;</div>
+<div class="line">entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a942b54345de6283838d63e9de0378440">data</a> = userdata;</div>
+<div class="line"><span class="keywordtype">unsigned</span> idx = poll_fd_hash(poll, <a class="code hl_function" href="group__core__io.html#ga4d727948c677509eec04746585819877">Socket_fd</a>(<a class="code hl_variable" href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">socket</a>));</div>
+<div class="line">entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a60a4b17af0ea783aea433d16a8f1767b">next</a> = poll-&gt;socket_data_map[idx];</div>
+<div class="line">poll-&gt;socket_data_map[idx] = entry;</div>
+<div class="line">poll-&gt;registered_count++;</div>
+<div class="ttc" id="agroup__core__io_html_ga4d727948c677509eec04746585819877"><div class="ttname"><a href="group__core__io.html#ga4d727948c677509eec04746585819877">Socket_fd</a></div><div class="ttdeci">int Socket_fd(const Socket_T socket)</div><div class="ttdoc">Get underlying file descriptor.</div></div>
+<div class="ttc" id="agroup__foundation_html_gaf5249a1778cd6cf5db0e2e410b292934"><div class="ttname"><a href="group__foundation.html#gaf5249a1778cd6cf5db0e2e410b292934">CALLOC</a></div><div class="ttdeci">#define CALLOC(arena, count, nbytes)</div><div class="ttdoc">Convenience macro for zero-initialized multi-element allocation with source tracking.</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00551">Arena.h:551</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_a235a818367962ab1444d564fc9ecb733"><div class="ttname"><a href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">SocketData::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00244">SocketPoll-private.h:244</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_a60a4b17af0ea783aea433d16a8f1767b"><div class="ttname"><a href="group__poll__private.html#a60a4b17af0ea783aea433d16a8f1767b">SocketData::next</a></div><div class="ttdeci">struct SocketData * next</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00246">SocketPoll-private.h:246</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_a942b54345de6283838d63e9de0378440"><div class="ttname"><a href="group__poll__private.html#a942b54345de6283838d63e9de0378440">SocketData::data</a></div><div class="ttdeci">void * data</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00245">SocketPoll-private.h:245</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_structSocketData"><div class="ttname"><a href="group__poll__private.html#structSocketData">SocketData</a></div><div class="ttdoc">Linked-list node for socket-to-userdata mapping in internal hash table.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00242">SocketPoll-private.h:243</a></div></div>
+</div><!-- fragment --><div class="fragment"><div class="line"><span class="comment">// Simplified lookup during event processing</span></div>
+<div class="line"><span class="keywordtype">unsigned</span> idx = poll_fd_hash(poll, event_fd);</div>
+<div class="line"><span class="keywordflow">for</span> (<a class="code hl_struct" href="group__poll__private.html#structSocketData">SocketData</a> *entry = poll-&gt;socket_data_map[idx]; entry; entry =</div>
+<div class="line">entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a60a4b17af0ea783aea433d16a8f1767b">next</a>) { <span class="keywordflow">if</span> (<a class="code hl_function" href="group__core__io.html#ga4d727948c677509eec04746585819877">Socket_fd</a>(entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">socket</a>) == event_fd) { <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> ev</div>
+<div class="line">= { .<a class="code hl_variable" href="group__event__system.html#a98544b5a507331adac069acd7f42d593">socket</a> = entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a235a818367962ab1444d564fc9ecb733">socket</a>, .data = entry-&gt;<a class="code hl_variable" href="group__poll__private.html#a942b54345de6283838d63e9de0378440">data</a>, .events = ... };</div>
+<div class="line">        <span class="comment">// Deliver ev to user</span></div>
+<div class="line">        <span class="keywordflow">break</span>;</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__event__system_html_a98544b5a507331adac069acd7f42d593"><div class="ttname"><a href="group__event__system.html#a98544b5a507331adac069acd7f42d593">SocketEvent_T::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00207">SocketPoll.h:207</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n Insert/Lookup/Delete: O(1) average, O(n_bucket) worst-case</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - requires poll-&gt;mutex held by caller</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Chain length minimized by prime table size and quality hash </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Userdata 'data' must not be freed while socket registered </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Used only in SocketPoll.c; not accessible via public API</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__poll__private.html#structFdSocketEntry" title="Linked-list node for FD-to-socket reverse mapping in internal hash table.">FdSocketEntry</a> for FD-to-socket reverse mapping </dd>
+<dd>
+socket_data_add_unlocked() for insertion helper </dd>
+<dd>
+socket_data_lookup_unlocked() for lookup helper </dd>
+<dd>
+socket_data_remove_unlocked() for removal helper </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" title="Register a socket for I/O event monitoring within the poll instance.">SocketPoll_add()</a> public interface populating this structure </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85" title="Update event monitoring and/or user data for a registered socket.">SocketPoll_mod()</a> for userdata updates </dd>
+<dd>
+<a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> for event structure using retrieved <a class="el" href="group__poll__private.html#a942b54345de6283838d63e9de0378440">data</a> </dd>
+<dd>
+<a class="el" href="group__event__system.html">Event System Modules</a> for event delivery pipeline </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga62f7a03bb960ab153cb4b8dd0f114980" title="Hash file descriptor using golden ratio multiplicative.">socket_util_hash_fd()</a> underlying hash computation </dd>
+<dd>
+poll_fd_hash() seeded variant for this module </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll-private_8h_source.html#l00117">117</a> of file <a class="el" href="SocketPoll-private_8h_source.html">SocketPoll-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll-private_8h_source.html#l00242">242</a> of file <a class="el" href="SocketPoll-private_8h_source.html">SocketPoll-private.h</a>.</p>
+</div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketData:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketData__coll__graph.svg" width="155" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a942b54345de6283838d63e9de0378440" name="a942b54345de6283838d63e9de0378440"></a>void *</td>
+<td class="fieldname">
+data</td>
+<td class="fielddoc">
+<p>User-associated data </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a60a4b17af0ea783aea433d16a8f1767b" name="a60a4b17af0ea783aea433d16a8f1767b"></a>struct <a class="el" href="group__poll__private.html#structSocketData">SocketData</a> *</td>
+<td class="fieldname">
+next</td>
+<td class="fielddoc">
+<p>Next entry in hash bucket </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a235a818367962ab1444d564fc9ecb733" name="a235a818367962ab1444d564fc9ecb733"></a>Socket_T</td>
+<td class="fieldname">
+socket</td>
+<td class="fielddoc">
+<p>Socket reference </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a name="structFdSocketEntry" id="structFdSocketEntry"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structFdSocketEntry">&#9670;&#160;</a></span>FdSocketEntry</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct FdSocketEntry</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>Linked-list node for FD-to-socket reverse mapping in internal hash table. </p>
+<p>Critical structure for translating raw file descriptors from polling backends (epoll/kqueue/poll) back to higher-level Socket_T objects during event processing. Enables the pipeline: backend FD events -&gt; <a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> with full context.</p>
+<p>Without this mapping, event delivery would require linear scans over all registered sockets, degrading to O(n) performance. Hashing ensures O(1) average resolution.</p>
+<p>Thread Safety: Protected by poll-&gt;mutex for concurrent access. Memory Management: Arena-allocated from poll-&gt;arena; collective cleanup.</p>
+<p>Structure Fields</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">fd   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Raw file descriptor from socket    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">socket   </td><td class="markdownTableBodyNone">Socket_T   </td><td class="markdownTableBodyNone">Associated opaque socket wrapper    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">next   </td><td class="markdownTableBodyNone">struct <a class="el" href="group__poll__private.html#structFdSocketEntry" title="Linked-list node for FD-to-socket reverse mapping in internal hash table.">FdSocketEntry</a> *   </td><td class="markdownTableBodyNone">Collision chain pointer   </td></tr>
+</table>
+<p>Event Translation Role</p>
+<p>Part of the core event processing pipeline:</p>
+<ol type="1">
+<li><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Block and wait for I/O events or timeout on registered sockets.">SocketPoll_wait()</a> calls <a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> -&gt; array of (fd, backend_events)</li>
+<li>For each fd: lookup <a class="el" href="group__poll__private.html#structFdSocketEntry" title="Linked-list node for FD-to-socket reverse mapping in internal hash table.">FdSocketEntry</a> via hash(fd) -&gt; get Socket_T</li>
+<li>For each Socket_T: lookup <a class="el" href="group__poll__private.html#structSocketData" title="Linked-list node for socket-to-userdata mapping in internal hash table.">SocketData</a> via hash(Socket_T) -&gt; get userdata</li>
+<li>Construct <a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> {socket, data, events} for user delivery</li>
+<li><p class="startli">Return array to caller</p>
+<p class="startli">Internal Usage Example</p>
+</li>
+</ol>
+<div class="fragment"><div class="line"><span class="comment">// During event wait processing (internal, mutex-held)</span></div>
+<div class="line">ssize_t nevents = <a class="code hl_function" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a>(poll-&gt;backend, ...);</div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nevents; i++) {</div>
+<div class="line">    <span class="keywordtype">int</span> <a class="code hl_variable" href="group__poll__private.html#a6e281de117ccb3201b590ba4184adb62">fd</a> = backend_get_fd(poll-&gt;backend, i);</div>
+<div class="line">    <span class="keywordtype">unsigned</span> idx = poll_fd_hash(poll, <a class="code hl_variable" href="group__poll__private.html#a6e281de117ccb3201b590ba4184adb62">fd</a>);</div>
+<div class="line">    <a class="code hl_struct" href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a> *fse = poll-&gt;fd_to_socket_map[idx];</div>
+<div class="line">    <span class="keywordflow">while</span> (fse &amp;&amp; fse-&gt;<a class="code hl_variable" href="group__poll__private.html#a6e281de117ccb3201b590ba4184adb62">fd</a> != <a class="code hl_variable" href="group__poll__private.html#a6e281de117ccb3201b590ba4184adb62">fd</a>) fse = fse-&gt;<a class="code hl_variable" href="group__poll__private.html#aec49f71e7b318291b9270ff95811c7b9">next</a>;</div>
+<div class="line">    <span class="keywordflow">if</span> (fse) {</div>
+<div class="line">        Socket_T sock = fse-&gt;<a class="code hl_variable" href="group__poll__private.html#adf65761f33705691e1fdae79ae0e8f24">socket</a>;</div>
+<div class="line">        <span class="comment">// Proceed to SocketData lookup and event construction</span></div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__event__system_html_ga5b2c06638f0c76ea3c6c2f38503d266b"><div class="ttname"><a href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a></div><div class="ttdeci">int backend_wait(PollBackend_T backend, int timeout_ms)</div><div class="ttdoc">Wait for events.</div></div>
+<div class="ttc" id="agroup__poll__private_html_a6e281de117ccb3201b590ba4184adb62"><div class="ttname"><a href="group__poll__private.html#a6e281de117ccb3201b590ba4184adb62">FdSocketEntry::fd</a></div><div class="ttdeci">int fd</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00320">SocketPoll-private.h:320</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_adf65761f33705691e1fdae79ae0e8f24"><div class="ttname"><a href="group__poll__private.html#adf65761f33705691e1fdae79ae0e8f24">FdSocketEntry::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00321">SocketPoll-private.h:321</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_aec49f71e7b318291b9270ff95811c7b9"><div class="ttname"><a href="group__poll__private.html#aec49f71e7b318291b9270ff95811c7b9">FdSocketEntry::next</a></div><div class="ttdeci">struct FdSocketEntry * next</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00322">SocketPoll-private.h:322</a></div></div>
+<div class="ttc" id="agroup__poll__private_html_structFdSocketEntry"><div class="ttname"><a href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a></div><div class="ttdoc">Linked-list node for FD-to-socket reverse mapping in internal hash table.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00318">SocketPoll-private.h:319</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n Lookup: O(1) avg / O(chain) worst; chains short due to hashing</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - caller must hold poll-&gt;mutex</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>FD uniqueness assumed; one-to-one mapping per registered socket </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>FD reuse by kernel possible; removal on socket del prevents stale entries </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Synced with socket_data_map during add/mod/del operations</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__poll__private.html#structSocketData" title="Linked-list node for socket-to-userdata mapping in internal hash table.">SocketData</a> for complementary socket-to-data mapping </dd>
+<dd>
+translate_backend_events_to_socket_events() master translation function </dd>
+<dd>
+<a class="el" href="group__event__system.html#gad998de1df9f46711f5c3b4dc0257f548" title="Get event details for index.">backend_get_event()</a> backend-specific event extraction </dd>
+<dd>
+<a class="el" href="group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations.">SocketEvent_T</a> output structure after translation </dd>
+<dd>
+<a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Block and wait for I/O events or timeout on registered sockets.">SocketPoll_wait()</a> orchestrates the full pipeline </dd>
+<dd>
+translate_from_epoll() example epoll translation using this </dd>
+<dd>
+poll_fd_hash() hash computation for FD indexing </dd>
+<dd>
+<a class="el" href="group__event__system.html">Event System Modules</a> for complete event flow </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPoll-private_8h_source.html#l00318">318</a> of file <a class="el" href="SocketPoll-private_8h_source.html">SocketPoll-private.h</a>.</p>
+</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for FdSocketEntry:</div>
+<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-2-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structFdSocketEntry__coll__graph.svg" width="174" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a6e281de117ccb3201b590ba4184adb62" name="a6e281de117ccb3201b590ba4184adb62"></a>int</td>
+<td class="fieldname">
+fd</td>
+<td class="fielddoc">
+<p>File descriptor </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="aec49f71e7b318291b9270ff95811c7b9" name="aec49f71e7b318291b9270ff95811c7b9"></a>struct <a class="el" href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a> *</td>
+<td class="fieldname">
+next</td>
+<td class="fielddoc">
+<p>Next entry in hash bucket </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="adf65761f33705691e1fdae79ae0e8f24" name="adf65761f33705691e1fdae79ae0e8f24"></a>Socket_T</td>
+<td class="fieldname">
+socket</td>
+<td class="fielddoc">
+<p>Associated socket </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a name="structSocketPoll__T" id="structSocketPoll__T"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketPoll__T">&#9670;&#160;</a></span>SocketPoll_T</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketPoll_T</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>Opaque internal state structure for SocketPoll instance. </p>
+<p>Encapsulates complete runtime state for a polling instance, including platform backend, configuration, registered sockets mappings, event buffers, synchronization, and optional extensions like timers and async I/O. Designed for efficient operation with O(1) lookups via hashing and arena-based memory management.</p>
+<p>All fields are private and accessed only within the module or trusted dependents. Thread safety enforced via embedded mutex; direct access bypasses protection.</p>
+<p>State Categories</p>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Category   </th><th class="markdownTableHeadNone">Fields   </th><th class="markdownTableHeadNone">Role    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Backend   </td><td class="markdownTableBodyNone">backend   </td><td class="markdownTableBodyNone">Platform I/O   </td></tr>
+</table>
+<p>multiplexing (epoll/kqueue/poll) | | Configuration | maxevents, default_timeout_ms | Limits and defaults for wait operations | | Registration | registered_count, max_registered| Active sockets count and capacity enforcement | | Events | socketevents | Output buffer for translated events | | Memory | arena | Single source for all internal allocations | | Mappings | socket_data_map[], fd_to_socket_map[], hash_seed | Fast bidirectional lookups | | Synchronization| mutex | Pthread lock for concurrent access | | Extensions | async, timer_heap | Optional advanced I/O and timing |</p>
+<p>Initialization and Lifecycle</p>
+<ul>
+<li>Created by <a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7" title="Create a new event poll instance.">SocketPoll_new()</a>: initializes backend, allocates arrays/tables, seeds hash</li>
+<li>Registered sockets populate hash tables via add/mod operations</li>
+<li>wait() loops: <a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> -&gt; translate -&gt; deliver events -&gt; process timers</li>
+<li>Destroyed by <a class="el" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2" title="Dispose of a SocketPoll instance and release all associated resources.">SocketPoll_free()</a>: clears tables, disposes arena, closes backend</li>
+</ul>
+<p>Memory: Everything arena-allocated for O(1) cleanup; no leaks on exceptions.</p>
+<p>Access Pattern</p>
+<div class="fragment"><div class="line"><span class="comment">// Safe internal access (mutex required)</span></div>
+<div class="line">pthread_mutex_lock(&amp;poll-&gt;mutex);</div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <span class="comment">// Modify state, e.g., poll-&gt;registered_count++;</span></div>
+<div class="line">    <span class="comment">// Hash table operations, backend calls</span></div>
+<div class="line">    <a class="code hl_function" href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a>(poll-&gt;backend, <a class="code hl_function" href="group__core__io.html#ga4d727948c677509eec04746585819877">Socket_fd</a>(sock), events);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Rollback changes if partial</span></div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    pthread_mutex_unlock(&amp;poll-&gt;mutex);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__backend__functions_html_gaa51ec4e5f966a860cdd9359c36e977c6"><div class="ttname"><a href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a></div><div class="ttdeci">int backend_add(PollBackend_T backend, int fd, unsigned events)</div><div class="ttdoc">Register file descriptor for I/O event notifications.</div></div>
+<div class="ttc" id="agroup__event__system_html_gab4754362476e3ffc3e000b1cbcc2a6f0"><div class="ttname"><a href="group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a></div><div class="ttdeci">const Except_T SocketPoll_Failed</div><div class="ttdoc">SocketPoll operation failure exception.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga947ef43f0f0def3fcc050a8df849fd16"><div class="ttname"><a href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a></div><div class="ttdeci">#define RERAISE</div><div class="ttdoc">Re-raise the currently caught exception.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00725">Except.h:725</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Thread Safety\n Partial - mutex enables; direct field access unsafe in MT env</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n Individual field O(1); table ops O(1) avg</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Layout optimized for cache locality; arrays contiguous </dd>
+<dd>
+hash_seed randomized to prevent hash DoS attacks </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>NULL extensions require checks; feature-dependent </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Backend may embed platform-specific state (e.g., epoll_fd)</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7" title="Create a new event poll instance.">SocketPoll_new()</a> initialization </dd>
+<dd>
+<a class="el" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2" title="Dispose of a SocketPoll instance and release all associated resources.">SocketPoll_free()</a> cleanup </dd>
+<dd>
+<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b" title="Opaque handle for platform-specific polling backend implementation.">PollBackend_T</a> platform layer </dd>
+<dd>
+<a class="el" href="group__poll__private.html#structSocketData" title="Linked-list node for socket-to-userdata mapping in internal hash table.">SocketData</a> socket mappings </dd>
+<dd>
+<a class="el" href="group__poll__private.html#structFdSocketEntry" title="Linked-list node for FD-to-socket reverse mapping in internal hash table.">FdSocketEntry</a> FD mappings </dd>
+<dd>
+<a class="el" href="group__event__system.html#structSocketTimer__heap__T" title="Binary min-heap container for managing multiple SocketTimer_T instances.">SocketTimer_heap_T</a> timers </dd>
+<dd>
+<a class="el" href="group__async__io.html#structSocketAsync__T" title="Core structure for asynchronous I/O context management.">SocketAsync_T</a> <a class="el" href="group__poll__private.html#a33dcc6465ff521360c191ee1b699fc47">async</a> </dd>
+<dd>
+<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> allocation </dd>
+<dd>
+pthread_mutex_t locking </dd>
+<dd>
+<a class="el" href="group__event__system.html">Event System Modules</a> overview </dd>
+<dd>
+docs/cross-platform-backends.md backends </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPoll-private_8h_source.html#l00404">404</a> of file <a class="el" href="SocketPoll-private_8h_source.html">SocketPoll-private.h</a>.</p>
+</div><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketPoll_T:</div>
+<div id="dynsection-3-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-3-content" class="dyncontent" style="display:none;">
+<div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="structSocketPoll__T__coll__graph.svg" width="100%" height="544"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a31237bda8b145cd7a4c4b1b2591ee3dc" name="a31237bda8b145cd7a4c4b1b2591ee3dc"></a><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
+<td class="fieldname">
+arena</td>
+<td class="fielddoc">
+<p>Memory arena </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a33dcc6465ff521360c191ee1b699fc47" name="a33dcc6465ff521360c191ee1b699fc47"></a><a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a></td>
+<td class="fieldname">
+async</td>
+<td class="fielddoc">
+<p>Optional async I/O context </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a88a87bcdd916ff495a756adc1e9f06d7" name="a88a87bcdd916ff495a756adc1e9f06d7"></a><a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></td>
+<td class="fieldname">
+backend</td>
+<td class="fielddoc">
+<p>Platform-specific backend </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a5aeb90d7138a60d98bcf5948da12e9f5" name="a5aeb90d7138a60d98bcf5948da12e9f5"></a>int</td>
+<td class="fieldname">
+default_timeout_ms</td>
+<td class="fielddoc">
+<p>Default timeout for wait </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a5a9bf570afcf7c0d4ac9a9311f3a27b0" name="a5a9bf570afcf7c0d4ac9a9311f3a27b0"></a><a class="el" href="group__poll__private.html#structFdSocketEntry">FdSocketEntry</a> *</td>
+<td class="fieldname">
+fd_to_socket_map[1021]</td>
+<td class="fielddoc">
+<p>FD-&gt;socket hash table </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="af8c9fe4c2e7f12115a135c69c9e7fbdb" name="af8c9fe4c2e7f12115a135c69c9e7fbdb"></a>unsigned</td>
+<td class="fieldname">
+hash_seed</td>
+<td class="fielddoc">
+<p>Random seed for FD hashing to mitigate collisions </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="afd944e224b0b04685b0e0b94716965be" name="afd944e224b0b04685b0e0b94716965be"></a>int</td>
+<td class="fieldname">
+max_registered</td>
+<td class="fielddoc">
+<p>Max registered (0=unlimited) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a658db3993da32f677a948cd36d276a83" name="a658db3993da32f677a948cd36d276a83"></a>int</td>
+<td class="fieldname">
+maxevents</td>
+<td class="fielddoc">
+<p>Maximum events per wait </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a56fa157efc7ff3aa02cdb75e57ee2f89" name="a56fa157efc7ff3aa02cdb75e57ee2f89"></a>pthread_mutex_t</td>
+<td class="fieldname">
+mutex</td>
+<td class="fielddoc">
+<p>Thread-safety mutex </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a2fa65b0698266106795cd06f53b277a2" name="a2fa65b0698266106795cd06f53b277a2"></a>int</td>
+<td class="fieldname">
+registered_count</td>
+<td class="fielddoc">
+<p>Current registered socket count </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a80bda4f02a183fc02340510cc79b5112" name="a80bda4f02a183fc02340510cc79b5112"></a><a class="el" href="group__poll__private.html#structSocketData">SocketData</a> *</td>
+<td class="fieldname">
+socket_data_map[1021]</td>
+<td class="fielddoc">
+<p>Socket-&gt;data hash table </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="aef3fbc97c09600c5f16b65d2bdbda6f0" name="aef3fbc97c09600c5f16b65d2bdbda6f0"></a><a class="el" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *</td>
+<td class="fieldname">
+socketevents</td>
+<td class="fielddoc">
+<p>Translated event array </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a377ea71b38ec41e5e223d479077024e2" name="a377ea71b38ec41e5e223d479077024e2"></a><a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *</td>
+<td class="fieldname">
+timer_heap</td>
+<td class="fielddoc">
+<p>Timer heap for integrated timers </p>
+</td></tr>
+</table>
 
 </div>
 </div>

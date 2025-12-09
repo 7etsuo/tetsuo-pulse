@@ -1124,5 +1124,7 @@ typedef struct SocketRetry_Stats
  * @see Socket_get_monotonic_ms() for measuring actual delays.
  */
 
+/** @} */
+
 #undef T
 #endif /* SOCKETRETRY_INCLUDED */

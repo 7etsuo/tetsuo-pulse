@@ -136,26 +136,18 @@ Functions</h2></td></tr>
 <p>Thread-safe global counter for tracking active Socket_T instances. </p>
 <p>&lt; Arena-based memory management for socket allocations. &lt; Global socket configuration and default timeouts. &lt; Rate limiting for socket bandwidth control. &lt; Public interface for Socket_T operations. &lt; Shared private base for socket implementations. &lt; C11 atomic operations for thread-safe state management (e.g., free flag).</p>
 <p>These utilities maintain a global, thread-safe count of live sockets for debugging, leak detection, and resource monitoring. The counter is incremented on successful allocation (Socket_new, Socket_new_from_fd, Socket_accept) and decremented on free (Socket_free).</p>
-<h2><a class="anchor" id="autotoc_md438"></a>
-Purpose and Usage</h2>
-<ul>
+<p>Purpose and Usage</p><ul>
 <li><b>Leak Detection</b>: Tests verify count == 0 after teardown</li>
 <li><b>Resource Tracking</b>: Monitor open sockets in long-running apps</li>
-<li><b>Debugging</b>: Identify memory leaks or unclosed sockets</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md439"></a>
-Implementation</h2>
-<ul>
+<li><p class="startli"><b>Debugging</b>: Identify memory leaks or unclosed sockets</p>
+<p class="startli">Implementation</p>
+</li>
 <li>Atomic operations or mutex-protected counter in <a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">SocketCommon-private.h</a></li>
 <li>Public query via <a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a> (test/debug only)</li>
-<li>No exceptions raised - simple counter ops</li>
-</ul>
-<h2><a class="anchor" id="autotoc_md440"></a>
-Thread Safety</h2>
-<p>All functions are fully thread-safe for concurrent allocation/free.</p>
-<h2><a class="anchor" id="autotoc_md441"></a>
-Testing Requirements</h2>
-<ul>
+<li><p class="startli">No exceptions raised - simple counter ops</p>
+<p class="startli">Thread Safety All functions are fully thread-safe for concurrent allocation/free.</p>
+<p class="startli">Testing Requirements</p>
+</li>
 <li>All unit tests MUST end with <code>assert(<a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a> == 0)</code></li>
 <li>Valgrind/ASan to confirm no leaks</li>
 <li>Multi-threaded tests to verify atomic correctness</li>
@@ -195,8 +187,7 @@ core/SocketCommon-private.h for implementation details </dd></dl>
 
 <p>Query current number of active Socket_T instances (public for tests). </p>
 <p>Returns the global count of currently allocated and live Socket_T objects. Exposed publicly in <a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">Socket.h</a> for unit testing and debugging purposes.</p>
-<h2><a class="anchor" id="autotoc_md448"></a>
-Usage in Tests</h2>
+<p>Usage in Tests</p>
 <div class="fragment"><div class="line"><span class="comment">// At end of test case:</span></div>
 <div class="line">assert(<a class="code hl_function" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a>() == 0 &amp;&amp; <span class="stringliteral">&quot;Socket leak detected!&quot;</span>);</div>
 <div class="line"> </div>
@@ -209,9 +200,7 @@ Usage in Tests</h2>
 <div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket with specified domain, type, and protocol.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
 <div class="ttc" id="agroup__socket__live__utils_html_gaa8cacd863c275e6e12f7c63b65708e1b"><div class="ttname"><a href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a></div><div class="ttdeci">int Socket_debug_live_count(void)</div><div class="ttdoc">Query current number of active Socket_T instances (public for tests).</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md449"></a>
-Behavior</h2>
-<ul>
+</div><!-- fragment --><p>Behavior</p><ul>
 <li>Returns instantaneous snapshot of live count</li>
 <li>Thread-safe read operation</li>
 <li>No side effects or exceptions</li>
@@ -219,9 +208,7 @@ Behavior</h2>
 <dl class="section return"><dt>Returns</dt><dd>Current live socket count (&gt;= 0)</dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes - atomic read or mutex-protected query</dt><dd></dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - simple counter read</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md450"></a>
-Public vs Private</h2>
-<ul>
+<p>Public vs Private</p><ul>
 <li>Declared in <a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">Socket.h</a> for test access</li>
 <li>Implementation details in <a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> and <a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">SocketCommon-private.h</a></li>
 <li>Tests should use this to verify no leaks</li>

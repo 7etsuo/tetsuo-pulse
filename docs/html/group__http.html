@@ -151,7 +151,7 @@ Modules</h2></td></tr>
 <tr class="memitem:group__http__error__macros" id="r_group__http__error__macros"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__error__macros.html">HTTP Server Error Handling Macros</a></td></tr>
 <tr class="memdesc:group__http__error__macros"><td class="mdescLeft">&#160;</td><td class="mdescRight">Migration guide for deprecated HTTP server statistics macros. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:group__http__server__connection__mgmt" id="r_group__http__server__connection__mgmt"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__server__connection__mgmt.html">Internal HTTP Server Connection Management Helpers</a></td></tr>
+<tr class="memitem:group__http__server__connection__mgmt" id="r_group__http__server__connection__mgmt"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__server__connection__mgmt.html">Internal HTTP Server Connection</a></td></tr>
 <tr class="memdesc:group__http__server__connection__mgmt"><td class="mdescLeft">&#160;</td><td class="mdescRight">Helper functions for managing individual HTTP server connections. <br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -1122,7 +1122,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga95a7f160f9f2452034e009ebdf11a9ba" id="r_ga95a7f160f9f2452034e009ebdf11a9ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9">SocketHTTP2_ErrorCode</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga95a7f160f9f2452034e009ebdf11a9ba">http2_frame_validate</a> (SocketHTTP2_Conn_T conn, const <a class="el" href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a> *header)</td></tr>
 <tr class="memdesc:ga95a7f160f9f2452034e009ebdf11a9ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate an HTTP/2 frame header against protocol rules.  <br /></td></tr>
 <tr class="separator:ga95a7f160f9f2452034e009ebdf11a9ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0b2d65258a58f956a30a209dc8e52ece" id="r_ga0b2d65258a58f956a30a209dc8e52ece"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0b2d65258a58f956a30a209dc8e52ece">http2_flow_adjust_window</a> (int32_t *window, int32_t <a class="el" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a>)</td></tr>
+<tr class="memitem:ga0b2d65258a58f956a30a209dc8e52ece" id="r_ga0b2d65258a58f956a30a209dc8e52ece"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0b2d65258a58f956a30a209dc8e52ece">http2_flow_adjust_window</a> (int32_t *window, int32_t delta)</td></tr>
 <tr class="memdesc:ga0b2d65258a58f956a30a209dc8e52ece"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust flow control window by signed delta, typically from SETTINGS update.  <br /></td></tr>
 <tr class="separator:ga0b2d65258a58f956a30a209dc8e52ece"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga64c0dd45136c50e56346d9758b68c491" id="r_ga64c0dd45136c50e56346d9758b68c491"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga64c0dd45136c50e56346d9758b68c491">http2_frame_send</a> (SocketHTTP2_Conn_T conn, const <a class="el" href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a> *header, const void *payload, size_t payload_len)</td></tr>
@@ -1257,7 +1257,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga8b19491608b8fb111a13c41d6e683919" id="r_ga8b19491608b8fb111a13c41d6e683919"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8b19491608b8fb111a13c41d6e683919">httpclient_host_hash</a> (const char *host, int port, size_t table_size)</td></tr>
 <tr class="memdesc:ga8b19491608b8fb111a13c41d6e683919"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute hash value for host:port pair used as connection pool key.  <br /></td></tr>
 <tr class="separator:ga8b19491608b8fb111a13c41d6e683919"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga061744acfdfb45c79b6923199ad88d87" id="r_ga061744acfdfb45c79b6923199ad88d87"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga061744acfdfb45c79b6923199ad88d87">httpclient_should_retry_error</a> (const SocketHTTPClient_T client, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
+<tr class="memitem:ga061744acfdfb45c79b6923199ad88d87" id="r_ga061744acfdfb45c79b6923199ad88d87"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga061744acfdfb45c79b6923199ad88d87">httpclient_should_retry_error</a> (const SocketHTTPClient_T client, <a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:ga061744acfdfb45c79b6923199ad88d87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if an HTTP client error is retryable.  <br /></td></tr>
 <tr class="separator:ga061744acfdfb45c79b6923199ad88d87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf1d66a9d712080e74f44f40aa3fafea1" id="r_gaf1d66a9d712080e74f44f40aa3fafea1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf1d66a9d712080e74f44f40aa3fafea1">httpclient_should_retry_status</a> (const SocketHTTPClient_T client, int status)</td></tr>
@@ -1299,8 +1299,8 @@ Functions</h2></td></tr>
 <tr class="memitem:gab2ad4e6a795964f1edabf14a71b83985" id="r_gab2ad4e6a795964f1edabf14a71b83985"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985">SocketHTTPServer_process</a> (SocketHTTPServer_T server, int timeout_ms)</td></tr>
 <tr class="memdesc:gab2ad4e6a795964f1edabf14a71b83985"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main event loop step: poll, accept, parse, handle requests.  <br /></td></tr>
 <tr class="separator:gab2ad4e6a795964f1edabf14a71b83985"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaf4e5392eaefa9ee259824571a1c5487d" id="r_gaf4e5392eaefa9ee259824571a1c5487d"><td class="memItemLeft" align="right" valign="top">SocketPoll_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf4e5392eaefa9ee259824571a1c5487d">SocketHTTPServer_poll</a> (SocketHTTPServer_T server)</td></tr>
-<tr class="memdesc:gaf4e5392eaefa9ee259824571a1c5487d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the internal SocketPoll_T instance for custom event handling.  <br /></td></tr>
+<tr class="memitem:gaf4e5392eaefa9ee259824571a1c5487d" id="r_gaf4e5392eaefa9ee259824571a1c5487d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaf4e5392eaefa9ee259824571a1c5487d">SocketHTTPServer_poll</a> (SocketHTTPServer_T server)</td></tr>
+<tr class="memdesc:gaf4e5392eaefa9ee259824571a1c5487d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access the internal <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> instance for custom event handling.  <br /></td></tr>
 <tr class="separator:gaf4e5392eaefa9ee259824571a1c5487d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga62a61206448cffe1710070a6c64b554d" id="r_ga62a61206448cffe1710070a6c64b554d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f">SocketHTTP_Method</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga62a61206448cffe1710070a6c64b554d">SocketHTTPServer_Request_method</a> (SocketHTTPServer_Request_T req)</td></tr>
 <tr class="memdesc:ga62a61206448cffe1710070a6c64b554d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the parsed HTTP method from the request.  <br /></td></tr>
@@ -1451,11 +1451,12 @@ Variables</h2></td></tr>
 <p>Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support. </p>
 <p>The HTTP group provides comprehensive HTTP protocol support including parsing, serialization, client/server implementations, and advanced features. Key components include:</p><ul>
 <li>SocketHTTP (core): HTTP types, headers, URI parsing, status codes (<a class="el" href="group__http.html">HTTP Modules</a>)</li>
-<li>SocketHTTP1: HTTP/1.1 parsing and serialization (<a class="el" href="group__http1.html">HTTP/1.1 Module</a>)</li>
-<li>SocketHTTP2: HTTP/2 protocol implementation (<a class="el" href="group__http2.html">HTTP/2 Module</a>)</li>
-<li><a class="el" href="group__http.html#structSocketHTTPClient" title="Main HTTP client instance managing configuration, pool, auth, and state.">SocketHTTPClient</a>: High-level HTTP client with pooling (<a class="el" href="group__http__client.html">HTTP Client Module</a>)</li>
-<li><a class="el" href="group__http.html#structSocketHTTPServer" title="Internal implementation of the SocketHTTPServer opaque type.">SocketHTTPServer</a>: HTTP server implementation (HTTP Server Module)</li>
-<li>SocketHPACK: HTTP/2 header compression (<a class="el" href="group__hpack.html">HPACK Module</a>)</li>
+<li>SocketHTTP1: HTTP/1.1 parsing and serialization (<a class="el" href="group__http1.html">HTTP/1.1</a>Module")
+- SocketHTTP2: HTTP/2 protocol implementation (@ref http2 "HTTP/2 Module")
+- SocketHTTPClient: High-level HTTP client with pooling (@ref http_client
+"HTTP Client Module")
+- SocketHTTPServer: HTTP server implementation (@ref http_server "HTTP Server Module")
+- SocketHPACK: HTTP/2 header compression (@ref hpack "HPACK Module")</li>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html" title="Base infrastructure for memory management, exception handling, and core utilities....">Core Foundation Modules</a> for base infrastructure. </dd>
 <dd>
@@ -1484,7 +1485,7 @@ SocketHTTPServer_T for HTTP server implementation. </dd></dl>
 <dd>
 RFC 7541 Section 4.1 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00149">149</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00163">163</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1539,7 +1540,7 @@ value_len</td>
 <dd>
 <a class="el" href="group__hpack__private.html#a9c27fe02791883c173fe35ec57063755">SocketHPACK_Encoder::table</a> and <a class="el" href="group__hpack__private.html#a263eaf0e8a043fb3312aa04c66b27916">SocketHPACK_Decoder::table</a> for usage. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00176">176</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00192">192</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHPACK_Table_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -1627,7 +1628,7 @@ tail</td>
 <dd>
 SocketHPACK_Table_T for dynamic <a class="el" href="group__hpack__private.html#a9c27fe02791883c173fe35ec57063755">table</a> details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00205">205</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00221">221</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1695,7 +1696,7 @@ use_indexing</td>
 SocketHPACK_Table_T for dynamic <a class="el" href="group__hpack__private.html#a263eaf0e8a043fb3312aa04c66b27916">table</a>. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Decompression bomb protection limits ratio of output to input bytes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00234">234</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00254">254</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1773,9 +1774,9 @@ table</td>
 <p>Contains 61 predefined HTTP header fields. Field order minimizes padding. Strings are compile-time constants, no allocation needed.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78" title="Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A).">hpack_static_table</a> for the full array of entries. </dd>
 <dd>
-SocketHPACK_StaticEntry for public typedef (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> exposed). </dd></dl>
+SocketHPACK_StaticEntry for public typedef (if exposed). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00265">265</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1827,7 +1828,7 @@ value_len</td>
 <dd>
 RFC 7541 Appendix B for Huffman <a class="el" href="group__hpack__private.html#ab8f97d8476a1a8b8a464ff039bf7d4f8">code</a> assignment. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00315">315</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1865,7 +1866,7 @@ code</td>
 <dd>
 HPACK_DFA_* <a class="el" href="group__hpack__private.html#a4d1e72ef25a0ef39679a5931d7665b70">flags</a> for behavior indicators. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00308">308</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00333">333</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1907,7 +1908,7 @@ sym</td>
 <div class="textblock"><p>HPACK header field representation. </p>
 <p>Represents a single header with optional never_index flag. The never_index flag indicates sensitive data that should never be added to the dynamic table. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00236">236</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00242">242</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1963,7 +1964,7 @@ value_len</td>
 <div class="textblock"><p>Configuration for HPACK encoder instance. </p>
 <p>Allows customization of table size, Huffman usage, and indexing behavior. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00549">549</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00587">587</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2005,7 +2006,7 @@ use_indexing</td>
 <div class="textblock"><p>Configuration for HPACK decoder instance. </p>
 <p>Controls security limits like max header sizes and decompression bomb prevention. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00650">650</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00689">689</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2061,7 +2062,7 @@ max_table_size</td>
 <dd>
 <a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c" title="Hash HTTP header name for case-insensitive bucket lookup.">sockethttp_hash_name()</a> for hash computation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00066">66</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00068">68</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for HeaderEntry:</div>
 <div id="dynsection-2-summary" class="dynsummary" style="display:block;">
@@ -2153,7 +2154,7 @@ value_len</td>
 <dd>
 <a class="el" href="group__http.html#ga10295fab9419b6257a90c16506b7842f" title="Remove all headers.">SocketHTTP_Headers_clear()</a> to remove all headers without freeing collection. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00094">94</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00102">102</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 </div><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP_Headers_T:</div>
 <div id="dynsection-3-summary" class="dynsummary" style="display:block;">
@@ -2223,7 +2224,7 @@ total_size</td>
 <div class="textblock"><p>Semantic properties of an HTTP method as defined in RFC 9110 Section 9.2. </p>
 <p>Bit fields indicating method safety, idempotency, cacheability, and body expectations. Used for request validation, caching decisions, and protocol compliance. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga80b627d3253567e6c73b94ddd6fe1bb5" title="Get method semantic properties.">SocketHTTP_method_properties()</a> to retrieve properties for a method. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00312">312</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00345">345</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2282,7 +2283,7 @@ safe: 1</td>
 <dd>
 <a class="el" href="group__http.html#ga2dc4cb8e02de1b8ed00826becde57f77" title="Iterate over all headers.">SocketHTTP_Headers_iterate()</a> for callback-based iteration. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00604">604</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00663">663</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2333,13 +2334,13 @@ value_len</td>
 <dd>
 <a class="el" href="group__http.html#ga0d205bd6286796dbdb3413766a6f1a50" title="Get port with default fallback.">SocketHTTP_URI_get_port()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">to</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">get</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">effective</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">port</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">with</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">defaults</a> (80/443). </dd>
 <dd>
-<a class="el" href="group__http.html#gabfed4438fa6b1f93409a582efd4a8448" title="Check if URI uses secure scheme.">SocketHTTP_URI_is_secure()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">to</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">check</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> <a class="el" href="group__http.html#af499416d2578ce288340f83318614034">scheme</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">indicates</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">TLS</a> (https/wss). </dd>
+<a class="el" href="group__http.html#gabfed4438fa6b1f93409a582efd4a8448" title="Check if URI uses secure scheme.">SocketHTTP_URI_is_secure()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">to</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">check</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">if</a> <a class="el" href="group__http.html#af499416d2578ce288340f83318614034">scheme</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">indicates</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">TLS</a> (https/wss). </dd>
 <dd>
 <a class="el" href="group__http.html#ga11a8df3a30b4d1001c6c504f4289ebae" title="Build URI string from components.">SocketHTTP_URI_build()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">to</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">serialize</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">back</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">to</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">string</a>. </dd>
 <dd>
 <a class="el" href="group__http.html#ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28" title="Percent-encode string.">SocketHTTP_URI_encode()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">and</a> <a class="el" href="group__http.html#ga68e3ed44f86aa5b9ce778bf3ff1fb868" title="Percent-decode string.">SocketHTTP_URI_decode()</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">for</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">percent</a> <a class="el" href="group__http.html#adb88160ddde47344eb46fe205567814a">handling</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00889">889</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00957">957</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2453,7 +2454,7 @@ userinfo_len</td>
 <dd>
 <a class="el" href="group__http.html#ga2a544671be752e72e6c35dfc237037ed" title="Check if media type matches pattern.">SocketHTTP_MediaType_matches()</a> to check against pattern (supports wildcard patterns like * / * for any media <a class="el" href="group__http.html#ad95d22d386c653c821d5bb0826f1b5d4">type</a>). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01082">1082</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01163">1163</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2530,7 +2531,7 @@ type_len</td>
 <div class="textblock"><p>Single entry from quality-sorted list in Accept-like headers for content negotiation. </p>
 <p>Represents a media type or language tag with its quality factor (q-value) from headers like Accept, Accept-Language. Parsed and sorted by descending quality (highest preference first). Quality defaults to 1.0 if not specified; 0.0 indicates rejection. Used in content negotiation to select best match. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga2bd50a204ccbbe78fc2938162d2a4248" title="Parse Accept-style header.">SocketHTTP_parse_accept()</a> which populates arrays of this type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01142">1142</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01229">1229</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2576,7 +2577,7 @@ value_len</td>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTP__Response" title="Protocol-agnostic representation of an HTTP response message.">SocketHTTP_Response</a> for corresponding response structure. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01230">1230</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01322">1322</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2657,7 +2658,7 @@ version</td>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTP__Request" title="Protocol-agnostic representation of an HTTP request message.">SocketHTTP_Request</a> for request counterpart. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01259">1259</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01354">1354</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2736,7 +2737,7 @@ version</td>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for max sizes enforced during append/terminate. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00443">443</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00463">463</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2812,7 +2813,7 @@ SocketHTTP_Headers_T for header handling. </dd>
 <dd>
 RFC 7230 for HTTP/1.1 specification compliance details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00495">495</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><div id="dynsection-4" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-4-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP1_Parser_T:</div>
 <div id="dynsection-4-summary" class="dynsummary" style="display:block;">
@@ -3039,7 +3040,7 @@ version_minor</td>
 <p>HTTP/2 stream (opaque type)</p>
 <p>Tracks stream ID, state, flow control windows, received DATA buffering, header/trailer decoding state, and user data. Supports split headers via CONTINUATION frames and distinguishes push vs. regular streams.</p>
 <dl class="section note"><dt>Note</dt><dd>Fields are subject to change; use public API functions for access.</dd></dl>
-<dl class="section user"><dt>Thread Safety\n No - internal fields modified by protocol processing; direct access unsafe in multi-threaded contexts without external synchronization</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - internal fields modified by protocol processing; direct</dt><dd>access unsafe in multi-threaded contexts without external synchronization</dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketHTTP2_Stream_T for opaque public handle. </dd>
 <dd>
 <a class="el" href="group__http.html#ga002456110497e7d02e0f0261a777d5a2" title="Create and initialize a new HTTP/2 stream structure.">http2_stream_create()</a> for instantiation. </dd>
@@ -3053,7 +3054,7 @@ RFC 9113 Section 5.1 for stream lifecycle.</dd></dl>
 <dd>
 <a class="el" href="group__http2.html#gab70f7e768dd89aca7fd859aae33c74a1" title="Send HEADERS frame.">SocketHTTP2_Stream_send_headers()</a> and <a class="el" href="group__http2.html#ga1daa1717c92531030eef02f38035103b" title="Send DATA frame.">SocketHTTP2_Stream_send_data()</a> for sending. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00177">177</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00182">182</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 </div><div id="dynsection-5" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-5-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP2_Stream_T:</div>
 <div id="dynsection-5-summary" class="dynsummary" style="display:block;">
@@ -3249,7 +3250,7 @@ userdata</td>
 <p>Central state holder for an HTTP/2 connection: underlying socket, memory arena, role (client/server), HPACK encoder/decoder, I/O buffers, settings (local/peer), flow control, stream hash table with counts and rate limits, frame state (e.g., CONTINUATION, GOAWAY, PING), callbacks, timeouts, and DoS protections (RST/PING/ SETTINGS rate limiting per CVE-2023-44487 and similar).</p>
 <p>Handles protocol compliance, security hardening, and event emission.</p>
 <dl class="section note"><dt>Note</dt><dd>Internal fields; access via public SocketHTTP2_Conn_T functions.</dd></dl>
-<dl class="section user"><dt>Thread Safety\n No - shared connection state modified without internal mutex; applications must serialize calls to connection functions (e.g., via external locking or single-threaded event loop)</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - shared connection state modified without internal mutex;</dt><dd>applications must serialize calls to connection functions (e.g., via external locking or single-threaded event loop)</dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketHTTP2_Conn_T opaque public type. </dd>
 <dd>
 <a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for public creation. </dd>
@@ -3263,13 +3264,13 @@ SocketHPACK_Encoder_T and SocketHPACK_Decoder_T for header compression.</dd></dl
 <dd>
 <a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b" title="Process socket events and HTTP/2 frames.">SocketHTTP2_Conn_process()</a> for event-driven processing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00251">251</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00259">259</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 </div><div id="dynsection-6" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-6-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP2_Conn_T:</div>
 <div id="dynsection-6-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-6-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTP2__Conn__coll__graph.svg" width="651" height="330"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTP2__Conn__coll__graph.svg" width="531" height="242"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -3609,7 +3610,7 @@ streams</td>
 <dd>
 SocketHTTPClient.c <a class="el" href="group__http.html#acf0f6ed48d328591d5d1caf988d05ef0">for</a> <a class="el" href="group__http.html#acf0f6ed48d328591d5d1caf988d05ef0">usage</a> <a class="el" href="group__http.html#acf0f6ed48d328591d5d1caf988d05ef0">in</a> client <a class="el" href="group__http.html#acf0f6ed48d328591d5d1caf988d05ef0">operations</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00101">101</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00102">102</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-7" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-7-trigger" src="closed.png" alt="+"/> Collaboration diagram for HTTPPoolEntry:</div>
 <div id="dynsection-7-summary" class="dynsummary" style="display:block;">
@@ -3723,7 +3724,7 @@ version</td>
 <dd>
 SocketHTTPClient-pool.c for implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00154">154</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00155">155</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-8" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-8-trigger" src="closed.png" alt="+"/> Collaboration diagram for HTTPPool:</div>
 <div id="dynsection-8-summary" class="dynsummary" style="display:block;">
@@ -3845,7 +3846,7 @@ total_requests</td>
 <dd>
 docs/HTTP-REFACTOR.md for design rationale. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00193">193</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00195">195</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-9" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-9-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPClient_T:</div>
 <div id="dynsection-9-summary" class="dynsummary" style="display:block;">
@@ -3931,7 +3932,7 @@ pool</td>
 <dd>
 <a class="el" href="group__http__client.html#ga3cb9ba239e5a623795bae1ddfd084201">SocketHTTPClient_Callback</a> for <a class="el" href="group__http.html#a5ad343392efab9e3220e605663dc3ad6">response</a> handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00294">294</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00296">296</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-10" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-10-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPClient_AsyncRequest_T:</div>
 <div id="dynsection-10-summary" class="dynsummary" style="display:block;">
@@ -4017,7 +4018,7 @@ userdata</td>
 <dd>
 <a class="el" href="group__http__client.html#structSocketHTTPClient__Cookie" title="Cookie attributes structure (RFC 6265).">SocketHTTPClient_Cookie</a> for <a class="el" href="group__http.html#a2ff05161d8f16a8dd1e648ad27e83e1d">cookie</a> fields. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00329">329</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00331">331</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-11" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-11-trigger" src="closed.png" alt="+"/> Collaboration diagram for CookieEntry:</div>
 <div id="dynsection-11-summary" class="dynsummary" style="display:block;">
@@ -4072,7 +4073,7 @@ next</td>
 <dd>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> "Cookies" section for <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> notes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00347">347</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00349">349</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><div id="dynsection-12" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-12-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPClient_CookieJar_T:</div>
 <div id="dynsection-12-summary" class="dynsummary" style="display:block;">
@@ -4146,7 +4147,7 @@ mutex</td>
 <dd>
 SocketHTTPServer_set_rate_limiter() for adding limiters. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00055">55</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00060">60</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
 </div><div id="dynsection-13" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-13-trigger" src="closed.png" alt="+"/> Collaboration diagram for RateLimitEntry:</div>
 <div id="dynsection-13-summary" class="dynsummary" style="display:block;">
@@ -4211,13 +4212,13 @@ connection_close() for cleanup. </dd>
 <dd>
 SocketHTTP1_Parser_T for HTTP/1.1 parsing <a class="el" href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">state</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00111">111</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00121">121</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
 </div><div id="dynsection-14" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-14-trigger" src="closed.png" alt="+"/> Collaboration diagram for ServerConnection:</div>
 <div id="dynsection-14-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-14-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structServerConnection__coll__graph.svg" width="382" height="304"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structServerConnection__coll__graph.svg" width="270" height="128"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -4453,13 +4454,13 @@ state</td>
 <dd>
 <a class="el" href="group__http.html#ga908829abf68bcfe935568fe4f45c0330" title="Finalize the response and transmit it to the client.">SocketHTTPServer_Request_finish()</a> to complete response. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00183">183</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00196">196</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
 </div><div id="dynsection-15" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-15-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPServer_Request_T:</div>
 <div id="dynsection-15-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-15-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTPServer__Request__coll__graph.svg" width="382" height="392"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHTTPServer__Request__coll__graph.svg" width="270" height="216"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -4523,7 +4524,7 @@ No embedded TLS; use SocketTLS integration via public API.</dd></dl>
 <dd>
 <a class="el" href="group__http.html#gacf5856e5b1728e44bbb68ef2e4637318" title="Dispose of HTTP server instance and release all resources.">SocketHTTPServer_free()</a> for cleanup and resource release. </dd>
 <dd>
-SocketPoll_T for event loop integration details. </dd>
+<a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> for event loop integration details. </dd>
 <dd>
 <a class="el" href="group__ip__tracker.html#ga763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> for client limiting implementation. </dd>
 <dd>
@@ -4535,7 +4536,7 @@ SocketPoll_T for event loop integration details. </dd>
 <dd>
 <a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985" title="Main event loop step: poll, accept, parse, handle requests.">SocketHTTPServer_process()</a> for event processing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00220">220</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00235">235</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
 </div><div id="dynsection-16" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-16-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPServer_T:</div>
 <div id="dynsection-16-summary" class="dynsummary" style="display:block;">
@@ -4624,7 +4625,7 @@ listen_socket</td>
 <td class="fielddoc">
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ace4771540acab364599204f12b0b905e" name="ace4771540acab364599204f12b0b905e"></a>SocketPoll_T</td>
+<a id="ace4771540acab364599204f12b0b905e" name="ace4771540acab364599204f12b0b905e"></a><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></td>
 <td class="fieldname">
 poll</td>
 <td class="fielddoc">
@@ -4699,7 +4700,7 @@ validator_userdata</td>
 <dd>
 <a class="el" href="group__http.html#gaea4fe38f3115faefc4bbc7f28e6b7362" title="Allocate and initialize a new HTTP server instance.">SocketHTTPServer_new()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00306">306</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00310">310</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 </div><div id="dynsection-17" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-17-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTPServer_Config:</div>
 <div id="dynsection-17-summary" class="dynsummary" style="display:block;">
@@ -4833,7 +4834,7 @@ SocketMetrics for global library metrics. </dd>
 <dd>
 SocketPool stats for connection pool details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l01697">1697</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l01834">1834</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -4931,7 +4932,10 @@ Cumulative connections accepted since start/reset. </td></tr>
 <td class="fieldname">
 total_requests</td>
 <td class="fielddoc">
-Total HTTP requests processed (successful + errors). </td></tr>
+Total HTTP requests processed (successful. <ul>
+<li>errors). </li>
+</ul>
+</td></tr>
 </table>
 
 </div>
@@ -4948,7 +4952,7 @@ Total HTTP requests processed (successful + errors). </td></tr>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00510">510</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00536">536</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -4979,7 +4983,7 @@ response</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00110">110</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00111">111</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -5010,7 +5014,7 @@ h2</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00112">112</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00113">113</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -5060,7 +5064,7 @@ socket</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00121">121</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00122">122</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -5105,7 +5109,7 @@ conn</td>
 SocketHTTP1_Config::max_method_size, max_uri_size, etc. for runtime limits.</dd></dl>
 <p>Default initial capacity for method token buffer (e.g., "GET", "POST"). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00829">829</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00887">887</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5139,9 +5143,9 @@ SocketHTTP1_Config::max_method_size, max_uri_size, etc. for runtime limits.</dd>
 <dd>
 <a class="el" href="SocketHTTP-private_8h.html" title="Internal HTTP core structures and helper functions.">SocketHTTP-private.h</a> <a class="el" href="group__http.html#ga3c8b1550781514298036c503bcb8e87c" title="Extract numeric value from hexadecimal digit character.">SOCKETHTTP_HEX_VALUE</a> for implementation. </dd>
 <dd>
-Chunk size parsing in <a class="el" href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57ab7b4ce15946e80a464e77140eccff4a1">HTTP1_PS_CHUNK_SIZE</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd></dl>
+Chunk size parsing in <a class="el" href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57ab7b4ce15946e80a464e77140eccff4a1">HTTP1_PS_CHUNK_SIZE</a> state. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00754">754</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00798">798</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5174,7 +5178,7 @@ Chunk size parsing in <a class="el" href="group__http.html#gga8cc947a0df8404588e
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a">HTTP1_CC_DIGIT</a>] in DFA classification. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00726">726</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00767">767</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5213,7 +5217,7 @@ Full field-value = *( field-content / obs-fold ); field-content = field-vchar [ 
 <dd>
 RFC 7230 section 3.2.4 "header fields" for field-value grammar. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00808">808</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00863">863</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5248,7 +5252,7 @@ RFC 7230 section 3.2.4 "header fields" for field-value grammar. </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495">HTTP1_CC_HEX</a>] for DFA usage (hex letters only, excluding digits). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00738">738</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00780">780</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5283,7 +5287,7 @@ Lenient for interoperability; strict mode may reject. </dd></dl>
 <dd>
 RFC 7230 section 3.2.6 errata for obs-text allowance. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00793">793</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00845">845</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5316,7 +5320,7 @@ RFC 7230 section 3.2.6 errata for obs-text allowance. </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9">HTTP1_CC_SP</a>, <a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad">HTTP1_CC_HTAB</a>] for DFA classes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00766">766</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00812">812</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5350,7 +5354,7 @@ RFC 7230 section 3.2.6 "token" production. </dd>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60">HTTP1_CC_TCHAR</a>] related DFA class. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00714">714</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00754">754</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5385,7 +5389,7 @@ Used in header field values, reason phrases; excludes SP (separate class). </dd>
 <dd>
 RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00779">779</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00828">828</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5404,7 +5408,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Fixed size of GOAWAY frame header fields (excluding debug data). </p>
 <p>8 bytes: last stream ID (4) + error code (4). </p><dl class="section see"><dt>See also</dt><dd>RFC 9113 Section 6.8 GOAWAY. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00114">114</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00118">118</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -5423,7 +5427,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Fixed size of PING frame payload (opaque data). </p>
 <p>8 bytes of arbitrary data for round-trip measurement or app use. </p><dl class="section see"><dt>See also</dt><dd>RFC 9113 Section 6.7 PING. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00105">105</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00109">109</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -5442,7 +5446,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Fixed size of a SETTINGS frame parameter entry. </p>
 <p>6 bytes: 2-byte identifier + 4-byte value (RFC 9113). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00096">96</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00100">100</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -5461,7 +5465,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Fixed size of WINDOW_UPDATE frame payload (window increment). </p>
 <p>4 bytes unsigned integer for flow control window adjustment. </p><dl class="section see"><dt>See also</dt><dd>RFC 9113 Section 6.9 WINDOW_UPDATE. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00123">123</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00127">127</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -5479,7 +5483,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Maximum 1xx informational status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00491">491</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00549">549</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5497,7 +5501,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Minimum 1xx informational status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00485">485</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00543">543</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5515,7 +5519,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Maximum 2xx successful status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00503">503</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00561">561</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5533,7 +5537,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Minimum 2xx successful status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00497">497</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00555">555</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5551,7 +5555,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Maximum 3xx redirection status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00515">515</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00573">573</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5569,7 +5573,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Minimum 3xx redirection status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00509">509</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00567">567</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5587,7 +5591,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Maximum 4xx client error status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00527">527</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00585">585</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5605,7 +5609,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Minimum 4xx client error status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00579">579</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5624,7 +5628,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Maximum 5xx server error status code. </p>
 <dl class="section note"><dt>Note</dt><dd>Extends to 599 for future standard codes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00540">540</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00598">598</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5642,7 +5646,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 
 <p>Minimum 5xx server error status code. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00533">533</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00591">591</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5661,7 +5665,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Maximum valid HTTP status code. </p>
 <dl class="section note"><dt>Note</dt><dd>Codes above 599 are not standard; extensions may use higher but library limits to 599. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00479">479</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00537">537</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5680,7 +5684,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Boundary constants for HTTP status code validation and categorization. </p>
 <p>These defines provide ranges for status code classes (1xx-5xx) and overall valid range (100-599). Used in <a class="el" href="group__http.html#ga13f50bb573333c5a0fe6ed5308392b1d" title="Check if status code is valid.">SocketHTTP_status_valid()</a>, <a class="el" href="group__http.html#gafa90f0cd5d3fa4e281b6debe6fed8fe6" title="Get status code category.">SocketHTTP_status_category()</a>, and internal checks. The SocketHTTP_StatusCode enum defines specific codes; these are for range checks.</p>
 <dl class="section note"><dt>Note</dt><dd>Not all codes in 100-599 are standardized; custom codes should use valid range. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga13f50bb573333c5a0fe6ed5308392b1d" title="Check if status code is valid.">SocketHTTP_status_valid()</a> to check <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> a code is in valid range. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga13f50bb573333c5a0fe6ed5308392b1d" title="Check if status code is valid.">SocketHTTP_status_valid()</a> to check if a code is in valid range. </dd>
 <dd>
 <a class="el" href="group__http.html#gafa90f0cd5d3fa4e281b6debe6fed8fe6" title="Get status code category.">SocketHTTP_status_category()</a> to get category (1-5). </dd>
 <dd>
@@ -5688,7 +5692,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Minimum valid HTTP status code.</p>
 <dl class="section note"><dt>Note</dt><dd>Codes below 100 are informational or invalid per RFC 9110. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00472">472</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00529">529</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5711,7 +5715,7 @@ RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></d
 <p>Raise HTTP client exception with detailed error message. </p>
 <p>Creates a thread-local copy of the exception with reason from socket_error_buf. Thread-safe: prevents race conditions when multiple threads raise same exception type.</p>
 <p>Requires: <a class="el" href="SocketUtil_8h.html#a9a80f14591d4cdb7347af54b5f66e766" title="SOCKET_DECLARE_MODULE_EXCEPTION - Declare thread-local exception.">SOCKET_DECLARE_MODULE_EXCEPTION(HTTPClient)</a> in .c file.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for centralized <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> infrastructure. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for centralized error infrastructure. </dd>
 <dd>
 docs/ERROR_HANDLING.md for exception patterns. </dd></dl>
 
@@ -5742,7 +5746,7 @@ SocketHTTPServer_T for HTTP server. </dd>
 <dd>
 SocketWS_T for WebSocket over HTTP. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01242">1242</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01251">1251</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -5769,7 +5773,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dd>
 <a class="el" href="WEBSOCKET_8md.html">docs/WEBSOCKET.md</a> for usage guide. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01260">1260</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01269">1269</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -5788,7 +5792,7 @@ SocketWS_client_connect() for client connections. </dd>
 <p>Default dynamic table size in bytes (RFC 7541 default). </p>
 <p>Used when no explicit table size is configured. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00124">124</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00130">130</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5807,7 +5811,7 @@ SocketWS_client_connect() for client connections. </dd>
 <p>Overhead bytes per dynamic table entry (RFC 7541 Section 4.1). </p>
 <p>32 bytes minimum overhead for name/value storage and indexing. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00180">180</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00186">186</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5825,7 +5829,7 @@ SocketWS_client_connect() for client connections. </dd>
 
 <p>Maximum total size for decoded header list in bytes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00153">153</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00159">159</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5843,7 +5847,7 @@ SocketWS_client_connect() for client connections. </dd>
 
 <p>Maximum size for individual header (name + value) in bytes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00145">145</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00151">151</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5862,7 +5866,7 @@ SocketWS_client_connect() for client connections. </dd>
 <p>Maximum allowable dynamic table size in bytes. </p>
 <p>ENFORCEMENT: Table size updates are validated in <a class="el" href="group__http.html#ga80929db456c087b62dd8f59935bbd359" title="Decode a complete HPACK header block into headers array.">SocketHPACK_Decoder_decode()</a>. Rejects updates exceeding settings_max_table_size. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga71187fb60d8bbf1a6494b0b7f4566d4d" title="Handle SETTINGS table size update.">SocketHPACK_Decoder_set_table_size()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00137">137</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00143">143</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5881,7 +5885,7 @@ SocketWS_client_connect() for client connections. </dd>
 <p>Maximum allowed dynamic table size updates per header block. </p>
 <p>Prevents excessive updates that could be used in attacks. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00163">163</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00169">169</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5900,7 +5904,7 @@ SocketWS_client_connect() for client connections. </dd>
 <p>Size of the static table (RFC 7541 Appendix A). </p>
 <p>Contains 61 predefined common header fields. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00172">172</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00178">178</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -5923,7 +5927,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dd>
 <a class="el" href="group__http.html#gad1bd59d68c6362c7a547785c53709163" title="Parse HTTP-date.">SocketHTTP_date_parse()</a> for parsing HTTP-date strings. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00174">174</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00189">189</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -5945,7 +5949,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - compile-time constant.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#aa21dae3f3eb3b5f5a8a071a678b597fa">SocketHTTP_Headers::buckets</a> for the hash table implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00046">46</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00047">47</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -5979,7 +5983,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga68e3ed44f86aa5b9ce778bf3ff1fb868" title="Percent-decode string.">SocketHTTP_URI_decode()</a> usage example. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00298">298</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00315">315</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6012,7 +6016,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd>RFC 9110 §5.6 for complete tchar grammar. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00231">231</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00245">245</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6047,7 +6051,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd>RFC 3986 §2.3 unreserved characters. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00264">264</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00279">279</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6073,7 +6077,7 @@ SocketHTTP_MAX_HEADER_VALUE for value length limits. </dd>
 <dd>
 SocketHTTP_MAX_HEADER_SIZE for total headers limit. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00094">94</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00103">103</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6096,7 +6100,7 @@ SocketHTTP_MAX_HEADER_SIZE for total headers limit. </dd></dl>
 <dd>
 SocketHTTP_MAX_HEADERS for maximum count. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00129">129</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00142">142</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6122,7 +6126,7 @@ SocketHTTP_MAX_HEADER_NAME for name limits. </dd>
 <dd>
 SocketHTTP_MAX_HEADERS for count limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00113">113</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00124">124</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6145,7 +6149,7 @@ SocketHTTP_MAX_HEADERS for count limits. </dd></dl>
 <dd>
 SocketHTTP_MAX_HEADER_SIZE for total size limit. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00145">145</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00158">158</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6168,7 +6172,7 @@ SocketHTTP_MAX_HEADER_SIZE for total size limit. </dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28" title="Percent-encode string.">SocketHTTP_URI_encode()</a> and <a class="el" href="group__http.html#ga68e3ed44f86aa5b9ce778bf3ff1fb868" title="Percent-decode string.">SocketHTTP_URI_decode()</a> for percent handling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00160">160</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00175">175</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6204,7 +6208,7 @@ SocketHTTP_MAX_HEADER_SIZE for total size limit. </dd></dl>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTP__Header" title="Single HTTP header field representation for iteration and access.">SocketHTTP_Header</a> for structure with name/value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00818">818</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00883">883</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6247,7 +6251,7 @@ Thread-safety depends on server configuration; typically called from event threa
 <dd>
 <a class="el" href="group__http.html#ga9b2fbeda02abcd8385d35f3164e82b8f" title="Determine if the request body uses chunked transfer encoding.">SocketHTTPServer_Request_is_chunked()</a> for transfer encoding info. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00477">477</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00522">522</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -6285,9 +6289,9 @@ If timed_out, some requests may have been aborted; check stats for details.</dd>
 <dd>
 <a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958" title="Block until graceful drain completes or times out.">SocketHTTPServer_drain_wait()</a> for blocking variant. </dd>
 <dd>
-<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> to query <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> independently. </dd></dl>
+<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> to query state independently. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00541">541</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00592">592</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -6318,7 +6322,7 @@ If timed_out, some requests may have been aborted; check stats for details.</dd>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - invoked from server's event loop thread (SocketPoll integration).</dt><dd>Server instances should not be shared across threads without external sync.</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - invoked from server's event loop thread (SocketPoll</dt><dd>integration). Server instances should not be shared across threads without external sync.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>For WebSocket upgrades, check <a class="el" href="group__http.html#gadea7c22d784dde56835abffcd57ee516" title="Check if the request is a WebSocket upgrade attempt.">SocketHTTPServer_Request_is_websocket()</a> and use <a class="el" href="group__http.html#ga27bf639b401330e8d40ebbaf0c93e12b" title="Accept WebSocket upgrade and switch protocol.">SocketHTTPServer_Request_upgrade_websocket()</a> instead of standard response. </dd>
 <dd>
 For HTTP/2 push, use <a class="el" href="group__http.html#gadc66dc775243c9466070358778fe7afd" title="Initiate an HTTP/2 server push of a related resource to the client.">SocketHTTPServer_Request_push()</a> if supported.</dd></dl>
@@ -6330,7 +6334,7 @@ SocketHTTP_Headers_T for header manipulation. </dd>
 <dd>
 HTTP Module Group for protocol details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00446">446</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00480">480</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -6373,7 +6377,7 @@ Thread-safety: Called from event thread; ensure validator is reentrant if sharin
 <dd>
 <a class="el" href="group__utilities.html">Utilities Group</a> for rate limiting integration. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00513">513</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00563">563</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -6402,7 +6406,7 @@ Thread-safety: Called from event thread; ensure validator is reentrant if sharin
 <p>Individual state descriptions provided in enum values.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a> for character classification used in transitions. </dd>
 <dd>
-<a class="el" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30" title="DFA state transition table for HTTP request parsing.">http1_req_state</a>, <a class="el" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f" title="DFA state transition table for HTTP response parsing.">http1_resp_state</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> transition tables. </dd>
+<a class="el" href="group__http1__private.html#gad7f1459235d97c9cb2f1c4960a7dbc30" title="DFA state transition table for HTTP request parsing.">http1_req_state</a>, <a class="el" href="group__http1__private.html#ga11bb00a4258fe1bb4ece5df41c2c9d3f" title="DFA state transition table for HTTP response parsing.">http1_resp_state</a> for state transition tables. </dd>
 <dd>
 <a class="el" href="group__http1__private.html#ga75ad7bc5978265a3fab598023b737c92" title="DFA action table for HTTP request parsing.">http1_req_action</a>, <a class="el" href="group__http1__private.html#ga9c08453987f874f606969a88b5d593ca" title="DFA action table for HTTP response parsing.">http1_resp_action</a> for actions triggered by transitions. </dd>
 <dd>
@@ -6461,7 +6465,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 <tr><td class="fieldname"><a id="gga8cc947a0df8404588ec5ca3e179d4e57a028d2301664d8f8873288ebc2ad3e211" name="gga8cc947a0df8404588ec5ca3e179d4e57a028d2301664d8f8873288ebc2ad3e211"></a>HTTP1_NUM_STATES&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00219">219</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00233">233</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -6490,7 +6494,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 <tr><td class="fieldname"><a id="gga79676ef844cfe95cf31f625403f121bcaeaf8dd2c1fe6ab635ac1455df16e4876" name="gga79676ef844cfe95cf31f625403f121bcaeaf8dd2c1fe6ab635ac1455df16e4876"></a>ASYNC_STATE_CANCELLED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00271">271</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00273">273</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 
 </div>
 </div>
@@ -6514,7 +6518,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 </ul>
 <p>Used for timeout enforcement, logging, and resource cleanup. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">ServerConnection::state</a> </dd>
 <dd>
-<a class="el" href="group__http.html#structSocketHTTPServer__Config" title="HTTP server configuration structure.">SocketHTTPServer_Config</a> for timeout configurations per <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd></dl>
+<a class="el" href="group__http.html#structSocketHTTPServer__Config" title="HTTP server configuration structure.">SocketHTTPServer_Config</a> for timeout configurations per state. </dd></dl>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga2f08f039d21b354ac9e74c026ffa84a6aa1627273364b1e8c6d1a01e893e97540" name="gga2f08f039d21b354ac9e74c026ffa84a6aa1627273364b1e8c6d1a01e893e97540"></a>CONN_STATE_READING_REQUEST&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="gga2f08f039d21b354ac9e74c026ffa84a6a6976ee0f38b40e338d212ccf34484397" name="gga2f08f039d21b354ac9e74c026ffa84a6a6976ee0f38b40e338d212ccf34484397"></a>CONN_STATE_READING_BODY&#160;</td><td class="fielddoc"></td></tr>
@@ -6524,7 +6528,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 <tr><td class="fieldname"><a id="gga2f08f039d21b354ac9e74c026ffa84a6a789a51a79c10caae10604554eb601e74" name="gga2f08f039d21b354ac9e74c026ffa84a6a789a51a79c10caae10604554eb601e74"></a>CONN_STATE_CLOSED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00076">76</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer-private_8h_source.html#l00085">85</a> of file <a class="el" href="SocketHTTPServer-private_8h_source.html">SocketHTTPServer-private.h</a>.</p>
 
 </div>
 </div>
@@ -6564,7 +6568,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00209">209</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00215">215</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 
 </div>
 </div>
@@ -6584,7 +6588,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 <p>Defines the finite state machine states for HTTP/2 connection establishment, settings exchange, operational phase, GOAWAY handling, and closure.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2__private.html#a2eced8ab6ddb5533a65b9019d19e59da">SocketHTTP2_Conn::state</a> for storage in connection struct. </dd>
 <dd>
-RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> transitions. </dd></dl>
+RFC 9113 Section 5.1 for connection preface and state transitions. </dd></dl>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga04a564c3d98f445678201ed187523246a835ef9d7cf00b97ec7ea82ab1878fbf9" name="gga04a564c3d98f445678201ed187523246a835ef9d7cf00b97ec7ea82ab1878fbf9"></a>HTTP2_CONN_STATE_INIT&#160;</td><td class="fielddoc"><p>Initial state </p>
 </td></tr>
@@ -6606,7 +6610,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00141">141</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00145">145</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -6643,7 +6647,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01182">1182</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l01271">1271</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6690,7 +6694,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00312">312</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6721,7 +6725,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00550">550</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00608">608</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6870,7 +6874,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00378">378</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00417">417</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6909,7 +6913,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00915">915</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00987">987</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6942,7 +6946,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00245">245</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP_8h_source.html#l00265">265</a> of file <a class="el" href="SocketHTTP_8h_source.html">SocketHTTP.h</a>.</p>
 
 </div>
 </div>
@@ -6972,7 +6976,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00281">281</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00285">285</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -7010,7 +7014,7 @@ RFC 9113 Section 5.1 for connection preface and <a class="el" href="SocketHappyE
 <tr><td class="fieldname"><a id="gga18f37238f317f3d8c35e7b5540883ca6abe2af2f5d2cab49a46d6ce236d50b31d" name="gga18f37238f317f3d8c35e7b5540883ca6abe2af2f5d2cab49a46d6ce236d50b31d"></a>URI_STATE_FRAGMENT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00178">178</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00189">189</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -7132,9 +7136,9 @@ Does not null-terminate; call <a class="el" href="group__http.html#ga607c2b77d65
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for parser-wide size limits (this is per-call cap). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00630">630</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00663">663</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00447">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00445">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00446">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7201,13 +7205,13 @@ Does not zero the buffer contents; undefined until first append. </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#structHTTP1__TokenBuf" title="Dynamic resizable buffer for accumulating parsed HTTP tokens.">HTTP1_TokenBuf</a> for structure fields. </dd>
 <dd>
-<a class="el" href="group__http.html#ga1d611fd0bed8609c050f914c0f868090" title="Reset token buffer to empty (len=0) without deallocating memory or changing capacity.">http1_tokenbuf_reset()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> needing to clear after init (though len=0). </dd>
+<a class="el" href="group__http.html#ga1d611fd0bed8609c050f914c0f868090" title="Reset token buffer to empty (len=0) without deallocating memory or changing capacity.">http1_tokenbuf_reset()</a> if needing to clear after init (though len=0). </dd>
 <dd>
 <a class="el" href="group__http.html#ga5487c78dd04b035e7acc9637725342da" title="Append a single character to the token buffer, growing capacity if necessary.">http1_tokenbuf_append()</a> for first data addition. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00585">585</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00611">611</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00447">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00445">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00446">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7251,9 +7255,9 @@ Previous data remains in buffer until overwritten; use secureclear if sensitive.
 <dd>
 <a class="el" href="group__http1__private.html#a031b669ec44709ed42b56a778f12d147">HTTP1_TokenBuf::len</a> for the reset field. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00608">608</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00636">636</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketHTTP1-private_8h_source.html#l00446">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7302,7 +7306,10 @@ Previous data remains in buffer until overwritten; use secureclear if sensitive.
   <table class="params">
     <tr><td class="paramname">buf</td><td>The <a class="el" href="group__http1__private.html#structHTTP1__TokenBuf" title="Dynamic resizable buffer for accumulating parsed HTTP tokens.">HTTP1_TokenBuf</a> to terminate (adds '\0' at buf-&gt;len). </td></tr>
     <tr><td class="paramname">arena</td><td>Arena_T for possible reallocation if no space for null terminator. </td></tr>
-    <tr><td class="paramname">max_size</td><td>Maximum allowed len INCLUDING the null terminator (buf-&gt;len + 1 &lt;= max_size). </td></tr>
+    <tr><td class="paramname">max_size</td><td>Maximum allowed len INCLUDING the null terminator (buf-&gt;len<ul>
+<li>1 &lt;= max_size). </li>
+</ul>
+</td></tr>
   </table>
   </dd>
 </dl>
@@ -7324,9 +7331,9 @@ Returned pointer valid until next append/reset/growth; do not free. </dd></dl>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for overall size limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00673">673</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00711">711</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00447">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00445">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00446">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7652,24 +7659,24 @@ RFC 9114 HPACK Section 3 Header Block Encoding and Section 6. Huffman Coding. </
 <dl class="section return"><dt>Returns</dt><dd>0 on successful adjustment, -1 if delta would cause invalid state. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Logs debug info on clamping; may trigger flow control errors if extreme. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gab444265ce7df6a5da3c7ec20291f150e" title="Process incoming HTTP/2 SETTINGS frame for parameter negotiation.">http2_process_settings()</a> for applying INITIAL_WINDOW_SIZE changes. </dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - modifies only the caller-provided window value via pointer; no shared state or connection access, safe for concurrent calls on distinct windows</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - modifies only the caller-provided window value via</dt><dd>pointer; no shared state or connection access, safe for concurrent calls on distinct windows</dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - simple arithmetic adjustment and bounds check</dt><dd></dd></dl>
+<p>Internal Usage</p>
 <div class="fragment"><div class="line"><span class="comment">// Adjust stream window after SETTINGS change</span></div>
 <div class="line">int32_t stream_window = get_initial_window();</div>
-<div class="line">int32_t <a class="code hl_variable" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a> = new_setting - old_setting;</div>
-<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__http.html#ga0b2d65258a58f956a30a209dc8e52ece">http2_flow_adjust_window</a>(&amp;stream_window, <a class="code hl_variable" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a>) == 0) {</div>
+<div class="line">int32_t delta = new_setting - old_setting;</div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__http.html#ga0b2d65258a58f956a30a209dc8e52ece">http2_flow_adjust_window</a>(&amp;stream_window, delta) == 0) {</div>
 <div class="line">    <span class="comment">// Apply to all active streams</span></div>
 <div class="line">    <span class="keywordflow">for each</span> stream {</div>
-<div class="line">        stream-&gt;send_window += <a class="code hl_variable" href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a>;  <span class="comment">// Already validated per-stream</span></div>
+<div class="line">        stream-&gt;send_window += delta;  <span class="comment">// Already validated per-stream</span></div>
 <div class="line">    }</div>
 <div class="line">    conn-&gt;initial_send_window = new_setting;</div>
 <div class="line">} <span class="keywordflow">else</span> {</div>
 <div class="line">    <span class="comment">// Log clamping or error</span></div>
 <div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a>(<span class="stringliteral">&quot;Window adjustment failed&quot;</span>);</div>
 <div class="line">}</div>
-<div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00498">SocketUtil.h:498</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00544">SocketUtil.h:544</a></div></div>
 <div class="ttc" id="agroup__http_html_ga0b2d65258a58f956a30a209dc8e52ece"><div class="ttname"><a href="group__http.html#ga0b2d65258a58f956a30a209dc8e52ece">http2_flow_adjust_window</a></div><div class="ttdeci">int http2_flow_adjust_window(int32_t *window, int32_t delta)</div><div class="ttdoc">Adjust flow control window by signed delta, typically from SETTINGS update.</div></div>
-<div class="ttc" id="agroup__reconnect__private_html_ga7a21408446fbd8c658853d5f53e2c76f"><div class="ttname"><a href="group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f">delta</a></div><div class="ttdeci">int64_t delta</div><div class="ttdoc">Retrieve current monotonic time in milliseconds for internal timing.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00434">SocketReconnect-private.h:434</a></div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd>RFC 9113 Section 6.5.2 SETTINGS and Section 6.9.2 Flow Control Windows for adjustment triggers. </dd></dl>
 
 </div>
@@ -8057,8 +8064,9 @@ RFC 9113 Section 6.9.2 Flow Control Windows: Receiving Updates. </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - modifies connection send buffer and flow control state; caller must ensure exclusive access to conn</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies connection send buffer and flow control state;</dt><dd>caller must ensure exclusive access to conn</dd></dl>
 <dl class="section user"><dt>Complexity\n O(frame length) - serializes and copies frame data to buffer</dt><dd></dd></dl>
+<p>Internal Usage</p>
 <div class="fragment"><div class="line"><span class="comment">// Send a SETTINGS ACK frame</span></div>
 <div class="line"><a class="code hl_struct" href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a> hdr = {0};</div>
 <div class="line">hdr.<a class="code hl_variable" href="group__http2.html#a55fab70be967b0da3d407a27ba926711">type</a> = HTTP2_SETTINGS_FRAME;</div>
@@ -8071,12 +8079,12 @@ RFC 9113 Section 6.9.2 Flow Control Windows: Receiving Updates. </dd></dl>
 <div class="line">    <span class="comment">// Handle error, possibly close connection</span></div>
 <div class="line">}</div>
 <div class="line"><span class="comment">// Buffer queued; flush later via SocketHTTP2_Conn_process() or manual send</span></div>
-<div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00502">SocketUtil.h:502</a></div></div>
-<div class="ttc" id="agroup__http2_html_a2bed570c22bd36b3e61a4b6e1e0b8033"><div class="ttname"><a href="group__http2.html#a2bed570c22bd36b3e61a4b6e1e0b8033">SocketHTTP2_FrameHeader::length</a></div><div class="ttdeci">uint32_t length</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00402">SocketHTTP2.h:402</a></div></div>
-<div class="ttc" id="agroup__http2_html_a4008ece540896b7489aff8776f970b79"><div class="ttname"><a href="group__http2.html#a4008ece540896b7489aff8776f970b79">SocketHTTP2_FrameHeader::flags</a></div><div class="ttdeci">uint8_t flags</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00404">SocketHTTP2.h:404</a></div></div>
-<div class="ttc" id="agroup__http2_html_a55fab70be967b0da3d407a27ba926711"><div class="ttname"><a href="group__http2.html#a55fab70be967b0da3d407a27ba926711">SocketHTTP2_FrameHeader::type</a></div><div class="ttdeci">uint8_t type</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00403">SocketHTTP2.h:403</a></div></div>
-<div class="ttc" id="agroup__http2_html_a65726cc5062e6479d5e204997395cf31"><div class="ttname"><a href="group__http2.html#a65726cc5062e6479d5e204997395cf31">SocketHTTP2_FrameHeader::stream_id</a></div><div class="ttdeci">uint32_t stream_id</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00405">SocketHTTP2.h:405</a></div></div>
-<div class="ttc" id="agroup__http2_html_structSocketHTTP2__FrameHeader"><div class="ttname"><a href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a></div><div class="ttdoc">HTTP/2 frame header (9 bytes on wire)</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00400">SocketHTTP2.h:401</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00548">SocketUtil.h:548</a></div></div>
+<div class="ttc" id="agroup__http2_html_a2bed570c22bd36b3e61a4b6e1e0b8033"><div class="ttname"><a href="group__http2.html#a2bed570c22bd36b3e61a4b6e1e0b8033">SocketHTTP2_FrameHeader::length</a></div><div class="ttdeci">uint32_t length</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00409">SocketHTTP2.h:409</a></div></div>
+<div class="ttc" id="agroup__http2_html_a4008ece540896b7489aff8776f970b79"><div class="ttname"><a href="group__http2.html#a4008ece540896b7489aff8776f970b79">SocketHTTP2_FrameHeader::flags</a></div><div class="ttdeci">uint8_t flags</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00411">SocketHTTP2.h:411</a></div></div>
+<div class="ttc" id="agroup__http2_html_a55fab70be967b0da3d407a27ba926711"><div class="ttname"><a href="group__http2.html#a55fab70be967b0da3d407a27ba926711">SocketHTTP2_FrameHeader::type</a></div><div class="ttdeci">uint8_t type</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00410">SocketHTTP2.h:410</a></div></div>
+<div class="ttc" id="agroup__http2_html_a65726cc5062e6479d5e204997395cf31"><div class="ttname"><a href="group__http2.html#a65726cc5062e6479d5e204997395cf31">SocketHTTP2_FrameHeader::stream_id</a></div><div class="ttdeci">uint32_t stream_id</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00412">SocketHTTP2.h:412</a></div></div>
+<div class="ttc" id="agroup__http2_html_structSocketHTTP2__FrameHeader"><div class="ttname"><a href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a></div><div class="ttdoc">HTTP/2 frame header (9 bytes on wire)</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00407">SocketHTTP2.h:408</a></div></div>
 <div class="ttc" id="agroup__http_html_ga64c0dd45136c50e56346d9758b68c491"><div class="ttname"><a href="group__http.html#ga64c0dd45136c50e56346d9758b68c491">http2_frame_send</a></div><div class="ttdeci">int http2_frame_send(SocketHTTP2_Conn_T conn, const SocketHTTP2_FrameHeader *header, const void *payload, size_t payload_len)</div><div class="ttdoc">Serialize HTTP/2 frame and queue it in send buffer.</div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Does not flush; call <a class="el" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af" title="Flush pending HTTP/2 frames to socket.">SocketHTTP2_Conn_flush()</a> or process events to transmit.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2__private.html#a0bc0c27fc4f266fe58f2b952f1138730">SocketHTTP2_Conn::send_buf</a> for buffering details. </dd>
@@ -8136,8 +8144,9 @@ RFC 9113 Section 4 Frame Format for header and payload serialization rules. </dd
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - reads connection state without internal synchronization; caller must ensure exclusive access to the connection object</dt><dd></dd></dl>
-<dl class="section user"><dt>Complexity\n O(1) - performs a fixed set of validation checks independent of input size</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - reads connection state without internal synchronization;</dt><dd>caller must ensure exclusive access to the connection object</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - performs a fixed set of validation checks independent of</dt><dd>input size</dd></dl>
+<p>Internal Usage</p>
 <div class="fragment"><div class="line"><span class="comment">// Example: Validate frame header in frame reader loop</span></div>
 <div class="line"><a class="code hl_enumeration" href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9">SocketHTTP2_ErrorCode</a> err = <a class="code hl_function" href="group__http.html#ga95a7f160f9f2452034e009ebdf11a9ba">http2_frame_validate</a>(conn, &amp;header);</div>
 <div class="line"><span class="keywordflow">if</span> (err != <a class="code hl_enumvalue" href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8">HTTP2_NO_ERROR</a>) {</div>
@@ -8147,8 +8156,8 @@ RFC 9113 Section 4 Frame Format for header and payload serialization rules. </dd
 <div class="line">}</div>
 <div class="line"><span class="comment">// Safe to process payload</span></div>
 <div class="line"><span class="keywordtype">int</span> processed = <a class="code hl_function" href="group__http.html#gae2bcff50ded7d328aed7ec535d9a047b">http2_process_frame</a>(conn, &amp;header, payload);</div>
-<div class="ttc" id="agroup__http2_html_ga0dae3fde0d9081ed887d2476442f6ee9"><div class="ttname"><a href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9">SocketHTTP2_ErrorCode</a></div><div class="ttdeci">SocketHTTP2_ErrorCode</div><div class="ttdoc">HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7)</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00317">SocketHTTP2.h:318</a></div></div>
-<div class="ttc" id="agroup__http2_html_gga0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8"><div class="ttname"><a href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8">HTTP2_NO_ERROR</a></div><div class="ttdeci">@ HTTP2_NO_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00319">SocketHTTP2.h:319</a></div></div>
+<div class="ttc" id="agroup__http2_html_ga0dae3fde0d9081ed887d2476442f6ee9"><div class="ttname"><a href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9">SocketHTTP2_ErrorCode</a></div><div class="ttdeci">SocketHTTP2_ErrorCode</div><div class="ttdoc">HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7)</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00323">SocketHTTP2.h:324</a></div></div>
+<div class="ttc" id="agroup__http2_html_gga0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8"><div class="ttname"><a href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8">HTTP2_NO_ERROR</a></div><div class="ttdeci">@ HTTP2_NO_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00325">SocketHTTP2.h:325</a></div></div>
 <div class="ttc" id="agroup__http_html_ga263655582ef6d072edb6e7a94858ec9c"><div class="ttname"><a href="group__http.html#ga263655582ef6d072edb6e7a94858ec9c">http2_send_connection_error</a></div><div class="ttdeci">void http2_send_connection_error(SocketHTTP2_Conn_T conn, SocketHTTP2_ErrorCode error_code)</div><div class="ttdoc">Emit GOAWAY frame with error code and shutdown connection gracefully.</div></div>
 <div class="ttc" id="agroup__http_html_ga95a7f160f9f2452034e009ebdf11a9ba"><div class="ttname"><a href="group__http.html#ga95a7f160f9f2452034e009ebdf11a9ba">http2_frame_validate</a></div><div class="ttdeci">SocketHTTP2_ErrorCode http2_frame_validate(SocketHTTP2_Conn_T conn, const SocketHTTP2_FrameHeader *header)</div><div class="ttdoc">Validate an HTTP/2 frame header against protocol rules.</div></div>
 <div class="ttc" id="agroup__http_html_gae2bcff50ded7d328aed7ec535d9a047b"><div class="ttname"><a href="group__http.html#gae2bcff50ded7d328aed7ec535d9a047b">http2_process_frame</a></div><div class="ttdeci">int http2_process_frame(SocketHTTP2_Conn_T conn, const SocketHTTP2_FrameHeader *header, const unsigned char *payload)</div><div class="ttdoc">Main entry for processing a received HTTP/2 frame.</div></div>
@@ -8430,9 +8439,9 @@ Application must poll connection state or events to detect and react. </dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga263655582ef6d072edb6e7a94858ec9c" title="Emit GOAWAY frame with error code and shutdown connection gracefully.">http2_send_connection_error()</a> for sending local GOAWAY. </dd>
 <dd>
-RFC 9113 Section 6.8 GOAWAY for format, semantics, and <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> code details. </dd>
+RFC 9113 Section 6.8 GOAWAY for format, semantics, and error code details. </dd>
 <dd>
-RFC 9113 Section 9.3 for HTTP/2 <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> handling and connection closure. </dd></dl>
+RFC 9113 Section 9.3 for HTTP/2 error handling and connection closure. </dd></dl>
 
 </div>
 </div>
@@ -8779,11 +8788,11 @@ RFC 9113 Section 8.2 Server Push for usage and client control via settings. </dd
   </table>
   </dd>
 </dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9" title="HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7)">SocketHTTP2_ErrorCode</a> for standard <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> values (e.g., PROTOCOL_ERROR, CANCEL). </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9" title="HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7)">SocketHTTP2_ErrorCode</a> for standard error values (e.g., PROTOCOL_ERROR, CANCEL). </dd>
 <dd>
 RFC 9113 §6.4 RST_STREAM for abort semantics and codes. </dd>
 <dd>
-<a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> GOAWAY for repeated <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> handling. </dd></dl>
+<a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> GOAWAY for repeated error handling. </dd></dl>
 
 </div>
 </div>
@@ -8983,7 +8992,7 @@ RFC 9113 Section 5.1 Stream States: window updates only on open/half-closed stre
 <dd>
 <a class="el" href="group__http2__private.html#aa0dabcce5e9e365c324dd44bf8958d67">SocketHTTP2_Conn::goaway_sent</a> and ::goaway_error_code. </dd>
 <dd>
-RFC 9113 Section 6.8 GOAWAY for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> notification and shutdown sequence. </dd></dl>
+RFC 9113 Section 6.8 GOAWAY for error notification and shutdown sequence. </dd></dl>
 
 </div>
 </div>
@@ -9986,9 +9995,9 @@ docs/HTTP-REFACTOR.md for backoff strategy. </dd></dl>
 <dd>
 docs/METRICS.md for performance considerations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00829">829</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00852">852</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01851">socket_util_hash_djb2_ci_len()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01731">socket_util_hash_uint()</a>.</p>
+<p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01949">socket_util_hash_djb2_ci_len()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01829">socket_util_hash_uint()</a>.</p>
 
 </div>
 </div>
@@ -10106,7 +10115,7 @@ docs/METRICS.md for performance considerations. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - acquires mutex.</dt><dd></dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#a867974712621670ef1dc975b2b396f84">SocketHTTPClient_Config.idle_timeout_ms</a> for timeout config. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga867974712621670ef1dc975b2b396f84">SocketHTTPClient_Config.idle_timeout_ms</a> for timeout config. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068" title="Initiate graceful shutdown.">SocketPool_drain()</a> for pool drain during shutdown. </dd></dl>
 
@@ -10207,9 +10216,8 @@ Socket_close() for low-level close. </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Conditional - safe if no concurrent access to pool; acquire pool-&gt;mutex externally if shared.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md346"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n Conditional - safe if no concurrent access to pool; acquire</dt><dd>pool-&gt;mutex externally if shared.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Typical paired with creation</span></div>
 <div class="line"><a class="code hl_struct" href="group__http.html#structHTTPPool">HTTPPool</a> *pool = <a class="code hl_function" href="group__http.html#ga4c39835a754ccb0d08ac61c1ea7a8c7c">httpclient_pool_new</a>(arena, &amp;config);</div>
 <div class="line"><span class="comment">// ... use pool ...</span></div>
@@ -10219,8 +10227,8 @@ Usage Example</h2>
 <div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
 <div class="ttc" id="agroup__http_html_ga4c39835a754ccb0d08ac61c1ea7a8c7c"><div class="ttname"><a href="group__http.html#ga4c39835a754ccb0d08ac61c1ea7a8c7c">httpclient_pool_new</a></div><div class="ttdeci">HTTPPool * httpclient_pool_new(Arena_T arena, const SocketHTTPClient_Config *config)</div><div class="ttdoc">Create and initialize a new HTTP connection pool.</div></div>
 <div class="ttc" id="agroup__http_html_ga55851750344eadd931492b704bccc9eb"><div class="ttname"><a href="group__http.html#ga55851750344eadd931492b704bccc9eb">httpclient_pool_free</a></div><div class="ttdeci">void httpclient_pool_free(HTTPPool *pool)</div><div class="ttdoc">Dispose of HTTP connection pool and all associated resources.</div></div>
-<div class="ttc" id="agroup__http_html_structHTTPPool"><div class="ttname"><a href="group__http.html#structHTTPPool">HTTPPool</a></div><div class="ttdoc">HTTP connection pool managing reusable connections by host:port key.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient-private_8h_source.html#l00154">SocketHTTPClient-private.h:155</a></div></div>
-</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) time where n = current connection count (closes each); O(1) space</dt><dd></dd></dl>
+<div class="ttc" id="agroup__http_html_structHTTPPool"><div class="ttname"><a href="group__http.html#structHTTPPool">HTTPPool</a></div><div class="ttdoc">HTTP connection pool managing reusable connections by host:port key.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient-private_8h_source.html#l00155">SocketHTTPClient-private.h:156</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) time where n = current connection count (closes each); O(1)</dt><dd>space</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Caller must ensure no threads are using pool entries during free. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Concurrent modifications during free may cause use-after-free or mutex poisoning.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga4c39835a754ccb0d08ac61c1ea7a8c7c" title="Create and initialize a new HTTP connection pool.">httpclient_pool_new()</a> for creation and initialization. </dd>
@@ -10298,7 +10306,7 @@ docs/HTTP-POOL.md for lifecycle management. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - acquires pool mutex.</dt><dd></dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga1e444d31f1cfe79f8cd5d9ff4bb2a1ce" title="Release a pool entry back to available state.">httpclient_pool_release()</a> to <a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> after use. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga1e444d31f1cfe79f8cd5d9ff4bb2a1ce" title="Release a pool entry back to available state.">httpclient_pool_release()</a> to return after use. </dd>
 <dd>
 <a class="el" href="group__http.html#gaeebf46d1a22a041f7f9fa3e8f602e71f" title="Establish connection to target URI, handling proxy and TLS.">httpclient_connect()</a> to connect the entry. </dd>
 <dd>
@@ -10356,9 +10364,8 @@ docs/HTTP-POOL.md for lifecycle management. </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - intended for single-threaded initialization; concurrent calls may race on arena.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md344"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n No - intended for single-threaded initialization; concurrent</dt><dd>calls may race on arena.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line"><a class="code hl_struct" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> cfg;</div>
 <div class="line"><a class="code hl_function" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;cfg);</div>
@@ -10373,14 +10380,13 @@ Usage Example</h2>
 <div class="line"><a class="code hl_function" href="group__http.html#ga55851750344eadd931492b704bccc9eb">httpclient_pool_free</a>(pool);</div>
 <div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
 <div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
-<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
 <div class="ttc" id="agroup__http__client_html_gaad5ad81c60bb230588b5f660a834f40e"><div class="ttname"><a href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a></div><div class="ttdeci">void SocketHTTPClient_config_defaults(SocketHTTPClient_Config *config)</div><div class="ttdoc">Initialize SocketHTTPClient_Config structure with production-safe defaults.</div></div>
-<div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00455">SocketHTTPClient.h:456</a></div></div>
+<div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00486">SocketHTTPClient.h:487</a></div></div>
 <div class="ttc" id="agroup__http_html_ga1e444d31f1cfe79f8cd5d9ff4bb2a1ce"><div class="ttname"><a href="group__http.html#ga1e444d31f1cfe79f8cd5d9ff4bb2a1ce">httpclient_pool_release</a></div><div class="ttdeci">void httpclient_pool_release(HTTPPool *pool, HTTPPoolEntry *entry)</div><div class="ttdoc">Release a pool entry back to available state.</div></div>
 <div class="ttc" id="agroup__http_html_gae26015dc94d7a799afa06e5af4a06028"><div class="ttname"><a href="group__http.html#gae26015dc94d7a799afa06e5af4a06028">httpclient_pool_get</a></div><div class="ttdeci">HTTPPoolEntry * httpclient_pool_get(HTTPPool *pool, const char *host, int port, int is_secure)</div><div class="ttdoc">Get or create a pool entry for the specified host:port and security.</div></div>
-<div class="ttc" id="agroup__http_html_structHTTPPoolEntry"><div class="ttname"><a href="group__http.html#structHTTPPoolEntry">HTTPPoolEntry</a></div><div class="ttdoc">HTTP connection pool entry for reusing connections to the same host:port.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient-private_8h_source.html#l00101">SocketHTTPClient-private.h:102</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md345"></a>
-Configuration Impact</h2>
+<div class="ttc" id="agroup__http_html_structHTTPPoolEntry"><div class="ttname"><a href="group__http.html#structHTTPPoolEntry">HTTPPoolEntry</a></div><div class="ttdoc">HTTP connection pool entry for reusing connections to the same host:port.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient-private_8h_source.html#l00102">SocketHTTPClient-private.h:103</a></div></div>
+</div><!-- fragment --><p>Configuration Impact</p>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Config Field   </th><th class="markdownTableHeadNone">Effect on Pool    </th></tr>
@@ -10391,7 +10397,7 @@ Configuration Impact</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">idle_timeout_ms   </td><td class="markdownTableBodyNone">Used in cleanup_idle()   </td></tr>
 </table>
-<dl class="section user"><dt>Complexity\n O(1) time - constant allocations; O(hash_size) space where hash_size ~ max_total / 8</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) time - constant allocations; O(hash_size) space where</dt><dd>hash_size ~ max_total / 8</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Pool does not own arena; caller manages lifetime. All entries freed on pool_free but not arena_clear. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Ensure config values reasonable to avoid large memory use or DoS; security checks mitigate but validate inputs.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga55851750344eadd931492b704bccc9eb" title="Dispose of HTTP connection pool and all associated resources.">httpclient_pool_free()</a> for disposal and cleanup. </dd>
@@ -10400,7 +10406,7 @@ Configuration Impact</h2>
 <dd>
 <a class="el" href="group__foundation.html#gaa5e5f01fe52f1e55de0e686cf32003aa" title="Validate multiplication of two sizes for potential overflow.">SocketSecurity_check_multiply()</a> for size validation used internally. </dd>
 <dd>
-docs/HTTP-POOL.md for pool design details (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> exists). </dd></dl>
+docs/HTTP-POOL.md for pool design details (if exists). </dd></dl>
 
 </div>
 </div>
@@ -10679,7 +10685,7 @@ docs/HTTP-POOL.md for pool design details (<a class="el" href="group__reconnect_
 <dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75" title="Error codes for HTTP client operations.">SocketHTTPClient_Error</a> for codes. </dd>
 <dd>
-<a class="el" href="group__http__client.html#ad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config.max_retries</a> for policy. </dd>
+<a class="el" href="group__http__client.html#gad8b244df21d9337ed74c872e694d10ba">SocketHTTPClient_Config.max_retries</a> for policy. </dd>
 <dd>
 docs/HTTP-REFACTOR.md for retry logic. </dd></dl>
 
@@ -10864,8 +10870,8 @@ docs/HTTP-REFACTOR.md for status handling. </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - modifies decoder state (table updates); requires external synchronization for shared use.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md303"></a>
+<dl class="section user"><dt>Thread Safety\n No - modifies decoder state (table updates); requires external</dt><dd>synchronization for shared use.</dd></dl>
+<h2><a class="anchor" id="autotoc_md276"></a>
 Basic Usage Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// In HTTP/2 frame processing loop</span></div>
 <div class="line"><a class="code hl_struct" href="group__hpack.html#structSocketHPACK__Header">SocketHPACK_Header</a> headers[128];  <span class="comment">// Reasonable max for most requests</span></div>
@@ -10874,9 +10880,8 @@ Basic Usage Pattern</h2>
 <div class="line"><span class="keywordtype">size_t</span> hplen = frame-&gt;headers.length;</div>
 <div class="line"> </div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
-<div class="line">    <a class="code hl_enumeration" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> res = <a class="code hl_function" href="group__http.html#ga80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a>(decoder, hpdata, hplen,</div>
-<div class="line">                                                       headers, 128, &amp;num_headers, arena);</div>
-<div class="line">    <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a>) {</div>
+<div class="line">    <a class="code hl_enumeration" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> res = <a class="code hl_function" href="group__http.html#ga80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a>(decoder, hpdata,</div>
+<div class="line">hplen, headers, 128, &amp;num_headers, arena); <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a>) {</div>
 <div class="line">        <span class="comment">// Process headers</span></div>
 <div class="line">        <span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; num_headers; ++i) {</div>
 <div class="line">            <span class="keywordflow">if</span> (headers[i].never_index) {</div>
@@ -10888,43 +10893,34 @@ Basic Usage Pattern</h2>
 <div class="line">        <span class="comment">// Buffer more data and retry (rare for complete frames)</span></div>
 <div class="line">    } <span class="keywordflow">else</span> {</div>
 <div class="line">        <span class="comment">// Protocol error; consider GOAWAY or connection close</span></div>
-<div class="line">        <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;HPACK decode failed: %s&quot;</span>, <a class="code hl_function" href="group__http.html#ga09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a>(res));</div>
-<div class="line">        <a class="code hl_define" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(<a class="code hl_variable" href="group__http2__private.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2_ProtocolError</a>);</div>
+<div class="line">        <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;HPACK decode failed: %s&quot;</span>,</div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a>(res)); <a class="code hl_define" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(<a class="code hl_variable" href="group__http2__private.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2_ProtocolError</a>);</div>
 <div class="line">    }</div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a> (<a class="code hl_variable" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a>) {</div>
 <div class="line">    <span class="comment">// Log and handle</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__foundation_html_ga45e87c4d7dee50346b15c7761b0b340a"><div class="ttname"><a href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a></div><div class="ttdeci">#define RAISE(e)</div><div class="ttdoc">Raise an exception with current file and line information.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00594">Except.h:594</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
-<div class="ttc" id="agroup__hpack_html_structSocketHPACK__Header"><div class="ttname"><a href="group__hpack.html#structSocketHPACK__Header">SocketHPACK_Header</a></div><div class="ttdoc">HPACK header field representation.</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00236">SocketHPACK.h:237</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga45e87c4d7dee50346b15c7761b0b340a"><div class="ttname"><a href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a></div><div class="ttdeci">#define RAISE(e)</div><div class="ttdoc">Raise an exception with current file and line information.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00636">Except.h:636</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+<div class="ttc" id="agroup__hpack_html_structSocketHPACK__Header"><div class="ttname"><a href="group__hpack.html#structSocketHPACK__Header">SocketHPACK_Header</a></div><div class="ttdoc">HPACK header field representation.</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00242">SocketHPACK.h:243</a></div></div>
 <div class="ttc" id="agroup__http2__private_html_gac51371422726d9cacab52b583dcd7587"><div class="ttname"><a href="group__http2__private.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2_ProtocolError</a></div><div class="ttdeci">const Except_T SocketHTTP2_ProtocolError</div></div>
 <div class="ttc" id="agroup__http_html_ga09650dc7a68806989192e4cd31b4393b"><div class="ttname"><a href="group__http.html#ga09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a></div><div class="ttdeci">const char * SocketHPACK_result_string(SocketHPACK_Result result)</div><div class="ttdoc">Get error description.</div></div>
-<div class="ttc" id="agroup__http_html_ga623ed321b4ede47b3ac642a001c57ef4"><div class="ttname"><a href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a></div><div class="ttdeci">SocketHPACK_Result</div><div class="ttdoc">HPACK operation result codes.</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00209">SocketHPACK.h:210</a></div></div>
+<div class="ttc" id="agroup__http_html_ga623ed321b4ede47b3ac642a001c57ef4"><div class="ttname"><a href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a></div><div class="ttdeci">SocketHPACK_Result</div><div class="ttdoc">HPACK operation result codes.</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00215">SocketHPACK.h:216</a></div></div>
 <div class="ttc" id="agroup__http_html_ga80929db456c087b62dd8f59935bbd359"><div class="ttname"><a href="group__http.html#ga80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a></div><div class="ttdeci">SocketHPACK_Result SocketHPACK_Decoder_decode(SocketHPACK_Decoder_T decoder, const unsigned char *input, size_t input_len, SocketHPACK_Header *headers, size_t max_headers, size_t *header_count, Arena_T arena)</div><div class="ttdoc">Decode a complete HPACK header block into headers array.</div></div>
 <div class="ttc" id="agroup__http_html_gaaf99a02bd5f3dd4baedcbde590cc5d09"><div class="ttname"><a href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a></div><div class="ttdeci">const Except_T SocketHPACK_Error</div><div class="ttdoc">SocketHPACK_Error - General HPACK operation failure.</div></div>
-<div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35">HPACK_INCOMPLETE</a></div><div class="ttdeci">@ HPACK_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00212">SocketHPACK.h:212</a></div></div>
-<div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a></div><div class="ttdeci">@ HPACK_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00211">SocketHPACK.h:211</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md304"></a>
+<div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35">HPACK_INCOMPLETE</a></div><div class="ttdeci">@ HPACK_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00218">SocketHPACK.h:218</a></div></div>
+<div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a></div><div class="ttdeci">@ HPACK_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00217">SocketHPACK.h:217</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md277"></a>
 Error Codes and Recovery</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
 <th class="markdownTableHeadNone">Code   </th><th class="markdownTableHeadNone">Typical Cause   </th><th class="markdownTableHeadNone">Recommended Action    </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">HPACK_ERROR_INVALID_INDEX   </td><td class="markdownTableBodyNone">Invalid table index   </td><td class="markdownTableBodyNone">Peer error; send RST_STREAM or GOAWAY    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">HPACK_ERROR_HUFFMAN   </td><td class="markdownTableBodyNone">Corrupt Huffman codes/padding   </td><td class="markdownTableBodyNone">Validate peer; close connection    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">HPACK_ERROR_TABLE_SIZE   </td><td class="markdownTableBodyNone">Invalid size update &gt; max   </td><td class="markdownTableBodyNone">Protocol violation; reject update    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">HPACK_ERROR_HEADER_SIZE   </td><td class="markdownTableBodyNone">Single header exceeds limit   </td><td class="markdownTableBodyNone">Increase config or drop oversized    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">HPACK_ERROR_LIST_SIZE   </td><td class="markdownTableBodyNone">Total size exceeds limit   </td><td class="markdownTableBodyNone">Increase config or truncate headers    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">HPACK_ERROR_BOMB   </td><td class="markdownTableBodyNone">Excessive expansion ratio   </td><td class="markdownTableBodyNone">Tighten max_expansion_ratio; ban peer IP   </td></tr>
+<td class="markdownTableBodyNone">HPACK_ERROR_INVALID_INDEX   </td><td class="markdownTableBodyNone">Invalid table index   </td><td class="markdownTableBodyNone">Peer error; send   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md305"></a>
+<p>RST_STREAM or GOAWAY | | HPACK_ERROR_HUFFMAN | Corrupt Huffman codes/padding | Validate peer; close connection | | HPACK_ERROR_TABLE_SIZE | Invalid size update &gt; max | Protocol violation; reject update | | HPACK_ERROR_HEADER_SIZE | Single header exceeds limit | Increase config or drop oversized | | HPACK_ERROR_LIST_SIZE | Total size exceeds limit | Increase config or truncate headers | | HPACK_ERROR_BOMB | Excessive expansion ratio | Tighten max_expansion_ratio; ban peer IP |</p>
+<h2><a class="anchor" id="autotoc_md278"></a>
 Security Considerations</h2>
 <ul>
 <li>Configurable limits prevent DoS via large headers or table updates.</li>
@@ -10946,7 +10942,7 @@ Arena strings lifetime ends with arena clear/dispose; copy if needed longer.</dd
 Do not reuse headers array across calls without clearing or size check. </dd>
 <dd>
 In production, log and monitor error rates for HPACK_ERROR_* codes.</dd></dl>
-<dl class="section user"><dt>Complexity\n O(n + m) where n=input size, m=output headers (linear scan + allocations)</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(n + m) where n=input size, m=output headers (linear scan +</dt><dd>allocations)</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0" title="Create HPACK decoder instance.">SocketHPACK_Decoder_new()</a> for creating secure decoders </dd>
 <dd>
 <a class="el" href="group__hpack.html#structSocketHPACK__DecoderConfig" title="Configuration for HPACK decoder instance.">SocketHPACK_DecoderConfig</a> for limit tuning </dd>
@@ -12009,12 +12005,13 @@ In production, log and monitor error rates for HPACK_ERROR_* codes.</dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - caller must ensure no concurrent access to the table or arena.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md296"></a>
+<dl class="section user"><dt>Thread Safety\n No - caller must ensure no concurrent access to the table or</dt><dd>arena.</dd></dl>
+<h2><a class="anchor" id="autotoc_md269"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
-<div class="line">    SocketHPACK_Table_T table = <a class="code hl_function" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a>(<a class="code hl_define" href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a>, arena);</div>
+<div class="line">    SocketHPACK_Table_T table =</div>
+<div class="line"><a class="code hl_function" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a>(<a class="code hl_define" href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a>, arena);</div>
 <div class="line">    <span class="comment">// ... use table for encoding/decoding ...</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a>) {</div>
 <div class="line">    <span class="comment">// Handle error</span></div>
@@ -12022,11 +12019,11 @@ Usage Example</h2>
 <div class="line">    <a class="code hl_function" href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a>(&amp;table);</div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
-<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
 <div class="ttc" id="agroup__http_html_ga821f51d4c73a41cfb01e75068c83e29e"><div class="ttname"><a href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a></div><div class="ttdeci">void SocketHPACK_Table_free(SocketHPACK_Table_T *table)</div><div class="ttdoc">Dispose of a dynamic table instance and release its resources.</div></div>
 <div class="ttc" id="agroup__http_html_gad2e8414c30906d4f093a213b088edf03"><div class="ttname"><a href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a></div><div class="ttdeci">SocketHPACK_Table_T SocketHPACK_Table_new(size_t max_size, Arena_T arena)</div><div class="ttdoc">Create a new dynamic HPACK table for header compression.</div></div>
-<div class="ttc" id="agroup__http_html_gaf6f02b4c16e51b058621e83fbfb1293a"><div class="ttname"><a href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a></div><div class="ttdeci">#define SOCKETHPACK_DEFAULT_TABLE_SIZE</div><div class="ttdoc">Default dynamic table size in bytes (RFC 7541 default).</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00124">SocketHPACK.h:124</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md297"></a>
+<div class="ttc" id="agroup__http_html_gaf6f02b4c16e51b058621e83fbfb1293a"><div class="ttname"><a href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a></div><div class="ttdeci">#define SOCKETHPACK_DEFAULT_TABLE_SIZE</div><div class="ttdoc">Default dynamic table size in bytes (RFC 7541 default).</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00130">SocketHPACK.h:130</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md270"></a>
 Important Notes</h2>
 <ul>
 <li>Always pair with <a class="el" href="group__http.html#gad2e8414c30906d4f093a213b088edf03" title="Create a new dynamic HPACK table for header compression.">SocketHPACK_Table_new()</a> using the same arena for lifecycle management.</li>
@@ -12188,8 +12185,8 @@ Important Notes</h2>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes - atomic creation; arena must be synchronized if shared across threads.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md294"></a>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic creation; arena must be synchronized if shared</dt><dd>across threads.</dd></dl>
+<h2><a class="anchor" id="autotoc_md267"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line">SocketHPACK_Table_T table = NULL;</div>
@@ -12198,14 +12195,13 @@ Basic Usage</h2>
 <div class="line">    assert(table != NULL);</div>
 <div class="line">    <span class="comment">// Table ready for use in encoders/decoders</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__foundation.html#ga6053a34c90a976ac971313bd5f201fb3">Arena_Failed</a>, <a class="code hl_variable" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a>) {</div>
-<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Failed to create table: %s\n&quot;</span>, Except_message(<a class="code hl_variable" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a>));</div>
-<div class="line">    <span class="keywordflow">return</span> -1;</div>
-<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Failed to create table: %s\n&quot;</span>,</div>
+<div class="line">Except_message(<a class="code hl_variable" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a>)); <span class="keywordflow">return</span> -1; } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="line"><span class="comment">// Use table...</span></div>
 <div class="line"><a class="code hl_function" href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a>(&amp;table);</div>
 <div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga6053a34c90a976ac971313bd5f201fb3"><div class="ttname"><a href="group__foundation.html#ga6053a34c90a976ac971313bd5f201fb3">Arena_Failed</a></div><div class="ttdeci">const Except_T Arena_Failed</div><div class="ttdoc">Exception raised when arena allocation fails.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md295"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md268"></a>
 Advanced Configuration</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -12293,8 +12289,8 @@ docs/HTTP-REFACTOR.md for performance tuning </dd>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - concurrent updates or accesses may lead to inconsistent state or data races.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md298"></a>
+<dl class="section user"><dt>Thread Safety\n No - concurrent updates or accesses may lead to inconsistent</dt><dd>state or data races.</dd></dl>
+<h2><a class="anchor" id="autotoc_md271"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">SocketHPACK_Table_T table = ...;  <span class="comment">// Initialized table</span></div>
 <div class="line"> </div>
@@ -12302,14 +12298,15 @@ Usage Example</h2>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_function" href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a>(table, 16384);  <span class="comment">// 16KB</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a>) {</div>
-<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;Failed to update table size: %s&quot;</span>, <a class="code hl_function" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a>());</div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;Failed to update table size: %s&quot;</span>,</div>
+<div class="line"><a class="code hl_function" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a>());</div>
 <div class="line">}</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Reduce size, evicting if necessary</span></div>
 <div class="line"><a class="code hl_function" href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a>(table, 2048);   <span class="comment">// 2KB</span></div>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
 <div class="ttc" id="agroup__http_html_gaa6f9521e46c52adbe47ecb48c2abc307"><div class="ttname"><a href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a></div><div class="ttdeci">void SocketHPACK_Table_set_max_size(SocketHPACK_Table_T table, size_t max_size)</div><div class="ttdoc">Update the maximum size of the dynamic table.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md299"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md272"></a>
 Eviction Behavior</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -12321,7 +12318,7 @@ Eviction Behavior</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">new_size == 0   </td><td class="markdownTableBodyNone">Clear entire table   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md300"></a>
+<h2><a class="anchor" id="autotoc_md273"></a>
 Query After Update</h2>
 <p>After calling, verify with:</p><ul>
 <li>SocketHPACK_Table_size(table) &lt;= max_size</li>
@@ -12331,7 +12328,7 @@ Query After Update</h2>
 <dd>
 Synchronized between encoder/decoder via SETTINGS frames in HTTP/2.</dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Frequent size changes can cause unnecessary evictions and performance overhead.</dd></dl>
-<dl class="section user"><dt>Complexity\n O(n) worst case - linear in number of entries if full eviction needed</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) worst case - linear in number of entries if full eviction</dt><dd>needed </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) average - if no or few evictions</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gad2e8414c30906d4f093a213b088edf03" title="Create a new dynamic HPACK table for header compression.">SocketHPACK_Table_new()</a> for initial configuration </dd>
 <dd>
@@ -12380,20 +12377,21 @@ Synchronized between encoder/decoder via SETTINGS frames in HTTP/2.</dd></dl>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Current table size in bytes (sum of name/value lengths + SOCKETHPACK_ENTRY_OVERHEAD * entry count).</dd></dl>
-<dl class="section user"><dt>Thread Safety\n No - concurrent table modifications (add/evict) may cause inconsistent return values.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md301"></a>
+<dl class="section user"><dt>Thread Safety\n No - concurrent table modifications (add/evict) may cause</dt><dd>inconsistent return values.</dd></dl>
+<h2><a class="anchor" id="autotoc_md274"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">SocketHPACK_Table_T table = <a class="code hl_function" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a>(4096, arena);</div>
 <div class="line"><span class="keywordtype">size_t</span> size = <a class="code hl_function" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a>(table);  <span class="comment">// Initially 0</span></div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// After adding entries</span></div>
 <div class="line"><a class="code hl_function" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb">SocketHPACK_Table_add</a>(table, <span class="stringliteral">&quot;:method&quot;</span>, 7, <span class="stringliteral">&quot;GET&quot;</span>, 3);</div>
-<div class="line">size = <a class="code hl_function" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a>(table);  <span class="comment">// ~42 bytes (value + name + overhead)</span></div>
+<div class="line">size = <a class="code hl_function" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a>(table);  <span class="comment">// ~42 bytes (value + name +</span></div>
+<div class="line">overhead)</div>
 <div class="line"> </div>
 <div class="line">printf(<span class="stringliteral">&quot;Table size: %zu bytes\n&quot;</span>, size);</div>
 <div class="ttc" id="agroup__http_html_ga43f69e69234e33e6fba377e1eeb53d89"><div class="ttname"><a href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a></div><div class="ttdeci">size_t SocketHPACK_Table_size(SocketHPACK_Table_T table)</div><div class="ttdoc">Query the current size of the dynamic table in bytes.</div></div>
 <div class="ttc" id="agroup__http_html_gad46ef6fbf9994cc55c982d507ce473eb"><div class="ttname"><a href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb">SocketHPACK_Table_add</a></div><div class="ttdeci">SocketHPACK_Result SocketHPACK_Table_add(SocketHPACK_Table_T table, const char *name, size_t name_len, const char *value, size_t value_len)</div><div class="ttdoc">Add entry to dynamic table.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md302"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md275"></a>
 Size Calculation</h2>
 <p>Total size = \sum (name_len + value_len) + (count * SOCKETHPACK_ENTRY_OVERHEAD)</p>
 <table class="markdownTable">
@@ -13865,7 +13863,7 @@ strncasecmp(3) for implementation details. </dd>
 <dd>
 <a class="el" href="group__http.html#ga14656f39c3a134218da1afd58407bda1" title="Get first header value (case-insensitive).">SocketHTTP_Headers_get()</a> and <a class="el" href="group__http.html#ga894520d65dc4573481c9a4028f73ae11" title="Check if header exists.">SocketHTTP_Headers_has()</a> for usage. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00150">150</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00161">161</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -14379,7 +14377,7 @@ strncasecmp(3) for implementation details. </dd>
 <dd>
 <a class="el" href="group__http.html#ga0d205bd6286796dbdb3413766a6f1a50" title="Get port with default fallback.">SocketHTTP_URI_get_port()</a> for port resolution with defaults. </dd>
 <dd>
-<a class="el" href="group__http.html#gaf635e39c16e4337fd63e0adf72e2a255" title="Get error description.">SocketHTTP_URI_result_string()</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> descriptions. </dd></dl>
+<a class="el" href="group__http.html#gaf635e39c16e4337fd63e0adf72e2a255" title="Get error description.">SocketHTTP_URI_result_string()</a> for error descriptions. </dd></dl>
 
 </div>
 </div>
@@ -14551,7 +14549,7 @@ strncasecmp(3) for implementation details. </dd>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTPServer__Config" title="HTTP server configuration structure.">SocketHTTPServer_Config</a> for field details and ranges. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -14610,7 +14608,7 @@ Stats preserved; errors during drain logged/incremented.</dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958" title="Block until graceful drain completes or times out.">SocketHTTPServer_drain_wait()</a> blocking convenience. </dd>
 <dd>
-<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> to query current <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd>
+<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> to query current state. </dd>
 <dd>
 <a class="el" href="group__http.html#gaffa4a9003d4696ab088d906cba07e39e" title="Register callback for graceful drain completion notification.">SocketHTTPServer_set_drain_callback()</a> for completion notification. </dd>
 <dd>
@@ -14669,7 +14667,7 @@ Callback invoked on 0 or -1 transition.</dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958" title="Block until graceful drain completes or times out.">SocketHTTPServer_drain_wait()</a> blocking wrapper using this. </dd>
 <dd>
-<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> alternative <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> query. </dd>
+<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> alternative state query. </dd>
 <dd>
 <a class="el" href="group__http.html#a0ee2c4f575071ebc2d64b70fca183ce4" title="Current number of active client connections.">SocketHTTPServer_Stats.active_connections</a> cross-check. </dd>
 <dd>
@@ -14882,7 +14880,7 @@ When using external poll, call server process functions manually or bypass. </dd
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - concurrent access to server undefined; use mutex if multi-threaded.</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - concurrent access to server undefined; use mutex if</dt><dd>multi-threaded.</dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Does not wait for in-flight requests; data loss possible if called mid-process. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>TLS contexts are not freed (referenced only). </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958" title="Block until graceful drain completes or times out.">SocketHTTPServer_drain_wait()</a> for graceful shutdown before free. </dd>
@@ -14891,7 +14889,7 @@ When using external poll, call server process functions manually or bypass. </dd
 <dd>
 <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> for memory management details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -14936,7 +14934,7 @@ When using external poll, call server process functions manually or bypass. </dd
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes - but concurrent calls may contend on system resources (e.g., ports).</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - but concurrent calls may contend on system resources</dt><dd>(e.g., ports).</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Config TLS context is referenced, not owned; manage its lifetime separately. </dd>
 <dd>
 Server uses internal SocketPool for connection management if limits allow. </dd></dl>
@@ -14948,7 +14946,7 @@ Server uses internal SocketPool for connection management if limits allow. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html">Connection Management</a> for pooling details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -14962,7 +14960,7 @@ Server uses internal SocketPool for connection management if limits allow. </dd>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">SocketPoll_T SocketHTTPServer_poll </td>
+          <td class="memname"><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> SocketHTTPServer_poll </td>
           <td>(</td>
           <td class="paramtype">SocketHTTPServer_T&#160;</td>
           <td class="paramname"><em>server</em></td><td>)</td>
@@ -14976,7 +14974,7 @@ Server uses internal SocketPool for connection management if limits allow. </dd>
 </table>
 </div><div class="memdoc">
 
-<p>Access the internal SocketPoll_T instance for custom event handling. </p>
+<p>Access the internal <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> instance for custom event handling. </p>
 <p>Provides direct access to server's poll multiplexer for advanced use cases:</p><ul>
 <li>Add custom fds/timers to the same poll loop.</li>
 <li>Inspect registered sockets or events.</li>
@@ -14989,7 +14987,7 @@ Server uses internal SocketPool for connection management if limits allow. </dd>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Pointer to internal SocketPoll_T, or NULL if server invalid/not started.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Pointer to internal <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a>, or NULL if server invalid/not started.</dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes - returns const view, but modifications not thread-safe.</dt><dd></dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Adding/removing affects server; use cautiously to avoid races. </dd>
 <dd>
@@ -15078,7 +15076,7 @@ Metrics updated internally; query with <a class="el" href="group__http.html#ga46
 <dd>
 <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> for timing consistency. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -15117,7 +15115,7 @@ Metrics updated internally; query with <a class="el" href="group__http.html#ga46
 <dl class="section return"><dt>Returns</dt><dd>Arena_T instance owned by connection/request (do not dispose).</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917" title="Allocate raw memory block from the specified arena.">Arena_alloc()</a>, <a class="el" href="group__foundation.html#ga3b920b3eed0306dc5afb36934955f6a2" title="Allocate and zero-initialize a block of memory elements from the arena.">Arena_calloc()</a> for allocation. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga0af0c54c1c64ff88ad43aadd48ce3ebe" title="Reset the arena by invalidating all current allocations while preserving the arena for reuse.">Arena_clear()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> needing reset mid-request (rare). </dd>
+<a class="el" href="group__foundation.html#ga0af0c54c1c64ff88ad43aadd48ce3ebe" title="Reset the arena by invalidating all current allocations while preserving the arena for reuse.">Arena_clear()</a> if needing reset mid-request (rare). </dd>
 <dd>
 <a class="el" href="group__foundation.html">Foundation Group</a> for arena details. </dd>
 <dd>
@@ -15223,7 +15221,7 @@ RFC 9112 Section 7.1 for chunked encoding spec. </dd>
 <dd>
 <a class="el" href="group__http.html#ga5fe7e9577e2d58033ef13c972e815975" title="Enable streaming body callback.">SocketHTTPServer_Request_body_stream()</a> to enable chunked processing. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7" title="Securely erase all data by zeroing memory contents.">SocketBuf_secureclear()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> handling sensitive data post-use. </dd></dl>
+<a class="el" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7" title="Securely erase all data by zeroing memory contents.">SocketBuf_secureclear()</a> if handling sensitive data post-use. </dd></dl>
 
 <p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00047">request_handler()</a>.</p>
 
@@ -15816,7 +15814,7 @@ For streaming body, body not available; use callback instead. </dd></dl>
 False for fixed-length bodies or GET/HEAD (no body). </dd>
 <dd>
 In validator/handler, before body read; remains constant.</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga27b60a6145a8b425f588bc428946450e" title="Retrieve the expected total length of the request body.">SocketHTTPServer_Request_body_expected()</a> for length <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> not chunked. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga27b60a6145a8b425f588bc428946450e" title="Retrieve the expected total length of the request body.">SocketHTTPServer_Request_body_expected()</a> for length if not chunked. </dd>
 <dd>
 <a class="el" href="group__http.html#ga5fe7e9577e2d58033ef13c972e815975" title="Enable streaming body callback.">SocketHTTPServer_Request_body_stream()</a> compatible with chunked. </dd>
 <dd>
@@ -16520,7 +16518,7 @@ For dynamic routing, implement path/method logic inside handler. </dd></dl>
 <dd>
 <a class="el" href="group__http.html">HTTP Group</a> for request/response types. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -16717,7 +16715,7 @@ SocketConfig for global socket options affecting behavior. </dd>
 <dd>
 <a class="el" href="group__core__io.html">Core I/O Group</a> for underlying socket primitives. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -16763,11 +16761,11 @@ During DRAINING, process()/poll continue until complete.</dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga20dcaa755268733bbeae04c26f6ca6bb" title="Initiate graceful server shutdown by draining active connections.">SocketHTTPServer_drain()</a> triggers DRAINING. </dd>
 <dd>
-<a class="el" href="group__http.html#gaf332d06f999890e277dc83777d669f00" title="Stop accepting new connections while allowing existing ones to complete.">SocketHTTPServer_stop()</a> may lead to DRAINING <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> connections active. </dd>
+<a class="el" href="group__http.html#gaf332d06f999890e277dc83777d669f00" title="Stop accepting new connections while allowing existing ones to complete.">SocketHTTPServer_stop()</a> may lead to DRAINING if connections active. </dd>
 <dd>
 <a class="el" href="group__http.html#gacf5856e5b1728e44bbb68ef2e4637318" title="Dispose of HTTP server instance and release all resources.">SocketHTTPServer_free()</a> finalizes to implicit STOPPED. </dd>
 <dd>
-docs/SIGNALS.md for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> in signal handlers.</dd></dl>
+docs/SIGNALS.md for state in signal handlers.</dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes - atomic enum read, no side effects.</dt><dd></dd></dl>
 
 </div>
@@ -16912,9 +16910,9 @@ For graceful shutdown with timeout, prefer <a class="el" href="group__http.html#
 <dd>
 <a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0" title="Query the current lifecycle state of the server.">SocketHTTPServer_state()</a> to check status. </dd>
 <dd>
-<a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f" title="Deregister a socket from the poll&#39;s event monitoring set.">SocketPoll_del()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> using external poll (server handles internally). </dd></dl>
+<a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f" title="Deregister a socket from the poll&#39;s event monitoring set.">SocketPoll_del()</a> if using external poll (server handles internally). </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -16945,7 +16943,7 @@ For graceful shutdown with timeout, prefer <a class="el" href="group__http.html#
 <dd>
 <a class="el" href="group__http.html#gae2bcff50ded7d328aed7ec535d9a047b" title="Main entry for processing a received HTTP/2 frame.">http2_process_frame()</a> for preface validation during handshake. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00062">62</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2-private_8h_source.html#l00065">65</a> of file <a class="el" href="SocketHTTP2-private_8h_source.html">SocketHTTP2-private.h</a>.</p>
 
 </div>
 </div>
@@ -17063,7 +17061,7 @@ SocketHTTP1 chunk size parsing in HTTP/1.1. </dd></dl>
 <li>Exceeding max name/value size limits</li>
 <li>Header count exceeding configured maximum</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb" title="Add header (null-terminated strings).">SocketHTTP_Headers_add()</a> returns <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> but may raise in future strict modes. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb" title="Add header (null-terminated strings).">SocketHTTP_Headers_add()</a> returns error but may raise in future strict modes. </dd>
 <dd>
 <a class="el" href="group__http.html#ga9cd7416c4d2d906c57303c814cfffa05" title="Validate header name.">SocketHTTP_header_name_valid()</a> and <a class="el" href="group__http.html#gafcd22b68210c4a6e922bbb88f34caacd" title="Validate header value.">SocketHTTP_header_value_valid()</a> checks. </dd></dl>
 
@@ -17211,7 +17209,7 @@ RFC 3986 §2.3 for unreserved set definition. </dd></dl>
 <p>Exception raised when binding to address/port fails (EADDRINUSE, EADDRNOTAVAIL, etc.). </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gafa06caca93c0fac3e52f7749abe03be9" title="Bind to address/port and start listening for incoming connections.">SocketHTTPServer_start()</a> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>
@@ -17238,7 +17236,7 @@ RFC 3986 §2.3 for unreserved set definition. </dd></dl>
 <p>Exception raised on general server failures such as allocation errors or internal state corruption. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaea4fe38f3115faefc4bbc7f28e6b7362" title="Allocate and initialize a new HTTP server instance.">SocketHTTPServer_new()</a>, <a class="el" href="group__http.html#gacf5856e5b1728e44bbb68ef2e4637318" title="Dispose of HTTP server instance and release all resources.">SocketHTTPServer_free()</a>, <a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985" title="Main event loop step: poll, accept, parse, handle requests.">SocketHTTPServer_process()</a> </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00162">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__server_8c_source.html#l00167">main()</a>.</p>
 
 </div>
 </div>

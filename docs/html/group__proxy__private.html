@@ -374,7 +374,7 @@ Functions</h2></td></tr>
 <dd>
 <a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> for HTTP CONNECT integration. </dd>
 <dd>
-<a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">SocketTLS.h</a> for optional HTTPS <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> support (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> SOCKET_HAS_TLS). </dd>
+<a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">SocketTLS.h</a> for optional HTTPS <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> support (#if SOCKET_HAS_TLS). </dd>
 <dd>
 <a class="el" href="group__core__io.html">Core I/O Modules</a> for foundational socket operations. </dd>
 <dd>
@@ -442,7 +442,7 @@ Arena_T::arena for memory management. </dd>
 <dd>
 docs/MEMORY_MANAGEMENT.md for <a class="el" href="group__proxy__private.html#a083369e24cff29efd9dc20163e541a16">arena</a> usage. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00552">552</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00611">611</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketProxy_Conn_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -530,7 +530,7 @@ password</td>
 <p>Password (arena copy, may be NULL) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a84361c1bf1c9efec61171b729effa6e1" name="a84361c1bf1c9efec61171b729effa6e1"></a>SocketPoll_T</td>
+<a id="a84361c1bf1c9efec61171b729effa6e1" name="a84361c1bf1c9efec61171b729effa6e1"></a><a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></td>
 <td class="fieldname">
 poll</td>
 <td class="fielddoc">
@@ -747,7 +747,7 @@ username</td>
 <dd>
 <a class="el" href="group__proxy__private.html#gae79febff78c4084b69989b8b3099ae33" title="Raise formatted Proxy exception using module infrastructure.">RAISE_PROXY_ERROR</a> usage example. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00469">469</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00520">520</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -791,7 +791,7 @@ username</td>
 <dd>
 <a class="el" href="SocketUtil_8h.html#a1feea47474a6b6e939c442cdd7c42fdb" title="SOCKET_ERROR_MSG - Format error message without errno.">SOCKET_ERROR_MSG</a> base. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00484">484</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00535">535</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -832,11 +832,11 @@ Thread-safe via local buf. </dd></dl>
 <dd>
 <a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b" title="SOCKET_RAISE_MODULE_ERROR - Raise module-specific exception.">SOCKET_RAISE_MODULE_ERROR</a> base. </dd>
 <dd>
-<a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> section. </dd>
+<a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> error section. </dd>
 <dd>
 docs/ERROR_HANDLING.md patterns. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00502">502</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00553">553</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -884,7 +884,7 @@ docs/ERROR_HANDLING.md for TRY/EXCEPT usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html">Utilities</a> for SocketLog, SocketError. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00443">443</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00494">494</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -910,7 +910,7 @@ SocketBuf_T::recvbuf for <a class="el" href="graceful__shutdown_8c.html#a0ddf122
 <dd>
 <a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> for header size limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00121">121</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00132">132</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -934,7 +934,7 @@ SocketBuf_T::recvbuf for <a class="el" href="graceful__shutdown_8c.html#a0ddf122
 <dd>
 <a class="el" href="group__proxy.html#structSocketProxy__Config" title="Configuration structure for proxy connections.">SocketProxy_Config</a> timeouts for overrides. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00191">191</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00205">205</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -959,7 +959,8 @@ socketproxy_parse_* functions for URL limits. </dd>
 <dd>
 <a class="el" href="group__core__io.html#ga89a14153269ffab409e6ebfaf6deebdd" title="Get current monotonic time in milliseconds.">socketproxy_get_time_ms()</a> for time conversions.</dd></dl>
 <p>Size of per-connection error message buffer.</p>
-<p>Value: 256 bytes - sufficient for errno strings + context (e.g., "SOCKS5 auth failed on fd=5"). Used in <a class="el" href="group__proxy__private.html#aaaed59222364e1228661678468b42283">SocketProxy_Conn_T::error_buf</a> for socketproxy_set_error formatting. Thread-local fallback via SocketUtil if needed, but instance-specific here.</p>
+<p>Value: 256 bytes - sufficient for errno strings + context (e.g., "SOCKS5
+auth failed on fd=5"). Used in <a class="el" href="group__proxy__private.html#aaaed59222364e1228661678468b42283">SocketProxy_Conn_T::error_buf</a> for socketproxy_set_error formatting. Thread-local fallback via SocketUtil if needed, but instance-specific here.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#aaaed59222364e1228661678468b42283">SocketProxy_Conn_T::error_buf</a> </dd>
 <dd>
 <a class="el" href="group__proxy__private.html#gabe33454412b97fd3d344b2bbfd042b2d" title="Error formatting macros delegating to SocketUtil infrastructure.">PROXY_ERROR_FMT()</a>, <a class="el" href="group__proxy__private.html#ga1e37b31329a2b2041a65e255cc2a77d8" title="Format proxy error without errno details.">PROXY_ERROR_MSG()</a> </dd>
@@ -968,7 +969,7 @@ socketproxy_parse_* functions for URL limits. </dd>
 <dd>
 <a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> "Error Handling" for base buffer. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00104">104</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00114">114</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -992,7 +993,7 @@ socketproxy_parse_* functions for URL limits. </dd>
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a>#url-format for supported formats. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00136">136</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00148">148</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1014,7 +1015,7 @@ socketproxy_parse_* functions for URL limits. </dd>
 <dd>
 SocketTimeout <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a> in <a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00164">164</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00178">178</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1038,7 +1039,7 @@ CLOCK_MONOTONIC for source. </dd>
 <dd>
 <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> related util. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00177">177</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00191">191</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1062,7 +1063,7 @@ CLOCK_MONOTONIC for source. </dd>
 <dd>
 <a class="el" href="group__foundation.html">Arena module</a> for safe memory. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00152">152</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00165">165</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1081,7 +1082,7 @@ CLOCK_MONOTONIC for source. </dd>
 <p>SOCKS4 CONNECT command code.Value: 1 CD field in request for TCP connect. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092" title="Internal functions for SOCKS4 and SOCKS4a protocol handling.">proxy_socks4_send_connect()</a>, <a class="el" href="group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03" title="Builds SOCKS4a CONNECT request using domain name (unofficial extension).">proxy_socks4a_send_connect()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00231">231</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00246">246</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1100,7 +1101,7 @@ CLOCK_MONOTONIC for source. </dd>
 <p>SOCKS4 reply codes for connection result.90: Granted, 91: Rejected, 92: No identd, 93: Ident mismatch. Mapped in <a class="el" href="group__proxy__private.html#ga2f17a3a05ffed99bade9280577b4bb25" title="Maps SOCKS4 reply codes to SocketProxy_Result for error consistency.">proxy_socks4_reply_to_result()</a>. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga82d72fd16b045c8660210f9ad861a879" title="Parses SOCKS4/SOCKS4a response to check connection result.">proxy_socks4_recv_response()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00239">239</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00254">254</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1116,7 +1117,7 @@ CLOCK_MONOTONIC for source. </dd>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00242">242</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00257">257</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1132,7 +1133,7 @@ CLOCK_MONOTONIC for source. </dd>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00241">241</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00256">256</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1148,7 +1149,7 @@ CLOCK_MONOTONIC for source. </dd>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00240">240</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00255">255</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1176,13 +1177,13 @@ RFC 1928 Appendix A for SOCKS4 informational. </dd>
 <dd>
 proxy_socks5_* functions for usage. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> mapping. </dd>
+<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for error mapping. </dd>
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a> for SOCKS flow.</dd></dl>
 <p>SOCKS4 protocol version number.</p>
 <p>Value: 4 Used in request header VN field. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092" title="Internal functions for SOCKS4 and SOCKS4a protocol handling.">proxy_socks4_send_connect()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00223">223</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00238">238</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1198,7 +1199,7 @@ proxy_socks5_* functions for usage. </dd>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00290">290</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00305">305</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1219,7 +1220,7 @@ proxy_socks5_* functions for usage. </dd>
 <dd>
 SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00289">289</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00304">304</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1235,7 +1236,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00291">291</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00306">306</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1251,7 +1252,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00268">268</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00283">283</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1267,7 +1268,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00270">270</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00285">285</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1288,7 +1289,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <dd>
 <a class="el" href="group__proxy__private.html#af601d7eeeb78ef4fe2c694ad20ee6f44">SocketProxy_Conn_T::socks5_auth_method</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00267">267</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00282">282</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1305,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00269">269</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00284">284</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1321,7 +1322,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 </div><div class="memdoc">
 <p>VER + STATUS </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00327">327</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00343">343</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1340,7 +1341,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>SOCKS5 subnegotiation auth version (RFC 1929).Value: 1 VER in username/password auth request/response. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#gaf0c10ebe07ba3206fd7e5e6725960e9a" title="Constructs SOCKS5 username/password subnegotiation request (RFC 1929).">proxy_socks5_send_auth()</a>, <a class="el" href="group__proxy__private.html#ga54e8297c18caa6bb448daa0d1dceafeb" title="Parses SOCKS5 authentication response for username/password method (RFC 1929).">proxy_socks5_recv_auth()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00258">258</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00273">273</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1356,7 +1357,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00279">279</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00294">294</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1375,7 +1376,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>SOCKS5 command codes.0x01: Connect, 0x02: Bind, 0x03: UDP associate. Only CONNECT used for tunneling. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#gad730a252b44728ae21660f2d168b66e3" title="Builds SOCKS5 CONNECT command to establish tunnel to target (RFC 1928).">proxy_socks5_send_connect()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00278">278</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00293">293</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1391,7 +1392,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00280">280</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00295">295</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1408,7 +1409,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 </div><div class="memdoc">
 <p>VER + REP + RSV + ATYP </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00328">328</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00344">344</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1427,7 +1428,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>SOCKS5 CONNECT response total sizes for common address types.IPv4: Header + 4 + 2 = 10 bytes, IPv6: Header + 16 + 2 = 22 bytes. Used to validate full response recv. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> for parsing. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00336">336</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00352">352</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1443,7 +1444,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00338">338</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00354">354</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1462,7 +1463,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>Fixed address and port sizes for SOCKS5 messages (RFC 1928 Sec 4).IPv4: 4 bytes, IPv6: 16 bytes, Port: 2 bytes (big-endian). Used for buffer allocation and parsing bounds. </p>
 <dl class="section see"><dt>See also</dt><dd>SOCKS5_ATYP_* for types. IPv4 address bytes </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00316">316</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00331">331</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1479,7 +1480,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 </div><div class="memdoc">
 <p>IPv6 address bytes </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00317">317</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00332">332</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1498,7 +1499,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>SOCKS5 response message size constants.Method response: 2 bytes, Auth response: 2 bytes, Connect header: 4 bytes (VER+REP+RSV+ATYP). Used for expected recv lengths in state machine. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga3695eb1c73d0f31fe1ac6d51f677ab73" title="Parses SOCKS5 server method selection response after greeting (RFC 1928).">proxy_socks5_recv_method()</a>, <a class="el" href="group__proxy__private.html#ga54e8297c18caa6bb448daa0d1dceafeb" title="Parses SOCKS5 authentication response for username/password method (RFC 1929).">proxy_socks5_recv_auth()</a>, <a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> VER + METHOD </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00326">326</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00342">342</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1515,7 +1516,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 </div><div class="memdoc">
 <p>Port bytes (network order) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00318">318</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00333">333</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1531,7 +1532,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00308">308</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00323">323</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1547,7 +1548,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00307">307</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00322">322</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1563,7 +1564,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00305">305</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00320">320</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1579,7 +1580,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00301">301</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00316">316</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1595,7 +1596,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00304">304</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00319">319</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1611,7 +1612,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00303">303</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00318">318</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1627,7 +1628,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00302">302</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00317">317</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1648,7 +1649,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <dd>
 <a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00300">300</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00315">315</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1664,7 +1665,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00306">306</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00321">321</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1683,7 +1684,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>SOCKS5 protocol version number.Value: 5 VER field in all messages. </p>
 <dl class="section see"><dt>See also</dt><dd>proxy_socks5_* functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00250">250</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00265">265</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1726,9 +1727,9 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <dd>
 <a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> example. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for <a class="el" href="group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6">return</a> mapping. </dd></dl>
+<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for return mapping. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00712">712</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00776">776</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1770,7 +1771,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a> for protocol flows. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00688">688</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00750">750</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1790,13 +1791,13 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 <p>Protocol-specific sub-state for proxy handshakes. </p>
 <p>Enumerates detailed states for SOCKS4/5 and HTTP CONNECT protocols during the proxy negotiation process. Used in state machine to dispatch send/recv handlers and track multi-step negotiation progress.</p>
 <p>Transitions driven by <a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> after successful I/O operations. Each state corresponds to a specific protocol phase, enabling modular handlers.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf9f1c72bfcb303aa9ee5dae6d903b9be" title="States in the proxy connection state machine.">SocketProxy_State</a> for high-level connection <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> (e.g., HANDSHAKE_SEND/RECV). </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf9f1c72bfcb303aa9ee5dae6d903b9be" title="States in the proxy connection state machine.">SocketProxy_State</a> for high-level connection state (e.g., HANDSHAKE_SEND/RECV). </dd>
 <dd>
 <a class="el" href="group__proxy__private.html#a813513bee1ea5117ffea491c85edcd81">SocketProxy_Conn_T::proto_state</a> for field usage in context. </dd>
 <dd>
 <a class="el" href="group__proxy__private.html#ga7b70e48528fb67371dbcc45e7b6ce5c1" title="Function type for protocol-specific request building.">ProxySendFunc</a>, <a class="el" href="group__proxy__private.html#ga502253ce06f453baedba160037571812" title="Function type for protocol-specific response parsing.">ProxyRecvFunc</a> for state-specific protocol handlers. </dd>
 <dd>
-<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> machine advancement logic. </dd>
+<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> for state machine advancement logic. </dd>
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a> for protocol flow diagrams. </dd></dl>
 <table class="fieldtable">
@@ -1826,7 +1827,7 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00364">364</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketProxy-private_8h_source.html#l00382">382</a> of file <a class="el" href="SocketProxy-private_8h_source.html">SocketProxy-private.h</a>.</p>
 
 </div>
 </div>
@@ -1890,33 +1891,33 @@ SocketProxy_SOCKS5H for domain resolution at <a class="el" href="group__proxy.ht
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Stateful parser in conn.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md604"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Incremental parse in recv loop</span></div>
 <div class="line"><span class="keywordflow">while</span> (<a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(...) ) {</div>
 <div class="line">    <span class="keywordtype">int</span> bytes = <a class="code hl_function" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd">socketproxy_do_recv</a>(conn);</div>
 <div class="line">    <span class="keywordflow">if</span> (bytes &gt; 0) {</div>
 <div class="line">        <span class="keywordtype">size_t</span> consumed;</div>
-<div class="line">        <a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga56bdb1756a98a60198184587c4902265">proxy_http_recv_response</a>(conn);  <span class="comment">// Internally calls parser_execute</span></div>
-<div class="line">        <span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
+<div class="line">        <a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga56bdb1756a98a60198184587c4902265">proxy_http_recv_response</a>(conn);  <span class="comment">//</span></div>
+<div class="line">Internally calls parser_execute <span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
 <div class="line">            <span class="comment">// Tunnel up: discard parser, use raw socket I/O</span></div>
 <div class="line">            conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd">PROTO_STATE_DONE</a>;</div>
 <div class="line">        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a>) {</div>
 <div class="line">            <span class="keywordflow">continue</span>;  <span class="comment">// Wait for more data</span></div>
 <div class="line">        } <span class="keywordflow">else</span> {</div>
 <div class="line">            <span class="comment">// Error response, e.g., 407 proxy auth required</span></div>
-<div class="line">            <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, r, <span class="stringliteral">&quot;HTTP proxy refused: %d&quot;</span>, status);</div>
+<div class="line">            <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, r, <span class="stringliteral">&quot;HTTP proxy refused: %d&quot;</span>,</div>
+<div class="line">status);</div>
 <div class="line">        }</div>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__core__io_html_gab87758fdfc1cbbf3af9740989da246fd"><div class="ttname"><a href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd">socketproxy_do_recv</a></div><div class="ttdeci">int socketproxy_do_recv(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Receive protocol data into conn-&gt;recv_buf.</div></div>
-<div class="ttc" id="agroup__core__io_html_gae980e6a437316380a792464ce32a595e"><div class="ttname"><a href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a></div><div class="ttdeci">SocketProxy_Result</div><div class="ttdoc">Result codes for proxy operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00277">SocketProxy.h:278</a></div></div>
-<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a></div><div class="ttdeci">@ PROXY_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00279">SocketProxy.h:279</a></div></div>
-<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a></div><div class="ttdeci">@ PROXY_IN_PROGRESS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00280">SocketProxy.h:280</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gae980e6a437316380a792464ce32a595e"><div class="ttname"><a href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a></div><div class="ttdeci">SocketProxy_Result</div><div class="ttdoc">Result codes for proxy operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00287">SocketProxy.h:288</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a></div><div class="ttdeci">@ PROXY_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00289">SocketProxy.h:289</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eac8e28cc62a3365a1732c669edf48ede1">PROXY_IN_PROGRESS</a></div><div class="ttdeci">@ PROXY_IN_PROGRESS</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00290">SocketProxy.h:290</a></div></div>
 <div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga56bdb1756a98a60198184587c4902265"><div class="ttname"><a href="group__proxy__private.html#ga56bdb1756a98a60198184587c4902265">proxy_http_recv_response</a></div><div class="ttdeci">SocketProxy_Result proxy_http_recv_response(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Parses HTTP response to CONNECT request for tunnel confirmation.</div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga590a8e0ece3a282a17f59778b6f9d757"><div class="ttname"><a href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a></div><div class="ttdeci">void socketproxy_set_error(struct SocketProxy_Conn_T *conn, SocketProxy_Result result, const char *fmt,...)</div><div class="ttdoc">Sets error condition in connection context with formatted message.</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd">PROTO_STATE_DONE</a></div><div class="ttdeci">@ PROTO_STATE_DONE</div><div class="ttdoc">Handshake protocol phase complete. Success or failure reflected in conn-&gt;result and high-level state....</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00406">SocketProxy-private.h:403</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd">PROTO_STATE_DONE</a></div><div class="ttdeci">@ PROTO_STATE_DONE</div><div class="ttdoc">Handshake protocol phase complete. Success or failure reflected in conn-&gt;result and high-level state....</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00456">SocketProxy-private.h:451</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>After success, may need to handle optional 100 Continue or pipelining (rare). </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Proxies may require additional auth headers; use extra_headers for Proxy-Authenticate. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(b) bytes parsed - linear in response size.</dt><dd></dd></dl>
@@ -1965,10 +1966,10 @@ RFC 7230 Section 5.3.2 "CONNECT Response". </dd></dl>
 <a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> for HTTP parsing used in response.</dd></dl>
 <p>Constructs HTTP CONNECT request to establish tunneled connection (RFC 7230).</p>
 <p>Builds HTTP/1.1 CONNECT method request for proxying TCP traffic (typically HTTPS). Request format: CONNECT target_host:target_port HTTP/1.1\r<br  />
-Host: target_host:target_port\r<br  />
-[Proxy-Authorization: Basic base64(user:pass)\r<br  />
+ Host: target_host:target_port\r<br  />
+ [Proxy-Authorization: Basic base64(user:pass)\r<br  />
 ] if credentials [extra_headers]\r<br  />
-\r<br  />
+ \r<br  />
  Uses SocketHTTP types internally for serialization; appends CRLF properly. Supports Basic auth: encodes user:pass to base64 if username/password set. Extra headers from conn-&gt;extra_headers added verbatim.</p>
 <p>Edge cases:</p><ul>
 <li>No target_host/port: invalid, error</li>
@@ -1991,25 +1992,23 @@ Host: target_host:target_port\r<br  />
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Uses/modifies conn send_buf.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md603"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// For HTTP proxy type</span></div>
-<div class="line"><span class="keywordflow">if</span> (conn-&gt;type == <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a> &amp;&amp; conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a>) {</div>
-<div class="line">    SocketHTTP_Headers_T headers = <a class="code hl_function" href="group__http.html#ga99b788a59c808ad4e1860b7e64514aa2">SocketHTTP_Headers_new</a>(conn-&gt;arena);</div>
-<div class="line">    <a class="code hl_function" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a>(headers, <span class="stringliteral">&quot;User-Agent&quot;</span>, <span class="stringliteral">&quot;SocketLib/1.0&quot;</span>);</div>
-<div class="line">    conn-&gt;extra_headers = headers;</div>
-<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga58484981c55e00df7a24b50671aefa87">proxy_http_send_connect</a>(conn) &lt; 0) {</div>
-<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;HTTP CONNECT build failed&quot;</span>);</div>
-<div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2">PROTO_STATE_HTTP_REQUEST_SENT</a>;</div>
+<div class="line"><span class="keywordflow">if</span> (conn-&gt;type == <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a> &amp;&amp; conn-&gt;proto_state ==</div>
+<div class="line"><a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a>) { SocketHTTP_Headers_T headers =</div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga99b788a59c808ad4e1860b7e64514aa2">SocketHTTP_Headers_new</a>(conn-&gt;arena); <a class="code hl_function" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a>(headers,</div>
+<div class="line"><span class="stringliteral">&quot;User-Agent&quot;</span>, <span class="stringliteral">&quot;SocketLib/1.0&quot;</span>); conn-&gt;extra_headers = headers; <span class="keywordflow">if</span></div>
+<div class="line">(<a class="code hl_function" href="group__proxy__private.html#ga58484981c55e00df7a24b50671aefa87">proxy_http_send_connect</a>(conn) &lt; 0) { <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn,</div>
+<div class="line">PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;HTTP CONNECT build failed&quot;</span>); } <span class="keywordflow">else</span> { conn-&gt;proto_state</div>
+<div class="line">= <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2">PROTO_STATE_HTTP_REQUEST_SENT</a>;</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTP</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00252">SocketProxy.h:252</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a687548e806513e256fcf2534ddf9cbd6">SOCKET_PROXY_HTTP</a></div><div class="ttdeci">@ SOCKET_PROXY_HTTP</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00258">SocketProxy.h:257</a></div></div>
 <div class="ttc" id="agroup__http_html_ga564aa2d79c404e093b07c56e7d7910eb"><div class="ttname"><a href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a></div><div class="ttdeci">int SocketHTTP_Headers_add(SocketHTTP_Headers_T headers, const char *name, const char *value)</div><div class="ttdoc">Add header (null-terminated strings).</div></div>
 <div class="ttc" id="agroup__http_html_ga99b788a59c808ad4e1860b7e64514aa2"><div class="ttname"><a href="group__http.html#ga99b788a59c808ad4e1860b7e64514aa2">SocketHTTP_Headers_new</a></div><div class="ttdeci">SocketHTTP_Headers_T SocketHTTP_Headers_new(Arena_T arena)</div><div class="ttdoc">Create a new empty HTTP header collection.</div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga58484981c55e00df7a24b50671aefa87"><div class="ttname"><a href="group__proxy__private.html#ga58484981c55e00df7a24b50671aefa87">proxy_http_send_connect</a></div><div class="ttdeci">int proxy_http_send_connect(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Internal functions for HTTP CONNECT proxy method (RFC 7230).</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2">PROTO_STATE_HTTP_REQUEST_SENT</a></div><div class="ttdeci">@ PROTO_STATE_HTTP_REQUEST_SENT</div><div class="ttdoc">HTTP CONNECT target_host:target_port HTTP/1.1 request sent. Includes Host:, optional Proxy-Authorizat...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00397">SocketProxy-private.h:395</a></div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a></div><div class="ttdeci">@ PROTO_STATE_INIT</div><div class="ttdoc">Initial state before any protocol interaction. Ready to build and send first message (greeting for SO...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00367">SocketProxy-private.h:366</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2">PROTO_STATE_HTTP_REQUEST_SENT</a></div><div class="ttdeci">@ PROTO_STATE_HTTP_REQUEST_SENT</div><div class="ttdoc">HTTP CONNECT target_host:target_port HTTP/1.1 request sent. Includes Host:, optional Proxy-Authorizat...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00441">SocketProxy-private.h:435</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a></div><div class="ttdeci">@ PROTO_STATE_INIT</div><div class="ttdoc">Initial state before any protocol interaction. Ready to build and send first message (greeting for SO...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00386">SocketProxy-private.h:384</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>HTTP proxies often require TLS after CONNECT for HTTPS; handled separately. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Basic auth transmitted base64 (not encrypted); use TLS to proxy for security. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(h + c) where h=headers size, c=creds encoded length.</dt><dd></dd></dl>
@@ -2087,8 +2086,7 @@ RFC 7230 Section 5.3.2 CONNECT method; RFC 7235 for auth. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Stateless.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md605"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// In proxy_http_recv_response after getting status</span></div>
 <div class="line"><span class="keywordtype">int</span> status = <a class="code hl_function" href="group__http1.html#gace300f1b370727b195654a02e3fd7ec0">SocketHTTP1_Parser_get_response</a>(conn-&gt;http_parser)-&gt;status;</div>
 <div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga9afd213292a65fd6db0e416fa37a433b">proxy_http_status_to_result</a>(status);</div>
@@ -2099,7 +2097,7 @@ Usage Example</h2>
 <div class="line">} <span class="keywordflow">else</span> {</div>
 <div class="line">    <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, r, <span class="stringliteral">&quot;HTTP %d&quot;</span>, status);</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_REQUIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00283">SocketProxy.h:283</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaae7c553c156d0bc0673280b02c1ed7a0">PROXY_ERROR_AUTH_REQUIRED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_REQUIRED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00294">SocketProxy.h:293</a></div></div>
 <div class="ttc" id="agroup__http1_html_gace300f1b370727b195654a02e3fd7ec0"><div class="ttname"><a href="group__http1.html#gace300f1b370727b195654a02e3fd7ec0">SocketHTTP1_Parser_get_response</a></div><div class="ttdeci">const SocketHTTP_Response * SocketHTTP1_Parser_get_response(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Get parsed response.</div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga9afd213292a65fd6db0e416fa37a433b"><div class="ttname"><a href="group__proxy__private.html#ga9afd213292a65fd6db0e416fa37a433b">proxy_http_status_to_result</a></div><div class="ttdeci">SocketProxy_Result proxy_http_status_to_result(int status)</div><div class="ttdoc">Maps HTTP status codes from CONNECT response to SocketProxy_Result.</div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Custom mappings for proxy-specific codes like 407. </dd></dl>
@@ -2175,8 +2173,7 @@ RFC 7230 Sections 6 (status codes), 5.3.2 CONNECT. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies conn.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md602"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga82d72fd16b045c8660210f9ad861a879">proxy_socks4_recv_response</a>(conn);</div>
 <div class="line"><span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
 <div class="line">    <span class="comment">// Success: SOCKS4 tunnel up</span></div>
@@ -2327,21 +2324,20 @@ RFC 1928 Appendix A "Status". </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Writes to conn send_buf/len.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md600"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// For SOCKS4 type after init state</span></div>
-<div class="line"><span class="keywordflow">if</span> (conn-&gt;type == <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a> &amp;&amp; conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a>) {</div>
-<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092">proxy_socks4_send_connect</a>(conn) &lt; 0 &amp;&amp; !<a class="code hl_function" href="group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03">proxy_socks4a_send_connect</a>(conn)) {</div>
+<div class="line"><span class="keywordflow">if</span> (conn-&gt;type == <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a> &amp;&amp; conn-&gt;proto_state ==</div>
+<div class="line"><a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a>) { <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092">proxy_socks4_send_connect</a>(conn) &lt; 0 &amp;&amp;</div>
+<div class="line">!<a class="code hl_function" href="group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03">proxy_socks4a_send_connect</a>(conn)) {</div>
 <div class="line">        <span class="comment">// Try SOCKS4a fallback if pure IPv4 fails? But here separate.</span></div>
-<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;Invalid SOCKS4 target&quot;</span>);</div>
-<div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9">PROTO_STATE_SOCKS4_CONNECT_SENT</a>;</div>
+<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;Invalid SOCKS4</span></div>
+<div class="line"><span class="stringliteral">target&quot;</span>); } <span class="keywordflow">else</span> { conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9">PROTO_STATE_SOCKS4_CONNECT_SENT</a>;</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00254">SocketProxy.h:254</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1">SOCKET_PROXY_SOCKS4</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS4</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00261">SocketProxy.h:261</a></div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga904ce0bf17f24e2e2783aaf8f1491c03"><div class="ttname"><a href="group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03">proxy_socks4a_send_connect</a></div><div class="ttdeci">int proxy_socks4a_send_connect(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Builds SOCKS4a CONNECT request using domain name (unofficial extension).</div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga93a6b1c4f6b287b308b18207368ad092"><div class="ttname"><a href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092">proxy_socks4_send_connect</a></div><div class="ttdeci">int proxy_socks4_send_connect(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Internal functions for SOCKS4 and SOCKS4a protocol handling.</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9">PROTO_STATE_SOCKS4_CONNECT_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS4_CONNECT_SENT</div><div class="ttdoc">SOCKS4 CONNECT request sent (IPv4 only or 4a extension). VN=4, CMD=1, DSTPORT, DSTIP (0....</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00390">SocketProxy-private.h:388</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9">PROTO_STATE_SOCKS4_CONNECT_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS4_CONNECT_SENT</div><div class="ttdoc">SOCKS4 CONNECT request sent (IPv4 only or 4a extension). VN=4, CMD=1, DSTPORT, DSTIP (0....</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00427">SocketProxy-private.h:422</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Prefer SOCKS5 for modern use; SOCKS4 deprecated but supported for compatibility. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>No auth; insecure - use only trusted proxies. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) for IPv4, O(d) for domain copy where d=domain len.</dt><dd></dd></dl>
@@ -2407,15 +2403,15 @@ RFC 1928 Appendix A "SOCKS 4 Protocol". </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies conn send state.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md601"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Fallback when SOCKS4 IPv4 fails</span></div>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092">proxy_socks4_send_connect</a>(conn) &lt; 0) {</div>
 <div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03">proxy_socks4a_send_connect</a>(conn) == 0) {</div>
 <div class="line">        <span class="comment">// SOCKS4a succeeded</span></div>
 <div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca4111e707281eccc70e9e6aa97777a1a9">PROTO_STATE_SOCKS4_CONNECT_SENT</a>;</div>
 <div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;SOCKS4(a) target invalid&quot;</span>);</div>
+<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;SOCKS4(a) target</span></div>
+<div class="line"><span class="stringliteral">invalid&quot;</span>);</div>
 <div class="line">    }</div>
 <div class="line">}</div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Unofficial extension; some proxies may not support - prefer SOCKS5. </dd></dl>
@@ -2423,7 +2419,7 @@ Usage Example</h2>
 <dl class="section user"><dt>Complexity\n O(d) domain length - string copy and null-term.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092" title="Internal functions for SOCKS4 and SOCKS4a protocol handling.">proxy_socks4_send_connect()</a> Standard IPv4 variant. </dd>
 <dd>
-<a class="el" href="group__proxy__private.html#ga82d72fd16b045c8660210f9ad861a879" title="Parses SOCKS4/SOCKS4a response to check connection result.">proxy_socks4_recv_response()</a> Shared response parser (ignores bound <a class="el" href="group__async__io.html#gabf6dc3901a5139f2f7f093db3003b798" title="Single connection attempt structure in Happy Eyeballs racing.">addr</a>). </dd>
+<a class="el" href="group__proxy__private.html#ga82d72fd16b045c8660210f9ad861a879" title="Parses SOCKS4/SOCKS4a response to check connection result.">proxy_socks4_recv_response()</a> Shared response parser (ignores bound addr). </dd>
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a>#socks4a-extension For compatibility notes. </dd>
 <dd>
@@ -2490,8 +2486,7 @@ RFC 1928 Appendix A (base); SOCKS4a described in various implementations. </dd><
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Updates conn state and buffers; single-threaded use only.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md596"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// After receiving response in handshake</span></div>
 <div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga54e8297c18caa6bb448daa0d1dceafeb">proxy_socks5_recv_auth</a>(conn);</div>
 <div class="line"><span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
@@ -2504,7 +2499,7 @@ Usage Example</h2>
 <div class="line">}</div>
 <div class="ttc" id="agroup__proxy__private_html_ga54e8297c18caa6bb448daa0d1dceafeb"><div class="ttname"><a href="group__proxy__private.html#ga54e8297c18caa6bb448daa0d1dceafeb">proxy_socks5_recv_auth</a></div><div class="ttdeci">SocketProxy_Result proxy_socks5_recv_auth(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Parses SOCKS5 authentication response for username/password method (RFC 1929).</div></div>
 <div class="ttc" id="agroup__proxy__private_html_gada1416d62b5113240c93bd3020dc4b68"><div class="ttname"><a href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68">socketproxy_advance_state</a></div><div class="ttdeci">void socketproxy_advance_state(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Internal state machine functions for proxy negotiation.</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a">PROTO_STATE_SOCKS5_CONNECT_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_CONNECT_SENT</div><div class="ttdoc">SOCKS5 CONNECT command sent with target details. CMD=0x01, ATYP (IPv4/domain/IPv6),...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00383">SocketProxy-private.h:381</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a">PROTO_STATE_SOCKS5_CONNECT_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_CONNECT_SENT</div><div class="ttdoc">SOCKS5 CONNECT command sent with target details. CMD=0x01, ATYP (IPv4/domain/IPv6),...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00414">SocketProxy-private.h:409</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Authentication complete; tunnel not yet established - next is CONNECT. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>STATUS=1 means invalid credentials; consider logging for security audit. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - Minimal 2-byte validation.</dt><dd></dd></dl>
@@ -2586,8 +2581,7 @@ RFC 1929 Section 2 "Server Response" for status details. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies conn recv state and overall result/state.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md598"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// In handshake recv loop</span></div>
 <div class="line"><span class="keywordtype">int</span> bytes = <a class="code hl_function" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd">socketproxy_do_recv</a>(conn);</div>
 <div class="line"><span class="keywordflow">if</span> (bytes &gt; 0) {</div>
@@ -2610,7 +2604,7 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd" title="Receive protocol data into conn-&gt;recv_buf.">socketproxy_do_recv()</a> Supplies response data. </dd>
 <dd>
-SOCKS5_REPLY_* Constants for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes. </dd>
+SOCKS5_REPLY_* Constants for error codes. </dd>
 <dd>
 <a class="el" href="PROXY_8md.html">docs/PROXY.md</a>#connect-response For success criteria. </dd>
 <dd>
@@ -2678,23 +2672,22 @@ RFC 1928 Section 4 "Reply" and address types. </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - Modifies conn fields (state, auth method, result); exclusive access required.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md594"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n No - Modifies conn fields (state, auth method, result);</dt><dd>exclusive access required.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Internal state machine after receiving data</span></div>
 <div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga3695eb1c73d0f31fe1ac6d51f677ab73">proxy_socks5_recv_method</a>(conn);</div>
 <div class="line"><span class="keywordflow">if</span> (r == <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595ea6493782f06c64d4240b03ebc37d10754">PROXY_OK</a>) {</div>
 <div class="line">    <span class="keywordflow">if</span> (conn-&gt;socks5_need_auth) {</div>
-<div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af">PROTO_STATE_SOCKS5_AUTH_SENT</a>;  <span class="comment">// Next: send auth</span></div>
-<div class="line">    } <span class="keywordflow">else</span> {</div>
-<div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a">PROTO_STATE_SOCKS5_CONNECT_SENT</a>;  <span class="comment">// Skip to connect</span></div>
+<div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af">PROTO_STATE_SOCKS5_AUTH_SENT</a>;  <span class="comment">// Next: send</span></div>
+<div class="line">auth } <span class="keywordflow">else</span> { conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a">PROTO_STATE_SOCKS5_CONNECT_SENT</a>;  <span class="comment">// Skip</span></div>
+<div class="line">to connect</div>
 <div class="line">    }</div>
 <div class="line">    <a class="code hl_function" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68">socketproxy_advance_state</a>(conn);</div>
 <div class="line">} <span class="keywordflow">else</span> <span class="keywordflow">if</span> (r == PROXY_PROTOCOL_ERROR) {</div>
 <div class="line">    <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, r, <span class="stringliteral">&quot;Invalid SOCKS5 method response&quot;</span>);</div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__proxy__private_html_ga3695eb1c73d0f31fe1ac6d51f677ab73"><div class="ttname"><a href="group__proxy__private.html#ga3695eb1c73d0f31fe1ac6d51f677ab73">proxy_socks5_recv_method</a></div><div class="ttdeci">SocketProxy_Result proxy_socks5_recv_method(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Parses SOCKS5 server method selection response after greeting (RFC 1928).</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af">PROTO_STATE_SOCKS5_AUTH_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_AUTH_SENT</div><div class="ttdoc">Username/password authentication request sent (method 0x02). Format per RFC 1929: VER=1,...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00378">SocketProxy-private.h:376</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af">PROTO_STATE_SOCKS5_AUTH_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_AUTH_SENT</div><div class="ttdoc">Username/password authentication request sent (method 0x02). Format per RFC 1929: VER=1,...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00404">SocketProxy-private.h:400</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Pair with <a class="el" href="group__proxy__private.html#ga0fcced421154218776f5077fa437f58e" title="Builds SOCKS5 greeting message for initial protocol negotiation (RFC 1928).">proxy_socks5_send_greeting()</a>; called after successful recv in handshake loop. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>If METHOD=0x02 but no credentials configured, subsequent auth will fail. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - Fixed 2-byte parse, constant time checks.</dt><dd></dd></dl>
@@ -2702,7 +2695,7 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd" title="Receive protocol data into conn-&gt;recv_buf.">socketproxy_do_recv()</a> Fills recv_buf before calling this. </dd>
 <dd>
-<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> For <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> progression after success. </dd>
+<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> For state progression after success. </dd>
 <dd>
 SOCKS5_AUTH_* Constants for method values. </dd>
 <dd>
@@ -2777,8 +2770,7 @@ RFC 1928 Section 2 "Server's Choice" for response semantics. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Stateless, no shared state or side effects.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md599"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Inside proxy_socks5_recv_connect after parsing REP</span></div>
 <div class="line"><span class="keywordtype">int</span> raw_rep = recv_buf[1];  <span class="comment">// REP field</span></div>
 <div class="line"><a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <a class="code hl_function" href="group__proxy__private.html#ga4799fc5a08ded667f5518862c078c1bd">proxy_socks5_reply_to_result</a>(raw_rep);</div>
@@ -2794,9 +2786,9 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> Primary caller during response parsing. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> Enum for library-wide <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes. </dd>
+<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> Enum for library-wide error codes. </dd>
 <dd>
-<a class="el" href="PROXY_8md.html">docs/PROXY.md</a><a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>-mapping For integration with retry policies. </dd>
+<a class="el" href="PROXY_8md.html">docs/PROXY.md</a>#error-mapping For integration with retry policies. </dd>
 <dd>
 RFC 1928 Appendix A "Reply Codes". </dd></dl>
 
@@ -2836,7 +2828,8 @@ RFC 1928 Appendix A "Reply Codes". </dd></dl>
 </ul>
 <p>Credentials are copied from conn-&gt;username and conn-&gt;password (arena-allocated). Validates lengths (max 255 per RFC); truncates or errors if exceed.</p>
 <p>Edge cases:</p><ul>
-<li>No credentials (NULL username/password): raises Proxy_Failed with "missing credentials"</li>
+<li>No credentials (NULL username/password): raises Proxy_Failed with "missing
+credentials"</li>
 <li>Empty strings: treated as invalid, error raised</li>
 <li>Lengths &gt;255: truncated with warning log, but prefer error in strict mode</li>
 <li>Non-UTF8 creds: sent as-is (protocol is binary-safe)</li>
@@ -2855,9 +2848,8 @@ RFC 1928 Appendix A "Reply Codes". </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - Reads/modifies conn-&gt;send_buf, send_len; exclusive access needed.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md595"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n No - Reads/modifies conn-&gt;send_buf, send_len; exclusive access</dt><dd>needed.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Called after method selection if password auth required</span></div>
 <div class="line"><span class="keywordflow">if</span> (conn-&gt;socks5_auth_method == <a class="code hl_define" href="group__proxy__private.html#ga899b27c99a9931c5696e2f82660a5747">SOCKS5_AUTH_PASSWORD</a>) {</div>
 <div class="line">    <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
@@ -2867,15 +2859,15 @@ Usage Example</h2>
 <div class="line">        conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cad9cbdb2e2397158bbd069ababd33e7af">PROTO_STATE_SOCKS5_AUTH_SENT</a>;</div>
 <div class="line">        <span class="comment">// Follow with socketproxy_do_send() in handshake loop</span></div>
 <div class="line">    } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(Proxy_Failed) {</div>
-<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>, <span class="stringliteral">&quot;Auth request build failed&quot;</span>);</div>
-<div class="line">    } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, <a class="code hl_enumvalue" href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a>, <span class="stringliteral">&quot;Auth request</span></div>
+<div class="line"><span class="stringliteral">build failed&quot;</span>); } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_FAILED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00284">SocketProxy.h:284</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
-<div class="ttc" id="agroup__proxy__private_html_ga899b27c99a9931c5696e2f82660a5747"><div class="ttname"><a href="group__proxy__private.html#ga899b27c99a9931c5696e2f82660a5747">SOCKS5_AUTH_PASSWORD</a></div><div class="ttdeci">#define SOCKS5_AUTH_PASSWORD</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00269">SocketProxy-private.h:269</a></div></div>
-<div class="ttc" id="agroup__proxy__private_html_gae79febff78c4084b69989b8b3099ae33"><div class="ttname"><a href="group__proxy__private.html#gae79febff78c4084b69989b8b3099ae33">RAISE_PROXY_ERROR</a></div><div class="ttdeci">#define RAISE_PROXY_ERROR(e)</div><div class="ttdoc">Raise formatted Proxy exception using module infrastructure.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00502">SocketProxy-private.h:502</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f"><div class="ttname"><a href="group__core__io.html#ggae980e6a437316380a792464ce32a595eaeaa9baf16d7658f8553f19fc887ba82f">PROXY_ERROR_AUTH_FAILED</a></div><div class="ttdeci">@ PROXY_ERROR_AUTH_FAILED</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00295">SocketProxy.h:295</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_ga899b27c99a9931c5696e2f82660a5747"><div class="ttname"><a href="group__proxy__private.html#ga899b27c99a9931c5696e2f82660a5747">SOCKS5_AUTH_PASSWORD</a></div><div class="ttdeci">#define SOCKS5_AUTH_PASSWORD</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00284">SocketProxy-private.h:284</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gae79febff78c4084b69989b8b3099ae33"><div class="ttname"><a href="group__proxy__private.html#gae79febff78c4084b69989b8b3099ae33">RAISE_PROXY_ERROR</a></div><div class="ttdeci">#define RAISE_PROXY_ERROR(e)</div><div class="ttdoc">Raise formatted Proxy exception using module infrastructure.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00553">SocketProxy-private.h:553</a></div></div>
 <div class="ttc" id="agroup__proxy__private_html_gaf0c10ebe07ba3206fd7e5e6725960e9a"><div class="ttname"><a href="group__proxy__private.html#gaf0c10ebe07ba3206fd7e5e6725960e9a">proxy_socks5_send_auth</a></div><div class="ttdeci">int proxy_socks5_send_auth(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Constructs SOCKS5 username/password subnegotiation request (RFC 1929).</div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Credentials are not securely cleared here; consider SocketBuf_secureclear if sensitive. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Protocol allows up to 255 bytes per field; longer creds will fail or truncate. </dd></dl>
@@ -2950,24 +2942,23 @@ RFC 1929 Section 2 "Client Request" for exact format. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies send_buf and send_len in conn.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md597"></a>
-Usage Example</h2>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// After auth success or no-auth</span></div>
 <div class="line"><span class="keywordflow">if</span> (conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca429c6f1b7b064fcfe594a9de4d5bd85b">PROTO_STATE_SOCKS5_AUTH_RECEIVED</a> ||</div>
 <div class="line">    conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca8767b75e57730c4169d8e5299fbf81f7">PROTO_STATE_SOCKS5_METHOD_RECEIVED</a>) {</div>
 <div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#gad730a252b44728ae21660f2d168b66e3">proxy_socks5_send_connect</a>(conn) &lt; 0) {</div>
-<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;Failed to build CONNECT&quot;</span>);</div>
-<div class="line">        <span class="keywordflow">return</span>;</div>
+<div class="line">        <a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_ERROR_CONFIG, <span class="stringliteral">&quot;Failed to build</span></div>
+<div class="line"><span class="stringliteral">CONNECT&quot;</span>); <span class="keywordflow">return</span>;</div>
 <div class="line">    }</div>
 <div class="line">    conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf20756c410fcc0f622ea89994f10c81a">PROTO_STATE_SOCKS5_CONNECT_SENT</a>;</div>
 <div class="line">    <span class="comment">// Enqueue send in poll or loop</span></div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__proxy__private_html_gad730a252b44728ae21660f2d168b66e3"><div class="ttname"><a href="group__proxy__private.html#gad730a252b44728ae21660f2d168b66e3">proxy_socks5_send_connect</a></div><div class="ttdeci">int proxy_socks5_send_connect(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Builds SOCKS5 CONNECT command to establish tunnel to target (RFC 1928).</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca429c6f1b7b064fcfe594a9de4d5bd85b"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca429c6f1b7b064fcfe594a9de4d5bd85b">PROTO_STATE_SOCKS5_AUTH_RECEIVED</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_AUTH_RECEIVED</div><div class="ttdoc">Auth response received and validated. On success (STATUS=0), proceed to CONNECT; failure maps to PROX...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00380">SocketProxy-private.h:379</a></div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca8767b75e57730c4169d8e5299fbf81f7"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca8767b75e57730c4169d8e5299fbf81f7">PROTO_STATE_SOCKS5_METHOD_RECEIVED</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_METHOD_RECEIVED</div><div class="ttdoc">Method selection response parsed successfully. Auth method stored in conn-&gt;socks5_auth_method; if non...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00375">SocketProxy-private.h:373</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca429c6f1b7b064fcfe594a9de4d5bd85b"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca429c6f1b7b064fcfe594a9de4d5bd85b">PROTO_STATE_SOCKS5_AUTH_RECEIVED</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_AUTH_RECEIVED</div><div class="ttdoc">Auth response received and validated. On success (STATUS=0), proceed to CONNECT; failure maps to PROX...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00408">SocketProxy-private.h:405</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493ca8767b75e57730c4169d8e5299fbf81f7"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca8767b75e57730c4169d8e5299fbf81f7">PROTO_STATE_SOCKS5_METHOD_RECEIVED</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_METHOD_RECEIVED</div><div class="ttdoc">Method selection response parsed successfully. Auth method stored in conn-&gt;socks5_auth_method; if non...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00399">SocketProxy-private.h:395</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Supports domain name resolution at proxy (SOCKS5H); no client-side DNS here. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Large hostnames (&gt;255) will fail; trim or resolve to IP client-side. </dd></dl>
-<dl class="section user"><dt>Complexity\n O(m) where m = length of target address string - copy and serialization.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(m) where m = length of target address string - copy and</dt><dd>serialization.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07" title="Parses SOCKS5 CONNECT response to determine tunnel establishment (RFC 1928).">proxy_socks5_recv_connect()</a> Handles <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> response and bound address. </dd>
 <dd>
 <a class="el" href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c" title="Send pending protocol data from conn-&gt;send_buf.">socketproxy_do_send()</a> Transmits the CONNECT command. </dd>
@@ -3032,29 +3023,28 @@ RFC 1928 Section 4 "Commands" and "Address Formats". </dd></dl>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No - Modifies conn-&gt;send_buf, conn-&gt;send_len, and potentially error_buf.</dt><dd>Caller must ensure exclusive access to conn during handshake.</dd></dl>
-<h2><a class="anchor" id="autotoc_md593"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n No - Modifies conn-&gt;send_buf, conn-&gt;send_len, and potentially</dt><dd>error_buf. Caller must ensure exclusive access to conn during handshake.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// Internal call from state machine</span></div>
-<div class="line"><span class="keywordflow">if</span> (conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a> &amp;&amp; conn-&gt;type == <a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>) {</div>
-<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga0fcced421154218776f5077fa437f58e">proxy_socks5_send_greeting</a>(conn) &lt; 0) {</div>
+<div class="line"><span class="keywordflow">if</span> (conn-&gt;proto_state == <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493caf5542717d2ee90d3d17b63b4cf6ece64">PROTO_STATE_INIT</a> &amp;&amp; conn-&gt;type ==</div>
+<div class="line"><a class="code hl_enumvalue" href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a>) { <span class="keywordflow">if</span> (<a class="code hl_function" href="group__proxy__private.html#ga0fcced421154218776f5077fa437f58e">proxy_socks5_send_greeting</a>(conn) &lt; 0) {</div>
 <div class="line">        <span class="comment">// Error already raised/handled via TRY/EXCEPT</span></div>
 <div class="line">        <span class="keywordflow">return</span> PROXY_ERROR_CONFIG;</div>
 <div class="line">    }</div>
 <div class="line">    conn-&gt;proto_state = <a class="code hl_enumvalue" href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cafba3acda31e424f195898a8ba5488940">PROTO_STATE_SOCKS5_GREETING_SENT</a>;</div>
 <div class="line">    <span class="comment">// Proceed to send via socketproxy_do_send(conn)</span></div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00256">SocketProxy.h:256</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f"><div class="ttname"><a href="group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f">SOCKET_PROXY_SOCKS5</a></div><div class="ttdeci">@ SOCKET_PROXY_SOCKS5</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00265">SocketProxy.h:264</a></div></div>
 <div class="ttc" id="agroup__proxy__private_html_ga0fcced421154218776f5077fa437f58e"><div class="ttname"><a href="group__proxy__private.html#ga0fcced421154218776f5077fa437f58e">proxy_socks5_send_greeting</a></div><div class="ttdeci">int proxy_socks5_send_greeting(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Builds SOCKS5 greeting message for initial protocol negotiation (RFC 1928).</div></div>
-<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cafba3acda31e424f195898a8ba5488940"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cafba3acda31e424f195898a8ba5488940">PROTO_STATE_SOCKS5_GREETING_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_GREETING_SENT</div><div class="ttdoc">SOCKS5 version 5 greeting sent to proxy. Lists supported auth methods (SOCKS5_AUTH_NONE,...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00372">SocketProxy-private.h:370</a></div></div>
+<div class="ttc" id="agroup__proxy__private_html_gga8d5525862e31c82df86ea8ec9ccd493cafba3acda31e424f195898a8ba5488940"><div class="ttname"><a href="group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cafba3acda31e424f195898a8ba5488940">PROTO_STATE_SOCKS5_GREETING_SENT</a></div><div class="ttdeci">@ PROTO_STATE_SOCKS5_GREETING_SENT</div><div class="ttdoc">SOCKS5 version 5 greeting sent to proxy. Lists supported auth methods (SOCKS5_AUTH_NONE,...</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy-private_8h_source.html#l00394">SocketProxy-private.h:389</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>This is the first step in SOCKS5 multi-step negotiation. Does not perform I/O. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Ensure conn-&gt;type is SOCKET_PROXY_SOCKS5 before calling; undefined otherwise. </dd></dl>
-<dl class="section user"><dt>Complexity\n O(1) - Fixed-size message construction, no loops or allocations beyond arena.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - Fixed-size message construction, no loops or allocations</dt><dd>beyond arena.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga3695eb1c73d0f31fe1ac6d51f677ab73" title="Parses SOCKS5 server method selection response after greeting (RFC 1928).">proxy_socks5_recv_method()</a> Paired function for receiving method selection response. </dd>
 <dd>
 <a class="el" href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c" title="Send pending protocol data from conn-&gt;send_buf.">socketproxy_do_send()</a> For transmitting the built greeting. </dd>
 <dd>
-<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> Advances <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> after send completion. </dd>
+<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68" title="Internal state machine functions for proxy negotiation.">socketproxy_advance_state()</a> Advances state after send completion. </dd>
 <dd>
 <a class="el" href="group__proxy__private.html#structSocketProxy__Conn__T" title="Opaque proxy connection context for managing tunneling negotiation.">SocketProxy_Conn_T</a> For context structure details. </dd>
 <dd>
@@ -3120,18 +3110,9 @@ RFC 1928 Section 2 "Greeting from Client to Server". </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies conn state machine.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md606"></a>
-Usage Example</h2>
-<div class="fragment"><div class="line"><span class="comment">// Typical in event loop after I/O</span></div>
-<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c">socketproxy_do_send</a>(conn) == 0) {  <span class="comment">// All sent</span></div>
-<div class="line">    <a class="code hl_function" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68">socketproxy_advance_state</a>(conn);  <span class="comment">// Now expect recv</span></div>
-<div class="line">} <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code hl_function" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd">socketproxy_do_recv</a>(conn) &gt; 0) {</div>
-<div class="line">    <a class="code hl_enumeration" href="group__core__io.html#gae980e6a437316380a792464ce32a595e">SocketProxy_Result</a> r = <span class="comment">/* recv handler via advance? Wait no, advance after parse */</span></div>
-<div class="line">    <span class="comment">// Actually, recv calls parse which calls advance on complete</span></div>
-<div class="line">    <a class="code hl_function" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68">socketproxy_advance_state</a>(conn);  <span class="comment">// Progress to next phase</span></div>
-<div class="line">}</div>
-<div class="ttc" id="agroup__core__io_html_ga71e6170ecb08801fd53c849e1456e83c"><div class="ttname"><a href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c">socketproxy_do_send</a></div><div class="ttdeci">int socketproxy_do_send(struct SocketProxy_Conn_T *conn)</div><div class="ttdoc">Send pending protocol data from conn-&gt;send_buf.</div></div>
-</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Idempotent in terminal states (DONE/ERROR). </dd></dl>
+<p>Usage Example</p>
+<p>Called after successful I/O operations to advance the proxy protocol state machine.</p>
+<dl class="section note"><dt>Note</dt><dd>Idempotent in terminal states (DONE/ERROR). </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Avoid calling during I/O; post-I/O only to prevent races. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) average - dispatches to O(1) handlers.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#ga8d5525862e31c82df86ea8ec9ccd493c" title="Protocol-specific sub-state for proxy handshakes.">SocketProxy_ProtoState</a> Detailed sub-states. </dd>
@@ -3140,7 +3121,7 @@ Usage Example</h2>
 <dd>
 <a class="el" href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c" title="Send pending protocol data from conn-&gt;send_buf.">socketproxy_do_send()</a>, <a class="el" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd" title="Receive protocol data into conn-&gt;recv_buf.">socketproxy_do_recv()</a> I/O triggers. </dd>
 <dd>
-<a class="el" href="PROXY_8md.html">docs/PROXY.md</a><a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>-machine For full transition diagram. </dd></dl>
+<a class="el" href="PROXY_8md.html">docs/PROXY.md</a>#state-machine For full transition diagram. </dd></dl>
 
 </div>
 </div>
@@ -3216,13 +3197,12 @@ Usage Example</h2>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Partial - error_buf local to conn; log may need sync if callback shared.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md607"></a>
-Usage Example</h2>
+<dl class="section user"><dt>Thread Safety\n Partial - error_buf local to conn; log may need sync if callback</dt><dd>shared.</dd></dl>
+<p>Usage Example</p>
 <div class="fragment"><div class="line"><span class="comment">// On parse failure</span></div>
 <div class="line"><a class="code hl_function" href="group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757">socketproxy_set_error</a>(conn, PROXY_PROTOCOL_ERROR,</div>
 <div class="line">                      <span class="stringliteral">&quot;Invalid SOCKS5 VER=%d expected 5&quot;</span>, ver);</div>
-<div class="line"><span class="comment">// Logs: ERROR Proxy: Invalid SOCKS5 VER=... </span></div>
+<div class="line"><span class="comment">// Logs: ERROR Proxy: Invalid SOCKS5 VER=...</span></div>
 <div class="line"><span class="comment">// Caller checks conn-&gt;result != PROXY_OK, raises or returns</span></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Message preserved until conn_free; useful for debug. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Fixed buf size; avoid long formats to prevent truncation. </dd></dl>

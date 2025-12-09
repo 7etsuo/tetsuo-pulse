@@ -1,12 +1,6 @@
 <map id="AsyncRequest" name="AsyncRequest">
-<area shape="rect" id="Node000001" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="103,284,211,309"/>
-<area shape="poly" id="edge5_Node000001_Node000001" title=" " alt="" coords="225,287,234,290,237,297,229,306,211,309,211,303,227,301,232,296,230,294,223,292"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="117,181,196,207"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,221,159,284,154,284,154,221"/>
-<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,133,159,181,154,181,154,133"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
-<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
+<area shape="rect" id="Node000001" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="5,108,113,133"/>
+<area shape="poly" id="edge2_Node000001_Node000001" title=" " alt="" coords="128,111,136,114,140,121,132,130,114,133,113,127,129,125,135,120,133,118,126,116"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="20,5,99,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="62,45,62,108,57,108,57,45"/>
 </map>

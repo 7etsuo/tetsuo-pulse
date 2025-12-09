@@ -901,6 +901,8 @@
 #define HTTPCLIENT_DIGEST_NC_SIZE 16
 #endif
 
+/** @} */ /* end of http_client_auth group */
+
 /**
  * @defgroup http_client_buffers Request/Response Buffer Constants
  * @brief Buffer sizes for HTTP request serialization, response reading, and
@@ -1197,9 +1199,5 @@
 #define HTTPCLIENT_ENCODING_BR 0x04
 
 /** @} */ /* end of http_client_encoding group */
-
-/** @} */ /* config groups */
-
-/* No more warnings please */
 
 #endif /* SOCKETHTTPCLIENT_CONFIG_INCLUDED */

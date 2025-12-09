@@ -255,7 +255,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga92485113993efb3a1302bbcb8f57a908" id="r_ga92485113993efb3a1302bbcb8f57a908"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a> (<a class="el" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn, void *buf, size_t len)</td></tr>
 <tr class="memdesc:ga92485113993efb3a1302bbcb8f57a908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive data from the reconnection-managed connection, auto-reconnecting on close or errors.  <br /></td></tr>
 <tr class="separator:ga92485113993efb3a1302bbcb8f57a908"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0678924e4ecd0f43e1385d2e0b5354d4" id="r_ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect_state_name</a> (<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
+<tr class="memitem:ga0678924e4ecd0f43e1385d2e0b5354d4" id="r_ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect_state_name</a> (<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> state)</td></tr>
 <tr class="memdesc:ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get human-readable name for a reconnection state.  <br /></td></tr>
 <tr class="separator:ga0678924e4ecd0f43e1385d2e0b5354d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -268,7 +268,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patterns. </p>
 <p>This header provides a robust reconnection mechanism for network applications, implementing exponential backoff, jitter to avoid thundering herd, circuit breaker to prevent cascading failures, and optional health checks. The module integrates seamlessly with event loops and provides transparent I/O wrappers that automatically handle disconnections and reconnections.</p>
-<h2><a class="anchor" id="autotoc_md627"></a>
+<h2><a class="anchor" id="autotoc_md452"></a>
 Features</h2>
 <ul>
 <li>Exponential backoff with configurable initial delay, multiplier, max delay, and jitter</li>
@@ -280,7 +280,7 @@ Features</h2>
 <li>Event loop integration via pollfd, process, and tick functions</li>
 <li>Statistics query for attempts and failures</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md628"></a>
+<h2><a class="anchor" id="autotoc_md453"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌─────────────────────────────┐</div>
 <div class="line">│    Application Layer        │</div>
@@ -304,15 +304,15 @@ Architecture Overview</h2>
 <div class="line">│   Foundation Layer          │</div>
 <div class="line">│   Arena, Except, Timer      │</div>
 <div class="line">└─────────────────────────────┘</div>
-<div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00278">SocketReconnect-private.h:279</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md629"></a>
+<div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00296">SocketReconnect-private.h:297</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md454"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__core__io.html">Core I/O Modules</a> (Socket_T for underlying connections), <a class="el" href="group__foundation.html">Core Foundation Modules</a> (Arena for memory, Except for error handling, SocketTimer for internal timing)</li>
 <li><b>Used by</b>: <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> (SocketPool for pooled reconnections), <a class="el" href="group__http.html">HTTP Modules</a> (<a class="el" href="group__http.html#structSocketHTTPClient" title="Main HTTP client instance managing configuration, pool, auth, and state.">SocketHTTPClient</a> for resilient HTTP requests)</li>
 <li><b>Integrates with</b>: <a class="el" href="group__event__system.html">Event System Modules</a> (SocketPoll for event handling)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md630"></a>
+<h2><a class="anchor" id="autotoc_md455"></a>
 Platform Requirements</h2>
 <ul>
 <li>POSIX-compliant system (Linux, BSD, macOS)</li>
@@ -320,14 +320,14 @@ Platform Requirements</h2>
 <li>CLOCK_MONOTONIC for accurate timing</li>
 <li>No external dependencies beyond standard library and socket primitives</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md631"></a>
+<h2><a class="anchor" id="autotoc_md456"></a>
 Typical Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md632"></a>
+<h3><a class="anchor" id="autotoc_md457"></a>
 Simple I/O Passthrough</h3>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> policy;</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a>(&amp;policy);</div>
-<div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(<span class="stringliteral">&quot;example.com&quot;</span>, 443, &amp;policy, NULL, NULL);</div>
-<div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a>(conn);</div>
+<div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(<span class="stringliteral">&quot;example.com&quot;</span>, 443, &amp;policy,</div>
+<div class="line">NULL, NULL); <a class="code hl_function" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a>(conn);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Send/Recv automatically handle reconnections</span></div>
 <div class="line">ssize_t sent = <a class="code hl_function" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a>(conn, data, len);</div>
@@ -340,8 +340,8 @@ Simple I/O Passthrough</h3>
 <div class="ttc" id="agroup__connection__mgmt_html_ga92485113993efb3a1302bbcb8f57a908"><div class="ttname"><a href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a></div><div class="ttdeci">ssize_t SocketReconnect_recv(SocketReconnect_T conn, void *buf, size_t len)</div><div class="ttdoc">Receive data from the reconnection-managed connection, auto-reconnecting on close or errors.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga9d8b4dd4a693ba7acb20ff8e78defe91"><div class="ttname"><a href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a></div><div class="ttdeci">void SocketReconnect_free(SocketReconnect_T *conn)</div><div class="ttdoc">Destroy a SocketReconnect_T instance and release all associated resources.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gae1f6cbe69ac37f9bae1efccfe98538ee"><div class="ttname"><a href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a></div><div class="ttdeci">ssize_t SocketReconnect_send(SocketReconnect_T conn, const void *buf, size_t len)</div><div class="ttdoc">Send data over the reconnection-managed connection with automatic retry on transient errors.</div></div>
-<div class="ttc" id="agroup__connection__mgmt_html_structSocketReconnect__Policy__T"><div class="ttname"><a href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></div><div class="ttdoc">Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00329">SocketReconnect.h:330</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md633"></a>
+<div class="ttc" id="agroup__connection__mgmt_html_structSocketReconnect__Policy__T"><div class="ttname"><a href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></div><div class="ttdoc">Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00362">SocketReconnect.h:363</a></div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md458"></a>
 Event Loop Integration</h3>
 <div class="fragment"><div class="line"><span class="comment">// In event loop</span></div>
 <div class="line"><span class="keywordtype">int</span> fd = <a class="code hl_function" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a>(conn);</div>
@@ -358,7 +358,7 @@ Event Loop Integration</h3>
 <div class="ttc" id="agroup__connection__mgmt_html_ga8dd2c1fe7147188da2be29f7623d2822"><div class="ttname"><a href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a></div><div class="ttdeci">void SocketReconnect_tick(SocketReconnect_T conn)</div><div class="ttdoc">Advance timers and perform periodic maintenance for state transitions and checks.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gaa2db0dea41db5bb5a7efeec947323da8"><div class="ttname"><a href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a></div><div class="ttdeci">int SocketReconnect_pollfd(SocketReconnect_T conn)</div><div class="ttdoc">Retrieve file descriptor for event loop integration (poll/epoll/kqueue/select).</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gaf5bf725fe34ae1de58a3ee05fbe270fd"><div class="ttname"><a href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a></div><div class="ttdeci">int SocketReconnect_next_timeout_ms(SocketReconnect_T conn)</div><div class="ttdoc">Calculate milliseconds until next timer event or action.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md634"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md459"></a>
 Thread Safety</h2>
 <ul>
 <li>Individual <a class="el" href="group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management.">SocketReconnect_T</a> instances must be accessed from a single thread</li>
@@ -388,7 +388,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00409">409</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00463">463</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -404,7 +404,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00405">405</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00459">459</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -420,7 +420,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00413">413</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00467">467</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -436,7 +436,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00417">417</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00471">471</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -452,7 +452,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00385">385</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00439">439</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +468,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00397">397</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00451">451</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +484,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00401">401</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00455">455</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -500,7 +500,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00389">389</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00443">443</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -516,7 +516,7 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00393">393</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00447">447</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>
@@ -527,12 +527,12 @@ docs/RECONNECT.md for advanced configuration guide </dd></dl>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></td>
+          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00112">112</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketReconnect_8h_source.html#l00123">123</a> of file <a class="el" href="SocketReconnect_8h_source.html">SocketReconnect.h</a>.</p>
 
 </div>
 </div>

@@ -26,11 +26,5 @@ var group__reconnect__private =
       [ "total_attempts", "group__reconnect__private.html#a93f6f4ab97532b4b9db422a1f19b882d", null ],
       [ "total_successes", "group__reconnect__private.html#acde4740d8c3de915c4185a0dcd967f35", null ],
       [ "userdata", "group__reconnect__private.html#a31140778b660ef58bf93500821501979", null ]
-    ] ],
-    [ "if", "group__reconnect__private.html#gaab33e6c19aa5cf524e12e3c40b50574a", null ],
-    [ "if", "group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d", null ],
-    [ "return", "group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6", null ],
-    [ "delta", "group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f", null ],
-    [ "else", "group__reconnect__private.html#ga0544c3fe466e421738dae463968b70ba", null ],
-    [ "seed", "group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee", null ]
+    ] ]
 ];

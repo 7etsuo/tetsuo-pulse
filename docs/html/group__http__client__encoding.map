@@ -1,4 +1,4 @@
 <map id="Content&#45;Encoding Flags" name="Content&#45;Encoding Flags">
-<area shape="rect" id="Node000002" href="$group__http__client__auth.html" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="5,5,149,45"/>
-<area shape="rect" id="Node000001" title="Bit flags indicating supported Content&#45;Encoding methods for HTTP client." alt="" coords="197,13,360,38"/>
+<area shape="rect" id="Node000002" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="5,5,147,31"/>
+<area shape="rect" id="Node000001" title="Bit flags indicating supported Content&#45;Encoding methods for HTTP client." alt="" coords="195,5,357,31"/>
 </map>

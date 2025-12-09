@@ -23,11 +23,12 @@ var searchData=
   ['socketreconnect_5fhealthcheck_20',['SocketReconnect_HealthCheck',['../group__connection__mgmt.html#gae24b576ed367f734f434ef30ad8386c3',1,'SocketReconnect.h']]],
   ['socketretry_5foperation_21',['SocketRetry_Operation',['../group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445',1,'SocketRetry.h']]],
   ['socketretry_5fshouldretry_22',['SocketRetry_ShouldRetry',['../group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8',1,'SocketRetry.h']]],
-  ['sockettimercallback_23',['SocketTimerCallback',['../group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7',1,'SocketTimer.h']]],
-  ['sockettls_5ft_24',['SocketTLS_T',['../group__security.html#ga63e73c93350813167a68162c5cb3d819',1,'SocketTLS.h']]],
-  ['sockettlsalpncallback_25',['SocketTLSAlpnCallback',['../group__tls__context.html#gaa53566f8d54960bb2d44516a50f67c70',1,'SocketTLSContext.h']]],
-  ['sockettlscertlookupcallback_26',['SocketTLSCertLookupCallback',['../group__security.html#ga5c2914ee879d575869932c3a3aed4863',1,'SocketTLSContext.h']]],
-  ['sockettlscrlcallback_27',['SocketTLSCrlCallback',['../group__security.html#ga60686895b6fbdd1290a6f6176484bf5b',1,'SocketTLSContext.h']]],
-  ['sockettlsocspgencallback_28',['SocketTLSOcspGenCallback',['../group__security.html#ga1acd7a590114ffbf4307a6f5a3bab35c',1,'SocketTLSContext.h']]],
-  ['sockettlsverifycallback_29',['SocketTLSVerifyCallback',['../group__security.html#gac9a12208531822c8304c23dcbcb8ba97',1,'SocketTLSContext.h']]]
+  ['socketretry_5ft_23',['SocketRetry_T',['../group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9',1,'SocketRetry.h']]],
+  ['sockettimercallback_24',['SocketTimerCallback',['../group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7',1,'SocketTimer.h']]],
+  ['sockettls_5ft_25',['SocketTLS_T',['../group__security.html#ga63e73c93350813167a68162c5cb3d819',1,'SocketTLS.h']]],
+  ['sockettlsalpncallback_26',['SocketTLSAlpnCallback',['../group__tls__context.html#gaa53566f8d54960bb2d44516a50f67c70',1,'SocketTLSContext.h']]],
+  ['sockettlscertlookupcallback_27',['SocketTLSCertLookupCallback',['../group__security.html#ga5c2914ee879d575869932c3a3aed4863',1,'SocketTLSContext.h']]],
+  ['sockettlscrlcallback_28',['SocketTLSCrlCallback',['../group__security.html#ga60686895b6fbdd1290a6f6176484bf5b',1,'SocketTLSContext.h']]],
+  ['sockettlsocspgencallback_29',['SocketTLSOcspGenCallback',['../group__security.html#ga1acd7a590114ffbf4307a6f5a3bab35c',1,'SocketTLSContext.h']]],
+  ['sockettlsverifycallback_30',['SocketTLSVerifyCallback',['../group__security.html#gac9a12208531822c8304c23dcbcb8ba97',1,'SocketTLSContext.h']]]
 ];
