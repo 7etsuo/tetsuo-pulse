@@ -1,0 +1,244 @@
+\doxysection{Socket\+HTTPClient\+\_\+\+Config Struct Reference}
+\hypertarget{structSocketHTTPClient__Config}{}\label{structSocketHTTPClient__Config}\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} \mbox{\hyperlink{structSocketHTTPClient__Config_aeeeb2ea03d33db0ba500da1c7782f7f3}{max\+\_\+version}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a9a480ef82e914f17714c7c57d12f88af}{allow\+\_\+http2\+\_\+cleartext}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_ac81b35696b105b13f703c5d71f5c5692}{enable\+\_\+connection\+\_\+pool}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__Config_ad87a23b29168c1a6a738bd07268247de}{max\+\_\+connections\+\_\+per\+\_\+host}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__Config_aacd5591ab8f36783e6f759052439eb30}{max\+\_\+total\+\_\+connections}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a867974712621670ef1dc975b2b396f84}{idle\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a82bcf56254c541ebd8fbdbba0a7ba7bb}{max\+\_\+connection\+\_\+age\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a12094d3f2718443658de2cab3f8873b4}{acquire\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_ad0964ac6e0738a3c4914054529bb51a7}{connect\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a5d89d81bfb2401b06059048425fafb93}{request\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a6e7fd7c2a4f862fc8d613d4662a7e2e1}{dns\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a1e5a28b4e256802af5f979726c728553}{follow\+\_\+redirects}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a847eaef5232b2ada9149eea8aa9d4d4c}{redirect\+\_\+on\+\_\+post}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_aa6bd2632f03fadb8a08f023e641c2c64}{accept\+\_\+encoding}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a39d5d74dbbdec57ac84fed12f747e299}{auto\+\_\+decompress}}
+\item 
+Socket\+TLSContext\+\_\+T \mbox{\hyperlink{structSocketHTTPClient__Config_a30f979d083088bc46c8c7de3bc37a3db}{tls\+\_\+context}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_aa5c6daa6286ff5a701a804da14108a4c}{verify\+\_\+ssl}}
+\item 
+Socket\+Proxy\+\_\+\+Config \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTPClient__Config_af1c22aca38ea27645e9400fe42680bdf}{proxy}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTPClient__Config_a0d03d16dc3eae06b6ab0b89b288c44df}{user\+\_\+agent}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__Config_aa26d176771f3b6ddee9a2d95142e9c46}{max\+\_\+response\+\_\+size}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_adb6071171fe058cbc1c221e1b0d6ec98}{enable\+\_\+retry}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_ad8b244df21d9337ed74c872e694d10ba}{max\+\_\+retries}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a1b02030b2c83c6e7bd1812de2362ede3}{retry\+\_\+initial\+\_\+delay\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_afd505949c45d0fb48c0810759cb66176}{retry\+\_\+max\+\_\+delay\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a6355fa7fdfcc9db5d6069189aef62928}{retry\+\_\+on\+\_\+connection\+\_\+error}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a58a60bcfb2edaa6accced6acd52191ad}{retry\+\_\+on\+\_\+timeout}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_a86ed34fbe021d156e6ee5ac2bc8e9b6e}{retry\+\_\+on\+\_\+5xx}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPClient__Config_ae9bb372f96fd426c9fcf729fa78f26e3}{enforce\+\_\+samesite}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP client configuration 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPClient__Config_aa6bd2632f03fadb8a08f023e641c2c64}\label{structSocketHTTPClient__Config_aa6bd2632f03fadb8a08f023e641c2c64} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!accept\_encoding@{accept\_encoding}}
+\index{accept\_encoding@{accept\_encoding}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{accept\_encoding}{accept\_encoding}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::accept\+\_\+encoding}
+
+Bitmask\+: GZIP \texorpdfstring{$\vert$}{|} DEFLATE \texorpdfstring{$\vert$}{|} BR \Hypertarget{structSocketHTTPClient__Config_a12094d3f2718443658de2cab3f8873b4}\label{structSocketHTTPClient__Config_a12094d3f2718443658de2cab3f8873b4} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!acquire\_timeout\_ms@{acquire\_timeout\_ms}}
+\index{acquire\_timeout\_ms@{acquire\_timeout\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{acquire\_timeout\_ms}{acquire\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::acquire\+\_\+timeout\+\_\+ms}
+
+Timeout waiting for pool slot \Hypertarget{structSocketHTTPClient__Config_a9a480ef82e914f17714c7c57d12f88af}\label{structSocketHTTPClient__Config_a9a480ef82e914f17714c7c57d12f88af} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!allow\_http2\_cleartext@{allow\_http2\_cleartext}}
+\index{allow\_http2\_cleartext@{allow\_http2\_cleartext}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{allow\_http2\_cleartext}{allow\_http2\_cleartext}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::allow\+\_\+http2\+\_\+cleartext}
+
+Allow h2c upgrade (default\+: 0) \Hypertarget{structSocketHTTPClient__Config_a39d5d74dbbdec57ac84fed12f747e299}\label{structSocketHTTPClient__Config_a39d5d74dbbdec57ac84fed12f747e299} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!auto\_decompress@{auto\_decompress}}
+\index{auto\_decompress@{auto\_decompress}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{auto\_decompress}{auto\_decompress}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::auto\+\_\+decompress}
+
+Auto-\/decompress responses (default\+: 1) \Hypertarget{structSocketHTTPClient__Config_ad0964ac6e0738a3c4914054529bb51a7}\label{structSocketHTTPClient__Config_ad0964ac6e0738a3c4914054529bb51a7} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!connect\_timeout\_ms@{connect\_timeout\_ms}}
+\index{connect\_timeout\_ms@{connect\_timeout\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{connect\_timeout\_ms}{connect\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::connect\+\_\+timeout\+\_\+ms}
+
+Connection timeout \Hypertarget{structSocketHTTPClient__Config_a6e7fd7c2a4f862fc8d613d4662a7e2e1}\label{structSocketHTTPClient__Config_a6e7fd7c2a4f862fc8d613d4662a7e2e1} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!dns\_timeout\_ms@{dns\_timeout\_ms}}
+\index{dns\_timeout\_ms@{dns\_timeout\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{dns\_timeout\_ms}{dns\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::dns\+\_\+timeout\+\_\+ms}
+
+DNS resolution timeout \Hypertarget{structSocketHTTPClient__Config_ac81b35696b105b13f703c5d71f5c5692}\label{structSocketHTTPClient__Config_ac81b35696b105b13f703c5d71f5c5692} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!enable\_connection\_pool@{enable\_connection\_pool}}
+\index{enable\_connection\_pool@{enable\_connection\_pool}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{enable\_connection\_pool}{enable\_connection\_pool}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::enable\+\_\+connection\+\_\+pool}
+
+Enable pooling (default\+: 1) \Hypertarget{structSocketHTTPClient__Config_adb6071171fe058cbc1c221e1b0d6ec98}\label{structSocketHTTPClient__Config_adb6071171fe058cbc1c221e1b0d6ec98} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!enable\_retry@{enable\_retry}}
+\index{enable\_retry@{enable\_retry}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{enable\_retry}{enable\_retry}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::enable\+\_\+retry}
+
+Enable automatic retry (default\+: 0) \Hypertarget{structSocketHTTPClient__Config_ae9bb372f96fd426c9fcf729fa78f26e3}\label{structSocketHTTPClient__Config_ae9bb372f96fd426c9fcf729fa78f26e3} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!enforce\_samesite@{enforce\_samesite}}
+\index{enforce\_samesite@{enforce\_samesite}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{enforce\_samesite}{enforce\_samesite}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::enforce\+\_\+samesite}
+
+Security configuration Enforce Same\+Site attribute (default\+: 1) \Hypertarget{structSocketHTTPClient__Config_a1e5a28b4e256802af5f979726c728553}\label{structSocketHTTPClient__Config_a1e5a28b4e256802af5f979726c728553} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!follow\_redirects@{follow\_redirects}}
+\index{follow\_redirects@{follow\_redirects}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{follow\_redirects}{follow\_redirects}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::follow\+\_\+redirects}
+
+Max redirects (0 = disabled) \Hypertarget{structSocketHTTPClient__Config_a867974712621670ef1dc975b2b396f84}\label{structSocketHTTPClient__Config_a867974712621670ef1dc975b2b396f84} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!idle\_timeout\_ms@{idle\_timeout\_ms}}
+\index{idle\_timeout\_ms@{idle\_timeout\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{idle\_timeout\_ms}{idle\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::idle\+\_\+timeout\+\_\+ms}
+
+Idle connection timeout \Hypertarget{structSocketHTTPClient__Config_a82bcf56254c541ebd8fbdbba0a7ba7bb}\label{structSocketHTTPClient__Config_a82bcf56254c541ebd8fbdbba0a7ba7bb} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_connection\_age\_ms@{max\_connection\_age\_ms}}
+\index{max\_connection\_age\_ms@{max\_connection\_age\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_connection\_age\_ms}{max\_connection\_age\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+connection\+\_\+age\+\_\+ms}
+
+Max connection age (0 = unlimited) \Hypertarget{structSocketHTTPClient__Config_ad87a23b29168c1a6a738bd07268247de}\label{structSocketHTTPClient__Config_ad87a23b29168c1a6a738bd07268247de} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_connections\_per\_host@{max\_connections\_per\_host}}
+\index{max\_connections\_per\_host@{max\_connections\_per\_host}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_connections\_per\_host}{max\_connections\_per\_host}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+connections\+\_\+per\+\_\+host}
+
+Per-\/host limit (default\+: 6) \Hypertarget{structSocketHTTPClient__Config_aa26d176771f3b6ddee9a2d95142e9c46}\label{structSocketHTTPClient__Config_aa26d176771f3b6ddee9a2d95142e9c46} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_response\_size@{max\_response\_size}}
+\index{max\_response\_size@{max\_response\_size}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_response\_size}{max\_response\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+response\+\_\+size}
+
+Max response body (0 = unlimited) \Hypertarget{structSocketHTTPClient__Config_ad8b244df21d9337ed74c872e694d10ba}\label{structSocketHTTPClient__Config_ad8b244df21d9337ed74c872e694d10ba} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_retries@{max\_retries}}
+\index{max\_retries@{max\_retries}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_retries}{max\_retries}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+retries}
+
+Max retry attempts (default\+: 3) \Hypertarget{structSocketHTTPClient__Config_aacd5591ab8f36783e6f759052439eb30}\label{structSocketHTTPClient__Config_aacd5591ab8f36783e6f759052439eb30} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_total\_connections@{max\_total\_connections}}
+\index{max\_total\_connections@{max\_total\_connections}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_total\_connections}{max\_total\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+total\+\_\+connections}
+
+Total limit (default\+: 100) \Hypertarget{structSocketHTTPClient__Config_aeeeb2ea03d33db0ba500da1c7782f7f3}\label{structSocketHTTPClient__Config_aeeeb2ea03d33db0ba500da1c7782f7f3} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!max\_version@{max\_version}}
+\index{max\_version@{max\_version}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_version}{max\_version}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} Socket\+HTTPClient\+\_\+\+Config\+::max\+\_\+version}
+
+Max HTTP version (default\+: HTTP/2) \Hypertarget{structSocketHTTPClient__Config_af1c22aca38ea27645e9400fe42680bdf}\label{structSocketHTTPClient__Config_af1c22aca38ea27645e9400fe42680bdf} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!proxy@{proxy}}
+\index{proxy@{proxy}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{proxy}{proxy}}
+{\footnotesize\ttfamily Socket\+Proxy\+\_\+\+Config\texorpdfstring{$\ast$}{*} Socket\+HTTPClient\+\_\+\+Config\+::proxy}
+
+Default proxy (NULL for none) \Hypertarget{structSocketHTTPClient__Config_a847eaef5232b2ada9149eea8aa9d4d4c}\label{structSocketHTTPClient__Config_a847eaef5232b2ada9149eea8aa9d4d4c} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!redirect\_on\_post@{redirect\_on\_post}}
+\index{redirect\_on\_post@{redirect\_on\_post}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{redirect\_on\_post}{redirect\_on\_post}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::redirect\+\_\+on\+\_\+post}
+
+Follow redirects for POST (default\+: 0) \Hypertarget{structSocketHTTPClient__Config_a5d89d81bfb2401b06059048425fafb93}\label{structSocketHTTPClient__Config_a5d89d81bfb2401b06059048425fafb93} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!request\_timeout\_ms@{request\_timeout\_ms}}
+\index{request\_timeout\_ms@{request\_timeout\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{request\_timeout\_ms}{request\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::request\+\_\+timeout\+\_\+ms}
+
+Request timeout \Hypertarget{structSocketHTTPClient__Config_a1b02030b2c83c6e7bd1812de2362ede3}\label{structSocketHTTPClient__Config_a1b02030b2c83c6e7bd1812de2362ede3} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!retry\_initial\_delay\_ms@{retry\_initial\_delay\_ms}}
+\index{retry\_initial\_delay\_ms@{retry\_initial\_delay\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{retry\_initial\_delay\_ms}{retry\_initial\_delay\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::retry\+\_\+initial\+\_\+delay\+\_\+ms}
+
+Initial backoff delay (default\+: 100ms) \Hypertarget{structSocketHTTPClient__Config_afd505949c45d0fb48c0810759cb66176}\label{structSocketHTTPClient__Config_afd505949c45d0fb48c0810759cb66176} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!retry\_max\_delay\_ms@{retry\_max\_delay\_ms}}
+\index{retry\_max\_delay\_ms@{retry\_max\_delay\_ms}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{retry\_max\_delay\_ms}{retry\_max\_delay\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::retry\+\_\+max\+\_\+delay\+\_\+ms}
+
+Max backoff delay (default\+: 10s) \Hypertarget{structSocketHTTPClient__Config_a86ed34fbe021d156e6ee5ac2bc8e9b6e}\label{structSocketHTTPClient__Config_a86ed34fbe021d156e6ee5ac2bc8e9b6e} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!retry\_on\_5xx@{retry\_on\_5xx}}
+\index{retry\_on\_5xx@{retry\_on\_5xx}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{retry\_on\_5xx}{retry\_on\_5xx}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::retry\+\_\+on\+\_\+5xx}
+
+Retry on 5xx responses (default\+: 0) \Hypertarget{structSocketHTTPClient__Config_a6355fa7fdfcc9db5d6069189aef62928}\label{structSocketHTTPClient__Config_a6355fa7fdfcc9db5d6069189aef62928} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!retry\_on\_connection\_error@{retry\_on\_connection\_error}}
+\index{retry\_on\_connection\_error@{retry\_on\_connection\_error}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{retry\_on\_connection\_error}{retry\_on\_connection\_error}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::retry\+\_\+on\+\_\+connection\+\_\+error}
+
+Retry on connect failures (default\+: 1) \Hypertarget{structSocketHTTPClient__Config_a58a60bcfb2edaa6accced6acd52191ad}\label{structSocketHTTPClient__Config_a58a60bcfb2edaa6accced6acd52191ad} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!retry\_on\_timeout@{retry\_on\_timeout}}
+\index{retry\_on\_timeout@{retry\_on\_timeout}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{retry\_on\_timeout}{retry\_on\_timeout}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::retry\+\_\+on\+\_\+timeout}
+
+Retry on timeouts (default\+: 1) \Hypertarget{structSocketHTTPClient__Config_a30f979d083088bc46c8c7de3bc37a3db}\label{structSocketHTTPClient__Config_a30f979d083088bc46c8c7de3bc37a3db} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!tls\_context@{tls\_context}}
+\index{tls\_context@{tls\_context}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{tls\_context}{tls\_context}}
+{\footnotesize\ttfamily Socket\+TLSContext\+\_\+T Socket\+HTTPClient\+\_\+\+Config\+::tls\+\_\+context}
+
+Custom TLS context (NULL for default) \Hypertarget{structSocketHTTPClient__Config_a0d03d16dc3eae06b6ab0b89b288c44df}\label{structSocketHTTPClient__Config_a0d03d16dc3eae06b6ab0b89b288c44df} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!user\_agent@{user\_agent}}
+\index{user\_agent@{user\_agent}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{user\_agent}{user\_agent}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HTTPClient\+\_\+\+Config\+::user\+\_\+agent}
+
+User-\/\+Agent header \Hypertarget{structSocketHTTPClient__Config_aa5c6daa6286ff5a701a804da14108a4c}\label{structSocketHTTPClient__Config_aa5c6daa6286ff5a701a804da14108a4c} 
+\index{SocketHTTPClient\_Config@{SocketHTTPClient\_Config}!verify\_ssl@{verify\_ssl}}
+\index{verify\_ssl@{verify\_ssl}!SocketHTTPClient\_Config@{SocketHTTPClient\_Config}}
+\doxysubsubsection{\texorpdfstring{verify\_ssl}{verify\_ssl}}
+{\footnotesize\ttfamily int Socket\+HTTPClient\+\_\+\+Config\+::verify\+\_\+ssl}
+
+Verify certificates (default\+: 1) 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient_8h}{Socket\+HTTPClient.\+h}}\end{DoxyCompactItemize}

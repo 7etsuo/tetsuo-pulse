@@ -1,0 +1,6 @@
+<map id="Live Socket Counting Utilities" name="Live Socket Counting Utilities">
+<area shape="rect" id="Node000003" href="$group__core__io.html" title="Fundamental socket primitives for TCP, UDP, Unix domain, and DNS operations." alt="" coords="28,5,153,31"/>
+<area shape="rect" id="Node000001" title="Thread&#45;safe global counter for tracking active Socket_T instances." alt="" coords="224,47,371,87"/>
+<area shape="rect" id="Node000002" href="$group__foundation.html" title="Base infrastructure for memory management, exception handling, and core utilities...." alt="" coords="5,55,176,80"/>
+<area shape="rect" id="Node000004" href="$group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics." alt="" coords="57,104,124,129"/>
+</map>

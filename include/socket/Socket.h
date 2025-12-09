@@ -3,22 +3,61 @@
 
 /**
  * @defgroup core_io Core I/O Modules
- * @brief Fundamental socket operations for TCP, UDP, and Unix domain sockets.
- * @{
- * The Core I/O group provides the basic socket primitives used by all
- * higher-level networking modules. Key components include:
- * - Socket (tcp/unix): High-level TCP/Unix socket abstraction with I/O
- * operations
- * - SocketBuf (buffers): Circular buffer for efficient socket I/O
- * - SocketDgram (udp): UDP datagram sockets with multicast/broadcast support
- * - SocketDNS (dns): Asynchronous DNS resolution with worker threads
- * - SocketProxy (proxy): Transparent proxy tunneling for HTTP CONNECT and SOCKS protocols
- * - SocketIO (io): Low-level socket I/O primitives
+ * @brief Fundamental socket primitives for TCP, UDP, Unix domain, and DNS
+ * operations.
  *
- * @see foundation for base infrastructure.
- * @see event_system for multiplexing built on core I/O.
- * @see Socket_T for TCP socket operations.
- * @see SocketDgram_T for UDP operations.
+ * This group forms the foundation for all networking in the library, providing
+ * low-level but safe abstractions over POSIX sockets. It handles
+ * cross-platform differences, error mapping to exceptions, and common patterns
+ * like partial I/O.
+ *
+ * ## Architecture Overview
+ *
+ * ```
+ * ┌─────────────────────────────┐
+ * │   Application Modules       │
+ * │ HTTP, TLS, Pool, Poll, etc. │
+ * └─────────────┬───────────────┘
+ *               │ Uses
+ * ┌─────────────▼───────────────┐
+ * │     Core I/O Modules        │
+ * │ Socket_T, DNS, Proxy, Buf   │
+ * └─────────────┬───────────────┘
+ *               │ Uses
+ * ┌─────────────▼───────────────┐
+ * │    Foundation Modules       │
+ * │ Arena, Except, Config, Util │
+ * └─────────────────────────────┘
+ * ```
+ *
+ * ## Module Breakdown
+ *
+ * | Module | Purpose | Key Features | Dependencies |
+ * |--------|---------|--------------|--------------|
+ * | Socket_T | TCP/Unix sockets | Bind/connect/I/O/options/fd passing |
+ * Foundation | | SocketDgram_T | UDP/Datagram |
+ * Sendto/recvfrom/multicast/broadcast | Foundation | | SocketBuf_T | Circular
+ * buffers | Zero-copy read/write/secure clear | Arena | | SocketDNS_T | Async
+ * DNS | Worker threads/non-blocking resolve | Socket, Timer | | SocketProxy_T
+ * | Proxy tunneling | HTTP CONNECT/SOCKS4/5 | Socket, DNS |
+ *
+ * ## Relationships
+ *
+ * - **Depends on**: @ref foundation (memory, exceptions, utils)
+ * - **Used by**: @ref event_system (poll integration), @ref connection_mgmt
+ * (pooling),
+ *   @ref http (HTTP over sockets), @ref security (protections), @ref async_io
+ * (happy eyeballs)
+ * - **Thread Safety**: Operations marked @threadsafe; instances not shared
+ * without locks
+ * - **Performance**: O(1) most ops; DNS may block unless async
+ *
+ * @see @ref foundation Base infrastructure
+ * @see @ref event_system Event system built on Core I/O
+ * @see Socket_T Primary TCP/Unix abstraction
+ * @see SocketDgram_T UDP abstraction
+ * @see docs/ASYNC_IO.md Integration guide
+ * @{
  */
 
 /**
@@ -26,37 +65,105 @@
  * @ingroup core_io
  * @brief High-level TCP/IP and Unix domain socket interface.
  *
- * This header consolidates all socket operations including:
- * - Core socket creation and I/O
- * - State query functions
- * - Socket options configuration
- * - Async DNS operations
- * - Unix domain socket support
+ * This header provides a comprehensive, exception-safe API for creating,
+ * configuring, and using TCP/IP and Unix domain sockets. It abstracts
+ * low-level POSIX socket operations while adding production features like
+ * automatic SIGPIPE handling, bandwidth limiting, timeouts, and async DNS
+ * integration.
  *
- * PLATFORM REQUIREMENTS:
- * - POSIX-compliant system (Linux, BSD, macOS, etc.)
- * - IPv6 support in kernel (for dual-stack sockets)
- * - POSIX threads (pthread) for thread-safe error reporting
- * - NOT portable to Windows without Winsock adaptation
+ * ## Key Features
  *
- * SIGPIPE HANDLING (automatic - no application action required):
- * The library handles SIGPIPE internally. All send operations use MSG_NOSIGNAL
- * (Linux/FreeBSD), and SO_NOSIGPIPE is set at socket creation (BSD/macOS).
- * Applications do NOT need to call signal(SIGPIPE, SIG_IGN).
+ * - **Core Operations**: Creation, bind, connect, listen, accept, send/recv
+ * with partial handling
+ * - **Advanced I/O**: Zero-copy sendfile, scatter/gather (sendv/recvv),
+ * ancillary data (sendmsg/recvmsg)
+ * - **Configuration**: Non-blocking mode, reuseaddr/port, keepalive, nodelay,
+ * buffers, congestion control
+ * - **Unix Domain**: Path binding, fd passing (SCM_RIGHTS), peer credentials
+ * (pid/uid/gid on Linux)
+ * - **Security**: SYN defer accept, bandwidth throttling, timeout enforcement
+ * - **Integration**: Async DNS, event loop compatibility, connection pooling
+ * ready
+ * - **Error Handling**: Detailed exceptions with retryability checks,
+ * thread-local errno
  *
- * Error Handling:
- * - Socket_Failed: General socket errors
- * - Socket_Closed: Connection terminated by peer
- * - Some functions return NULL/0 for non-blocking EAGAIN/EWOULDBLOCK
+ * ## Platform Requirements
  *
- * Timeouts:
- * - Global defaults configurable via Socket_timeouts_setdefaults()
- * - Per-socket overrides via Socket_timeouts_set()
- * - Applied to DNS resolution and blocking connect() paths
+ * | Requirement | Details |
+ * |-------------|---------|
+ * | OS | POSIX-compliant (Linux, FreeBSD, macOS, Solaris) |
+ * | Network | IPv4/IPv6 kernel support for dual-stack |
+ * | Threads | pthreads for thread-safe operations |
+ * | Limits | Standard fd limits; Unix paths <= UNIX_PATH_MAX (~108 bytes) |
+ * | Portability | Not Windows-native; requires Winsock porting |
  *
- * @see Socket_new() for socket creation.
- * @see Socket_connect() for connection establishment.
- * @see Socket_send() and Socket_recv() for I/O operations.
+ * ## SIGPIPE Handling
+ *
+ * Automatic and transparent:
+ * - Linux/FreeBSD: All sends use MSG_NOSIGNAL
+ * - BSD/macOS: SO_NOSIGPIPE set at socket creation
+ * - No application signal handlers needed
+ *
+ * Optional: Socket_ignore_sigpipe() for raw socket compatibility
+ *
+ * ## Error Model
+ *
+ * - **Exceptions**: Socket_Failed (general), Socket_Closed (peer disconnect),
+ * SocketUnix_Failed (Unix errors)
+ * - **Non-blocking**: EAGAIN/EWOULDBLOCK return 0/NULL, not exceptions
+ * - **Retryability**: Socket_error_is_retryable() classifies errors for
+ * backoff logic
+ * - **Diagnostics**: Socket_geterrno(), Socket_GetLastError(),
+ * Socket_safe_strerror()
+ *
+ * ## Timeout Configuration
+ *
+ * Granular control via SocketTimeouts_T:
+ * - Global defaults: Socket_timeouts_setdefaults()
+ * - Per-socket: Socket_timeouts_set(), Socket_timeouts_set_extended()
+ * - Phases: DNS, connect, TLS handshake, I/O operations
+ *
+ * ## Usage Patterns
+ *
+ * ### Simple Client
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "api.example.com", 443);
+ * Socket_sendall(sock, request, len);
+ * Socket_free(&sock);
+ * @endcode
+ *
+ * ### Echo Server
+ * @code{.c}
+ * Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_bind(server, "0.0.0.0", 8080);
+ * Socket_listen(server, 128);
+ * while (running) {
+ *     Socket_T client = Socket_accept(server);
+ *     if (client) {
+ *         // Handle client...
+ *         Socket_free(&client);
+ *     }
+ * }
+ * Socket_free(&server);
+ * @endcode
+ *
+ * ## Related Headers and Modules
+ *
+ * - core/Except.h: Exception framework (TRY/EXCEPT)
+ * - core/SocketConfig.h: Global limits and timeouts
+ * - dns/SocketDNS.h: Asynchronous hostname resolution
+ * - socket/SocketCommon.h: Shared enums and structs
+ * - pool/SocketPool.h: @ref connection_mgmt Connection pooling
+ * - poll/SocketPoll.h: @ref event_system Event multiplexing
+ * - tls/SocketTLS.h: #if SOCKET_HAS_TLS TLS/SSL support
+ *
+ * @see @ref core_io for full module overview
+ * @see Socket_T for opaque type details
+ * @see Socket_new() entry point for creation
+ * @see docs/ASYNC_IO.md asynchronous I/O guide
+ * @see docs/SECURITY.md secure socket configuration
+ * @see docs/UNIX_DOMAIN.md Unix socket specifics
  */
 
 #include "core/Except.h"
@@ -66,29 +173,57 @@
 
 #define T Socket_T
 /**
+ * @brief Opaque handle representing a TCP/IP or Unix domain socket connection.
  * @ingroup core_io
- * @brief Opaque handle for TCP/IP and Unix domain sockets.
  *
- * This type represents a high-level abstraction over low-level socket file
- * descriptors, providing:
- * - Automatic SIGPIPE handling
- * - Non-blocking mode support
- * - Timeout configuration
- * - Bandwidth limiting
- * - Unix domain socket operations including fd passing
- * - Thread-safe state queries
+ * Socket_T provides a safe, high-level abstraction over POSIX socket file
+ * descriptors (int fd). It encapsulates:
+ * - File descriptor management (auto-close on free)
+ * - Socket options configuration (reuseaddr, nodelay, keepalive, etc.)
+ * - I/O operations (send/recv with partial handling, sendfile, sendmsg)
+ * - State tracking (connected, bound, listening)
+ * - Unix domain specific features (fd passing via SCM_RIGHTS)
+ * - Bandwidth limiting and timeout controls
+ * - Automatic SIGPIPE suppression
+ * - Exception-based error handling
  *
- * Sockets are created with Socket_new() or Socket_new_from_fd() and freed with
- * Socket_free(). All operations are exception-safe using Except_T.
+ * Lifecycle:
+ * 1. Create: Socket_new() or Socket_new_from_fd()
+ * 2. Configure: setnonblocking, setreuseaddr, settimeout, etc.
+ * 3. Use: bind/connect/listen/accept/send/recv
+ * 4. Cleanup: Socket_free(&sock) - always pass address to nullify pointer
  *
- * @note All sockets are created in blocking mode by default. Use
- * Socket_setnonblocking() to enable non-blocking I/O.
+ * Thread Safety:
+ * - Individual operations are thread-safe where documented (@threadsafe
+ * Yes/No)
+ * - Socket instances should not be shared across threads without external
+ * synchronization
+ * - State queries (isconnected, getpeeraddr) are atomic but reflect last
+ * operation
+ * - For concurrent access, use mutex or SocketPool for managed sharing
  *
- * @see SocketDgram_T for UDP/datagram sockets.
- * @see SocketBuf_T for buffering support.
- * @see SocketPool_T for connection pooling.
- * @see @ref event_system for event-driven I/O integration.
- * @see docs/ASYNC_IO.md for asynchronous patterns.
+ * Related Types:
+ * - SocketDgram_T: For UDP and datagram sockets
+ * - SocketPool_T: For managing multiple connections
+ * - SocketBuf_T: For efficient buffering
+ *
+ * @note Sockets start in blocking mode; enable non-blocking for event loops
+ * @note All I/O functions handle EINTR and EAGAIN appropriately
+ * @note For TLS, use SocketTLS_enable() after creation but before
+ * connect/handshake
+ * @warning Never close underlying fd directly - use Socket_free()
+ * @warning Check Socket_error_is_retryable() for transient errors
+ *
+ * @see Socket_new() for creation from scratch
+ * @see Socket_new_from_fd() for wrapping existing fds
+ * @see Socket_free() for proper cleanup
+ * @see Socket_connect(), Socket_bind(), Socket_listen(), Socket_accept() for
+ * lifecycle ops
+ * @see Socket_send(), Socket_recv(), Socket_sendfile() for I/O
+ * @see SocketPool_T @ref connection_mgmt for pooling
+ * @see @ref event_system for integration with SocketPoll_T
+ * @see docs/ASYNC_IO.md for advanced async patterns
+ * @see docs/SECURITY.md for secure configuration guidelines
  */
 typedef struct T *T;
 
@@ -101,19 +236,60 @@ typedef struct T *T;
  * @brief General socket operation failure exception.
  * @ingroup core_io
  *
- * Category: NETWORK (usually) or PROTOCOL (configuration errors)
- * Retryable: Depends on errno - use Socket_error_is_retryable() to check
+ * Indicates failure in any socket-related system call or library operation.
+ * This is the primary exception for most Socket_T API errors.
  *
- * Raised for:
- * - Socket creation failures (socket(), bind(), listen(), accept())
- * - Connection failures (connect())
- * - I/O failures (send(), recv())
- * - Option setting failures (setsockopt())
+ * Error Category:
+ * - NETWORK: Transient issues like timeouts, resets, unreachable hosts
+ * - PROTOCOL: Invalid configuration or state (e.g., bind on used port)
+ * - SYSTEM: Resource exhaustion or permission issues
  *
- * Check errno via Socket_geterrno() for specific error code.
+ * Retryability: Use Socket_error_is_retryable(Socket_geterrno()) to determine
+ * if safe to retry the operation. Examples:
+ * - Retryable: ECONNREFUSED, ETIMEDOUT, EAGAIN
+ * - Non-retryable: EACCES, EINVAL, EMFILE
  *
- * @see Socket_error_is_retryable() for retryability checking.
- * @see Socket_geterrno() for errno access.
+ * Always check Socket_geterrno() and Socket_GetLastError() in EXCEPT block for
+ * details.
+ *
+ * Common triggers:
+ * - socket(2), bind(2), listen(2), accept(4), connect(2) failures
+ * - send(2), recv(2), sendmsg(2), recvmsg(2) errors
+ * - setsockopt(2), getsockopt(2) failures
+ * - Internal allocation failures (ENOMEM)
+ *
+ * @see Socket_geterrno() to retrieve errno value
+ * @see Socket_GetLastError() for human-readable error string
+ * @see Socket_error_is_retryable() to check if operation can be retried
+ *
+ * ## Handling Example
+ *
+ * @code{.c}
+ * TRY {
+ *     Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ *     Socket_connect(sock, "invalid-host", 80);
+ * } EXCEPT(Socket_Failed) {
+ *     int err = Socket_geterrno();
+ *     if (Socket_error_is_retryable(err)) {
+ *         SOCKET_LOG_WARN_MSG("Retryable socket error %d: %s", err,
+ * Socket_GetLastError());
+ *         // Implement backoff and retry logic
+ *     } else {
+ *         SOCKET_LOG_ERROR_MSG("Fatal socket error %d: %s", err,
+ * Socket_GetLastError());
+ *         // Abort or fallback
+ *     }
+ * } END_TRY;
+ * @endcode
+ *
+ * @note errno is preserved thread-locally; safe in multithreaded contexts
+ * @note Use Socket_safe_strerror() for safe strerror() wrapper
+ * @warning Do not assume all Socket_Failed are network errors - check errno
+ * @warning In non-blocking mode, EAGAIN may not raise exception (returns 0
+ * instead)
+ *
+ * @see Socket_Closed for peer disconnection cases
+ * @see SocketUnix_Failed for Unix-specific errors
  */
 extern const Except_T Socket_Failed;
 
@@ -202,48 +378,234 @@ extern int Socket_error_is_retryable (int err);
  */
 
 /**
- * @brief Create a new socket.
+ * @brief Create a new socket with specified domain, type, and protocol.
  * @ingroup core_io
- * @param domain Address family (AF_INET, AF_INET6, etc.).
- * @param type Socket type (SOCK_STREAM, SOCK_DGRAM, etc.).
- * @param protocol Protocol (usually 0 for default).
- * @return New socket instance.
- * @throws Socket_Failed on error.
- * @threadsafe Yes - creates new socket without accessing shared resources.
- * @see Socket_free() for cleanup.
- * @see Socket_connect() for establishing connections.
- * @see Socket_bind() for server-side binding.
+ *
+ * Creates and initializes a new socket instance using the socket(2) system
+ * call. The socket is created in blocking mode by default. SIGPIPE is
+ * automatically handled internally via platform-specific mechanisms
+ * (MSG_NOSIGNAL on Linux, SO_NOSIGPIPE on BSD/macOS). The library sets
+ * reasonable default socket options including close-on-exec and non-SIGPIPE
+ * behavior.
+ *
+ * Supported domains: AF_INET (IPv4), AF_INET6 (IPv6), AF_UNIX (Unix domain).
+ * Supported types: SOCK_STREAM (TCP), SOCK_DGRAM (UDP), SOCK_SEQPACKET (SCTP).
+ * Protocol is usually 0 to select default for the domain/type combination.
+ *
+ * Edge cases:
+ * - Invalid domain/type/protocol combinations raise Socket_Failed immediately.
+ * - Resource limits (EMFILE, ENFILE) raise Socket_Failed.
+ * - Permission issues (EACCES) raise Socket_Failed.
+ *
+ * For UDP, use SocketDgram_new() instead for datagram-specific features.
+ *
+ * @param[in] domain Address family (AF_INET, AF_INET6, AF_UNIX)
+ * @param[in] type Socket type (SOCK_STREAM for TCP, SOCK_DGRAM for UDP)
+ * @param[in] protocol Protocol number (0 for default)
+ *
+ * @return New Socket_T instance on success, raises exception on failure.
+ *
+ * @throws Socket_Failed System call failed (EACCES permission denied,
+ * EMFILE/ENFILE too many files, ENOMEM out of memory, EINVAL invalid
+ * arguments)
+ *
+ * @threadsafe Yes - creates independent instance safe from concurrent calls
+ *
+ * ## Basic Usage
+ *
+ * @code{.c}
+ * // Create TCP IPv4 socket
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "example.com", 80);
+ * // ... use socket ...
+ * Socket_free(&sock);
+ * @endcode
+ *
+ * ## With Error Handling and Options
+ *
+ * @code{.c}
+ * TRY {
+ *     Socket_T sock = Socket_new(AF_INET6, SOCK_STREAM, 0);
+ *     Socket_setreuseaddr(sock);  // Allow address reuse
+ *     Socket_setnonblocking(sock);  // Non-blocking mode
+ *     Socket_bind(sock, "::", 8080);
+ *     Socket_listen(sock, 128);
+ *     // Server loop...
+ * } EXCEPT(Socket_Failed) {
+ *     fprintf(stderr, "Socket creation failed: %s\n", Socket_GetLastError());
+ *     // Handle error (e.g., retry or exit)
+ * } FINALLY {
+ *     Socket_free(&sock);
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Socket is blocking by default; use Socket_setnonblocking() for async
+ * I/O.
+ * @note For Unix domain sockets, use AF_UNIX domain.
+ * @warning Ensure proper cleanup with Socket_free() to avoid fd leaks.
+ * @warning SOCK_DGRAM with this function creates basic UDP socket; use
+ * SocketDgram_new() for full UDP features like multicast.
+ *
+ * @complexity O(1) - single socket(2) system call plus option setup
+ *
+ * @see Socket_free() for resource cleanup
+ * @see Socket_connect() for client connections
+ * @see Socket_bind() and Socket_listen() for servers
+ * @see SocketDgram_new() for UDP/datagram sockets
+ * @see Socket_new_from_fd() for wrapping existing fds
+ * @see docs/ASYNC_IO.md for non-blocking patterns
  */
 extern T Socket_new (int domain, int type, int protocol);
 
 /**
- * @brief Create a pair of connected Unix domain sockets.
+ * @brief Create a pair of connected Unix domain sockets for inter-process
+ * communication.
  * @ingroup core_io
- * @param type Socket type (SOCK_STREAM or SOCK_DGRAM).
- * @param socket1 Output - first socket of the pair.
- * @param socket2 Output - second socket of the pair.
- * @throws Socket_Failed on error.
- * @threadsafe Yes - creates new sockets without modifying any shared state.
- * @note Creates two connected Unix domain sockets for IPC. Both sockets are ready to use - no bind/connect needed.
- * @see Socket_new() for individual socket creation.
+ *
+ * Creates two connected Unix domain sockets using socketpair(2) system call.
+ * The sockets are of the specified type (SOCK_STREAM or SOCK_DGRAM) and are
+ * immediately connected to each other. No bind() or connect() is needed.
+ * Both sockets are created in blocking mode with default options (CLOEXEC, no
+ * SIGPIPE). This is useful for parent-child process communication after
+ * fork(), or for thread-to-thread IPC without network stack overhead.
+ *
+ * Supported types: SOCK_STREAM (reliable byte stream), SOCK_DGRAM (datagrams).
+ * Domain is always AF_UNIX internally.
+ *
+ * Edge cases:
+ * - Unsupported type raises Socket_Failed (EINVAL)
+ * - Resource limits raise Socket_Failed (EMFILE, ENFILE)
+ * - On success, both *socket1 and *socket2 are non-NULL and connected.
+ *
+ * After use, free both sockets with Socket_free().
+ *
+ * @param[in] type Socket type (SOCK_STREAM or SOCK_DGRAM)
+ * @param[out] socket1 First socket of the pair (set to new Socket_T or NULL on
+ * error)
+ * @param[out] socket2 Second socket of the pair (set to new Socket_T or NULL
+ * on error)
+ *
+ * @throws Socket_Failed System call failed (EINVAL invalid type, EMFILE/ENFILE
+ * too many files, ENOMEM, EAFNOSUPPORT)
+ *
+ * @threadsafe Yes - creates independent socket pair safe from concurrent calls
+ *
+ * ## Basic Usage
+ *
+ * @code{.c}
+ * Socket_T sock1, sock2;
+ * SocketPair_new(SOCK_STREAM, &sock1, &sock2);
+ * // Now sock1 and sock2 are connected
+ * // Send from sock1, receive on sock2, etc.
+ * Socket_free(&sock1);
+ * Socket_free(&sock2);
+ * @endcode
+ *
+ * ## With Error Handling for Fork IPC
+ *
+ * @code{.c}
+ * TRY {
+ *     Socket_T parent_sock, child_sock;
+ *     SocketPair_new(SOCK_STREAM, &parent_sock, &child_sock);
+ *     pid_t pid = fork();
+ *     if (pid == 0) {  // Child
+ *         Socket_free(&parent_sock);  // Close unused
+ *         // Use child_sock for IPC
+ *     } else {  // Parent
+ *         Socket_free(&child_sock);
+ *         // Use parent_sock for IPC
+ *     }
+ * } EXCEPT(Socket_Failed) {
+ *     perror("Socket pair creation failed");
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Sockets are bidirectional: data sent on one can be received on the
+ * other.
+ * @note For DGRAM type, it's like connected UDP - sendto not needed.
+ * @warning Always free both sockets to avoid fd leaks.
+ * @warning After fork(), close the unused socket in both parent and child to
+ * avoid deadlocks.
+ *
+ * @complexity O(1) - single socketpair(2) call
+ *
+ * @see Socket_new() for single socket creation
+ * @see Socket_free() for cleanup
+ * @see Socket_sendfd() for passing fds over Unix sockets
+ * @see man socketpair(2) for low-level details
  */
 extern void SocketPair_new (int type, T *socket1, T *socket2);
 
 /**
- * @brief Free a socket and close the connection.
+ * @brief Dispose of a socket instance and close the underlying file
+ * descriptor.
  * @ingroup core_io
- * @param socket Pointer to socket (will be set to NULL on success).
- * @threadsafe Yes - operates only on the specified socket instance.
- * @note Closes the underlying file descriptor and frees resources.
- * @see Socket_new() for socket creation.
- * @see Socket_debug_live_count() for verifying no leaks in tests.
+ *
+ * Closes the socket's file descriptor using close(2) and frees all associated
+ * resources including internal state, buffers, and timers. The pointer *socket
+ * is set to NULL after successful cleanup to prevent use-after-free.
+ *
+ * This function is idempotent: calling on NULL does nothing. It handles
+ * partial cleanup if socket is in inconsistent state (e.g., after exception).
+ *
+ * IMPORTANT: Always pass pointer to socket (&sock) so it can be nulled.
+ * Failing to do so may lead to use-after-free bugs.
+ *
+ * For testing, use Socket_debug_live_count() to ensure all sockets freed.
+ *
+ * Edge cases:
+ * - Already freed socket (NULL): no-op
+ * - Socket in connect/bind state: aborts operations gracefully
+ * - TLS-enabled socket: performs TLS shutdown if connected
+ *
+ * @param[in,out] socket Pointer to Socket_T (set to NULL on success)
+ *
+ * @throws None - errors during close are logged but not raised (Socket_Failed
+ * would be swallowed)
+ *
+ * @threadsafe Yes - per-socket cleanup, no shared state modification
+ *
+ * ## Basic Usage
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * // ... use sock ...
+ * Socket_free(&sock);  // Pass address to nullify
+ * @endcode
+ *
+ * ## In TRY/EXCEPT Block
+ *
+ * @code{.c}
+ * Socket_T sock = NULL;
+ * TRY {
+ *     sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ *     // Operations that may fail
+ * } EXCEPT(Socket_Failed) {
+ *     // Error handling
+ * } FINALLY {
+ *     Socket_free(&sock);  // Safe even if sock NULL
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Always use &sock in Socket_free(&sock) to enable nulling.
+ * @note For pooled sockets, use SocketPool_remove() before free.
+ * @warning Do not access socket after free - undefined behavior.
+ * @warning In multithreaded code, ensure no other thread uses socket during
+ * free.
+ *
+ * @complexity O(1) - close(2) call plus resource cleanup
+ *
+ * @see Socket_new() for creation
+ * @see Socket_debug_live_count() for leak detection in tests
+ * @see SocketPool_T for connection pooling alternatives
  */
 extern void Socket_free (T *socket);
 
 /**
  * @brief Create Socket_T from existing file descriptor.
  * @ingroup core_io
- * @param fd File descriptor (must be valid socket, will be set to non-blocking).
+ * @param fd File descriptor (must be valid socket, will be set to
+ * non-blocking).
  * @return New Socket_T instance or NULL on failure.
  * @throws Socket_Failed on error.
  * @threadsafe Yes - returns new instance without modifying shared state.
@@ -266,17 +628,95 @@ extern int Socket_debug_live_count (void);
  */
 
 /**
- * @brief Bind socket to address and port.
+ * @brief Bind a socket to a local IP address and port.
  * @ingroup core_io
- * @param socket Socket to bind.
- * @param host IP address or NULL/"0.0.0.0" for any.
- * @param port Port number (1 to SOCKET_MAX_PORT).
- * @throws Socket_Failed on error.
- * @warning May block 30+ seconds during DNS resolution if hostname provided.
- * @note For non-blocking operation, use IP addresses directly.
- * @see Socket_listen() for listening on bound sockets.
- * @see Socket_connect() for client-side connection.
- * @see @ref SocketDNS_T "Async DNS resolution" for non-blocking hostname resolution.
+ *
+ * Associates the socket with a local network address and port using bind(2).
+ * This is required for servers (before listen()) and clients wanting specific
+ * local endpoints (e.g., source IP selection). Hostnames trigger synchronous
+ * DNS resolution, which may block; use IP literals or async DNS for
+ * non-blocking.
+ *
+ * Supported formats for host:
+ * - NULL or "0.0.0.0": Bind to all IPv4 interfaces
+ * - "::": Bind to all IPv6 interfaces (dual-stack if possible)
+ * - Specific IP: "192.168.1.100" or "[2001:db8::1]"
+ * - Hostname: Resolves via getaddrinfo(3), blocks up to ~30s on failure
+ *
+ * Port range: 1-65535 (SOCKET_MAX_PORT); 0 for kernel-assigned ephemeral port.
+ *
+ * Edge cases:
+ * - Port 0: OS assigns available port; query with Socket_getlocalport()
+ * - Already bound: Raises Socket_Failed (EINVAL or EADDRINUSE)
+ * - Permission denied on privileged ports (<1024): Socket_Failed (EACCES)
+ * - Address not local: Socket_Failed (EADDRNOTAVAIL)
+ *
+ * For non-blocking bind, resolve hostname first with SocketDNS_resolve_sync()
+ * or async.
+ *
+ * @param[in,out] socket Unbound socket to bind (updated with local addr/port
+ * state)
+ * @param[in] host Local address string (IP or hostname; NULL for any)
+ * @param[in] port Local port (1-65535; 0 for ephemeral)
+ *
+ * @throws Socket_Failed Bind failed: EADDRINUSE (port busy), EADDRNOTAVAIL
+ * (invalid local addr), EACCES (permission), ENETDOWN (interface down),
+ * getaddrinfo errors for hostnames
+ *
+ * @threadsafe Yes - binds specific socket instance atomically
+ *
+ * ## Basic Server Bind
+ *
+ * @code{.c}
+ * Socket_T server = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_bind(server, NULL, 8080);  // Bind to any IP on port 8080
+ * Socket_listen(server, SOMAXCONN);
+ * @endcode
+ *
+ * ## Client Bind to Specific Interface
+ *
+ * @code{.c}
+ * TRY {
+ *     Socket_T client = Socket_new(AF_INET6, SOCK_STREAM, 0);
+ *     Socket_bind(client, "::1", 0);  // Bind to loopback, ephemeral port
+ *     Socket_connect(client, "example.com", 80);
+ *     int local_port = Socket_getlocalport(client);  // Query assigned port
+ * } EXCEPT(Socket_Failed) {
+ *     // Handle bind/connect failure
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Async DNS for Non-Blocking
+ *
+ * @code{.c}
+ * SocketDNS_T dns = SocketDNS_new();
+ * Request_T req = Socket_bind_async(dns, sock, "localhost", 8080);
+ * // Poll dns fd or integrate with event loop
+ * struct addrinfo *res = SocketDNS_getresult(dns, req);
+ * if (res) Socket_bind_with_addrinfo(sock, res);
+ * freeaddrinfo(res);
+ * @endcode
+ *
+ * @note After bind, use Socket_getlocaladdr() and Socket_getlocalport() to
+ * confirm
+ * @note For IPv6, prefer "::" for dual-stack; use SocketConfig_set_ipv6only()
+ * for v6-only
+ * @warning Hostname resolution blocks; use Socket_bind_async() or IP for async
+ * apps
+ * @warning Privileged ports require root or cap_net_bind_service; use setcap
+ * or non-privileged
+ * @warning In containers/Docker, ensure --cap-add=NET_BIND_SERVICE or run as
+ * root
+ *
+ * @complexity O(1) for IP bind; O(n) for hostname resolution where n=lookup
+ * time
+ *
+ * @see Socket_listen() next step for servers
+ * @see Socket_getlocaladdr(), Socket_getlocalport() for bound address query
+ * @see Socket_bind_unix() for Unix domain binding
+ * @see Socket_bind_async(), Socket_bind_with_addrinfo() for async variant
+ * @see SocketDNS_T @ref core_io for async resolution
+ * @see docs/SECURITY.md bind security considerations
  */
 extern void Socket_bind (T socket, const char *host, int port);
 
@@ -303,16 +743,101 @@ extern void Socket_listen (T socket, int backlog);
 extern T Socket_accept (T socket);
 
 /**
- * @brief Connect to remote host.
+ * @brief Establish a connection to a remote host and port.
  * @ingroup core_io
- * @param socket Socket to connect.
- * @param host Remote IP address or hostname.
- * @param port Remote port.
- * @throws Socket_Failed on error.
- * @warning May block 30+ seconds during DNS resolution if hostname provided.
- * @note For non-blocking operation, use IP addresses directly.
- * @see Socket_bind() for binding to local addresses.
- * @see @ref SocketDNS_T "Async DNS resolution" for non-blocking hostname resolution.
+ *
+ * Initiates a connection to the remote endpoint using connect(2). For TCP
+ * sockets, this performs the 3-way handshake; for UDP, sets default peer
+ * address for send(). Hostnames trigger synchronous DNS via getaddrinfo(3),
+ * potentially blocking.
+ *
+ * Supported host formats:
+ * - IP address: "192.168.1.1", "[2001:db8::1]"
+ * - Hostname: "example.com" - resolves A/AAAA records
+ * - IPv6 literals require [] brackets
+ *
+ * Port: 1-65535; common services like 80 (HTTP), 443 (HTTPS)
+ *
+ * Behavior:
+ * - Blocking mode: Waits for handshake completion or timeout/failure
+ * - Non-blocking: Returns immediately; use Socket_isconnected() or poll for
+ * completion
+ *
+ * Edge cases:
+ * - Unreachable host: Socket_Failed (ETIMEDOUT or ENETUNREACH)
+ * - Refused connection: Socket_Failed (ECONNREFUSED)
+ * - DNS failure: Socket_Failed with EAI_* mapped to errno
+ * - Already connected: Socket_Failed (EISCONN)
+ *
+ * For non-blocking connect, pair with SocketPoll for writable event.
+ *
+ * @param[in,out] socket Unconnected socket (updated with peer addr/port on
+ * success)
+ * @param[in] host Remote address (IP or hostname)
+ * @param[in] port Remote port (1-65535)
+ *
+ * @throws Socket_Failed Connect failed: ECONNREFUSED (no listener), ETIMEDOUT
+ * (no route/response), ENETUNREACH/EHOSTUNREACH (routing), getaddrinfo/DNS
+ * errors, EMSGSIZE (MTU issue)
+ *
+ * @threadsafe Yes - connects specific socket instance
+ *
+ * ## Basic Client Connect
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "www.example.com", 80);
+ * // Now connected; send HTTP request
+ * ssize_t n = Socket_sendall(sock, "GET / HTTP/1.1\r\nHost:
+ * example.com\r\n\r\n", len); Socket_free(&sock);
+ * @endcode
+ *
+ * ## Non-Blocking Connect
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_setnonblocking(sock);
+ * TRY {
+ *     Socket_connect(sock, "example.com", 443);
+ * } EXCEPT(Socket_Failed) {
+ *     if (Socket_geterrno() == EINPROGRESS) {
+ *         // Poll for writable
+ *         SocketPoll_T poll = SocketPoll_new(1);
+ *         SocketPoll_add(poll, sock, POLL_WRITE, sock);
+ *         SocketEvent_T *ev = NULL;
+ *         if (SocketPoll_wait(poll, &ev, timeout) > 0) {
+ *             // Check getsockopt SO_ERROR for connect result
+ *         }
+ *     }
+ * }
+ * @endcode
+ *
+ * ## With Local Bind and Timeout
+ *
+ * @code{.c}
+ * SocketTimeouts_T to = { .connect_ms = 5000 };
+ * Socket_timeouts_set(sock, &to);
+ * Socket_bind(sock, "192.168.1.10", 0);  // Specific source IP
+ * Socket_connect(sock, "::1", 8080);  // IPv6 loopback
+ * @endcode
+ *
+ * @note Success sets peer address; query with Socket_getpeeraddr/port()
+ * @note For UDP, connect sets default peer for send() without addr
+ * @note Dual-stack: Prefers IPv6 if available; configure via hints in async
+ * DNS
+ * @warning Synchronous DNS blocks; use Socket_connect_async() for event loops
+ * @warning Firewalls/NAT may affect connectivity; test with real networks
+ * @warning In non-blocking, EINPROGRESS means pending - check SO_ERROR later
+ *
+ * @complexity O(1) handshake time; O(n) for DNS where n=resolution latency
+ *
+ * @see Socket_isconnected() to verify connection status
+ * @see Socket_getpeeraddr(), Socket_getpeerport() for remote endpoint
+ * @see Socket_bind() for local address binding before connect
+ * @see Socket_connect_async(), Socket_connect_with_addrinfo() for async
+ * @see Socket_timeouts_set() for connect timeout control
+ * @see docs/ASYNC_IO.md non-blocking connect patterns
+ * @see docs/SECURITY.md secure connect practices (TLS, verify host)
  */
 extern void Socket_connect (T socket, const char *host, int port);
 
@@ -341,7 +866,8 @@ extern ssize_t Socket_send (T socket, const void *buf, size_t len);
  * @param buf Buffer for received data.
  * @param len Buffer size (> 0).
  * @return Bytes received (> 0) or 0 if would block (EAGAIN/EWOULDBLOCK).
- * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other errors.
+ * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other
+ * errors.
  * @see Socket_recvall() for guaranteed complete reception.
  * @see Socket_send() for sending data.
  */
@@ -367,7 +893,8 @@ extern ssize_t Socket_sendall (T socket, const void *buf, size_t len);
  * @param buf Buffer for received data.
  * @param len Buffer size (> 0).
  * @return Total bytes received (always equals len on success).
- * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other errors.
+ * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other
+ * errors.
  * @see Socket_recv() for partial receive operations.
  * @see Socket_sendall() for sending all data.
  */
@@ -398,7 +925,8 @@ extern ssize_t Socket_sendv (T socket, const struct iovec *iov, int iovcnt);
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
  * @return Total bytes received (> 0) or 0 if would block.
- * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other errors.
+ * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other
+ * errors.
  * @see Socket_recvvall() for guaranteed complete scatter/gather receive.
  * @see Socket_sendv() for scatter/gather send.
  */
@@ -424,7 +952,8 @@ extern ssize_t Socket_sendvall (T socket, const struct iovec *iov, int iovcnt);
  * @param iov Array of iovec structures.
  * @param iovcnt Number of iovec structures (> 0, <= IOV_MAX).
  * @return Total bytes received (always equals sum of all iov_len on success).
- * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other errors.
+ * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other
+ * errors.
  * @see Socket_recvv() for partial scatter/gather receive.
  * @see Socket_sendvall() for sending all scatter/gather data.
  */
@@ -485,7 +1014,8 @@ extern ssize_t Socket_sendmsg (T socket, const struct msghdr *msg, int flags);
  * @param msg Message structure for data, address, and ancillary data.
  * @param flags Message flags (MSG_DONTWAIT, MSG_PEEK, etc.).
  * @return Total bytes received (> 0) or 0 if would block.
- * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other errors.
+ * @throws Socket_Closed on peer close or ECONNRESET, Socket_Failed on other
+ * errors.
  * @see Socket_sendmsg() for sending messages with ancillary data.
  * @see Socket_recvfd() for receiving file descriptors.
  */
@@ -811,7 +1341,8 @@ extern void Socket_setcloexec (T socket, int enable);
  * @brief Enable TCP_DEFER_ACCEPT.
  * @ingroup core_io
  * @param socket Listening socket.
- * @param timeout_sec Seconds to wait for data before completing accept (0 to disable, max platform-specific).
+ * @param timeout_sec Seconds to wait for data before completing accept (0 to
+ * disable, max platform-specific).
  *
  * Delays accept() completion until client sends data, preventing
  * @brief SYN-only connections from consuming application resources.
@@ -1083,7 +1614,8 @@ extern int Socket_getpeergid (const T socket);
  * - Only works with connected Unix domain sockets
  * - Receiving process should validate the fd type before use
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent
+ * operation.
  * @see Socket_recvfd() for receiving file descriptors.
  * @see Socket_sendfds() for sending multiple descriptors.
  */
@@ -1102,7 +1634,8 @@ extern int Socket_sendfd (T socket, int fd_to_pass);
  *
  * OWNERSHIP: Caller takes ownership of the received fd and MUST close it.
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent
+ * operation.
  * @see Socket_sendfd() for sending file descriptors.
  * @see Socket_recvfds() for receiving multiple descriptors.
  */
@@ -1120,7 +1653,8 @@ extern int Socket_recvfd (T socket, int *fd_received);
  * Passes multiple file descriptors atomically in a single message.
  * All descriptors are either sent together or none are sent.
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent
+ * operation.
  * @see Socket_recvfds() for receiving multiple descriptors.
  * @see Socket_sendfd() for sending single descriptor.
  */
@@ -1130,7 +1664,8 @@ extern int Socket_sendfds (T socket, const int *fds, size_t count);
  * @brief Receive multiple file descriptors.
  * @ingroup core_io
  * @param socket Connected Unix domain socket (AF_UNIX).
- * @param fds Output array for received descriptors (must have max_count capacity).
+ * @param fds Output array for received descriptors (must have max_count
+ * capacity).
  * @param max_count Maximum descriptors to receive.
  * @param received_count Output for actual count received.
  * @return 1 on success, 0 if would block (EAGAIN/EWOULDBLOCK).
@@ -1141,7 +1676,8 @@ extern int Socket_sendfds (T socket, const int *fds, size_t count);
  *
  * OWNERSHIP: Caller takes ownership of all received fds and MUST close them.
  *
- * @threadsafe Yes - uses thread-local error buffers for safe concurrent operation.
+ * @threadsafe Yes - uses thread-local error buffers for safe concurrent
+ * operation.
  * @see Socket_sendfds() for sending multiple descriptors.
  * @see Socket_recvfd() for receiving single descriptor.
  */
@@ -1152,7 +1688,8 @@ extern int Socket_recvfds (T socket, int *fds, size_t max_count,
  * @brief Bind Unix domain socket to a filesystem path.
  * @ingroup core_io
  * @internal
- * @param base The socket base structure containing the file descriptor and domain.
+ * @param base The socket base structure containing the file descriptor and
+ * domain.
  * @param path Null-terminated string specifying the Unix socket path.
  * @param exc_type Exception type to raise on failure.
  * @throws exc_type On bind errors such as EADDRINUSE, ENOENT, or EACCES.
@@ -1164,7 +1701,8 @@ extern int Socket_recvfds (T socket, int *fds, size_t max_count,
  * @see Socket_bind_unix() for the public high-level interface.
  * @see SocketUnix_connect() for the connect counterpart.
  * @see SocketUnix_validate_unix_path() for path validation.
- * @threadsafe Conditional - safe if base fd is not shared across threads without locking.
+ * @threadsafe Conditional - safe if base fd is not shared across threads
+ * without locking.
  */
 extern void SocketUnix_bind (SocketBase_T base, const char *path,
                              Except_T exc_type);
@@ -1173,7 +1711,8 @@ extern void SocketUnix_bind (SocketBase_T base, const char *path,
  * @brief Connect Unix domain socket to a filesystem path.
  * @ingroup core_io
  * @internal
- * @param base The socket base structure containing the file descriptor and domain.
+ * @param base The socket base structure containing the file descriptor and
+ * domain.
  * @param path Null-terminated string specifying the remote Unix socket path.
  * @param exc_type Exception type to raise on failure.
  * @throws exc_type On connect errors such as ECONNREFUSED, ENOENT, or EACCES.
@@ -1185,7 +1724,8 @@ extern void SocketUnix_bind (SocketBase_T base, const char *path,
  * @see Socket_connect_unix() for the public high-level interface.
  * @see SocketUnix_bind() for the bind counterpart.
  * @see SocketUnix_validate_unix_path() for path validation.
- * @threadsafe Conditional - safe if base fd is not shared across threads without locking.
+ * @threadsafe Conditional - safe if base fd is not shared across threads
+ * without locking.
  */
 extern void SocketUnix_connect (SocketBase_T base, const char *path,
                                 Except_T exc_type);
@@ -1229,7 +1769,7 @@ extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
  * @see Socket_bind_with_addrinfo() for binding with resolved address.
  */
 extern Request_T Socket_bind_async (SocketDNS_T dns, T socket,
-                                     const char *host, int port);
+                                    const char *host, int port);
 
 /**
  * @brief Cancel pending async bind resolution.

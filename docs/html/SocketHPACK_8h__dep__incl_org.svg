@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="HPACK header compression (RFC 7541) for HTTP/2.">
+<g id="a_Node000001"><a xlink:title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">
 <polygon fill="#999999" stroke="#666666" points="194.5,-129 105.5,-129 105.5,-110 194.5,-110 194.5,-129"/>
 <text text-anchor="middle" x="150" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHPACK.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketHPACK-private_8h.html" target="_top" xlink:title="Internal HPACK header compression structures and constants.">
+<g id="a_Node000002"><a xlink:href="SocketHPACK-private_8h.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="122,-74 0,-74 0,-55 122,-55 122,-74"/>
 <text text-anchor="middle" x="61" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHPACK&#45;private.h</text>
 </a>

@@ -34,6 +34,7 @@
 /* Forward declarations */
 static void release_connection_resources (T pool, Connection_T conn,
                                           Socket_T socket);
+static void SocketPool_connections_release_buffers (Connection_T conn);
 
 /* ============================================================================
  * Free List Management

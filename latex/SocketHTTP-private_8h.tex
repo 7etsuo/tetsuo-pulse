@@ -1,0 +1,166 @@
+\doxysection{include/http/\+Socket\+HTTP-\/private.h File Reference}
+\hypertarget{SocketHTTP-private_8h}{}\label{SocketHTTP-private_8h}\index{include/http/SocketHTTP-\/private.h@{include/http/SocketHTTP-\/private.h}}
+
+
+Internal HTTP core structures and helper functions.  
+
+
+{\ttfamily \#include "{}core/\+Socket\+Util.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP.\+h"{}}\newline
+{\ttfamily \#include $<$string.\+h$>$}\newline
+Include dependency graph for Socket\+HTTP-\/private.h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP-private_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=212pt]{SocketHTTP-private_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structHeaderEntry}{Header\+Entry}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__Headers}{Socket\+HTTP\+\_\+\+Headers}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SocketHTTP-private_8h_a1ff149febc7c6bd14ef6e8cee65f8653}{SOCKETHTTP\+\_\+\+HEADER\+\_\+\+BUCKETS}}~31
+\item 
+\#define \mbox{\hyperlink{SocketHTTP-private_8h_a35666e507452b39f3bc5d3492983b312}{SOCKETHTTP\+\_\+\+IS\+\_\+\+TCHAR}}(c)~(\mbox{\hyperlink{SocketHTTP-private_8h_a2e16fb26eaa473b37c1658e3fc672f2c}{sockethttp\+\_\+tchar\+\_\+table}}\mbox{[}(unsigned char)(c)\mbox{]})
+\item 
+\#define \mbox{\hyperlink{SocketHTTP-private_8h_a25417275d603915430838c5b3b177b3c}{SOCKETHTTP\+\_\+\+IS\+\_\+\+UNRESERVED}}(c)~  (\mbox{\hyperlink{SocketHTTP-private_8h_a31e0089dfbfffafd32b29d6ed44e802e}{sockethttp\+\_\+uri\+\_\+unreserved}}\mbox{[}(unsigned char)(c)\mbox{]})
+\item 
+\#define \mbox{\hyperlink{SocketHTTP-private_8h_a3c8b1550781514298036c503bcb8e87c}{SOCKETHTTP\+\_\+\+HEX\+\_\+\+VALUE}}(c)~(\mbox{\hyperlink{SocketHTTP-private_8h_a42653a02dca3cb9f33cef15f09f56389}{sockethttp\+\_\+hex\+\_\+value}}\mbox{[}(unsigned char)(c)\mbox{]})
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structHeaderEntry}{Header\+Entry}} \mbox{\hyperlink{SocketHTTP-private_8h_a6110c2b68df8f797d4a2285816831c97}{Header\+Entry}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHTTP-private_8h_a18f37238f317f3d8c35e7b5540883ca6}{URIParser\+State}} \{ \newline
+{\bfseries URI\+\_\+\+STATE\+\_\+\+START}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+SCHEME}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+SCHEME\+\_\+\+COLON}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+AUTHORITY\+\_\+\+START}
+, \newline
+{\bfseries URI\+\_\+\+STATE\+\_\+\+AUTHORITY}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+HOST}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+HOST\+\_\+\+IPV6}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+PORT}
+, \newline
+{\bfseries URI\+\_\+\+STATE\+\_\+\+PATH}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+QUERY}
+, {\bfseries URI\+\_\+\+STATE\+\_\+\+FRAGMENT}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const unsigned char \mbox{\hyperlink{SocketHTTP-private_8h_a2e16fb26eaa473b37c1658e3fc672f2c}{sockethttp\+\_\+tchar\+\_\+table}} \mbox{[}256\mbox{]}
+\item 
+const unsigned char \mbox{\hyperlink{SocketHTTP-private_8h_a31e0089dfbfffafd32b29d6ed44e802e}{sockethttp\+\_\+uri\+\_\+unreserved}} \mbox{[}256\mbox{]}
+\item 
+const unsigned char \mbox{\hyperlink{SocketHTTP-private_8h_a42653a02dca3cb9f33cef15f09f56389}{sockethttp\+\_\+hex\+\_\+value}} \mbox{[}256\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internal HTTP core structures and helper functions. 
+
+This header contains internal structures and helper functions for the HTTP module. NOT for public consumption -\/ use \doxylink{SocketHTTP_8h}{Socket\+HTTP.\+h} instead.
+
+Contains\+:
+\begin{DoxyItemize}
+\item Header collection internal structures (hash table + linked list)
+\item URI parser state machine internals
+\item Internal helper functions for case-\/insensitive operations
+\item Private utility functions for HTTP processing
+\end{DoxyItemize}
+
+Thread safety\+: Functions in this header are not thread-\/safe unless documented.
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHTTP_8h}{Socket\+HTTP.\+h} for public API. 
+
+\doxylink{SocketHTTP1-private_8h}{Socket\+HTTP1-\/private.\+h} for HTTP/1.\+1 internal structures. 
+
+\doxylink{SocketHTTP2-private_8h}{Socket\+HTTP2-\/private.\+h} for HTTP/2 internal structures. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHTTP-private_8h_a1ff149febc7c6bd14ef6e8cee65f8653}\label{SocketHTTP-private_8h_a1ff149febc7c6bd14ef6e8cee65f8653} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!SOCKETHTTP\_HEADER\_BUCKETS@{SOCKETHTTP\_HEADER\_BUCKETS}}
+\index{SOCKETHTTP\_HEADER\_BUCKETS@{SOCKETHTTP\_HEADER\_BUCKETS}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP\_HEADER\_BUCKETS}{SOCKETHTTP\_HEADER\_BUCKETS}}
+{\footnotesize\ttfamily \#define SOCKETHTTP\+\_\+\+HEADER\+\_\+\+BUCKETS~31}
+
+Hash table bucket count (prime for better distribution) 31 provides good balance for typical header counts (10-\/30) \Hypertarget{SocketHTTP-private_8h_a3c8b1550781514298036c503bcb8e87c}\label{SocketHTTP-private_8h_a3c8b1550781514298036c503bcb8e87c} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!SOCKETHTTP\_HEX\_VALUE@{SOCKETHTTP\_HEX\_VALUE}}
+\index{SOCKETHTTP\_HEX\_VALUE@{SOCKETHTTP\_HEX\_VALUE}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP\_HEX\_VALUE}{SOCKETHTTP\_HEX\_VALUE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP\+\_\+\+HEX\+\_\+\+VALUE(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~(\mbox{\hyperlink{SocketHTTP-private_8h_a42653a02dca3cb9f33cef15f09f56389}{sockethttp\+\_\+hex\+\_\+value}}\mbox{[}(unsigned char)(c)\mbox{]})}
+
+Get hex value or 255 if invalid \Hypertarget{SocketHTTP-private_8h_a35666e507452b39f3bc5d3492983b312}\label{SocketHTTP-private_8h_a35666e507452b39f3bc5d3492983b312} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!SOCKETHTTP\_IS\_TCHAR@{SOCKETHTTP\_IS\_TCHAR}}
+\index{SOCKETHTTP\_IS\_TCHAR@{SOCKETHTTP\_IS\_TCHAR}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP\_IS\_TCHAR}{SOCKETHTTP\_IS\_TCHAR}}
+{\footnotesize\ttfamily \#define SOCKETHTTP\+\_\+\+IS\+\_\+\+TCHAR(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~(\mbox{\hyperlink{SocketHTTP-private_8h_a2e16fb26eaa473b37c1658e3fc672f2c}{sockethttp\+\_\+tchar\+\_\+table}}\mbox{[}(unsigned char)(c)\mbox{]})}
+
+Check if character is valid token character \Hypertarget{SocketHTTP-private_8h_a25417275d603915430838c5b3b177b3c}\label{SocketHTTP-private_8h_a25417275d603915430838c5b3b177b3c} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!SOCKETHTTP\_IS\_UNRESERVED@{SOCKETHTTP\_IS\_UNRESERVED}}
+\index{SOCKETHTTP\_IS\_UNRESERVED@{SOCKETHTTP\_IS\_UNRESERVED}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP\_IS\_UNRESERVED}{SOCKETHTTP\_IS\_UNRESERVED}}
+{\footnotesize\ttfamily \#define SOCKETHTTP\+\_\+\+IS\+\_\+\+UNRESERVED(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~  (\mbox{\hyperlink{SocketHTTP-private_8h_a31e0089dfbfffafd32b29d6ed44e802e}{sockethttp\+\_\+uri\+\_\+unreserved}}\mbox{[}(unsigned char)(c)\mbox{]})}
+
+Check if character is unreserved (doesn\textquotesingle{}t need encoding) 
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{SocketHTTP-private_8h_a6110c2b68df8f797d4a2285816831c97}\label{SocketHTTP-private_8h_a6110c2b68df8f797d4a2285816831c97} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!HeaderEntry@{HeaderEntry}}
+\index{HeaderEntry@{HeaderEntry}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HeaderEntry}{HeaderEntry}}
+{\footnotesize\ttfamily typedef struct \mbox{\hyperlink{structHeaderEntry}{Header\+Entry}} \mbox{\hyperlink{structHeaderEntry}{Header\+Entry}}}
+
+Single header entry in the collection 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHTTP-private_8h_a18f37238f317f3d8c35e7b5540883ca6}\label{SocketHTTP-private_8h_a18f37238f317f3d8c35e7b5540883ca6} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!URIParserState@{URIParserState}}
+\index{URIParserState@{URIParserState}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{URIParserState}{URIParserState}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP-private_8h_a18f37238f317f3d8c35e7b5540883ca6}{URIParser\+State}}}
+
+URI parser state machine states 
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{SocketHTTP-private_8h_a42653a02dca3cb9f33cef15f09f56389}\label{SocketHTTP-private_8h_a42653a02dca3cb9f33cef15f09f56389} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!sockethttp\_hex\_value@{sockethttp\_hex\_value}}
+\index{sockethttp\_hex\_value@{sockethttp\_hex\_value}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{sockethttp\_hex\_value}{sockethttp\_hex\_value}}
+{\footnotesize\ttfamily const unsigned char sockethttp\+\_\+hex\+\_\+value\mbox{[}256\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Hex value table for percent decoding Returns 0-\/15 for \textquotesingle{}0\textquotesingle{}-\/\textquotesingle{}9\textquotesingle{}, \textquotesingle{}a\textquotesingle{}-\/\textquotesingle{}f\textquotesingle{}, \textquotesingle{}A\textquotesingle{}-\/\textquotesingle{}F\textquotesingle{}, or 255 for invalid \Hypertarget{SocketHTTP-private_8h_a2e16fb26eaa473b37c1658e3fc672f2c}\label{SocketHTTP-private_8h_a2e16fb26eaa473b37c1658e3fc672f2c} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!sockethttp\_tchar\_table@{sockethttp\_tchar\_table}}
+\index{sockethttp\_tchar\_table@{sockethttp\_tchar\_table}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{sockethttp\_tchar\_table}{sockethttp\_tchar\_table}}
+{\footnotesize\ttfamily const unsigned char sockethttp\+\_\+tchar\+\_\+table\mbox{[}256\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Token character table for RFC 9110 tchar = "{}!"{} / "{}\#"{} / "{}\$"{} / "{}\%"{} / "{}\&"{} / "{}\textquotesingle{}"{} / "{}\texorpdfstring{$\ast$}{*}"{} / "{}+"{} / "{}-\/"{} / "{}."{} / "{}\texorpdfstring{$^\wedge$}{\string^}"{} / "{}\+\_\+"{} / "{}\`{}"{} / "{}\texorpdfstring{$\vert$}{|}"{} / "{}\texorpdfstring{$\sim$}{\string~}"{} / DIGIT / ALPHA \Hypertarget{SocketHTTP-private_8h_a31e0089dfbfffafd32b29d6ed44e802e}\label{SocketHTTP-private_8h_a31e0089dfbfffafd32b29d6ed44e802e} 
+\index{SocketHTTP-\/private.h@{SocketHTTP-\/private.h}!sockethttp\_uri\_unreserved@{sockethttp\_uri\_unreserved}}
+\index{sockethttp\_uri\_unreserved@{sockethttp\_uri\_unreserved}!SocketHTTP-\/private.h@{SocketHTTP-\/private.h}}
+\doxysubsubsection{\texorpdfstring{sockethttp\_uri\_unreserved}{sockethttp\_uri\_unreserved}}
+{\footnotesize\ttfamily const unsigned char sockethttp\+\_\+uri\+\_\+unreserved\mbox{[}256\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Unreserved characters for URI per RFC 3986 unreserved = ALPHA / DIGIT / "{}-\/"{} / "{}."{} / "{}\+\_\+"{} / "{}\texorpdfstring{$\sim$}{\string~}"{} 

@@ -1,14 +1,14 @@
 <map id="Socket&#45;private.h" name="Socket&#45;private.h">
-<area shape="rect" id="Node000001" title="Private implementation details for the Socket module, including internal structure definition...." alt="" coords="642,5,760,31"/>
+<area shape="rect" id="Node000001" title="Private implementation details for Socket module: internal structure and shared utilities...." alt="" coords="642,5,760,31"/>
 <area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="158,313,254,339"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="684,33,238,308,236,303,681,29"/>
-<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="937,313,1078,339"/>
+<area shape="rect" id="Node000006" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="937,313,1078,339"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="693,32,681,50,670,72,665,95,670,118,695,155,727,189,763,218,802,243,881,282,951,307,949,312,879,287,799,248,760,223,723,193,691,159,665,120,660,95,665,70,677,47,689,29"/>
 <area shape="rect" id="Node000015" href="$SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates." alt="" coords="22,240,180,265"/>
 <area shape="poly" id="edge15_Node000001_Node000015" title=" " alt="" coords="642,26,450,45,353,61,315,71,286,81,233,114,186,155,148,196,120,230,115,227,143,192,183,151,230,110,284,76,313,66,352,56,449,40,642,21"/>
 <area shape="rect" id="Node000017" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="852,167,969,192"/>
 <area shape="poly" id="edge20_Node000001_Node000017" title=" " alt="" coords="754,28,805,47,830,60,853,77,870,94,884,114,904,152,899,155,880,117,866,97,850,81,827,65,803,51,752,33"/>
-<area shape="rect" id="Node000026" href="$SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module." alt="" coords="680,79,839,119"/>
+<area shape="rect" id="Node000026" href="$SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure." alt="" coords="680,79,839,119"/>
 <area shape="poly" id="edge41_Node000001_Node000026" title=" " alt="" coords="712,29,740,66,735,69,708,32"/>
 <area shape="rect" id="Node000032" title=" " alt="" coords="914,86,1005,111"/>
 <area shape="poly" id="edge59_Node000001_Node000032" title=" " alt="" coords="739,28,910,80,908,85,738,33"/>
@@ -42,7 +42,7 @@
 <area shape="poly" id="edge19_Node000015_Node000016" title=" " alt="" coords="104,266,104,300,98,300,98,266"/>
 <area shape="poly" id="edge21_Node000017_Node000004" title=" " alt="" coords="901,194,729,378,725,374,897,191"/>
 <area shape="poly" id="edge22_Node000017_Node000006" title=" " alt="" coords="921,191,994,300,990,303,916,194"/>
-<area shape="rect" id="Node000018" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1102,313,1230,339"/>
+<area shape="rect" id="Node000018" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1102,313,1230,339"/>
 <area shape="poly" id="edge23_Node000017_Node000018" title=" " alt="" coords="932,190,1136,304,1133,309,930,195"/>
 <area shape="rect" id="Node000020" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="1356,240,1526,265"/>
 <area shape="poly" id="edge28_Node000017_Node000020" title=" " alt="" coords="970,186,1343,236,1342,241,969,191"/>

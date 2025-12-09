@@ -1,0 +1,93 @@
+\doxysection{Socket\+HPACK\+\_\+\+Decoder Struct Reference}
+\hypertarget{structSocketHPACK__Decoder}{}\label{structSocketHPACK__Decoder}\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+
+
+{\ttfamily \#include $<$Socket\+HPACK-\/private.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HPACK\+\_\+\+Decoder\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=203pt]{structSocketHPACK__Decoder__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \mbox{\hyperlink{structSocketHPACK__Decoder_a8dd2c1243711c74bb5f3957b6c1d4291}{table}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Decoder_a194dd06dc6446308c490e95eb4d867b6}{max\+\_\+header\+\_\+size}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Decoder_abb3d83767bc2130e81199e0ffe201fd8}{max\+\_\+header\+\_\+list\+\_\+size}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Decoder_ab42953feca789bb66e7bd21364abfc23}{settings\+\_\+max\+\_\+table\+\_\+size}}
+\item 
+Arena\+\_\+T \mbox{\hyperlink{structSocketHPACK__Decoder_a965791d356e251537bbdde4c68b1141f}{arena}}
+\item 
+uint64\+\_\+t \mbox{\hyperlink{structSocketHPACK__Decoder_a3119e7b6178e0e4ca028bca8795ec4d7}{decode\+\_\+input\+\_\+bytes}}
+\item 
+uint64\+\_\+t \mbox{\hyperlink{structSocketHPACK__Decoder_a6c331a59385db826d299e6f63c763e89}{decode\+\_\+output\+\_\+bytes}}
+\item 
+double \mbox{\hyperlink{structSocketHPACK__Decoder_ac422792522b6ca5c498ceadad095df54}{max\+\_\+expansion\+\_\+ratio}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HPACK decoder implementation 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHPACK__Decoder_a965791d356e251537bbdde4c68b1141f}\label{structSocketHPACK__Decoder_a965791d356e251537bbdde4c68b1141f} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!arena@{arena}}
+\index{arena@{arena}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{arena}{arena}}
+{\footnotesize\ttfamily Arena\+\_\+T Socket\+HPACK\+\_\+\+Decoder\+::arena}
+
+Memory arena \Hypertarget{structSocketHPACK__Decoder_a3119e7b6178e0e4ca028bca8795ec4d7}\label{structSocketHPACK__Decoder_a3119e7b6178e0e4ca028bca8795ec4d7} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!decode\_input\_bytes@{decode\_input\_bytes}}
+\index{decode\_input\_bytes@{decode\_input\_bytes}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{decode\_input\_bytes}{decode\_input\_bytes}}
+{\footnotesize\ttfamily uint64\+\_\+t Socket\+HPACK\+\_\+\+Decoder\+::decode\+\_\+input\+\_\+bytes}
+
+Cumulative input bytes in current decode session \Hypertarget{structSocketHPACK__Decoder_a6c331a59385db826d299e6f63c763e89}\label{structSocketHPACK__Decoder_a6c331a59385db826d299e6f63c763e89} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!decode\_output\_bytes@{decode\_output\_bytes}}
+\index{decode\_output\_bytes@{decode\_output\_bytes}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{decode\_output\_bytes}{decode\_output\_bytes}}
+{\footnotesize\ttfamily uint64\+\_\+t Socket\+HPACK\+\_\+\+Decoder\+::decode\+\_\+output\+\_\+bytes}
+
+Cumulative output bytes in current decode session \Hypertarget{structSocketHPACK__Decoder_ac422792522b6ca5c498ceadad095df54}\label{structSocketHPACK__Decoder_ac422792522b6ca5c498ceadad095df54} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!max\_expansion\_ratio@{max\_expansion\_ratio}}
+\index{max\_expansion\_ratio@{max\_expansion\_ratio}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{max\_expansion\_ratio}{max\_expansion\_ratio}}
+{\footnotesize\ttfamily double Socket\+HPACK\+\_\+\+Decoder\+::max\+\_\+expansion\+\_\+ratio}
+
+Max allowed output/input ratio (default 10.\+0) \Hypertarget{structSocketHPACK__Decoder_abb3d83767bc2130e81199e0ffe201fd8}\label{structSocketHPACK__Decoder_abb3d83767bc2130e81199e0ffe201fd8} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!max\_header\_list\_size@{max\_header\_list\_size}}
+\index{max\_header\_list\_size@{max\_header\_list\_size}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{max\_header\_list\_size}{max\_header\_list\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Decoder\+::max\+\_\+header\+\_\+list\+\_\+size}
+
+Max total decoded size \Hypertarget{structSocketHPACK__Decoder_a194dd06dc6446308c490e95eb4d867b6}\label{structSocketHPACK__Decoder_a194dd06dc6446308c490e95eb4d867b6} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!max\_header\_size@{max\_header\_size}}
+\index{max\_header\_size@{max\_header\_size}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{max\_header\_size}{max\_header\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Decoder\+::max\+\_\+header\+\_\+size}
+
+Max individual header size \Hypertarget{structSocketHPACK__Decoder_ab42953feca789bb66e7bd21364abfc23}\label{structSocketHPACK__Decoder_ab42953feca789bb66e7bd21364abfc23} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!settings\_max\_table\_size@{settings\_max\_table\_size}}
+\index{settings\_max\_table\_size@{settings\_max\_table\_size}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{settings\_max\_table\_size}{settings\_max\_table\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Decoder\+::settings\+\_\+max\+\_\+table\+\_\+size}
+
+Max size from SETTINGS \Hypertarget{structSocketHPACK__Decoder_a8dd2c1243711c74bb5f3957b6c1d4291}\label{structSocketHPACK__Decoder_a8dd2c1243711c74bb5f3957b6c1d4291} 
+\index{SocketHPACK\_Decoder@{SocketHPACK\_Decoder}!table@{table}}
+\index{table@{table}!SocketHPACK\_Decoder@{SocketHPACK\_Decoder}}
+\doxysubsubsection{\texorpdfstring{table}{table}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} Socket\+HPACK\+\_\+\+Decoder\+::table}
+
+Dynamic table 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHPACK-private_8h}{Socket\+HPACK-\/private.\+h}}\end{DoxyCompactItemize}

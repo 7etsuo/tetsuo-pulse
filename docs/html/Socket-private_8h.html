@@ -111,12 +111,13 @@ $(document).ready(function(){initNavTree('Socket-private_8h.html',''); initResiz
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Data Structures</a>  </div>
+<a href="#nested-classes">Data Structures</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">Socket-private.h File Reference<div class="ingroups"><a class="el" href="group__core__io.html">Core I/O Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Private implementation details for the Socket module, including internal structure definition. Internal use only; do not include directly in application code.  
+<p>Private implementation details for Socket module: internal structure and shared utilities. Internal use only - included by Socket_*.c implementation files.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketConfig_8h_source.html">core/SocketConfig.h</a>&quot;</code><br />
@@ -140,16 +141,98 @@ $(document).ready(function(){initNavTree('Socket-private_8h.html',''); initResiz
 </div>
 </div>
 <p><a href="Socket-private_8h_source.html">Go to the source code of this file.</a></p>
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:gaa8cacd863c275e6e12f7c63b65708e1b" id="r_gaa8cacd863c275e6e12f7c63b65708e1b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a> (void)</td></tr>
+<tr class="memdesc:gaa8cacd863c275e6e12f7c63b65708e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query current number of active Socket_T instances (public for tests).  <br /></td></tr>
+<tr class="separator:gaa8cacd863c275e6e12f7c63b65708e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Private implementation details for the Socket module, including internal structure definition. Internal use only; do not include directly in application code. </p>
-<p>This header defines the opaque Socket_T structure for internal manipulation and provides utility functions shared across socket implementation files. It includes conditional TLS fields when SOCKET_HAS_TLS is enabled.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">socket/Socket.h</a> for the public socket API. </dd>
+<div class="textblock"><p>Private implementation details for Socket module: internal structure and shared utilities. Internal use only - included by Socket_*.c implementation files. </p>
+<p>This header provides:</p><ul>
+<li>Complete <code>struct Socket_T</code> definition extending <code><a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a></code></li>
+<li>Thread-safe live socket counting utilities for leak detection</li>
+<li>TLS field initialization (conditional on SOCKET_HAS_TLS)</li>
+<li>Shared functions across Socket implementation files</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md431"></a>
+Architecture Overview</h2>
+<div class="fragment"><div class="line">+---------------------+     +---------------------+</div>
+<div class="line">| Socket.h (Public)   |     | Socket-<span class="keyword">private</span>.h    |</div>
+<div class="line">| - Opaque Socket_T   |&lt;---&gt;| - <span class="keyword">struct </span>Socket_T   |</div>
+<div class="line">| - Public functions  |     | - Private utilities |</div>
+<div class="line">+----------+----------+     +----------+----------+</div>
+<div class="line">           |                           |</div>
+<div class="line">           | includes                   | includes</div>
+<div class="line">           v                           v</div>
+<div class="line">+----------+----------+     +----------+----------+</div>
+<div class="line">| Application Code     |     | Implementation:    |</div>
+<div class="line">| - <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>()       |     | - Socket.c         |</div>
+<div class="line">| - <a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>()   |     | - Socket-*.c       |</div>
+<div class="line">+----------------------+     +---------------------+</div>
+<div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket with specified domain, type, and protocol.</div></div>
+<div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md432"></a>
+Module Relationships</h2>
+<ul>
+<li><b>Depends on</b>: <a class="el" href="Arena_8h.html" title="Arena-based memory allocator for efficient bulk memory management.">core/Arena.h</a> (memory), <a class="el" href="SocketConfig_8h.html" title="Compile-time and runtime configuration constants, limits, and platform adaptations.">core/SocketConfig.h</a> (config), <a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">socket/SocketCommon-private.h</a> (base)</li>
+<li><b>Used internally by</b>: All socket implementation files (*.c)</li>
+<li><b>Integrates with</b>: <a class="el" href="SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates.">core/SocketRateLimit.h</a> (throttling), <a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">tls/SocketTLS.h</a> (secure transport when enabled)</li>
+<li><b>Public counterpart</b>: <a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">socket/Socket.h</a> (opaque type and API)</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md433"></a>
+Key Features</h2>
+<ul>
+<li><b>Live Count Tracking</b>: Atomic counters for debugging and tests (<a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a>)</li>
+<li><b>Bandwidth Limiting</b>: Per-socket <a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> integration</li>
+<li><b>TLS Support</b> (conditional): State and buffers for non-blocking TLS I/O</li>
+<li><b>Double-Free Protection</b>: Atomic 'freed' sentinel</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md434"></a>
+Conditional Compilation</h2>
+<ul>
+<li>Use <code>#if SOCKET_HAS_TLS</code> to guard TLS-related code (checks value 0/1, not just definition)</li>
+<li>TLS fields add ~100 bytes to struct size when enabled</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md435"></a>
+Thread Safety</h2>
+<ul>
+<li>Utilities: Fully thread-safe (atomics/mutexes)</li>
+<li>Struct fields: Varies - atomics for simple state, mutexes for complex ops</li>
+<li>Direct access: Requires external synchronization by caller</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md436"></a>
+Usage Guidelines</h2>
+<ul>
+<li>Include only from socket/*.c implementation files</li>
+<li>Never include in application or public headers</li>
+<li>For ABI stability, avoid direct field manipulation - use accessor functions</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md437"></a>
+Testing Integration</h2>
+<ul>
+<li>Tests MUST verify <code><a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a> == 0</code> after teardown</li>
+<li>Sanitizers (ASan/UBSan) required for all paths</li>
+</ul>
+<dl class="section warning"><dt>Warning</dt><dd>Direct struct field access breaks encapsulation and may change ABI </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Memory for dynamic fields from embedded arena (lifecycle tied to socket) </dd></dl>
+<dl class="section user"><dt>Complexity\n Most operations O(1), with locking for shared state</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">socket/Socket.h</a> for public opaque API </dd>
 <dd>
-<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module.">socket/SocketCommon-private.h</a> for shared base structure. </dd>
+<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">socket/SocketCommon-private.h</a> for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> details </dd>
 <dd>
-<a class="el" href="SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates.">core/SocketRateLimit.h</a> for bandwidth limiting integration. </dd>
+<a class="el" href="SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates.">core/SocketRateLimit.h</a> for bandwidth limiting </dd>
 <dd>
-docs/ERROR_HANDLING.md for exception handling in socket operations. </dd></dl>
+<a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">tls/SocketTLS.h</a> for TLS integration (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> SOCKET_HAS_TLS) </dd>
+<dd>
+docs/MEMORY_MANAGEMENT.md for arena guidelines </dd>
+<dd>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for TLS hardening and rate limiting </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception patterns in socket ops </dd>
+<dd>
+docs/TESTING.md for live count verification in tests </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="Socket-private_8h_source.html">Socket-private.h</a>.</p>
 </div></div><!-- contents -->

@@ -211,28 +211,132 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Structured exception handling for C with TRY/EXCEPT/FINALLY blocks. </p>
-<p>IMPORTANT: Do NOT compile with -DNDEBUG in production code. The exception system relies on runtime checks that are critical for safety. While assert() statements will be disabled, the explicit NULL checks will remain active.</p>
-<p>This module provides structured exception handling similar to try/catch in other languages. It uses setjmp/longjmp for non-local control flow.</p>
-<p>Features:</p><ul>
-<li>TRY/EXCEPT/FINALLY blocks</li>
-<li>Thread-safe implementation (thread-local exception stack)</li>
-<li>Named exceptions with reason strings</li>
-<li>Exception propagation with RERAISE</li>
+<p>This header implements a comprehensive exception handling system for C programs, providing try/catch/finally semantics using setjmp/longjmp under the hood. Designed for robust error management in networked applications, with thread-local stacks to support concurrent operations without synchronization overhead.</p>
+<p>Key capabilities:</p><ul>
+<li>Hierarchical named exceptions with descriptive reasons</li>
+<li>Automatic propagation and specific catching</li>
+<li>Guaranteed cleanup via FINALLY on all paths</li>
+<li>Integration with assert() for debugging</li>
+<li>Safe early returns and nesting support</li>
 </ul>
-<p>Usage: TRY // Code that might raise an exception if (error_condition) <a class="el" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a" title="Raise an exception with current file and line information.">RAISE(Socket_Failed)</a>; <a class="el" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e" title="Catch a specific exception type within a TRY block.">EXCEPT(Socket_Failed)</a> // Handle specific exception FINALLY // Cleanup code (always executed) END_TRY;</p>
-<dl class="section note"><dt>Note</dt><dd>Exception handling uses setjmp/longjmp which can cause issues with variable optimization. Use volatile for variables modified in TRY blocks. </dd></dl>
-<dl class="section warning"><dt>Warning</dt><dd>Do not compile with -DNDEBUG in production - exception safety relies on runtime checks.</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> for exception type definition. </dd>
+<h2><a class="anchor" id="autotoc_md12"></a>
+Architecture Overview</h2>
+<div class="fragment"><div class="line">Application Code</div>
+<div class="line">    |</div>
+<div class="line">  <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> { ... <a class="code hl_define" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(e) ... }</div>
+<div class="line">    |     (setjmp + stack push)</div>
+<div class="line">  longjmp() --&gt; <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(e) / <a class="code hl_define" href="group__foundation.html#ga0a70ee0cbf5b1738be4c9463c529ce72">ELSE</a> / <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div>
+<div class="line">    |             (match + flag update)</div>
+<div class="line">  <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a> (pop + re-raise <span class="keywordflow">if</span> unhandled)</div>
+<div class="line">    |</div>
+<div class="line">Outer Handler or Termination</div>
+<div class="ttc" id="agroup__foundation_html_ga0a70ee0cbf5b1738be4c9463c529ce72"><div class="ttname"><a href="group__foundation.html#ga0a70ee0cbf5b1738be4c9463c529ce72">ELSE</a></div><div class="ttdeci">#define ELSE</div><div class="ttdoc">Catch any exception not caught by previous EXCEPT blocks.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01136">Except.h:1136</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga45e87c4d7dee50346b15c7761b0b340a"><div class="ttname"><a href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a></div><div class="ttdeci">#define RAISE(e)</div><div class="ttdoc">Raise an exception with current file and line information.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00594">Except.h:594</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+</div><!-- fragment --><p>Thread-local stack (Except_stack) holds frames with jmp_buf for unwinding. Exceptions (<a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a>) carry type and reason for dispatch and diagnostics.</p>
+<h2><a class="anchor" id="autotoc_md13"></a>
+Features</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Feature   </th><th class="markdownTableHeadNone">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Structured Blocks   </td><td class="markdownTableBodyNone">TRY/EXCEPT/ELSE/FINALLY/END_TRY for control flow    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Exception Types   </td><td class="markdownTableBodyNone">Named const <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> instances for type-safe catching    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Propagation   </td><td class="markdownTableBodyNone">RERAISE for chaining handlers; automatic via END_TRY    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Cleanup   </td><td class="markdownTableBodyNone">FINALLY executes always; RETURN cleans stack    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Thread Safety   </td><td class="markdownTableBodyNone">Independent per-thread stacks; no locks needed    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Debugging   </td><td class="markdownTableBodyNone">Captures file/line; integrates with assert()   </td></tr>
+</table>
+<h2><a class="anchor" id="autotoc_md14"></a>
+Platform Requirements</h2>
+<ul>
+<li>Standard C11 with &lt;setjmp.h&gt; support</li>
+<li>Thread-local storage (__thread or equivalent)</li>
+<li>POSIX threads for multi-threading (tested on Linux/macOS/Windows)</li>
+<li>Compiler support for volatile and GNU extensions (via CMake)</li>
+<li>Avoid in signal handlers or non-async-signal-safe contexts</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md15"></a>
+Basic Usage Example</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Except_8h.html">core/Except.h</a>&quot;</span></div>
+<div class="line"><span class="keyword">extern</span> <span class="keyword">const</span> <a class="code hl_struct" href="group__foundation.html#structExcept__T">Except_T</a> ExampleError;  <span class="comment">// Defined elsewhere</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">void</span> example_function() {</div>
+<div class="line">  <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <span class="comment">// Protected code - may raise exceptions</span></div>
+<div class="line">    <span class="keyword">volatile</span> <span class="keywordtype">int</span> status = risky_operation();</div>
+<div class="line">    <span class="keywordflow">if</span> (status != 0) {</div>
+<div class="line">      <a class="code hl_define" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(ExampleError);</div>
+<div class="line">    }</div>
+<div class="line">    <span class="comment">// Success path</span></div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(ExampleError) {</div>
+<div class="line">    <span class="comment">// Specific error handling</span></div>
+<div class="line">    printf(<span class="stringliteral">&quot;Handled error: %s\n&quot;</span>, Except_frame.exception-&gt;reason);</div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#ga0a70ee0cbf5b1738be4c9463c529ce72">ELSE</a> {</div>
+<div class="line">    <span class="comment">// Unexpected errors</span></div>
+<div class="line">    printf(<span class="stringliteral">&quot;Unexpected: %s at %s:%d\n&quot;</span>, Except_frame.exception-&gt;reason,</div>
+<div class="line">           Except_frame.file, Except_frame.line);</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;  <span class="comment">// Propagate further</span></div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    <span class="comment">// Cleanup always runs</span></div>
+<div class="line">    cleanup_resources();</div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">}</div>
+<div class="ttc" id="aExcept_8h_html"><div class="ttname"><a href="Except_8h.html">Except.h</a></div><div class="ttdoc">Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga947ef43f0f0def3fcc050a8df849fd16"><div class="ttname"><a href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a></div><div class="ttdeci">#define RERAISE</div><div class="ttdoc">Re-raise the currently caught exception.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00677">Except.h:677</a></div></div>
+<div class="ttc" id="agroup__foundation_html_structExcept__T"><div class="ttname"><a href="group__foundation.html#structExcept__T">Except_T</a></div><div class="ttdoc">Exception structure for structured error handling.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00204">Except.h:205</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md16"></a>
+Advanced Usage: Custom Exception and Nesting</h2>
+<div class="fragment"><div class="line"><span class="comment">// Define custom exception</span></div>
+<div class="line"><span class="keyword">const</span> <a class="code hl_struct" href="group__foundation.html#structExcept__T">Except_T</a> CustomError = { &amp;<a class="code hl_variable" href="group__foundation.html#ga02c91dd1cedbfe4b9e31d7775e0ead7f">Assert_Failed</a>, <span class="stringliteral">&quot;Custom error occurred&quot;</span> };</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">void</span> nested_example() {</div>
+<div class="line">  <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {  <span class="comment">// Outer</span></div>
+<div class="line">    outer_setup();</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {  <span class="comment">// Inner</span></div>
+<div class="line">      inner_op();  <span class="comment">// May raise CustomError</span></div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(CustomError) {</div>
+<div class="line">      handle_inner();</div>
+<div class="line">      <a class="code hl_define" href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;  <span class="comment">// To outer</span></div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">      inner_cleanup();</div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(CustomError) {</div>
+<div class="line">    <span class="comment">// Outer handling</span></div>
+<div class="line">    outer_recovery();</div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    outer_cleanup();</div>
+<div class="line">  } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__foundation_html_ga02c91dd1cedbfe4b9e31d7775e0ead7f"><div class="ttname"><a href="group__foundation.html#ga02c91dd1cedbfe4b9e31d7775e0ead7f">Assert_Failed</a></div><div class="ttdeci">const Except_T Assert_Failed</div><div class="ttdoc">Standard exception raised by failed assertions.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Use volatile for variables crossing exception boundaries to avoid optimization issues. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>setjmp/longjmp not portable to all platforms; tested on major OS/compilers. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a" title="Raise an exception with current file and line information.">RAISE()</a> macro for raising exceptions. </dd>
+In production, enable runtime checks (avoid -DNDEBUG); assertions optional. </dd>
 <dd>
-TRY/EXCEPT/FINALLY macros for exception handling. </dd>
+Deep nesting increases stack usage; monitor in threaded environments. </dd></dl>
+<dl class="section user"><dt>Complexity\n Macro expansion O(1); runtime depends on nesting depth.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> for exception payload structure. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga9199ea10e7cd2cf2422ae8ffa9ac43a1" title="Raise an exception (internal function - use RAISE() macro instead).">Except_raise()</a> for internal exception raising function. </dd>
+<a class="el" href="Except_8h.html#structExcept__Frame" title="Exception frame for TRY/EXCEPT/FINALLY blocks.">Except_Frame</a> for internal stack frames. </dd>
 <dd>
-<a class="el" href="group__core__io.html">Core I/O Modules</a> for modules that use this exception system. </dd>
+<a class="el" href="group__foundation.html#ga02c91dd1cedbfe4b9e31d7775e0ead7f" title="Standard exception raised by failed assertions.">Assert_Failed</a> base for assertion errors. </dd>
 <dd>
-docs/ERROR_HANDLING.md for detailed exception handling documentation and best practices. </dd></dl>
+<a class="el" href="group__foundation.html">Core Foundation Modules</a> for memory/error foundations this builds on. </dd>
+<dd>
+<a class="el" href="group__core__io.html">Core I/O Modules</a> for example module using exceptions (Socket operations). </dd>
+<dd>
+docs/ERROR_HANDLING.md for full guide, custom exceptions, volatile rules, and threading. </dd>
+<dd>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> implications in networked code. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 </div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -248,13 +352,71 @@ docs/ERROR_HANDLING.md for detailed exception handling documentation and best pr
       </table>
 </div><div class="memdoc">
 <div class="textblock"><p>Exception frame for TRY/EXCEPT/FINALLY blocks. </p>
-<p>Internal structure representing an exception handling context on the thread-local exception stack. Each TRY block creates a new frame.</p>
-<dl class="section note"><dt>Note</dt><dd>This is an internal structure - users should not manipulate directly. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0" title="Start a TRY/EXCEPT/FINALLY exception handling block.">TRY</a> macro for creating <a class="el" href="Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8">exception</a> frames. </dd>
+<p>Internal opaque structure (forward-declared for typedef) that holds the state for one level of exception handling context. Pushed onto thread-local Except_stack by TRY macro, capturing setjmp() buffer for non-local jumps, exception details, and metadata for debugging and propagation.</p>
+<p>Implementation details (for maintainers):</p><ul>
+<li>Linked list via prev pointer for stack unwinding</li>
+<li>jmp_buf env stores register state and return address for longjmp()</li>
+<li>Stores raised exception info for handlers (EXCEPT/ELSE access via Except_frame)</li>
+<li>File/line captured at raise time for precise error location</li>
+<li>Managed automatically by macros; manual access risks corruption</li>
+</ul>
+<p>Lifecycle:</p><ul>
+<li>Created in TRY: allocate locals, setjmp(), push to stack</li>
+<li>Updated on RAISE: set exception/file/line</li>
+<li>Popped on normal exit, RETURN, or after handling</li>
+<li>Reused in RERAISE for propagation</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md19"></a>
+Internal Fields (Do Not Use Directly)</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Type   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">prev   </td><td class="markdownTableBodyNone"><a class="el" href="Except_8h.html#structExcept__Frame" title="Exception frame for TRY/EXCEPT/FINALLY blocks.">Except_Frame</a> *   </td><td class="markdownTableBodyNone">Link to previous (outer) frame in stack    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">env   </td><td class="markdownTableBodyNone">jmp_buf   </td><td class="markdownTableBodyNone">setjmp/longjmp buffer for control transfer    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">file   </td><td class="markdownTableBodyNone">const char *   </td><td class="markdownTableBodyNone">Source file of exception raise (for diagnostics)    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">line   </td><td class="markdownTableBodyNone">int   </td><td class="markdownTableBodyNone">Source line of exception raise    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">exception   </td><td class="markdownTableBodyNone">const <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> *   </td><td class="markdownTableBodyNone">Pointer to raised exception details   </td></tr>
+</table>
+<dl class="section note"><dt>Note</dt><dd>Internal implementation detail - users interact via macros only. </dd>
 <dd>
-<a class="el" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874" title="Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.">Except_stack</a> for thread-local <a class="el" href="Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8">exception</a> stack. </dd></dl>
+sizeof(Except_Frame) includes jmp_buf (platform-dependent size ~200 bytes). </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Direct manipulation can corrupt stack or cause crashes; use macros. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Internal - accessed only within thread's context by macros.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md20"></a>
+Example Internal Flow (for Understanding)</h2>
+<div class="fragment"><div class="line"><span class="comment">// Simplified macro expansion insight</span></div>
+<div class="line"><span class="comment">// TRY expands to:</span></div>
+<div class="line"><a class="code hl_struct" href="Except_8h.html#structExcept__Frame">Except_Frame</a> frame;  <span class="comment">// Local frame</span></div>
+<div class="line">frame.<a class="code hl_variable" href="Except_8h.html#a4a5323a9c98b198d171a7f0409f3bbae">prev</a> = <a class="code hl_variable" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a>;</div>
+<div class="line"><a class="code hl_variable" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a> = &amp;frame;</div>
+<div class="line">Except_flag = setjmp(frame.<a class="code hl_variable" href="Except_8h.html#abce4b8de2bbf7d6fb6ef52d618309264">env</a>);  <span class="comment">// 0 if normal, non-zero on longjmp</span></div>
+<div class="line"><span class="keywordflow">if</span> (Except_flag == 0) {  <span class="comment">// Enter protected code</span></div>
+<div class="line">  <span class="comment">// User code here</span></div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// EXCEPT/ELSE/FINALLY handle jumps to here</span></div>
+<div class="line"><span class="comment">// END_TRY pops and checks for re-raise</span></div>
+<div class="ttc" id="aExcept_8h_html_a4a5323a9c98b198d171a7f0409f3bbae"><div class="ttname"><a href="Except_8h.html#a4a5323a9c98b198d171a7f0409f3bbae">Except_Frame::prev</a></div><div class="ttdeci">Except_Frame * prev</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00275">Except.h:275</a></div></div>
+<div class="ttc" id="aExcept_8h_html_abce4b8de2bbf7d6fb6ef52d618309264"><div class="ttname"><a href="Except_8h.html#abce4b8de2bbf7d6fb6ef52d618309264">Except_Frame::env</a></div><div class="ttdeci">jmp_buf env</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00276">Except.h:276</a></div></div>
+<div class="ttc" id="aExcept_8h_html_structExcept__Frame"><div class="ttname"><a href="Except_8h.html#structExcept__Frame">Except_Frame</a></div><div class="ttdoc">Exception frame for TRY/EXCEPT/FINALLY blocks.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00273">Except.h:274</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
+</div><!-- fragment --><dl class="section warning"><dt>Warning</dt><dd>jmp_buf size and portability vary; avoid embedding in user structs. </dd></dl>
+<dl class="section user"><dt>Complexity\n N/A - runtime structure.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874" title="Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.">Except_stack</a> for the stack head pointer. </dd>
+<dd>
+<a class="el" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0" title="Start a TRY/EXCEPT/FINALLY exception handling block.">TRY</a> for frame creation and push. </dd>
+<dd>
+<a class="el" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b" title="Complete a TRY/EXCEPT/FINALLY exception handling block.">END_TRY</a> for frame pop and cleanup. </dd>
+<dd>
+RAISE/RERAISE for updating frame <a class="el" href="Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8">exception</a> data. </dd>
+<dd>
+docs/ERROR_HANDLING.md for advanced macro expansion and internal mechanics. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00077">77</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Except_8h_source.html#l00273">273</a> of file <a class="el" href="Except_8h_source.html">Except.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for Except_Frame:</div>
 <div id="dynsection-2-summary" class="dynsummary" style="display:block;">

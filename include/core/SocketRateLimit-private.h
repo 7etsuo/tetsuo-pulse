@@ -3,12 +3,14 @@
 
 /**
  * @file SocketRateLimit-private.h
- * @brief Private implementation details for the token bucket rate limiter module.
+ * @brief Private implementation details for the token bucket rate limiter
+ * module.
  * @ingroup utilities
  * @internal
  *
- * Contains internal structures, constants, and flags used by SocketRateLimit.c.
- * Not part of the public API - do not include directly from user code.
+ * Contains internal structures, constants, and flags used by
+ * SocketRateLimit.c. Not part of the public API - do not include directly from
+ * user code.
  *
  * Key sections:
  * - @ref ratelimit_consts "Rate Limiter Constants"
@@ -116,13 +118,9 @@
  * Uses monotonic time (CLOCK_MONOTONIC) for refill calculations to handle
  * system clock adjustments gracefully.
  *
- * @var SocketRateLimit_T::tokens_per_sec Configured token refill rate in tokens per second.
- * @var SocketRateLimit_T::bucket_size Configured maximum bucket capacity (burst allowance).
- * @var SocketRateLimit_T::tokens Current number of available tokens (refilled over time).
- * @var SocketRateLimit_T::last_refill_ms Monotonic timestamp (ms) of last refill/acquire.
- * @var SocketRateLimit_T::mutex Mutex protecting all operations and fields.
- * @var SocketRateLimit_T::arena Arena for this instance's memory allocation (NULL for malloc).
- * @var SocketRateLimit_T::initialized State flag: -1=shutdown (during free), 0=uninitialized, 1=ready.
+ * Field documentation provided inline after each member for internal
+ * reference.
+ * @see SocketRateLimit_T public opaque type.
  *
  * @see SocketRateLimit_T public opaque type.
  * @see SocketRateLimit_new() for creation and initialization.
@@ -137,10 +135,11 @@ struct T
       last_refill_ms;    /**< Last refill timestamp (monotonic milliseconds) */
   pthread_mutex_t mutex; /**< Thread safety mutex for all operations */
   Arena_T arena;         /**< Arena used for allocation (NULL if malloc) */
-  int initialized; /**< State flag: -1=shutdown (freeing), 0=uninitialized, 1=ready.
-                      *   Protects against concurrent access during init/destroy.
-                      * @internal
-                      */
+  int initialized; /**< State flag: -1=shutdown (freeing), 0=uninitialized,
+                    * 1=ready. Protects against concurrent access during
+                    * init/destroy.
+                    * @internal
+                    */
 };
 
 #undef T
@@ -160,6 +159,46 @@ struct T
  * structure to be accessed for direct field access where needed (e.g., tests).
  *
  * @see SocketRateLimit.c for static function implementations.
+ *
+ * # Thread-local Exception Infrastructure
+ *
+ * The module employs thread-local exceptions for detailed, thread-safe error
+ * reporting. This allows each thread to have its own detailed exception state
+ * without contention or corruption.
+ *
+ * Declaration** (in SocketRateLimit.c):
+ * @code{.c}
+ * SOCKET_DECLARE_MODULE_EXCEPTION(SocketRateLimit);
+ * @endcode
+ *
+ * This expands to:
+ * @code{.c}
+ * static __thread Except_T SocketRateLimit_DetailedException;
+ * @endcode
+ *
+ * Usage Pattern**:
+ * @code{.c}
+ * SOCKET_RAISE_MSG(SocketRateLimit, SocketRateLimit_Failed, "invalid
+ * configuration: rate=%zu", rate);
+ * @endcode
+ *
+ * The detailed exception captures formatted reasons using thread-local
+ * buffers, enabling precise diagnostics while maintaining exception safety.
+ *
+ * Integration with Public API**:
+ * - Public functions document @throws SocketRateLimit_Failed
+ * - Internal code uses detailed variants for granularity
+ * - Handled via standard TRY/EXCEPT in callers
+ *
+ * @see SocketUtil.h for macro definitions (SOCKET_DECLARE_MODULE_EXCEPTION,
+ * SOCKET_RAISE_MSG, etc.)
+ * @see core/Except.h for base TRY/EXCEPT/FINALLY exception handling
+ * @see SocketRateLimit_Failed in SocketRateLimit.h for the base exception type
+ * @threadsafe Yes - __thread ensures per-thread isolation
+ *
+ * @note Exceptions are raised via RAISE() which unwinds the stack using
+ * setjmp/longjmp under the hood.
+ * @warning Avoid raising from signal handlers or non-async-safe contexts.
  */
 
 #endif /* SOCKETRATELIMIT_PRIVATE_INCLUDED */

@@ -4,13 +4,76 @@
 /**
  * @file SocketConfig.h
  * @ingroup foundation
- * @brief Compile-time configuration and platform detection for the socket library.
+ * @brief Compile-time and runtime configuration constants, limits, and
+ * platform adaptations.
  *
- * This header provides compile-time configuration for the socket library
- * including all size limits, platform detection, and socket option mappings.
- * All configuration values can be overridden at compile time using -D flags.
+ * Central hub for all library configuration: version info, size limits, buffer
+ * capacities, timeout defaults, feature flags (HTTP, TLS, WebSocket),
+ * platform-specific options (epoll/kqueue, SO_REUSEPORT), and socket option
+ * mappings. Enables customizable builds via CMake flags (-DENABLE_TLS=ON,
+ * -DSOCKET_MAX_CONNECTIONS=5000) and runtime tuning via functions like
+ * SocketConfig_set_max_memory().
  *
- * @see SocketUtil.h for runtime utilities that use these configurations.
+ * ## Key Configuration Areas
+ *
+ * ### Size and Capacity Limits
+ * - Connection pools: SOCKET_MAX_CONNECTIONS (default 10k)
+ * - Buffers: SOCKET_MAX_BUFFER_SIZE (1MB), UDP_MAX_PAYLOAD (65k)
+ * - Arenas: ARENA_CHUNK_SIZE (10k), global limit via set_max_memory()
+ *
+ * ### Feature Flags
+ * - SOCKET_HAS_TLS: TLS 1.3 support (OpenSSL/LibreSSL)
+ * - SOCKET_HAS_HTTP: HTTP/1.1 + HTTP/2 with HPACK
+ * - SOCKET_HAS_WEBSOCKET: RFC 6455 WebSocket
+ *
+ * ### Platform Detection and Backends
+ * - Linux: epoll, accept4(), TCP_DEFER_ACCEPT
+ * - BSD/macOS: kqueue, SO_NOSIGPIPE, SO_ACCEPTFILTER
+ * - Universal: poll() fallback, MSG_NOSIGNAL handling
+ *
+ * ### Runtime Config
+ * - Global memory limit enforcement for arenas
+ * - Validation macros (SOCKET_VALID_PORT, etc.)
+ * - Timeout structs (SocketTimeouts_T, SocketTimeouts_Extended_T)
+ *
+ * All constants can be overridden at compile-time with -D flags. Runtime
+ * functions provide dynamic control where applicable. Thread-safe where noted.
+ *
+ * ## Overriding Defaults
+ *
+ * ### CMake Build Flags
+ * | Flag | Default | Purpose |
+ * |------|---------|---------|
+ * | -DENABLE_TLS=ON | Enabled | TLS/DTLS support |
+ * | -DENABLE_HTTP=ON | Enabled | HTTP protocols |
+ * | -DSOCKET_MAX_CONNECTIONS=10000 | 10k | Pool size limit |
+ *
+ * ### Runtime Functions
+ * - SocketConfig_set_max_memory(bytes) - Global arena limit
+ * - SocketConfig_get_memory_used() - Current usage query
+ *
+ * ## Platform Requirements
+ *
+ * - POSIX.1-2008 compliant system (Linux, BSD, macOS)
+ * - C11 compiler with stdatomic.h support for thread safety
+ * - Optional: OpenSSL/LibreSSL for TLS, CMake 3.10+ for builds
+ *
+ * ## Validation and Safety
+ *
+ * - All limits enforced at runtime with NULL returns or exceptions
+ * - Macros like SAFE_CLOSE handle EINTR safely
+ * - Atomic operations for shared config state
+ *
+ * @note Many values are #ifndef guarded for easy overrides.
+ * @warning Overly low limits may cause premature failures; test thoroughly.
+ * @warning Feature flags affect ABI; rebuild dependent code when changed.
+ *
+ * @see SocketUtil.h - Runtime utilities leveraging these configs.
+ * @see Arena.h - Memory allocation respecting global limits.
+ * @see Socket.h - Socket creation using validated params.
+ * @see @ref foundation - Base module group.
+ * @see docs/CONFIGURATION.md - Detailed build and runtime config guide.
+ * @see CMakeLists.txt - Build system integration.
  */
 
 /* Standard includes required for configuration macros */
@@ -25,19 +88,85 @@
 #include <unistd.h>
 
 /**
- * @brief Thread-safe and bounds-checked strerror implementation.
+ * @brief Provides a thread-safe and bounds-checked implementation of
+ * strerror().
  * @ingroup foundation
- * @param errnum Error number to convert to string.
- * @return Human-readable error string or static fallback on failure.
  *
- * Provides a safe alternative to strerror() that avoids buffer overflows
- * and thread-safety issues with errno. Returns a static buffer with error
- * description, or "Unknown error" on failure.
+ * This function converts a system error number (typically errno) into a
+ * human-readable string description. It serves as a safer alternative to the
+ * standard strerror() function, addressing common issues such as buffer
+ * overflows, non-thread-safe behavior, and potential modifications to errno.
+ * The implementation prefers strerror_r() when available (both GNU and POSIX
+ * variants are supported) and falls back to a platform-appropriate mechanism,
+ * such as thread-local storage or a static buffer.
  *
- * @note Thread-safe: Yes - uses internal static buffer or strerror_r().
- * @see Socket_GetLastError() for formatted error strings with context.
- * @see Socket_geterrorcode() for error categorization.
- * @see @ref foundation for error handling utilities.
+ * Key features and behaviors:
+ * - **Thread Safety**: Each thread receives its own error string buffer,
+ * preventing race conditions in multi-threaded applications.
+ * - **Bounds Checking**: Input validation ensures no buffer overruns.
+ * - **Fallback Handling**: For unknown error codes or conversion failures,
+ * returns a descriptive string like "Unknown error #123".
+ * - **No Side Effects**: Does not modify errno or any global state.
+ * - **Portability**: Works across POSIX systems, with adaptations for
+ * variations in strerror_r() behavior (GNU returns char* vs POSIX int).
+ *
+ * Typical usage includes error logging, user-facing messages, and debugging.
+ * It is particularly useful in exception handlers or after failed system
+ * calls.
+ *
+ * @param[in] errnum The error number to convert to a string (e.g., errno
+ * value). Supports 0 (success) and all standard POSIX error codes.
+ *
+ * @return A pointer to a static, null-terminated string describing the error.
+ *         The string is valid until the next call to this function in the same
+ *         thread or thread exit. Never returns NULL.
+ *
+ * @throws None - This function does not raise exceptions; failures result in
+ *                fallback strings.
+ *
+ * @threadsafe Yes - Internal per-thread buffering or reentrant system calls
+ * ensure concurrent access safety without locks.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Simple error reporting after a system call
+ * int fd = open("file.txt", O_RDONLY);
+ * if (fd < 0) {
+ *     const char *err = Socket_safe_strerror(errno);
+ *     fprintf(stderr, "Failed to open file: %s\n", err);
+ * }
+ * @endcode
+ *
+ * ## Integration with Library Exceptions
+ *
+ * @code{.c}
+ * TRY {
+ *     Socket_T sock = Socket_connect("example.com", 80);
+ * } EXCEPT(Socket_Failed) {
+ *     // Socket_GetLastError() internally uses Socket_safe_strerror()
+ *     SOCKET_LOG_ERROR_MSG("Connection failed: %s", Socket_GetLastError());
+ * } END_TRY;
+ * @endcode
+ *
+ * @note The returned string should not be freed or modified; it points to
+ * internal static or thread-local data.
+ * @note On some platforms, strerror_r() may require special handling for
+ * buffer sizes; this function abstracts those details.
+ * @warning Avoid using in signal handlers unless confirmed async-signal-safe
+ *          on your platform (generally not recommended).
+ *
+ * @complexity O(1) - Constant time operation involving string lookup or copy.
+ *
+ * @see strerror(3p) - Standard POSIX strerror() (unsafe in threads).
+ * @see strerror_r(3p) - Reentrant version used internally.
+ * @see Socket_GetLastError() - For library-specific errors with additional
+ * context.
+ * @see Socket_geterrorcode() - Categorizes errors for retry logic.
+ * @see SocketError_categorize_errno() - Classifies errno values.
+ * @see @ref foundation - Base infrastructure including other utilities.
+ * @see docs/ERROR-HANDLING.md - Detailed guide on error patterns in the
+ * library.
  */
 extern const char *Socket_safe_strerror (int errnum);
 
@@ -156,8 +285,9 @@ extern const char *Socket_safe_strerror (int errnum);
  * @see SAFE_UDP_SIZE for MTU-safe size.
  */
 #ifndef UDP_MAX_PAYLOAD
-#define UDP_MAX_PAYLOAD 65507UL /* IPv4/6 max UDP payload excluding headers   \
-                                 */
+#define UDP_MAX_PAYLOAD                                                       \
+  65507UL /* IPv4/6 max UDP payload excluding headers                         \
+           */
 #endif
 
 /**
@@ -500,7 +630,8 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
- * @brief SOCKET_POLL_MAX_REGISTERED - Maximum sockets registered per poll instance
+ * @brief SOCKET_POLL_MAX_REGISTERED - Maximum sockets registered per poll
+ * instance
  *
  * @brief Defense-in-depth limit to prevent resource exhaustion attacks.
  * Set to 0 to disable the limit (unlimited registrations).
@@ -1105,11 +1236,12 @@ extern const char *Socket_safe_strerror (int errnum);
  * @brief HTTP protocol support flag.
  * @ingroup http
  *
- * Includes full HTTP/1.1 and HTTP/2 implementation with HPACK header compression,
- * client (SocketHTTPClient) and server (SocketHTTPServer) APIs, WebSocket support.
+ * Includes full HTTP/1.1 and HTTP/2 implementation with HPACK header
+ * compression, client (SocketHTTPClient) and server (SocketHTTPServer) APIs,
+ * WebSocket support.
  *
- * Set to 1 to enable HTTP features (default), 0 to disable for reduced footprint.
- * Controlled by CMake -DENABLE_HTTP=ON/OFF.
+ * Set to 1 to enable HTTP features (default), 0 to disable for reduced
+ * footprint. Controlled by CMake -DENABLE_HTTP=ON/OFF.
  *
  * @see include/http/ for HTTP module headers.
  * @see SocketHTTPClient_T for high-level HTTP client.
@@ -1123,8 +1255,8 @@ extern const char *Socket_safe_strerror (int errnum);
  * @brief WebSocket protocol support flag.
  * @ingroup http
  *
- * Enables WebSocket RFC 6455 implementation with permessage-deflate extension support.
- * Builds on HTTP module for handshake and framing.
+ * Enables WebSocket RFC 6455 implementation with permessage-deflate extension
+ * support. Builds on HTTP module for handshake and framing.
  *
  * Set to 1 to enable WebSocket features (default), 0 to disable.
  * Requires SOCKET_HAS_HTTP=1.
@@ -1141,8 +1273,9 @@ extern const char *Socket_safe_strerror (int errnum);
  * @brief TLS/SSL support flag.
  * @ingroup security
  *
- * Enables TLS 1.3 (only, no legacy versions) and DTLS support using OpenSSL or LibreSSL.
- * Includes client/server certificate management, session resumption, ALPN negotiation.
+ * Enables TLS 1.3 (only, no legacy versions) and DTLS support using OpenSSL or
+ * LibreSSL. Includes client/server certificate management, session resumption,
+ * ALPN negotiation.
  *
  * Set to 1 to enable TLS features, 0 to disable (default for minimal builds).
  * Controlled by CMake -DENABLE_TLS=ON/OFF, auto-detects crypto library.
@@ -1165,8 +1298,9 @@ extern const char *Socket_safe_strerror (int errnum);
 /**
  * @brief Fallback definition for IOV_MAX if not provided by system headers.
  *
- * Maximum number of I/O vectors supported for scatter/gather operations (readv/writev, sendmsg/recvmsg).
- * This limit prevents excessive memory use in vectorized I/O operations and aligns with POSIX standards.
+ * Maximum number of I/O vectors supported for scatter/gather operations
+ * (readv/writev, sendmsg/recvmsg). This limit prevents excessive memory use in
+ * vectorized I/O operations and aligns with POSIX standards.
  *
  * @see struct iovec (sys/uio.h) for I/O vector structure.
  * @see Socket_sendv(), Socket_recvv() for vectorized send/receive operations.
@@ -1215,7 +1349,8 @@ extern const char *Socket_safe_strerror (int errnum);
  */
 
 /**
- * @brief SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for Socket_connect()
+ * @brief SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for
+ * Socket_connect()
  *
  * When enabled (1), Socket_connect() will use the RFC 8305 Happy Eyeballs
  * algorithm for hostname connections, racing IPv6 and IPv4 connection
@@ -1273,15 +1408,58 @@ extern const char *Socket_safe_strerror (int errnum);
 #endif
 
 /**
- * @brief Timeout configuration structure for socket operations.
+ * @brief Basic timeout configuration structure for socket operations.
  * @ingroup foundation
  *
- * Basic timeout settings for connection establishment, DNS resolution, and general operations.
- * Values of 0 indicate infinite timeout (blocking until completion or error).
+ * Defines timeout parameters for core socket operations: connection
+ * establishment, DNS resolution, and general read/write operations. This
+ * structure provides a simple way to configure blocking vs non-blocking
+ * behavior across library APIs.
  *
- * @see SocketConfig.h for default values like SOCKET_DEFAULT_CONNECT_TIMEOUT_MS.
- * @see SocketTimeouts_Extended_T for per-phase extended timeouts.
- * @see Socket_connect() for connect timeout usage.
+ * All fields are in milliseconds. A value of 0 means infinite timeout (block
+ * until completion, error, or interrupt). Negative values are invalid and may
+ * trigger assertions or defaults.
+ *
+ * Lifecycle: Stack-allocated or embedded in larger configs; no allocation/free
+ * needed. Thread safety: Read-only after initialization; safe to share const
+ * instances. Used by high-level APIs like Socket_connect(), SocketHTTPClient,
+ * etc., for consistent timeout behavior.
+ *
+ * Defaults: See constants like SOCKET_DEFAULT_CONNECT_TIMEOUT_MS (30s).
+ *
+ * ## Fields
+ *
+ * | Field | Default | Description |
+ * |----------------|----------------|---------------------------------------------|
+ * | connect_timeout_ms | 30000 | TCP connect timeout (ms, 0=infinite) |
+ * | dns_timeout_ms | 5000 | DNS resolution timeout (ms, 0=infinite) |
+ * | operation_timeout_ms | 0 | General I/O timeout (ms, 0=infinite) |
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketTimeouts_T timeouts = {
+ *     .connect_timeout_ms = 5000,  // 5s connect
+ *     .dns_timeout_ms = 2000,     // 2s DNS
+ *     .operation_timeout_ms = 10000 // 10s I/O
+ * };
+ *
+ * // Pass to API functions
+ * // e.g., Socket_connect_with_timeout(host, port, &timeouts); (hypothetical)
+ * @endcode
+ *
+ * @note These timeouts apply unless overridden by extended structs or
+ * per-function params.
+ * @note Infinite timeouts (0) suitable for trusted clients; use finite in
+ * untrusted scenarios.
+ * @warning Very short values may cause unnecessary failures on slow networks.
+ *
+ * @see SocketTimeouts_Extended_T - Granular per-phase timeouts.
+ * @see SOCKET_DEFAULT_CONNECT_TIMEOUT_MS - Compile-time defaults.
+ * @see Socket_connect() - Applies connect_timeout_ms.
+ * @see SocketDNS_T - Uses dns_timeout_ms for resolutions.
+ * @see @ref core_io - Related socket operations.
+ * @see docs/TIMEOUTS.md - Timeout best practices and tuning.
  */
 typedef struct SocketTimeouts
 {
@@ -1295,8 +1473,9 @@ typedef struct SocketTimeouts
  * @brief Extended per-phase timeout configuration structure.
  * @ingroup foundation
  *
- * Provides granular control over timeouts for specific operation phases like DNS, connect, TLS handshake, and requests.
- * Allows fine-tuning for production environments with varying latency characteristics per phase.
+ * Provides granular control over timeouts for specific operation phases like
+ * DNS, connect, TLS handshake, and requests. Allows fine-tuning for production
+ * environments with varying latency characteristics per phase.
  *
  * Precedence (highest to lowest):
  * 1. Per-request timeouts (API-specific)
@@ -1310,7 +1489,8 @@ typedef struct SocketTimeouts
  * - Positive: Specific timeout in ms
  *
  * @see SocketTimeouts_T for basic timeouts.
- * @see SocketConfig.h constants like SOCKET_DEFAULT_TLS_TIMEOUT_MS for defaults.
+ * @see SocketConfig.h constants like SOCKET_DEFAULT_TLS_TIMEOUT_MS for
+ * defaults.
  * @see SocketTLS_handshake() for TLS phase timeout usage.
  */
 typedef struct SocketTimeouts_Extended
@@ -1819,7 +1999,8 @@ union align
  * @brief Linux-specific features detection.
  * @ingroup core_io
  *
- * Detects Linux platform (__linux__) to enable Linux-only optimizations and options:
+ * Detects Linux platform (__linux__) to enable Linux-only optimizations and
+ * options:
  * - accept4(): Atomic accept with non-blocking and CLOEXEC flags.
  * - SO_DOMAIN: Socket option to query address family (AF_INET, etc.).
  *
@@ -1985,8 +2166,8 @@ union align
 /**
  * @brief TCP_DEFER_ACCEPT option for SYN flood protection.
  *
- * Linux-specific option that delays accept() completion until client sends data.
- * On BSD/macOS, use SO_ACCEPTFILTER instead.
+ * Linux-specific option that delays accept() completion until client sends
+ * data. On BSD/macOS, use SO_ACCEPTFILTER instead.
  *
  * @ingroup security
  * @see TCP_DEFER_ACCEPT
@@ -2274,33 +2455,185 @@ union align
  */
 
 /**
- * @brief Set global memory limit for Arena allocations.
+ * @brief Sets the global memory limit enforced by all Arena allocators.
  * @ingroup foundation
- * @param max_bytes Maximum total bytes (0 = unlimited, default).
- * @threadsafe Yes (atomic store)
- * @see SocketConfig_get_max_memory() to query the current limit.
- * @see SocketConfig_get_memory_used() to see current usage.
- * @see Arena_T for memory allocation that respects this limit.
+ *
+ * Configures a hard limit on total memory usage across all arenas created by
+ * the library. When this limit is reached, subsequent Arena_alloc() and
+ * Arena_calloc() calls will return NULL, triggering Arena_Failed exceptions
+ * in TRY blocks. This provides a defense against memory exhaustion attacks
+ * and helps in containerized environments with strict resource constraints.
+ *
+ * The limit is tracked atomically and applies globally, shared across all
+ * threads and arenas. Setting to 0 disables the limit (unlimited memory).
+ * Initial default is unlimited (0). Changes take effect immediately for new
+ * allocations but do not retroactively affect existing ones.
+ *
+ * Use cases:
+ * - Production servers: Limit to prevent DoS from malicious clients allocating
+ *   excessive buffers via HTTP bodies or other means.
+ * - Embedded systems: Enforce deterministic memory usage.
+ * - Testing: Simulate out-of-memory conditions.
+ *
+ * Monitoring: Pair with SocketConfig_get_memory_used() for runtime tracking
+ * and alerting when approaching the limit.
+ *
+ * @param[in] max_bytes The new global limit in bytes (0 = unlimited).
+ *                      Must be non-negative; values > SIZE_MAX are clamped.
+ *
+ * @return None (void).
+ *
+ * @throws None - This function does not allocate memory or raise exceptions.
+ *
+ * @threadsafe Yes - Uses atomic operations (stdatomic.h or compiler
+ * intrinsics) for cross-thread safe updates without locks.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Set 100MB global limit at startup
+ * SocketConfig_set_max_memory(100 * 1024 * 1024);
+ *
+ * // Later, check usage
+ * size_t used = SocketConfig_get_memory_used();
+ * size_t max = SocketConfig_get_max_memory();
+ * if (used > max * 0.9) {
+ *     SOCKET_LOG_WARN_MSG("Memory usage high: %zu / %zu bytes", used, max);
+ * }
+ * @endcode
+ *
+ * ## With Arena Allocation
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * TRY {
+ *     void *buf = ALLOC(arena, 1 << 30);  // 1GB attempt
+ *     // If limit is 100MB, this will fail and raise Arena_Failed
+ * } EXCEPT(Arena_Failed) {
+ *     SOCKET_LOG_ERROR_MSG("Allocation failed - global limit exceeded");
+ * } FINALLY {
+ *     Arena_dispose(&arena);
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Existing allocations are not reclaimed; only new ones are limited.
+ * @note Limit is enforced per allocation, not per arena - total across all
+ * arenas.
+ * @note To reset to unlimited: SocketConfig_set_max_memory(0);
+ *
+ * @warning Setting a low limit mid-runtime may cause immediate OOM for ongoing
+ * operations.
+ * @warning In multi-process scenarios, each process has independent tracking.
+ *
+ * @complexity O(1) - Atomic update with no locking or traversal.
+ *
+ * @see SocketConfig_get_max_memory() - Query current limit.
+ * @see SocketConfig_get_memory_used() - Get current total usage.
+ * @see Arena_alloc() - Allocation function that checks this limit.
+ * @see Arena_T - Memory arena implementation.
+ * @see @ref foundation - Core memory management utilities.
+ * @see docs/MEMORY-MANAGEMENT.md - Guide to arena usage and limits.
  */
 extern void SocketConfig_set_max_memory (size_t max_bytes);
 
 /**
- * @brief Get current global memory limit.
+ * @brief Retrieves the currently configured global memory limit.
  * @ingroup foundation
- * @return Maximum bytes configured (0 = unlimited).
- * @threadsafe Yes (atomic load)
- * @see SocketConfig_set_max_memory() to set the limit.
- * @see SocketConfig_get_memory_used() to see current usage.
+ *
+ * Returns the maximum allowed total memory for all Arena allocations
+ * library-wide. A value of 0 indicates no limit (unlimited). This query is
+ * useful for monitoring, logging, and dynamic adjustment decisions in
+ * long-running applications.
+ *
+ * This function is lightweight and can be called frequently without
+ * performance impact. It reflects the most recent limit set via
+ * SocketConfig_set_max_memory().
+ *
+ * @return Current global memory limit in bytes (0 = unlimited).
+ *
+ * @throws None.
+ *
+ * @threadsafe Yes - Atomic load operation.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * size_t limit = SocketConfig_get_max_memory();
+ * if (limit == 0) {
+ *     printf("No global memory limit set.\n");
+ * } else {
+ *     printf("Global memory limit: %zu bytes\n", limit);
+ * }
+ * @endcode
+ *
+ * @note Value may change concurrently if other threads call set_max_memory().
+ * @note For usage stats, combine with SocketConfig_get_memory_used().
+ *
+ * @complexity O(1).
+ *
+ * @see SocketConfig_set_max_memory() - Set the limit.
+ * @see SocketConfig_get_memory_used() - Get current usage.
+ * @see Arena_T - Related memory management.
+ * @see @ref foundation - Base utilities.
  */
 extern size_t SocketConfig_get_max_memory (void);
 
 /**
- * @brief Get current total memory usage.
+ * @brief Retrieves the total current memory allocated via Arenas.
  * @ingroup foundation
- * @return Total bytes currently allocated via Arena.
- * @threadsafe Yes (atomic load)
- * @see SocketConfig_set_max_memory() to set the limit that this usage is checked against.
- * @see Arena_T for the allocator that tracks this usage.
+ *
+ * Returns the aggregate bytes currently allocated across all arenas in the
+ * process. This includes active allocations but excludes freed chunks that
+ * may be cached for reuse within arenas. Provides visibility into memory
+ * footprint for monitoring, alerting, and debugging memory leaks.
+ *
+ * Tracked atomically to support concurrent updates from multiple threads.
+ * Value increases on successful alloc/calloc, decreases on arena
+ * clear/dispose.
+ *
+ * Use in conjunction with get_max_memory() to compute utilization percentage.
+ * Helps detect leaks if value grows unbounded or doesn't decrease after load.
+ *
+ * @return Total bytes currently in use by all arenas (0 if none allocated).
+ *
+ * @throws None.
+ *
+ * @threadsafe Yes - Atomic load with memory barriers for consistency.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Monitor memory usage
+ * size_t used = SocketConfig_get_memory_used();
+ * size_t max_allowed = SocketConfig_get_max_memory();
+ * double utilization = max_allowed ? (double)used / max_allowed : 0.0;
+ *
+ * if (utilization > 0.8) {
+ *     SOCKET_LOG_WARN_MSG("High memory utilization: %.1f%% (%zu / %zu)",
+ *                         utilization * 100, used, max_allowed);
+ * }
+ * @endcode
+ *
+ * ## In Tests for Leak Detection
+ *
+ * @code{.c}
+ * // At end of test
+ * assert(SocketConfig_get_memory_used() == 0 && "Memory leak detected!");
+ * @endcode
+ *
+ * @note Does not include malloc() or other non-arena allocations.
+ * @note Cached free chunks within arenas may inflate the value slightly.
+ * @note Multi-process: Each process tracks its own usage independently.
+ *
+ * @warning Not a replacement for heap profilers; focused on arena subsystem.
+ *
+ * @complexity O(1) - Direct atomic read of global counter.
+ *
+ * @see SocketConfig_set_max_memory() - Configure limit checked against this.
+ * @see SocketConfig_get_max_memory() - Get configured limit.
+ * @see Arena_clear(), Arena_dispose() - Operations that reduce usage.
+ * @see @ref foundation - Memory management primitives.
+ * @see docs/MEMORY-MANAGEMENT.md - Arena best practices and monitoring.
  */
 extern size_t SocketConfig_get_memory_used (void);
 

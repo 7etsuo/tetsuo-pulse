@@ -1,7 +1,7 @@
 var SocketTLSContext_8h =
 [
     [ "T", "SocketTLSContext_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
-    [ "SocketTLSAlpnCallback", "SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70", null ],
+    [ "SocketTLSAlpnCallback", "group__tls__context.html#gaa53566f8d54960bb2d44516a50f67c70", null ],
     [ "SocketTLSCertLookupCallback", "group__security.html#ga5c2914ee879d575869932c3a3aed4863", null ],
     [ "SocketTLSCrlCallback", "group__security.html#ga60686895b6fbdd1290a6f6176484bf5b", null ],
     [ "SocketTLSOcspGenCallback", "group__security.html#ga1acd7a590114ffbf4307a6f5a3bab35c", null ],

@@ -1,0 +1,362 @@
+\doxysection{Socket\+HTTP2\+\_\+\+Conn Struct Reference}
+\hypertarget{structSocketHTTP2__Conn}{}\label{structSocketHTTP2__Conn}\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+
+
+{\ttfamily \#include $<$Socket\+HTTP2-\/private.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HTTP2\+\_\+\+Conn\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{structSocketHTTP2__Conn__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+Socket\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_a2c3984cb03447d438d41423c306ecf40}{socket}}
+\item 
+Arena\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_add91dda5c24caebe764cbbd3e2d8bdd9}{arena}}
+\item 
+\mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{Socket\+HTTP2\+\_\+\+Role}} \mbox{\hyperlink{structSocketHTTP2__Conn_a5bc0c0b09108757103e1e97ded474fb8}{role}}
+\item 
+\mbox{\hyperlink{SocketHTTP2-private_8h_a04a564c3d98f445678201ed187523246}{Socket\+HTTP2\+\_\+\+Conn\+State}} \mbox{\hyperlink{structSocketHTTP2__Conn_a043c5750cd782e7750511b2faa11ce44}{state}}
+\item 
+\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} \mbox{\hyperlink{structSocketHTTP2__Conn_a77c1e38c59990f7f25c307e5617aaa8c}{encoder}}
+\item 
+\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} \mbox{\hyperlink{structSocketHTTP2__Conn_a026a7fead4232eb5f2b9787c8147b415}{decoder}}
+\item 
+Socket\+Buf\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_aeb7544ab75407d3c2ae26ecdde1d863c}{recv\+\_\+buf}}
+\item 
+Socket\+Buf\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_a6f42db4aa716f98e3fb89d7b13a0d5b8}{send\+\_\+buf}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a603b851045ad377aa1b1f12c303ddbcc}{local\+\_\+settings}} \mbox{[}\mbox{\hyperlink{SocketHTTP2_8h_a5520a61b7f70500149663a3114dff963}{HTTP2\+\_\+\+SETTINGS\+\_\+\+COUNT}}\mbox{]}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_ab839a4fe94a04ca8f55629dcb55cc293}{peer\+\_\+settings}} \mbox{[}\mbox{\hyperlink{SocketHTTP2_8h_a5520a61b7f70500149663a3114dff963}{HTTP2\+\_\+\+SETTINGS\+\_\+\+COUNT}}\mbox{]}
+\item 
+int \mbox{\hyperlink{structSocketHTTP2__Conn_a037783b57229686721bb37f58bb642d1}{settings\+\_\+ack\+\_\+pending}}
+\item 
+int32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a5f11b818784d196779d96979d9a9cfef}{send\+\_\+window}}
+\item 
+int32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a5147abf0bea114c8e1db9b046a746bf8}{recv\+\_\+window}}
+\item 
+int32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a52dc2f957e3f1fbf90591191132a185f}{initial\+\_\+send\+\_\+window}}
+\item 
+int32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_ae8c498d2c7e43b520b167a0c129df7b2}{initial\+\_\+recv\+\_\+window}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP2__Stream}{Socket\+HTTP2\+\_\+\+Stream}} \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTP2__Conn_a836305e2a36eddcb09b197772453e8f5}{streams}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a4621c6d853c9e1caed7af64faa26e88b}{stream\+\_\+count}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a32ca2a00225f8fd4948561398ee0c426}{client\+\_\+initiated\+\_\+count}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_aa99ab3831bfb14001593f6ab55def5cb}{server\+\_\+initiated\+\_\+count}}
+\item 
+Socket\+Rate\+Limit\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_a01e894481cfd941db418b372cf5b7ff7}{stream\+\_\+open\+\_\+rate\+\_\+limit}}
+\item 
+Socket\+Rate\+Limit\+\_\+T \mbox{\hyperlink{structSocketHTTP2__Conn_a007db2028f52ca7d5d955fec5cc515db}{stream\+\_\+close\+\_\+rate\+\_\+limit}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a855ce539ffdc14a3d1480834f8374ab2}{hash\+\_\+seed}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a0d3f2fb4587b4f637e1c779afb697b4f}{next\+\_\+stream\+\_\+id}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_aab09421c01eb8f69d7306c215f146988}{last\+\_\+peer\+\_\+stream\+\_\+id}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a4d15cabc7ca5ee346f06550f920d8cc7}{max\+\_\+peer\+\_\+stream\+\_\+id}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a39e072d9eed8d88f40e771071aae0a05}{continuation\+\_\+stream\+\_\+id}}
+\item 
+int \mbox{\hyperlink{structSocketHTTP2__Conn_a053fc69f9d5acb7560069de014ca1dce}{expecting\+\_\+continuation}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_af284b44083b4aed8d7d3e9c6c8f71542}{continuation\+\_\+frame\+\_\+count}}
+\item 
+int \mbox{\hyperlink{structSocketHTTP2__Conn_a6eca3e4e8a958ae3320b64b9fe1d62f0}{goaway\+\_\+sent}}
+\item 
+int \mbox{\hyperlink{structSocketHTTP2__Conn_a2a1ae9b3ae563abe7a60d376e287dbf2}{goaway\+\_\+received}}
+\item 
+\mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{Socket\+HTTP2\+\_\+\+Error\+Code}} \mbox{\hyperlink{structSocketHTTP2__Conn_a3e4946d4f8f8504249e8ca023fdb209e}{goaway\+\_\+error\+\_\+code}}
+\item 
+unsigned char \mbox{\hyperlink{structSocketHTTP2__Conn_a1cc7ec1cb04c746be4a909f0f39c880e}{ping\+\_\+opaque}} \mbox{[}8\mbox{]}
+\item 
+int \mbox{\hyperlink{structSocketHTTP2__Conn_a15a470b96126b40ce6186b38bcc68b40}{ping\+\_\+pending}}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a2b58ef8db2dbf4688818dfb790da220b}\label{structSocketHTTP2__Conn_a2b58ef8db2dbf4688818dfb790da220b} 
+\mbox{\hyperlink{SocketHTTP2_8h_a990cec8dae4a5eb79e28e30039038a98}{Socket\+HTTP2\+\_\+\+Stream\+Callback}} {\bfseries stream\+\_\+callback}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a0432dcb9b4f8fdeae339330a23e2cd23}\label{structSocketHTTP2__Conn_a0432dcb9b4f8fdeae339330a23e2cd23} 
+\mbox{\hyperlink{SocketHTTP2_8h_a82daab7aba48e58f206a541e11b63bb2}{Socket\+HTTP2\+\_\+\+Conn\+Callback}} {\bfseries conn\+\_\+callback}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a1b5822a4b1562c7f0abf6b5f6d6c63c0}\label{structSocketHTTP2__Conn_a1b5822a4b1562c7f0abf6b5f6d6c63c0} 
+void \texorpdfstring{$\ast$}{*} {\bfseries stream\+\_\+callback\+\_\+data}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_adf58ad856453af90722cc58e18a945f2}\label{structSocketHTTP2__Conn_adf58ad856453af90722cc58e18a945f2} 
+void \texorpdfstring{$\ast$}{*} {\bfseries conn\+\_\+callback\+\_\+data}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a5b2ed59f051a1367132de7b5b2243986}\label{structSocketHTTP2__Conn_a5b2ed59f051a1367132de7b5b2243986} 
+int {\bfseries settings\+\_\+timeout\+\_\+ms}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a9d7ab03e989bbae736c5111084a10a64}\label{structSocketHTTP2__Conn_a9d7ab03e989bbae736c5111084a10a64} 
+int {\bfseries ping\+\_\+timeout\+\_\+ms}
+\item 
+\Hypertarget{structSocketHTTP2__Conn_a89d5052b9406266b9cbaa3f02d795ee9}\label{structSocketHTTP2__Conn_a89d5052b9406266b9cbaa3f02d795ee9} 
+int {\bfseries idle\+\_\+timeout\+\_\+ms}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a63df69db98280a3a7bfb34a6be5f6e90}{rst\+\_\+count\+\_\+in\+\_\+window}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_a6d1cac8e0a00a5969ded90f7e5e1ac6e}{rst\+\_\+window\+\_\+start\+\_\+ms}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_ac8d4be6daea651241985875aa79f0aa1}{ping\+\_\+count\+\_\+in\+\_\+window}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_ae4cfc1c8742b534ca189a35fe81ae6db}{ping\+\_\+window\+\_\+start\+\_\+ms}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_ad837496d9a6547f9a970e9bbc09aa1af}{settings\+\_\+count\+\_\+in\+\_\+window}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Conn_addfbb0278710f269238b94cd77f40623}{settings\+\_\+window\+\_\+start\+\_\+ms}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP/2 connection 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTP2__Conn_add91dda5c24caebe764cbbd3e2d8bdd9}\label{structSocketHTTP2__Conn_add91dda5c24caebe764cbbd3e2d8bdd9} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!arena@{arena}}
+\index{arena@{arena}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{arena}{arena}}
+{\footnotesize\ttfamily Arena\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::arena}
+
+Memory arena \Hypertarget{structSocketHTTP2__Conn_a32ca2a00225f8fd4948561398ee0c426}\label{structSocketHTTP2__Conn_a32ca2a00225f8fd4948561398ee0c426} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!client\_initiated\_count@{client\_initiated\_count}}
+\index{client\_initiated\_count@{client\_initiated\_count}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{client\_initiated\_count}{client\_initiated\_count}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::client\+\_\+initiated\+\_\+count}
+
+Count of client-\/initiated streams \Hypertarget{structSocketHTTP2__Conn_af284b44083b4aed8d7d3e9c6c8f71542}\label{structSocketHTTP2__Conn_af284b44083b4aed8d7d3e9c6c8f71542} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!continuation\_frame\_count@{continuation\_frame\_count}}
+\index{continuation\_frame\_count@{continuation\_frame\_count}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{continuation\_frame\_count}{continuation\_frame\_count}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::continuation\+\_\+frame\+\_\+count}
+
+Current CONTINUATION count for header block \Hypertarget{structSocketHTTP2__Conn_a39e072d9eed8d88f40e771071aae0a05}\label{structSocketHTTP2__Conn_a39e072d9eed8d88f40e771071aae0a05} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!continuation\_stream\_id@{continuation\_stream\_id}}
+\index{continuation\_stream\_id@{continuation\_stream\_id}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{continuation\_stream\_id}{continuation\_stream\_id}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::continuation\+\_\+stream\+\_\+id}
+
+Stream expecting CONTINUATION \Hypertarget{structSocketHTTP2__Conn_a026a7fead4232eb5f2b9787c8147b415}\label{structSocketHTTP2__Conn_a026a7fead4232eb5f2b9787c8147b415} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!decoder@{decoder}}
+\index{decoder@{decoder}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{decoder}{decoder}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} Socket\+HTTP2\+\_\+\+Conn\+::decoder}
+
+Header decoder \Hypertarget{structSocketHTTP2__Conn_a77c1e38c59990f7f25c307e5617aaa8c}\label{structSocketHTTP2__Conn_a77c1e38c59990f7f25c307e5617aaa8c} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!encoder@{encoder}}
+\index{encoder@{encoder}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{encoder}{encoder}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} Socket\+HTTP2\+\_\+\+Conn\+::encoder}
+
+Header encoder \Hypertarget{structSocketHTTP2__Conn_a053fc69f9d5acb7560069de014ca1dce}\label{structSocketHTTP2__Conn_a053fc69f9d5acb7560069de014ca1dce} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!expecting\_continuation@{expecting\_continuation}}
+\index{expecting\_continuation@{expecting\_continuation}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{expecting\_continuation}{expecting\_continuation}}
+{\footnotesize\ttfamily int Socket\+HTTP2\+\_\+\+Conn\+::expecting\+\_\+continuation}
+
+Expecting CONTINUATION frame \Hypertarget{structSocketHTTP2__Conn_a3e4946d4f8f8504249e8ca023fdb209e}\label{structSocketHTTP2__Conn_a3e4946d4f8f8504249e8ca023fdb209e} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!goaway\_error\_code@{goaway\_error\_code}}
+\index{goaway\_error\_code@{goaway\_error\_code}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{goaway\_error\_code}{goaway\_error\_code}}
+{\footnotesize\ttfamily \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{Socket\+HTTP2\+\_\+\+Error\+Code}} Socket\+HTTP2\+\_\+\+Conn\+::goaway\+\_\+error\+\_\+code}
+
+GOAWAY error code \Hypertarget{structSocketHTTP2__Conn_a2a1ae9b3ae563abe7a60d376e287dbf2}\label{structSocketHTTP2__Conn_a2a1ae9b3ae563abe7a60d376e287dbf2} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!goaway\_received@{goaway\_received}}
+\index{goaway\_received@{goaway\_received}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{goaway\_received}{goaway\_received}}
+{\footnotesize\ttfamily int Socket\+HTTP2\+\_\+\+Conn\+::goaway\+\_\+received}
+
+GOAWAY frame received \Hypertarget{structSocketHTTP2__Conn_a6eca3e4e8a958ae3320b64b9fe1d62f0}\label{structSocketHTTP2__Conn_a6eca3e4e8a958ae3320b64b9fe1d62f0} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!goaway\_sent@{goaway\_sent}}
+\index{goaway\_sent@{goaway\_sent}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{goaway\_sent}{goaway\_sent}}
+{\footnotesize\ttfamily int Socket\+HTTP2\+\_\+\+Conn\+::goaway\+\_\+sent}
+
+GOAWAY frame sent \Hypertarget{structSocketHTTP2__Conn_a855ce539ffdc14a3d1480834f8374ab2}\label{structSocketHTTP2__Conn_a855ce539ffdc14a3d1480834f8374ab2} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!hash\_seed@{hash\_seed}}
+\index{hash\_seed@{hash\_seed}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{hash\_seed}{hash\_seed}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::hash\+\_\+seed}
+
+Random seed for stream hash randomization \Hypertarget{structSocketHTTP2__Conn_ae8c498d2c7e43b520b167a0c129df7b2}\label{structSocketHTTP2__Conn_ae8c498d2c7e43b520b167a0c129df7b2} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!initial\_recv\_window@{initial\_recv\_window}}
+\index{initial\_recv\_window@{initial\_recv\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{initial\_recv\_window}{initial\_recv\_window}}
+{\footnotesize\ttfamily int32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::initial\+\_\+recv\+\_\+window}
+
+Initial stream recv window \Hypertarget{structSocketHTTP2__Conn_a52dc2f957e3f1fbf90591191132a185f}\label{structSocketHTTP2__Conn_a52dc2f957e3f1fbf90591191132a185f} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!initial\_send\_window@{initial\_send\_window}}
+\index{initial\_send\_window@{initial\_send\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{initial\_send\_window}{initial\_send\_window}}
+{\footnotesize\ttfamily int32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::initial\+\_\+send\+\_\+window}
+
+Initial stream send window \Hypertarget{structSocketHTTP2__Conn_aab09421c01eb8f69d7306c215f146988}\label{structSocketHTTP2__Conn_aab09421c01eb8f69d7306c215f146988} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!last\_peer\_stream\_id@{last\_peer\_stream\_id}}
+\index{last\_peer\_stream\_id@{last\_peer\_stream\_id}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{last\_peer\_stream\_id}{last\_peer\_stream\_id}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::last\+\_\+peer\+\_\+stream\+\_\+id}
+
+Last peer stream ID processed \Hypertarget{structSocketHTTP2__Conn_a603b851045ad377aa1b1f12c303ddbcc}\label{structSocketHTTP2__Conn_a603b851045ad377aa1b1f12c303ddbcc} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!local\_settings@{local\_settings}}
+\index{local\_settings@{local\_settings}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{local\_settings}{local\_settings}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::local\+\_\+settings\mbox{[}\mbox{\hyperlink{SocketHTTP2_8h_a5520a61b7f70500149663a3114dff963}{HTTP2\+\_\+\+SETTINGS\+\_\+\+COUNT}}\mbox{]}}
+
+Our settings \Hypertarget{structSocketHTTP2__Conn_a4d15cabc7ca5ee346f06550f920d8cc7}\label{structSocketHTTP2__Conn_a4d15cabc7ca5ee346f06550f920d8cc7} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!max\_peer\_stream\_id@{max\_peer\_stream\_id}}
+\index{max\_peer\_stream\_id@{max\_peer\_stream\_id}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{max\_peer\_stream\_id}{max\_peer\_stream\_id}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::max\+\_\+peer\+\_\+stream\+\_\+id}
+
+Max stream ID from GOAWAY \Hypertarget{structSocketHTTP2__Conn_a0d3f2fb4587b4f637e1c779afb697b4f}\label{structSocketHTTP2__Conn_a0d3f2fb4587b4f637e1c779afb697b4f} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!next\_stream\_id@{next\_stream\_id}}
+\index{next\_stream\_id@{next\_stream\_id}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{next\_stream\_id}{next\_stream\_id}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::next\+\_\+stream\+\_\+id}
+
+Next stream ID to use \Hypertarget{structSocketHTTP2__Conn_ab839a4fe94a04ca8f55629dcb55cc293}\label{structSocketHTTP2__Conn_ab839a4fe94a04ca8f55629dcb55cc293} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!peer\_settings@{peer\_settings}}
+\index{peer\_settings@{peer\_settings}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{peer\_settings}{peer\_settings}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::peer\+\_\+settings\mbox{[}\mbox{\hyperlink{SocketHTTP2_8h_a5520a61b7f70500149663a3114dff963}{HTTP2\+\_\+\+SETTINGS\+\_\+\+COUNT}}\mbox{]}}
+
+Peer\textquotesingle{}s settings \Hypertarget{structSocketHTTP2__Conn_ac8d4be6daea651241985875aa79f0aa1}\label{structSocketHTTP2__Conn_ac8d4be6daea651241985875aa79f0aa1} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!ping\_count\_in\_window@{ping\_count\_in\_window}}
+\index{ping\_count\_in\_window@{ping\_count\_in\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{ping\_count\_in\_window}{ping\_count\_in\_window}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::ping\+\_\+count\+\_\+in\+\_\+window}
+
+PING count in current window \Hypertarget{structSocketHTTP2__Conn_a1cc7ec1cb04c746be4a909f0f39c880e}\label{structSocketHTTP2__Conn_a1cc7ec1cb04c746be4a909f0f39c880e} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!ping\_opaque@{ping\_opaque}}
+\index{ping\_opaque@{ping\_opaque}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{ping\_opaque}{ping\_opaque}}
+{\footnotesize\ttfamily unsigned char Socket\+HTTP2\+\_\+\+Conn\+::ping\+\_\+opaque\mbox{[}8\mbox{]}}
+
+Last PING opaque data \Hypertarget{structSocketHTTP2__Conn_a15a470b96126b40ce6186b38bcc68b40}\label{structSocketHTTP2__Conn_a15a470b96126b40ce6186b38bcc68b40} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!ping\_pending@{ping\_pending}}
+\index{ping\_pending@{ping\_pending}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{ping\_pending}{ping\_pending}}
+{\footnotesize\ttfamily int Socket\+HTTP2\+\_\+\+Conn\+::ping\+\_\+pending}
+
+Waiting for PING ACK \Hypertarget{structSocketHTTP2__Conn_ae4cfc1c8742b534ca189a35fe81ae6db}\label{structSocketHTTP2__Conn_ae4cfc1c8742b534ca189a35fe81ae6db} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!ping\_window\_start\_ms@{ping\_window\_start\_ms}}
+\index{ping\_window\_start\_ms@{ping\_window\_start\_ms}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{ping\_window\_start\_ms}{ping\_window\_start\_ms}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::ping\+\_\+window\+\_\+start\+\_\+ms}
+
+Window start timestamp (monotonic) \Hypertarget{structSocketHTTP2__Conn_aeb7544ab75407d3c2ae26ecdde1d863c}\label{structSocketHTTP2__Conn_aeb7544ab75407d3c2ae26ecdde1d863c} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!recv\_buf@{recv\_buf}}
+\index{recv\_buf@{recv\_buf}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{recv\_buf}{recv\_buf}}
+{\footnotesize\ttfamily Socket\+Buf\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::recv\+\_\+buf}
+
+Receive buffer \Hypertarget{structSocketHTTP2__Conn_a5147abf0bea114c8e1db9b046a746bf8}\label{structSocketHTTP2__Conn_a5147abf0bea114c8e1db9b046a746bf8} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!recv\_window@{recv\_window}}
+\index{recv\_window@{recv\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{recv\_window}{recv\_window}}
+{\footnotesize\ttfamily int32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::recv\+\_\+window}
+
+Connection receive window \Hypertarget{structSocketHTTP2__Conn_a5bc0c0b09108757103e1e97ded474fb8}\label{structSocketHTTP2__Conn_a5bc0c0b09108757103e1e97ded474fb8} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!role@{role}}
+\index{role@{role}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{role}{role}}
+{\footnotesize\ttfamily \mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{Socket\+HTTP2\+\_\+\+Role}} Socket\+HTTP2\+\_\+\+Conn\+::role}
+
+Client or server \Hypertarget{structSocketHTTP2__Conn_a63df69db98280a3a7bfb34a6be5f6e90}\label{structSocketHTTP2__Conn_a63df69db98280a3a7bfb34a6be5f6e90} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!rst\_count\_in\_window@{rst\_count\_in\_window}}
+\index{rst\_count\_in\_window@{rst\_count\_in\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{rst\_count\_in\_window}{rst\_count\_in\_window}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::rst\+\_\+count\+\_\+in\+\_\+window}
+
+RST\+\_\+\+STREAM count in current window \Hypertarget{structSocketHTTP2__Conn_a6d1cac8e0a00a5969ded90f7e5e1ac6e}\label{structSocketHTTP2__Conn_a6d1cac8e0a00a5969ded90f7e5e1ac6e} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!rst\_window\_start\_ms@{rst\_window\_start\_ms}}
+\index{rst\_window\_start\_ms@{rst\_window\_start\_ms}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{rst\_window\_start\_ms}{rst\_window\_start\_ms}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::rst\+\_\+window\+\_\+start\+\_\+ms}
+
+Window start timestamp (monotonic) \Hypertarget{structSocketHTTP2__Conn_a6f42db4aa716f98e3fb89d7b13a0d5b8}\label{structSocketHTTP2__Conn_a6f42db4aa716f98e3fb89d7b13a0d5b8} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!send\_buf@{send\_buf}}
+\index{send\_buf@{send\_buf}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{send\_buf}{send\_buf}}
+{\footnotesize\ttfamily Socket\+Buf\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::send\+\_\+buf}
+
+Send buffer \Hypertarget{structSocketHTTP2__Conn_a5f11b818784d196779d96979d9a9cfef}\label{structSocketHTTP2__Conn_a5f11b818784d196779d96979d9a9cfef} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!send\_window@{send\_window}}
+\index{send\_window@{send\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{send\_window}{send\_window}}
+{\footnotesize\ttfamily int32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::send\+\_\+window}
+
+Connection send window \Hypertarget{structSocketHTTP2__Conn_aa99ab3831bfb14001593f6ab55def5cb}\label{structSocketHTTP2__Conn_aa99ab3831bfb14001593f6ab55def5cb} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!server\_initiated\_count@{server\_initiated\_count}}
+\index{server\_initiated\_count@{server\_initiated\_count}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{server\_initiated\_count}{server\_initiated\_count}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::server\+\_\+initiated\+\_\+count}
+
+Count of server-\/initiated streams (incl push) \Hypertarget{structSocketHTTP2__Conn_a037783b57229686721bb37f58bb642d1}\label{structSocketHTTP2__Conn_a037783b57229686721bb37f58bb642d1} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!settings\_ack\_pending@{settings\_ack\_pending}}
+\index{settings\_ack\_pending@{settings\_ack\_pending}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{settings\_ack\_pending}{settings\_ack\_pending}}
+{\footnotesize\ttfamily int Socket\+HTTP2\+\_\+\+Conn\+::settings\+\_\+ack\+\_\+pending}
+
+Waiting for SETTINGS ACK \Hypertarget{structSocketHTTP2__Conn_ad837496d9a6547f9a970e9bbc09aa1af}\label{structSocketHTTP2__Conn_ad837496d9a6547f9a970e9bbc09aa1af} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!settings\_count\_in\_window@{settings\_count\_in\_window}}
+\index{settings\_count\_in\_window@{settings\_count\_in\_window}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{settings\_count\_in\_window}{settings\_count\_in\_window}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::settings\+\_\+count\+\_\+in\+\_\+window}
+
+SETTINGS count in current window \Hypertarget{structSocketHTTP2__Conn_addfbb0278710f269238b94cd77f40623}\label{structSocketHTTP2__Conn_addfbb0278710f269238b94cd77f40623} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!settings\_window\_start\_ms@{settings\_window\_start\_ms}}
+\index{settings\_window\_start\_ms@{settings\_window\_start\_ms}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{settings\_window\_start\_ms}{settings\_window\_start\_ms}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::settings\+\_\+window\+\_\+start\+\_\+ms}
+
+Window start timestamp (monotonic) \Hypertarget{structSocketHTTP2__Conn_a2c3984cb03447d438d41423c306ecf40}\label{structSocketHTTP2__Conn_a2c3984cb03447d438d41423c306ecf40} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!socket@{socket}}
+\index{socket@{socket}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{socket}{socket}}
+{\footnotesize\ttfamily Socket\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::socket}
+
+Underlying transport \Hypertarget{structSocketHTTP2__Conn_a043c5750cd782e7750511b2faa11ce44}\label{structSocketHTTP2__Conn_a043c5750cd782e7750511b2faa11ce44} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!state@{state}}
+\index{state@{state}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{state}{state}}
+{\footnotesize\ttfamily \mbox{\hyperlink{SocketHTTP2-private_8h_a04a564c3d98f445678201ed187523246}{Socket\+HTTP2\+\_\+\+Conn\+State}} Socket\+HTTP2\+\_\+\+Conn\+::state}
+
+Connection state \Hypertarget{structSocketHTTP2__Conn_a007db2028f52ca7d5d955fec5cc515db}\label{structSocketHTTP2__Conn_a007db2028f52ca7d5d955fec5cc515db} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!stream\_close\_rate\_limit@{stream\_close\_rate\_limit}}
+\index{stream\_close\_rate\_limit@{stream\_close\_rate\_limit}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{stream\_close\_rate\_limit}{stream\_close\_rate\_limit}}
+{\footnotesize\ttfamily Socket\+Rate\+Limit\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::stream\+\_\+close\+\_\+rate\+\_\+limit}
+
+Rate limit for stream closes/\+RST \Hypertarget{structSocketHTTP2__Conn_a4621c6d853c9e1caed7af64faa26e88b}\label{structSocketHTTP2__Conn_a4621c6d853c9e1caed7af64faa26e88b} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!stream\_count@{stream\_count}}
+\index{stream\_count@{stream\_count}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{stream\_count}{stream\_count}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP2\+\_\+\+Conn\+::stream\+\_\+count}
+
+Active stream count (total for legacy, deprecate) \Hypertarget{structSocketHTTP2__Conn_a01e894481cfd941db418b372cf5b7ff7}\label{structSocketHTTP2__Conn_a01e894481cfd941db418b372cf5b7ff7} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!stream\_open\_rate\_limit@{stream\_open\_rate\_limit}}
+\index{stream\_open\_rate\_limit@{stream\_open\_rate\_limit}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{stream\_open\_rate\_limit}{stream\_open\_rate\_limit}}
+{\footnotesize\ttfamily Socket\+Rate\+Limit\+\_\+T Socket\+HTTP2\+\_\+\+Conn\+::stream\+\_\+open\+\_\+rate\+\_\+limit}
+
+Rate limit for stream creations \Hypertarget{structSocketHTTP2__Conn_a836305e2a36eddcb09b197772453e8f5}\label{structSocketHTTP2__Conn_a836305e2a36eddcb09b197772453e8f5} 
+\index{SocketHTTP2\_Conn@{SocketHTTP2\_Conn}!streams@{streams}}
+\index{streams@{streams}!SocketHTTP2\_Conn@{SocketHTTP2\_Conn}}
+\doxysubsubsection{\texorpdfstring{streams}{streams}}
+{\footnotesize\ttfamily struct \mbox{\hyperlink{structSocketHTTP2__Stream}{Socket\+HTTP2\+\_\+\+Stream}}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} Socket\+HTTP2\+\_\+\+Conn\+::streams}
+
+Hash table 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTP2-private_8h}{Socket\+HTTP2-\/private.\+h}}\end{DoxyCompactItemize}

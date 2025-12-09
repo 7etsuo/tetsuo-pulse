@@ -1,5 +1,5 @@
 <map id="SocketPoll_backend.h" name="SocketPoll_backend.h">
-<area shape="rect" id="Node000001" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="130,5,282,31"/>
+<area shape="rect" id="Node000001" title="Defines internal backend abstraction for cross&#45;platform polling." alt="" coords="130,5,282,31"/>
 <area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="225,299,321,324"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="211,30,270,285,265,286,206,31"/>
 <area shape="rect" id="Node000006" href="$SocketPoll_8h.html" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="45,79,165,104"/>
@@ -20,9 +20,9 @@
 <area shape="rect" id="Node000008" title=" " alt="" coords="34,225,99,251"/>
 <area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="98,179,80,214,75,212,93,176"/>
 <area shape="poly" id="edge11_Node000009_Node000004" title=" " alt="" coords="358,180,323,198,283,224,244,258,215,300,211,314,211,329,220,359,215,360,206,330,206,313,210,298,240,255,279,220,320,193,355,175"/>
-<area shape="rect" id="Node000010" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1268,299,1409,324"/>
+<area shape="rect" id="Node000010" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1268,299,1409,324"/>
 <area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="442,167,676,185,826,201,976,223,1146,257,1285,293,1284,298,1145,263,975,228,825,207,676,190,442,172"/>
-<area shape="rect" id="Node000019" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="396,299,524,324"/>
+<area shape="rect" id="Node000019" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="396,299,524,324"/>
 <area shape="poly" id="edge22_Node000009_Node000019" title=" " alt="" coords="392,177,450,285,445,288,387,179"/>
 <area shape="rect" id="Node000021" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="793,225,964,251"/>
 <area shape="poly" id="edge27_Node000009_Node000021" title=" " alt="" coords="443,172,786,221,785,226,442,177"/>

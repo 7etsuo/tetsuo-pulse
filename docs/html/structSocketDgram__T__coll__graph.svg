@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Opaque handle for UDP/datagram sockets.">
+<g id="a_Node000001"><a xlink:title="Opaque type representing a datagram socket instance.">
 <polygon fill="#999999" stroke="#666666" points="157.5,-19 69.5,-19 69.5,0 157.5,0 157.5,-19"/>
 <text text-anchor="middle" x="113.5" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDgram_T</text>
 </a>
@@ -30,7 +30,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="group__core__io.html#structSocketBase__T" target="_top" xlink:title="Internal implementation structure for SocketBase_T opaque type.">
+<g id="a_Node000002"><a xlink:href="group__core__io.html#structSocketBase__T" target="_top" xlink:title="Internal implementation of SocketBase_T opaque type.">
 <polygon fill="white" stroke="#666666" points="154,-85 73,-85 73,-66 154,-66 154,-85"/>
 <text text-anchor="middle" x="113.5" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">SocketBase_T</text>
 </a>
@@ -49,7 +49,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="group__foundation.html#structSocketTimeouts__T" target="_top" xlink:title="Timeout configuration structure for socket operations.">
+<g id="a_Node000003"><a xlink:href="group__foundation.html#structSocketTimeouts__T" target="_top" xlink:title="Basic timeout configuration structure for socket operations.">
 <polygon fill="white" stroke="#666666" points="99,-151 0,-151 0,-132 99,-132 99,-151"/>
 <text text-anchor="middle" x="49.5" y="-139" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTimeouts_T</text>
 </a>

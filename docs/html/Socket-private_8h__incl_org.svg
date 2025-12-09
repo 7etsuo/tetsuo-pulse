@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Private implementation details for the Socket module, including internal structure definition....">
+<g id="a_Node000001"><a xlink:title="Private implementation details for Socket module: internal structure and shared utilities....">
 <polygon fill="#999999" stroke="#666666" points="565.76,-360 477.76,-360 477.76,-341 565.76,-341 565.76,-360"/>
 <text text-anchor="middle" x="521.76" y="-348" font-family="Helvetica,sans-Serif" font-size="10.00">Socket&#45;private.h</text>
 </a>
@@ -38,7 +38,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="804.76,-129 698.76,-129 698.76,-110 804.76,-110 804.76,-129"/>
 <text text-anchor="middle" x="751.76" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -92,7 +92,7 @@
 <!-- Node26 -->
 <g id="Node000026" class="node">
 <title>Node26</title>
-<g id="a_Node000026"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for the SocketCommon module.">
+<g id="a_Node000026"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for SocketCommon module providing shared socket infrastructure.">
 <polygon fill="white" stroke="#666666" points="625.26,-305 506.26,-305 506.26,-275 625.26,-275 625.26,-305"/>
 <text text-anchor="start" x="514.26" y="-293" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon</text>
 <text text-anchor="middle" x="565.76" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">&#45;private.h</text>
@@ -399,7 +399,7 @@
 <!-- Node18 -->
 <g id="Node000018" class="node">
 <title>Node18</title>
-<g id="a_Node000018"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000018"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="918.76,-129 822.76,-129 822.76,-110 918.76,-110 918.76,-129"/>
 <text text-anchor="middle" x="870.76" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

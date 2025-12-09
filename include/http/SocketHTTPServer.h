@@ -243,14 +243,17 @@ typedef struct SocketWS *SocketWS_T;
  */
 
 /**
- * @brief Exception raised on general server failures such as allocation errors or internal state corruption.
+ * @brief Exception raised on general server failures such as allocation errors
+ * or internal state corruption.
  * @ingroup http
- * @see SocketHTTPServer_new(), SocketHTTPServer_free(), SocketHTTPServer_process()
+ * @see SocketHTTPServer_new(), SocketHTTPServer_free(),
+ * SocketHTTPServer_process()
  */
 extern const Except_T SocketHTTPServer_Failed;
 
 /**
- * @brief Exception raised when binding to address/port fails (EADDRINUSE, EADDRNOTAVAIL, etc.).
+ * @brief Exception raised when binding to address/port fails (EADDRINUSE,
+ * EADDRNOTAVAIL, etc.).
  * @ingroup http
  * @see SocketHTTPServer_start()
  */
@@ -269,11 +272,12 @@ extern const Except_T SocketHTTPServer_ProtocolError;
  */
 
 /**
- * @brief Server lifecycle states for monitoring server operation and graceful shutdown.
+ * @brief Server lifecycle states for monitoring server operation and graceful
+ * shutdown.
  * @ingroup http
  *
- * Enum values indicate the current phase of the server lifecycle, particularly during
- * drain operations for graceful shutdown.
+ * Enum values indicate the current phase of the server lifecycle, particularly
+ * during drain operations for graceful shutdown.
  *
  * @see SocketHTTPServer_state()
  * @see SocketHTTPServer_drain()
@@ -294,8 +298,8 @@ typedef enum
  * @brief HTTP server configuration structure.
  * @ingroup http
  *
- * Defines listening parameters, TLS settings, protocol options, resource limits,
- * and timeout behaviors for the HTTP server.
+ * Defines listening parameters, TLS settings, protocol options, resource
+ * limits, and timeout behaviors for the HTTP server.
  *
  * Use SocketHTTPServer_config_defaults() to initialize with sensible defaults,
  * then customize as needed before passing to SocketHTTPServer_new().
@@ -307,68 +311,90 @@ typedef struct
 {
   /* Listener */
   int port;                 /**< @brief Listen port (default: 8080). */
-  const char *bind_address; /**< @brief Bind address (NULL = all interfaces, default: "0.0.0.0"). */
+  const char *bind_address; /**< @brief Bind address (NULL = all interfaces,
+                               default: "0.0.0.0"). */
   int backlog;              /**< @brief Listen backlog (default: 128). */
 
   /* TLS */
-  SocketTLSContext_T tls_context; /**< @brief TLS context for HTTPS (NULL = plain HTTP). 
- * Requires SOCKET_HAS_TLS and valid OpenSSL/LibreSSL context.
- * @see SocketTLSContext_new() for creating TLS contexts.
- */
+  SocketTLSContext_T
+      tls_context; /**< @brief TLS context for HTTPS (NULL = plain HTTP).
+                    * Requires SOCKET_HAS_TLS and valid OpenSSL/LibreSSL
+                    * context.
+                    * @see SocketTLSContext_new() for creating TLS contexts.
+                    */
 
   /* Protocol */
-  SocketHTTP_Version max_version; /**< @brief Maximum supported HTTP version (default: HTTP_VERSION_2). 
- * Controls protocol negotiation and feature availability.
- * @see SocketHTTP_Version enum for values.
- */
-  int enable_h2c_upgrade;         /**< @brief Enable HTTP/2 upgrade via HTTP/1.1 Upgrade header (default: 0). 
- * Allows clients to upgrade from HTTP/1.1 to HTTP/2 over cleartext (h2c).
- * Requires prior HTTP/1.1 connection; not for initial h2 connections.
- * @warning Security risk if not behind trusted proxy; prefer ALPN/TLS for h2.
- */
+  SocketHTTP_Version
+      max_version;        /**< @brief Maximum supported HTTP version (default:
+                           * HTTP_VERSION_2).        Controls protocol negotiation and
+                           * feature availability.
+                           * @see SocketHTTP_Version enum for values.
+                           */
+  int enable_h2c_upgrade; /**< @brief Enable HTTP/2 upgrade via HTTP/1.1
+                           * Upgrade header (default: 0). Allows clients to
+                           * upgrade from HTTP/1.1 to HTTP/2 over cleartext
+                           * (h2c). Requires prior HTTP/1.1 connection; not for
+                           * initial h2 connections.
+                           * @warning Security risk if not behind trusted
+                           * proxy; prefer ALPN/TLS for h2.
+                           */
 
   /* Size Limits */
-  size_t max_header_size;         /**< @brief Maximum total header size in bytes (default: 64KB). 
- * Exceeding triggers 431 Request Header Fields Too Large.
- * Enforced by underlying HTTP parsers.
- */
-  size_t max_body_size;           /**< @brief Maximum request body size in bytes (default: 10MB). 
- * Exceeding triggers 413 Payload Too Large before body allocation.
- * Set to 0 for unlimited (use with caution).
- */
+  size_t
+      max_header_size; /**< @brief Maximum total header size in bytes (default:
+                        * 64KB). Exceeding triggers 431 Request Header Fields
+                        * Too Large. Enforced by underlying HTTP parsers.
+                        */
+  size_t max_body_size; /**< @brief Maximum request body size in bytes
+                         * (default: 10MB). Exceeding triggers 413 Payload Too
+                         * Large before body allocation. Set to 0 for unlimited
+                         * (use with caution).
+                         */
 
   /* Timeout Configuration */
-  int request_timeout_ms;        /**< @brief Idle timeout between requests in ms (default: 30s). 
- * Closes idle keep-alive connections after this period.
- */
-  int keepalive_timeout_ms;      /**< @brief Keep-alive timeout in ms (default: 60s). 
- * Maximum time a connection can remain idle before closure.
- * @note Overrides or complements request_timeout_ms for persistent connections.
- */
-  int request_read_timeout_ms;   /**< @brief Maximum time to read complete request in ms (default: 30s). 
- * Applies to entire request parsing including headers and body.
- * Prevents slowloris-style attacks.
- */
-  int response_write_timeout_ms; /**< @brief Maximum time to send complete response in ms (default: 60s). 
- * Ensures timely response delivery; aborts on timeout.
- */
+  int request_timeout_ms;      /**< @brief Idle timeout between requests in ms
+                                * (default: 30s).      Closes idle keep-alive connections
+                                * after this period.
+                                */
+  int keepalive_timeout_ms;    /**< @brief Keep-alive timeout in ms (default:
+                                * 60s).    Maximum time a connection can remain idle
+                                * before closure.
+                                * @note Overrides or complements
+                                * request_timeout_ms for persistent connections.
+                                */
+  int request_read_timeout_ms; /**< @brief Maximum time to read complete
+                                * request in ms (default: 30s). Applies to
+                                * entire request parsing including headers and
+                                * body. Prevents slowloris-style attacks.
+                                */
+  int response_write_timeout_ms; /**< @brief Maximum time to send complete
+                                  * response in ms (default: 60s). Ensures
+                                  * timely response delivery; aborts on
+                                  * timeout.
+                                  */
 
   /* Connection Limits */
-  size_t max_connections;             /**< @brief Total maximum concurrent connections (default: 1000). 
- * Enforced globally; new connections rejected when reached.
- */
-  size_t max_requests_per_connection; /**< @brief Maximum requests per connection (default: 1000). 
- * Limits pipelining/abuse on single connection; closes after limit.
- * For HTTP/2, applies to total streams processed.
- */
-  int max_connections_per_client;     /**< @brief Maximum connections per client IP (default: 100). 
- * Prevents abuse from single IP; uses SocketIPTracker internally.
- * Negative values disable limit.
- */
-  size_t max_concurrent_requests;     /**< @brief Maximum concurrent requests/streams per connection (default: 100). 
- * For HTTP/2 multiplexing; limits open streams.
- * For HTTP/1.1, typically 1 but affects pipelining if enabled.
- */
+  size_t max_connections; /**< @brief Total maximum concurrent connections
+                           * (default: 1000). Enforced globally; new
+                           * connections rejected when reached.
+                           */
+  size_t max_requests_per_connection; /**< @brief Maximum requests per
+                                       * connection (default: 1000). Limits
+                                       * pipelining/abuse on single connection;
+                                       * closes after limit. For HTTP/2,
+                                       * applies to total streams processed.
+                                       */
+  int max_connections_per_client; /**< @brief Maximum connections per client IP
+                                   * (default: 100). Prevents abuse from single
+                                   * IP; uses SocketIPTracker internally.
+                                   * Negative values disable limit.
+                                   */
+  size_t max_concurrent_requests; /**< @brief Maximum concurrent
+                                   * requests/streams per connection (default:
+                                   * 100). For HTTP/2 multiplexing; limits open
+                                   * streams. For HTTP/1.1, typically 1 but
+                                   * affects pipelining if enabled.
+                                   */
 } SocketHTTPServer_Config;
 
 /* ============================================================================
@@ -377,7 +403,8 @@ typedef struct
  */
 
 /**
- * @brief Opaque HTTP server instance managing connections, requests, and protocol handling.
+ * @brief Opaque HTTP server instance managing connections, requests, and
+ * protocol handling.
  * @ingroup http
  *
  * Handles listening, accepting connections, parsing HTTP requests (1.1/2),
@@ -400,7 +427,8 @@ typedef struct SocketHTTPServer *SocketHTTPServer_T;
  * Memory managed by server arena.
  *
  * @see SocketHTTPServer_Handler callback usage.
- * @see SocketHTTPServer_Request_method(), SocketHTTPServer_Request_headers() etc.
+ * @see SocketHTTPServer_Request_method(), SocketHTTPServer_Request_headers()
+ * etc.
  * @see SocketHTTPServer_Request_finish() to complete response.
  */
 typedef struct SocketHTTPServer_Request *SocketHTTPServer_Request_T;
@@ -411,31 +439,37 @@ typedef struct SocketHTTPServer_Request *SocketHTTPServer_Request_T;
  */
 
 /**
- * @brief Primary request handler callback invoked for each incoming HTTP request.
+ * @brief Primary request handler callback invoked for each incoming HTTP
+ * request.
  * @ingroup http
  *
- * This is the main entry point for application logic. For each parsed HTTP request,
- * the server calls this callback with the request context. The handler is responsible
- * for:
+ * This is the main entry point for application logic. For each parsed HTTP
+ * request, the server calls this callback with the request context. The
+ * handler is responsible for:
  * 1. Inspecting request via accessors: method, path, headers, body.
  * 2. Setting response: status with SocketHTTPServer_Request_status(),
  *    headers with SocketHTTPServer_Request_header().
- * 3. Providing body: either static with SocketHTTPServer_Request_body_data() or
- *    streaming with SocketHTTPServer_Request_begin_stream().
- * 4. Finalizing with SocketHTTPServer_Request_finish() or SocketHTTPServer_Request_end_stream().
+ * 3. Providing body: either static with SocketHTTPServer_Request_body_data()
+ * or streaming with SocketHTTPServer_Request_begin_stream().
+ * 4. Finalizing with SocketHTTPServer_Request_finish() or
+ * SocketHTTPServer_Request_end_stream().
  *
- * The @p req context is valid only during callback execution. Do not store pointers
- * to it or its contents beyond the callback; they may be invalidated or freed.
- * All allocations use the per-request arena available via SocketHTTPServer_Request_arena().
+ * The @p req context is valid only during callback execution. Do not store
+ * pointers to it or its contents beyond the callback; they may be invalidated
+ * or freed. All allocations use the per-request arena available via
+ * SocketHTTPServer_Request_arena().
  *
- * @param req Request context containing parsed request data and response builders.
+ * @param req Request context containing parsed request data and response
+ * builders.
  * @param userdata Arbitrary user data set via SocketHTTPServer_set_handler().
  *
- * @threadsafe No - invoked from server's event loop thread (SocketPoll integration).
- *              Server instances should not be shared across threads without external sync.
+ * @threadsafe No - invoked from server's event loop thread (SocketPoll
+ * integration). Server instances should not be shared across threads without
+ * external sync.
  *
- * @note For WebSocket upgrades, check SocketHTTPServer_Request_is_websocket() and
- *       use SocketHTTPServer_Request_upgrade_websocket() instead of standard response.
+ * @note For WebSocket upgrades, check SocketHTTPServer_Request_is_websocket()
+ * and use SocketHTTPServer_Request_upgrade_websocket() instead of standard
+ * response.
  * @note For HTTP/2 push, use SocketHTTPServer_Request_push() if supported.
  *
  * @see SocketHTTPServer_set_handler() to register this callback.
@@ -450,26 +484,37 @@ typedef void (*SocketHTTPServer_Handler) (SocketHTTPServer_Request_T req,
  * @brief Callback for streaming request body data incrementally.
  * @ingroup http
  *
- * Enables memory-efficient handling of large request bodies (e.g., file uploads)
- * by processing data in chunks as received, without loading the entire body into memory.
- * To use, call SocketHTTPServer_Request_body_stream() in the handler before finishing.
- * The server will then invoke this callback for each chunk parsed from the wire.
+ * Enables memory-efficient handling of large request bodies (e.g., file
+ * uploads) by processing data in chunks as received, without loading the
+ * entire body into memory. To use, call SocketHTTPServer_Request_body_stream()
+ * in the handler before finishing. The server will then invoke this callback
+ * for each chunk parsed from the wire.
  *
- * @param req Request context (same as handler; use for response setup if needed).
- * @param chunk Pointer to body data chunk (valid only during callback; do not store or free).
+ * @param req Request context (same as handler; use for response setup if
+ * needed).
+ * @param chunk Pointer to body data chunk (valid only during callback; do not
+ * store or free).
  * @param len Length of the chunk in bytes.
- * @param is_final Non-zero if this is the final chunk (end of body), zero otherwise.
- * @param userdata User-provided data passed unchanged from SocketHTTPServer_Request_body_stream().
+ * @param is_final Non-zero if this is the final chunk (end of body), zero
+ * otherwise.
+ * @param userdata User-provided data passed unchanged from
+ * SocketHTTPServer_Request_body_stream().
  *
  * @return 0 to continue receiving and processing more body chunks,
- *         non-zero to abort the request (server sends 400 Bad Request and closes connection).
+ *         non-zero to abort the request (server sends 400 Bad Request and
+ * closes connection).
  *
- * @note Chunks may arrive in any size up to internal buffer limits (typically 4-8KB).
- * @note For chunked encoding, @p is_final is set after final zero-length chunk.
- * @note Body data is temporary; copy if needed for later use (use request arena).
- * @note Thread-safety depends on server configuration; typically called from event thread.
+ * @note Chunks may arrive in any size up to internal buffer limits (typically
+ * 4-8KB).
+ * @note For chunked encoding, @p is_final is set after final zero-length
+ * chunk.
+ * @note Body data is temporary; copy if needed for later use (use request
+ * arena).
+ * @note Thread-safety depends on server configuration; typically called from
+ * event thread.
  *
- * @warning Aborting mid-body closes the connection immediately; client may retry.
+ * @warning Aborting mid-body closes the connection immediately; client may
+ * retry.
  * @see SocketHTTPServer_Request_body_stream() to enable streaming mode.
  * @see SocketHTTPServer_Request_body_expected() for expected total length.
  * @see SocketHTTPServer_Request_is_chunked() for transfer encoding info.
@@ -487,9 +532,9 @@ typedef int (*SocketHTTPServer_BodyCallback) (SocketHTTPServer_Request_T req,
  * CORS preflight, or input sanitization. Can short-circuit and reject invalid
  * requests early, avoiding handler invocation and resource waste.
  *
- * Available data: method, path, query, headers (body not yet parsed/available).
- * To reject, set *reject_status to an HTTP error code (e.g., 401 Unauthorized,
- * 403 Forbidden, 429 Too Many Requests) and return 0.
+ * Available data: method, path, query, headers (body not yet
+ * parsed/available). To reject, set *reject_status to an HTTP error code
+ * (e.g., 401 Unauthorized, 403 Forbidden, 429 Too Many Requests) and return 0.
  *
  * @param req Request context with method, path, headers accessible.
  * @param reject_status Output: HTTP status code for rejection response.
@@ -498,12 +543,17 @@ typedef int (*SocketHTTPServer_BodyCallback) (SocketHTTPServer_Request_T req,
  * @param userdata User data set via SocketHTTPServer_set_validator().
  *
  * @return Non-zero (true) to approve request and proceed to handler callback,
- *         0 (false) to reject with the status in *reject_status (connection may close).
+ *         0 (false) to reject with the status in *reject_status (connection
+ * may close).
  *
- * @note Validator runs after initial parsing but before body handling; efficient for headers-only checks.
- * @note Multiple validators can be chained externally if needed, but server supports only one.
- * @note For per-endpoint validation, implement in handler or use rate limiting API.
- * @note Thread-safety: Called from event thread; ensure validator is reentrant if sharing state.
+ * @note Validator runs after initial parsing but before body handling;
+ * efficient for headers-only checks.
+ * @note Multiple validators can be chained externally if needed, but server
+ * supports only one.
+ * @note For per-endpoint validation, implement in handler or use rate limiting
+ * API.
+ * @note Thread-safety: Called from event thread; ensure validator is reentrant
+ * if sharing state.
  *
  * @see SocketHTTPServer_set_validator() to register.
  * @see SocketHTTPServer_Request_headers() for header access in validator.
@@ -525,13 +575,14 @@ typedef int (*SocketHTTPServer_Validator) (SocketHTTPServer_Request_T req,
  * Set via SocketHTTPServer_set_drain_callback() before initiating drain.
  *
  * @param server The server instance entering STOPPED state.
- * @param timed_out Non-zero if drain timed out (remaining connections force-closed),
- *                  zero if completed gracefully within timeout.
+ * @param timed_out Non-zero if drain timed out (remaining connections
+ * force-closed), zero if completed gracefully within timeout.
  * @param userdata User data provided at callback registration.
  *
  * @note Called from the event loop thread during or after drain_poll().
  * @note Server is still valid but in STOPPED state; do not start it again.
- * @note If timed_out, some requests may have been aborted; check stats for details.
+ * @note If timed_out, some requests may have been aborted; check stats for
+ * details.
  *
  * @see SocketHTTPServer_set_drain_callback() for registration.
  * @see SocketHTTPServer_drain() to initiate graceful shutdown.
@@ -561,15 +612,17 @@ typedef void (*SocketHTTPServer_DrainCallback) (SocketHTTPServer_T server,
  * - TLS: NULL (HTTP)
  * - HTTP/2 upgrade: disabled
  *
- * Customize fields after initialization before passing to SocketHTTPServer_new().
- * Validates basic config sanity (e.g., positive limits) but does not bind/test.
+ * Customize fields after initialization before passing to
+ * SocketHTTPServer_new(). Validates basic config sanity (e.g., positive
+ * limits) but does not bind/test.
  *
  * @param config Pointer to configuration structure to initialize.
  *               Must not be NULL; contents overwritten.
  *
  * @threadsafe Yes - pure function, no side effects or shared state.
  *
- * @note Defaults can be overridden at compile-time via #defines (e.g., HTTPSERVER_DEFAULT_PORT).
+ * @note Defaults can be overridden at compile-time via #defines (e.g.,
+ * HTTPSERVER_DEFAULT_PORT).
  * @see SocketHTTPServer_new() which consumes this config.
  * @see SocketHTTPServer_Config for field details and ranges.
  */
@@ -584,20 +637,25 @@ extern void SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config);
  * SocketHTTPServer_start() or integrate with external poll loop.
  * Validates config for sanity (e.g., valid port, limits >0).
  *
- * Ownership: Caller owns the returned instance; free with SocketHTTPServer_free().
- * Internal resources (sockets, timers) managed automatically.
+ * Ownership: Caller owns the returned instance; free with
+ * SocketHTTPServer_free(). Internal resources (sockets, timers) managed
+ * automatically.
  *
- * @param config Configuration structure (copied internally; can be stack or reused).
- *               Must not be NULL. Invalid values may raise exceptions.
+ * @param config Configuration structure (copied internally; can be stack or
+ * reused). Must not be NULL. Invalid values may raise exceptions.
  *
  * @return Opaque SocketHTTPServer_T instance on success.
- * @throws SocketHTTPServer_Failed on memory allocation failure or invalid config.
+ * @throws SocketHTTPServer_Failed on memory allocation failure or invalid
+ * config.
  * @throws Arena_Failed if internal arena allocation fails (propagated).
  *
- * @threadsafe Yes - but concurrent calls may contend on system resources (e.g., ports).
+ * @threadsafe Yes - but concurrent calls may contend on system resources
+ * (e.g., ports).
  *
- * @note Config TLS context is referenced, not owned; manage its lifetime separately.
- * @note Server uses internal SocketPool for connection management if limits allow.
+ * @note Config TLS context is referenced, not owned; manage its lifetime
+ * separately.
+ * @note Server uses internal SocketPool for connection management if limits
+ * allow.
  * @see SocketHTTPServer_config_defaults() to prepare config.
  * @see SocketHTTPServer_start() to begin listening.
  * @see SocketHTTPServer_free() for cleanup.
@@ -623,9 +681,11 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config);
  *
  * @throws SocketHTTPServer_Failed on internal cleanup errors (rare).
  *
- * @threadsafe No - concurrent access to server undefined; use mutex if multi-threaded.
+ * @threadsafe No - concurrent access to server undefined; use mutex if
+ * multi-threaded.
  *
- * @warning Does not wait for in-flight requests; data loss possible if called mid-process.
+ * @warning Does not wait for in-flight requests; data loss possible if called
+ * mid-process.
  * @note TLS contexts are not freed (referenced only).
  * @see SocketHTTPServer_drain_wait() for graceful shutdown before free.
  * @see SocketHTTPServer_stop() to halt without full cleanup.
@@ -637,25 +697,28 @@ extern void SocketHTTPServer_free (SocketHTTPServer_T *server);
  * @brief Bind to address/port and start listening for incoming connections.
  * @ingroup http
  *
- * Performs system bind(2)/listen(2) on configured address/port using dual-stack
- * IPv6 preferred (falls back to IPv4 if needed). Sets socket to non-blocking,
- * reuseaddr/reuseport, and integrates with internal poll loop.
+ * Performs system bind(2)/listen(2) on configured address/port using
+ * dual-stack IPv6 preferred (falls back to IPv4 if needed). Sets socket to
+ * non-blocking, reuseaddr/reuseport, and integrates with internal poll loop.
  * Marks server as running; subsequent calls are no-ops (returns 0).
  *
- * Does not block; returns immediately after setup. Use SocketHTTPServer_process()
- * or external poll on SocketHTTPServer_fd() to accept/process connections.
+ * Does not block; returns immediately after setup. Use
+ * SocketHTTPServer_process() or external poll on SocketHTTPServer_fd() to
+ * accept/process connections.
  *
  * @param server Initialized server instance (from SocketHTTPServer_new()).
  *
  * @return 0 on success (already running or bind/listen succeeded),
  *         -1 on error (errno set; may also raise exceptions).
- * @throws SocketHTTPServer_BindFailed on bind/listen system errors (EADDRINUSE, etc.).
+ * @throws SocketHTTPServer_BindFailed on bind/listen system errors
+ * (EADDRINUSE, etc.).
  * @throws SocketHTTPServer_Failed on socket creation or config issues.
  *
  * @threadsafe No - server state modified; concurrent calls undefined.
  *
  * @note Port 0 binds to ephemeral port; query Socket_getlocalport() after.
- * @note For HTTPS, ensure tls_context configured and SocketTLS_enable() integrated.
+ * @note For HTTPS, ensure tls_context configured and SocketTLS_enable()
+ * integrated.
  * @note Conflicts with prior binds raise EADDRINUSE; check with netstat/ss.
  * @see SocketHTTPServer_stop() to cease listening.
  * @see SocketHTTPServer_fd() for poll integration.
@@ -665,7 +728,8 @@ extern void SocketHTTPServer_free (SocketHTTPServer_T *server);
 extern int SocketHTTPServer_start (SocketHTTPServer_T server);
 
 /**
- * @brief Stop accepting new connections while allowing existing ones to complete.
+ * @brief Stop accepting new connections while allowing existing ones to
+ * complete.
  * @ingroup http
  *
  * Closes the listening socket to prevent new accepts. Existing connections
@@ -679,7 +743,8 @@ extern int SocketHTTPServer_start (SocketHTTPServer_T server);
  *
  * @threadsafe No - modifies server state.
  *
- * @note To force closure of all connections, use SocketHTTPServer_free() directly.
+ * @note To force closure of all connections, use SocketHTTPServer_free()
+ * directly.
  * @note For graceful shutdown with timeout, prefer SocketHTTPServer_drain().
  * @see SocketHTTPServer_drain() for full graceful shutdown.
  * @see SocketHTTPServer_state() to check status.
@@ -688,23 +753,27 @@ extern int SocketHTTPServer_start (SocketHTTPServer_T server);
 extern void SocketHTTPServer_stop (SocketHTTPServer_T server);
 
 /**
- * @brief Register the primary request handler callback and associated user data.
+ * @brief Register the primary request handler callback and associated user
+ * data.
  * @ingroup http
  *
- * Sets the callback invoked for every valid HTTP request after parsing and validation.
- * Previous handler (if any) is replaced. NULL handler disables request handling
- * (server accepts but immediately closes connections with 500).
+ * Sets the callback invoked for every valid HTTP request after parsing and
+ * validation. Previous handler (if any) is replaced. NULL handler disables
+ * request handling (server accepts but immediately closes connections with
+ * 500).
  *
  * Userdata is stored and passed unchanged to every invocation of handler.
  * Can be changed dynamically; affects future requests only.
  *
- * @param server Server instance (must be created but not required to be started).
+ * @param server Server instance (must be created but not required to be
+ * started).
  * @param handler Callback function or NULL to disable handling.
  * @param userdata Opaque pointer passed to handler on each request.
  *
  * @threadsafe No - updates shared server state.
  *
- * @note Handler must be thread-safe if server uses multi-threaded poll (advanced).
+ * @note Handler must be thread-safe if server uses multi-threaded poll
+ * (advanced).
  * @note Set before starting or processing to avoid missing requests.
  * @note For dynamic routing, implement path/method logic inside handler.
  * @see SocketHTTPServer_Handler for callback signature and responsibilities.
@@ -721,25 +790,29 @@ extern void SocketHTTPServer_set_handler (SocketHTTPServer_T server,
  */
 
 /**
- * @brief Retrieve the file descriptor of the listening socket for external polling.
+ * @brief Retrieve the file descriptor of the listening socket for external
+ * polling.
  * @ingroup http
  *
- * Allows integration with custom event loops (e.g., external SocketPoll or other
- * libraries like libevent). Monitor for POLLIN to detect new connection attempts.
- * Server's internal poll is still active if using SocketHTTPServer_process();
- * for full external control, avoid internal processing and handle accepts manually.
+ * Allows integration with custom event loops (e.g., external SocketPoll or
+ * other libraries like libevent). Monitor for POLLIN to detect new connection
+ * attempts. Server's internal poll is still active if using
+ * SocketHTTPServer_process(); for full external control, avoid internal
+ * processing and handle accepts manually.
  *
  * Returns -1 if server not started or stopped.
  *
  * @param server Server instance (started via SocketHTTPServer_start()).
  *
- * @return Valid file descriptor (>=0) for listening socket, or -1 if not listening.
+ * @return Valid file descriptor (>=0) for listening socket, or -1 if not
+ * listening.
  *
  * @threadsafe Yes - atomic read of cached fd.
  *
  * @note FD remains owned by server; do not close() it.
  * @note For accepts, use Socket_accept(server_fd) and add to your poll.
- * @note When using external poll, call server process functions manually or bypass.
+ * @note When using external poll, call server process functions manually or
+ * bypass.
  * @see SocketHTTPServer_poll() for full internal poll instance.
  * @see Socket_accept() for manual connection acceptance.
  * @see @ref event_system "Event System Group" for polling details.
@@ -751,7 +824,8 @@ extern int SocketHTTPServer_fd (SocketHTTPServer_T server);
  * @ingroup http
  *
  * Performs a single iteration of the internal event loop:
- * - Polls registered fds (listening socket + client connections + timers) for timeout_ms.
+ * - Polls registered fds (listening socket + client connections + timers) for
+ * timeout_ms.
  * - Accepts new connections up to configured limits (rate, per-IP).
  * - Reads/parses incoming data on connections (HTTP/1.1 or 2 frames).
  * - Invokes validator and handler for complete requests.
@@ -759,14 +833,15 @@ extern int SocketHTTPServer_fd (SocketHTTPServer_T server);
  * - Cleans up idle/timeout connections.
  * - Triggers drain callback if applicable.
  *
- * For continuous operation, call in loop with timeout -1 (infinite, interruptible).
- * For integration, use smaller timeouts or external poll with SocketHTTPServer_fd().
+ * For continuous operation, call in loop with timeout -1 (infinite,
+ * interruptible). For integration, use smaller timeouts or external poll with
+ * SocketHTTPServer_fd().
  *
  * @param server Running server (started via SocketHTTPServer_start()).
  * @param timeout_ms Maximum wait time in ms (-1 = infinite/block until event).
  *
- * @return Number of requests fully processed (handler invoked + response sent),
- *         or -1 on fatal error (raises exception).
+ * @return Number of requests fully processed (handler invoked + response
+ * sent), or -1 on fatal error (raises exception).
  *
  * @throws SocketHTTPServer_ProtocolError on malformed requests.
  * @throws SocketHTTPServer_Failed on I/O or internal errors.
@@ -798,12 +873,14 @@ extern int SocketHTTPServer_process (SocketHTTPServer_T server,
  *
  * @param server Server instance (started or not; NULL if not initialized).
  *
- * @return Pointer to internal SocketPoll_T, or NULL if server invalid/not started.
+ * @return Pointer to internal SocketPoll_T, or NULL if server invalid/not
+ * started.
  *
  * @threadsafe Yes - returns const view, but modifications not thread-safe.
  *
  * @warning Adding/removing affects server; use cautiously to avoid races.
- * @warning Internal timers/connections registered; do not del() them arbitrarily.
+ * @warning Internal timers/connections registered; do not del() them
+ * arbitrarily.
  * @see SocketPoll_add(), SocketPoll_mod() for usage.
  * @see SocketHTTPServer_process() which uses this internally.
  * @see @ref event_system "Event System Group" for poll API details.
@@ -827,7 +904,8 @@ extern SocketPoll_T SocketHTTPServer_poll (SocketHTTPServer_T server);
  * @return SocketHTTP_Method enum value corresponding to the method.
  *
  * @see SocketHTTP_method_name() to convert to string (e.g., "GET").
- * @see SocketHTTP_method_properties() for method attributes (safe, idempotent, etc.).
+ * @see SocketHTTP_method_properties() for method attributes (safe, idempotent,
+ * etc.).
  * @see SocketHTTP_method_parse() for parsing raw strings.
  */
 extern SocketHTTP_Method
@@ -837,8 +915,8 @@ SocketHTTPServer_Request_method (SocketHTTPServer_Request_T req);
  * @brief Get the request path (URI path component).
  * @ingroup http
  *
- * Returns the path part of the request URI after parsing (e.g., "/api/users/123").
- * Decoded and normalized; does not include query string.
+ * Returns the path part of the request URI after parsing (e.g.,
+ * "/api/users/123"). Decoded and normalized; does not include query string.
  * Points to internal buffer; valid during request lifetime.
  *
  * @param req Request context.
@@ -901,7 +979,8 @@ SocketHTTPServer_Request_headers (SocketHTTPServer_Request_T req);
  * @param req Request context.
  * @return Pointer to body bytes, or NULL if no body, streaming, or error.
  *
- * @warning For security, avoid trusting large bodies; validate Content-Type/Length.
+ * @warning For security, avoid trusting large bodies; validate
+ * Content-Type/Length.
  * @see SocketHTTPServer_Request_body_len() for size.
  * @see SocketHTTPServer_Request_body_stream() to enable chunked processing.
  * @see SocketBuf_secureclear() if handling sensitive data post-use.
@@ -921,7 +1000,8 @@ SocketHTTPServer_Request_body (SocketHTTPServer_Request_T req);
  * @return Body length in bytes, or 0 if unknown/no body.
  *
  * @see SocketHTTPServer_Request_body() for data access.
- * @see SocketHTTPServer_Request_body_expected() for advertised length (pre-read).
+ * @see SocketHTTPServer_Request_body_expected() for advertised length
+ * (pre-read).
  * @see SocketHTTP1_Parser_content_length() underlying parser info.
  */
 extern size_t
@@ -931,9 +1011,9 @@ SocketHTTPServer_Request_body_len (SocketHTTPServer_Request_T req);
  * @brief Get the client (peer) IP address as string.
  * @ingroup http
  *
- * Returns formatted string representation of remote client address (IPv4/IPv6).
- * From getpeername(); for proxied requests, use X-Forwarded-For header.
- * Points to internal static buffer; valid during request, do not free.
+ * Returns formatted string representation of remote client address
+ * (IPv4/IPv6). From getpeername(); for proxied requests, use X-Forwarded-For
+ * header. Points to internal static buffer; valid during request, do not free.
  * Format: "IP:port" or "unix:/path/to/socket".
  *
  * @param req Request context.
@@ -1011,22 +1091,27 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req);
  * @brief Set the HTTP status code for the response.
  * @ingroup http
  *
- * Specifies the status code to send in the response (e.g., 200 OK, 404 Not Found, 500 Internal Server Error).
- * Must be called before adding headers, body, or calling finish(). If not set, defaults to 200 OK.
- * Server may override in error cases (e.g., parsing failures -> 400/500).
+ * Specifies the status code to send in the response (e.g., 200 OK, 404 Not
+ * Found, 500 Internal Server Error). Must be called before adding headers,
+ * body, or calling finish(). If not set, defaults to 200 OK. Server may
+ * override in error cases (e.g., parsing failures -> 400/500).
  *
  * @param req Request context (valid during handler callback).
  * @param code HTTP status code (100-599 range recommended; validated).
  *
  * @note Reason phrase auto-appended using SocketHTTP_status_reason(code).
- * @note For client errors (4xx), consider logging request details for debugging.
+ * @note For client errors (4xx), consider logging request details for
+ * debugging.
  * @note For redirects (3xx), pair with Location header.
  *
  * @see SocketHTTP_status_reason(int) for standard reason phrases.
- * @see SocketHTTP_status_category(int) to classify codes (1xx informational, 2xx success, etc.).
+ * @see SocketHTTP_status_category(int) to classify codes (1xx informational,
+ * 2xx success, etc.).
  * @see SocketHTTP_status_valid(int) to check valid range.
- * @see SocketHTTPServer_Request_header() to add response headers (e.g., Location for redirects).
- * @see SocketHTTPServer_Request_finish() to send after setting status/headers/body.
+ * @see SocketHTTPServer_Request_header() to add response headers (e.g.,
+ * Location for redirects).
+ * @see SocketHTTPServer_Request_finish() to send after setting
+ * status/headers/body.
  * @see docs/HTTP.md "HTTP Response Guidelines" for best practices.
  *
  * @threadsafe No - modifies shared request state.
@@ -1038,19 +1123,24 @@ extern void SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req,
  * @brief Add a header field to the HTTP response.
  * @ingroup http
  *
- * Appends a name-value pair to the response headers collection. Headers are sent
- * immediately after the status line when finish() or streaming begins.
+ * Appends a name-value pair to the response headers collection. Headers are
+ * sent immediately after the status line when finish() or streaming begins.
  * Supports multiple values for the same header (e.g., repeated Set-Cookie).
  * Header names are normalized to lowercase for consistency.
  *
  * @param req Request context (valid during handler or validator).
- * @param name Null-terminated header name string (e.g., "Content-Type", "Authorization").
- * @param value Null-terminated header value string (may contain commas for multi-value).
+ * @param name Null-terminated header name string (e.g., "Content-Type",
+ * "Authorization").
+ * @param value Null-terminated header value string (may contain commas for
+ * multi-value).
  *
- * @note Validates header name and value per RFC 7230/9110: tokens, no invalid chars.
- * @note Server automatically adds mandatory headers: Date, Connection, Server (configurable).
+ * @note Validates header name and value per RFC 7230/9110: tokens, no invalid
+ * chars.
+ * @note Server automatically adds mandatory headers: Date, Connection, Server
+ * (configurable).
  * @note Content-Length auto-set if body provided and not chunked.
- * @note For security, sanitize values to prevent injection (e.g., CRLF in values -> header smuggling).
+ * @note For security, sanitize values to prevent injection (e.g., CRLF in
+ * values -> header smuggling).
  *
  * @see SocketHTTP_Headers_T for underlying header storage and advanced ops.
  * @see SocketHTTP_Headers_add() similar low-level function.
@@ -1059,7 +1149,8 @@ extern void SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req,
  * @see SocketHTTP_Headers_get() to query existing headers.
  *
  * @threadsafe No - concurrent modifications to same req may corrupt headers.
- * @throws SocketHTTPServer_ProtocolError if name/value invalid (e.g., empty name, control chars).
+ * @throws SocketHTTPServer_ProtocolError if name/value invalid (e.g., empty
+ * name, control chars).
  */
 extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
                                              const char *name,
@@ -1080,16 +1171,19 @@ extern void SocketHTTPServer_Request_header (SocketHTTPServer_Request_T req,
  *
  * @note Sets Content-Type to application/octet-stream if unspecified.
  * @note Supports zero-length bodies (no Content-Length or Transfer-Encoding).
- * @note Compression (e.g., gzip) applied if client accepts via Accept-Encoding.
+ * @note Compression (e.g., gzip) applied if client accepts via
+ * Accept-Encoding.
  * @note For text content, explicitly set Content-Type with charset.
  *
  * @see SocketHTTPServer_Request_body_string() for null-terminated strings.
  * @see SocketHTTPServer_Request_begin_stream() for chunked/dynamic streaming.
- * @see SocketHTTPServer_Request_header("Content-Type", "application/json") for type.
+ * @see SocketHTTPServer_Request_header("Content-Type", "application/json") for
+ * type.
  * @see SocketHTTP_Headers_set() for advanced header control.
  *
  * @threadsafe No - sets shared body state.
- * @throws SocketHTTPServer_Failed if len exceeds max_body_size or allocation fails.
+ * @throws SocketHTTPServer_Failed if len exceeds max_body_size or allocation
+ * fails.
  */
 extern void SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
                                                 const void *data, size_t len);
@@ -1105,11 +1199,13 @@ extern void SocketHTTPServer_Request_body_data (SocketHTTPServer_Request_T req,
  * @param req Request context.
  * @param str Pointer to null-terminated string (NULL for empty body).
  *
- * @note strlen() excludes null terminator; binary data with \0 requires body_data().
+ * @note strlen() excludes null terminator; binary data with \0 requires
+ * body_data().
  * @note Sets Content-Type to text/plain; charset=utf-8 if not overridden.
  * @note Large strings buffered in memory; stream for generated content.
  *
- * @see SocketHTTPServer_Request_body_data() for binary data with explicit length.
+ * @see SocketHTTPServer_Request_body_data() for binary data with explicit
+ * length.
  * @see SocketHTTPServer_Request_header("Content-Type", ...) to override type.
  * @see SocketHTTPServer_Request_begin_stream() for streaming text generation.
  *
@@ -1125,12 +1221,14 @@ SocketHTTPServer_Request_body_string (SocketHTTPServer_Request_T req,
  * @ingroup http
  *
  * Serializes the configured status, headers, and body into an HTTP message
- * and sends it over the connection. For non-streaming responses, full body sent.
- * Marks the request as complete; subsequent modifications ignored.
- * Handles protocol specifics: chunked for HTTP/1.1 without length, frames for HTTP/2.
- * Connection kept alive if possible (protocol, headers, timeouts allow).
+ * and sends it over the connection. For non-streaming responses, full body
+ * sent. Marks the request as complete; subsequent modifications ignored.
+ * Handles protocol specifics: chunked for HTTP/1.1 without length, frames for
+ * HTTP/2. Connection kept alive if possible (protocol, headers, timeouts
+ * allow).
  *
- * @param req Request context (invalidated after this call; do not use further).
+ * @param req Request context (invalidated after this call; do not use
+ * further).
  *
  * @note Call exactly once per request, typically at end of handler.
  * @note If streaming enabled, call after end_stream() (finish() not needed).
@@ -1179,19 +1277,23 @@ SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
  * @ingroup http
  *
  * Returns the advertised body size from Content-Length header or -1 if unknown
- * (e.g., chunked transfer-encoding or missing header). Useful for pre-allocating
- * buffers or deciding streaming vs. buffering in handler/validator.
- * Accurate after headers parsed, before body read (even if streaming enabled).
+ * (e.g., chunked transfer-encoding or missing header). Useful for
+ * pre-allocating buffers or deciding streaming vs. buffering in
+ * handler/validator. Accurate after headers parsed, before body read (even if
+ * streaming enabled).
  *
  * @param req Request context (valid during handler or body callback).
  *
- * @return >=0 exact expected bytes (Content-Length), or -1 if undetermined/chunked.
+ * @return >=0 exact expected bytes (Content-Length), or -1 if
+ * undetermined/chunked.
  *
- * @note For chunked, total unknown until final chunk; use body_len() post-complete.
+ * @note For chunked, total unknown until final chunk; use body_len()
+ * post-complete.
  * @note 0 indicates empty body (common for GET/HEAD).
  * @note May differ from actual received if client lies/truncated.
  *
- * @see SocketHTTPServer_Request_body_len() for actual received length (post-read).
+ * @see SocketHTTPServer_Request_body_len() for actual received length
+ * (post-read).
  * @see SocketHTTPServer_Request_is_chunked() to detect transfer encoding.
  * @see SocketHTTP1_Parser_content_length() underlying parser value.
  * @see docs/HTTP.md "Request Body Handling" for details.
@@ -1206,9 +1308,9 @@ SocketHTTPServer_Request_body_expected (SocketHTTPServer_Request_T req);
  * @ingroup http
  *
  * Checks the Transfer-Encoding header for "chunked" (case-insensitive).
- * Chunked used when Content-Length absent (HTTP/1.1 requirement for unknown length).
- * Indicates body arrives in delimited chunks; total length unknown until end.
- * Relevant for streaming decisions or buffer management.
+ * Chunked used when Content-Length absent (HTTP/1.1 requirement for unknown
+ * length). Indicates body arrives in delimited chunks; total length unknown
+ * until end. Relevant for streaming decisions or buffer management.
  *
  * @param req Request context (after headers parsed).
  *
@@ -1237,10 +1339,10 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
  * @brief Initiate a streaming (chunked) response to the client.
  * @ingroup http
  *
- * Starts the response by sending status and headers with Transfer-Encoding: chunked
- * (or equivalent HTTP/2 frames). Enables sending body in arbitrary chunks without
- * knowing total length upfront. Ideal for dynamic content generation, large files,
- * or real-time data (e.g., SSE, progress updates).
+ * Starts the response by sending status and headers with Transfer-Encoding:
+ * chunked (or equivalent HTTP/2 frames). Enables sending body in arbitrary
+ * chunks without knowing total length upfront. Ideal for dynamic content
+ * generation, large files, or real-time data (e.g., SSE, progress updates).
  * Headers sent immediately; subsequent send_chunk() append body chunks.
  * Must follow with end_stream() to finalize (sends trailers if any).
  *
@@ -1248,10 +1350,13 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
  *
  * @return 0 on success (headers sent, ready for chunks), -1 on failure.
  *
- * @note Do not call status(), header(), body_data(), body_string(), or finish() after.
- * @note Chunk size unlimited per call, but internal buffers apply (8KB typical).
+ * @note Do not call status(), header(), body_data(), body_string(), or
+ * finish() after.
+ * @note Chunk size unlimited per call, but internal buffers apply (8KB
+ * typical).
  * @note Client must support chunked (HTTP/1.1 default); HTTP/1.0 may fail.
- * @note For HTTP/2, translates to multiple DATA frames with end-stream flag on last.
+ * @note For HTTP/2, translates to multiple DATA frames with end-stream flag on
+ * last.
  * @warning No Content-Length set; clients buffer until end_stream().
  *
  * @see SocketHTTPServer_Request_send_chunk() to emit body chunks.
@@ -1261,7 +1366,8 @@ SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req);
  * @see docs/HTTP.md "Streaming Responses" for examples.
  *
  * @threadsafe No - commits response, modifies connection state.
- * @throws SocketHTTPServer_Failed on immediate send failure (e.g., closed conn).
+ * @throws SocketHTTPServer_Failed on immediate send failure (e.g., closed
+ * conn).
  */
 extern int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req);
@@ -1305,22 +1411,26 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req);
  * @brief Initiate an HTTP/2 server push of a related resource to the client.
  * @ingroup http
  *
- * Sends a promised PUSH_PROMISE frame followed by pushed response (HEADERS + DATA).
- * Allows server to preemptively send resources likely needed by client (e.g., CSS/JS for HTML).
- * Only functional on HTTP/2 connections; HTTP/1.x returns -1 (no push support).
- * Client may refuse (via RST_STREAM); check return for success.
- * Path relative to request URI authority; full URL constructed internally.
+ * Sends a promised PUSH_PROMISE frame followed by pushed response (HEADERS +
+ * DATA). Allows server to preemptively send resources likely needed by client
+ * (e.g., CSS/JS for HTML). Only functional on HTTP/2 connections; HTTP/1.x
+ * returns -1 (no push support). Client may refuse (via RST_STREAM); check
+ * return for success. Path relative to request URI authority; full URL
+ * constructed internally.
  *
  * @param req Request context on HTTP/2 stream.
  * @param path Target resource path (e.g., "/style.css"; relative).
- * @param headers Optional headers for pushed request (method GET assumed; :method can override).
+ * @param headers Optional headers for pushed request (method GET assumed;
+ * :method can override).
  *
- * @return 0 if push initiated successfully, -1 if failed/unsupported (not HTTP/2, client refused, error).
+ * @return 0 if push initiated successfully, -1 if failed/unsupported (not
+ * HTTP/2, client refused, error).
  *
  * @note Push streams consume window/bandwidth; use judiciously to avoid DoS.
  * @note Client settings (e.g., ENABLE_PUSH=0) or GOAWAY may disable.
  * @note Pushed responses still subject to server config limits/timeouts.
- * @warning Over-pushing harms performance; base on Cache-Control, Link headers.
+ * @warning Over-pushing harms performance; base on Cache-Control, Link
+ * headers.
  *
  * @see SocketHTTPServer_Request_is_http2() to check protocol support.
  * @see SocketHTTP2_Stream for low-level push control.
@@ -1347,7 +1457,8 @@ extern int SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
  * @return 1 if HTTP/2 (or h2 via upgrade), 0 if HTTP/1.1 or lower.
  *
  * @note Constant for connection lifetime; not per-request.
- * @note HTTP/2 requires prior negotiation; plain HTTP/1.1 cannot upgrade post-start.
+ * @note HTTP/2 requires prior negotiation; plain HTTP/1.1 cannot upgrade
+ * post-start.
  * @note For h2c (cleartext HTTP/2), requires config enable_h2c_upgrade.
  *
  * @see SocketHTTPServer_Request_version() for exact version enum.
@@ -1376,11 +1487,14 @@ extern int SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req);
  *
  * @return 1 if valid WebSocket upgrade request, 0 if not (standard HTTP).
  *
- * @note Requires HTTP/1.1+; HTTP/2 uses extended CONNECT but not standard here.
- * @note Validates all required headers (Upgrade, Connection: Upgrade, Sec-WebSocket-Key).
+ * @note Requires HTTP/1.1+; HTTP/2 uses extended CONNECT but not standard
+ * here.
+ * @note Validates all required headers (Upgrade, Connection: Upgrade,
+ * Sec-WebSocket-Key).
  * @note Origin header checked against config if security enabled.
  *
- * @see SocketHTTPServer_Request_upgrade_websocket() to accept and get WS handle.
+ * @see SocketHTTPServer_Request_upgrade_websocket() to accept and get WS
+ * handle.
  * @see SocketWS_T for WebSocket protocol handling.
  * @see RFC 9112 Appendix B "WebSocket Upgrade" for handshake details.
  * @see docs/WEBSOCKET.md for WebSocket integration guide.
@@ -1395,14 +1509,15 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req);
  * @ingroup http
  *
  * Performs WebSocket handshake: sends 101 Switching Protocols response with
- * Sec-WebSocket-Accept key, then returns opaque WebSocket_T handle for framing.
- * Transitions connection from HTTP to WebSocket (ws:// or wss:// over TLS).
- * After upgrade, use SocketWS APIs for messages, close, etc.; HTTP functions invalid.
- * Request context and HTTP state discarded post-upgrade.
+ * Sec-WebSocket-Accept key, then returns opaque WebSocket_T handle for
+ * framing. Transitions connection from HTTP to WebSocket (ws:// or wss:// over
+ * TLS). After upgrade, use SocketWS APIs for messages, close, etc.; HTTP
+ * functions invalid. Request context and HTTP state discarded post-upgrade.
  *
  * @param req Request context with valid upgrade request (is_websocket() true).
  *
- * @return SocketWS_T instance for WebSocket operations, or NULL on failure (e.g., invalid handshake).
+ * @return SocketWS_T instance for WebSocket operations, or NULL on failure
+ * (e.g., invalid handshake).
  *
  * @note Validates client key, computes accept value per RFC 6455.
  * @note Sec-WebSocket-Protocol negotiated if offered (config or first).
@@ -1432,18 +1547,21 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req);
  * @ingroup http
  *
  * Associates a SocketRateLimit_T instance with a path prefix (e.g., "/api/").
- * Incoming requests matching prefix (via Request_path() starts-with) checked against limiter
- * before handler invocation. Exceeded limits trigger 429 Too Many Requests with Retry-After.
- * NULL path_prefix applies globally (all requests). NULL limiter disables for prefix.
- * Supports dynamic updates; affects new requests only.
+ * Incoming requests matching prefix (via Request_path() starts-with) checked
+ * against limiter before handler invocation. Exceeded limits trigger 429 Too
+ * Many Requests with Retry-After. NULL path_prefix applies globally (all
+ * requests). NULL limiter disables for prefix. Supports dynamic updates;
+ * affects new requests only.
  *
  * @param server Server instance (running or not).
- * @param path_prefix Path prefix to match (e.g., "/api/v1", NULL=global), case-sensitive.
+ * @param path_prefix Path prefix to match (e.g., "/api/v1", NULL=global),
+ * case-sensitive.
  * @param limiter Rate limiter (owned by caller; server references, not frees).
  *
  * @note Up to HTTPSERVER_MAX_RATE_LIMIT_ENDPOINTS (64 default) slots.
  * @note Path matching simple prefix; for regex/glob, implement in validator.
- * @note Per-IP limits via max_connections_per_client; this is per-endpoint RPS.
+ * @note Per-IP limits via max_connections_per_client; this is per-endpoint
+ * RPS.
  * @note Stats: rate_limited counter incremented on rejections.
  *
  * @see SocketRateLimit_T from utilities group for token bucket config.
@@ -1467,23 +1585,28 @@ extern void SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
  * @brief Install a middleware validator callback for incoming requests.
  * @ingroup http
  *
- * Registers a function executed after parsing headers but before body read/handler.
- * Ideal for early rejection: auth (tokens, JWT), rate limiting, CORS, schema validation.
- * Validator can set reject_status (e.g., 401) and return 0 to short-circuit (no handler).
- * Runs per-request; stateful validators must be thread-safe or per-connection.
- * Replaces prior validator; NULL disables.
+ * Registers a function executed after parsing headers but before body
+ * read/handler. Ideal for early rejection: auth (tokens, JWT), rate limiting,
+ * CORS, schema validation. Validator can set reject_status (e.g., 401) and
+ * return 0 to short-circuit (no handler). Runs per-request; stateful
+ * validators must be thread-safe or per-connection. Replaces prior validator;
+ * NULL disables.
  *
  * @param server Server instance.
  * @param validator Callback or NULL to disable validation.
  * @param userdata Opaque data passed to each invocation.
  *
- * @note Executes in event thread; fast operations preferred to avoid blocking poll.
- * @note Access to method, path, query, headers; body unavailable yet (use stream for large).
- * @note Rejection sends minimal error response (status + basic headers); customize via validator.
+ * @note Executes in event thread; fast operations preferred to avoid blocking
+ * poll.
+ * @note Access to method, path, query, headers; body unavailable yet (use
+ * stream for large).
+ * @note Rejection sends minimal error response (status + basic headers);
+ * customize via validator.
  * @note Chain multiple via wrapper if needed, but single slot provided.
  *
  * @see SocketHTTPServer_Validator callback signature and usage.
- * @see SocketHTTPServer_Request_* accessors available in validator (no body()).
+ * @see SocketHTTPServer_Request_* accessors available in validator (no
+ * body()).
  * @see SocketHTTPServer_set_rate_limit() for built-in endpoint limiting.
  * @see docs/SECURITY.md "Middleware and Validation" for patterns.
  *
@@ -1503,19 +1626,24 @@ SocketHTTPServer_set_validator (SocketHTTPServer_T server,
  * @brief Initiate graceful server shutdown by draining active connections.
  * @ingroup http
  *
- * Transitions server to DRAINING state: closes listening socket (no new accepts),
- * allows in-flight requests/connections to complete naturally via timeouts or finish().
- * After specified timeout (or infinite), force-closes any remaining to STOPPED.
- * Integrates with poll/process loop; call drain_poll() or drain_wait() to monitor.
- * Signals OS/epoll to stop queuing new SYNs if possible.
+ * Transitions server to DRAINING state: closes listening socket (no new
+ * accepts), allows in-flight requests/connections to complete naturally via
+ * timeouts or finish(). After specified timeout (or infinite), force-closes
+ * any remaining to STOPPED. Integrates with poll/process loop; call
+ * drain_poll() or drain_wait() to monitor. Signals OS/epoll to stop queuing
+ * new SYNs if possible.
  *
  * @param server Server instance (running state).
- * @param timeout_ms Max ms to wait for graceful completion (-1=infinite, 0=immediate force).
+ * @param timeout_ms Max ms to wait for graceful completion (-1=infinite,
+ * 0=immediate force).
  *
- * @return 0 if drain started successfully, -1 on error (already stopped/draining).
+ * @return 0 if drain started successfully, -1 on error (already
+ * stopped/draining).
  *
- * @note Existing connections: requests handled, but no new on them after start.
- * @note Timeout triggers abrupt close (possible data loss for unfinished responses).
+ * @note Existing connections: requests handled, but no new on them after
+ * start.
+ * @note Timeout triggers abrupt close (possible data loss for unfinished
+ * responses).
  * @note Call before free() for clean shutdown; drain_wait() for blocking.
  * @note Stats preserved; errors during drain logged/incremented.
  *
@@ -1534,10 +1662,11 @@ extern int SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms);
  * @brief Non-blocking check of drain progress and remaining work.
  * @ingroup http
  *
- * Queries number of active connections during DRAINING: polls internal pool/timer.
- * Returns count of connections needing completion (processing or idle but open).
- * Call in event loop (with process()) until 0 (complete) or -1 (timed out, force-closed).
- * Complements drain_wait() for custom loops or integration.
+ * Queries number of active connections during DRAINING: polls internal
+ * pool/timer. Returns count of connections needing completion (processing or
+ * idle but open). Call in event loop (with process()) until 0 (complete) or -1
+ * (timed out, force-closed). Complements drain_wait() for custom loops or
+ * integration.
  *
  * @param server Server in DRAINING (ignore otherwise).
  *
@@ -1546,7 +1675,8 @@ extern int SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms);
  *
  * @note Decreases as requests finish/connections idle-timeout.
  * @note Call frequently during drain; pairs with process() for progress.
- * @note On -1, remaining connections closed abruptly (possible aborted requests).
+ * @note On -1, remaining connections closed abruptly (possible aborted
+ * requests).
  * @note Callback invoked on 0 or -1 transition.
  *
  * @see SocketHTTPServer_drain() initiates draining.
@@ -1569,7 +1699,8 @@ extern int SocketHTTPServer_drain_poll (SocketHTTPServer_T server);
  * Non-blocking alternative: manual loop with drain_poll().
  *
  * @param server Server in DRAINING state (after drain()).
- * @param timeout_ms Max additional ms to wait (-1=use drain timeout, 0=check once).
+ * @param timeout_ms Max additional ms to wait (-1=use drain timeout, 0=check
+ * once).
  *
  * @return 0 if fully drained gracefully (STOPPED, no force-close),
  *         -1 if timed out (remaining connections force-closed).
@@ -1591,7 +1722,8 @@ extern int SocketHTTPServer_drain_wait (SocketHTTPServer_T server,
                                         int timeout_ms);
 
 /**
- * @brief Calculate remaining time before drain timeout forces connection closure.
+ * @brief Calculate remaining time before drain timeout forces connection
+ * closure.
  * @ingroup http
  *
  * Returns ms left until DRAINING state force-closes lingering connections.
@@ -1621,9 +1753,10 @@ extern int64_t SocketHTTPServer_drain_remaining_ms (SocketHTTPServer_T server);
  * @ingroup http
  *
  * Sets function invoked when drain reaches STOPPED: either graceful (all done)
- * or timed-out (force-closed). Called from event thread during/after process().
- * Useful for final cleanup, logging shutdown stats, or signaling parent process.
- * Replaces prior callback; NULL disables. Set before drain() for immediate effect.
+ * or timed-out (force-closed). Called from event thread during/after
+ * process(). Useful for final cleanup, logging shutdown stats, or signaling
+ * parent process. Replaces prior callback; NULL disables. Set before drain()
+ * for immediate effect.
  *
  * @param server Server instance.
  * @param callback Drain completion handler or NULL to disable.
@@ -1634,7 +1767,8 @@ extern int64_t SocketHTTPServer_drain_remaining_ms (SocketHTTPServer_T server);
  * @note Safe to free() server from callback (after invocation).
  * @note Not called on abrupt free()/errors; use atexit or signals for those.
  *
- * @see SocketHTTPServer_DrainCallback signature: receives server, timed_out flag.
+ * @see SocketHTTPServer_DrainCallback signature: receives server, timed_out
+ * flag.
  * @see SocketHTTPServer_drain() to start process triggering callback.
  * @see SocketHTTPServer_Stats for post-drain metrics snapshot.
  * @see docs/SIGNALS.md "Shutdown Hooks" for integration.
@@ -1650,15 +1784,17 @@ SocketHTTPServer_set_drain_callback (SocketHTTPServer_T server,
  * @brief Query the current lifecycle state of the server.
  * @ingroup http
  *
- * Returns enum indicating operational phase: RUNNING (normal), DRAINING (shutdown initiated),
- * or STOPPED (no activity). Useful for monitoring, logging, or conditional logic during shutdown.
- * Atomic read for concurrency safety.
+ * Returns enum indicating operational phase: RUNNING (normal), DRAINING
+ * (shutdown initiated), or STOPPED (no activity). Useful for monitoring,
+ * logging, or conditional logic during shutdown. Atomic read for concurrency
+ * safety.
  *
  * @param server Server instance (any state).
  *
  * @return SocketHTTPServer_State: RUNNING, DRAINING, or STOPPED.
  *
- * @note RUNNING: accepting/processing; DRAINING: finishing existing; STOPPED: idle/closed.
+ * @note RUNNING: accepting/processing; DRAINING: finishing existing; STOPPED:
+ * idle/closed.
  * @note State changes via start()/stop()/drain()/free().
  * @note During DRAINING, process()/poll continue until complete.
  *
@@ -1679,7 +1815,8 @@ SocketHTTPServer_state (SocketHTTPServer_T server);
  */
 
 /**
- * @brief Comprehensive server statistics structure for monitoring and debugging.
+ * @brief Comprehensive server statistics structure for monitoring and
+ * debugging.
  * @ingroup http
  *
  * Aggregates counters, gauges, and histograms for server health, performance,
@@ -1697,39 +1834,52 @@ SocketHTTPServer_state (SocketHTTPServer_T server);
 typedef struct
 {
   /* Connection stats */
-  size_t active_connections;   /**< @brief Current number of active client connections. */
-  size_t total_connections;    /**< @brief Cumulative connections accepted since start/reset. */
-  size_t connections_rejected; /**< @brief Connections rejected due to limits (max_conns, per-IP). */
+  size_t active_connections; /**< @brief Current number of active client
+                                connections. */
+  size_t total_connections;  /**< @brief Cumulative connections accepted since
+                                start/reset. */
+  size_t connections_rejected; /**< @brief Connections rejected due to limits
+                                  (max_conns, per-IP). */
 
   /* Request stats */
-  size_t total_requests;      /**< @brief Total HTTP requests processed (successful + errors). */
-  size_t requests_per_second; /**< @brief Recent RPS calculated over config window (10s default). */
+  size_t total_requests; /**< @brief Total HTTP requests processed (successful
+                            + errors). */
+  size_t requests_per_second; /**< @brief Recent RPS calculated over config
+                                 window (10s default). */
 
   /* Byte counters */
-  size_t total_bytes_sent;     /**< @brief Total response bytes sent to clients (headers + body). */
-  size_t total_bytes_received; /**< @brief Total request bytes received (headers + body). */
+  size_t total_bytes_sent;     /**< @brief Total response bytes sent to clients
+                                  (headers + body). */
+  size_t total_bytes_received; /**< @brief Total request bytes received
+                                  (headers + body). */
 
   /* Error stats */
-  size_t errors_4xx;   /**< @brief Count of 4xx client errors returned. */
-  size_t errors_5xx;   /**< @brief Count of 5xx server errors returned. */
-  size_t timeouts;     /**< @brief Connections/requests closed due to timeout. */
+  size_t errors_4xx; /**< @brief Count of 4xx client errors returned. */
+  size_t errors_5xx; /**< @brief Count of 5xx server errors returned. */
+  size_t timeouts;   /**< @brief Connections/requests closed due to timeout. */
   size_t rate_limited; /**< @brief Requests rejected by rate limiters (429). */
 
   /* Latency stats (microseconds) */
-  int64_t avg_request_time_us; /**< @brief Arithmetic mean of request processing times. */
-  int64_t max_request_time_us; /**< @brief Maximum observed request latency (reset on stats reset). */
-  int64_t p50_request_time_us; /**< @brief Median (50th percentile) request latency. */
-  int64_t p95_request_time_us; /**< @brief 95th percentile request latency (tail latency). */
-  int64_t p99_request_time_us; /**< @brief 99th percentile request latency (extreme tail). */
+  int64_t avg_request_time_us; /**< @brief Arithmetic mean of request
+                                  processing times. */
+  int64_t max_request_time_us; /**< @brief Maximum observed request latency
+                                  (reset on stats reset). */
+  int64_t p50_request_time_us; /**< @brief Median (50th percentile) request
+                                  latency. */
+  int64_t p95_request_time_us; /**< @brief 95th percentile request latency
+                                  (tail latency). */
+  int64_t p99_request_time_us; /**< @brief 99th percentile request latency
+                                  (extreme tail). */
 } SocketHTTPServer_Stats;
 
 /**
  * @brief Populate statistics structure with current server metrics snapshot.
  * @ingroup http
  *
- * Atomically copies all counters, gauges, and computed values (RPS, percentiles)
- * into the provided struct. Includes reset-tolerant fields like active_connections.
- * Latency stats based on recent samples (ring buffer of last N requests).
+ * Atomically copies all counters, gauges, and computed values (RPS,
+ * percentiles) into the provided struct. Includes reset-tolerant fields like
+ * active_connections. Latency stats based on recent samples (ring buffer of
+ * last N requests).
  *
  * @param server Server instance.
  * @param stats Pointer to SocketHTTPServer_Stats to fill (must not be NULL).

@@ -1,0 +1,13 @@
+<map id="include/http/SocketHPACK.h" name="include/http/SocketHPACK.h">
+<area shape="rect" id="Node000001" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="139,5,330,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,75,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,33,85,76,84,71,202,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="99,79,165,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="220,33,162,73,159,68,217,28"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="189,79,280,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="237,31,237,65,232,65,232,31"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="304,79,400,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="255,28,322,69,320,74,252,33"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="425,79,527,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="274,28,424,72,423,77,273,33"/>
+</map>

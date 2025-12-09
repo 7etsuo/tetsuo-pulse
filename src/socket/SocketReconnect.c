@@ -74,6 +74,41 @@ SocketReconnect_state_name (SocketReconnect_State state)
 }
 
 /* ============================================================================
+ * Internal Helper Functions
+ * ============================================================================
+ */
+
+static int64_t
+socketreconnect_get_time_ms (void)
+{
+  return Socket_get_monotonic_ms();
+}
+
+static double
+socketreconnect_random_double (void)
+{
+  unsigned int value;
+  if (SocketCrypto_random_bytes(&value, sizeof(value)) == 0) {
+    return (double)value / (double)0xFFFFFFFFU;
+  } else {
+    /* Fallback to time-based PRNG */
+#ifdef _WIN32
+    static __declspec(thread) unsigned int seed = 0;
+#else
+    static __thread unsigned int seed = 0;
+#endif
+    if (seed == 0) {
+      seed = (unsigned int)Socket_get_monotonic_ms();
+    }
+    /* xorshift32 */
+    seed ^= seed << 13;
+    seed ^= seed >> 17;
+    seed ^= seed << 5;
+    return (double)seed / (double)0xFFFFFFFFU;
+  }
+}
+
+/* ============================================================================
  * Policy Defaults
  * ============================================================================
  */

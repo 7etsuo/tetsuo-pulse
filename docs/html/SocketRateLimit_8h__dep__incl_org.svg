@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for the Socket module, including internal structure definition....">
+<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for Socket module: internal structure and shared utilities....">
 <polygon fill="white" stroke="#666666" points="97,-74 9,-74 9,-55 97,-55 97,-74"/>
 <text text-anchor="middle" x="53" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">Socket&#45;private.h</text>
 </a>
@@ -146,7 +146,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="TLS internal shared definitions and helper functions.">
+<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="Internal TLS module shared definitions, macros, and helper functions.">
 <polygon fill="white" stroke="#666666" points="106,-19 0,-19 0,0 106,0 106,-19"/>
 <text text-anchor="middle" x="53" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS&#45;private.h</text>
 </a>

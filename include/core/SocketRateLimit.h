@@ -2,7 +2,7 @@
 #define SOCKETRATELIMIT_INCLUDED
 
 /**
- * @defgroup utilities Utility Modules
+ * @defgroup utilities Utilities
  * @brief Helper modules for rate limiting, retry logic, and metrics.
  *
  * The Utilities group provides supporting functionality used across
@@ -54,8 +54,8 @@
  * Usage Example:
  * @code
  *   Arena_T arena = Arena_new();
- *   SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50);  // 100/sec, burst=50
- *   Arena_dispose(&arena);  // Don't forget cleanup!
+ *   SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50);  //
+ * 100/sec, burst=50 Arena_dispose(&arena);  // Don't forget cleanup!
  *
  *   // In a loop or before operation:
  *   if (SocketRateLimit_try_acquire(limiter, 1)) {
@@ -73,7 +73,8 @@
  *   }
  * @endcode
  *
- * @note This example uses standard POSIX usleep(); integrate with your event loop's sleep.
+ * @note This example uses standard POSIX usleep(); integrate with your event
+ * loop's sleep.
  * @see SocketTimer in @ref event_system for timed events instead of sleeping.
  *
  * @see SocketRateLimit_new() for limiter creation.
@@ -91,9 +92,9 @@
  * @brief Opaque token bucket rate limiter instance.
  * @ingroup utilities
  *
- * Thread-safe implementation of the token bucket algorithm for controlling operation
- * rates (e.g., connections or bandwidth throttling) with burst support up to the
- * configured bucket capacity.
+ * Thread-safe implementation of the token bucket algorithm for controlling
+ * operation rates (e.g., connections or bandwidth throttling) with burst
+ * support up to the configured bucket capacity.
  *
  * Allows short bursts while enforcing long-term average rates.
  *
@@ -122,18 +123,22 @@ extern const Except_T SocketRateLimit_Failed;
  * @ingroup utilities
  * @param arena Arena for memory allocation (NULL to use malloc).
  * @param tokens_per_sec Token refill rate (tokens added per second).
- * @param bucket_size Maximum bucket capacity (burst limit; 0 = use tokens_per_sec).
+ * @param bucket_size Maximum bucket capacity (burst limit; 0 = use
+ * tokens_per_sec).
  * @return New rate limiter instance or NULL on failure.
- * @throws SocketRateLimit_Failed on allocation failure or invalid parameters (e.g., tokens_per_sec == 0).
+ * @throws SocketRateLimit_Failed on allocation failure or invalid parameters
+ * (e.g., tokens_per_sec == 0).
  * @threadsafe Yes - creation is thread-safe; returns independent instance.
  *
- * The bucket starts full with bucket_size tokens (or defaults to tokens_per_sec if 0).
- * Recommend bucket_size >= tokens_per_sec to allow reasonable bursts without excessive limiting.
+ * The bucket starts full with bucket_size tokens (or defaults to
+ * tokens_per_sec if 0). Recommend bucket_size >= tokens_per_sec to allow
+ * reasonable bursts without excessive limiting.
  *
  * @see SocketRateLimit_free() for disposal.
  * @see SocketRateLimit_T for type details.
  * @see Arena_T in @ref foundation for arena-based memory management.
- * @see @ref connection_mgmt "Connection Management" for pool integration examples.
+ * @see @ref connection_mgmt "Connection Management" for pool integration
+ * examples.
  */
 extern T SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec,
                               size_t bucket_size);
@@ -143,13 +148,15 @@ extern T SocketRateLimit_new (Arena_T arena, size_t tokens_per_sec,
  * @ingroup utilities
  * @param limiter Pointer to the rate limiter handle (set to NULL on success).
  * @throws None.
- * @threadsafe Conditional - safe from one thread at a time; acquires internal mutex for cleanup.
+ * @threadsafe Conditional - safe from one thread at a time; acquires internal
+ * mutex for cleanup.
  *
  * Releases resources held by the limiter, including the internal mutex.
- * If the instance was allocated via malloc (arena==NULL in new()), memory is freed;
- * otherwise, only the handle is cleared (arena will free on dispose).
+ * If the instance was allocated via malloc (arena==NULL in new()), memory is
+ * freed; otherwise, only the handle is cleared (arena will free on dispose).
  *
- * @note Always call after use to prevent resource leaks and allow accurate live count debugging.
+ * @note Always call after use to prevent resource leaks and allow accurate
+ * live count debugging.
  * @see SocketRateLimit_new() for allocation details.
  * @see Arena_dispose() for arena-managed cleanup.
  * @see SocketRateLimit_debug_live_count() for verifying no leaks.
@@ -161,13 +168,15 @@ extern void SocketRateLimit_free (T *limiter);
  * @ingroup utilities
  * @param limiter The rate limiter instance.
  * @param tokens Number of tokens required (0 always succeeds).
- * @return 1 if tokens were available and consumed, 0 if insufficient (rate-limited).
+ * @return 1 if tokens were available and consumed, 0 if insufficient
+ * (rate-limited).
  * @throws None.
  * @threadsafe Yes - protected by internal mutex.
  *
- * Refills the token bucket based on wall-clock time elapsed since last operation.
- * If current tokens >= requested, deducts them and succeeds; otherwise fails immediately.
- * Ideal for high-throughput scenarios where blocking is unacceptable.
+ * Refills the token bucket based on wall-clock time elapsed since last
+ * operation. If current tokens >= requested, deducts them and succeeds;
+ * otherwise fails immediately. Ideal for high-throughput scenarios where
+ * blocking is unacceptable.
  *
  * @note Use in loops with backoff if frequent failures occur.
  * @see SocketRateLimit_wait_time_ms() for calculating delay before retry.
@@ -207,7 +216,8 @@ extern int64_t SocketRateLimit_wait_time_ms (T limiter, size_t tokens);
  * @brief Get the number of currently available tokens in the bucket.
  * @ingroup utilities
  * @param limiter The rate limiter instance.
- * @return Number of tokens available after time-based refill (capped at bucket_size).
+ * @return Number of tokens available after time-based refill (capped at
+ * bucket_size).
  * @throws None.
  * @threadsafe Yes - protected by internal mutex.
  *
@@ -249,13 +259,14 @@ extern void SocketRateLimit_reset (T limiter);
  * @throws SocketRateLimit_Failed if parameters invalid (e.g., new rate == 0).
  * @threadsafe Yes - atomic update under mutex protection.
  *
- * Applies changes immediately. If bucket_size decreased, excess tokens are discarded.
- * If increased, current tokens remain until consumed/refilled.
+ * Applies changes immediately. If bucket_size decreased, excess tokens are
+ * discarded. If increased, current tokens remain until consumed/refilled.
  * Refill rate change affects future additions proportionally.
  *
  * @note Best used during low activity; may temporarily alter effective rate.
  * @see SocketRateLimit_reset() to refill to new capacity immediately.
- * @see SocketRateLimit_get_rate() and SocketRateLimit_get_bucket_size() to query current config.
+ * @see SocketRateLimit_get_rate() and SocketRateLimit_get_bucket_size() to
+ * query current config.
  * @see SocketRateLimit_new() for static initial setup.
  */
 extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
@@ -269,8 +280,8 @@ extern void SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
  * @throws None.
  * @threadsafe Yes - mutex-protected read.
  *
- * Returns the rate set by SocketRateLimit_new() or last SocketRateLimit_configure().
- * Used for monitoring or dynamic adjustments.
+ * Returns the rate set by SocketRateLimit_new() or last
+ * SocketRateLimit_configure(). Used for monitoring or dynamic adjustments.
  *
  * @see SocketRateLimit_get_bucket_size() companion getter.
  * @see SocketRateLimit_configure() to update rate.
@@ -302,9 +313,9 @@ extern size_t SocketRateLimit_get_bucket_size (T limiter);
  * @throws None.
  * @threadsafe Yes - uses atomic operations.
  *
- * Internal counter incremented in SocketRateLimit_new(), decremented in free().
- * Intended for test suites to verify complete cleanup.
- * Production code should not rely on this; use sanitizers/valgrind instead.
+ * Internal counter incremented in SocketRateLimit_new(), decremented in
+ * free(). Intended for test suites to verify complete cleanup. Production code
+ * should not rely on this; use sanitizers/valgrind instead.
  *
  * @note Similar to Socket_debug_live_count() in core socket modules.
  * @see Test framework in src/test/ for usage examples.

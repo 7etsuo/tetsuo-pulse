@@ -1,0 +1,19 @@
+<map id="SocketHTTP2_Stream" name="SocketHTTP2_Stream">
+<area shape="rect" id="Node000001" title=" " alt="" coords="381,196,536,221"/>
+<area shape="poly" id="edge10_Node000001_Node000001" title=" " alt="" coords="551,201,563,209,554,216,537,219,536,214,552,211,557,209,549,205"/>
+<area shape="rect" id="Node000002" href="$structSocketHTTP2__Conn.html" title=" " alt="" coords="246,286,389,311"/>
+<area shape="poly" id="edge7_Node000002_Node000001" title=" " alt="" coords="407,228,369,248,346,267,328,287,324,284,342,263,367,243,405,224"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="384,279,424,258,440,240,451,220,456,223,445,243,427,262,386,284"/>
+<area shape="poly" id="edge8_Node000002_Node000002" title=" " alt="" coords="404,290,415,299,407,306,389,309,388,304,405,302,410,299,401,295"/>
+<area shape="rect" id="Node000003" href="$structSocketHPACK__Encoder.html" title=" " alt="" coords="5,196,168,221"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="131,224,288,283,286,288,129,229"/>
+<area shape="rect" id="Node000004" href="$structSocketHPACK__Table.html" title=" " alt="" coords="92,93,239,119"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="150,131,98,198,93,194,146,128"/>
+<area shape="rect" id="Node000006" href="$structSocketHPACK__Decoder.html" title=" " alt="" coords="193,196,357,221"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="190,126,264,194,260,198,186,130"/>
+<area shape="rect" id="Node000005" href="$structHPACK__DynamicEntry.html" title=" " alt="" coords="87,5,244,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="168,45,168,93,163,93,163,45"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="282,234,290,259,308,284,304,287,286,261,277,236"/>
+<area shape="rect" id="Node000007" href="$structSocketHPACK__Header.html" title=" " alt="" coords="380,93,537,119"/>
+<area shape="poly" id="edge9_Node000001_Node000007" title=" " alt="" coords="461,133,461,196,456,196,456,133"/>
+</map>

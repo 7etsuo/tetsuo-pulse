@@ -66,7 +66,7 @@ var sectionId = 'dynsection-0';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for the SocketCommon module.">
+<g id="a_Node000002"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for SocketCommon module providing shared socket infrastructure.">
 <polygon fill="white" stroke="#666666" points="728.5,-305 609.5,-305 609.5,-275 728.5,-275 728.5,-305"/>
 <text text-anchor="start" x="617.5" y="-293" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon</text>
 <text text-anchor="middle" x="669" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">&#45;private.h</text>
@@ -103,7 +103,7 @@ var sectionId = 'dynsection-0';
 <!-- Node7 -->
 <g id="Node000007" class="node">
 <title>Node7</title>
-<g id="a_Node000007"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000007"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="681,-129 575,-129 575,-110 681,-110 681,-129"/>
 <text text-anchor="middle" x="628" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -562,7 +562,7 @@ var sectionId = 'dynsection-0';
 <!-- Node23 -->
 <g id="Node000023" class="node">
 <title>Node23</title>
-<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="871,-129 775,-129 775,-110 871,-110 871,-129"/>
 <text text-anchor="middle" x="823" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

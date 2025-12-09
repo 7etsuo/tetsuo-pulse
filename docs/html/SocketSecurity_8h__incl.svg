@@ -120,7 +120,7 @@ var sectionId = 'dynsection-0';
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="472.5,-74 366.5,-74 366.5,-55 472.5,-55 472.5,-74"/>
 <text text-anchor="middle" x="419.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

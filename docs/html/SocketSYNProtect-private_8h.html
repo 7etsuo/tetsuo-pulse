@@ -112,6 +112,7 @@ $(document).ready(function(){initNavTree('SocketSYNProtect-private_8h.html','');
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
+<a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">SocketSYNProtect-private.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
 </div><!--header-->
@@ -122,6 +123,9 @@ $(document).ready(function(){initNavTree('SocketSYNProtect-private_8h.html','');
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketRateLimit_8h_source.html">core/SocketRateLimit.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketSYNProtect_8h_source.html">core/SocketSYNProtect.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketUtil_8h_source.html">core/SocketUtil.h</a>&quot;</code><br />
+<code>#include &lt;pthread.h&gt;</code><br />
+<code>#include &lt;stdatomic.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketSYNProtect-private.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
@@ -146,6 +150,24 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketSYNProtect__T" id="r_structSocketSYNProtect__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#structSocketSYNProtect__T">SocketSYNProtect_T</a></td></tr>
 <tr class="memdesc:structSocketSYNProtect__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Core internal structure for the SYN protection module.  <a href="group__security.html#structSocketSYNProtect__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketSYNProtect__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
+Macros</h2></td></tr>
+<tr class="memitem:ga3714b05d28ef69f2bc3b95b17abde741" id="r_ga3714b05d28ef69f2bc3b95b17abde741"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga3714b05d28ef69f2bc3b95b17abde741">SOCKET_SYN_IP_HASH_SIZE</a>&#160;&#160;&#160;4093</td></tr>
+<tr class="memdesc:ga3714b05d28ef69f2bc3b95b17abde741"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default hash table size for IP state tracking entries.  <br /></td></tr>
+<tr class="separator:ga3714b05d28ef69f2bc3b95b17abde741"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2e75c0e89d959bd3fa395f8307c1ba65" id="r_ga2e75c0e89d959bd3fa395f8307c1ba65"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga2e75c0e89d959bd3fa395f8307c1ba65">SOCKET_SYN_LIST_HASH_SIZE</a>&#160;&#160;&#160;509</td></tr>
+<tr class="memdesc:ga2e75c0e89d959bd3fa395f8307c1ba65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default hash table size for whitelist and blacklist entries.  <br /></td></tr>
+<tr class="separator:ga2e75c0e89d959bd3fa395f8307c1ba65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae82758ef1761626baf114a11955520e1" id="r_gae82758ef1761626baf114a11955520e1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae82758ef1761626baf114a11955520e1">SOCKET_SYN_INITIAL_SCORE</a>&#160;&#160;&#160;0.8f</td></tr>
+<tr class="memdesc:gae82758ef1761626baf114a11955520e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial reputation score for newly encountered IP addresses.  <br /></td></tr>
+<tr class="separator:gae82758ef1761626baf114a11955520e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga94b45dbd0567c33d239bcfe0b8de2391" id="r_ga94b45dbd0567c33d239bcfe0b8de2391"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga94b45dbd0567c33d239bcfe0b8de2391">SOCKET_SYN_TRUSTED_SCORE</a>&#160;&#160;&#160;1.0f</td></tr>
+<tr class="memdesc:ga94b45dbd0567c33d239bcfe0b8de2391"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reputation score assigned to whitelisted or fully trusted IPs.  <br /></td></tr>
+<tr class="separator:ga94b45dbd0567c33d239bcfe0b8de2391"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga89596d086483db6027b30bdd41bb04dd" id="r_ga89596d086483db6027b30bdd41bb04dd"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga89596d086483db6027b30bdd41bb04dd">SOCKET_SYN_MAX_CIDR_ENTRIES</a>&#160;&#160;&#160;256</td></tr>
+<tr class="memdesc:ga89596d086483db6027b30bdd41bb04dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of whitelist entries (CIDR ranges or single IPs).  <br /></td></tr>
+<tr class="separator:ga89596d086483db6027b30bdd41bb04dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>

@@ -1,0 +1,18 @@
+<map id="SocketHTTP1_Parser" name="SocketHTTP1_Parser">
+<area shape="rect" id="Node000001" title=" " alt="" coords="737,120,888,145"/>
+<area shape="rect" id="Node000002" href="$structSocketHTTP1__Config.html" title=" " alt="" coords="459,5,609,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="617,31,666,45,714,64,761,90,797,117,794,122,758,95,712,68,664,50,615,36"/>
+<area shape="rect" id="Node000003" href="$structSocketHTTP__Request.html" title=" " alt="" coords="457,133,611,159"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="625,139,737,134,737,139,625,144"/>
+<area shape="rect" id="Node000004" href="$structSocketHTTP__Headers.html" title=" " alt="" coords="199,133,353,159"/>
+<area shape="poly" id="edge8_Node000001_Node000004" title=" " alt="" coords="347,128,377,123,471,112,545,108,619,109,714,115,737,118,737,123,713,121,619,114,545,113,472,117,378,129,348,133"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="367,143,456,143,456,149,367,149"/>
+<area shape="rect" id="Node000006" href="$structSocketHTTP__Response.html" title=" " alt="" coords="452,183,616,208"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="354,159,378,163,465,180,464,185,377,169,353,164"/>
+<area shape="rect" id="Node000005" href="$structHeaderEntry.html" title=" " alt="" coords="5,133,100,159"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="114,143,199,143,199,149,114,149"/>
+<area shape="poly" id="edge5_Node000005_Node000005" title=" " alt="" coords="33,119,39,110,53,107,64,109,71,116,73,125,70,134,65,132,68,124,67,118,62,114,53,112,42,115,37,122"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="625,178,713,159,771,143,773,148,714,165,626,183"/>
+<area shape="rect" id="Node000007" href="$structHTTP1__TokenBuf.html" title=" " alt="" coords="471,269,597,295"/>
+<area shape="poly" id="edge9_Node000001_Node000007" title=" " alt="" coords="611,281,663,273,688,265,712,254,744,230,770,199,803,144,808,147,774,202,747,234,715,259,690,270,664,278,611,286"/>
+</map>

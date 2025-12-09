@@ -1,0 +1,298 @@
+\doxysection{include/http/\+Socket\+HTTPClient-\/private.h File Reference}
+\hypertarget{SocketHTTPClient-private_8h}{}\label{SocketHTTPClient-private_8h}\index{include/http/SocketHTTPClient-\/private.h@{include/http/SocketHTTPClient-\/private.h}}
+
+
+Internal HTTP client structures and connection pooling.  
+
+
+{\ttfamily \#include "{}core/\+Socket\+Util.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP1.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP2.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTPClient-\/config.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTPClient.\+h"{}}\newline
+{\ttfamily \#include "{}socket/\+Socket.\+h"{}}\newline
+{\ttfamily \#include "{}socket/\+Socket\+Buf.\+h"{}}\newline
+{\ttfamily \#include $<$pthread.\+h$>$}\newline
+{\ttfamily \#include $<$time.\+h$>$}\newline
+Include dependency graph for Socket\+HTTPClient-\/private.h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTPClient-private_8h__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}
+\item 
+struct \mbox{\hyperlink{structHTTPPool}{HTTPPool}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient}{Socket\+HTTPClient}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__Request}{Socket\+HTTPClient\+\_\+\+Request}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__AsyncRequest}{Socket\+HTTPClient\+\_\+\+Async\+Request}}
+\item 
+struct \mbox{\hyperlink{structCookieEntry}{Cookie\+Entry}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__CookieJar}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ae461bf5ddae6eda683926a6303af87f6}\label{SocketHTTPClient-private_8h_ae461bf5ddae6eda683926a6303af87f6} 
+\#define {\bfseries SOCKET\+\_\+\+LOG\+\_\+\+COMPONENT}~"{}HTTPClient"{}
+\item 
+\#define \mbox{\hyperlink{SocketHTTPClient-private_8h_a9d1b9d606e0e93792f0af19a3bee285d}{HTTPCLIENT\+\_\+\+ERROR\+\_\+\+FMT}}(fmt, ...)~SOCKET\+\_\+\+ERROR\+\_\+\+FMT (fmt, \#\#\+\_\+\+\_\+\+VA\+\_\+\+ARGS\+\_\+\+\_\+)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aa9c3c2e77f678fe7ffa525cbfb463488}\label{SocketHTTPClient-private_8h_aa9c3c2e77f678fe7ffa525cbfb463488} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+MSG}(fmt, ...)~SOCKET\+\_\+\+ERROR\+\_\+\+MSG (fmt, \#\#\+\_\+\+\_\+\+VA\+\_\+\+ARGS\+\_\+\+\_\+)
+\item 
+\#define \mbox{\hyperlink{group__http_ga579e19931e574af25ef4d1907a04f5c0}{RAISE\+\_\+\+HTTPCLIENT\+\_\+\+ERROR}}(e)~  SOCKET\+\_\+\+RAISE\+\_\+\+MODULE\+\_\+\+ERROR (\mbox{\hyperlink{structSocketHTTPClient}{Socket\+HTTPClient}}, e)
+\begin{DoxyCompactList}\small\item\em RAISE\+\_\+\+HTTPCLIENT\+\_\+\+ERROR -\/ Raise exception with detailed error message. \end{DoxyCompactList}\item 
+\Hypertarget{SocketHTTPClient-private_8h_a7ea812ac0a2761595089b6769bfa0000}\label{SocketHTTPClient-private_8h_a7ea812ac0a2761595089b6769bfa0000} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+REALM\+\_\+\+MAX\+\_\+\+LEN}~128
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a68ac57157e7da03cb1e01c89f1de0b62}\label{SocketHTTPClient-private_8h_a68ac57157e7da03cb1e01c89f1de0b62} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+NONCE\+\_\+\+MAX\+\_\+\+LEN}~128
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ac1867aa3adecede606b1b7b13382cdff}\label{SocketHTTPClient-private_8h_ac1867aa3adecede606b1b7b13382cdff} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+OPAQUE\+\_\+\+MAX\+\_\+\+LEN}~128
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ae603e1e97bd6c811788db4a1a13d2fdf}\label{SocketHTTPClient-private_8h_ae603e1e97bd6c811788db4a1a13d2fdf} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+QOP\+\_\+\+MAX\+\_\+\+LEN}~64
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aca4e69f011e9351cdc536e4ff39e1fc8}\label{SocketHTTPClient-private_8h_aca4e69f011e9351cdc536e4ff39e1fc8} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+ALGORITHM\+\_\+\+MAX\+\_\+\+LEN}~32
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_abf48ccd1c3e88f91938628cbedb58a9b}\label{SocketHTTPClient-private_8h_abf48ccd1c3e88f91938628cbedb58a9b} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+PARAM\+\_\+\+NAME\+\_\+\+MAX\+\_\+\+LEN}~32
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aa0b187842ed5e06b21c2efd5e1502945}\label{SocketHTTPClient-private_8h_aa0b187842ed5e06b21c2efd5e1502945} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+VALUE\+\_\+\+MAX\+\_\+\+LEN}~256
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a59b2e3d63dba9a65c0a8784f8d53910c}\label{SocketHTTPClient-private_8h_a59b2e3d63dba9a65c0a8784f8d53910c} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+AUTH}~"{}auth"{}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a668efa527c21fb1ba797c40cc0071851}\label{SocketHTTPClient-private_8h_a668efa527c21fb1ba797c40cc0071851} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+AUTH\+\_\+\+LEN}~4
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a6206f5f70b3f2726ec1f0240ef6ec8be}\label{SocketHTTPClient-private_8h_a6206f5f70b3f2726ec1f0240ef6ec8be} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+TRUE}~"{}true"{}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a45ede6e0f0cee7b4736d2e823e118808}\label{SocketHTTPClient-private_8h_a45ede6e0f0cee7b4736d2e823e118808} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+TRUE\+\_\+\+LEN}~4
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a1b8abffe44f092b5be73e641028a2d48}\label{SocketHTTPClient-private_8h_a1b8abffe44f092b5be73e641028a2d48} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+STALE}~"{}stale"{}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a25d8f3e2731f996b78a19c648c32828e}\label{SocketHTTPClient-private_8h_a25d8f3e2731f996b78a19c648c32828e} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+TOKEN\+\_\+\+STALE\+\_\+\+LEN}~5
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a140803a9e3422d25c7e5b4c49d3e0334}\label{SocketHTTPClient-private_8h_a140803a9e3422d25c7e5b4c49d3e0334} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+PREFIX}~"{}Digest "{}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a524f012cb4a866b13d36e707cf27ade8}\label{SocketHTTPClient-private_8h_a524f012cb4a866b13d36e707cf27ade8} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+PREFIX\+\_\+\+LEN}~7
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ae66a7ce0f5a7adb89c206d35e2f63668}\label{SocketHTTPClient-private_8h_ae66a7ce0f5a7adb89c206d35e2f63668} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+BASIC\+\_\+\+PREFIX}~"{}Basic "{}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aef664b715298f25f28ff7ea1f9c4d17b}\label{SocketHTTPClient-private_8h_aef664b715298f25f28ff7ea1f9c4d17b} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+BASIC\+\_\+\+PREFIX\+\_\+\+LEN}~6
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a35dcb4fed1bf914f6f349317ef9e32c3}\label{SocketHTTPClient-private_8h_a35dcb4fed1bf914f6f349317ef9e32c3} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+HEX\+\_\+\+SIZE}~(SOCKET\+\_\+\+CRYPTO\+\_\+\+SHA256\+\_\+\+SIZE \texorpdfstring{$\ast$}{*} 2 + 1)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a3e4e900df8359ef28d95b0ead64dbcf5}\label{SocketHTTPClient-private_8h_a3e4e900df8359ef28d95b0ead64dbcf5} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+CNONCE\+\_\+\+SIZE}~16
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a3db68e362a4cd23917b2e2b6dc05ef22}\label{SocketHTTPClient-private_8h_a3db68e362a4cd23917b2e2b6dc05ef22} 
+\#define {\bfseries HTTPCLIENT\+\_\+\+DIGEST\+\_\+\+A\+\_\+\+BUFFER\+\_\+\+SIZE}~512
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \mbox{\hyperlink{SocketHTTPClient-private_8h_a919a5c6d2bfbb770b285179216b0e534}{HTTPPool\+Entry}}
+\item 
+typedef struct \mbox{\hyperlink{structHTTPPool}{HTTPPool}} \mbox{\hyperlink{SocketHTTPClient-private_8h_aa38cc3b7791e8e1690568309971ef838}{HTTPPool}}
+\item 
+typedef struct \mbox{\hyperlink{structCookieEntry}{Cookie\+Entry}} \mbox{\hyperlink{SocketHTTPClient-private_8h_af98d334bea46459217ca4df5c5540ce9}{Cookie\+Entry}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc}{HTTPAsync\+State}} \{ \newline
+{\bfseries ASYNC\+\_\+\+STATE\+\_\+\+IDLE} = 0
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+CONNECTING}
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+SENDING}
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+RECEIVING\+\_\+\+HEADERS}
+, \newline
+{\bfseries ASYNC\+\_\+\+STATE\+\_\+\+RECEIVING\+\_\+\+BODY}
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+COMPLETE}
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+FAILED}
+, {\bfseries ASYNC\+\_\+\+STATE\+\_\+\+CANCELLED}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a4c39835a754ccb0d08ac61c1ea7a8c7c}\label{SocketHTTPClient-private_8h_a4c39835a754ccb0d08ac61c1ea7a8c7c} 
+\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*} {\bfseries httpclient\+\_\+pool\+\_\+new} (Arena\+\_\+T arena, const \mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}} \texorpdfstring{$\ast$}{*}config)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a55851750344eadd931492b704bccc9eb}\label{SocketHTTPClient-private_8h_a55851750344eadd931492b704bccc9eb} 
+void {\bfseries httpclient\+\_\+pool\+\_\+free} (\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*}pool)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ae26015dc94d7a799afa06e5af4a06028}\label{SocketHTTPClient-private_8h_ae26015dc94d7a799afa06e5af4a06028} 
+\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} {\bfseries httpclient\+\_\+pool\+\_\+get} (\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*}pool, const char \texorpdfstring{$\ast$}{*}host, int port, int is\+\_\+secure)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a1e444d31f1cfe79f8cd5d9ff4bb2a1ce}\label{SocketHTTPClient-private_8h_a1e444d31f1cfe79f8cd5d9ff4bb2a1ce} 
+void {\bfseries httpclient\+\_\+pool\+\_\+release} (\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*}pool, \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*}entry)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a996ec5177cc7dd1e5a2ff36287dbdbd8}\label{SocketHTTPClient-private_8h_a996ec5177cc7dd1e5a2ff36287dbdbd8} 
+void {\bfseries httpclient\+\_\+pool\+\_\+close} (\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*}pool, \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*}entry)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_ae5168e295288f03ec4acd0075375b5dd}\label{SocketHTTPClient-private_8h_ae5168e295288f03ec4acd0075375b5dd} 
+void {\bfseries httpclient\+\_\+pool\+\_\+cleanup\+\_\+idle} (\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*}pool)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aeebf46d1a22a041f7f9fa3e8f602e71f}\label{SocketHTTPClient-private_8h_aeebf46d1a22a041f7f9fa3e8f602e71f} 
+\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} {\bfseries httpclient\+\_\+connect} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}uri)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a58e2c87cf71ab222a1744e48c0637d66}\label{SocketHTTPClient-private_8h_a58e2c87cf71ab222a1744e48c0637d66} 
+int {\bfseries httpclient\+\_\+send\+\_\+request} (\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*}conn, \mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a1a48227c77137889a2c5d5884a1ed72f}\label{SocketHTTPClient-private_8h_a1a48227c77137889a2c5d5884a1ed72f} 
+int {\bfseries httpclient\+\_\+receive\+\_\+response} (\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*}conn, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response, Arena\+\_\+T arena)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a06c89eec019402c15530b421636b6d80}\label{SocketHTTPClient-private_8h_a06c89eec019402c15530b421636b6d80} 
+int {\bfseries httpclient\+\_\+auth\+\_\+basic\+\_\+header} (const char \texorpdfstring{$\ast$}{*}username, const char \texorpdfstring{$\ast$}{*}password, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a8bd3db663d0f873219ab2f28017750a5}\label{SocketHTTPClient-private_8h_a8bd3db663d0f873219ab2f28017750a5} 
+int {\bfseries httpclient\+\_\+auth\+\_\+digest\+\_\+response} (const char \texorpdfstring{$\ast$}{*}username, const char \texorpdfstring{$\ast$}{*}password, const char \texorpdfstring{$\ast$}{*}realm, const char \texorpdfstring{$\ast$}{*}nonce, const char \texorpdfstring{$\ast$}{*}uri, const char \texorpdfstring{$\ast$}{*}method, const char \texorpdfstring{$\ast$}{*}qop, const char \texorpdfstring{$\ast$}{*}nc, const char \texorpdfstring{$\ast$}{*}cnonce, int use\+\_\+sha256, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\item 
+int \mbox{\hyperlink{SocketHTTPClient-private_8h_a3fcfd7234a5afe59a88881771654b119}{httpclient\+\_\+auth\+\_\+digest\+\_\+challenge}} (const char \texorpdfstring{$\ast$}{*}www\+\_\+authenticate, const char \texorpdfstring{$\ast$}{*}username, const char \texorpdfstring{$\ast$}{*}password, const char \texorpdfstring{$\ast$}{*}method, const char \texorpdfstring{$\ast$}{*}uri, const char \texorpdfstring{$\ast$}{*}nc\+\_\+value, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\item 
+int \mbox{\hyperlink{group__http_gae2f0b8ff528dfcd4951ea76392f84f9c}{httpclient\+\_\+auth\+\_\+bearer\+\_\+header}} (const char \texorpdfstring{$\ast$}{*}token, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Thread-\/safe\+: Yes. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{SocketHTTPClient-private_8h_a1cc79d996671eef21de4f871615e65f9}{httpclient\+\_\+auth\+\_\+is\+\_\+stale\+\_\+nonce}} (const char \texorpdfstring{$\ast$}{*}www\+\_\+authenticate)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a9ba266d6ec1b02fb7d97645d12deaf5a}\label{SocketHTTPClient-private_8h_a9ba266d6ec1b02fb7d97645d12deaf5a} 
+int {\bfseries httpclient\+\_\+cookies\+\_\+for\+\_\+request} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar, const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}uri, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size, int enforce\+\_\+samesite)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a7ba809ebabcf319995ba0b894e2e587f}\label{SocketHTTPClient-private_8h_a7ba809ebabcf319995ba0b894e2e587f} 
+int {\bfseries httpclient\+\_\+parse\+\_\+set\+\_\+cookie} (const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t len, const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}request\+\_\+uri, \mbox{\hyperlink{structSocketHTTPClient__Cookie}{Socket\+HTTPClient\+\_\+\+Cookie}} \texorpdfstring{$\ast$}{*}cookie, Arena\+\_\+T arena)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a061744acfdfb45c79b6923199ad88d87}\label{SocketHTTPClient-private_8h_a061744acfdfb45c79b6923199ad88d87} 
+int {\bfseries httpclient\+\_\+should\+\_\+retry\+\_\+error} (const \mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} error)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_af1d66a9d712080e74f44f40aa3fafea1}\label{SocketHTTPClient-private_8h_af1d66a9d712080e74f44f40aa3fafea1} 
+int {\bfseries httpclient\+\_\+should\+\_\+retry\+\_\+status} (const \mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, int status)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a61edb588d3d3b364aaab844db26428eb}\label{SocketHTTPClient-private_8h_a61edb588d3d3b364aaab844db26428eb} 
+int {\bfseries httpclient\+\_\+calculate\+\_\+retry\+\_\+delay} (const \mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, int attempt)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a6abcc8edfc2d53251216f0b896ec6a4d}\label{SocketHTTPClient-private_8h_a6abcc8edfc2d53251216f0b896ec6a4d} 
+void {\bfseries httpclient\+\_\+retry\+\_\+sleep\+\_\+ms} (int ms)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_a37b2d33a0506dfba35f203ed8a759cf1}\label{SocketHTTPClient-private_8h_a37b2d33a0506dfba35f203ed8a759cf1} 
+void {\bfseries clear\+\_\+response\+\_\+for\+\_\+retry} (\mbox{\hyperlink{structSocketHTTP__Response}{Socket\+HTTP\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\item 
+\Hypertarget{SocketHTTPClient-private_8h_aecc3cd561f0ff3d1ae821ec6c66cf7f4}\label{SocketHTTPClient-private_8h_aecc3cd561f0ff3d1ae821ec6c66cf7f4} 
+void {\bfseries httpclient\+\_\+clear\+\_\+response\+\_\+for\+\_\+retry} (\mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internal HTTP client structures and connection pooling. 
+
+This header contains internal structures for the HTTP client implementation. NOT for public consumption -\/ use \doxylink{SocketHTTPClient_8h}{Socket\+HTTPClient.\+h} instead.
+
+Contains\+:
+\begin{DoxyItemize}
+\item Connection pool management with per-\/host limits
+\item HTTP/1.\+1 and HTTP/2 protocol state machines
+\item Request/response lifecycle management
+\item Cookie jar implementation
+\item Rate limiting and retry logic
+\item TLS integration and certificate validation
+\item Asynchronous operation state tracking
+\end{DoxyItemize}
+
+The client supports both synchronous and asynchronous operations with automatic protocol negotiation and connection reuse.
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHTTPClient_8h}{Socket\+HTTPClient.\+h} for public HTTP client API. 
+
+\doxylink{SocketHTTPClient-config_8h}{Socket\+HTTPClient-\/config.\+h} for configuration constants. 
+
+\doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} for core HTTP internal structures. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHTTPClient-private_8h_a9d1b9d606e0e93792f0af19a3bee285d}\label{SocketHTTPClient-private_8h_a9d1b9d606e0e93792f0af19a3bee285d} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!HTTPCLIENT\_ERROR\_FMT@{HTTPCLIENT\_ERROR\_FMT}}
+\index{HTTPCLIENT\_ERROR\_FMT@{HTTPCLIENT\_ERROR\_FMT}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTPCLIENT\_ERROR\_FMT}{HTTPCLIENT\_ERROR\_FMT}}
+{\footnotesize\ttfamily \#define HTTPCLIENT\+\_\+\+ERROR\+\_\+\+FMT(\begin{DoxyParamCaption}\item[{}]{fmt,  }\item[{}]{... }\end{DoxyParamCaption})~SOCKET\+\_\+\+ERROR\+\_\+\+FMT (fmt, \#\#\+\_\+\+\_\+\+VA\+\_\+\+ARGS\+\_\+\+\_\+)}
+
+Error formatting macros -\/ delegate to centralized infrastructure. Uses socket\+\_\+error\+\_\+buf from Socket\+Util.\+h (thread-\/local, 256 bytes). 
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{SocketHTTPClient-private_8h_af98d334bea46459217ca4df5c5540ce9}\label{SocketHTTPClient-private_8h_af98d334bea46459217ca4df5c5540ce9} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!CookieEntry@{CookieEntry}}
+\index{CookieEntry@{CookieEntry}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{CookieEntry}{CookieEntry}}
+{\footnotesize\ttfamily typedef struct \mbox{\hyperlink{structCookieEntry}{Cookie\+Entry}} \mbox{\hyperlink{structCookieEntry}{Cookie\+Entry}}}
+
+Cookie entry in jar \Hypertarget{SocketHTTPClient-private_8h_aa38cc3b7791e8e1690568309971ef838}\label{SocketHTTPClient-private_8h_aa38cc3b7791e8e1690568309971ef838} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!HTTPPool@{HTTPPool}}
+\index{HTTPPool@{HTTPPool}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTPPool}{HTTPPool}}
+{\footnotesize\ttfamily typedef struct \mbox{\hyperlink{structHTTPPool}{HTTPPool}} \mbox{\hyperlink{structHTTPPool}{HTTPPool}}}
+
+HTTP connection pool
+
+Manages connections keyed by host\+:port with per-\/host limits and HTTP/2 multiplexing support. \Hypertarget{SocketHTTPClient-private_8h_a919a5c6d2bfbb770b285179216b0e534}\label{SocketHTTPClient-private_8h_a919a5c6d2bfbb770b285179216b0e534} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!HTTPPoolEntry@{HTTPPoolEntry}}
+\index{HTTPPoolEntry@{HTTPPoolEntry}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTPPoolEntry}{HTTPPoolEntry}}
+{\footnotesize\ttfamily typedef struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}}
+
+HTTP connection pool entry
+
+Manages a single connection that can be reused for requests to the same host\+:port. Supports both HTTP/1.\+1 (one request at a time) and HTTP/2 (multiplexed streams). 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc}\label{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!HTTPAsyncState@{HTTPAsyncState}}
+\index{HTTPAsyncState@{HTTPAsyncState}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTPAsyncState}{HTTPAsyncState}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc}{HTTPAsync\+State}}}
+
+Async request state 
+
+\doxysubsection{Function Documentation}
+\Hypertarget{SocketHTTPClient-private_8h_a3fcfd7234a5afe59a88881771654b119}\label{SocketHTTPClient-private_8h_a3fcfd7234a5afe59a88881771654b119} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!httpclient\_auth\_digest\_challenge@{httpclient\_auth\_digest\_challenge}}
+\index{httpclient\_auth\_digest\_challenge@{httpclient\_auth\_digest\_challenge}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{httpclient\_auth\_digest\_challenge()}{httpclient\_auth\_digest\_challenge()}}
+{\footnotesize\ttfamily int httpclient\+\_\+auth\+\_\+digest\+\_\+challenge (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{www\+\_\+authenticate,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{username,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{password,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{method,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{uri,  }\item[{const char \texorpdfstring{$\ast$}{*}}]{nc\+\_\+value,  }\item[{char \texorpdfstring{$\ast$}{*}}]{output,  }\item[{size\+\_\+t}]{output\+\_\+size }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+httpclient\+\_\+auth\+\_\+digest\+\_\+challenge -\/ Handle Digest WWW-\/\+Authenticate challenge @www\+\_\+authenticate\+: WWW-\/\+Authenticate header value @username\+: User\textquotesingle{}s username @password\+: User\textquotesingle{}s password @method\+: HTTP method (GET, POST, etc.) @uri\+: Request URI @nc\+\_\+value\+: Nonce count (e.\+g., "{}00000001"{}) @output\+: Output buffer for Authorization header value @output\+\_\+size\+: Size of output buffer
+
+Returns\+: 0 on success, -\/1 on error
+
+Parses a Digest challenge and generates the appropriate Authorization header value. Handles both MD5 and SHA-\/256 algorithms, qop=auth. NOTE\+: qop=auth-\/int is NOT supported. \Hypertarget{SocketHTTPClient-private_8h_a1cc79d996671eef21de4f871615e65f9}\label{SocketHTTPClient-private_8h_a1cc79d996671eef21de4f871615e65f9} 
+\index{SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}!httpclient\_auth\_is\_stale\_nonce@{httpclient\_auth\_is\_stale\_nonce}}
+\index{httpclient\_auth\_is\_stale\_nonce@{httpclient\_auth\_is\_stale\_nonce}!SocketHTTPClient-\/private.h@{SocketHTTPClient-\/private.h}}
+\doxysubsubsection{\texorpdfstring{httpclient\_auth\_is\_stale\_nonce()}{httpclient\_auth\_is\_stale\_nonce()}}
+{\footnotesize\ttfamily int httpclient\+\_\+auth\+\_\+is\+\_\+stale\+\_\+nonce (\begin{DoxyParamCaption}\item[{const char \texorpdfstring{$\ast$}{*}}]{www\+\_\+authenticate }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+httpclient\+\_\+auth\+\_\+is\+\_\+stale\+\_\+nonce -\/ Check if WWW-\/\+Authenticate contains stale=true @www\+\_\+authenticate\+: WWW-\/\+Authenticate header value
+
+Returns\+: 1 if stale=true present, 0 otherwise
+
+Used to determine if a 401 response is due to an expired nonce (which should be retried) vs. invalid credentials (which should not). 

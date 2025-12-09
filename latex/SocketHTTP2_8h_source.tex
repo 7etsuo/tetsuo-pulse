@@ -1,0 +1,522 @@
+\doxysection{Socket\+HTTP2.\+h}
+\hypertarget{SocketHTTP2_8h_source}{}\label{SocketHTTP2_8h_source}\index{include/http/SocketHTTP2.h@{include/http/SocketHTTP2.h}}
+\mbox{\hyperlink{SocketHTTP2_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00038\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_INCLUDED}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_INCLUDED}}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \textcolor{preprocessor}{\#include\ <stddef.h>}}
+\DoxyCodeLine{00042\ \textcolor{preprocessor}{\#include\ <stdint.h>}}
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#include\ <sys/types.h>}}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00045\ \textcolor{preprocessor}{\#include\ "{}core/Arena.h"{}}}
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#include\ "{}core/Except.h"{}}}
+\DoxyCodeLine{00047\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHPACK_8h}{http/SocketHPACK.h}}"{}}}
+\DoxyCodeLine{00048\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP_8h}{http/SocketHTTP.h}}"{}}}
+\DoxyCodeLine{00049\ \textcolor{preprocessor}{\#include\ "{}socket/Socket.h"{}}}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00051\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00052\ \textcolor{comment}{\ *\ Configuration\ Limits\ (RFC\ 9113\ Section\ 6.5.2)}}
+\DoxyCodeLine{00053\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00054\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00057\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_HEADER\_TABLE\_SIZE}}
+\DoxyCodeLine{00058\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_HEADER\_TABLE\_SIZE\ 4096}}
+\DoxyCodeLine{00059\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00062\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_ENABLE\_PUSH}}
+\DoxyCodeLine{00063\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_ENABLE\_PUSH\ 1}}
+\DoxyCodeLine{00064\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00072\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_MAX\_CONCURRENT\_STREAMS}}
+\DoxyCodeLine{00073\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_MAX\_CONCURRENT\_STREAMS\ 100}}
+\DoxyCodeLine{00074\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00077\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_INITIAL\_WINDOW\_SIZE}}
+\DoxyCodeLine{00078\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_INITIAL\_WINDOW\_SIZE\ 65535}}
+\DoxyCodeLine{00079\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00082\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_MAX\_FRAME\_SIZE}}
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_MAX\_FRAME\_SIZE\ 16384}}
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00087\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_MAX\_MAX\_FRAME\_SIZE\ 16777215}}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00095\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_MAX\_HEADER\_LIST\_SIZE}}
+\DoxyCodeLine{00096\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_MAX\_HEADER\_LIST\_SIZE\ (16\ *\ 1024)}}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00099\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_STREAM\_RECV\_BUF\_SIZE\ (64\ *\ 1024)}}
+\DoxyCodeLine{00100\ }
+\DoxyCodeLine{00102\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_INITIAL\_HEADER\_BLOCK\_SIZE\ (16\ *\ 1024)}}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00105\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_MAX\_DECODED\_HEADERS\ 128}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00108\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_MAX\_CONTINUATION\_FRAMES\ 32}}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00112\ \textcolor{preprocessor}{\#define\ HTTP2\_REQUEST\_PSEUDO\_HEADER\_COUNT\ 4}}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00114\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00117\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_MAX\_STREAMS}}
+\DoxyCodeLine{00118\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_MAX\_STREAMS\ 1000}}
+\DoxyCodeLine{00119\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00120\ }
+\DoxyCodeLine{00122\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_CONNECTION\_WINDOW\_SIZE}}
+\DoxyCodeLine{00123\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_CONNECTION\_WINDOW\_SIZE\ (1\ <<\ 20)\ }\textcolor{comment}{/*\ 1MB\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00124\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00125\ }
+\DoxyCodeLine{00132\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_RST\_RATE\_LIMIT}}
+\DoxyCodeLine{00133\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_RST\_RATE\_LIMIT\ 100\ }\textcolor{comment}{/*\ Max\ RST\_STREAM\ frames\ per\ window\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00134\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00135\ }
+\DoxyCodeLine{00136\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_RST\_RATE\_WINDOW\_MS}}
+\DoxyCodeLine{00137\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_RST\_RATE\_WINDOW\_MS\ 1000\ }\textcolor{comment}{/*\ Rate\ window\ in\ milliseconds\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00138\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00139\ }
+\DoxyCodeLine{00145\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_PING\_RATE\_LIMIT}}
+\DoxyCodeLine{00146\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_PING\_RATE\_LIMIT\ 50\ }\textcolor{comment}{/*\ Max\ PING\ frames\ per\ window\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00147\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00149\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_PING\_RATE\_WINDOW\_MS}}
+\DoxyCodeLine{00150\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_PING\_RATE\_WINDOW\_MS\ 1000\ }\textcolor{comment}{/*\ Rate\ window\ in\ milliseconds\ \ \ \(\backslash\)}}
+\DoxyCodeLine{00151\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00152\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00159\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_SETTINGS\_RATE\_LIMIT}}
+\DoxyCodeLine{00160\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_SETTINGS\_RATE\_LIMIT\ 10\ }\textcolor{comment}{/*\ Max\ SETTINGS\ frames\ per\ window\ \ \(\backslash\)}}
+\DoxyCodeLine{00161\ \textcolor{comment}{\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00162\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00163\ }
+\DoxyCodeLine{00164\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_SETTINGS\_RATE\_WINDOW\_MS}}
+\DoxyCodeLine{00165\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_SETTINGS\_RATE\_WINDOW\_MS\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00166\ \textcolor{preprocessor}{\ \ 5000\ }\textcolor{comment}{/*\ Longer\ window\ for\ config\ changes\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00167\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00168\ }
+\DoxyCodeLine{00169\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_SETTINGS\_TIMEOUT\_MS}}
+\DoxyCodeLine{00170\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_SETTINGS\_TIMEOUT\_MS\ 30000\ }\textcolor{comment}{/*\ 30\ seconds\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00171\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00173\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_DEFAULT\_PING\_TIMEOUT\_MS}}
+\DoxyCodeLine{00174\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_DEFAULT\_PING\_TIMEOUT\_MS\ 30000\ }\textcolor{comment}{/*\ 30\ seconds\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00175\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00176\ }
+\DoxyCodeLine{00177\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_MAX\_WINDOW\_SIZE}}
+\DoxyCodeLine{00178\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_MAX\_WINDOW\_SIZE\ 0x7FFFFFFF\ }\textcolor{comment}{/*\ 2\string^31\ -\/\ 1\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00179\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00181\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP2\_IO\_BUFFER\_SIZE}}
+\DoxyCodeLine{00182\ \textcolor{preprocessor}{\#define\ SOCKETHTTP2\_IO\_BUFFER\_SIZE\ SOCKETHTTP2\_DEFAULT\_STREAM\_RECV\_BUF\_SIZE}}
+\DoxyCodeLine{00183\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00184\ }
+\DoxyCodeLine{00186\ \textcolor{preprocessor}{\#define\ HTTP2\_FRAME\_HEADER\_SIZE\ 9}}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00189\ \textcolor{preprocessor}{\#define\ HTTP2\_WINDOW\_UPDATE\_PAYLOAD\_SIZE\ 4}}
+\DoxyCodeLine{00190\ }
+\DoxyCodeLine{00192\ \textcolor{preprocessor}{\#define\ HTTP2\_PUSH\_PROMISE\_ID\_SIZE\ 4}}
+\DoxyCodeLine{00193\ }
+\DoxyCodeLine{00195\ \textcolor{preprocessor}{\#define\ HTTP2\_PRIORITY\_PAYLOAD\_SIZE\ 5}}
+\DoxyCodeLine{00196\ }
+\DoxyCodeLine{00198\ \textcolor{preprocessor}{\#define\ HTTP2\_PREFACE\_SIZE\ 24}}
+\DoxyCodeLine{00199\ }
+\DoxyCodeLine{00201\ \textcolor{preprocessor}{\#define\ HTTP2\_STREAM\_HASH\_SIZE\ 1021}}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00203\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00204\ \textcolor{comment}{\ *\ Exception\ Types}}
+\DoxyCodeLine{00205\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00206\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00207\ }
+\DoxyCodeLine{00209\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ Except\_T\ \mbox{\hyperlink{SocketHTTP2_8h_ac51371422726d9cacab52b583dcd7587}{SocketHTTP2\_ProtocolError}};}
+\DoxyCodeLine{00210\ }
+\DoxyCodeLine{00212\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ Except\_T\ \mbox{\hyperlink{SocketHTTP2_8h_aad19ee7b4b3a371cb35bd42c9247dda8}{SocketHTTP2\_StreamError}};}
+\DoxyCodeLine{00213\ }
+\DoxyCodeLine{00215\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ Except\_T\ \mbox{\hyperlink{SocketHTTP2_8h_a7f79462d19b6633911fbf1d683df1ad5}{SocketHTTP2\_FlowControlError}};}
+\DoxyCodeLine{00216\ }
+\DoxyCodeLine{00217\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00218\ \textcolor{comment}{\ *\ Frame\ Types\ (RFC\ 9113\ Section\ 6)}}
+\DoxyCodeLine{00219\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00220\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00221\ }
+\DoxyCodeLine{00225\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00226\ \{}
+\DoxyCodeLine{00227\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa04554819e8fccfd4a5e3af472d297c05}{HTTP2\_FRAME\_DATA}}\ =\ 0x0,\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00228\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aacfab4408ab345f3e125932618bc2a797}{HTTP2\_FRAME\_HEADERS}}\ =\ 0x1,\ \ \ \ \ \ \ }
+\DoxyCodeLine{00229\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aaeb5e132de27090a912bdf4608770dad2}{HTTP2\_FRAME\_PRIORITY}}\ =\ 0x2,\ \ \ \ \ \ }
+\DoxyCodeLine{00230\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa01cb150f545986ecf7b644d1c0d55a9b}{HTTP2\_FRAME\_RST\_STREAM}}\ =\ 0x3,\ \ \ \ }
+\DoxyCodeLine{00231\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa958eea494ddddc4a9dae9bb92b306158}{HTTP2\_FRAME\_SETTINGS}}\ =\ 0x4,\ \ \ \ \ \ }
+\DoxyCodeLine{00232\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa0a45b8840463a20beff3ceb88c6c928b}{HTTP2\_FRAME\_PUSH\_PROMISE}}\ =\ 0x5,\ \ }
+\DoxyCodeLine{00233\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa39d39c46b34c78d84ea93738f6878612}{HTTP2\_FRAME\_PING}}\ =\ 0x6,\ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00234\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aa373e3880213bbd8865b1e180ce84a492}{HTTP2\_FRAME\_GOAWAY}}\ =\ 0x7,\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00235\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aacb8ce16978aa358ee7d98cbb41338396}{HTTP2\_FRAME\_WINDOW\_UPDATE}}\ =\ 0x8,\ }
+\DoxyCodeLine{00236\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0aac5d7b06ae7255f7fd60724a8a74a0b67}{HTTP2\_FRAME\_CONTINUATION}}\ =\ 0x9\ \ \ }
+\DoxyCodeLine{00237\ \}\ \mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0a}{SocketHTTP2\_FrameType}};}
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00239\ \textcolor{comment}{/*\ Frame\ flags\ */}}
+\DoxyCodeLine{00240\ \textcolor{preprocessor}{\#define\ HTTP2\_FLAG\_END\_STREAM\ 0x01\ \ }}
+\DoxyCodeLine{00241\ \textcolor{preprocessor}{\#define\ HTTP2\_FLAG\_END\_HEADERS\ 0x04\ }}
+\DoxyCodeLine{00243\ \textcolor{preprocessor}{\#define\ HTTP2\_FLAG\_PADDED\ 0x08\ \ \ \ \ \ }}
+\DoxyCodeLine{00244\ \textcolor{preprocessor}{\#define\ HTTP2\_FLAG\_PRIORITY\ 0x20\ \ \ \ }}
+\DoxyCodeLine{00245\ \textcolor{preprocessor}{\#define\ HTTP2\_FLAG\_ACK\ 0x01\ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00247\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00248\ \textcolor{comment}{\ *\ Error\ Codes\ (RFC\ 9113\ Section\ 7)}}
+\DoxyCodeLine{00249\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00250\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00251\ }
+\DoxyCodeLine{00255\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00256\ \{}
+\DoxyCodeLine{00257\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9ac23405996c11dae9e88239ce88a16ea8}{HTTP2\_NO\_ERROR}}\ =\ 0x0,\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00258\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a1bb78671b75564a3eb2ff5aceccd90dc}{HTTP2\_PROTOCOL\_ERROR}}\ =\ 0x1,\ \ \ \ \ \ }
+\DoxyCodeLine{00259\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a81f3b3d6f4c3bd15763d0141fb64a167}{HTTP2\_INTERNAL\_ERROR}}\ =\ 0x2,\ \ \ \ \ \ }
+\DoxyCodeLine{00260\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a6d14aa74e9963c9a6353bc78b2d1f692}{HTTP2\_FLOW\_CONTROL\_ERROR}}\ =\ 0x3,\ \ }
+\DoxyCodeLine{00261\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9af0559ab4d1a0307b036aba800c58b5be}{HTTP2\_SETTINGS\_TIMEOUT}}\ =\ 0x4,\ \ \ \ }
+\DoxyCodeLine{00262\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a320592477b4417654e4b9f0930f5b7a8}{HTTP2\_STREAM\_CLOSED}}\ =\ 0x5,\ \ \ \ \ \ \ }
+\DoxyCodeLine{00263\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a84f82454caaecec6ef5b59e65e91b174}{HTTP2\_FRAME\_SIZE\_ERROR}}\ =\ 0x6,\ \ \ \ }
+\DoxyCodeLine{00264\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9ad3fa8cc0ff8952f30ddd054844d230b6}{HTTP2\_REFUSED\_STREAM}}\ =\ 0x7,\ \ \ \ \ \ }
+\DoxyCodeLine{00265\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9aede75f5387b7175bb15ee13f9385044a}{HTTP2\_CANCEL}}\ =\ 0x8,\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00266\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a18aad6cf9299f0c586e34470f91ad54b}{HTTP2\_COMPRESSION\_ERROR}}\ =\ 0x9,\ \ \ }
+\DoxyCodeLine{00267\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9aa1e6461cadd786960db3c57644d6bfe8}{HTTP2\_CONNECT\_ERROR}}\ =\ 0xa,\ \ \ \ \ \ \ }
+\DoxyCodeLine{00268\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9ad241898d450e04e101a411e8bfdb6c95}{HTTP2\_ENHANCE\_YOUR\_CALM}}\ =\ 0xb,\ \ \ }
+\DoxyCodeLine{00269\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9a775b0e49c491ebe333f7e9a3a8d764ef}{HTTP2\_INADEQUATE\_SECURITY}}\ =\ 0xc,\ }
+\DoxyCodeLine{00270\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9aa0e39cae17fa95dbdaa49000f021ad13}{HTTP2\_HTTP\_1\_1\_REQUIRED}}\ =\ 0xd\ \ \ \ }
+\DoxyCodeLine{00271\ \}\ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{SocketHTTP2\_ErrorCode}};}
+\DoxyCodeLine{00272\ }
+\DoxyCodeLine{00273\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00274\ \textcolor{comment}{\ *\ Settings\ Identifiers\ (RFC\ 9113\ Section\ 6.5.2)}}
+\DoxyCodeLine{00275\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00276\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00277\ }
+\DoxyCodeLine{00281\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00282\ \{}
+\DoxyCodeLine{00283\ \ \ HTTP2\_SETTINGS\_HEADER\_TABLE\_SIZE\ =\ 0x1,}
+\DoxyCodeLine{00284\ \ \ HTTP2\_SETTINGS\_ENABLE\_PUSH\ =\ 0x2,}
+\DoxyCodeLine{00285\ \ \ HTTP2\_SETTINGS\_MAX\_CONCURRENT\_STREAMS\ =\ 0x3,}
+\DoxyCodeLine{00286\ \ \ HTTP2\_SETTINGS\_INITIAL\_WINDOW\_SIZE\ =\ 0x4,}
+\DoxyCodeLine{00287\ \ \ HTTP2\_SETTINGS\_MAX\_FRAME\_SIZE\ =\ 0x5,}
+\DoxyCodeLine{00288\ \ \ HTTP2\_SETTINGS\_MAX\_HEADER\_LIST\_SIZE\ =\ 0x6}
+\DoxyCodeLine{00289\ \}\ \mbox{\hyperlink{SocketHTTP2_8h_a4040b0e6d05a8901e50c497254a8176d}{SocketHTTP2\_SettingsId}};}
+\DoxyCodeLine{00290\ }
+\DoxyCodeLine{00292\ \textcolor{preprocessor}{\#define\ HTTP2\_SETTINGS\_COUNT\ 6}}
+\DoxyCodeLine{00293\ }
+\DoxyCodeLine{00294\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00295\ \textcolor{comment}{\ *\ Stream\ States\ (RFC\ 9113\ Section\ 5.1)}}
+\DoxyCodeLine{00296\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00297\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00298\ }
+\DoxyCodeLine{00302\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00303\ \{}
+\DoxyCodeLine{00304\ \ \ HTTP2\_STREAM\_STATE\_IDLE\ =\ 0,}
+\DoxyCodeLine{00305\ \ \ HTTP2\_STREAM\_STATE\_RESERVED\_LOCAL,}
+\DoxyCodeLine{00306\ \ \ HTTP2\_STREAM\_STATE\_RESERVED\_REMOTE,}
+\DoxyCodeLine{00307\ \ \ HTTP2\_STREAM\_STATE\_OPEN,}
+\DoxyCodeLine{00308\ \ \ HTTP2\_STREAM\_STATE\_HALF\_CLOSED\_LOCAL,}
+\DoxyCodeLine{00309\ \ \ HTTP2\_STREAM\_STATE\_HALF\_CLOSED\_REMOTE,}
+\DoxyCodeLine{00310\ \ \ HTTP2\_STREAM\_STATE\_CLOSED}
+\DoxyCodeLine{00311\ \}\ \mbox{\hyperlink{SocketHTTP2_8h_a6a90f4be9250fb7b967b5deefc0df5dc}{SocketHTTP2\_StreamState}};}
+\DoxyCodeLine{00312\ }
+\DoxyCodeLine{00313\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00314\ \textcolor{comment}{\ *\ Frame\ Header}}
+\DoxyCodeLine{00315\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00316\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00317\ }
+\DoxyCodeLine{00321\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00322\ \{}
+\DoxyCodeLine{00323\ \ \ uint32\_t\ length;\ \ \ \ }
+\DoxyCodeLine{00324\ \ \ uint8\_t\ type;\ \ \ \ \ \ \ }
+\DoxyCodeLine{00325\ \ \ uint8\_t\ flags;\ \ \ \ \ \ }
+\DoxyCodeLine{00326\ \ \ uint32\_t\ stream\_id;\ }
+\DoxyCodeLine{00327\ \}\ \mbox{\hyperlink{structSocketHTTP2__FrameHeader}{SocketHTTP2\_FrameHeader}};}
+\DoxyCodeLine{00328\ }
+\DoxyCodeLine{00329\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00330\ \textcolor{comment}{\ *\ Connection\ Role}}
+\DoxyCodeLine{00331\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00332\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00333\ }
+\DoxyCodeLine{00337\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00338\ \{}
+\DoxyCodeLine{00339\ \ \ HTTP2\_ROLE\_CLIENT,}
+\DoxyCodeLine{00340\ \ \ HTTP2\_ROLE\_SERVER}
+\DoxyCodeLine{00341\ \}\ \mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{SocketHTTP2\_Role}};}
+\DoxyCodeLine{00342\ }
+\DoxyCodeLine{00343\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00344\ \textcolor{comment}{\ *\ Connection\ Configuration}}
+\DoxyCodeLine{00345\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00346\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00347\ }
+\DoxyCodeLine{00351\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00352\ \{}
+\DoxyCodeLine{00353\ \ \ \mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{SocketHTTP2\_Role}}\ role;}
+\DoxyCodeLine{00354\ }
+\DoxyCodeLine{00355\ \ \ \textcolor{comment}{/*\ Local\ settings\ (we\ send\ to\ peer)\ */}}
+\DoxyCodeLine{00356\ \ \ uint32\_t\ header\_table\_size;}
+\DoxyCodeLine{00357\ \ \ uint32\_t\ enable\_push;}
+\DoxyCodeLine{00358\ \ \ uint32\_t\ max\_concurrent\_streams;\ }
+\DoxyCodeLine{00360\ \ \ uint32\_t\ max\_stream\_open\_rate;\ \ \ }
+\DoxyCodeLine{00362\ \ \ uint32\_t\ max\_stream\_open\_burst;\ \ }
+\DoxyCodeLine{00363\ \ \ uint32\_t\ max\_stream\_close\_rate;\ \ }
+\DoxyCodeLine{00364\ \ \ uint32\_t\ max\_stream\_close\_burst;\ }
+\DoxyCodeLine{00365\ \ \ uint32\_t\ initial\_window\_size;}
+\DoxyCodeLine{00366\ \ \ uint32\_t\ max\_frame\_size;}
+\DoxyCodeLine{00367\ \ \ uint32\_t\ max\_header\_list\_size;}
+\DoxyCodeLine{00368\ }
+\DoxyCodeLine{00369\ \ \ \textcolor{comment}{/*\ Connection-\/level\ flow\ control\ */}}
+\DoxyCodeLine{00370\ \ \ uint32\_t\ connection\_window\_size;}
+\DoxyCodeLine{00371\ }
+\DoxyCodeLine{00372\ \ \ \textcolor{comment}{/*\ Timeouts\ (milliseconds)\ */}}
+\DoxyCodeLine{00373\ \ \ \textcolor{keywordtype}{int}\ settings\_timeout\_ms;}
+\DoxyCodeLine{00374\ \ \ \textcolor{keywordtype}{int}\ ping\_timeout\_ms;}
+\DoxyCodeLine{00375\ \ \ \textcolor{keywordtype}{int}\ idle\_timeout\_ms;}
+\DoxyCodeLine{00376\ \}\ \mbox{\hyperlink{structSocketHTTP2__Config}{SocketHTTP2\_Config}};}
+\DoxyCodeLine{00377\ }
+\DoxyCodeLine{00378\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00379\ \textcolor{comment}{\ *\ Opaque\ Types}}
+\DoxyCodeLine{00380\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00381\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00382\ }
+\DoxyCodeLine{00387\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn}}\ *\mbox{\hyperlink{group__http_ga71710b60048bb252c74115f947f14e6a}{SocketHTTP2\_Conn\_T}};}
+\DoxyCodeLine{00388\ }
+\DoxyCodeLine{00393\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream}}\ *\mbox{\hyperlink{group__http_gaae451408b4b91d69d78281b872773000}{SocketHTTP2\_Stream\_T}};}
+\DoxyCodeLine{00394\ }
+\DoxyCodeLine{00395\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00396\ \textcolor{comment}{\ *\ Setting\ Entry\ (for\ SETTINGS\ frame)}}
+\DoxyCodeLine{00397\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00398\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00399\ }
+\DoxyCodeLine{00403\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00404\ \{}
+\DoxyCodeLine{00405\ \ \ uint16\_t\ \mbox{\hyperlink{structSocketHTTP2__Stream_a2304a281c92e318fbab5e5ed94ce2f9c}{id}};}
+\DoxyCodeLine{00406\ \ \ uint32\_t\ value;}
+\DoxyCodeLine{00407\ \}\ \mbox{\hyperlink{structSocketHTTP2__Setting}{SocketHTTP2\_Setting}};}
+\DoxyCodeLine{00408\ }
+\DoxyCodeLine{00409\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00410\ \textcolor{comment}{\ *\ Configuration\ Functions}}
+\DoxyCodeLine{00411\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00412\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00413\ }
+\DoxyCodeLine{00421\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_gaf25e213512222a83030da6049be7c659}{SocketHTTP2\_config\_defaults}}\ (\mbox{\hyperlink{structSocketHTTP2__Config}{SocketHTTP2\_Config}}\ *config,}
+\DoxyCodeLine{00422\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{SocketHTTP2\_Role}}\ role);}
+\DoxyCodeLine{00423\ }
+\DoxyCodeLine{00424\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00425\ \textcolor{comment}{\ *\ Connection\ Lifecycle}}
+\DoxyCodeLine{00426\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00427\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00428\ }
+\DoxyCodeLine{00440\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}}
+\DoxyCodeLine{00441\ \mbox{\hyperlink{group__http_gaac497f685932335cce6c3868243edf3c}{SocketHTTP2\_Conn\_new}}\ (Socket\_T\ socket,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP2__Config}{SocketHTTP2\_Config}}\ *config,}
+\DoxyCodeLine{00442\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Arena\_T\ arena);}
+\DoxyCodeLine{00443\ }
+\DoxyCodeLine{00451\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_ga13128ca7c1208a2a4694ea9926e2ff20}{SocketHTTP2\_Conn\_free}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00452\ }
+\DoxyCodeLine{00464\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga3d2680dfe3afbbf9c6e9f09dad9f91d0}{SocketHTTP2\_Conn\_handshake}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00465\ }
+\DoxyCodeLine{00478\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gaecd0eb2455f15e9c9cea360331dcff5b}{SocketHTTP2\_Conn\_process}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},\ \textcolor{keywordtype}{unsigned}\ events);}
+\DoxyCodeLine{00479\ }
+\DoxyCodeLine{00488\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga667e2c409b1c71f702559904a823c6af}{SocketHTTP2\_Conn\_flush}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00489\ }
+\DoxyCodeLine{00498\ \textcolor{keyword}{extern}\ Socket\_T\ \mbox{\hyperlink{group__http_gab805b04d372fb6fdc75a5495d2cde2b2}{SocketHTTP2\_Conn\_socket}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00499\ }
+\DoxyCodeLine{00508\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gafa8022932a5b7a53fcc7f27a4aa0bf8a}{SocketHTTP2\_Conn\_is\_closed}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00509\ }
+\DoxyCodeLine{00518\ \textcolor{keyword}{extern}\ Arena\_T\ \mbox{\hyperlink{group__http_ga12d9e2a8985ca9063c60842fcde83980}{SocketHTTP2\_Conn\_arena}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00519\ }
+\DoxyCodeLine{00520\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00521\ \textcolor{comment}{\ *\ Connection\ Control}}
+\DoxyCodeLine{00522\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00523\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00524\ }
+\DoxyCodeLine{00535\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gae0eb32c4b96fbf53f984c778859ca7c3}{SocketHTTP2\_Conn\_settings}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00536\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP2__Setting}{SocketHTTP2\_Setting}}\ *settings,}
+\DoxyCodeLine{00537\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ count);}
+\DoxyCodeLine{00538\ }
+\DoxyCodeLine{00548\ \textcolor{keyword}{extern}\ uint32\_t\ \mbox{\hyperlink{group__http_ga4e07a686761551bf19c8fb513feb0103}{SocketHTTP2\_Conn\_get\_setting}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00549\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a4040b0e6d05a8901e50c497254a8176d}{SocketHTTP2\_SettingsId}}\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00550\ }
+\DoxyCodeLine{00560\ \textcolor{keyword}{extern}\ uint32\_t\ \mbox{\hyperlink{group__http_gad7e3dd8d7d156d66f0e7a020ecdb75d4}{SocketHTTP2\_Conn\_get\_local\_setting}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00561\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a4040b0e6d05a8901e50c497254a8176d}{SocketHTTP2\_SettingsId}}\ \textcolor{keywordtype}{id});}
+\DoxyCodeLine{00562\ }
+\DoxyCodeLine{00572\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga6af782386d1634eb1a7fe105b82938cf}{SocketHTTP2\_Conn\_ping}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00573\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ opaque[8]);}
+\DoxyCodeLine{00574\ }
+\DoxyCodeLine{00588\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga572c83da10b0028e5c8eba35daad06d5}{SocketHTTP2\_Conn\_goaway}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00589\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{SocketHTTP2\_ErrorCode}}\ error\_code,}
+\DoxyCodeLine{00590\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{void}\ *debug\_data,\ \textcolor{keywordtype}{size\_t}\ debug\_len);}
+\DoxyCodeLine{00591\ }
+\DoxyCodeLine{00600\ \textcolor{keyword}{extern}\ uint32\_t\ \mbox{\hyperlink{group__http_ga8b438032a990cdc059ec3afcf002a501}{SocketHTTP2\_Conn\_last\_stream\_id}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00601\ }
+\DoxyCodeLine{00602\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00603\ \textcolor{comment}{\ *\ Connection\ Flow\ Control}}
+\DoxyCodeLine{00604\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00605\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00606\ }
+\DoxyCodeLine{00616\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga2a0c736743250c55dbcdbea743774447}{SocketHTTP2\_Conn\_window\_update}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00617\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint32\_t\ increment);}
+\DoxyCodeLine{00618\ }
+\DoxyCodeLine{00627\ \textcolor{keyword}{extern}\ int32\_t\ \mbox{\hyperlink{group__http_ga7d6946f3ae6907c3e2207cd87f7c84f0}{SocketHTTP2\_Conn\_send\_window}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00628\ }
+\DoxyCodeLine{00637\ \textcolor{keyword}{extern}\ int32\_t\ \mbox{\hyperlink{group__http_ga835634eb0dbb8316097e755768956306}{SocketHTTP2\_Conn\_recv\_window}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00638\ }
+\DoxyCodeLine{00639\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00640\ \textcolor{comment}{\ *\ Stream\ Management}}
+\DoxyCodeLine{00641\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00642\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00643\ }
+\DoxyCodeLine{00655\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ \mbox{\hyperlink{group__http_ga5b78067e17aeddcd3b61748033c9e871}{SocketHTTP2\_Stream\_new}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}});}
+\DoxyCodeLine{00656\ }
+\DoxyCodeLine{00665\ \textcolor{keyword}{extern}\ uint32\_t\ \mbox{\hyperlink{group__http_gaddacfb14fd837b4dda70a77339cd3e30}{SocketHTTP2\_Stream\_id}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream);}
+\DoxyCodeLine{00666\ }
+\DoxyCodeLine{00675\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP2_8h_a6a90f4be9250fb7b967b5deefc0df5dc}{SocketHTTP2\_StreamState}}}
+\DoxyCodeLine{00676\ \mbox{\hyperlink{group__http_ga769baab55e16f038f085a579eac6aab3}{SocketHTTP2\_Stream\_state}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream);}
+\DoxyCodeLine{00677\ }
+\DoxyCodeLine{00685\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_ga5a81c4cf3cbde03b2b22b763e50d8d17}{SocketHTTP2\_Stream\_close}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00686\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{SocketHTTP2\_ErrorCode}}\ error\_code);}
+\DoxyCodeLine{00687\ }
+\DoxyCodeLine{00695\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ *\mbox{\hyperlink{group__http_gaa270fdaf04a54c3d7bf5a795aa00481f}{SocketHTTP2\_Stream\_get\_userdata}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream);}
+\DoxyCodeLine{00696\ }
+\DoxyCodeLine{00704\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_ga176621579ec7edc82efdaf6e96ef70e3}{SocketHTTP2\_Stream\_set\_userdata}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00705\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00706\ }
+\DoxyCodeLine{00707\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00708\ \textcolor{comment}{\ *\ Sending\ (Client/Server)}}
+\DoxyCodeLine{00709\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00710\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00711\ }
+\DoxyCodeLine{00728\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gab70f7e768dd89aca7fd859aae33c74a1}{SocketHTTP2\_Stream\_send\_headers}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00729\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHPACK__Header}{SocketHPACK\_Header}}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_ac2af9dff31aba5417433484193321f19}{headers}},}
+\DoxyCodeLine{00730\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP2__Stream_acb8cf27f8ee544e395cea707894ce323}{header\_count}},}
+\DoxyCodeLine{00731\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_stream);}
+\DoxyCodeLine{00732\ }
+\DoxyCodeLine{00743\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gade9cdeda99348242667dfe65e4c1f054}{SocketHTTP2\_Stream\_send\_request}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00744\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Request}{SocketHTTP\_Request}}\ *request,}
+\DoxyCodeLine{00745\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_stream);}
+\DoxyCodeLine{00746\ }
+\DoxyCodeLine{00757\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}}
+\DoxyCodeLine{00758\ \mbox{\hyperlink{group__http_ga553a90f9d384e7ac9667e03d146a873b}{SocketHTTP2\_Stream\_send\_response}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00759\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Response}{SocketHTTP\_Response}}\ *response,}
+\DoxyCodeLine{00760\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_stream);}
+\DoxyCodeLine{00761\ }
+\DoxyCodeLine{00773\ \textcolor{keyword}{extern}\ ssize\_t\ \mbox{\hyperlink{group__http_ga1daa1717c92531030eef02f38035103b}{SocketHTTP2\_Stream\_send\_data}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00774\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{void}\ *data,\ \textcolor{keywordtype}{size\_t}\ len,}
+\DoxyCodeLine{00775\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ end\_stream);}
+\DoxyCodeLine{00776\ }
+\DoxyCodeLine{00787\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}}
+\DoxyCodeLine{00788\ \mbox{\hyperlink{group__http_ga3655b8f926656c6307e7db0377908e23}{SocketHTTP2\_Stream\_send\_trailers}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00789\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHPACK__Header}{SocketHPACK\_Header}}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_a410c1d307dce703979a0cdeebc4badb2}{trailers}},}
+\DoxyCodeLine{00790\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ count);}
+\DoxyCodeLine{00791\ }
+\DoxyCodeLine{00792\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00793\ \textcolor{comment}{\ *\ Receiving}}
+\DoxyCodeLine{00794\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00795\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00796\ }
+\DoxyCodeLine{00809\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gae764cf10037efdba2b3aabc30f47c034}{SocketHTTP2\_Stream\_recv\_headers}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00810\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHPACK__Header}{SocketHPACK\_Header}}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_ac2af9dff31aba5417433484193321f19}{headers}},}
+\DoxyCodeLine{00811\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ max\_headers,}
+\DoxyCodeLine{00812\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_acb8cf27f8ee544e395cea707894ce323}{header\_count}},}
+\DoxyCodeLine{00813\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ *end\_stream);}
+\DoxyCodeLine{00814\ }
+\DoxyCodeLine{00826\ \textcolor{keyword}{extern}\ ssize\_t\ \mbox{\hyperlink{group__http_ga2af1317d69ebb7fcebdf0a916a6f0676}{SocketHTTP2\_Stream\_recv\_data}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00827\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ *buf,\ \textcolor{keywordtype}{size\_t}\ len,}
+\DoxyCodeLine{00828\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ *end\_stream);}
+\DoxyCodeLine{00829\ }
+\DoxyCodeLine{00841\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gaac66e768242c701bf092296fa1dd2e19}{SocketHTTP2\_Stream\_recv\_trailers}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00842\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHPACK__Header}{SocketHPACK\_Header}}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_a410c1d307dce703979a0cdeebc4badb2}{trailers}},}
+\DoxyCodeLine{00843\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ max\_trailers,}
+\DoxyCodeLine{00844\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ *\mbox{\hyperlink{structSocketHTTP2__Stream_a14e085fb67ff6888f03986bee8c4bf55}{trailer\_count}});}
+\DoxyCodeLine{00845\ }
+\DoxyCodeLine{00846\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00847\ \textcolor{comment}{\ *\ Stream\ Flow\ Control}}
+\DoxyCodeLine{00848\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00849\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00850\ }
+\DoxyCodeLine{00860\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gac6a15b2e7183cb4408510bac49674c36}{SocketHTTP2\_Stream\_window\_update}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00861\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ uint32\_t\ increment);}
+\DoxyCodeLine{00862\ }
+\DoxyCodeLine{00871\ \textcolor{keyword}{extern}\ int32\_t\ \mbox{\hyperlink{group__http_gafc20f969c971accab7bad1b1a8540581}{SocketHTTP2\_Stream\_send\_window}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream);}
+\DoxyCodeLine{00872\ }
+\DoxyCodeLine{00881\ \textcolor{keyword}{extern}\ int32\_t\ \mbox{\hyperlink{group__http_ga5dd00b82918a7db53168cb45e351705a}{SocketHTTP2\_Stream\_recv\_window}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream);}
+\DoxyCodeLine{00882\ }
+\DoxyCodeLine{00883\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00884\ \textcolor{comment}{\ *\ Server\ Push\ (RFC\ 9113\ Section\ 8.4)}}
+\DoxyCodeLine{00885\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00886\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00887\ }
+\DoxyCodeLine{00898\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}}
+\DoxyCodeLine{00899\ \mbox{\hyperlink{group__http_ga7d284dfe8264dcc527215e2231d25e1d}{SocketHTTP2\_Stream\_push\_promise}}\ (\mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00900\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHPACK__Header}{SocketHPACK\_Header}}\ *request\_headers,}
+\DoxyCodeLine{00901\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP2__Stream_acb8cf27f8ee544e395cea707894ce323}{header\_count}});}
+\DoxyCodeLine{00902\ }
+\DoxyCodeLine{00903\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00904\ \textcolor{comment}{\ *\ Callbacks}}
+\DoxyCodeLine{00905\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00906\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00907\ }
+\DoxyCodeLine{00909\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_STREAM\_START\ 1\ \ \ \ \ \ }}
+\DoxyCodeLine{00910\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_HEADERS\_RECEIVED\ 2\ \ }}
+\DoxyCodeLine{00911\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_DATA\_RECEIVED\ 3\ \ \ \ \ }}
+\DoxyCodeLine{00912\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_TRAILERS\_RECEIVED\ 4\ }}
+\DoxyCodeLine{00913\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_STREAM\_END\ 5\ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00914\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_STREAM\_RESET\ 6\ \ \ \ \ \ }}
+\DoxyCodeLine{00915\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_PUSH\_PROMISE\ 7\ \ \ \ \ \ }}
+\DoxyCodeLine{00916\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_WINDOW\_UPDATE\ 8\ \ \ \ \ }}
+\DoxyCodeLine{00921\ \textcolor{keyword}{typedef}\ void\ (*\mbox{\hyperlink{SocketHTTP2_8h_a990cec8dae4a5eb79e28e30039038a98}{SocketHTTP2\_StreamCallback}})\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00922\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP2__Stream}{SocketHTTP2\_Stream\_T}}\ stream,}
+\DoxyCodeLine{00923\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ event,\ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00924\ }
+\DoxyCodeLine{00934\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}}
+\DoxyCodeLine{00935\ \mbox{\hyperlink{group__http_ga93ddae7c32f498ea89e5d089b10e7080}{SocketHTTP2\_Conn\_set\_stream\_callback}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00936\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a990cec8dae4a5eb79e28e30039038a98}{SocketHTTP2\_StreamCallback}}\ callback,}
+\DoxyCodeLine{00937\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00938\ }
+\DoxyCodeLine{00940\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_SETTINGS\_ACK\ 20\ \ \ \ \ }}
+\DoxyCodeLine{00941\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_PING\_ACK\ 21\ \ \ \ \ \ \ \ \ }}
+\DoxyCodeLine{00942\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_GOAWAY\_RECEIVED\ 22\ \ }}
+\DoxyCodeLine{00943\ \textcolor{preprocessor}{\#define\ HTTP2\_EVENT\_CONNECTION\_ERROR\ 23\ }}
+\DoxyCodeLine{00948\ \textcolor{keyword}{typedef}\ void\ (*\mbox{\hyperlink{SocketHTTP2_8h_a82daab7aba48e58f206a541e11b63bb2}{SocketHTTP2\_ConnCallback}})\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},\ \textcolor{keywordtype}{int}\ event,}
+\DoxyCodeLine{00949\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00950\ }
+\DoxyCodeLine{00960\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}}
+\DoxyCodeLine{00961\ \mbox{\hyperlink{group__http_ga86560d058cbae3ae5fd5b3964c308d84}{SocketHTTP2\_Conn\_set\_conn\_callback}}\ (\mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_a843d469bf9cb83836e4d3442a98c7274}{conn}},}
+\DoxyCodeLine{00962\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTP2_8h_a82daab7aba48e58f206a541e11b63bb2}{SocketHTTP2\_ConnCallback}}\ callback,}
+\DoxyCodeLine{00963\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00964\ }
+\DoxyCodeLine{00965\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00966\ \textcolor{comment}{\ *\ h2c\ Upgrade\ (Cleartext\ HTTP/2)}}
+\DoxyCodeLine{00967\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00968\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00969\ }
+\DoxyCodeLine{00981\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}}
+\DoxyCodeLine{00982\ \mbox{\hyperlink{group__http_gacee40a42125d8297c8537a4e5fd995d1}{SocketHTTP2\_Conn\_upgrade\_client}}\ (Socket\_T\ socket,}
+\DoxyCodeLine{00983\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *settings\_payload,}
+\DoxyCodeLine{00984\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ settings\_len,\ Arena\_T\ arena);}
+\DoxyCodeLine{00985\ }
+\DoxyCodeLine{00998\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ \mbox{\hyperlink{group__http_ga5d0f7810c2a14c2a3afb5bfcd1f0ff88}{SocketHTTP2\_Conn\_upgrade\_server}}\ (}
+\DoxyCodeLine{00999\ \ \ \ \ Socket\_T\ socket,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Request}{SocketHTTP\_Request}}\ *initial\_request,}
+\DoxyCodeLine{01000\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *settings\_payload,\ \textcolor{keywordtype}{size\_t}\ settings\_len,\ Arena\_T\ arena);}
+\DoxyCodeLine{01001\ }
+\DoxyCodeLine{01002\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{01003\ \textcolor{comment}{\ *\ Utility\ Functions}}
+\DoxyCodeLine{01004\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{01005\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{01006\ }
+\DoxyCodeLine{01014\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{group__http_gaa7c75e897126298258fbde690c8baaa5}{SocketHTTP2\_error\_string}}\ (\mbox{\hyperlink{SocketHTTP2_8h_a0dae3fde0d9081ed887d2476442f6ee9}{SocketHTTP2\_ErrorCode}}\ code);}
+\DoxyCodeLine{01015\ }
+\DoxyCodeLine{01024\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{group__http_ga57e81dab63e8dd6a94d9c2366b2cad61}{SocketHTTP2\_frame\_type\_string}}\ (\mbox{\hyperlink{SocketHTTP2_8h_aeb74330a70e149eb7b10547a6b83fa0a}{SocketHTTP2\_FrameType}}\ type);}
+\DoxyCodeLine{01025\ }
+\DoxyCodeLine{01034\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *}
+\DoxyCodeLine{01035\ \mbox{\hyperlink{group__http_ga1972e0a26eb71569d6d561bae3a85da8}{SocketHTTP2\_stream\_state\_string}}\ (\mbox{\hyperlink{SocketHTTP2_8h_a6a90f4be9250fb7b967b5deefc0df5dc}{SocketHTTP2\_StreamState}}\ \mbox{\hyperlink{structSocketHTTP2__Stream_af7064871a0c1959b4bcc445e7ad64fd7}{state}});}
+\DoxyCodeLine{01036\ }
+\DoxyCodeLine{01037\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{01038\ \textcolor{comment}{\ *\ Frame\ Parsing\ (Low-\/level\ API)}}
+\DoxyCodeLine{01039\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{01040\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{01041\ }
+\DoxyCodeLine{01057\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga439a2fd76b902c7218ea92c9cfd2a9c3}{SocketHTTP2\_frame\_header\_parse}}\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *data,}
+\DoxyCodeLine{01058\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ input\_len,}
+\DoxyCodeLine{01059\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP2__FrameHeader}{SocketHTTP2\_FrameHeader}}\ *header);}
+\DoxyCodeLine{01060\ }
+\DoxyCodeLine{01069\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}}
+\DoxyCodeLine{01070\ \mbox{\hyperlink{group__http_gaf41a82ae4777a86f95990cdaeff20900}{SocketHTTP2\_frame\_header\_serialize}}\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP2__FrameHeader}{SocketHTTP2\_FrameHeader}}\ *header,}
+\DoxyCodeLine{01071\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *data);}
+\DoxyCodeLine{01072\ }
+\DoxyCodeLine{01073\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTP2\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

@@ -1,5 +1,5 @@
 <map id="SocketTimer_heap_T" name="SocketTimer_heap_T">
-<area shape="rect" id="Node000001" title="Typedef for the internal timer heap structure." alt="" coords="5,93,152,119"/>
-<area shape="rect" id="Node000002" href="$SocketTimer-private_8h.html#structSocketTimer__T" title=" " alt="" coords="23,5,134,31"/>
+<area shape="rect" id="Node000001" title="Binary min&#45;heap container for managing multiple SocketTimer_T instances." alt="" coords="5,93,152,119"/>
+<area shape="rect" id="Node000002" href="$group__event__system.html#structSocketTimer__T" title="Internal representation of a single scheduled timer event." alt="" coords="23,5,134,31"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="81,45,81,93,76,93,76,45"/>
 </map>

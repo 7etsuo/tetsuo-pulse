@@ -1,4 +1,6 @@
 <map id="SocketSYN_IPEntry" name="SocketSYN_IPEntry">
-<area shape="rect" id="Node000001" title="Internal IP tracking entry for hash table and LRU management." alt="" coords="5,15,148,40"/>
-<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="163,21,175,28,149,34,148,29,169,27,161,27"/>
+<area shape="rect" id="Node000001" title="Internal IP tracking entry for hash table and LRU management." alt="" coords="5,103,148,128"/>
+<area shape="poly" id="edge2_Node000001_Node000001" title=" " alt="" coords="162,105,171,109,175,116,167,124,149,128,148,122,164,119,169,115,167,113,160,110"/>
+<area shape="rect" id="Node000002" href="$group__security.html#structSocketSYN__IPState" title="Per&#45;IP address tracking and reputation state." alt="" coords="5,5,148,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,44,79,102,74,102,74,44"/>
 </map>

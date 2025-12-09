@@ -18,7 +18,8 @@
  *   ./example_proxy_connect socks5://localhost:1080 example.com 80
  *
  *   # SOCKS5 proxy with authentication
- *   ./example_proxy_connect socks5://user:pass@proxy.example.com:1080 example.com 443
+ *   ./example_proxy_connect socks5://user:pass@proxy.example.com:1080
+ * example.com 443
  *
  *   # HTTP CONNECT proxy
  *   ./example_proxy_connect http://proxy.example.com:8080 example.com 443
@@ -195,7 +196,8 @@ main (int argc, char **argv)
         printf ("SUCCESS: Tunnel established!\n\n");
 
         /* Demonstrate the connection is working */
-        printf ("Connected to %s:%d through proxy\n", target_host, target_port);
+        printf ("Connected to %s:%d through proxy\n", target_host,
+                target_port);
         printf ("Socket fd: %d\n", Socket_fd (sock));
         printf ("Local address: %s:%d\n", Socket_getlocaladdr (sock),
                 Socket_getlocalport (sock));
@@ -248,8 +250,8 @@ main (int argc, char **argv)
             SocketTLSContext_free (&tls_ctx);
 #else
             printf ("\nTarget port is 443 but TLS support not compiled in.\n");
-            printf (
-                "Compile with -DENABLE_TLS=ON for HTTPS over proxy support.\n");
+            printf ("Compile with -DENABLE_TLS=ON for HTTPS over proxy "
+                    "support.\n");
 #endif
           }
         else
@@ -311,4 +313,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

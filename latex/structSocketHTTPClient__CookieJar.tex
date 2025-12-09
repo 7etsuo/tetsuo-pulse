@@ -1,0 +1,55 @@
+\doxysection{Socket\+HTTPClient\+\_\+\+Cookie\+Jar Struct Reference}
+\hypertarget{structSocketHTTPClient__CookieJar}{}\label{structSocketHTTPClient__CookieJar}\index{SocketHTTPClient\_CookieJar@{SocketHTTPClient\_CookieJar}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient-\/private.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=230pt]{structSocketHTTPClient__CookieJar__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_ab13d27d5be3fe59dd889d16dccdd26c7}\label{structSocketHTTPClient__CookieJar_ab13d27d5be3fe59dd889d16dccdd26c7} 
+\mbox{\hyperlink{structCookieEntry}{Cookie\+Entry}} \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} {\bfseries hash\+\_\+table}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_a24e94a17451d98396a704d23b0e5bbde}\label{structSocketHTTPClient__CookieJar_a24e94a17451d98396a704d23b0e5bbde} 
+size\+\_\+t {\bfseries hash\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_ae97075e236de2375ce5501b5c3e94934}\label{structSocketHTTPClient__CookieJar_ae97075e236de2375ce5501b5c3e94934} 
+size\+\_\+t {\bfseries count}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_abf1b3b30bb13fbfeb512d590d5ff076c}\label{structSocketHTTPClient__CookieJar_abf1b3b30bb13fbfeb512d590d5ff076c} 
+size\+\_\+t {\bfseries max\+\_\+cookies}
+\item 
+unsigned \mbox{\hyperlink{structSocketHTTPClient__CookieJar_a4f1c591a54c3361862f956dc6721b7a9}{hash\+\_\+seed}}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_af95bbb204ab88b924b75a939e7079308}\label{structSocketHTTPClient__CookieJar_af95bbb204ab88b924b75a939e7079308} 
+Arena\+\_\+T {\bfseries arena}
+\item 
+\Hypertarget{structSocketHTTPClient__CookieJar_a109c89c76327b7663c8f1e2cede8cb62}\label{structSocketHTTPClient__CookieJar_a109c89c76327b7663c8f1e2cede8cb62} 
+pthread\+\_\+mutex\+\_\+t {\bfseries mutex}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Cookie jar structure 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPClient__CookieJar_a4f1c591a54c3361862f956dc6721b7a9}\label{structSocketHTTPClient__CookieJar_a4f1c591a54c3361862f956dc6721b7a9} 
+\index{SocketHTTPClient\_CookieJar@{SocketHTTPClient\_CookieJar}!hash\_seed@{hash\_seed}}
+\index{hash\_seed@{hash\_seed}!SocketHTTPClient\_CookieJar@{SocketHTTPClient\_CookieJar}}
+\doxysubsubsection{\texorpdfstring{hash\_seed}{hash\_seed}}
+{\footnotesize\ttfamily unsigned Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+::hash\+\_\+seed}
+
+Random seed for hash collision resistance 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient-private_8h}{Socket\+HTTPClient-\/private.\+h}}\end{DoxyCompactItemize}

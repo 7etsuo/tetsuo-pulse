@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="group__http.html#structHPACK__DynamicEntry" target="_top" xlink:title="Entry in the HPACK dynamic table storing a header field name&#45;value pair.">
+<g id="a_Node000002"><a xlink:href="group__hpack__private.html#structHPACK__DynamicEntry" target="_top" xlink:title="Entry in the HPACK dynamic table storing a header field name&#45;value pair.">
 <polygon fill="white" stroke="#666666" points="119.5,-85 1.5,-85 1.5,-66 119.5,-66 119.5,-85"/>
 <text text-anchor="middle" x="60.5" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">HPACK_DynamicEntry</text>
 </a>

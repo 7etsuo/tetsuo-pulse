@@ -1,5 +1,5 @@
 <map id="SocketTimer&#45;private.h" name="SocketTimer&#45;private.h">
-<area shape="rect" id="Node000001" title="Internal timer implementation details and heap management." alt="" coords="5,5,156,31"/>
-<area shape="rect" id="Node000002" href="$SocketPoll-private_8h.html" title="Internal implementation details for SocketPoll module." alt="" coords="11,79,150,104"/>
+<area shape="rect" id="Node000001" title="Internal implementation details for the high&#45;performance SocketTimer module." alt="" coords="5,5,156,31"/>
+<area shape="rect" id="Node000002" href="$SocketPoll-private_8h.html" title=" " alt="" coords="11,79,150,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,44,83,79,78,79,78,44"/>
 </map>

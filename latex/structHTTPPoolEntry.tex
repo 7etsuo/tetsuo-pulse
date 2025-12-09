@@ -1,0 +1,149 @@
+\doxysection{HTTPPool\+Entry Struct Reference}
+\hypertarget{structHTTPPoolEntry}{}\label{structHTTPPoolEntry}\index{HTTPPoolEntry@{HTTPPoolEntry}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient-\/private.\+h$>$}
+
+
+
+Collaboration diagram for HTTPPool\+Entry\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{structHTTPPoolEntry__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPoolEntry_aa6d4279116d6227d6271d1e31a959516}{host}}
+\item 
+int \mbox{\hyperlink{structHTTPPoolEntry_acf0f6ed48d328591d5d1caf988d05ef0}{port}}
+\item 
+int \mbox{\hyperlink{structHTTPPoolEntry_a69aedeb10418ebe293f847cb3edc93fc}{is\+\_\+secure}}
+\item 
+\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} \mbox{\hyperlink{structHTTPPoolEntry_a8d065c98c445e3256a490a6eb71d9e27}{version}}
+\item 
+\Hypertarget{structHTTPPoolEntry_a9344f18d70b4adfe62a1bf7011924505}\label{structHTTPPoolEntry_a9344f18d70b4adfe62a1bf7011924505} 
+\begin{tabbing}
+xx\=xx\=xx\=xx\=xx\=xx\=xx\=xx\=xx\=\kill
+union \{\\
+\>struct \{\\
+\>\>Socket\_T {\bfseries socket}\\
+\>\>\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{SocketHTTP1\_Parser\_T}} {\bfseries parser}\\
+\>\>SocketBuf\_T {\bfseries inbuf}\\
+\>\>SocketBuf\_T {\bfseries outbuf}\\
+\>\>Arena\_T \mbox{\hyperlink{structHTTPPoolEntry_a4ada73a8109f8ec9a5ec7eb4a255a3c9}{conn\_arena}}\\
+\>\} {\bfseries h1}\\
+\>struct \{\\
+\>\>\mbox{\hyperlink{group__http_ga71710b60048bb252c74115f947f14e6a}{SocketHTTP2\_Conn\_T}} {\bfseries conn}\\
+\>\>int \mbox{\hyperlink{structHTTPPoolEntry_a79159a493723b72c04ab94380394a5ff}{active\_streams}}\\
+\>\} {\bfseries h2}\\
+\} {\bfseries proto}\\
+
+\end{tabbing}\item 
+time\+\_\+t \mbox{\hyperlink{structHTTPPoolEntry_ad4e337e15ebff8d12e21dfe97c795f63}{created\+\_\+at}}
+\item 
+time\+\_\+t \mbox{\hyperlink{structHTTPPoolEntry_a9df59b3cf31861e7b8e1d26a7ba20629}{last\+\_\+used}}
+\item 
+int \mbox{\hyperlink{structHTTPPoolEntry_a3b6c9901f8132c739908861f3f353bae}{in\+\_\+use}}
+\item 
+int \mbox{\hyperlink{structHTTPPoolEntry_ab102d805d6823e277f26799f7f78bf01}{closed}}
+\item 
+struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPoolEntry_aa02514e2702a9be070ba838c09977e9d}{hash\+\_\+next}}
+\item 
+struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPoolEntry_a6e84a7ed47b4d0a45e40898870df0a2a}{next}}
+\item 
+struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPoolEntry_a37c8e777b33f04d904ab1a7c80839ebf}{prev}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP connection pool entry
+
+Manages a single connection that can be reused for requests to the same host\+:port. Supports both HTTP/1.\+1 (one request at a time) and HTTP/2 (multiplexed streams). 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structHTTPPoolEntry_a79159a493723b72c04ab94380394a5ff}\label{structHTTPPoolEntry_a79159a493723b72c04ab94380394a5ff} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!active\_streams@{active\_streams}}
+\index{active\_streams@{active\_streams}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{active\_streams}{active\_streams}}
+{\footnotesize\ttfamily int HTTPPool\+Entry\+::active\+\_\+streams}
+
+Count of active streams \Hypertarget{structHTTPPoolEntry_ab102d805d6823e277f26799f7f78bf01}\label{structHTTPPoolEntry_ab102d805d6823e277f26799f7f78bf01} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!closed@{closed}}
+\index{closed@{closed}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{closed}{closed}}
+{\footnotesize\ttfamily int HTTPPool\+Entry\+::closed}
+
+Connection closed by peer \Hypertarget{structHTTPPoolEntry_a4ada73a8109f8ec9a5ec7eb4a255a3c9}\label{structHTTPPoolEntry_a4ada73a8109f8ec9a5ec7eb4a255a3c9} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!conn\_arena@{conn\_arena}}
+\index{conn\_arena@{conn\_arena}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{conn\_arena}{conn\_arena}}
+{\footnotesize\ttfamily Arena\+\_\+T HTTPPool\+Entry\+::conn\+\_\+arena}
+
+Arena for connection resources (parser, buffers) \Hypertarget{structHTTPPoolEntry_ad4e337e15ebff8d12e21dfe97c795f63}\label{structHTTPPoolEntry_ad4e337e15ebff8d12e21dfe97c795f63} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!created\_at@{created\_at}}
+\index{created\_at@{created\_at}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{created\_at}{created\_at}}
+{\footnotesize\ttfamily time\+\_\+t HTTPPool\+Entry\+::created\+\_\+at}
+
+Connection creation time \Hypertarget{structHTTPPoolEntry_aa02514e2702a9be070ba838c09977e9d}\label{structHTTPPoolEntry_aa02514e2702a9be070ba838c09977e9d} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!hash\_next@{hash\_next}}
+\index{hash\_next@{hash\_next}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{hash\_next}{hash\_next}}
+{\footnotesize\ttfamily struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*} HTTPPool\+Entry\+::hash\+\_\+next}
+
+Hash chain for host\+:port \Hypertarget{structHTTPPoolEntry_aa6d4279116d6227d6271d1e31a959516}\label{structHTTPPoolEntry_aa6d4279116d6227d6271d1e31a959516} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!host@{host}}
+\index{host@{host}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{host}{host}}
+{\footnotesize\ttfamily char\texorpdfstring{$\ast$}{*} HTTPPool\+Entry\+::host}
+
+Target hostname (owned, null-\/terminated) \Hypertarget{structHTTPPoolEntry_a3b6c9901f8132c739908861f3f353bae}\label{structHTTPPoolEntry_a3b6c9901f8132c739908861f3f353bae} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!in\_use@{in\_use}}
+\index{in\_use@{in\_use}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{in\_use}{in\_use}}
+{\footnotesize\ttfamily int HTTPPool\+Entry\+::in\+\_\+use}
+
+For H1.\+1\+: currently handling request \Hypertarget{structHTTPPoolEntry_a69aedeb10418ebe293f847cb3edc93fc}\label{structHTTPPoolEntry_a69aedeb10418ebe293f847cb3edc93fc} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!is\_secure@{is\_secure}}
+\index{is\_secure@{is\_secure}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{is\_secure}{is\_secure}}
+{\footnotesize\ttfamily int HTTPPool\+Entry\+::is\+\_\+secure}
+
+Using TLS \Hypertarget{structHTTPPoolEntry_a9df59b3cf31861e7b8e1d26a7ba20629}\label{structHTTPPoolEntry_a9df59b3cf31861e7b8e1d26a7ba20629} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!last\_used@{last\_used}}
+\index{last\_used@{last\_used}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{last\_used}{last\_used}}
+{\footnotesize\ttfamily time\+\_\+t HTTPPool\+Entry\+::last\+\_\+used}
+
+Last activity time \Hypertarget{structHTTPPoolEntry_a6e84a7ed47b4d0a45e40898870df0a2a}\label{structHTTPPoolEntry_a6e84a7ed47b4d0a45e40898870df0a2a} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!next@{next}}
+\index{next@{next}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{next}{next}}
+{\footnotesize\ttfamily struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*} HTTPPool\+Entry\+::next}
+
+Free list / all connections list \Hypertarget{structHTTPPoolEntry_acf0f6ed48d328591d5d1caf988d05ef0}\label{structHTTPPoolEntry_acf0f6ed48d328591d5d1caf988d05ef0} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!port@{port}}
+\index{port@{port}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{port}{port}}
+{\footnotesize\ttfamily int HTTPPool\+Entry\+::port}
+
+Target port \Hypertarget{structHTTPPoolEntry_a37c8e777b33f04d904ab1a7c80839ebf}\label{structHTTPPoolEntry_a37c8e777b33f04d904ab1a7c80839ebf} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!prev@{prev}}
+\index{prev@{prev}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{prev}{prev}}
+{\footnotesize\ttfamily struct \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*} HTTPPool\+Entry\+::prev}
+
+Doubly linked for removal \Hypertarget{structHTTPPoolEntry_a8d065c98c445e3256a490a6eb71d9e27}\label{structHTTPPoolEntry_a8d065c98c445e3256a490a6eb71d9e27} 
+\index{HTTPPoolEntry@{HTTPPoolEntry}!version@{version}}
+\index{version@{version}!HTTPPoolEntry@{HTTPPoolEntry}}
+\doxysubsubsection{\texorpdfstring{version}{version}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} HTTPPool\+Entry\+::version}
+
+Negotiated protocol version 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient-private_8h}{Socket\+HTTPClient-\/private.\+h}}\end{DoxyCompactItemize}

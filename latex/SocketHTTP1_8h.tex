@@ -1,0 +1,422 @@
+\doxysection{include/http/\+Socket\+HTTP1.h File Reference}
+\hypertarget{SocketHTTP1_8h}{}\label{SocketHTTP1_8h}\index{include/http/SocketHTTP1.h@{include/http/SocketHTTP1.h}}
+
+
+HTTP/1.\+1 message syntax parsing and serialization (RFC 9112).  
+
+
+{\ttfamily \#include $<$stddef.\+h$>$}\newline
+{\ttfamily \#include $<$stdint.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include "{}core/\+Arena.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Except.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP.\+h"{}}\newline
+Include dependency graph for Socket\+HTTP1.\+h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP1_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP1_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP1__Config}{Socket\+HTTP1\+\_\+\+Config}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a31c24401916c5664adb6ea3616681b46}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+REQUEST\+\_\+\+LINE}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_ac4b9886203defffcd90cddff2540b6e6}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+METHOD\+\_\+\+LEN}}~16
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_aad40b2eeddd7e9517f82d47349f9d271}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+URI\+\_\+\+LEN}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a5f5ecb6e846886cb5a2adf261a197f77}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+NAME}}~256
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a02fdc5c8df1cd6d293ce80c4647e8278}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+VALUE}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_aa3441412b165e62bb60e49f703acd245}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADERS}}~100
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a11553aa6152c3065fee134ea4924cc26}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+SIZE}}~(64 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a6a2a172023b9fc8609f638e37fc28781}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+CHUNK\+\_\+\+SIZE}}~(16 \texorpdfstring{$\ast$}{*} 1024 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a2b4e16b62a1a792c810cb1fc94519c85}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+CHUNK\+\_\+\+EXT}}~1024
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a207d48fb770893866f7a01d4ec09390d}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+TRAILER\+\_\+\+SIZE}}~(4 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_afac78449ad6cedf3dc9f703d5bd338b1}{SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+LINE}}~(16 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a17c37ff959acffa4e20330b701877924}{SOCKETHTTP1\+\_\+\+INT\+\_\+\+STRING\+\_\+\+BUFSIZE}}~24
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1_8h_a1ee215b68e39922641052018f578a002}{SOCKETHTTP1\+\_\+\+CONTENT\+\_\+\+LENGTH\+\_\+\+BUFSIZE}}~48
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structSocketHTTP1__Parser}{Socket\+HTTP1\+\_\+\+Parser}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTP1\+\_\+\+Parser\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HTTP/1.\+1 parser instance (opaque type) \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}{Socket\+HTTP1\+\_\+\+Parse\+Mode}} \{ \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1}{HTTP1\+\_\+\+PARSE\+\_\+\+REQUEST}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96aab0293475cda774be4e2e2fd417eef87}{HTTP1\+\_\+\+PARSE\+\_\+\+RESPONSE}}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}{Socket\+HTTP1\+\_\+\+State}} \{ \newline
+\mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1}{HTTP1\+\_\+\+STATE\+\_\+\+START}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eade98f14dc018677523eb4dd5eade8892}{HTTP1\+\_\+\+STATE\+\_\+\+HEADERS}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaed34954e4bc5ada417b736ea8762a381}{HTTP1\+\_\+\+STATE\+\_\+\+BODY}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea03634fa688c3a4b61d2e33770d10aae5}{HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+SIZE}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea0d1c2b238a0bafb0d8863b1cfab9d5d8}{HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+DATA}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1bc28b2d1b80f9aa51e112e6bffff72e}{HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+END}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea270022e51ea38ce543b1648c327da9d4}{HTTP1\+\_\+\+STATE\+\_\+\+TRAILERS}}
+, \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1a17feeec742feb1412f1ac3185a830e}{HTTP1\+\_\+\+STATE\+\_\+\+COMPLETE}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9}{HTTP1\+\_\+\+STATE\+\_\+\+ERROR}}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{Socket\+HTTP1\+\_\+\+Result}} \{ \newline
+\mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d}{HTTP1\+\_\+\+OK}} = 0
+, \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f}{HTTP1\+\_\+\+INCOMPLETE}}
+, \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea690680a1e66e6b072695744e820e55e0}{HTTP1\+\_\+\+ERROR}}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+LINE\+\_\+\+TOO\+\_\+\+LONG}
+, \newline
+{\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+METHOD}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+URI}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+VERSION}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+STATUS}
+, \newline
+{\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+HEADER\+\_\+\+NAME}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+HEADER\+\_\+\+VALUE}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+HEADER\+\_\+\+TOO\+\_\+\+LARGE}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+TOO\+\_\+\+MANY\+\_\+\+HEADERS}
+, \newline
+{\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+CONTENT\+\_\+\+LENGTH}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+CHUNK\+\_\+\+SIZE}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+CHUNK\+\_\+\+TOO\+\_\+\+LARGE}
+, \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743}{HTTP1\+\_\+\+ERROR\+\_\+\+BODY\+\_\+\+TOO\+\_\+\+LARGE}}
+, \newline
+{\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+TRAILER}
+, \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56}{HTTP1\+\_\+\+ERROR\+\_\+\+UNSUPPORTED\+\_\+\+TRANSFER\+\_\+\+CODING}}
+, {\bfseries HTTP1\+\_\+\+ERROR\+\_\+\+UNEXPECTED\+\_\+\+EOF}
+, \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229}{HTTP1\+\_\+\+ERROR\+\_\+\+SMUGGLING\+\_\+\+DETECTED}}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{Socket\+HTTP1\+\_\+\+Body\+Mode}} \{ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a}{HTTP1\+\_\+\+BODY\+\_\+\+NONE}}
+, \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eaf53be77b9110eb429f3f76f152a918e8}{HTTP1\+\_\+\+BODY\+\_\+\+CONTENT\+\_\+\+LENGTH}}
+, \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ea8fc42a2eca05bc22c21e39819cf2ce68}{HTTP1\+\_\+\+BODY\+\_\+\+CHUNKED}}
+, \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eae35df2245221a5bebe7ba5bfc6c51e86}{HTTP1\+\_\+\+BODY\+\_\+\+UNTIL\+\_\+\+CLOSE}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+void \mbox{\hyperlink{group__http_gaed53869d1481794448fd6e3d9d6d5e84}{Socket\+HTTP1\+\_\+config\+\_\+defaults}} (\mbox{\hyperlink{structSocketHTTP1__Config}{Socket\+HTTP1\+\_\+\+Config}} \texorpdfstring{$\ast$}{*}config)
+\begin{DoxyCompactList}\small\item\em Initialize config with defaults. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} \mbox{\hyperlink{group__http_ga7fb2e95c0a39df0a5c075faa55d6a6f3}{Socket\+HTTP1\+\_\+\+Parser\+\_\+new}} (\mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}{Socket\+HTTP1\+\_\+\+Parse\+Mode}} mode, const \mbox{\hyperlink{structSocketHTTP1__Config}{Socket\+HTTP1\+\_\+\+Config}} \texorpdfstring{$\ast$}{*}config, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Create new parser. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_gaf0a2a42b97cd8ab5340958a4aa30124f}{Socket\+HTTP1\+\_\+\+Parser\+\_\+free}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} \texorpdfstring{$\ast$}{*}parser)
+\begin{DoxyCompactList}\small\item\em Free parser. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga49a9ded0a495db9d15e7b6ec5abce5cb}{Socket\+HTTP1\+\_\+\+Parser\+\_\+reset}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Reset parser for next message. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{Socket\+HTTP1\+\_\+\+Result}} \mbox{\hyperlink{group__http_ga83fa0ae51796710bc10e16154b448a3f}{Socket\+HTTP1\+\_\+\+Parser\+\_\+execute}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser, const char \texorpdfstring{$\ast$}{*}data, size\+\_\+t len, size\+\_\+t \texorpdfstring{$\ast$}{*}consumed)
+\begin{DoxyCompactList}\small\item\em Parse data incrementally. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}{Socket\+HTTP1\+\_\+\+State}} \mbox{\hyperlink{group__http_gae628eea962092f79332744f005bfe81f}{Socket\+HTTP1\+\_\+\+Parser\+\_\+state}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get current parser state. \end{DoxyCompactList}\item 
+const \mbox{\hyperlink{structSocketHTTP__Request}{Socket\+HTTP\+\_\+\+Request}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga2ea1bef9e80e9ed39b960bc375c7d83b}{Socket\+HTTP1\+\_\+\+Parser\+\_\+get\+\_\+request}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get parsed request. \end{DoxyCompactList}\item 
+const \mbox{\hyperlink{structSocketHTTP__Response}{Socket\+HTTP\+\_\+\+Response}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gace300f1b370727b195654a02e3fd7ec0}{Socket\+HTTP1\+\_\+\+Parser\+\_\+get\+\_\+response}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get parsed response. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{Socket\+HTTP1\+\_\+\+Body\+Mode}} \mbox{\hyperlink{group__http_gac425dba4f2dfcd61c19cd8933482db99}{Socket\+HTTP1\+\_\+\+Parser\+\_\+body\+\_\+mode}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get body transfer mode. \end{DoxyCompactList}\item 
+int64\+\_\+t \mbox{\hyperlink{group__http_ga7f8d17864cc2a6d6a00055b8b6a8152d}{Socket\+HTTP1\+\_\+\+Parser\+\_\+content\+\_\+length}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get Content-\/\+Length value. \end{DoxyCompactList}\item 
+int64\+\_\+t \mbox{\hyperlink{group__http_ga66d78b9f96cb10365f7aa7c0fb142f3f}{Socket\+HTTP1\+\_\+\+Parser\+\_\+body\+\_\+remaining}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get remaining body bytes. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{Socket\+HTTP1\+\_\+\+Result}} \mbox{\hyperlink{group__http_ga4d5411b548fb2d9139c5a98c96888c10}{Socket\+HTTP1\+\_\+\+Parser\+\_\+read\+\_\+body}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser, const char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len, size\+\_\+t \texorpdfstring{$\ast$}{*}consumed, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+len, size\+\_\+t \texorpdfstring{$\ast$}{*}written)
+\begin{DoxyCompactList}\small\item\em Read body data. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga43509d51fdb403d3e0917d0edace81dc}{Socket\+HTTP1\+\_\+\+Parser\+\_\+body\+\_\+complete}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Check if body fully received. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} \mbox{\hyperlink{group__http_gaaaab6bad3178f0109b69f5f0c83e6805}{Socket\+HTTP1\+\_\+\+Parser\+\_\+get\+\_\+trailers}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get trailer headers. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga6207068650f6737b8f98ed419e51d56c}{Socket\+HTTP1\+\_\+\+Parser\+\_\+should\+\_\+keepalive}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Check keep-\/alive status. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga92d722afa530f7e28512dae210a5be17}{Socket\+HTTP1\+\_\+\+Parser\+\_\+is\+\_\+upgrade}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Check if upgrade requested. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga5cfd27ea3f2fd476c4f3e45aa88968d6}{Socket\+HTTP1\+\_\+\+Parser\+\_\+upgrade\+\_\+protocol}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Get requested upgrade protocol. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gae0a96206e67a279005be9686d159faf3}{Socket\+HTTP1\+\_\+\+Parser\+\_\+expects\+\_\+continue}} (\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} parser)
+\begin{DoxyCompactList}\small\item\em Check for Expect\+: 100-\/continue. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga66bdb40cb195c23e4e02dfa41ad1e4b7}{Socket\+HTTP1\+\_\+serialize\+\_\+request}} (const \mbox{\hyperlink{structSocketHTTP__Request}{Socket\+HTTP\+\_\+\+Request}} \texorpdfstring{$\ast$}{*}request, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Serialize request to buffer. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_gab8921dc474a57cdb9e68ac329f70a100}{Socket\+HTTP1\+\_\+serialize\+\_\+response}} (const \mbox{\hyperlink{structSocketHTTP__Response}{Socket\+HTTP\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Serialize response to buffer. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_gaf49c3054b9785e30c0377c57b4df4bf4}{Socket\+HTTP1\+\_\+serialize\+\_\+headers}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Serialize headers only. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga1ee4d308dc266c293146b181d75c0fd9}{Socket\+HTTP1\+\_\+chunk\+\_\+encode}} (const void \texorpdfstring{$\ast$}{*}data, size\+\_\+t len, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Encode data as single chunk. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga6c018b4a237cb0c87a529e1332ddad5c}{Socket\+HTTP1\+\_\+chunk\+\_\+final}} (char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size, \mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} trailers)
+\begin{DoxyCompactList}\small\item\em Write final (zero-\/length) chunk. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gad77e06b6dd656dede4191a51d1c27661}{Socket\+HTTP1\+\_\+chunk\+\_\+encode\+\_\+size}} (size\+\_\+t data\+\_\+len)
+\begin{DoxyCompactList}\small\item\em Calculate encoded chunk size. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga2978becba9896924c0543135477ec4ff}{Socket\+HTTP1\+\_\+result\+\_\+string}} (\mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{Socket\+HTTP1\+\_\+\+Result}} result)
+\begin{DoxyCompactList}\small\item\em Get human-\/readable error description. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_gab0e624687447c4ade518d16bf70ac8a4}{Socket\+HTTP1\+\_\+\+Parse\+Error}}
+\begin{DoxyCompactList}\small\item\em Socket\+HTTP1\+\_\+\+Parse\+Error -\/ HTTP/1.\+1 message parse failure. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga7fe3d14ed6f02dfecfc98f4872d95372}{Socket\+HTTP1\+\_\+\+Serialize\+Error}}
+\begin{DoxyCompactList}\small\item\em Socket\+HTTP1\+\_\+\+Serialize\+Error -\/ HTTP/1.\+1 message serialization failure. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP/1.\+1 message syntax parsing and serialization (RFC 9112). 
+
+Provides HTTP/1.\+1 message parsing, serialization, and chunked encoding. Builds on \doxylink{SocketHTTP_8h}{Socket\+HTTP.\+h} for core types (methods, status codes, headers, URI).
+
+Features\+:
+\begin{DoxyItemize}
+\item DFA-\/based incremental parser (O(n) complexity)
+\item Request and response parsing
+\item All request-\/target forms (origin, absolute, authority, asterisk)
+\item Chunked transfer encoding with trailer support
+\item Request smuggling prevention (strict RFC 9112 Section 6.\+3)
+\item Optional content encoding (gzip/deflate/brotli)
+\item Configurable limits for security
+\end{DoxyItemize}
+
+Thread safety\+: Parser instances are NOT thread-\/safe. Use one parser per thread or external synchronization.
+
+Security notes\+:
+\begin{DoxyItemize}
+\item Rejects requests with both Content-\/\+Length and Transfer-\/\+Encoding
+\item Rejects multiple differing Content-\/\+Length values
+\item Validates all header names/values for injection attacks
+\item Enforces configurable size limits
+\end{DoxyItemize}
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{group__http_ga7fb2e95c0a39df0a5c075faa55d6a6f3}{Socket\+HTTP1\+\_\+\+Parser\+\_\+new()} for creating parsers. 
+
+\doxylink{group__http_ga83fa0ae51796710bc10e16154b448a3f}{Socket\+HTTP1\+\_\+\+Parser\+\_\+execute()} for incremental parsing. 
+
+\doxylink{group__http_ga66bdb40cb195c23e4e02dfa41ad1e4b7}{Socket\+HTTP1\+\_\+serialize\+\_\+request()} for message serialization. 
+
+\doxylink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T} for core HTTP types and utilities. 
+
+\doxylink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T} for HTTP client functionality. 
+
+\doxylink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T} for HTTP server functionality. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHTTP1_8h_a1ee215b68e39922641052018f578a002}\label{SocketHTTP1_8h_a1ee215b68e39922641052018f578a002} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE@{SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE}}
+\index{SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE@{SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE}{SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+CONTENT\+\_\+\+LENGTH\+\_\+\+BUFSIZE~48}
+
+Buffer size for Content-\/\+Length header line ("{}\+Content-\/\+Length\+: "{} + value) \Hypertarget{SocketHTTP1_8h_a17c37ff959acffa4e20330b701877924}\label{SocketHTTP1_8h_a17c37ff959acffa4e20330b701877924} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_INT\_STRING\_BUFSIZE@{SOCKETHTTP1\_INT\_STRING\_BUFSIZE}}
+\index{SOCKETHTTP1\_INT\_STRING\_BUFSIZE@{SOCKETHTTP1\_INT\_STRING\_BUFSIZE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_INT\_STRING\_BUFSIZE}{SOCKETHTTP1\_INT\_STRING\_BUFSIZE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+INT\+\_\+\+STRING\+\_\+\+BUFSIZE~24}
+
+Buffer size for integer-\/to-\/string conversion (covers int64\+\_\+t) \Hypertarget{SocketHTTP1_8h_a2b4e16b62a1a792c810cb1fc94519c85}\label{SocketHTTP1_8h_a2b4e16b62a1a792c810cb1fc94519c85} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_CHUNK\_EXT@{SOCKETHTTP1\_MAX\_CHUNK\_EXT}}
+\index{SOCKETHTTP1\_MAX\_CHUNK\_EXT@{SOCKETHTTP1\_MAX\_CHUNK\_EXT}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_CHUNK\_EXT}{SOCKETHTTP1\_MAX\_CHUNK\_EXT}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+CHUNK\+\_\+\+EXT~1024}
+
+Maximum chunk extension length \Hypertarget{SocketHTTP1_8h_a6a2a172023b9fc8609f638e37fc28781}\label{SocketHTTP1_8h_a6a2a172023b9fc8609f638e37fc28781} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_CHUNK\_SIZE@{SOCKETHTTP1\_MAX\_CHUNK\_SIZE}}
+\index{SOCKETHTTP1\_MAX\_CHUNK\_SIZE@{SOCKETHTTP1\_MAX\_CHUNK\_SIZE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_CHUNK\_SIZE}{SOCKETHTTP1\_MAX\_CHUNK\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+CHUNK\+\_\+\+SIZE~(16 \texorpdfstring{$\ast$}{*} 1024 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum chunk size \Hypertarget{SocketHTTP1_8h_afac78449ad6cedf3dc9f703d5bd338b1}\label{SocketHTTP1_8h_afac78449ad6cedf3dc9f703d5bd338b1} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_HEADER\_LINE@{SOCKETHTTP1\_MAX\_HEADER\_LINE}}
+\index{SOCKETHTTP1\_MAX\_HEADER\_LINE@{SOCKETHTTP1\_MAX\_HEADER\_LINE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_HEADER\_LINE}{SOCKETHTTP1\_MAX\_HEADER\_LINE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+LINE~(16 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum individual header line length (name + \+: + value + OWS + \textbackslash{}r~\newline
+) \Hypertarget{SocketHTTP1_8h_a5f5ecb6e846886cb5a2adf261a197f77}\label{SocketHTTP1_8h_a5f5ecb6e846886cb5a2adf261a197f77} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_HEADER\_NAME@{SOCKETHTTP1\_MAX\_HEADER\_NAME}}
+\index{SOCKETHTTP1\_MAX\_HEADER\_NAME@{SOCKETHTTP1\_MAX\_HEADER\_NAME}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_HEADER\_NAME}{SOCKETHTTP1\_MAX\_HEADER\_NAME}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+NAME~256}
+
+Maximum header name length \Hypertarget{SocketHTTP1_8h_a11553aa6152c3065fee134ea4924cc26}\label{SocketHTTP1_8h_a11553aa6152c3065fee134ea4924cc26} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_HEADER\_SIZE@{SOCKETHTTP1\_MAX\_HEADER\_SIZE}}
+\index{SOCKETHTTP1\_MAX\_HEADER\_SIZE@{SOCKETHTTP1\_MAX\_HEADER\_SIZE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_HEADER\_SIZE}{SOCKETHTTP1\_MAX\_HEADER\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+SIZE~(64 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum total header size \Hypertarget{SocketHTTP1_8h_a02fdc5c8df1cd6d293ce80c4647e8278}\label{SocketHTTP1_8h_a02fdc5c8df1cd6d293ce80c4647e8278} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_HEADER\_VALUE@{SOCKETHTTP1\_MAX\_HEADER\_VALUE}}
+\index{SOCKETHTTP1\_MAX\_HEADER\_VALUE@{SOCKETHTTP1\_MAX\_HEADER\_VALUE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_HEADER\_VALUE}{SOCKETHTTP1\_MAX\_HEADER\_VALUE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+VALUE~(8 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum header value length \Hypertarget{SocketHTTP1_8h_aa3441412b165e62bb60e49f703acd245}\label{SocketHTTP1_8h_aa3441412b165e62bb60e49f703acd245} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_HEADERS@{SOCKETHTTP1\_MAX\_HEADERS}}
+\index{SOCKETHTTP1\_MAX\_HEADERS@{SOCKETHTTP1\_MAX\_HEADERS}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_HEADERS}{SOCKETHTTP1\_MAX\_HEADERS}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+HEADERS~100}
+
+Maximum number of headers \Hypertarget{SocketHTTP1_8h_ac4b9886203defffcd90cddff2540b6e6}\label{SocketHTTP1_8h_ac4b9886203defffcd90cddff2540b6e6} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_METHOD\_LEN@{SOCKETHTTP1\_MAX\_METHOD\_LEN}}
+\index{SOCKETHTTP1\_MAX\_METHOD\_LEN@{SOCKETHTTP1\_MAX\_METHOD\_LEN}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_METHOD\_LEN}{SOCKETHTTP1\_MAX\_METHOD\_LEN}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+METHOD\+\_\+\+LEN~16}
+
+Maximum HTTP method length (longest standard\+: OPTIONS = 7) \Hypertarget{SocketHTTP1_8h_a31c24401916c5664adb6ea3616681b46}\label{SocketHTTP1_8h_a31c24401916c5664adb6ea3616681b46} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_REQUEST\_LINE@{SOCKETHTTP1\_MAX\_REQUEST\_LINE}}
+\index{SOCKETHTTP1\_MAX\_REQUEST\_LINE@{SOCKETHTTP1\_MAX\_REQUEST\_LINE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_REQUEST\_LINE}{SOCKETHTTP1\_MAX\_REQUEST\_LINE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+REQUEST\+\_\+\+LINE~(8 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum request/status line length \Hypertarget{SocketHTTP1_8h_a207d48fb770893866f7a01d4ec09390d}\label{SocketHTTP1_8h_a207d48fb770893866f7a01d4ec09390d} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_TRAILER\_SIZE@{SOCKETHTTP1\_MAX\_TRAILER\_SIZE}}
+\index{SOCKETHTTP1\_MAX\_TRAILER\_SIZE@{SOCKETHTTP1\_MAX\_TRAILER\_SIZE}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_TRAILER\_SIZE}{SOCKETHTTP1\_MAX\_TRAILER\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+TRAILER\+\_\+\+SIZE~(4 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum trailer headers size \Hypertarget{SocketHTTP1_8h_aad40b2eeddd7e9517f82d47349f9d271}\label{SocketHTTP1_8h_aad40b2eeddd7e9517f82d47349f9d271} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SOCKETHTTP1\_MAX\_URI\_LEN@{SOCKETHTTP1\_MAX\_URI\_LEN}}
+\index{SOCKETHTTP1\_MAX\_URI\_LEN@{SOCKETHTTP1\_MAX\_URI\_LEN}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHTTP1\_MAX\_URI\_LEN}{SOCKETHTTP1\_MAX\_URI\_LEN}}
+{\footnotesize\ttfamily \#define SOCKETHTTP1\+\_\+\+MAX\+\_\+\+URI\+\_\+\+LEN~(8 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum URI length in request line 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}\label{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SocketHTTP1\_BodyMode@{SocketHTTP1\_BodyMode}}
+\index{SocketHTTP1\_BodyMode@{SocketHTTP1\_BodyMode}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTP1\_BodyMode}{SocketHTTP1\_BodyMode}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{Socket\+HTTP1\+\_\+\+Body\+Mode}}}
+
+Body transfer mode (determined from headers) \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_BODY\_NONE@{HTTP1\_BODY\_NONE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_BODY\_NONE@{HTTP1\_BODY\_NONE}}}\Hypertarget{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a}\label{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a} 
+HTTP1\+\_\+\+BODY\+\_\+\+NONE&No body (GET, HEAD, 1xx, 204, 304) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_BODY\_CONTENT\_LENGTH@{HTTP1\_BODY\_CONTENT\_LENGTH}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_BODY\_CONTENT\_LENGTH@{HTTP1\_BODY\_CONTENT\_LENGTH}}}\Hypertarget{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eaf53be77b9110eb429f3f76f152a918e8}\label{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eaf53be77b9110eb429f3f76f152a918e8} 
+HTTP1\+\_\+\+BODY\+\_\+\+CONTENT\+\_\+\+LENGTH&Fixed Content-\/\+Length \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_BODY\_CHUNKED@{HTTP1\_BODY\_CHUNKED}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_BODY\_CHUNKED@{HTTP1\_BODY\_CHUNKED}}}\Hypertarget{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ea8fc42a2eca05bc22c21e39819cf2ce68}\label{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ea8fc42a2eca05bc22c21e39819cf2ce68} 
+HTTP1\+\_\+\+BODY\+\_\+\+CHUNKED&Transfer-\/\+Encoding\+: chunked \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_BODY\_UNTIL\_CLOSE@{HTTP1\_BODY\_UNTIL\_CLOSE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_BODY\_UNTIL\_CLOSE@{HTTP1\_BODY\_UNTIL\_CLOSE}}}\Hypertarget{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eae35df2245221a5bebe7ba5bfc6c51e86}\label{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eae35df2245221a5bebe7ba5bfc6c51e86} 
+HTTP1\+\_\+\+BODY\+\_\+\+UNTIL\+\_\+\+CLOSE&Read until connection close (HTTP/1.\+0) \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}\label{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SocketHTTP1\_ParseMode@{SocketHTTP1\_ParseMode}}
+\index{SocketHTTP1\_ParseMode@{SocketHTTP1\_ParseMode}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTP1\_ParseMode}{SocketHTTP1\_ParseMode}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}{Socket\+HTTP1\+\_\+\+Parse\+Mode}}}
+
+Parser mode \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_PARSE\_REQUEST@{HTTP1\_PARSE\_REQUEST}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_PARSE\_REQUEST@{HTTP1\_PARSE\_REQUEST}}}\Hypertarget{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1}\label{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1} 
+HTTP1\+\_\+\+PARSE\+\_\+\+REQUEST&Parse HTTP requests \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_PARSE\_RESPONSE@{HTTP1\_PARSE\_RESPONSE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_PARSE\_RESPONSE@{HTTP1\_PARSE\_RESPONSE}}}\Hypertarget{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96aab0293475cda774be4e2e2fd417eef87}\label{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96aab0293475cda774be4e2e2fd417eef87} 
+HTTP1\+\_\+\+PARSE\+\_\+\+RESPONSE&Parse HTTP responses \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SocketHTTP1\_Result@{SocketHTTP1\_Result}}
+\index{SocketHTTP1\_Result@{SocketHTTP1\_Result}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTP1\_Result}{SocketHTTP1\_Result}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{Socket\+HTTP1\+\_\+\+Result}}}
+
+Parse result codes \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_OK@{HTTP1\_OK}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_OK@{HTTP1\_OK}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d} 
+HTTP1\+\_\+\+OK&Complete message or chunk parsed \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_INCOMPLETE@{HTTP1\_INCOMPLETE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_INCOMPLETE@{HTTP1\_INCOMPLETE}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f} 
+HTTP1\+\_\+\+INCOMPLETE&Need more data \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ERROR@{HTTP1\_ERROR}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_ERROR@{HTTP1\_ERROR}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea690680a1e66e6b072695744e820e55e0}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea690680a1e66e6b072695744e820e55e0} 
+HTTP1\+\_\+\+ERROR&Generic error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ERROR\_BODY\_TOO\_LARGE@{HTTP1\_ERROR\_BODY\_TOO\_LARGE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_ERROR\_BODY\_TOO\_LARGE@{HTTP1\_ERROR\_BODY\_TOO\_LARGE}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743} 
+HTTP1\+\_\+\+ERROR\+\_\+\+BODY\+\_\+\+TOO\+\_\+\+LARGE&Decompressed body exceeds limit \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ERROR\_UNSUPPORTED\_TRANSFER\_CODING@{HTTP1\_ERROR\_UNSUPPORTED\_TRANSFER\_CODING}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_ERROR\_UNSUPPORTED\_TRANSFER\_CODING@{HTTP1\_ERROR\_UNSUPPORTED\_TRANSFER\_CODING}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56} 
+HTTP1\+\_\+\+ERROR\+\_\+\+UNSUPPORTED\+\_\+\+TRANSFER\+\_\+\+CODING&Unsupported Transfer-\/\+Encoding coding \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ERROR\_SMUGGLING\_DETECTED@{HTTP1\_ERROR\_SMUGGLING\_DETECTED}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_ERROR\_SMUGGLING\_DETECTED@{HTTP1\_ERROR\_SMUGGLING\_DETECTED}}}\Hypertarget{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229}\label{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229} 
+HTTP1\+\_\+\+ERROR\+\_\+\+SMUGGLING\+\_\+\+DETECTED&Request smuggling attempt \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e} 
+\index{SocketHTTP1.h@{SocketHTTP1.h}!SocketHTTP1\_State@{SocketHTTP1\_State}}
+\index{SocketHTTP1\_State@{SocketHTTP1\_State}!SocketHTTP1.h@{SocketHTTP1.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTP1\_State}{SocketHTTP1\_State}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}{Socket\+HTTP1\+\_\+\+State}}}
+
+Parser state (high-\/level) \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_START@{HTTP1\_STATE\_START}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_START@{HTTP1\_STATE\_START}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1} 
+HTTP1\+\_\+\+STATE\+\_\+\+START&Waiting for first line \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_HEADERS@{HTTP1\_STATE\_HEADERS}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_HEADERS@{HTTP1\_STATE\_HEADERS}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eade98f14dc018677523eb4dd5eade8892}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eade98f14dc018677523eb4dd5eade8892} 
+HTTP1\+\_\+\+STATE\+\_\+\+HEADERS&Parsing headers \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_BODY@{HTTP1\_STATE\_BODY}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_BODY@{HTTP1\_STATE\_BODY}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaed34954e4bc5ada417b736ea8762a381}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaed34954e4bc5ada417b736ea8762a381} 
+HTTP1\+\_\+\+STATE\+\_\+\+BODY&Reading body \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_CHUNK\_SIZE@{HTTP1\_STATE\_CHUNK\_SIZE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_CHUNK\_SIZE@{HTTP1\_STATE\_CHUNK\_SIZE}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea03634fa688c3a4b61d2e33770d10aae5}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea03634fa688c3a4b61d2e33770d10aae5} 
+HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+SIZE&Reading chunk size line \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_CHUNK\_DATA@{HTTP1\_STATE\_CHUNK\_DATA}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_CHUNK\_DATA@{HTTP1\_STATE\_CHUNK\_DATA}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea0d1c2b238a0bafb0d8863b1cfab9d5d8}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea0d1c2b238a0bafb0d8863b1cfab9d5d8} 
+HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+DATA&Reading chunk data \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_CHUNK\_END@{HTTP1\_STATE\_CHUNK\_END}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_CHUNK\_END@{HTTP1\_STATE\_CHUNK\_END}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1bc28b2d1b80f9aa51e112e6bffff72e}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1bc28b2d1b80f9aa51e112e6bffff72e} 
+HTTP1\+\_\+\+STATE\+\_\+\+CHUNK\+\_\+\+END&Reading chunk CRLF \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_TRAILERS@{HTTP1\_STATE\_TRAILERS}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_TRAILERS@{HTTP1\_STATE\_TRAILERS}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea270022e51ea38ce543b1648c327da9d4}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea270022e51ea38ce543b1648c327da9d4} 
+HTTP1\+\_\+\+STATE\+\_\+\+TRAILERS&Reading trailers \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_COMPLETE@{HTTP1\_STATE\_COMPLETE}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_COMPLETE@{HTTP1\_STATE\_COMPLETE}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1a17feeec742feb1412f1ac3185a830e}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1a17feeec742feb1412f1ac3185a830e} 
+HTTP1\+\_\+\+STATE\+\_\+\+COMPLETE&Message complete \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_STATE\_ERROR@{HTTP1\_STATE\_ERROR}!SocketHTTP1.h@{SocketHTTP1.h}}\index{SocketHTTP1.h@{SocketHTTP1.h}!HTTP1\_STATE\_ERROR@{HTTP1\_STATE\_ERROR}}}\Hypertarget{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9}\label{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9} 
+HTTP1\+\_\+\+STATE\+\_\+\+ERROR&Parse error \\
+\hline
+
+\end{DoxyEnumFields}

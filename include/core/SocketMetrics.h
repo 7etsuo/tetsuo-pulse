@@ -2,6 +2,44 @@
 #define SOCKETMETRICS_INCLUDED
 
 /**
+ * @defgroup utilities Utilities
+ * @brief Helper modules for rate limiting, retry logic, and metrics
+ *
+ * The utilities group provides cross-cutting concerns like metrics collection,
+ * rate limiting, retry policies, and performance monitoring. These modules
+ * integrate seamlessly with core I/O and higher-level protocols.
+ *
+ * ## Architecture Overview
+ *
+ * ```
+ * ┌───────────────────────────────────────────────────────────┐
+ * │                    Application Layer                      │
+ * │  HTTP Servers, TCP Services, Connection Pools, etc.       │
+ * └─────────────────────┬─────────────────────────────────────┘
+ *                       │ Uses
+ * ┌─────────────────────▼─────────────────────────────────────┐
+ * │                 Utilities Layer                           │
+ * │  SocketMetrics, SocketRateLimit, SocketRetry, etc.        │
+ * └─────────────────────┬─────────────────────────────────────┘
+ *                       │ Uses
+ * ┌─────────────────────▼─────────────────────────────────────┐
+ * │              Foundation Layer                             │
+ * │  Arena, Except, SocketUtil (legacy compat)                │
+ * └───────────────────────────────────────────────────────────┘
+ * ```
+ *
+ * ## Module Relationships
+ *
+ * - **Depends on**: Foundation modules for atomic ops and logging
+ * - **Used by**: Connection Mgmt, HTTP, Security, Event System
+ * - **Backward Compatibility**: Legacy metrics in SocketUtil.h map to new
+ * system
+ * - **Integration**: Export metrics to Prometheus/StatsD for observability
+ *
+ * @{
+ */
+
+/**
  * @file SocketMetrics.h
  * @ingroup utilities
  * @brief Production-grade metrics collection and observability for monitoring.
@@ -29,10 +67,96 @@
  * - No dynamic allocation after initialization
  * - Total memory usage: ~100KB for default configuration
  *
- * @see SocketMetrics_counter_inc() for recording counter metrics.
- * @see SocketMetrics_gauge_set() for gauge metrics.
- * @see SocketMetrics_histogram_observe() for histogram metrics.
- * @see SocketMetrics_export_prometheus() for metric export.
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Initialize (optional, auto-called by library)
+ * SocketMetrics_init();
+ *
+ * // Record a counter event
+ * SocketMetrics_counter_inc(SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL);
+ *
+ * // Update gauge for current state
+ * SocketMetrics_gauge_set(SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS, 5);
+ *
+ * // Time an operation with macro convenience
+ * SOCKET_METRICS_TIME_START();
+ * // ... perform HTTP request ...
+ * SOCKET_METRICS_TIME_OBSERVE(SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS);
+ *
+ * // Export for monitoring system
+ * char buffer[65536];
+ * size_t len = SocketMetrics_export_prometheus(buffer, sizeof(buffer));
+ * // Send buffer to Prometheus scraper or log file
+ *
+ * // Cleanup at shutdown
+ * SocketMetrics_shutdown();
+ * @endcode
+ *
+ * ## Export Formats
+ *
+ * ### Prometheus Text Format
+ *
+ * Standard exposition format with # HELP and # TYPE headers.
+ *
+ * Example:
+ * @code
+ * # HELP socket_pool_connections_created Total connections created
+ * # TYPE socket_pool_connections_created counter
+ * socket_pool_connections_created 1234
+ * # HELP socket_http_client_request_latency_ms HTTP client request latency in
+ * ms # TYPE socket_http_client_request_latency_ms histogram
+ * socket_http_client_request_latency_ms_sum 125000
+ * socket_http_client_request_latency_ms_count 1000
+ * socket_http_client_request_latency_ms{quantile="0.5"} 100
+ * socket_http_client_request_latency_ms{quantile="0.95"} 250
+ * @endcode
+ *
+ * ### StatsD Line Format
+ *
+ * UDP-friendly lines for StatsD aggregation.
+ *
+ * Example:
+ * @code
+ * myapp.socket.pool.connections_created:1234|c
+ * myapp.socket.http_client.active_requests:5|g
+ * myapp.socket.http_client.request_latency_ms:125|ms|@0.95
+ * @endcode
+ *
+ * ### JSON Structured Format
+ *
+ * For API endpoints or structured logging.
+ *
+ * Example snippet:
+ * @code{.json}
+ * {
+ *   "timestamp_ms": 1699876543210,
+ *   "counters": { "pool_connections_created": 1234 },
+ *   "gauges": { "pool_active_connections": 42 },
+ *   "histograms": {
+ *     "http_client_request_latency_ms": {
+ *       "count": 1000, "sum": 125000.0, "p50": 100.0, "p95": 250.0
+ *     }
+ *   }
+ * }
+ * @endcode
+ *
+ * @note Metrics are designed for high-performance; counters/gauges are
+ * lock-free.
+ * @warning Large histograms (high SOCKET_METRICS_HISTOGRAM_BUCKETS) increase
+ * memory and percentile calc time.
+ * @complexity
+ * - Counter/Gauge ops: O(1) atomic
+ * - Histogram observe: O(1) amortized reservoir sampling
+ * - Percentile query: O(n log n) sort where n=1024 buckets
+ * - Full snapshot/export: O(total metrics count) ≈ O(200)
+ *
+ * @see SocketMetrics_counter_inc() for counters
+ * @see SocketMetrics_gauge_set() for gauges
+ * @see SocketMetrics_histogram_observe() for distributions
+ * @see SocketMetrics_export_prometheus() for Prometheus integration
+ * @see docs/METRICS.md for detailed guide and migration from legacy system
+ * @see SocketUtil.h for backward-compatible SocketMetrics_increment()
  */
 
 #include <stddef.h>
@@ -44,7 +168,8 @@
  */
 
 /**
- * @brief SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram reservoir
+ * @brief SOCKET_METRICS_HISTOGRAM_BUCKETS - Number of samples in histogram
+ * reservoir
  * @ingroup utilities
  *
  * Higher values give more accurate percentiles but use more memory.
@@ -84,30 +209,116 @@
  */
 
 /**
- * @brief SocketMetricType - Type of metric
+ * @brief Metric type enumeration defining the three supported metric kinds.
  * @ingroup utilities
+ *
+ * This enum classifies metrics into counters (cumulative totals that only
+ * increase), gauges (current snapshot values that can increase or decrease),
+ * and histograms (value distributions for analyzing latencies, sizes, or other
+ * variable metrics with percentile calculations like p50, p95, p99).
+ *
+ * ## Usage Patterns
+ *
+ * - **Counters**: Use for counting events like requests processed, errors
+ * occurred, or bytes transferred. Never decrease.
+ *
+ * - **Gauges**: Track current state like active connections, queue depth, or
+ * memory usage.
+ *
+ * - **Histograms**: Record observations of variable values (e.g., response
+ * times) to compute percentiles for SLO monitoring.
+ *
+ * ## Metric Types Table
+ *
+ * | Type       | Purpose                          | Key Operations | StatsD
+ * Suffix | Prometheus Type |
+ * |------------|----------------------------------|---------------------------------|---------------|-----------------|
+ * | COUNTER    | Cumulative event counts          | inc(), add(value) | \|c |
+ * counter         | | GAUGE      | Current value snapshots          |
+ * set(value), inc(), dec()        | \|g           | gauge           | |
+ * HISTOGRAM  | Value distributions & percentiles| observe(value),
+ * percentile(p)   | \|ms or \|h   | histogram       |
+ *
+ * @note Counters wrap around on overflow (uint64_t, ~584 years at 1/sec rate).
+ * @warning Gauges should be updated frequently for accurate monitoring.
+ * @complexity All type-specific ops are O(1) except histogram percentiles O(n
+ * log n).
+ *
+ * @see SocketMetrics_counter_inc() for counter examples
+ * @see SocketMetrics_gauge_set() for gauge examples
+ * @see SocketMetrics_histogram_observe() for histogram examples
+ * @see docs/METRICS.md#metric-types for best practices
  */
 typedef enum SocketMetricType
 {
-  SOCKET_METRIC_TYPE_COUNTER = 0, /**< Monotonically increasing counter */
-  SOCKET_METRIC_TYPE_GAUGE,       /**< Value that can go up or down */
-  SOCKET_METRIC_TYPE_HISTOGRAM    /**< Distribution with percentiles */
+  SOCKET_METRIC_TYPE_COUNTER
+  = 0, /**< Monotonically increasing counter for event totals */
+  SOCKET_METRIC_TYPE_GAUGE, /**< Gauge for current state values (up or down) */
+  SOCKET_METRIC_TYPE_HISTOGRAM /**< Histogram for distributions with
+                                  percentiles */
 } SocketMetricType;
 
 /**
- * @brief SocketMetricCategory - Category grouping for metrics
+ * @brief Category enumeration for logical grouping of metrics by subsystem.
  * @ingroup utilities
+ *
+ * Metrics are organized into categories corresponding to major library
+ * modules. This enables filtered querying, namespacing in exports (e.g.,
+ * "socket_pool_*" prefix in Prometheus), and targeted alerting/dashboards.
+ *
+ * Categories are used internally for metric naming and documentation but
+ * exposed via SocketMetrics_category_name() for dynamic tools.
+ *
+ * ## Categories Overview Table
+ *
+ * | Category       | Subsystem              | Purpose | Example Metrics |
+ * |----------------|------------------------|----------------------------------------------|------------------------------------------|
+ * | POOL           | Connection Pooling     | Track pool health, efficiency,
+ * and lifecycle | connections_active, acquire_time_ms      | | HTTP_CLIENT |
+ * HTTP Client            | Monitor outbound requests and performance    |
+ * requests_total, latency_ms, bytes_sent   | | HTTP_SERVER    | HTTP Server |
+ * Server request handling and throughput       | requests_total,
+ * response_size, errors    | | TLS            | TLS/SSL Security       |
+ * Handshake success, verification, sessions    | handshakes_total,
+ * cert_failures          | | DNS            | DNS Resolution         | Query
+ * performance and cache effectiveness    | queries_total, cache_hits,
+ * query_time_ms | | SOCKET         | Core Socket I/O        | Basic socket
+ * creation, connect/accept stats  | connect_success, accept_total            |
+ * | POLL           | Event Loop             | Polling efficiency and event
+ * processing      | wakeups, events_dispatched               |
+ *
+ * ## Best Practices
+ *
+ * - **Alerting**: Set alerts per category (e.g., high TLS failures → security
+ * issue)
+ * - **Dashboards**: Group by category for subsystem-specific views
+ * - **Export Prefix**: Categories form base names in exports (e.g., "pool_"
+ * prefix)
+ *
+ * @note SOCKET_METRIC_CAT_COUNT is sentinel, not a real category.
+ * @threadsafe Yes - enum values are constants
+ *
+ * @see SocketMetrics_category_name() to retrieve string representation
+ * @see docs/METRICS.md#categories for dashboard examples
  */
 typedef enum SocketMetricCategory
 {
-  SOCKET_METRIC_CAT_POOL = 0,    /**< Connection pool metrics */
-  SOCKET_METRIC_CAT_HTTP_CLIENT, /**< HTTP client metrics */
-  SOCKET_METRIC_CAT_HTTP_SERVER, /**< HTTP server metrics */
-  SOCKET_METRIC_CAT_TLS,         /**< TLS/SSL metrics */
-  SOCKET_METRIC_CAT_DNS,         /**< DNS resolution metrics */
-  SOCKET_METRIC_CAT_SOCKET,      /**< Core socket metrics */
-  SOCKET_METRIC_CAT_POLL,        /**< Poll/event loop metrics */
-  SOCKET_METRIC_CAT_COUNT        /**< Number of categories */
+  SOCKET_METRIC_CAT_POOL
+  = 0, /**< Connection pool metrics: lifecycle, health, efficiency */
+  SOCKET_METRIC_CAT_HTTP_CLIENT, /**< HTTP client metrics: requests, latency,
+                                    throughput */
+  SOCKET_METRIC_CAT_HTTP_SERVER, /**< HTTP server metrics: requests handled,
+                                    errors, bytes */
+  SOCKET_METRIC_CAT_TLS, /**< TLS/SSL metrics: handshakes, verification,
+                            sessions */
+  SOCKET_METRIC_CAT_DNS, /**< DNS resolution metrics: queries, cache, timeouts
+                          */
+  SOCKET_METRIC_CAT_SOCKET, /**< Core socket metrics: creation, connect, accept
+                             */
+  SOCKET_METRIC_CAT_POLL,   /**< Poll/event loop metrics: wakeups, events,
+                               timeouts */
+  SOCKET_METRIC_CAT_COUNT   /**< Sentinel: total number of categories (not for
+                               use) */
 } SocketMetricCategory;
 
 /* ============================================================================
@@ -344,7 +555,8 @@ typedef struct SocketMetrics_HistogramSnapshot
 } SocketMetrics_HistogramSnapshot;
 
 /**
- * @brief Complete point-in-time snapshot of all metrics for export and analysis.
+ * @brief Complete point-in-time snapshot of all metrics for export and
+ * analysis.
  * @ingroup utilities
  *
  * Aggregates counters, gauges, and histogram snapshots across all categories.
@@ -370,7 +582,8 @@ typedef struct SocketMetrics_Snapshot
  * @ingroup utilities
  * @return 0 on success, -1 on failure.
  * @threadsafe Yes - idempotent, can be called multiple times.
- * @note Automatically called by library initialization; explicit call optional for custom setups.
+ * @note Automatically called by library initialization; explicit call optional
+ * for custom setups.
  * @see SocketMetrics_shutdown() for resource cleanup.
  * @see SocketMetrics_get() to capture metrics snapshots.
  */
@@ -379,7 +592,8 @@ extern int SocketMetrics_init (void);
 /**
  * @brief Shut down the metrics subsystem, releasing all resources.
  * @ingroup utilities
- * @threadsafe Yes - idempotent, safe to call multiple times even if not initialized.
+ * @threadsafe Yes - idempotent, safe to call multiple times even if not
+ * initialized.
  * @see SocketMetrics_init() for subsystem initialization.
  * @see SocketMetrics_reset() if reset needed before shutdown.
  */
@@ -548,7 +762,8 @@ SocketMetrics_histogram_snapshot (SocketHistogramMetric metric,
  * @brief Capture a complete point-in-time snapshot of all metrics.
  * @ingroup utilities
  * @param snapshot Output structure populated with current metrics data.
- * @threadsafe Yes - provides consistent view without blocking other operations.
+ * @threadsafe Yes - provides consistent view without blocking other
+ * operations.
  * @see SocketMetrics_export_prometheus() to export the snapshot.
  * @see SocketMetrics_Snapshot for structure details.
  * @see SocketMetrics_reset() to clear metrics before new snapshot.
@@ -593,8 +808,10 @@ extern void SocketMetrics_reset_histograms (void);
  * @param buffer Output buffer for formatted text
  * @param buffer_size Size of output buffer
  *
- * @return Number of bytes written (excluding NUL), or required size if too small.
- * @threadsafe Yes - atomic snapshot acquisition with mutex protection for consistency.
+ * @return Number of bytes written (excluding NUL), or required size if too
+ * small.
+ * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
+ * consistency.
  *
  * Exports metrics in Prometheus exposition format (text/plain).
  * Format: https://prometheus.io/docs/instrumenting/exposition_formats/
@@ -614,8 +831,10 @@ extern size_t SocketMetrics_export_prometheus (char *buffer,
  * @param buffer_size Size of output buffer
  * @param prefix Metric name prefix (e.g., "myapp.socket") or NULL
  *
- * @return Number of bytes written (excluding NUL), or required size if too small.
- * @threadsafe Yes - atomic snapshot acquisition with mutex protection for consistency.
+ * @return Number of bytes written (excluding NUL), or required size if too
+ * small.
+ * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
+ * consistency.
  *
  * Exports metrics in StatsD line format.
  * Format: https://github.com/statsd/statsd/blob/master/docs/metric_types.md
@@ -633,8 +852,10 @@ extern size_t SocketMetrics_export_statsd (char *buffer, size_t buffer_size,
  * @param buffer Output buffer for formatted text
  * @param buffer_size Size of output buffer
  *
- * @return Number of bytes written (excluding NUL), or required size if too small.
- * @threadsafe Yes - atomic snapshot acquisition with mutex protection for consistency.
+ * @return Number of bytes written (excluding NUL), or required size if too
+ * small.
+ * @threadsafe Yes - atomic snapshot acquisition with mutex protection for
+ * consistency.
  *
  * Exports metrics as JSON object.
  *
@@ -765,7 +986,8 @@ extern const char *SocketMetrics_category_name (SocketMetricCategory category);
   while (0)
 
 /**
- * @brief SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status class
+ * @brief SOCKET_METRICS_HTTP_RESPONSE_CLASS - Record HTTP response by status
+ * class
  * @ingroup utilities
  * @param status HTTP status code (100-599)
  */

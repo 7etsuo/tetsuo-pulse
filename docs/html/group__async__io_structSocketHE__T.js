@@ -9,7 +9,7 @@ var group__async__io_structSocketHE__T =
     [ "dns_complete", "group__async__io.html#aee70d363ad60a557390043a4c5facf67", null ],
     [ "dns_error", "group__async__io.html#aa121090386dd73b5f4d3baa210ade4b6", null ],
     [ "dns_request", "group__async__io.html#af2a815ad1815bfc78cb6d018b8e7ac8b", null ],
-    [ "error_buf", "group__async__io.html#ad658a91e1c063809e9d8c33d9669cbb1", null ],
+    [ "error_buf", "group__async__io.html#a53be6d234730141d247e0e078dbf266c", null ],
     [ "fallback_timer_armed", "group__async__io.html#af55fc86d74b971f71f4a236ab1a908ee", null ],
     [ "first_attempt_time_ms", "group__async__io.html#a8e2cdbeca7dfaef55ebb8d4e0dde26c9", null ],
     [ "host", "group__async__io.html#a9d47f78c56dbd6d1c7499dcb57ba3f00", null ],

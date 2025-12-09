@@ -111,7 +111,7 @@
 <!-- Node9 -->
 <g id="Node000009" class="node">
 <title>Node9</title>
-<g id="a_Node000009"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title="Internal implementation details for SocketPoll module.">
+<g id="a_Node000009"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="848.5,-24.5 744.5,-24.5 744.5,-5.5 848.5,-5.5 848.5,-24.5"/>
 <text text-anchor="middle" x="796.5" y="-12.5" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll&#45;private.h</text>
 </a>
@@ -129,7 +129,7 @@
 <!-- Node10 -->
 <g id="Node000010" class="node">
 <title>Node10</title>
-<g id="a_Node000010"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Abstract interface for platform&#45;specific polling implementations.">
+<g id="a_Node000010"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Defines internal backend abstraction for cross&#45;platform polling.">
 <polygon fill="white" stroke="#666666" points="846.5,-85 732.5,-85 732.5,-66 846.5,-66 846.5,-85"/>
 <text text-anchor="middle" x="789.5" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll_backend.h</text>
 </a>

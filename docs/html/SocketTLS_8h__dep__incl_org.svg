@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
+<g id="a_Node000001"><a xlink:title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">
 <polygon fill="#999999" stroke="#666666" points="550,-184 476,-184 476,-165 550,-165 550,-184"/>
 <text text-anchor="middle" x="513" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS.h</text>
 </a>
@@ -38,7 +38,7 @@
 <!-- Node4 -->
 <g id="Node000004" class="node">
 <title>Node4</title>
-<g id="a_Node000004"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="TLS internal shared definitions and helper functions.">
+<g id="a_Node000004"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="Internal TLS module shared definitions, macros, and helper functions.">
 <polygon fill="white" stroke="#666666" points="319,-74 213,-74 213,-55 319,-55 319,-74"/>
 <text text-anchor="middle" x="266" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS&#45;private.h</text>
 </a>

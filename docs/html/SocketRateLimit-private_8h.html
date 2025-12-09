@@ -113,7 +113,7 @@ $(document).ready(function(){initNavTree('SocketRateLimit-private_8h.html',''); 
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a>  </div>
-  <div class="headertitle"><div class="title">SocketRateLimit-private.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utility Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketRateLimit-private.h File Reference<div class="ingroups"><a class="el" href="group__utilities.html">Utilities</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -137,7 +137,8 @@ $(document).ready(function(){initNavTree('SocketRateLimit-private_8h.html',''); 
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketRateLimit__T" id="r_structSocketRateLimit__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketRateLimit-private_8h.html#structSocketRateLimit__T">SocketRateLimit_T</a></td></tr>
+<tr class="memitem:structSocketRateLimit__T" id="r_structSocketRateLimit__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td></tr>
+<tr class="memdesc:structSocketRateLimit__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure implementing the token bucket rate limiter.  <a href="group__utilities.html#structSocketRateLimit__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketRateLimit__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -157,7 +158,7 @@ Macros</h2></td></tr>
 <tr class="memitem:gabc04e35de3ddc2371a970a9ff98956e9" id="r_gabc04e35de3ddc2371a970a9ff98956e9"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gabc04e35de3ddc2371a970a9ff98956e9">SOCKET_RATELIMIT_MUTEX_INITIALIZED</a>&#160;&#160;&#160;1</td></tr>
 <tr class="memdesc:gabc04e35de3ddc2371a970a9ff98956e9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal flag indicating mutex is initialized and ready.  <br /></td></tr>
 <tr class="separator:gabc04e35de3ddc2371a970a9ff98956e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="SocketRateLimit-private_8h.html#structSocketRateLimit__T">SocketRateLimit_T</a></td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td></tr>
 <tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque token bucket rate limiter instance.  <br /></td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -177,76 +178,7 @@ Macros</h2></td></tr>
 <a class="el" href="group__utilities.html">Utilities Group</a> for related modules. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
-</div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketRateLimit__T" id="structSocketRateLimit__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketRateLimit__T">&#9670;&#160;</a></span>SocketRateLimit_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketRateLimit_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketRateLimit-private_8h_source.html#l00131">131</a> of file <a class="el" href="SocketRateLimit-private_8h_source.html">SocketRateLimit-private.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a73b888de24b69327ad5b89c35fd258a0" name="a73b888de24b69327ad5b89c35fd258a0"></a><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
-<td class="fieldname">
-arena</td>
-<td class="fielddoc">
-<p>Arena used for allocation (NULL if malloc) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a671d83b003e2e93b8510dd25efa20f39" name="a671d83b003e2e93b8510dd25efa20f39"></a>size_t</td>
-<td class="fieldname">
-bucket_size</td>
-<td class="fielddoc">
-<p>Maximum bucket capacity (burst limit) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="af3112ff0c0da07cee2a9f25f8d93e231" name="af3112ff0c0da07cee2a9f25f8d93e231"></a>int</td>
-<td class="fieldname">
-initialized</td>
-<td class="fielddoc">
-<p>State flag: -1=shutdown (freeing), 0=uninitialized, 1=ready. Protects against concurrent access during init/destroy. </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a9b9090fee313ce8aafde3f3bb1100933" name="a9b9090fee313ce8aafde3f3bb1100933"></a>int64_t</td>
-<td class="fieldname">
-last_refill_ms</td>
-<td class="fielddoc">
-<p>Last refill timestamp (monotonic milliseconds) </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a0b4e983c00cf356f73a2e735953472fa" name="a0b4e983c00cf356f73a2e735953472fa"></a>pthread_mutex_t</td>
-<td class="fieldname">
-mutex</td>
-<td class="fielddoc">
-<p>Thread safety mutex for all operations </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a93a780870f78b3668747961949604339" name="a93a780870f78b3668747961949604339"></a>size_t</td>
-<td class="fieldname">
-tokens</td>
-<td class="fielddoc">
-<p>Current available tokens </p>
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ade353acd0ab4faa3f8775023a48b3725" name="ade353acd0ab4faa3f8775023a48b3725"></a>size_t</td>
-<td class="fieldname">
-tokens_per_sec</td>
-<td class="fielddoc">
-<p>Token refill rate (tokens added per second) </p>
-</td></tr>
-</table>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

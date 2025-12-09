@@ -1,0 +1,92 @@
+\doxysection{Socket\+HTTPClient\+\_\+\+Pool\+Stats Struct Reference}
+\hypertarget{structSocketHTTPClient__PoolStats}{}\label{structSocketHTTPClient__PoolStats}\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a102cdd1136d87673c4eb8ca42cd64942}{active\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_aaab49cd26a75dd2f3f7ed96eafc09a25}{idle\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_acbe290157d79e718d8397a6d7078487c}{total\+\_\+requests}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a0bb94abb8c7aa981d1aae1d47469b316}{reused\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a9a5d4cac43fdb9d880edef1dc778273a}{connections\+\_\+created}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a1dfc46ee0c2d61f3facd7daf0d93f0a0}{connections\+\_\+failed}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_ac9548fe3f865ed4d99c7366b0f64937d}{connections\+\_\+timed\+\_\+out}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a822cd3674285e9ee5a3e541b42cc8f9a}{stale\+\_\+connections\+\_\+removed}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPClient__PoolStats_a2388e92ca44d26b70ce6904abbcf0d13}{pool\+\_\+exhausted\+\_\+waits}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Pool statistics 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPClient__PoolStats_a102cdd1136d87673c4eb8ca42cd64942}\label{structSocketHTTPClient__PoolStats_a102cdd1136d87673c4eb8ca42cd64942} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!active\_connections@{active\_connections}}
+\index{active\_connections@{active\_connections}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{active\_connections}{active\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::active\+\_\+connections}
+
+Connections currently in use \Hypertarget{structSocketHTTPClient__PoolStats_a9a5d4cac43fdb9d880edef1dc778273a}\label{structSocketHTTPClient__PoolStats_a9a5d4cac43fdb9d880edef1dc778273a} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!connections\_created@{connections\_created}}
+\index{connections\_created@{connections\_created}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{connections\_created}{connections\_created}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::connections\+\_\+created}
+
+Total connections created \Hypertarget{structSocketHTTPClient__PoolStats_a1dfc46ee0c2d61f3facd7daf0d93f0a0}\label{structSocketHTTPClient__PoolStats_a1dfc46ee0c2d61f3facd7daf0d93f0a0} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!connections\_failed@{connections\_failed}}
+\index{connections\_failed@{connections\_failed}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{connections\_failed}{connections\_failed}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::connections\+\_\+failed}
+
+Connection attempts that failed \Hypertarget{structSocketHTTPClient__PoolStats_ac9548fe3f865ed4d99c7366b0f64937d}\label{structSocketHTTPClient__PoolStats_ac9548fe3f865ed4d99c7366b0f64937d} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!connections\_timed\_out@{connections\_timed\_out}}
+\index{connections\_timed\_out@{connections\_timed\_out}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{connections\_timed\_out}{connections\_timed\_out}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::connections\+\_\+timed\+\_\+out}
+
+Connections that timed out waiting \Hypertarget{structSocketHTTPClient__PoolStats_aaab49cd26a75dd2f3f7ed96eafc09a25}\label{structSocketHTTPClient__PoolStats_aaab49cd26a75dd2f3f7ed96eafc09a25} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!idle\_connections@{idle\_connections}}
+\index{idle\_connections@{idle\_connections}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{idle\_connections}{idle\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::idle\+\_\+connections}
+
+Connections available for reuse \Hypertarget{structSocketHTTPClient__PoolStats_a2388e92ca44d26b70ce6904abbcf0d13}\label{structSocketHTTPClient__PoolStats_a2388e92ca44d26b70ce6904abbcf0d13} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!pool\_exhausted\_waits@{pool\_exhausted\_waits}}
+\index{pool\_exhausted\_waits@{pool\_exhausted\_waits}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{pool\_exhausted\_waits}{pool\_exhausted\_waits}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::pool\+\_\+exhausted\+\_\+waits}
+
+Times we waited for pool slot \Hypertarget{structSocketHTTPClient__PoolStats_a0bb94abb8c7aa981d1aae1d47469b316}\label{structSocketHTTPClient__PoolStats_a0bb94abb8c7aa981d1aae1d47469b316} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!reused\_connections@{reused\_connections}}
+\index{reused\_connections@{reused\_connections}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{reused\_connections}{reused\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::reused\+\_\+connections}
+
+Times a pooled connection was reused \Hypertarget{structSocketHTTPClient__PoolStats_a822cd3674285e9ee5a3e541b42cc8f9a}\label{structSocketHTTPClient__PoolStats_a822cd3674285e9ee5a3e541b42cc8f9a} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!stale\_connections\_removed@{stale\_connections\_removed}}
+\index{stale\_connections\_removed@{stale\_connections\_removed}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{stale\_connections\_removed}{stale\_connections\_removed}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::stale\+\_\+connections\+\_\+removed}
+
+Stale/dead connections cleaned up \Hypertarget{structSocketHTTPClient__PoolStats_acbe290157d79e718d8397a6d7078487c}\label{structSocketHTTPClient__PoolStats_acbe290157d79e718d8397a6d7078487c} 
+\index{SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}!total\_requests@{total\_requests}}
+\index{total\_requests@{total\_requests}!SocketHTTPClient\_PoolStats@{SocketHTTPClient\_PoolStats}}
+\doxysubsubsection{\texorpdfstring{total\_requests}{total\_requests}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPClient\+\_\+\+Pool\+Stats\+::total\+\_\+requests}
+
+Total requests made 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient_8h}{Socket\+HTTPClient.\+h}}\end{DoxyCompactItemize}

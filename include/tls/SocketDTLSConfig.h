@@ -26,18 +26,20 @@
  * Version 1.3
  */
 
- /**
-  * @defgroup dtls_config DTLS Configuration Constants
-  * @ingroup security
-  * @brief Secure default constants for DTLS protocol parameters, MTU management, cookie protection, timeouts, and DoS protection limits.
-  *
-  * These constants can be overridden before including this header and provide stubs when TLS is disabled.
-  * Enforces DTLS 1.2 minimum with support for 1.3 when available.
-  *
-  * @see SocketDTLS.h for the DTLS socket API.
-  * @see SocketDTLSContext.h for context configuration.
-  * @{
-  */
+/**
+ * @defgroup dtls_config DTLS Configuration Constants
+ * @ingroup security
+ * @brief Secure default constants for DTLS protocol parameters, MTU
+ * management, cookie protection, timeouts, and DoS protection limits.
+ *
+ * These constants can be overridden before including this header and provide
+ * stubs when TLS is disabled. Enforces DTLS 1.2 minimum with support for 1.3
+ * when available.
+ *
+ * @see SocketDTLS.h for the DTLS socket API.
+ * @see SocketDTLSContext.h for context configuration.
+ * @{
+ */
 
 #if SOCKET_HAS_TLS
 
@@ -53,8 +55,8 @@
 /**
  * @brief Minimum supported DTLS protocol version.
  * @ingroup dtls_config
- * @details Enforces DTLS 1.2 minimum (DTLS1_2_VERSION) for security equivalent to TLS 1.2.
- * Override only for legacy compatibility (not recommended).
+ * @details Enforces DTLS 1.2 minimum (DTLS1_2_VERSION) for security equivalent
+ * to TLS 1.2. Override only for legacy compatibility (not recommended).
  * @see SOCKET_DTLS_MAX_VERSION
  * @see RFC 6347 for DTLS 1.2 specification.
  */
@@ -65,7 +67,8 @@
 /**
  * @brief Maximum supported DTLS protocol version.
  * @ingroup dtls_config
- * @details Defaults to highest available (DTLS 1.3 if supported by OpenSSL, else 1.2).
+ * @details Defaults to highest available (DTLS 1.3 if supported by OpenSSL,
+ * else 1.2).
  * @see SOCKET_DTLS_MIN_VERSION
  * @see DTLS1_3_VERSION OpenSSL constant for DTLS 1.3.
  */
@@ -87,9 +90,10 @@
 /**
  * @brief Preferred DTLS ciphersuites string for secure configuration.
  * @ingroup dtls_config
- * @details Prioritizes ECDHE with AEAD ciphers (GCM, ChaCha20-Poly1305) for forward secrecy and performance.
- * Excludes legacy CBC, RC4, 3DES, and non-PFS ciphers for security.
- * Format compatible with OpenSSL SSL_CTX_set_cipher_list() or SSL_set_cipher_list().
+ * @details Prioritizes ECDHE with AEAD ciphers (GCM, ChaCha20-Poly1305) for
+ * forward secrecy and performance. Excludes legacy CBC, RC4, 3DES, and non-PFS
+ * ciphers for security. Format compatible with OpenSSL
+ * SSL_CTX_set_cipher_list() or SSL_set_cipher_list().
  * @see "ECDHE-ECDSA-AES256-GCM-SHA384" etc. for individual suites.
  * @see OpenSSL documentation for ciphersuite strings.
  */
@@ -117,8 +121,9 @@
 /**
  * @brief Default MTU for DTLS path.
  * @ingroup dtls_config
- * @details Conservative value (1400 bytes) to avoid fragmentation in IPv6 tunnels, VPNs, and networks with overhead.
- * Adjust based on path MTU discovery for optimal performance.
+ * @details Conservative value (1400 bytes) to avoid fragmentation in IPv6
+ * tunnels, VPNs, and networks with overhead. Adjust based on path MTU
+ * discovery for optimal performance.
  * @see SOCKET_DTLS_MIN_MTU
  * @see SOCKET_DTLS_MAX_MTU
  * @see RFC 6347 Section 4.2.5 for MTU recommendations.
@@ -155,21 +160,26 @@
 /**
  * @brief Maximum size of a single DTLS record in bytes.
  * @ingroup dtls_config
- * @details Matches TLS maximum record size of 16384 bytes per RFC 6347 Section 4.2.3.
- * Used for internal buffer sizing to accommodate full records without truncation.
- * @see SOCKET_DTLS_MAX_PAYLOAD for effective application data limit after overhead.
- * @see RFC 6347 "Datagram Transport Layer Security Version 1.2" for record layer details.
+ * @details Matches TLS maximum record size of 16384 bytes per RFC 6347
+ * Section 4.2.3. Used for internal buffer sizing to accommodate full records
+ * without truncation.
+ * @see SOCKET_DTLS_MAX_PAYLOAD for effective application data limit after
+ * overhead.
+ * @see RFC 6347 "Datagram Transport Layer Security Version 1.2" for record
+ * layer details.
  */
 #ifndef SOCKET_DTLS_MAX_RECORD_SIZE
 #define SOCKET_DTLS_MAX_RECORD_SIZE 16384
 #endif
 
 /**
- * @brief Estimated overhead bytes per DTLS record for conservative buffer sizing.
+ * @brief Estimated overhead bytes per DTLS record for conservative buffer
+ * sizing.
  * @ingroup dtls_config
- * @details Includes 13-byte record header, variable MAC (up to 20 bytes), explicit IV, padding, etc.
- * Conservative 64-byte estimate accounts for worst-case scenarios across ciphersuites.
- * Used in payload calculations to prevent fragmentation.
+ * @details Includes 13-byte record header, variable MAC (up to 20 bytes),
+ * explicit IV, padding, etc. Conservative 64-byte estimate accounts for
+ * worst-case scenarios across ciphersuites. Used in payload calculations to
+ * prevent fragmentation.
  * @see SOCKET_DTLS_MAX_PAYLOAD for computed max application data.
  * @see RFC 6347 Section 4.2.3 for record format and overhead details.
  */
@@ -180,9 +190,10 @@
 /**
  * @brief Maximum application data payload per DTLS record using default MTU.
  * @ingroup dtls_config
- * @details Computed as (default MTU - record overhead - 28 bytes for IPv4/UDP headers).
- * Ensures packets fit within default MTU without IP fragmentation.
- * Actual value depends on network path MTU; use path MTU discovery for optimization.
+ * @details Computed as (default MTU - record overhead - 28 bytes for IPv4/UDP
+ * headers). Ensures packets fit within default MTU without IP fragmentation.
+ * Actual value depends on network path MTU; use path MTU discovery for
+ * optimization.
  * @see SOCKET_DTLS_DEFAULT_MTU
  * @see SOCKET_DTLS_RECORD_OVERHEAD
  * @see RFC 6347 Section 4.2.5 "Path MTU" for fragmentation avoidance.
@@ -206,7 +217,8 @@
 /**
  * @brief Length of DTLS hello cookie in bytes.
  * @ingroup dtls_config
- * @details Fixed to 32 bytes (truncated HMAC-SHA256 output) for security and compatibility.
+ * @details Fixed to 32 bytes (truncated HMAC-SHA256 output) for security and
+ * compatibility.
  * @see RFC 6347 Section 4.2.1 for cookie exchange mechanism.
  */
 #ifndef SOCKET_DTLS_COOKIE_LEN
@@ -340,7 +352,8 @@
  * @brief Validate if given MTU value is within acceptable range.
  * @ingroup dtls_config
  * @param mtu The MTU value to validate.
- * @return 1 if valid (between SOCKET_DTLS_MIN_MTU and SOCKET_DTLS_MAX_MTU), 0 otherwise.
+ * @return 1 if valid (between SOCKET_DTLS_MIN_MTU and SOCKET_DTLS_MAX_MTU), 0
+ * otherwise.
  * @see SOCKET_DTLS_MIN_MTU
  * @see SOCKET_DTLS_MAX_MTU
  */
@@ -358,16 +371,16 @@
 #define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \
   ((int)(ms) >= 0 && (int)(ms) <= SOCKET_DTLS_MAX_TIMEOUT_MS)
 
-
-
 #else /* SOCKET_HAS_TLS not defined */
 
 /**
- * @brief Stub definitions for DTLS configuration constants when TLS support is disabled.
+ * @brief Stub definitions for DTLS configuration constants when TLS support is
+ * disabled.
  * @ingroup security
- * @details These compile-time stubs enable header inclusion and conditional compilation
- * without OpenSSL dependency. Values are set to safe zeros or minimal defaults to
- * prevent misuse in disabled mode. Do not use these values for protocol operations.
+ * @details These compile-time stubs enable header inclusion and conditional
+ * compilation without OpenSSL dependency. Values are set to safe zeros or
+ * minimal defaults to prevent misuse in disabled mode. Do not use these values
+ * for protocol operations.
  * @see dtls_config group documentation for enabled-mode constants and details.
  * @see SocketDTLSConfig.h main documentation for full configuration reference.
  */
@@ -379,7 +392,6 @@
 
 #endif /* SOCKET_HAS_TLS */
 /**
- * @} */ /* dtls_config */ 
-
+ * @} */ /* dtls_config */
 
 #endif

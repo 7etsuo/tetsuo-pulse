@@ -120,7 +120,7 @@ $(document).ready(function(){initNavTree('SocketHPACK_8h.html',''); initResizabl
 </div><!--header-->
 <div class="contents">
 
-<p>HPACK header compression (RFC 7541) for HTTP/2.  
+<p>HPACK header compression/decompression module for HTTP/2 (RFC 7541).  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;stddef.h&gt;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
@@ -210,16 +210,16 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gad2e8414c30906d4f093a213b088edf03" id="r_gad2e8414c30906d4f093a213b088edf03"><td class="memItemLeft" align="right" valign="top">SocketHPACK_Table_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a> (size_t max_size, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:gad2e8414c30906d4f093a213b088edf03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create dynamic table.  <br /></td></tr>
+<tr class="memdesc:gad2e8414c30906d4f093a213b088edf03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new dynamic HPACK table for header compression.  <br /></td></tr>
 <tr class="separator:gad2e8414c30906d4f093a213b088edf03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga821f51d4c73a41cfb01e75068c83e29e" id="r_ga821f51d4c73a41cfb01e75068c83e29e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a> (SocketHPACK_Table_T *table)</td></tr>
-<tr class="memdesc:ga821f51d4c73a41cfb01e75068c83e29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free dynamic table.  <br /></td></tr>
+<tr class="memdesc:ga821f51d4c73a41cfb01e75068c83e29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of a dynamic table instance and release its resources.  <br /></td></tr>
 <tr class="separator:ga821f51d4c73a41cfb01e75068c83e29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa6f9521e46c52adbe47ecb48c2abc307" id="r_gaa6f9521e46c52adbe47ecb48c2abc307"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a> (SocketHPACK_Table_T table, size_t max_size)</td></tr>
-<tr class="memdesc:gaa6f9521e46c52adbe47ecb48c2abc307"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update maximum table size.  <br /></td></tr>
+<tr class="memdesc:gaa6f9521e46c52adbe47ecb48c2abc307"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update the maximum size of the dynamic table.  <br /></td></tr>
 <tr class="separator:gaa6f9521e46c52adbe47ecb48c2abc307"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga43f69e69234e33e6fba377e1eeb53d89" id="r_ga43f69e69234e33e6fba377e1eeb53d89"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a> (SocketHPACK_Table_T table)</td></tr>
-<tr class="memdesc:ga43f69e69234e33e6fba377e1eeb53d89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current table size in bytes.  <br /></td></tr>
+<tr class="memdesc:ga43f69e69234e33e6fba377e1eeb53d89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the current size of the dynamic table in bytes.  <br /></td></tr>
 <tr class="separator:ga43f69e69234e33e6fba377e1eeb53d89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gadd54bf8828aec9d319682da54106537b" id="r_gadd54bf8828aec9d319682da54106537b"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gadd54bf8828aec9d319682da54106537b">SocketHPACK_Table_count</a> (SocketHPACK_Table_T table)</td></tr>
 <tr class="memdesc:gadd54bf8828aec9d319682da54106537b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of entries.  <br /></td></tr>
@@ -261,7 +261,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga780b420084cdeebd327cf2f2cdcdc94b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free decoder.  <br /></td></tr>
 <tr class="separator:ga780b420084cdeebd327cf2f2cdcdc94b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga80929db456c087b62dd8f59935bbd359" id="r_ga80929db456c087b62dd8f59935bbd359"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga80929db456c087b62dd8f59935bbd359">SocketHPACK_Decoder_decode</a> (SocketHPACK_Decoder_T decoder, const unsigned char *input, size_t input_len, <a class="el" href="group__hpack.html#structSocketHPACK__Header">SocketHPACK_Header</a> *headers, size_t max_headers, size_t *header_count, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga80929db456c087b62dd8f59935bbd359"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode header block.  <br /></td></tr>
+<tr class="memdesc:ga80929db456c087b62dd8f59935bbd359"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decode a complete HPACK header block into headers array.  <br /></td></tr>
 <tr class="separator:ga80929db456c087b62dd8f59935bbd359"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga71187fb60d8bbf1a6494b0b7f4566d4d" id="r_ga71187fb60d8bbf1a6494b0b7f4566d4d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga71187fb60d8bbf1a6494b0b7f4566d4d">SocketHPACK_Decoder_set_table_size</a> (SocketHPACK_Decoder_T decoder, size_t max_size)</td></tr>
 <tr class="memdesc:ga71187fb60d8bbf1a6494b0b7f4566d4d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle SETTINGS table size update.  <br /></td></tr>
@@ -301,7 +301,92 @@ Variables</h2></td></tr>
 <tr class="separator:gaaf99a02bd5f3dd4baedcbde590cc5d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>HPACK header compression (RFC 7541) for HTTP/2. </p>
+<div class="textblock"><p>HPACK header compression/decompression module for HTTP/2 (RFC 7541). </p>
+<p>This module implements the full HPACK algorithm for efficient HTTP/2 header field representation and transmission. It handles header compression to reduce bandwidth and decompression with security safeguards.</p>
+<h2><a class="anchor" id="autotoc_md286"></a>
+Key Components</h2>
+<ul>
+<li><b>Static Table</b>: Fixed 61 entries of common headers (Appendix A).</li>
+<li><b>Dynamic Table</b>: Growable table for repeated headers with eviction policy.</li>
+<li><b>Encoding Primitives</b>: Integer, string (literal/Huffman), indexing modes.</li>
+<li><b>Encoder/Decoder</b>: Stateful instances for block-level operations.</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md287"></a>
+Architecture Overview</h2>
+<div class="fragment"><div class="line">+-------------------+     +-------------------+</div>
+<div class="line">|   HTTP/2 Layer    |     |   Application     |</div>
+<div class="line">| (<a class="code hl_variable" href="group__http2__private.html#ga1c39c708707a15d109d6cbbd7e3ebe67">SocketHTTP2</a>)     |&lt;---&gt;| (Request/Response)|</div>
+<div class="line">+-------------------+     +-------------------+</div>
+<div class="line">          ^                        ^</div>
+<div class="line">          | Uses                   | Produces</div>
+<div class="line">          v                        v</div>
+<div class="line">+-------------------+     +-------------------+</div>
+<div class="line">|   HPACK Encoder   |     | HPACK Decoder     |</div>
+<div class="line">| - Table Mgmt      |     | - Table Updates   |</div>
+<div class="line">| - Header Encoding |     | - Header Decoding |</div>
+<div class="line">+-------------------+     +-------------------+</div>
+<div class="line">          ^                        ^</div>
+<div class="line">          | Shared                 | Shared</div>
+<div class="line">          v                        v</div>
+<div class="line">+-------------------+     +-------------------+</div>
+<div class="line">|   Dynamic Table   |&lt;---&gt;|   (Shared State)  |</div>
+<div class="line">| (FIFO Circular)   |     +-------------------+</div>
+<div class="line">+-------------------+               ^</div>
+<div class="line">          ^                         |</div>
+<div class="line">          | Static                  |</div>
+<div class="line">          v                         |</div>
+<div class="line">+-------------------+               |</div>
+<div class="line">|   Static Table    |&lt;--------------+</div>
+<div class="line">| (61 Fixed Entries)|</div>
+<div class="line">+-------------------+</div>
+<div class="ttc" id="agroup__http2__private_html_ga1c39c708707a15d109d6cbbd7e3ebe67"><div class="ttname"><a href="group__http2__private.html#ga1c39c708707a15d109d6cbbd7e3ebe67">SocketHTTP2</a></div><div class="ttdeci">const Except_T SocketHTTP2</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md288"></a>
+Module Dependencies</h2>
+<ul>
+<li><b>Foundation</b>: Arena_T for memory, <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> for errors.</li>
+<li><b>HTTP Core</b>: SocketHTTP_Headers_T compatibility (optional integration).</li>
+<li><b>Used By</b>: SocketHTTP2_Conn_T for frame processing.</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md289"></a>
+Thread Safety</h2>
+<ul>
+<li>Individual encoder/decoder instances: NOT thread-safe (internal state mutation).</li>
+<li>Static functions (huffman_encode, int_encode): thread-safe.</li>
+<li>Dynamic table: NOT thread-safe; synchronize adds/gets.</li>
+<li>Recommendation: One encoder/decoder per connection/thread.</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md290"></a>
+Security Features</h2>
+<ul>
+<li>Configurable limits on table size, header sizes, list size.</li>
+<li>Decompression bomb protection via expansion ratio check.</li>
+<li>Validation of encoding primitives (Huffman padding, integer overflows).</li>
+<li>Automatic never-indexing for sensitive headers (e.g., authorization, cookie).</li>
+<li>Limits on table size updates per block to prevent DoS.</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md291"></a>
+Performance Characteristics</h2>
+<ul>
+<li>Encoding/Decoding: O(n) linear in header block size.</li>
+<li>Table operations: O(1) add/get/evict via circular buffer.</li>
+<li>Huffman: DFA-based decoding for speed, optional encoding.</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md292"></a>
+Configuration Limits</h2>
+<p>See defined constants:</p><ul>
+<li>SOCKETHPACK_DEFAULT_TABLE_SIZE (4096 bytes)</li>
+<li>SOCKETHPACK_MAX_TABLE_SIZE (64KB)</li>
+<li>SOCKETHPACK_MAX_HEADER_SIZE (8KB)</li>
+<li>SOCKETHPACK_MAX_HEADER_LIST_SIZE (64KB)</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md293"></a>
+Integration Notes</h2>
+<ul>
+<li>Use with <a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for automatic setup.</li>
+<li>Manual use: Create encoder/decoder, manage table size via SETTINGS.</li>
+<li>Error handling: Check SocketHPACK_Result; use <a class="el" href="group__http.html#ga09650dc7a68806989192e4cd31b4393b" title="Get error description.">SocketHPACK_result_string()</a> for logging.</li>
+<li>Testing: Use test_hpack binary in build/ for validation. </li>
+</ul>
 
 <p class="definition">Definition in file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div></div><!-- contents -->

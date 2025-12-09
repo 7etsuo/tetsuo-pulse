@@ -156,7 +156,7 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gac82b13f33ba79d9fa97582a64654e8ef" id="r_gac82b13f33ba79d9fa97582a64654e8ef"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t capacity)</td></tr>
-<tr class="memdesc:gac82b13f33ba79d9fa97582a64654e8ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new circular buffer.  <br /></td></tr>
+<tr class="memdesc:gac82b13f33ba79d9fa97582a64654e8ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new circular buffer with specified initial capacity.  <br /></td></tr>
 <tr class="separator:gac82b13f33ba79d9fa97582a64654e8ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7e38c8dbadd8bd771d70ec98eda9f448" id="r_ga7e38c8dbadd8bd771d70ec98eda9f448"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7e38c8dbadd8bd771d70ec98eda9f448">SocketBuf_release</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> *buf)</td></tr>
 <tr class="memdesc:ga7e38c8dbadd8bd771d70ec98eda9f448"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release the buffer handle and invalidate the pointer.  <br /></td></tr>
@@ -215,17 +215,95 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Circular buffer for efficient socket I/O operations. </p>
-<p>Provides efficient buffering for network I/O operations using a circular buffer implementation. This minimizes memory copies and provides O(1) operations for all buffer operations.</p>
+<p>Provides efficient buffering for network I/O operations using a circular buffer implementation. This minimizes memory copies and provides O(1) operations for most buffer operations (O(n) for data copies).</p>
 <p>Features:</p><ul>
-<li>Zero-copy read/write operations where possible</li>
-<li>Thread-safe design (when used with proper synchronization)</li>
-<li>Automatic wraparound handling</li>
-<li>Memory managed by Arena allocator</li>
+<li>Zero-copy read/write pointers for integration with system calls like send/recv</li>
+<li>Dynamic resizing with <a class="el" href="group__core__io.html#ga77d70e899c26ac30bad4aac232505f1e" title="Dynamically resize buffer to ensure at least min_space available.">SocketBuf_reserve()</a></li>
+<li>Secure clearing for sensitive data (e.g., keys, credentials)</li>
+<li>Thread-conditional safety with external synchronization</li>
+<li>Automatic wraparound handling - no manual offset management needed</li>
+<li>Arena-based memory management for efficient allocation/deallocation</li>
 </ul>
-<p>The buffer automatically handles wraparound, so users don't need to worry about circular buffer complexities.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef" title="Create a new circular buffer.">SocketBuf_new()</a> for buffer creation. </dd>
+<h2><a class="anchor" id="autotoc_md531"></a>
+Basic Usage</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketBuf_8h.html">socket/SocketBuf.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Arena_8h.html">core/Arena.h</a>&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;string.h&gt;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;assert.h&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_typedef" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf = <a class="code hl_function" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a>(arena, 4096);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Write data</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *msg = <span class="stringliteral">&quot;Hello, SocketBuf!&quot;</span>;</div>
+<div class="line">    <span class="keywordtype">size_t</span> written = <a class="code hl_function" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a>(buf, msg, strlen(msg));</div>
+<div class="line">    assert(written == strlen(msg));</div>
+<div class="line">    assert(<a class="code hl_function" href="group__core__io.html#ga4f350e096708c438bc2002909325b143">SocketBuf_available</a>(buf) == strlen(msg));</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Read data (copy)</span></div>
+<div class="line">    <span class="keywordtype">char</span> readbuf[1024] = {0};</div>
+<div class="line">    <span class="keywordtype">size_t</span> read_len = <a class="code hl_function" href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a>(buf, readbuf, <span class="keyword">sizeof</span>(readbuf));</div>
+<div class="line">    assert(read_len == strlen(msg));</div>
+<div class="line">    assert(strcmp(readbuf, msg) == 0);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Zero-copy read for transmission</span></div>
+<div class="line">    <span class="keywordtype">size_t</span> len;</div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">void</span> *data_ptr = <a class="code hl_function" href="group__core__io.html#gae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a>(buf, &amp;len);</div>
+<div class="line">    <span class="keywordflow">if</span> (data_ptr) {</div>
+<div class="line">        <span class="comment">// e.g., send(socket, data_ptr, len, 0);</span></div>
+<div class="line">        <a class="code hl_function" href="group__core__io.html#gad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a>(buf, len);  <span class="comment">// Remove after use</span></div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga7e38c8dbadd8bd771d70ec98eda9f448">SocketBuf_release</a>(&amp;buf);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__core__io.html#ga246f86a3226316f3922ee9eba0436777">SocketBuf_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Handle errors: allocation failure, invalid ops</span></div>
+<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Buffer error: %s\n&quot;</span>, Except_message(<a class="code hl_variable" href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a>));</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    <span class="comment">// Release already called in TRY</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
+<div class="ttc" id="aArena_8h_html"><div class="ttname"><a href="Arena_8h.html">Arena.h</a></div><div class="ttdoc">Arena-based memory allocator for efficient bulk memory management.</div></div>
+<div class="ttc" id="aSocketBuf_8h_html"><div class="ttname"><a href="SocketBuf_8h.html">SocketBuf.h</a></div><div class="ttdoc">Circular buffer for efficient socket I/O operations.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga246f86a3226316f3922ee9eba0436777"><div class="ttname"><a href="group__core__io.html#ga246f86a3226316f3922ee9eba0436777">SocketBuf_Failed</a></div><div class="ttdeci">const Except_T SocketBuf_Failed</div><div class="ttdoc">Exception indicating failure in buffer operations such as allocation or resize errors.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga4aacfb9008833f24abec18b1d65d0d42"><div class="ttname"><a href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a></div><div class="ttdeci">size_t SocketBuf_read(SocketBuf_T buf, void *data, size_t len)</div><div class="ttdoc">Read and remove data from the buffer.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga4f350e096708c438bc2002909325b143"><div class="ttname"><a href="group__core__io.html#ga4f350e096708c438bc2002909325b143">SocketBuf_available</a></div><div class="ttdeci">size_t SocketBuf_available(const SocketBuf_T buf)</div><div class="ttdoc">Query the number of bytes available for reading.</div></div>
+<div class="ttc" id="agroup__core__io_html_ga7e38c8dbadd8bd771d70ec98eda9f448"><div class="ttname"><a href="group__core__io.html#ga7e38c8dbadd8bd771d70ec98eda9f448">SocketBuf_release</a></div><div class="ttdeci">void SocketBuf_release(SocketBuf_T *buf)</div><div class="ttdoc">Release the buffer handle and invalidate the pointer.</div></div>
+<div class="ttc" id="agroup__core__io_html_gabad296e666bf8d65669ab7c71d6b8d97"><div class="ttname"><a href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a></div><div class="ttdeci">size_t SocketBuf_write(SocketBuf_T buf, const void *data, size_t len)</div><div class="ttdoc">Write data into the buffer.</div></div>
+<div class="ttc" id="agroup__core__io_html_gac82b13f33ba79d9fa97582a64654e8ef"><div class="ttname"><a href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a></div><div class="ttdeci">SocketBuf_T SocketBuf_new(Arena_T arena, size_t capacity)</div><div class="ttdoc">Create a new circular buffer with specified initial capacity.</div></div>
+<div class="ttc" id="agroup__core__io_html_gad11c3dede8563afbb1a3e9b9f4e936e6"><div class="ttname"><a href="group__core__io.html#gad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a></div><div class="ttdeci">void SocketBuf_consume(SocketBuf_T buf, size_t len)</div><div class="ttdoc">Discard data from the front of the buffer without reading it.</div></div>
+<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00113">SocketBuf.h:113</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gae4d5d95ed126030f6414b7f607cd555e"><div class="ttname"><a href="group__core__io.html#gae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a></div><div class="ttdeci">const void * SocketBuf_readptr(SocketBuf_T buf, size_t *len)</div><div class="ttdoc">Obtain a direct pointer to readable data for zero-copy access.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md532"></a>
+Security Considerations</h2>
+<p>For buffers holding sensitive data (e.g., TLS keys, passwords):</p>
+<div class="fragment"><div class="line"><span class="comment">// Before reuse or disposal</span></div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7">SocketBuf_secureclear</a>(buf);  <span class="comment">// Overwrites with zeros</span></div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Or clear non-sensitive</span></div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#ga61b062261e8e954240edf8d3a6a01fb8">SocketBuf_clear</a>(buf);  <span class="comment">// Faster, but leaves remnants</span></div>
+<div class="ttc" id="agroup__core__io_html_ga61b062261e8e954240edf8d3a6a01fb8"><div class="ttname"><a href="group__core__io.html#ga61b062261e8e954240edf8d3a6a01fb8">SocketBuf_clear</a></div><div class="ttdeci">void SocketBuf_clear(SocketBuf_T buf)</div><div class="ttdoc">Reset buffer to empty state without zeroing memory.</div></div>
+<div class="ttc" id="agroup__core__io_html_gaf0f12ab9bbed33398141c41561c1fcb7"><div class="ttname"><a href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7">SocketBuf_secureclear</a></div><div class="ttdeci">void SocketBuf_secureclear(SocketBuf_T buf)</div><div class="ttdoc">Securely erase all data by zeroing memory contents.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Integrate with <a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for per-connection buffers in servers. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Never retain pointers from readptr/writeptr across mutating calls. </dd></dl>
+<dl class="section user"><dt>Complexity\n Most ops O(1); data ops O(n) where n=bytes transferred.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef" title="Create a new circular buffer with specified initial capacity.">SocketBuf_new()</a> for creation. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97" title="Write data into the buffer.">SocketBuf_write()</a> and <a class="el" href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42" title="Read and remove data from the buffer.">SocketBuf_read()</a> for I/O operations. </dd></dl>
+<a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97" title="Write data into the buffer.">SocketBuf_write()</a> / <a class="el" href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42" title="Read and remove data from the buffer.">SocketBuf_read()</a> for basic I/O. </dd>
+<dd>
+Socket_readptr() / Socket_writeptr() for zero-copy patterns. </dd>
+<dd>
+SocketPool_T for pool usage. </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for advanced I/O integration. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -236,12 +314,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
+          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00032">32</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00092">92</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>

@@ -6,7 +6,7 @@
 <area shape="poly" id="edge75_Node000001_Node000009" title=" " alt="" coords="2186,30,2200,87,2206,125,2208,163,2208,239,2205,273,2199,305,2183,360,2178,358,2194,304,2200,272,2203,239,2203,163,2200,125,2194,88,2181,31"/>
 <area shape="rect" id="Node000027" title=" " alt="" coords="241,445,317,471"/>
 <area shape="poly" id="edge88_Node000001_Node000027" title=" " alt="" coords="2084,24,1651,38,1067,66,789,85,555,108,464,121,395,135,351,150,341,157,337,164,337,313,333,347,323,381,296,435,291,433,318,379,328,346,332,313,332,163,337,153,349,145,394,130,463,116,554,103,788,80,1067,60,1651,33,2084,19"/>
-<area shape="rect" id="Node000039" href="$SocketIPTracker_8h.html" title="Per&#45;IP connection tracking for rate limiting and DoS protection." alt="" coords="2435,372,2594,397"/>
+<area shape="rect" id="Node000039" href="$SocketIPTracker_8h.html" title="Header for IP connection tracker module." alt="" coords="2435,372,2594,397"/>
 <area shape="poly" id="edge71_Node000001_Node000039" title=" " alt="" coords="2276,20,2353,31,2393,41,2429,55,2462,74,2487,98,2504,127,2511,163,2511,239,2515,358,2510,358,2505,239,2505,164,2499,129,2483,101,2458,78,2427,60,2391,46,2352,36,2275,25"/>
 <area shape="rect" id="Node000040" href="$SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112)." alt="" coords="1822,299,1965,324"/>
 <area shape="poly" id="edge76_Node000001_Node000040" title=" " alt="" coords="2171,33,1916,291,1912,287,2167,29"/>
@@ -53,9 +53,9 @@
 <area shape="poly" id="edge26_Node000013_Node000004" title=" " alt="" coords="1471,395,1602,439,1600,444,1469,400"/>
 <area shape="poly" id="edge25_Node000013_Node000007" title=" " alt="" coords="1433,399,1383,507,1378,505,1428,397"/>
 <area shape="poly" id="edge28_Node000014_Node000007" title=" " alt="" coords="1037,323,1082,392,1119,433,1161,468,1196,487,1233,501,1305,519,1303,524,1231,506,1194,492,1159,473,1115,437,1078,395,1032,326"/>
-<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="341,445,483,471"/>
+<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="341,445,483,471"/>
 <area shape="poly" id="edge29_Node000014_Node000015" title=" " alt="" coords="970,325,705,375,572,410,461,444,459,439,570,405,703,369,969,320"/>
-<area shape="rect" id="Node000024" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="912,445,1040,471"/>
+<area shape="rect" id="Node000024" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="912,445,1040,471"/>
 <area shape="poly" id="edge39_Node000014_Node000024" title=" " alt="" coords="1026,325,987,433,982,432,1021,324"/>
 <area shape="rect" id="Node000026" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="716,372,887,397"/>
 <area shape="poly" id="edge44_Node000014_Node000026" title=" " alt="" coords="992,327,852,370,850,365,991,321"/>
@@ -98,7 +98,7 @@
 <area shape="poly" id="edge53_Node000026_Node000030" title=" " alt="" coords="804,398,804,432,799,432,799,398"/>
 <area shape="poly" id="edge59_Node000031_Node000006" title=" " alt="" coords="1147,166,1341,177,1585,200,1707,217,1818,239,1911,265,1948,280,1978,297,2001,319,2013,342,2021,367,2037,396,2068,434,2064,437,2032,399,2016,369,2008,344,1997,322,1974,301,1945,285,1909,270,1817,244,1706,223,1584,206,1340,183,1147,172"/>
 <area shape="poly" id="edge60_Node000031_Node000007" title=" " alt="" coords="1042,180,1018,194,997,211,985,230,985,239,989,249,1000,262,1012,270,1038,277,1068,281,1084,287,1100,296,1126,319,1146,340,1173,383,1199,425,1218,446,1243,469,1282,493,1323,511,1321,516,1280,498,1240,473,1214,450,1195,428,1168,386,1141,344,1123,323,1097,301,1082,292,1066,286,1037,282,1010,275,996,266,984,252,980,240,980,228,993,207,1015,189,1039,175"/>
-<area shape="rect" id="Node000032" href="$SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support." alt="" coords="1157,225,1273,251"/>
+<area shape="rect" id="Node000032" href="$SocketTLS_8h.html" title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement." alt="" coords="1157,225,1273,251"/>
 <area shape="poly" id="edge61_Node000031_Node000032" title=" " alt="" coords="1090,175,1179,217,1177,222,1088,180"/>
 <area shape="rect" id="Node000033" href="$SocketTLSConfig_8h.html" title="TLS configuration constants, structure, and secure defaults." alt="" coords="668,225,823,251"/>
 <area shape="poly" id="edge64_Node000031_Node000033" title=" " alt="" coords="1014,180,811,225,810,220,1013,175"/>

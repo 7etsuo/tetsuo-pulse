@@ -1,0 +1,4 @@
+<map id="Internal TLS Field Utilities" name="Internal TLS Field Utilities">
+<area shape="rect" id="Node000002" href="$group__core__io.html" title="Fundamental socket primitives for TCP, UDP, Unix domain, and DNS operations." alt="" coords="5,13,131,38"/>
+<area shape="rect" id="Node000001" title="Utilities for initializing and managing TLS state in Socket_T." alt="" coords="179,5,304,45"/>
+</map>

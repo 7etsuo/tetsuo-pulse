@@ -184,5 +184,13 @@ var searchData=
   ['socket_5fproxy_5fsocks4_181',['SOCKET_PROXY_SOCKS4',['../group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ab789e6a114edbf61a4df42d8240a51c1',1,'SocketProxy.h']]],
   ['socket_5fproxy_5fsocks4a_182',['SOCKET_PROXY_SOCKS4A',['../group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a8d530f085d00940efe69768b8cf374c6',1,'SocketProxy.h']]],
   ['socket_5fproxy_5fsocks5_183',['SOCKET_PROXY_SOCKS5',['../group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132a65e12b32adeb0ad03fc8a1031423c21f',1,'SocketProxy.h']]],
-  ['socket_5fproxy_5fsocks5h_184',['SOCKET_PROXY_SOCKS5H',['../group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820',1,'SocketProxy.h']]]
+  ['socket_5fproxy_5fsocks5h_184',['SOCKET_PROXY_SOCKS5H',['../group__core__io.html#ggaaa33f7bdae951cc7b53a2fb049e89132ae87246b34aba7c6500664e7be36d8820',1,'SocketProxy.h']]],
+  ['syn_5faction_5fallow_185',['SYN_ACTION_ALLOW',['../group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8',1,'SocketSYNProtect.h']]],
+  ['syn_5faction_5fblock_186',['SYN_ACTION_BLOCK',['../group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa',1,'SocketSYNProtect.h']]],
+  ['syn_5faction_5fchallenge_187',['SYN_ACTION_CHALLENGE',['../group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1',1,'SocketSYNProtect.h']]],
+  ['syn_5faction_5fthrottle_188',['SYN_ACTION_THROTTLE',['../group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9',1,'SocketSYNProtect.h']]],
+  ['syn_5frep_5fhostile_189',['SYN_REP_HOSTILE',['../group__security.html#ggad7b655dd229bc52cb32ec3cc1674d423a5f79b45826a9103f4f8346e74286ad9d',1,'SocketSYNProtect.h']]],
+  ['syn_5frep_5fneutral_190',['SYN_REP_NEUTRAL',['../group__security.html#ggad7b655dd229bc52cb32ec3cc1674d423a3af21cd252d430b04f39badf787d06a2',1,'SocketSYNProtect.h']]],
+  ['syn_5frep_5fsuspect_191',['SYN_REP_SUSPECT',['../group__security.html#ggad7b655dd229bc52cb32ec3cc1674d423ac0634349dad12cd7a8d2a74b9b7cf1be',1,'SocketSYNProtect.h']]],
+  ['syn_5frep_5ftrusted_192',['SYN_REP_TRUSTED',['../group__security.html#ggad7b655dd229bc52cb32ec3cc1674d423a3c7fc4e1a973261af722ef5a72067c34',1,'SocketSYNProtect.h']]]
 ];

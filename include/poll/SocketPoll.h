@@ -6,16 +6,18 @@
 #include "socket/Socket.h"
 
 /**
- * @brief Asynchronous I/O context for high-throughput, zero-copy operations, integrated with SocketPoll_T.
+ * @brief Asynchronous I/O context for high-throughput, zero-copy operations,
+ * integrated with SocketPoll_T.
  * @ingroup async_io
- * Enables automatic completion processing during event waits and advanced patterns like scatter-gather I/O and non-blocking file operations.
+ * Enables automatic completion processing during event waits and advanced
+ * patterns like scatter-gather I/O and non-blocking file operations.
  *
  * @see @ref event_system for core polling infrastructure.
  * @see SocketPoll_get_async() to retrieve from a poll instance.
  * @see @ref async_io "Async I/O module" for detailed usage and patterns.
  * @see docs/ASYNC_IO.md for implementation examples and best practices.
  */
-  
+
 struct SocketAsync_T;
 typedef struct SocketAsync_T *SocketAsync_T;
 
@@ -23,17 +25,22 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * @defgroup event_system Event System Modules
  * @brief High-performance I/O multiplexing with cross-platform backends.
  * @{
- * Key components: SocketPoll_T (cross-platform I/O multiplexing), SocketTimer_T (timer management).
- * Enables scalable event-driven network applications with automatic platform adaptation.
+ * Key components: SocketPoll_T (cross-platform I/O multiplexing),
+ * SocketTimer_T (timer management). Enables scalable event-driven network
+ * applications with automatic platform adaptation.
  *
  * Architecture Overview:
- * - # SocketPoll_T: Core polling interface with backend abstraction for epoll/kqueue/poll.
- * - # SocketTimer_T: Heap-based timer scheduling integrated with poll wait cycles.
- * - Integration with @ref async_io::SocketAsync_T via SocketPoll_get_async() for zero-copy, high-throughput async operations.
+ * - # SocketPoll_T: Core polling interface with backend abstraction for
+ * epoll/kqueue/poll.
+ * - # SocketTimer_T: Heap-based timer scheduling integrated with poll wait
+ * cycles.
+ * - Integration with @ref async_io::SocketAsync_T via SocketPoll_get_async()
+ * for zero-copy, high-throughput async operations.
  *
  * Backend Selection:
  * - Linux: epoll(7) for O(1) edge-triggered notifications.
- * - BSD/macOS: kqueue(2) for efficient event filtering and file descriptor monitoring.
+ * - BSD/macOS: kqueue(2) for efficient event filtering and file descriptor
+ * monitoring.
  * - Fallback: poll(2) for broad POSIX compatibility (level-triggered).
  *
  * Design Principles:
@@ -42,22 +49,28 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * - Non-blocking: Automatically configures sockets for async operation.
  *
  * Usage Patterns:
- * - Servers: Combine with @ref connection_mgmt::SocketPool_T for connection handling.
- * - Clients: Use with @ref utilities::SocketReconnect_T for resilient connections.
+ * - Servers: Combine with @ref connection_mgmt::SocketPool_T for connection
+ * handling.
+ * - Clients: Use with @ref utilities::SocketReconnect_T for resilient
+ * connections.
  * - Timeouts: Integrate SocketTimer_add() for idle connection management.
  *
  * Error Handling: Uses @ref foundation exceptions with detailed errno mapping.
- * Performance: Minimizes syscalls; supports up to system limits (e.g., /proc/sys/fs/epoll/max_user_watches).
+ * Performance: Minimizes syscalls; supports up to system limits (e.g.,
+ * /proc/sys/fs/epoll/max_user_watches).
  *
  * @see @ref foundation for base infrastructure (Arena_T, Except_T).
- * @see @ref core_io for Socket_T primitives compatible with event registration.
+ * @see @ref core_io for Socket_T primitives compatible with event
+ * registration.
  * @see @ref connection_mgmt for advanced connection lifecycle management.
  * @see @ref async_io for SocketAsync_T usage in high-performance scenarios.
  * @see @ref utilities for rate limiting and retry logic integration.
  * @see SocketPoll_T for polling API details.
  * @see SocketTimer_T for timer API (re-exported here).
- * @see @ref async_io::SocketAsync_T for async extensions (integrated via SocketPoll_get_async()).
- * @see docs/ASYNC_IO.md for event-driven programming examples and best practices.
+ * @see @ref async_io::SocketAsync_T for async extensions (integrated via
+ * SocketPoll_get_async()).
+ * @see docs/ASYNC_IO.md for event-driven programming examples and best
+ * practices.
  * @see docs/ERROR_HANDLING.md for exception patterns in event loops.
  * @}
  */
@@ -65,10 +78,12 @@ typedef struct SocketAsync_T *SocketAsync_T;
 /**
  * @file SocketPoll.h
  * @ingroup event_system
- * @brief Cross-platform high-level interface for monitoring multiple sockets for I/O events.
+ * @brief Cross-platform high-level interface for monitoring multiple sockets
+ * for I/O events.
  *
- * Automatically selects optimal backend: epoll (Linux), kqueue (BSD/macOS), poll (POSIX fallback).
- * Supports edge-triggered and level-triggered modes depending on backend capabilities.
+ * Automatically selects optimal backend: epoll (Linux), kqueue (BSD/macOS),
+ * poll (POSIX fallback). Supports edge-triggered and level-triggered modes
+ * depending on backend capabilities.
  *
  * PLATFORM REQUIREMENTS:
  * - POSIX-compliant system (Linux, BSD, macOS, etc.)
@@ -85,8 +100,9 @@ typedef struct SocketAsync_T *SocketAsync_T;
  * - Thread-safe implementation with internal locking
  * - Integrated async I/O completion processing
  *
- * Maintains an internal mapping of sockets to user data for efficient event dispatching and context retrieval.
- * Registered sockets are automatically configured for non-blocking I/O.
+ * Maintains an internal mapping of sockets to user data for efficient event
+ * dispatching and context retrieval. Registered sockets are automatically
+ * configured for non-blocking I/O.
  *
  * @see SocketPoll_new() for poll instance creation.
  * @see SocketPoll_add() for socket registration with events and user data.
@@ -101,12 +117,14 @@ typedef struct SocketAsync_T *SocketAsync_T;
  */
 
 /**
- * @brief High-performance socket polling abstraction with cross-platform backends.
+ * @brief High-performance socket polling abstraction with cross-platform
+ * backends.
  * @ingroup event_system
  *
- * Provides scalable event notification for network applications with O(1) event delivery
- * regardless of the number of monitored sockets. Automatically selects the best available
- * backend for the platform: epoll (Linux), kqueue (BSD/macOS), or poll (POSIX fallback).
+ * Provides scalable event notification for network applications with O(1)
+ * event delivery regardless of the number of monitored sockets. Automatically
+ * selects the best available backend for the platform: epoll (Linux), kqueue
+ * (BSD/macOS), or poll (POSIX fallback).
  *
  * Key Features:
  * - O(1) event delivery with edge-triggered mode for efficiency
@@ -162,7 +180,7 @@ typedef enum
 {
   POLL_READ = 1 << 0,  /**< Data available for reading */
   POLL_WRITE = 1 << 1, /**< Socket ready for writing */
-  POLL_ERROR = 1 << 2,  /**< Error condition occurred */
+  POLL_ERROR = 1 << 2, /**< Error condition occurred */
   POLL_HANGUP = 1 << 3 /**< Connection hang up / disconnection */
 } SocketPoll_Events;
 
@@ -199,7 +217,8 @@ typedef struct SocketEvent
  * to use the default timeout configured via SocketPoll_setdefaulttimeout().
  * Useful for consistent timeout behavior across multiple wait calls.
  *
- * @note This constant ensures timeout consistency across multiple wait operations.
+ * @note This constant ensures timeout consistency across multiple wait
+ * operations.
  * @note Equivalent to calling SocketPoll_getdefaulttimeout() for each wait.
  *
  * @see SocketPoll_wait() for timeout parameter usage.
@@ -211,60 +230,268 @@ typedef struct SocketEvent
 /**
  * @brief Create a new event poll instance.
  * @ingroup event_system
- * @param maxevents Maximum number of events to process per wait call (suggest 1024+ for servers).
- * @return New SocketPoll_T instance.
- * @throws SocketPoll_Failed if backend initialization fails (e.g., resource limits).
- * @threadsafe Yes - each instance is independent.
- * @note Automatically selects and initializes platform-optimal backend (epoll/kqueue/poll) with edge-triggered mode where supported.
- * @note Allocates an internal arena for efficient memory management tied to poll lifecycle.
- * @see SocketPoll_free() for resource cleanup.
- * @see SocketPoll_setmaxregistered() for configuring registration limits.
- * @see SocketPoll_wait() for primary event loop integration.
- * @see SocketPoll_add() for adding sockets to monitor.
- * @see @ref event_system "Event System" for complete module overview.
+ *
+ * Initializes a cross-platform event polling context capable of monitoring
+ * multiple sockets for I/O readiness. Automatically detects and configures the
+ * optimal backend based on platform capabilities, ensuring high-performance
+ * event delivery suitable for servers handling thousands of concurrent
+ * connections.
+ *
+ * The maxevents parameter determines the capacity of the internal event queue,
+ * which affects how many events can be retrieved in a single SocketPoll_wait()
+ * call. Recommended values:
+ * - Small clients: 64-256
+ * - Medium servers: 1024-4096
+ * - High-throughput: 8192+ (monitor memory usage)
+ *
+ * Edge cases and error conditions:
+ * - If maxevents <= 0, defaults to system-specific value (e.g., 64 for epoll).
+ * - Backend initialization failures due to resource limits (ulimit -n,
+ * /proc/sys/fs/epoll/max_user_watches).
+ * - Unsupported platforms fall back to poll(2) with level-triggered semantics.
+ *
+ * @param[in] maxevents Maximum number of events to process per wait call (0
+ * for system default; suggest 1024+ for servers).
+ *
+ * @return New SocketPoll_T instance, fully initialized and ready for use.
+ *
+ * @throws SocketPoll_Failed On backend creation failure, such as:
+ *                           - EMFILE/ENFILE: Process/system file descriptor
+ * limit reached.
+ *                           - ENOMEM: Memory allocation failure for internal
+ * structures.
+ *                           - ENOSYS: Backend not supported on platform.
+ *
+ * @threadsafe Yes - Creation is atomic and instances operate independently
+ * across threads.
+ *
+ * @complexity O(1) - Involves a single system call for backend setup and
+ * initial allocations.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Basic TCP echo server setup
+ * SocketPoll_T poll = SocketPoll_new(1024);  // Tune based on expected load
+ * if (poll == NULL) {
+ *     // Handle initialization failure
+ *     exit(1);
+ * }
+ *
+ * Socket_T listener = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * TRY {
+ *     Socket_bind(listener, "127.0.0.1", 8080);
+ *     Socket_listen(listener, SOMAXCONN);
+ *     Socket_setnonblocking(listener, 1);
+ *     SocketPoll_add(poll, listener, POLL_READ, (void*)listener);
+ * } EXCEPT(Socket_Failed) {
+ *     // Log error
+ * } END_TRY;
+ *
+ * // Event loop would follow...
+ * SocketPoll_free(&poll);
+ * @endcode
+ *
+ * ## Advanced Usage with Configuration
+ *
+ * @code{.c}
+ * SocketPoll_T poll = SocketPoll_new(2048);
+ * SocketPoll_setdefaulttimeout(poll, 100);  // 100ms default wait
+ * SocketPoll_setmaxregistered(poll, 10000); // Limit connections
+ *
+ * // Integrate with timers for heartbeats
+ * SocketTimer_T heartbeat = SocketTimer_add(poll, 30000, heartbeat_cb, NULL);
+ *
+ * // ... main loop ...
+ * @endcode
+ *
+ * @note Each poll instance manages its own internal arena; no external Arena_T
+ * required.
+ * @warning High maxevents values increase per-wait memory footprint; profile
+ * under load.
+ * @see SocketPoll_free() for proper disposal and resource release.
+ * @see SocketPoll_setmaxregistered() for post-creation registration limits.
+ * @see SocketPoll_wait() for the core event waiting mechanism.
+ * @see SocketPoll_add() for registering sockets to monitor.
+ * @see SocketTimer_add() for scheduling timers integrated with the poll cycle.
+ * @see @ref event_system for full event system architecture.
+ * @see docs/ASYNC_IO.md for event-driven server examples and best practices.
  */
 extern T SocketPoll_new (int maxevents);
 
 /**
- * @brief Dispose of an event poll instance and release resources.
+ * @brief Dispose of a SocketPoll instance and release all associated
+ * resources.
  * @ingroup event_system
- * @param poll Pointer to poll instance (set to NULL on success).
- * @threadsafe Yes - safe from any thread.
- * @note Closes underlying backend file descriptor (epoll fd, kqueue, or poll structures).
- * @note Automatically deregisters and closes all tracked sockets if configured.
- * @note Releases internal mappings, timers, and arena-allocated memory.
- * @warning Ensure no concurrent SocketPoll_wait() or registrations are active.
  *
- * Always pair with SocketPoll_new() and call before program exit to avoid leaks.
+ * Completes the lifecycle of a poll instance by:
+ * - Closing the platform-specific backend file descriptor (e.g., epoll fd).
+ * - Implicitly deregistering all monitored file descriptors by destroying
+ * backend state.
+ * - Canceling all integrated timers via heap cleanup.
+ * - Destroying synchronization primitives (mutex).
+ * - Disposing the internal arena, which frees all hash table entries, event
+ * buffers, and mappings.
+ * - Freeing the main poll structure.
  *
- * @see SocketPoll_new() for instance creation.
- * @see SocketPoll_getregisteredcount() to verify cleanup (should be 0 post-free).
- * @see @ref foundation::Arena_dispose() for managing the arena used by poll.
- * @see docs/MEMORY_MANAGEMENT.md for arena lifecycle best practices.
+ * Sockets registered with the poll are NOT closed or freed; the user remains
+ * responsible for calling Socket_free() or Socket_close() on them separately.
+ * The internal mappings (socket-to-data and fd-to-socket) are cleared,
+ * preventing further event delivery for those sockets.
+ *
+ * Post-cleanup, the poll pointer is set to NULL to prevent accidental reuse.
+ * If called on NULL or invalid, it's a no-op.
+ *
+ * Edge cases:
+ * - Concurrent wait/add/del operations: May result in incomplete cleanup;
+ * internal locks mitigate but prefer sequential access.
+ * - Backend close failures: Logged via SOCKET_LOG_ERROR but do not halt
+ * cleanup.
+ *
+ * @param[in,out] poll Pointer to the poll instance (set to NULL on
+ * completion).
+ *
+ * @threadsafe Yes - Uses internal mutex to protect shared state during
+ * cleanup.
+ *
+ * @complexity O(n + m) where n=registered sockets (hash table traversal
+ * implicit via arena dispose), m=timers.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketPoll_T poll = SocketPoll_new(1024);
+ * // ... register sockets, run event loop ...
+ *
+ * // Cleanup
+ * SocketPoll_free(&poll);  // poll now NULL, all internal resources released
+ * @endcode
+ *
+ * ## In Exception-Safe Context
+ *
+ * @code{.c}
+ * TRY {
+ *     SocketPoll_T poll = SocketPoll_new(1024);
+ *     // Operations that may throw
+ *     SocketPoll_add(poll, sock, events, data);
+ * } FINALLY {
+ *     SocketPoll_free(&poll);  // Ensures cleanup even if exceptions occur
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Sockets must be explicitly closed by user code post-deregistration.
+ * @warning Avoid calling during active SocketPoll_wait(); use signals or
+ * timeouts for graceful shutdown.
+ * @see SocketPoll_new() for creation counterpart.
+ * @see SocketPoll_del() for deregistering individual sockets before full
+ * cleanup.
+ * @see SocketPoll_getregisteredcount() to monitor and verify count drops to 0.
+ * @see Arena_dispose() indirectly called via internal arena.
+ * @see SocketTimer_heap_free() for timer cleanup details.
+ * @see docs/MEMORY_MANAGEMENT.md for comprehensive resource disposal
+ * guidelines.
  */
 extern void SocketPoll_free (T *poll);
 
 /**
- * @brief Register a socket for event monitoring in the poll set.
+ * @brief Register a socket for I/O event monitoring within the poll instance.
  * @ingroup event_system
- * @param poll Poll instance to register with.
- * @param socket Socket_T to monitor for I/O events.
- * @param events Bitmask of events (POLL_READ | POLL_WRITE | etc.).
- * @param data Opaque user data pointer associated with this socket (retrieved in events).
- * @threadsafe Yes - atomic registration with mutex protection.
- * @note Automatically configures socket to non-blocking mode if not already set.
- * @note POLL_ERROR and POLL_HANGUP are always implicitly monitored.
- * @throws SocketPoll_Failed if socket already registered, invalid fd, or backend registration fails (e.g., EMFILE).
- * @note Respects SocketPoll_setmaxregistered() limit; raises if exceeded.
  *
- * User data is stored internally and returned unchanged in SocketEvent_T.data during notifications.
+ * Adds the specified socket to the poll's internal monitoring set, enabling
+ * event notifications for the requested I/O conditions. Internally performs:
+ * - Socket validity check and duplicate registration detection.
+ * - Idempotent configuration of socket to non-blocking mode.
+ * - O(1) hash table insertion for socket-to-userdata mapping.
+ * - Platform-specific backend registration (epoll_ctl add, kevent add, poll
+ * array update).
+ * - registered_count increment with max_registered limit enforcement.
  *
- * @see SocketPoll_mod() to update events or data for existing registration.
- * @see SocketPoll_del() to deregister a socket.
- * @see SocketPoll_wait() to receive events for registered sockets.
- * @see SocketPoll_Events for event bitmask definitions.
- * @see Socket_setnonblocking() for manual non-blocking configuration.
- * @see @ref core_io::Socket_T for socket lifecycle management.
+ * Event monitoring includes explicit flags (read/write) plus implicit error
+ * and hangup detection. User data is preserved and delivered verbatim in event
+ * notifications.
+ *
+ * Error conditions trigger SocketPoll_Failed with detailed messages via
+ * Socket_GetLastError(). Common failures: duplicate socket, bad fd, resource
+ * limits (EMFILE), permissions (EPERM).
+ *
+ * ## Event Flags Table
+ *
+ * | Flag          | Description                  | Backend Equivalent |
+ * |---------------|------------------------------|-----------------------------|
+ * | POLL_READ     | Data ready to read           | EPOLLIN / EVFILT_READ | |
+ * POLL_WRITE    | Ready to write               | EPOLLOUT / EVFILT_WRITE     |
+ * | POLL_ERROR    | Error condition              | EPOLLERR / NOTE_ERROR | |
+ * POLL_HANGUP   | Peer disconnect              | EPOLLHUP / EVFILT_READ eof  |
+ *
+ * @param[in] poll Poll instance (non-NULL, valid).
+ * @param[in] socket Socket to add for monitoring (valid open fd required).
+ * @param[in] events Bitmask of events to monitor (0 invalid; use
+ * SocketPoll_Events).
+ * @param[in] data Opaque userdata (may be NULL; stored and returned in
+ * events).
+ *
+ * @throws SocketPoll_Failed For:
+ *                          - Duplicate registration (socket already in poll).
+ *                          - Invalid socket (NULL, closed, bad fd).
+ *                          - Backend failure (EMFILE, ENOMEM, EPERM, ENOSYS).
+ *                          - Exceeds configured max_registered limit.
+ *
+ * @threadsafe Yes - Fully atomic with mutex; concurrent safe.
+ *
+ * @complexity O(1) average case - Hash insert + O(1) backend syscall.
+ *
+ * ## Basic Server Listener Registration
+ *
+ * @code{.c}
+ * Socket_T listener;
+ * TRY {
+ *     listener = Socket_new(AF_INET, SOCK_STREAM, 0);
+ *     Socket_bind(listener, "0.0.0.0", 8080);
+ *     Socket_listen(listener, SOMAXCONN);
+ *     Socket_setnonblocking(listener, 1);  // Recommended
+ *     SocketPoll_add(poll, listener, POLL_READ, listener);  // Self-reference
+ * common } EXCEPT(Socket_Failed) {
+ *     // Handle bind/listen failure
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Client Connection Handling
+ *
+ * @code{.c}
+ * // After accept(2)
+ * Socket_T client = Socket_new_from_fd(accepted_fd);
+ * if (client) {
+ *     TRY {
+ *         SocketPoll_add(poll, client, POLL_READ | POLL_WRITE, client_ctx);
+ *     } EXCEPT(SocketPoll_Failed) {
+ *         Socket_free(&client);
+ *         // Log registration failure
+ *     } END_TRY;
+ * }
+ * @endcode
+ *
+ * ## With Custom User Data
+ *
+ * @code{.c}
+ * struct ConnCtx { void *app_data; time_t last_active; };
+ * struct ConnCtx *ctx = CALLOC(poll_arena, 1, sizeof(struct ConnCtx));
+ * ctx->app_data = user_object;
+ * SocketPoll_add(poll, sock, POLL_READ, ctx);  // Retrieved in
+ * SocketEvent_T.data
+ * @endcode
+ *
+ * @note User data lifetime must exceed poll lifetime or until
+ * SocketPoll_del().
+ * @warning Do not register the same socket in multiple polls; use one primary
+ * poll per socket.
+ * @see SocketPoll_mod() for event/data updates without re-registration.
+ * @see SocketPoll_del() for explicit removal.
+ * @see SocketPoll_wait() to process resulting events.
+ * @see SocketPoll_Events enum for flag values.
+ * @see Socket_setnonblocking() if manual control needed.
+ * @see @ref connection_mgmt::SocketPool_add() for pool-integrated registration
+ * patterns.
+ * @see docs/ASYNC_IO.md for full event-driven examples.
  */
 extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
                             void *data);
@@ -277,11 +504,13 @@ extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
  * @param events Updated event bitmask to monitor (can change from previous).
  * @param data Updated user data pointer (replaces previous association).
  * @threadsafe Yes - atomic update protecting against concurrent access.
- * @throws SocketPoll_Failed if socket not registered or backend modification fails.
+ * @throws SocketPoll_Failed if socket not registered or backend modification
+ * fails.
  * @note Equivalent to del + add internally on some backends (e.g., kqueue).
  * @note Does not change socket's non-blocking state.
  *
- * Use to dynamically adjust monitoring (e.g., enable write after connect success).
+ * Use to dynamically adjust monitoring (e.g., enable write after connect
+ * success).
  *
  * @see SocketPoll_add() for initial socket registration.
  * @see SocketPoll_del() for complete deregistration.
@@ -292,23 +521,69 @@ extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
                             void *data);
 
 /**
- * @brief Deregister a socket from event monitoring.
+ * @brief Deregister a socket from the poll's event monitoring set.
  * @ingroup event_system
- * @param poll Poll instance.
- * @param socket Socket to deregister (no-op if not registered).
- * @threadsafe Yes - mutex-protected removal from internal mappings.
- * @note Idempotent: safe to call multiple times or on unregistered sockets.
- * @note On transient backend errors, cleans local state for consistency.
- * @note Logs warnings for inconsistent state (e.g., backend already removed).
- * @throws SocketPoll_Failed on persistent backend errors (rare, e.g., EBADF).
  *
- * Call during connection cleanup or error recovery to free poll resources.
- * Does not close the socket fd; user must manage socket lifecycle.
+ * Removes the specified socket from internal monitoring, stopping future event
+ * notifications for it. Internally executes:
+ * - Hash table removal for socket-data and fd-socket mappings (O(1) average).
+ * - Backend deregistration (epoll_ctl del, kevent delete, poll array removal).
+ * - registered_count decrement.
+ * - Cleanup of any associated state (e.g., event filters).
  *
- * @see SocketPoll_add() and SocketPoll_mod() for registration/modification.
- * @see SocketPoll_getregisteredcount() to track active registrations.
- * @see Socket_free() for full socket disposal after deregistration.
- * @see @ref connection_mgmt for pool-based connection cleanup patterns.
+ * Idempotent operation: No-op if socket not registered or already removed.
+ * On backend transient errors (e.g., ENOENT), local state cleaned for
+ * consistency. Persistent errors (EBADF, EPERM) raise exception. Logs warnings
+ * for detected inconsistencies via SOCKET_LOG_WARN.
+ *
+ * Call this during connection closure, error handling, or resource reclamation
+ * to prevent stale events and free backend slots. Does NOT close or free the
+ * socket; manage separately.
+ *
+ * @param[in] poll Valid poll instance.
+ * @param[in] socket Socket to remove (ignored if NULL or unregistered).
+ *
+ * @throws SocketPoll_Failed Rarely, on backend del failure (e.g., EBADF
+ * invalid fd, EPERM permissions).
+ *
+ * @threadsafe Yes - Atomic with mutex; concurrent safe.
+ *
+ * @complexity O(1) average - Hash removal + single backend del syscall.
+ *
+ * ## Usage in Event Handling
+ *
+ * @code{.c}
+ * // In event loop, on error or hangup
+ * if (ev->events & (POLL_ERROR | POLL_HANGUP)) {
+ *     SOCKET_LOG_INFO("Disconnecting socket %d", Socket_fd(ev->socket));
+ *     SocketPoll_del(poll, ev->socket);
+ *     Socket_free(&ev->socket);  // Or Socket_close() if reusing fd
+ * }
+ * @endcode
+ *
+ * ## Bulk Cleanup with Pool
+ *
+ * @code{.c}
+ * // Graceful shutdown
+ * SocketPool_foreach(pool, cleanup_cb, NULL);
+ *
+ * void cleanup_cb(Connection_T conn, void *arg) {
+ *     Socket_T sock = Connection_socket(conn);
+ *     SocketPoll_del(poll, sock);  // Deregister before pool remove
+ *     // Pool handles further cleanup
+ * }
+ * @endcode
+ *
+ * @note After del, socket can be re-registered with SocketPoll_add() or used
+ * elsewhere.
+ * @warning Failing to del before Socket_free() may leak backend state (rare;
+ * auto-clean on close).
+ * @see SocketPoll_add() for registration counterpart.
+ * @see SocketPoll_mod() for updates without full removal.
+ * @see SocketPoll_getregisteredcount() to verify removal (decrements count).
+ * @see Socket_free() for socket disposal post-del.
+ * @see @ref connection_mgmt::SocketPool_remove() for pool integration.
+ * @see docs/ASYNC_IO.md for cleanup patterns in event-driven apps.
  */
 extern void SocketPoll_del (T poll, Socket_T socket);
 
@@ -335,25 +610,109 @@ extern int SocketPoll_getdefaulttimeout (T poll);
 extern void SocketPoll_setdefaulttimeout (T poll, int timeout);
 
 /**
- * @brief Wait for I/O events on registered sockets.
+ * @brief Block and wait for I/O events or timeout on registered sockets.
  * @ingroup event_system
- * @param poll Poll instance.
- * @param events Output - array of events that occurred.
- * @param timeout Timeout in milliseconds (-1 for infinite, 0 for immediate,
- *                SOCKET_POLL_TIMEOUT_USE_DEFAULT for poll's default timeout).
- * @return Number of events (0 on timeout).
- * @threadsafe Yes - event array is thread-local to poll instance.
- * @throws SocketPoll_Failed on error.
- * @note The events array points to internal memory - do not free.
- * @note Also processes async I/O completions automatically.
- * @note Use SOCKET_POLL_TIMEOUT_USE_DEFAULT for consistent timeout behavior.
- * @see SocketPoll_add() for registering sockets to monitor.
- * @see SocketPoll_getdefaulttimeout() for default timeout configuration.
- * @see SocketPoll_setdefaulttimeout() for setting default timeout.
- * @see SOCKET_POLL_TIMEOUT_USE_DEFAULT for special timeout constant.
- * @see SocketEvent_T for event structure details.
- * @see SocketPoll_Events for available event types.
- * @see SocketAsync_T for async I/O integration.
+ *
+ * Core event loop primitive: suspends execution until I/O events occur on
+ * monitored sockets, timers expire, or timeout elapses. Internally
+ * orchestrates:
+ * - Timer heap check for due timers (integrated SocketTimer support).
+ * - Backend wait syscall (epoll_wait, kevent, poll) for raw fd events.
+ * - Event translation from backend fd/events to SocketEvent_T with userdata.
+ * - Optional async I/O completion processing (SocketAsync).
+ * - Automatic cleanup of expired/closed registrations.
+ *
+ * Returns array of SocketEvent_T populated with occurred events. Array is
+ * valid until next wait call. 0 return indicates timeout (no events); negative
+ * or exception on errors.
+ *
+ * Timeout semantics:
+ * - -1: Infinite wait (block until event).
+ * - 0: Non-blocking poll (immediate return).
+ * - >0: Wait up to N ms.
+ * - SOCKET_POLL_TIMEOUT_USE_DEFAULT: Use poll->default_timeout_ms.
+ *
+ * Errors: Backend syscalls fail (EINTR handled), invalid state, or resource
+ * issues. Also processes and delivers timer callbacks if timers due.
+ *
+ * ## Timeout Values Table
+ *
+ * | Value | Behavior | Use Case |
+ * |-------|----------|----------|
+ * | -1 | Infinite block | Primary server loop |
+ * | 0 | Non-blocking | Edge-triggered checks |
+ * | >0 | Bounded wait | With external timeouts |
+ * | USE_DEFAULT | Configured default | Consistent loops |
+ *
+ * @param[in] poll Valid poll instance with registered sockets.
+ * @param[out] events Pointer to array of events (internal; do not
+ * free/modify).
+ * @param[in] timeout_ms Wait timeout (-1 infinite, 0 immediate, USE_DEFAULT
+ * for default).
+ *
+ * @return >=0 Number of occurred events (0=timeout, no events).
+ *         Exceptions or negative on fatal errors (rare; check throws).
+ *
+ * @throws SocketPoll_Failed On backend wait failure (e.g., EINVAL, EBADF,
+ * ENOMEM).
+ *
+ * @threadsafe Yes - Returns thread-local event array; mutex protects internal
+ * state.
+ *
+ * @complexity O(k) where k=number of ready events (backend delivers in batch).
+ *
+ * ## Simple Event Loop
+ *
+ * @code{.c}
+ * while (running) {
+ *     SocketEvent_T *events;
+ *     int nev = SocketPoll_wait(poll, &events, 100);  // 100ms timeout
+ *     for (int i = 0; i < nev; ++i) {
+ *         SocketEvent_T *ev = &events[i];
+ *         if (ev->events & POLL_READ) {
+ *             // Handle read: recv, accept, etc.
+ *         }
+ *         if (ev->events & POLL_WRITE) {
+ *             // Handle write: send, connect completion
+ *         }
+ *         if (ev->events & (POLL_ERROR | POLL_HANGUP)) {
+ *             // Handle error/disconnect: close, log
+ *             SocketPoll_del(poll, ev->socket);
+ *             Socket_free(&ev->socket);
+ *         }
+ *         void *data = ev->data;  // User data from add/mod
+ *         // Use data for context-specific handling
+ *     }
+ * }
+ * @endcode
+ *
+ * ## With Timers and Default Timeout
+ *
+ * @code{.c}
+ * SocketPoll_setdefaulttimeout(poll, -1);  // Infinite default
+ * SocketTimer_T timer = SocketTimer_add_repeating(poll, 5000, periodic_cb,
+ * NULL);
+ *
+ * while (running) {
+ *     SocketEvent_T *events;
+ *     int nev = SocketPoll_wait(poll, &events,
+ * SOCKET_POLL_TIMEOUT_USE_DEFAULT);
+ *     // Process events + timers (periodic_cb called if due)
+ * }
+ * @endcode
+ *
+ * @note Events array overwritten on next wait; process immediately.
+ * @warning Infinite timeout (-1) without signals/timers risks deadlock; prefer
+ * bounded.
+ * @see SocketPoll_add() to populate monitoring set before wait.
+ * @see SocketEvent_T structure for event details.
+ * @see SocketPoll_Events for event flags in returned events.
+ * @see SOCKET_POLL_TIMEOUT_USE_DEFAULT constant.
+ * @see SocketPoll_setdefaulttimeout() for configuring default.
+ * @see SocketTimer_add() for timer integration.
+ * @see SocketPoll_get_async() for async extensions processed here.
+ * @see docs/ASYNC_IO.md for complete event loop examples.
+ * @see docs/ERROR_HANDLING.md for exception safety in loops.
  */
 extern int SocketPoll_wait (T poll, SocketEvent_T **events, int timeout);
 
@@ -375,7 +734,8 @@ extern SocketAsync_T SocketPoll_get_async (T poll);
  * @param poll Poll instance.
  * @return Maximum limit (0 = unlimited).
  * @threadsafe Yes.
- * @note Defense-in-depth: Returns the configured limit on socket registrations.
+ * @note Defense-in-depth: Returns the configured limit on socket
+ * registrations.
  * @note Compile-time default is SOCKET_POLL_MAX_REGISTERED (0 = disabled).
  * @see SocketPoll_setmaxregistered() for setting the limit.
  * @see SocketPoll_getregisteredcount() for current count.
@@ -390,7 +750,8 @@ extern int SocketPoll_getmaxregistered (T poll);
  * @param max Maximum limit (0 = unlimited).
  * @threadsafe Yes.
  * @throws SocketPoll_Failed if max < registered_count and max > 0.
- * @note Defense-in-depth: Limits the number of sockets that can be registered to prevent resource exhaustion attacks.
+ * @note Defense-in-depth: Limits the number of sockets that can be registered
+ * to prevent resource exhaustion attacks.
  * @note Set to 0 to disable limit.
  * @note Cannot set limit below current registered_count.
  * @see SocketPoll_getmaxregistered() for retrieving the current limit.

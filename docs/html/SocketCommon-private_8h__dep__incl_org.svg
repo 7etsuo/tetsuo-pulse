@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Private declarations for the SocketCommon module.">
+<g id="a_Node000001"><a xlink:title="Private declarations for SocketCommon module providing shared socket infrastructure.">
 <polygon fill="#999999" stroke="#666666" points="180,-129 52,-129 52,-110 180,-110 180,-129"/>
 <text text-anchor="middle" x="116" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketCommon&#45;private.h</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for the Socket module, including internal structure definition....">
+<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for Socket module: internal structure and shared utilities....">
 <polygon fill="white" stroke="#666666" points="100,-74 12,-74 12,-55 100,-55 100,-74"/>
 <text text-anchor="middle" x="56" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">Socket&#45;private.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="TLS internal shared definitions and helper functions.">
+<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="Internal TLS module shared definitions, macros, and helper functions.">
 <polygon fill="white" stroke="#666666" points="106,-19 0,-19 0,0 106,0 106,-19"/>
 <text text-anchor="middle" x="53" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS&#45;private.h</text>
 </a>

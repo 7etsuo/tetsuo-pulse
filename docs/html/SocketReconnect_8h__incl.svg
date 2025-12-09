@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
+<g id="a_Node000001"><a xlink:title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">
 <polygon fill="#999999" stroke="#666666" points="1214.5,-294 1111.5,-294 1111.5,-275 1214.5,-275 1214.5,-294"/>
 <text text-anchor="middle" x="1163" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect.h</text>
 </a>
@@ -165,7 +165,7 @@ var sectionId = 'dynsection-0';
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000005"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="365,-129 259,-129 259,-110 365,-110 365,-129"/>
 <text text-anchor="middle" x="312" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -183,7 +183,7 @@ var sectionId = 'dynsection-0';
 <!-- Node15 -->
 <g id="Node000015" class="node">
 <title>Node15</title>
-<g id="a_Node000015"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000015"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="857,-129 761,-129 761,-110 857,-110 857,-129"/>
 <text text-anchor="middle" x="809" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

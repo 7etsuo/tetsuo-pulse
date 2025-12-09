@@ -12,9 +12,9 @@
 <area shape="poly" id="edge37_Node000001_Node000024" title=" " alt="" coords="1357,28,1438,70,1435,75,1354,33"/>
 <area shape="rect" id="Node000003" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="158,299,261,324"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="588,99,449,110,276,133,191,150,116,171,56,197,33,211,17,227,9,243,11,256,22,267,39,277,89,292,145,302,144,307,88,297,37,282,18,271,6,258,4,242,13,224,30,207,53,192,114,166,190,145,275,128,448,105,588,93"/>
-<area shape="rect" id="Node000005" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1120,225,1262,251"/>
+<area shape="rect" id="Node000005" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1120,225,1262,251"/>
 <area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="691,102,1136,219,1134,224,689,107"/>
-<area shape="rect" id="Node000015" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="344,225,472,251"/>
+<area shape="rect" id="Node000015" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="344,225,472,251"/>
 <area shape="poly" id="edge14_Node000002_Node000015" title=" " alt="" coords="629,106,440,220,438,216,626,102"/>
 <area shape="rect" id="Node000017" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="562,152,732,177"/>
 <area shape="poly" id="edge19_Node000002_Node000017" title=" " alt="" coords="650,104,650,138,644,138,644,104"/>

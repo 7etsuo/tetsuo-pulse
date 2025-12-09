@@ -1,8 +1,0 @@
-<map id="SocketData" name="SocketData">
-<area shape="rect" id="Node000001" title="Hash table entry for socket&#45;to&#45;userdata mapping." alt="" coords="26,181,117,207"/>
-<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="131,185,139,188,143,194,135,202,117,205,116,199,133,197,138,194,136,192,129,190"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="32,93,111,119"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,133,74,181,69,181,69,133"/>
-<area shape="rect" id="Node000003" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,45,74,93,69,93,69,45"/>
-</map>

@@ -1,8 +1,8 @@
 <map id="SocketReconnect.h" name="SocketReconnect.h">
-<area shape="rect" id="Node000001" title="Automatic reconnection framework with exponential backoff and circuit breaker." alt="" coords="172,5,309,31"/>
+<area shape="rect" id="Node000001" title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte..." alt="" coords="172,5,309,31"/>
 <area shape="rect" id="Node000002" href="$SocketPool_8h.html" title="Connection pooling with automatic lifecycle management." alt="" coords="109,79,209,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="219,42,174,80,171,76,216,38"/>
-<area shape="rect" id="Node000005" href="$SocketReconnect-private_8h.html" title="Internal implementation details for automatic reconnection framework." alt="" coords="233,79,413,104"/>
+<area shape="rect" id="Node000005" href="$SocketReconnect-private_8h.html" title="Private header for SocketReconnect module internals." alt="" coords="233,79,413,104"/>
 <area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="266,38,312,76,308,80,263,42"/>
 <area shape="rect" id="Node000003" href="$SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module." alt="" coords="5,152,148,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="137,115,92,154,88,150,134,111"/>

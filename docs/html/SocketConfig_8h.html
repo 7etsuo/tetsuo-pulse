@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('SocketConfig_8h.html',''); initResizab
 </div><!--header-->
 <div class="contents">
 
-<p>Compile-time configuration and platform detection for the socket library.  
+<p>Compile-time and runtime configuration constants, limits, and platform adaptations.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;errno.h&gt;</code><br />
 <code>#include &lt;fcntl.h&gt;</code><br />
@@ -149,7 +149,7 @@ $(document).ready(function(){initNavTree('SocketConfig_8h.html',''); initResizab
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketTimeouts__T" id="r_structSocketTimeouts__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a></td></tr>
-<tr class="memdesc:structSocketTimeouts__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Timeout configuration structure for socket operations.  <a href="group__foundation.html#structSocketTimeouts__T">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketTimeouts__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Basic timeout configuration structure for socket operations.  <a href="group__foundation.html#structSocketTimeouts__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketTimeouts__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketTimeouts__Extended__T" id="r_structSocketTimeouts__Extended__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketTimeouts__Extended__T">SocketTimeouts_Extended_T</a></td></tr>
 <tr class="memdesc:structSocketTimeouts__Extended__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extended per-phase timeout configuration structure.  <a href="group__foundation.html#structSocketTimeouts__Extended__T">More...</a><br /></td></tr>
@@ -452,7 +452,7 @@ Macros</h2></td></tr>
 <tr class="memdesc:gaaa099b2101176b12abb25299a6ac5bd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default connect timeout.  <br /></td></tr>
 <tr class="separator:gaaa099b2101176b12abb25299a6ac5bd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68b9522f84336d319f6b629906c3128c" id="r_a68b9522f84336d319f6b629906c3128c"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketConfig_8h.html#a68b9522f84336d319f6b629906c3128c">SOCKET_CONNECT_HAPPY_EYEBALLS</a>&#160;&#160;&#160;0</td></tr>
-<tr class="memdesc:a68b9522f84336d319f6b629906c3128c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Connect to remote host.">Socket_connect()</a>  <br /></td></tr>
+<tr class="memdesc:a68b9522f84336d319f6b629906c3128c"><td class="mdescLeft">&#160;</td><td class="mdescRight">SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a>  <br /></td></tr>
 <tr class="separator:a68b9522f84336d319f6b629906c3128c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac01d46f482abd08d6fb51a115b3590c4" id="r_gac01d46f482abd08d6fb51a115b3590c4"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac01d46f482abd08d6fb51a115b3590c4">SOCKET_DEFAULT_DNS_TIMEOUT_MS</a>&#160;&#160;&#160;5000 /* 5 seconds */</td></tr>
 <tr class="memdesc:gac01d46f482abd08d6fb51a115b3590c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default DNS resolution timeout.  <br /></td></tr>
@@ -758,22 +758,101 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga481ecfe6b9e5c83515c92d1808e4b2f9" id="r_ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a> (int errnum)</td></tr>
-<tr class="memdesc:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-safe and bounds-checked strerror implementation.  <br /></td></tr>
+<tr class="memdesc:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides a thread-safe and bounds-checked implementation of strerror().  <br /></td></tr>
 <tr class="separator:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaed9ff2b1bf0e03f310bb9ade53ea5d12" id="r_gaed9ff2b1bf0e03f310bb9ade53ea5d12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaed9ff2b1bf0e03f310bb9ade53ea5d12">SocketConfig_set_max_memory</a> (size_t max_bytes)</td></tr>
-<tr class="memdesc:gaed9ff2b1bf0e03f310bb9ade53ea5d12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set global memory limit for Arena allocations.  <br /></td></tr>
+<tr class="memdesc:gaed9ff2b1bf0e03f310bb9ade53ea5d12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the global memory limit enforced by all Arena allocators.  <br /></td></tr>
 <tr class="separator:gaed9ff2b1bf0e03f310bb9ade53ea5d12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaabcf66346ca3fe8e418cc692f11ff279" id="r_gaabcf66346ca3fe8e418cc692f11ff279"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaabcf66346ca3fe8e418cc692f11ff279">SocketConfig_get_max_memory</a> (void)</td></tr>
-<tr class="memdesc:gaabcf66346ca3fe8e418cc692f11ff279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current global memory limit.  <br /></td></tr>
+<tr class="memdesc:gaabcf66346ca3fe8e418cc692f11ff279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the currently configured global memory limit.  <br /></td></tr>
 <tr class="separator:gaabcf66346ca3fe8e418cc692f11ff279"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaab4be8d7fbe44f61e567e06012b5e224" id="r_gaab4be8d7fbe44f61e567e06012b5e224"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaab4be8d7fbe44f61e567e06012b5e224">SocketConfig_get_memory_used</a> (void)</td></tr>
-<tr class="memdesc:gaab4be8d7fbe44f61e567e06012b5e224"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current total memory usage.  <br /></td></tr>
+<tr class="memdesc:gaab4be8d7fbe44f61e567e06012b5e224"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieves the total current memory allocated via Arenas.  <br /></td></tr>
 <tr class="separator:gaab4be8d7fbe44f61e567e06012b5e224"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Compile-time configuration and platform detection for the socket library. </p>
-<p>This header provides compile-time configuration for the socket library including all size limits, platform detection, and socket option mappings. All configuration values can be overridden at compile time using -D flags.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for runtime <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a> that use these configurations. </dd></dl>
+<div class="textblock"><p>Compile-time and runtime configuration constants, limits, and platform adaptations. </p>
+<p>Central hub for all library configuration: version info, size limits, buffer capacities, timeout defaults, feature flags (HTTP, TLS, WebSocket), platform-specific options (epoll/kqueue, SO_REUSEPORT), and socket option mappings. Enables customizable builds via CMake flags (-DENABLE_TLS=ON, -DSOCKET_MAX_CONNECTIONS=5000) and runtime tuning via functions like <a class="el" href="group__foundation.html#gaed9ff2b1bf0e03f310bb9ade53ea5d12" title="Sets the global memory limit enforced by all Arena allocators.">SocketConfig_set_max_memory()</a>.</p>
+<h2><a class="anchor" id="autotoc_md46"></a>
+Key Configuration Areas</h2>
+<h3><a class="anchor" id="autotoc_md47"></a>
+Size and Capacity Limits</h3>
+<ul>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> pools: SOCKET_MAX_CONNECTIONS (default 10k)</li>
+<li>Buffers: SOCKET_MAX_BUFFER_SIZE (1MB), UDP_MAX_PAYLOAD (65k)</li>
+<li>Arenas: ARENA_CHUNK_SIZE (10k), global limit via set_max_memory()</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md48"></a>
+Feature Flags</h3>
+<ul>
+<li>SOCKET_HAS_TLS: TLS 1.3 support (OpenSSL/LibreSSL)</li>
+<li>SOCKET_HAS_HTTP: HTTP/1.1 + HTTP/2 with HPACK</li>
+<li>SOCKET_HAS_WEBSOCKET: RFC 6455 WebSocket</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md49"></a>
+Platform Detection and Backends</h3>
+<ul>
+<li>Linux: epoll, accept4(), TCP_DEFER_ACCEPT</li>
+<li>BSD/macOS: kqueue, SO_NOSIGPIPE, SO_ACCEPTFILTER</li>
+<li>Universal: poll() fallback, MSG_NOSIGNAL handling</li>
+</ul>
+<h3><a class="anchor" id="autotoc_md50"></a>
+Runtime Config</h3>
+<ul>
+<li>Global memory limit enforcement for arenas</li>
+<li>Validation macros (SOCKET_VALID_PORT, etc.)</li>
+<li>Timeout structs (<a class="el" href="group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations.">SocketTimeouts_T</a>, <a class="el" href="group__foundation.html#structSocketTimeouts__Extended__T" title="Extended per-phase timeout configuration structure.">SocketTimeouts_Extended_T</a>)</li>
+</ul>
+<p>All constants can be overridden at compile-time with -D flags. Runtime functions provide dynamic control where applicable. Thread-safe where noted.</p>
+<h2><a class="anchor" id="autotoc_md51"></a>
+Overriding Defaults</h2>
+<h3><a class="anchor" id="autotoc_md52"></a>
+CMake Build Flags</h3>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Flag   </th><th class="markdownTableHeadNone">Default   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">-DENABLE_TLS=ON   </td><td class="markdownTableBodyNone">Enabled   </td><td class="markdownTableBodyNone">TLS/DTLS support    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">-DENABLE_HTTP=ON   </td><td class="markdownTableBodyNone">Enabled   </td><td class="markdownTableBodyNone">HTTP protocols    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">-DSOCKET_MAX_CONNECTIONS=10000   </td><td class="markdownTableBodyNone">10k   </td><td class="markdownTableBodyNone">Pool size limit   </td></tr>
+</table>
+<h3><a class="anchor" id="autotoc_md53"></a>
+Runtime Functions</h3>
+<ul>
+<li>SocketConfig_set_max_memory(bytes) - Global arena limit</li>
+<li><a class="el" href="group__foundation.html#gaab4be8d7fbe44f61e567e06012b5e224" title="Retrieves the total current memory allocated via Arenas.">SocketConfig_get_memory_used()</a> - Current usage query</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md54"></a>
+Platform Requirements</h2>
+<ul>
+<li>POSIX.1-2008 compliant system (Linux, BSD, macOS)</li>
+<li>C11 compiler with stdatomic.h support for thread safety</li>
+<li>Optional: OpenSSL/LibreSSL for TLS, CMake 3.10+ for builds</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md55"></a>
+Validation and Safety</h2>
+<ul>
+<li>All limits enforced at runtime with NULL returns or exceptions</li>
+<li>Macros like SAFE_CLOSE handle EINTR safely</li>
+<li>Atomic operations for shared config state</li>
+</ul>
+<dl class="section note"><dt>Note</dt><dd>Many values are #ifndef guarded for easy overrides. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Overly low limits may cause premature failures; test thoroughly. </dd>
+<dd>
+Feature flags affect ABI; rebuild dependent code when changed.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> - Runtime <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a> leveraging these configs. </dd>
+<dd>
+<a class="el" href="Arena_8h.html" title="Arena-based memory allocator for efficient bulk memory management.">Arena.h</a> - Memory allocation respecting global limits. </dd>
+<dd>
+<a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">Socket.h</a> - Socket creation using validated params. </dd>
+<dd>
+<a class="el" href="group__foundation.html">Core Foundation Modules</a> - Base module group. </dd>
+<dd>
+docs/CONFIGURATION.md - Detailed build and runtime config guide. </dd>
+<dd>
+CMakeLists.txt - Build system integration. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -789,12 +868,12 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Connect to remote host.">Socket_connect()</a> </p>
-<p>When enabled (1), <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Connect to remote host.">Socket_connect()</a> will use the RFC 8305 Happy Eyeballs algorithm for hostname connections, racing IPv6 and IPv4 connection attempts for faster connection establishment.</p>
-<p>When disabled (0, default), <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Connect to remote host.">Socket_connect()</a> uses sequential connection attempts for backwards compatibility.</p>
+<p>SOCKET_CONNECT_HAPPY_EYEBALLS - Enable Happy Eyeballs for <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a> </p>
+<p>When enabled (1), <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a> will use the RFC 8305 Happy Eyeballs algorithm for hostname connections, racing IPv6 and IPv4 connection attempts for faster connection establishment.</p>
+<p>When disabled (0, default), <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a> uses sequential connection attempts for backwards compatibility.</p>
 <p>Can be overridden at compile time with -DSOCKET_CONNECT_HAPPY_EYEBALLS=1 </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01229">1229</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01352">1352</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -810,7 +889,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01835">1835</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01998">1998</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -826,7 +905,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01795">1795</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01958">1958</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -842,7 +921,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01809">1809</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01972">1972</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -862,7 +941,7 @@ Functions</h2></td></tr>
 <p>Defense-in-depth limit to prevent resource exhaustion attacks. Set to 0 to disable the limit (unlimited registrations). Default: 0 (disabled) for backwards compatibility.</p>
 <p>Security note: In high-security deployments, consider setting this to a reasonable limit based on expected workload to prevent DoS. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00512">512</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00635">635</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -878,7 +957,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01431">1431</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01594">1594</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -894,7 +973,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01426">1426</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01589">1589</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -910,7 +989,7 @@ Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01834">1834</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01997">1997</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -933,7 +1012,7 @@ Functions</h2></td></tr>
 </ul>
 <p>Prevents integer overflow when calculating buffer sizes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00368">368</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00491">491</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>

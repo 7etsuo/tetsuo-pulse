@@ -126,16 +126,16 @@ $(document).ready(function(){initNavTree('group__http__server__connection__mgmt.
 <p>Helper functions for managing individual HTTP server connections. </p>
 <p>These functions implement core connection lifecycle logic: creation, I/O handling, request parsing, response generation, and cleanup. Designed for use in split implementation files (src/http/ *.c). All functions assume single-threaded access via the server's poll loop and are not thread-safe.</p>
 <p>Key areas:</p><ul>
-<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> allocation and teardown (<a class="el" href="group__http.html#ga661e9beac05d8c8b41df73120537c6af">connection_new</a>, <a class="el" href="group__http.html#gabe51462e112b59f52cbb1febfaeba7c9">connection_close</a>)</li>
-<li>I/O operations with buffering and timeouts (<a class="el" href="group__http.html#gacd94ab9df9f26bb81487c46553875ae7">connection_read</a>, <a class="el" href="group__http.html#ga2e72171bf90e61315849daf7c5d37468">connection_send_data</a>)</li>
-<li>HTTP request parsing and validation (<a class="el" href="group__http.html#ga1e34ed26286555466cb14bdd7bcdba86">connection_parse_request</a>)</li>
-<li>Response serialization and error handling (<a class="el" href="group__http.html#ga31ded50da5af2355d60b5f78c18866ab">connection_send_response</a>, <a class="el" href="group__http.html#gad8b6fd9be8c2566fe7f029efc270e6a3">connection_send_error</a>)</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> allocation and teardown (connection_new, connection_close)</li>
+<li>I/O operations with buffering and timeouts (connection_read, connection_send_data)</li>
+<li>HTTP request parsing and validation (connection_parse_request)</li>
+<li>Response serialization and error handling (connection_send_response, connection_send_error)</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> structure for connection state details. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> structure for connection <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> details. </dd>
 <dd>
 SocketHTTPServer_T for server-level management and integration. </dd>
 <dd>
-<a class="el" href="group__event__system.html#structSocketPoll__T" title="Complete internal state for SocketPoll instance.">SocketPoll_T</a> for event-driven I/O multiplexing. </dd>
+SocketPoll_T for event-driven I/O multiplexing. </dd>
 <dd>
 <a class="el" href="group__event__system.html">Event System Group</a> for polling integration. </dd>
 <dd>

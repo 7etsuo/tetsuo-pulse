@@ -1,10 +1,10 @@
 <map id="SocketCommon&#45;private.h" name="SocketCommon&#45;private.h">
-<area shape="rect" id="Node000001" title="Private declarations for the SocketCommon module." alt="" coords="75,5,245,31"/>
-<area shape="rect" id="Node000002" href="$Socket-private_8h.html" title="Private implementation details for the Socket module, including internal structure definition...." alt="" coords="21,79,139,104"/>
+<area shape="rect" id="Node000001" title="Private declarations for SocketCommon module providing shared socket infrastructure." alt="" coords="75,5,245,31"/>
+<area shape="rect" id="Node000002" href="$Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities...." alt="" coords="21,79,139,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="139,42,95,80,91,76,135,38"/>
 <area shape="rect" id="Node000004" href="$SocketDgram-private_8h.html" title="Internal implementation details for datagram (UDP) socket structure." alt="" coords="166,79,322,104"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="186,38,232,76,229,80,182,42"/>
-<area shape="rect" id="Node000003" href="$SocketTLS-private_8h.html" title="TLS internal shared definitions and helper functions." alt="" coords="5,152,147,177"/>
+<area shape="rect" id="Node000003" href="$SocketTLS-private_8h.html" title="Internal TLS module shared definitions, macros, and helper functions." alt="" coords="5,152,147,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="81,118,79,152,74,152,76,118"/>
 <area shape="rect" id="Node000005" href="$SocketDTLS-private_8h.html" title="DTLS internal shared definitions and helper functions." alt="" coords="171,152,322,177"/>
 <area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="248,118,249,152,244,152,242,118"/>

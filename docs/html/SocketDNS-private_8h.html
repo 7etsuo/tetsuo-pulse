@@ -192,7 +192,7 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="group__dns.html#ggabbf149223655194c14baa78907cb2daba8ee12f04250be78e34a7bdf0f08f2111">REQ_CANCELLED</a>
 <br />
  }</td></tr>
-<tr class="memdesc:gabbf149223655194c14baa78907cb2dab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of DNS request processing states.  <a href="group__dns.html#gabbf149223655194c14baa78907cb2dab">More...</a><br /></td></tr>
+<tr class="memdesc:gabbf149223655194c14baa78907cb2dab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of DNS request lifecycle states.  <a href="group__dns.html#gabbf149223655194c14baa78907cb2dab">More...</a><br /></td></tr>
 <tr class="separator:gabbf149223655194c14baa78907cb2dab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaba752f803497a475aa1b96ed2351dd99" id="r_gaba752f803497a475aa1b96ed2351dd99"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaba752f803497a475aa1b96ed2351dd99">DnsCleanupLevel</a> { <br />
 &#160;&#160;<a class="el" href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941">DNS_CLEAN_NONE</a> = 0
@@ -211,20 +211,8 @@ Enumerations</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga0c5a84436f8b4c2c2159a9ae95ec6e6f" id="r_ga0c5a84436f8b4c2c2159a9ae95ec6e6f"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga0c5a84436f8b4c2c2159a9ae95ec6e6f">allocate_dns_resolver</a> (void)</td></tr>
-<tr class="memdesc:ga0c5a84436f8b4c2c2159a9ae95ec6e6f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize DNS resolver structure from heap memory.  <br /></td></tr>
-<tr class="separator:ga0c5a84436f8b4c2c2159a9ae95ec6e6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6c7a4f5e6d71025f70a9ce5815567d19" id="r_ga6c7a4f5e6d71025f70a9ce5815567d19"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga6c7a4f5e6d71025f70a9ce5815567d19">initialize_dns_fields</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
-<tr class="memdesc:ga6c7a4f5e6d71025f70a9ce5815567d19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize basic DNS resolver fields to default values.  <br /></td></tr>
-<tr class="separator:ga6c7a4f5e6d71025f70a9ce5815567d19"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga558e7ea40aee65f859eef6c434f750e0" id="r_ga558e7ea40aee65f859eef6c434f750e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga558e7ea40aee65f859eef6c434f750e0">initialize_dns_components</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
-<tr class="memdesc:ga558e7ea40aee65f859eef6c434f750e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize core DNS resolver components: arena, synchronization primitives, pipe, and worker threads.  <br /></td></tr>
-<tr class="separator:ga558e7ea40aee65f859eef6c434f750e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga62b1aab7c7e7de783b56183c7a62863d" id="r_ga62b1aab7c7e7de783b56183c7a62863d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga62b1aab7c7e7de783b56183c7a62863d">setup_thread_attributes</a> (pthread_attr_t *attr)</td></tr>
-<tr class="memdesc:ga62b1aab7c7e7de783b56183c7a62863d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure thread attributes for worker thread creation.  <br /></td></tr>
-<tr class="separator:ga62b1aab7c7e7de783b56183c7a62863d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga94f5a6033fa425d4586553885a1dea47" id="r_ga94f5a6033fa425d4586553885a1dea47"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga94f5a6033fa425d4586553885a1dea47">create_single_worker_thread</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, int thread_index)</td></tr>
-<tr class="memdesc:ga94f5a6033fa425d4586553885a1dea47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a single worker thread.  <br /></td></tr>
+<tr class="memdesc:ga94f5a6033fa425d4586553885a1dea47"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize DNS resolver structure from heap memory.  <br /></td></tr>
 <tr class="separator:ga94f5a6033fa425d4586553885a1dea47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa9424b326264ca67ebcd3b425836fd3e" id="r_gaa9424b326264ca67ebcd3b425836fd3e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaa9424b326264ca67ebcd3b425836fd3e">create_worker_threads</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
 <tr class="memdesc:gaa9424b326264ca67ebcd3b425836fd3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Spawn the configured number of DNS worker threads.  <br /></td></tr>
@@ -307,11 +295,8 @@ Functions</h2></td></tr>
 <tr class="memitem:gadbfe83ac3fd8daf74a5189130d35eb54" id="r_gadbfe83ac3fd8daf74a5189130d35eb54"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gadbfe83ac3fd8daf74a5189130d35eb54">hash_table_remove</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req)</td></tr>
 <tr class="memdesc:gadbfe83ac3fd8daf74a5189130d35eb54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove request from hash table.  <br /></td></tr>
 <tr class="separator:gadbfe83ac3fd8daf74a5189130d35eb54"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae886927eaa45cdd51372735713b90058" id="r_gae886927eaa45cdd51372735713b90058"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gae886927eaa45cdd51372735713b90058">queue_append</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req)</td></tr>
-<tr class="memdesc:gae886927eaa45cdd51372735713b90058"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append request to processing queue.  <br /></td></tr>
-<tr class="separator:gae886927eaa45cdd51372735713b90058"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf136ad6b2c162ef7251dc25b2e1a7200" id="r_gaf136ad6b2c162ef7251dc25b2e1a7200"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaf136ad6b2c162ef7251dc25b2e1a7200">remove_from_queue_head</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req)</td></tr>
-<tr class="memdesc:gaf136ad6b2c162ef7251dc25b2e1a7200"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove request from queue head position.  <br /></td></tr>
+<tr class="memdesc:gaf136ad6b2c162ef7251dc25b2e1a7200"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append a DNS request to the end of the FIFO processing queue.  <br /></td></tr>
 <tr class="separator:gaf136ad6b2c162ef7251dc25b2e1a7200"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa57962854d57cd4bad03222b31bf5036" id="r_gaa57962854d57cd4bad03222b31bf5036"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaa57962854d57cd4bad03222b31bf5036">remove_from_queue_middle</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req)</td></tr>
 <tr class="memdesc:gaa57962854d57cd4bad03222b31bf5036"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove request from middle of queue.  <br /></td></tr>
@@ -364,7 +349,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga01e5cc089ceff56a8558e455b94c8254" id="r_ga01e5cc089ceff56a8558e455b94c8254"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga01e5cc089ceff56a8558e455b94c8254">signal_completion</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
 <tr class="memdesc:ga01e5cc089ceff56a8558e455b94c8254"><td class="mdescLeft">&#160;</td><td class="mdescRight">Signal completion of DNS request to waiting threads/polls.  <br /></td></tr>
 <tr class="separator:ga01e5cc089ceff56a8558e455b94c8254"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gadbc14c60ccd56fe1f73c7d52b04d0664" id="r_gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gadbc14c60ccd56fe1f73c7d52b04d0664">store_resolution_result</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int error)</td></tr>
+<tr class="memitem:gadbc14c60ccd56fe1f73c7d52b04d0664" id="r_gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gadbc14c60ccd56fe1f73c7d52b04d0664">store_resolution_result</a> (struct <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns, struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
 <tr class="memdesc:gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="mdescLeft">&#160;</td><td class="mdescRight">Store DNS resolution result in request structure.  <br /></td></tr>
 <tr class="separator:gadbc14c60ccd56fe1f73c7d52b04d0664"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga08d853b1c769338c43c424a51f071876" id="r_ga08d853b1c769338c43c424a51f071876"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga08d853b1c769338c43c424a51f071876">dns_cancellation_error</a> (void)</td></tr>
@@ -387,7 +372,7 @@ Variables</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal structures, enums, and prototypes for asynchronous DNS resolver implementation. </p>
-<p>Defines private data structures, state enumerations, and internal function prototypes for the thread-pool based DNS resolution module. Intended solely for library maintainers. Applications must use public API in <a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> exclusively.</p>
+<p>Defines private data structures, state enumerations, and internal function prototypes for the thread-pool based DNS resolution module. Intended solely for library maintainers. Applications must use public API in <a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> exclusively.</p>
 <p>Core internal architecture:</p><ul>
 <li><a class="el" href="group__dns.html#structSocketDNS__T" title="Async DNS resolver structure.">SocketDNS_T</a>: Resolver with arena, worker threads, request queue/hash, sync primitives, completion pipe</li>
 <li><a class="el" href="group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure.">SocketDNS_Request_T</a>: Per-request state including hostname, callback, result, timeout tracking</li>
@@ -406,7 +391,7 @@ Variables</h2></td></tr>
 <li>Worker threads isolated; callbacks execute in worker context (no main thread reentrancy)</li>
 <li>Timeouts prevent DoS from slow/broken DNS servers</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for public asynchronous API (resolve, pollfd, getresult). </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for public asynchronous API (resolve, pollfd, getresult). </dd>
 <dd>
 src/dns/SocketDNS.c for public wrapper functions and exception setup. </dd>
 <dd>
@@ -433,7 +418,7 @@ Callback functions must be reentrant and fast; see SocketDNS_Callback documentat
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00224">224</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00241">241</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>

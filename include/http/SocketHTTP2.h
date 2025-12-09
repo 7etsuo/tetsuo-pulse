@@ -1,11 +1,13 @@
 /**
  * @defgroup http2 HTTP/2 Protocol Implementation
- * @brief HTTP/2 (RFC 9113) support with framing, streams, flow control, and HPACK integration.
+ * @brief HTTP/2 (RFC 9113) support with framing, streams, flow control, and
+ * HPACK integration.
  * @ingroup http
  * @{
  *
- * Complete HTTP/2 implementation including binary framing, stream multiplexing,
- * flow control, HPACK header compression, server push, and h2c upgrade.
+ * Complete HTTP/2 implementation including binary framing, stream
+ * multiplexing, flow control, HPACK header compression, server push, and h2c
+ * upgrade.
  *
  * Key features:
  * - Full RFC 9113 compliance
@@ -25,7 +27,8 @@
 /**
  * @file SocketHTTP2.h
  * @ingroup http22
- * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.
+ * @brief HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow
+ * control.
  *
  * Provides complete HTTP/2 implementation with:
  * - Binary framing layer (9-byte frame headers)
@@ -171,8 +174,9 @@
 #endif
 
 #ifndef SOCKETHTTP2_PING_RATE_WINDOW_MS
-#define SOCKETHTTP2_PING_RATE_WINDOW_MS 1000 /* Rate window in milliseconds   \
-                                              */
+#define SOCKETHTTP2_PING_RATE_WINDOW_MS                                       \
+  1000 /* Rate window in milliseconds                                         \
+        */
 #endif
 
 /**
@@ -181,8 +185,9 @@
  * Prevents SETTINGS flood for CPU/memory exhaustion.
  */
 #ifndef SOCKETHTTP2_SETTINGS_RATE_LIMIT
-#define SOCKETHTTP2_SETTINGS_RATE_LIMIT 10 /* Max SETTINGS frames per window  \
-                                            */
+#define SOCKETHTTP2_SETTINGS_RATE_LIMIT                                       \
+  10 /* Max SETTINGS frames per window                                        \
+      */
 #endif
 
 #ifndef SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS
@@ -293,13 +298,14 @@ typedef enum
  * @see SocketHTTP2_FrameType
  * @see SocketHTTP2_FrameHeader
  */
- /* Frame flags */
-#define HTTP2_FLAG_END_STREAM 0x01  /**< DATA, HEADERS */
-#define HTTP2_FLAG_END_HEADERS 0x04 /**< HEADERS, PUSH_PROMISE, CONTINUATION  \
-                                     */
-#define HTTP2_FLAG_PADDED 0x08      /**< DATA, HEADERS, PUSH_PROMISE */
-#define HTTP2_FLAG_PRIORITY 0x20    /**< HEADERS */
-#define HTTP2_FLAG_ACK 0x01         /**< SETTINGS, PING */
+/* Frame flags */
+#define HTTP2_FLAG_END_STREAM 0x01 /**< DATA, HEADERS */
+#define HTTP2_FLAG_END_HEADERS                                                \
+  0x04                           /**< HEADERS, PUSH_PROMISE, CONTINUATION     \
+                                  */
+#define HTTP2_FLAG_PADDED 0x08   /**< DATA, HEADERS, PUSH_PROMISE */
+#define HTTP2_FLAG_PRIORITY 0x20 /**< HEADERS */
+#define HTTP2_FLAG_ACK 0x01      /**< SETTINGS, PING */
 
 /* ============================================================================
  * Error Codes (RFC 9113 Section 7)
@@ -394,8 +400,9 @@ typedef enum
  * @brief HTTP/2 frame header (9 bytes on wire)
  * @ingroup http2
  *
- * Every HTTP/2 frame begins with a fixed 9-byte header containing length, type,
- * flags, and stream ID. Stream ID 0 is reserved for connection-level frames.
+ * Every HTTP/2 frame begins with a fixed 9-byte header containing length,
+ * type, flags, and stream ID. Stream ID 0 is reserved for connection-level
+ * frames.
  * @see SocketHTTP2_frame_header_parse() to parse from wire format.
  * @see SocketHTTP2_frame_header_serialize() to encode to wire format.
  */
@@ -416,8 +423,8 @@ typedef struct
  * @brief HTTP/2 endpoint role
  * @ingroup http2
  *
- * Determines client or server behavior in connection setup and frame processing.
- * Clients initiate with preface; servers validate it.
+ * Determines client or server behavior in connection setup and frame
+ * processing. Clients initiate with preface; servers validate it.
  * @see SocketHTTP2_config_defaults() which requires role.
  * @see SocketHTTP2_Conn_new() for role-based connection creation.
  */
@@ -480,8 +487,8 @@ typedef struct
  * @brief HTTP/2 connection (opaque type)
  * @ingroup http22
  *
- * Manages connection state, streams, flow control windows, and frame processing.
- * Not thread-safe; use one per thread or synchronize externally.
+ * Manages connection state, streams, flow control windows, and frame
+ * processing. Not thread-safe; use one per thread or synchronize externally.
  * @see SocketHTTP2_Conn_new() for creation.
  * @see SocketHTTP2_Conn_free() for destruction.
  * @see SocketHTTP2_Conn_process() for event-driven processing.
@@ -496,7 +503,8 @@ typedef struct SocketHTTP2_Conn *SocketHTTP2_Conn_T;
  * Supports headers, data, trailers, and flow control.
  * @see SocketHTTP2_Stream_new() for creation.
  * @see SocketHTTP2_Stream_close() for termination.
- * @see SocketHTTP2_Stream_send_headers() and SocketHTTP2_Stream_send_data() for sending.
+ * @see SocketHTTP2_Stream_send_headers() and SocketHTTP2_Stream_send_data()
+ * for sending.
  */
 typedef struct SocketHTTP2_Stream *SocketHTTP2_Stream_T;
 
@@ -525,11 +533,81 @@ typedef struct
  */
 
 /**
- * @brief Initialize config with RFC defaults
+ * @brief Initialize HTTP/2 configuration with safe RFC-compliant defaults.
  * @ingroup http2
- * @param config Configuration structure to initialize
- * @param role Client or server role
- * @threadsafe Yes
+ *
+ * Populates the SocketHTTP2_Config structure with recommended default values
+ * from RFC 9113 Section 6.5.2, plus library-specific security and performance
+ * settings. This ensures secure and efficient operation out-of-the-box.
+ *
+ * Key defaults set:
+ * - Header table size: 4096 bytes
+ * - Enable push: 1 for servers, 0 for clients (clients can't push)
+ * - Max concurrent streams: 100
+ * - Initial window size: 65535 bytes
+ * - Max frame size: 16384 bytes
+ * - Max header list size: 16KB
+ * - Stream open rate: 100/sec with 10 burst (DoS protection)
+ * - Stream close rate: 200/sec with 20 burst
+ * - Connection window: 1MB
+ * - Timeouts: 30s for settings/ping acknowledgments
+ *
+ * Role-specific:
+ * - Servers: Push enabled by default
+ * - Clients: Push disabled (per RFC, clients don't initiate push)
+ *
+ * The function zeros the entire struct first, then sets explicit values.
+ * Call this before customizing settings for SocketHTTP2_Conn_new().
+ *
+ * @param[out] config Configuration structure to populate (must not be NULL)
+ * @param[in] role Client or server role (affects enable_push)
+ *
+ * @return void (no return value)
+ *
+ * @throws None - pure initialization, no side effects or allocations
+ *
+ * @threadsafe Yes - operates only on provided struct, no shared state
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketHTTP2_Config config;
+ * SocketHTTP2_config_defaults(&config, HTTP2_ROLE_CLIENT);
+ * // Customize
+ * config.max_concurrent_streams = 50;
+ * config.initial_window_size = 32768;
+ * // Use in connection
+ * SocketHTTP2_Conn_T conn = SocketHTTP2_Conn_new(sock, &config, arena);
+ * @endcode
+ *
+ * ## Server Configuration
+ *
+ * @code{.c}
+ * SocketHTTP2_Config config;
+ * SocketHTTP2_config_defaults(&config, HTTP2_ROLE_SERVER);
+ * config.enable_push = 0; // Disable if not needed
+ * config.max_concurrent_streams = 1000; // Higher for busy servers
+ * @endcode
+ *
+ * ## Default Values Table
+ *
+ * | Setting | Client Default | Server Default | Description |
+ * |---------|----------------|----------------|-------------|
+ * | header_table_size | 4096 | 4096 | HPACK dynamic table size |
+ * | enable_push | 0 | 1 | Server push support |
+ * | max_concurrent_streams | 100 | 100 | Max simultaneous streams |
+ * | initial_window_size | 65535 | 65535 | Stream flow control window |
+ * | max_frame_size | 16384 | 16384 | Largest frame payload |
+ * | max_header_list_size | 16KB | 16KB | Decompressed headers limit |
+ * | max_stream_open_rate | 100/sec | 100/sec | DoS protection rate |
+ *
+ * @note All unset fields zeroed; explicitly set any custom values after call
+ * @warning Defaults tuned for security; increasing limits may expose to DoS
+ * @complexity O(1) - simple struct assignment
+ *
+ * @see SocketHTTP2_Config for full field documentation
+ * @see SocketHTTP2_Conn_new() which uses this config
+ * @see SocketHTTP2_SettingsId for settings identifiers
  */
 extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
                                          SocketHTTP2_Role role);
@@ -540,63 +618,371 @@ extern void SocketHTTP2_config_defaults (SocketHTTP2_Config *config,
  */
 
 /**
- * @brief Create HTTP/2 connection
+ * @brief Create a new HTTP/2 connection instance.
  * @ingroup http2
- * @param socket  Underlying TCP socket (after TLS handshake for h2)
- * @param config  Configuration (NULL for defaults)
- * @param arena  Memory arena
  *
- * @return New connection instance
- * @throws SocketHTTP2_ProtocolError on allocation failure
- * @threadsafe Yes (arena must be thread-safe or thread-local)
+ * Initializes an HTTP/2 connection over the provided socket. The connection
+ * supports both client and server roles, with automatic handling of preface,
+ * settings exchange, and flow control. Memory is allocated from the provided
+ * arena for lifecycle management.
+ *
+ * Detailed behavior:
+ * - Validates inputs (socket and arena required)
+ * - Applies default config if NULL provided (client role default)
+ * - Initializes local and peer settings, flow control windows
+ * - Generates random hash seed for stream table security
+ * - Sets up rate limiting for stream opens/closes to prevent DoS
+ * - Initializes internal buffers, HPACK decoder/encoder, stream hash table
+ * - Sets initial next stream ID based on role (odd for client, even for
+ * server)
+ *
+ * Edge cases:
+ * - If config->role is invalid, behavior undefined (assert in debug)
+ * - Socket must be connected TCP; UDP not supported
+ * - For encrypted h2, call after TLS handshake completes
+ * - Connection starts in INIT state; call SocketHTTP2_Conn_handshake() to
+ * complete setup
+ *
+ * @param[in] socket Underlying TCP socket (connected, after TLS for h2)
+ * @param[in] config Optional configuration; NULL uses client defaults
+ * @param[in] arena Memory arena for allocations (must outlive connection)
+ *
+ * @return New HTTP/2 connection instance, or NULL on failure (check Except)
+ *
+ * @throws SocketHTTP2_Failed Allocation or initialization failure (arena full,
+ * rate limit alloc fail, random bytes fail)
+ * @throws Arena_Failed Underlying memory allocation failure
+ *
+ * @threadsafe Yes - but arena must be thread-local or synchronized; creates
+ * independent instance
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Client connection
+ * Arena_T arena = Arena_new();
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "example.com", 443);
+ * // Assume TLS handshake done...
+ * SocketHTTP2_Config config;
+ * SocketHTTP2_config_defaults(&config, HTTP2_ROLE_CLIENT);
+ * config.enable_push = 0; // Disable server push
+ * SocketHTTP2_Conn_T conn = SocketHTTP2_Conn_new(sock, &config, arena);
+ * if (conn) {
+ *     SocketHTTP2_Conn_handshake(conn);
+ *     // Use connection...
+ *     SocketHTTP2_Conn_free(&conn);
+ * }
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ * ## Server Connection
+ *
+ * @code{.c}
+ * // Server side (after accept)
+ * SocketHTTP2_Config config;
+ * SocketHTTP2_config_defaults(&config, HTTP2_ROLE_SERVER);
+ * config.max_concurrent_streams = 100;
+ * SocketHTTP2_Conn_T conn = SocketHTTP2_Conn_new(accepted_sock, &config,
+ * arena);
+ * @endcode
+ *
+ * @note Connection is not thread-safe; use one per event loop/thread
+ * @warning Socket must remain valid until Conn_free(); do not close externally
+ * @complexity O(1) - fixed allocations and initializations
+ *
+ * @see SocketHTTP2_config_defaults() for config setup
+ * @see SocketHTTP2_Conn_handshake() to complete preface/settings exchange
+ * @see SocketHTTP2_Conn_free() for cleanup
+ * @see SocketHTTP2_Conn_process() for event processing
  */
 extern SocketHTTP2_Conn_T
 SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
                       Arena_T arena);
 
 /**
- * @brief Free connection and all streams
+ * @brief Dispose of HTTP/2 connection and release all resources.
  * @ingroup http2
- * @param conn  Pointer to connection (will be set to NULL)
  *
- * @threadsafe No
+ * Cleans up the connection instance, including all associated streams,
+ * internal buffers, HPACK state, rate limiters, and other resources.
+ * The underlying socket is NOT closed; caller must close it separately if
+ * needed. Sets the pointer to NULL after cleanup.
+ *
+ * Cleanup order:
+ * - Free HPACK encoder and decoder
+ * - Release stream open/close rate limiters
+ * - Release receive and send buffers
+ * - Connection struct memory returned to arena (not freed explicitly)
+ * - All streams automatically cleaned via arena or explicit free
+ *
+ * Safe to call on NULL or already-freed pointer (no-op).
+ * Call this in FINALLY block or after error to prevent leaks.
+ *
+ * @param[in,out] conn Pointer to connection (set to NULL on success)
+ *
+ * @return void
+ *
+ * @throws None - idempotent cleanup, no allocations or side effects
+ *
+ * @threadsafe No - assumes exclusive access to conn pointer
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketHTTP2_Conn_T conn = SocketHTTP2_Conn_new(sock, config, arena);
+ * if (conn) {
+ *     TRY {
+ *         // Use connection: handshake, process events, etc.
+ *         SocketHTTP2_Conn_process(conn, events);
+ *     } EXCEPT (SocketHTTP2_Error) {
+ *         SocketHTTP2_Conn_goaway(conn, HTTP2_PROTOCOL_ERROR, NULL, 0);
+ *     } FINALLY {
+ *         SocketHTTP2_Conn_free(&conn);  // Safe even if NULL
+ *     } END_TRY;
+ * }
+ * // Close socket separately if needed
+ * Socket_free(&sock);
+ * @endcode
+ *
+ * @note Does NOT send GOAWAY or close socket; use Conn_goaway() for graceful
+ * shutdown
+ * @warning Failing to call free() leaks arena allocations; always pair with
+ * new()
+ * @complexity O(n) where n is number of active streams - frees all streams
+ *
+ * @see SocketHTTP2_Conn_new() for creation
+ * @see SocketHTTP2_Conn_goaway() for graceful shutdown before free
+ * @see Arena_clear() or Arena_dispose() for arena lifecycle
  */
 extern void SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn);
 
 /**
- * @brief Perform HTTP/2 connection preface
+ * @brief Complete HTTP/2 connection preface and initial settings exchange.
  * @ingroup http2
- * @param conn  Connection
  *
- * Client sends: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" + SETTINGS
- * Server expects preface, sends SETTINGS
+ * Advances the connection through the initial HTTP/2 handshake state machine
+ * (RFC 9113 Section 3.4-3.5). This includes sending/receiving the connection
+ * preface, exchanging SETTINGS frames, and acknowledging them. Call repeatedly
+ * until returns 0 (complete).
  *
- * @return 0 on complete, 1 if in progress, -1 on error
- * @threadsafe No
+ * State transitions:
+ * - CLIENT from INIT: Send preface magic + initial SETTINGS, advance to
+ * PREFACE_SENT
+ * - SERVER from INIT: Wait for client preface (via Conn_process), then send
+ * SETTINGS
+ * - Both: Send settings if not sent, wait for peer ACK
+ * - On mutual ACK: Transition to READY state, optional window update if needed
+ *
+ * Return values:
+ * - 0: Handshake complete (READY state), ready for stream operations
+ * - 1: In progress (waiting for peer response or I/O)
+ * - -1: Error (invalid state, send failure); check errno or last error
+ *
+ * Integrate with event loop: Call when POLL_READ/WRITE on socket during
+ * handshake. Errors may require Conn_goaway() and Conn_free().
+ *
+ * @param[in,out] conn Active connection (must not be NULL)
+ *
+ * @return 0 complete, 1 in progress, -1 error
+ *
+ * @throws SocketHTTP2_Failed Send failure during handshake (socket error, flow
+ * control)
+ * @throws SocketHTTP2_ProtocolError Invalid preface or settings ACK timeout
+ *
+ * @threadsafe No - modifies connection state
+ *
+ * ## Usage Example (Client)
+ *
+ * @code{.c}
+ * SocketHTTP2_Conn_T conn = SocketHTTP2_Conn_new(sock, &config, arena);
+ * int status;
+ * while ((status = SocketHTTP2_Conn_handshake(conn)) == 1) {
+ *     // Wait for socket events
+ *     unsigned events = SocketPoll_wait(poll, timeout); // Pseudo
+ *     SocketHTTP2_Conn_process(conn, events);
+ *     SocketHTTP2_Conn_flush(conn);
+ * }
+ * if (status < 0) {
+ *     // Handle error: log, goaway, free
+ *     SocketHTTP2_Conn_free(&conn);
+ *     return -1;
+ * }
+ * // Now in READY: create streams, send requests
+ * @endcode
+ *
+ * ## Server Usage
+ *
+ * @code{.c}
+ * // After Conn_new (INIT state)
+ * // Handshake driven by Conn_process on incoming data
+ * while (SocketHTTP2_Conn_handshake(conn) == 1) {
+ *     SocketHTTP2_Conn_process(conn, POLL_READ);
+ * }
+ * // On 0: ready for client-initiated streams
+ * @endcode
+ *
+ * ## Return Value Table
+ *
+ * | Value | State | Action |
+ * |-------|-------|--------|
+ * | 0 | READY | Proceed to streams |
+ * | 1 | In progress | Continue polling/processing |
+ * | -1 | Error | Check error, cleanup |
+ *
+ * @note May send initial WINDOW_UPDATE if connection window > default
+ * @warning Call before any stream operations; undefined if skipped
+ * @complexity O(1) per call - state machine steps
+ *
+ * @see SocketHTTP2_Conn_new() before handshake
+ * @see SocketHTTP2_Conn_process() for I/O during handshake
+ * @see SocketHTTP2_Conn_state() to query (private, for debug)
  */
 extern int SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn);
 
 /**
- * @brief Process incoming data
+ * @brief Process socket events and HTTP/2 frames.
  * @ingroup http2
- * @param conn  Connection
- * @param events  Poll events (POLL_READ, POLL_WRITE, etc.)
  *
- * Call when socket is readable/writable. Processes frames and
- * invokes callbacks for stream events.
+ * Main event loop entry point for HTTP/2 connections. Handles reading from
+ * socket, parsing frames, dispatching to frame handlers, and invoking stream
+ * callbacks. Call this when the underlying socket has POLL_READ or POLL_WRITE
+ * events.
  *
- * @return 0 on success, -1 on error
- * @threadsafe No
+ * Behavior:
+ * - Reads available data from socket into internal receive buffer
+ * - Verifies client preface on server (if initial state)
+ * - Processes complete frames from buffer (loop until buffer empty or partial)
+ * - Dispatches frames to handlers (DATA, HEADERS, SETTINGS, etc.)
+ * - Updates flow control windows, stream states
+ * - Invokes user callbacks for stream events (headers, data, end, reset)
+ * - Handles errors: may send GOAWAY, transition to error state
+ *
+ * During handshake: advances state via internal calls to Conn_handshake
+ * After ready: processes multiplexed streams
+ *
+ * Return:
+ * - 0: Success, processed all available data
+ * - 1: Partial frame, need more data (continue polling)
+ * - -1: Error (protocol violation, socket error); connection may be invalid
+ *
+ * Pair with Conn_flush() after process to send pending responses.
+ * Integrate with SocketPoll or similar for non-blocking I/O.
+ *
+ * @param[in,out] conn HTTP/2 connection
+ * @param[in] events Bitmask of poll events (POLL_READ | POLL_WRITE |
+ * POLL_ERROR | POLL_HANGUP)
+ *
+ * @return 0 success, 1 need more data, -1 error
+ *
+ * @throws SocketHTTP2_ProtocolError Frame parsing or protocol violation
+ * @throws SocketHTTP2_FlowControlError Window overflow or underflow
+ * @throws SocketHTTP2_StreamError Stream-specific error
+ * @throws Socket_Failed Underlying socket read error
+ *
+ * @threadsafe No - modifies connection and stream states
+ *
+ * ## Event Loop Integration
+ *
+ * @code{.c}
+ * SocketPoll_T poll = SocketPoll_new(1024);
+ * SocketPoll_add(poll, SocketHTTP2_Conn_socket(conn), POLL_READ | POLL_WRITE,
+ * conn);
+ *
+ * while (running) {
+ *     SocketEvent_T *events;
+ *     int n = SocketPoll_wait(poll, &events, timeout_ms);
+ *     for (int i = 0; i < n; i++) {
+ *         SocketHTTP2_Conn_T c = events[i].data;
+ *         int r = SocketHTTP2_Conn_process(c, events[i].events);
+ *         if (r < 0) {
+ *             // Error: log, goaway, free
+ *             SocketHTTP2_Conn_goaway(c, HTTP2_PROTOCOL_ERROR, NULL, 0);
+ *             SocketHTTP2_Conn_free(&c);
+ *         }
+ *         SocketHTTP2_Conn_flush(c); // Send pending frames
+ *     }
+ * }
+ * @endcode
+ *
+ * ## Error Handling
+ *
+ * On -1 return:
+ * - Check Socket_geterrorcode() or last except
+ * - Send GOAWAY if protocol error
+ * - Remove from poll, free connection
+ * - Log peer IP/port for security monitoring
+ *
+ * @note Events param currently unused (always processes read); future opt for
+ * write
+ * @warning Must call after poll events on socket FD; blocking calls undefined
+ * @complexity O(m) where m is number of frames processed - linear in input
+ * size
+ *
+ * @see SocketHTTP2_Conn_flush() to send responses after process
+ * @see SocketHTTP2_Conn_handshake() advanced internally during early calls
+ * @see SocketPoll integration example above
+ * @see SocketHTTP2_StreamCallback for event notifications
  */
 extern int SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events);
 
 /**
- * @brief Flush pending output
+ * @brief Flush pending HTTP/2 frames to socket.
  * @ingroup http2
- * @param conn  Connection
  *
- * @return 0 on success, -1 on error
- * @threadsafe No
+ * Sends all buffered output frames from the send buffer to the underlying
+ * socket. Handles partial sends and EAGAIN by returning 1 (would block). Call
+ * this after Conn_process() or after sending data/headers to ensure timely
+ * delivery.
+ *
+ * Behavior:
+ * - Loops until send buffer empty or socket blocks
+ * - Uses Socket_send() for transmission
+ * - Updates send window on successful sends
+ * - On EAGAIN/0: returns 1, caller should poll for WRITE
+ * - On error: returns -1, errno set (e.g. ECONNRESET)
+ *
+ * Non-blocking friendly; integrates with event loops.
+ *
+ * @param[in,out] conn Connection with buffered output
+ *
+ * @return 0 all sent, 1 would block (partial send), -1 error
+ *
+ * @throws Socket_Failed Socket send error (connection closed, reset)
+ * @throws SocketHTTP2_FlowControlError If send window exhausted (rare,
+ * internal)
+ *
+ * @threadsafe No - modifies send buffer and windows
+ *
+ * ## Usage in Event Loop
+ *
+ * @code{.c}
+ * // After processing input
+ * int r = SocketHTTP2_Conn_process(conn, events);
+ * if (r >= 0) {
+ *     int f = SocketHTTP2_Conn_flush(conn);
+ *     if (f == 1) {
+ *         // Register for POLL_WRITE
+ *         SocketPoll_mod(poll, SocketHTTP2_Conn_socket(conn), POLL_WRITE,
+ * conn);
+ *     }
+ * }
+ * @endcode
+ *
+ * ## Return Value Table
+ *
+ * | Value | Meaning | Next Action |
+ * |-------|---------|-------------|
+ * | 0 | All data sent | Normal |
+ * | 1 | Partial send, need WRITE | Poll for write |
+ * | -1 | Error | Check errno, cleanup |
+ *
+ * @note Buffers frames for efficient batched sending
+ * @warning Must call regularly to avoid head-of-line blocking
+ * @complexity O(k) where k bytes sent - linear in output size
+ *
+ * @see SocketHTTP2_Conn_process() before flush for full cycle
+ * @see Socket_send_window() to check available capacity
  */
 extern int SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn);
 
@@ -830,7 +1216,8 @@ extern void SocketHTTP2_Stream_set_userdata (SocketHTTP2_Stream_T stream,
  * @param header_count  Number of headers
  * @param end_stream  Set END_STREAM flag (no body follows)
  *
- * @note Required pseudo-headers: requests (:method, :scheme, :authority, :path); responses (:status).
+ * @note Required pseudo-headers: requests (:method, :scheme, :authority,
+ * :path); responses (:status).
  *
  * @return 0 on success, -1 on error
  * @threadsafe No

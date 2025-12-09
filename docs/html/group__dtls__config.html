@@ -203,7 +203,7 @@ Macros</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Secure default constants for DTLS protocol parameters, MTU management, cookie protection, timeouts, and DoS protection limits. </p>
 <p>These constants can be overridden before including this header and provide stubs when TLS is disabled. Enforces DTLS 1.2 minimum with support for 1.3 when available.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for the DTLS socket API. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for the DTLS socket API. </dd>
 <dd>
 <a class="el" href="SocketDTLSContext_8h.html" title="DTLS context management with cookie protection and secure defaults.">SocketDTLSContext.h</a> for context configuration. </dd></dl>
 <h2 class="groupheader">Macro Definition Documentation</h2>
@@ -438,7 +438,7 @@ RFC 6347 Section 4.2.5 for MTU recommendations. </dd></dl>
 <p>Maximum allowable MTU value. </p>
 <p>Supports jumbo frames (9000 bytes), though rare in practice. Used for validation of user-provided MTU values. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dtls__config.html#ga4e20e95db1f3cb5f21c2d10649ac36da" title="Minimum allowable MTU value.">SOCKET_DTLS_MIN_MTU</a> </dd>
 <dd>
-<a class="el" href="group__foundation.html#gacd7c2df90f755def2ac7e1edeef37538" title="Round up to next power of 2.">socket_util_round_up_pow2()</a> for power-of-2 alignment if needed. </dd></dl>
+<a class="el" href="group__foundation.html#gacd7c2df90f755def2ac7e1edeef37538" title="Round up to next power of 2.">socket_util_round_up_pow2()</a> for power-of-2 alignment <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> needed. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketDTLSConfig_8h_source.html#l00152">152</a> of file <a class="el" href="SocketDTLSConfig_8h_source.html">SocketDTLSConfig.h</a>.</p>
 

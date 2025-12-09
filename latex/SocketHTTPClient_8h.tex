@@ -1,0 +1,316 @@
+\doxysection{include/http/\+Socket\+HTTPClient.h File Reference}
+\hypertarget{SocketHTTPClient_8h}{}\label{SocketHTTPClient_8h}\index{include/http/SocketHTTPClient.h@{include/http/SocketHTTPClient.h}}
+
+
+High-\/level HTTP client with connection pooling and protocol negotiation.  
+
+
+{\ttfamily \#include $<$stddef.\+h$>$}\newline
+{\ttfamily \#include $<$stdint.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include $<$time.\+h$>$}\newline
+{\ttfamily \#include "{}core/\+Arena.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Except.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTPClient-\/config.\+h"{}}\newline
+Include dependency graph for Socket\+HTTPClient.\+h\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTPClient_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=241pt]{SocketHTTPClient_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__Auth}{Socket\+HTTPClient\+\_\+\+Auth}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__Cookie}{Socket\+HTTPClient\+\_\+\+Cookie}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPClient__PoolStats}{Socket\+HTTPClient\+\_\+\+Pool\+Stats}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPClient_8h_ac46f2ab9dacbb1af2d590f2974e21577}\label{SocketHTTPClient_8h_ac46f2ab9dacbb1af2d590f2974e21577} 
+typedef struct Socket\+TLSContext\+\_\+T \texorpdfstring{$\ast$}{*} {\bfseries Socket\+TLSContext\+\_\+T}
+\item 
+\Hypertarget{SocketHTTPClient_8h_a8848b039e73e8d70f25c3ff7d704767e}\label{SocketHTTPClient_8h_a8848b039e73e8d70f25c3ff7d704767e} 
+typedef struct Socket\+Proxy\+\_\+\+Config {\bfseries Socket\+Proxy\+\_\+\+Config}
+\item 
+typedef struct \mbox{\hyperlink{structSocketHTTPClient}{Socket\+HTTPClient}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTPClient\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HTTP client instance. \end{DoxyCompactList}\item 
+typedef struct \mbox{\hyperlink{structSocketHTTPClient__Request}{Socket\+HTTPClient\+\_\+\+Request}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTPClient\+\_\+\+Request\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HTTP request builder. \end{DoxyCompactList}\item 
+typedef struct \mbox{\hyperlink{structSocketHTTPClient__AsyncRequest}{Socket\+HTTPClient\+\_\+\+Async\+Request}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}
+\begin{DoxyCompactList}\small\item\em Async request handle. \end{DoxyCompactList}\item 
+typedef struct \mbox{\hyperlink{structSocketHTTPClient__CookieJar}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}
+\begin{DoxyCompactList}\small\item\em Cookie jar. \end{DoxyCompactList}\item 
+typedef void(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}{Socket\+HTTPClient\+\_\+\+Callback}}) (\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} req, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response, \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} error, void \texorpdfstring{$\ast$}{*}userdata)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} \{ \newline
+{\bfseries HTTPCLIENT\+\_\+\+OK} = 0
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+DNS}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+CONNECT}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TLS}
+, \newline
+{\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TIMEOUT}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+PROTOCOL}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TOO\+\_\+\+MANY\+\_\+\+REDIRECTS}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+RESPONSE\+\_\+\+TOO\+\_\+\+LARGE}
+, \newline
+{\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+CANCELLED}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+OUT\+\_\+\+OF\+\_\+\+MEMORY}
+, {\bfseries HTTPCLIENT\+\_\+\+ERROR\+\_\+\+LIMIT\+\_\+\+EXCEEDED}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30}{Socket\+HTTPClient\+\_\+\+Auth\+Type}} \{ \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c}{HTTP\+\_\+\+AUTH\+\_\+\+NONE}} = 0
+, \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba}{HTTP\+\_\+\+AUTH\+\_\+\+BASIC}}
+, \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3}{HTTP\+\_\+\+AUTH\+\_\+\+DIGEST}}
+, \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96}{HTTP\+\_\+\+AUTH\+\_\+\+BEARER}}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTPClient_8h_a5a9d40d261a12f620aba6b26e8fb714b}{Socket\+HTTPClient\+\_\+\+Same\+Site}} \{ {\bfseries COOKIE\+\_\+\+SAMESITE\+\_\+\+NONE} = 0
+, {\bfseries COOKIE\+\_\+\+SAMESITE\+\_\+\+LAX} = 1
+, {\bfseries COOKIE\+\_\+\+SAMESITE\+\_\+\+STRICT} = 2
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{group__http_gaf69fc4efa6d5b4df9cdf207cfa05b6b9}{Socket\+HTTPClient\+\_\+error\+\_\+is\+\_\+retryable}} (\mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} error)
+\begin{DoxyCompactList}\small\item\em Check if error code is retryable. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_gaad5ad81c60bb230588b5f660a834f40e}{Socket\+HTTPClient\+\_\+config\+\_\+defaults}} (\mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}} \texorpdfstring{$\ast$}{*}config)
+\begin{DoxyCompactList}\small\item\em Initialize config with defaults. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} \mbox{\hyperlink{group__http_ga2d57db3a9a6388315f253caa099e4205}{Socket\+HTTPClient\+\_\+new}} (const \mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}} \texorpdfstring{$\ast$}{*}config)
+\begin{DoxyCompactList}\small\item\em Create HTTP client. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga01d6c9bebdcda63949ba9af698f8e7e5}{Socket\+HTTPClient\+\_\+free}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} \texorpdfstring{$\ast$}{*}client)
+\begin{DoxyCompactList}\small\item\em Free client and all resources. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gafef425814e66932f7cf1f36e9356b70e}{Socket\+HTTPClient\+\_\+get}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Perform GET request. \end{DoxyCompactList}\item 
+int {\bfseries Socket\+HTTPClient\+\_\+head} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Perform HEAD request. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga9b47bc2dd38d4a6700af79ced0acecb2}{Socket\+HTTPClient\+\_\+post}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, const char \texorpdfstring{$\ast$}{*}content\+\_\+type, const void \texorpdfstring{$\ast$}{*}body, size\+\_\+t body\+\_\+len, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Perform POST request. \end{DoxyCompactList}\item 
+int {\bfseries Socket\+HTTPClient\+\_\+put} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, const char \texorpdfstring{$\ast$}{*}content\+\_\+type, const void \texorpdfstring{$\ast$}{*}body, size\+\_\+t body\+\_\+len, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Perform PUT request. \end{DoxyCompactList}\item 
+int {\bfseries Socket\+HTTPClient\+\_\+delete} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Perform DELETE request. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga826bca53483c23de2c8b03d456010149}{Socket\+HTTPClient\+\_\+\+Response\+\_\+free}} (\mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Free response resources. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} \mbox{\hyperlink{group__http_ga46c9c2ab8d3334dd0ad1359d2bb93102}{Socket\+HTTPClient\+\_\+\+Request\+\_\+new}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, \mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} method, const char \texorpdfstring{$\ast$}{*}url)
+\begin{DoxyCompactList}\small\item\em Create request builder. \end{DoxyCompactList}\item 
+void {\bfseries Socket\+HTTPClient\+\_\+\+Request\+\_\+free} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} \texorpdfstring{$\ast$}{*}req)
+\begin{DoxyCompactList}\small\item\em Free request builder
+
+@req Pointer to request (set to NULL) \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga8a7c54a81dc916af60f9747162e844a2}{Socket\+HTTPClient\+\_\+\+Request\+\_\+header}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, const char \texorpdfstring{$\ast$}{*}name, const char \texorpdfstring{$\ast$}{*}value)
+\begin{DoxyCompactList}\small\item\em Add header. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gae8f21b1fc1aae1ef8b1bbe43ce875247}{Socket\+HTTPClient\+\_\+\+Request\+\_\+body}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, const void \texorpdfstring{$\ast$}{*}data, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Set request body. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga8470d0864afe35f5265bda12d221f14e}{Socket\+HTTPClient\+\_\+\+Request\+\_\+body\+\_\+stream}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, ssize\+\_\+t(\texorpdfstring{$\ast$}{*}read\+\_\+cb)(void \texorpdfstring{$\ast$}{*}buf, size\+\_\+t len, void \texorpdfstring{$\ast$}{*}userdata), void \texorpdfstring{$\ast$}{*}userdata)
+\begin{DoxyCompactList}\small\item\em Set streaming body. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_gabe918e0dacc9d507f1ad288a399dfca6}{Socket\+HTTPClient\+\_\+\+Request\+\_\+timeout}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, int ms)
+\begin{DoxyCompactList}\small\item\em Set per-\/request timeout. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga4aaf34db687d93fcbaa8e13b35916b6a}{Socket\+HTTPClient\+\_\+\+Request\+\_\+auth}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, const \mbox{\hyperlink{structSocketHTTPClient__Auth}{Socket\+HTTPClient\+\_\+\+Auth}} \texorpdfstring{$\ast$}{*}auth)
+\begin{DoxyCompactList}\small\item\em Set per-\/request authentication. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga4ba09b6d59cc2aee465749978f62ad76}{Socket\+HTTPClient\+\_\+\+Request\+\_\+execute}} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response)
+\begin{DoxyCompactList}\small\item\em Execute request. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} {\bfseries Socket\+HTTPClient\+\_\+get\+\_\+async} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, \mbox{\hyperlink{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}{Socket\+HTTPClient\+\_\+\+Callback}} callback, void \texorpdfstring{$\ast$}{*}userdata)
+\begin{DoxyCompactList}\small\item\em Start async GET. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} {\bfseries Socket\+HTTPClient\+\_\+post\+\_\+async} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const char \texorpdfstring{$\ast$}{*}url, const char \texorpdfstring{$\ast$}{*}content\+\_\+type, const void \texorpdfstring{$\ast$}{*}body, size\+\_\+t body\+\_\+len, \mbox{\hyperlink{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}{Socket\+HTTPClient\+\_\+\+Callback}} callback, void \texorpdfstring{$\ast$}{*}userdata)
+\begin{DoxyCompactList}\small\item\em Start async POST. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} {\bfseries Socket\+HTTPClient\+\_\+\+Request\+\_\+async} (\mbox{\hyperlink{group__http_ga265c0209bd77c39f219d72c3956a8818}{Socket\+HTTPClient\+\_\+\+Request\+\_\+T}} req, \mbox{\hyperlink{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}{Socket\+HTTPClient\+\_\+\+Callback}} callback, void \texorpdfstring{$\ast$}{*}userdata)
+\begin{DoxyCompactList}\small\item\em Start async custom request. \end{DoxyCompactList}\item 
+void {\bfseries Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+cancel} (\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} req)
+\begin{DoxyCompactList}\small\item\em Cancel async request. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga9f4f6e7641bef38d356a7349e1d589a4}{Socket\+HTTPClient\+\_\+process}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, int timeout\+\_\+ms)
+\begin{DoxyCompactList}\small\item\em Process async requests. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} \mbox{\hyperlink{group__http_ga7f6bd73797f507766f9edc1242b9772e}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+new}} (void)
+\begin{DoxyCompactList}\small\item\em Create cookie jar. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga628b803f0ccfdc41d8425bf1c1064d7e}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+free}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} \texorpdfstring{$\ast$}{*}jar)
+\begin{DoxyCompactList}\small\item\em Free cookie jar. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga07b465d99995da22fc317dc170d09787}{Socket\+HTTPClient\+\_\+set\+\_\+cookie\+\_\+jar}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, \mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar)
+\begin{DoxyCompactList}\small\item\em Associate jar with client. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} \mbox{\hyperlink{group__http_ga52e891cd45c787d4025e15d8c4c42849}{Socket\+HTTPClient\+\_\+get\+\_\+cookie\+\_\+jar}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client)
+\begin{DoxyCompactList}\small\item\em Get associated cookie jar. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gae276f63daea601b662eae51e1973f3e5}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+set}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar, const \mbox{\hyperlink{structSocketHTTPClient__Cookie}{Socket\+HTTPClient\+\_\+\+Cookie}} \texorpdfstring{$\ast$}{*}cookie)
+\begin{DoxyCompactList}\small\item\em Set cookie. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\begin{Indent}\textbf{ Cookie name}\par
+{\em Get cookie by name
+
+
+\begin{DoxyParams}{Parameters}
+{\em jar} & Cookie jar \\
+\hline
+{\em domain} & Domain to match \\
+\hline
+{\em path} & Path to match\\
+\hline
+\end{DoxyParams}
+\begin{DoxyReturn}{Returns}
+Cookie or NULL if not found 
+\end{DoxyReturn}
+}\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPClient_8h_a79838faf1567b0b9946b95b946de4392}\label{SocketHTTPClient_8h_a79838faf1567b0b9946b95b946de4392} 
+const \mbox{\hyperlink{structSocketHTTPClient__Cookie}{Socket\+HTTPClient\+\_\+\+Cookie}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+get} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar, const char \texorpdfstring{$\ast$}{*}domain, const char \texorpdfstring{$\ast$}{*}path, const char \texorpdfstring{$\ast$}{*}name)
+\item 
+void \mbox{\hyperlink{group__http_gaad4e0041def5bbfdbd42f1192b5f588a}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+clear}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar)
+\begin{DoxyCompactList}\small\item\em Clear all cookies. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga52288a166212725fc43156b1bb2fc5b4}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+clear\+\_\+expired}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar)
+\begin{DoxyCompactList}\small\item\em Clear expired cookies. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga0804b639cfe122234e22b14498f2af13}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+load}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar, const char \texorpdfstring{$\ast$}{*}filename)
+\begin{DoxyCompactList}\small\item\em Load cookies from file. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga4f086bf1231cc24fee20d8b0461fec05}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+save}} (\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} jar, const char \texorpdfstring{$\ast$}{*}filename)
+\begin{DoxyCompactList}\small\item\em Save cookies to file. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga1e9410043754e2ad4dbaa3572c595547}{Socket\+HTTPClient\+\_\+set\+\_\+auth}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, const \mbox{\hyperlink{structSocketHTTPClient__Auth}{Socket\+HTTPClient\+\_\+\+Auth}} \texorpdfstring{$\ast$}{*}auth)
+\begin{DoxyCompactList}\small\item\em Set default authentication. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_gaca84ba9dfcb00f58533dafe869f8c548}{Socket\+HTTPClient\+\_\+pool\+\_\+stats}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client, \mbox{\hyperlink{structSocketHTTPClient__PoolStats}{Socket\+HTTPClient\+\_\+\+Pool\+Stats}} \texorpdfstring{$\ast$}{*}stats)
+\begin{DoxyCompactList}\small\item\em Get pool statistics. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga1fd6bae0397b3156f49100f444fdaac6}{Socket\+HTTPClient\+\_\+pool\+\_\+clear}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client)
+\begin{DoxyCompactList}\small\item\em Clear all pooled connections. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} \mbox{\hyperlink{group__http_gac8680d78a9d70c7662d39466c63aab72}{Socket\+HTTPClient\+\_\+last\+\_\+error}} (\mbox{\hyperlink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T}} client)
+\begin{DoxyCompactList}\small\item\em Get last error code. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga859120de13b0764564f3c1ce111b3379}{Socket\+HTTPClient\+\_\+error\+\_\+string}} (\mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} error)
+\begin{DoxyCompactList}\small\item\em Get error description. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\end{Indent}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga5dc1b9ac7f30436bc422f312cd6db709}{Socket\+HTTPClient\+\_\+\+Failed}}
+\begin{DoxyCompactList}\small\item\em General client failure. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga50039c8c595271d7d51b28ed5a4e7196}{Socket\+HTTPClient\+\_\+\+DNSFailed}}
+\begin{DoxyCompactList}\small\item\em DNS resolution failure. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga83bda6e77bc5fb165e4e7fead483094b}{Socket\+HTTPClient\+\_\+\+Connect\+Failed}}
+\begin{DoxyCompactList}\small\item\em TCP connection failure. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_gac109f9bf9ba67f2f56db130172b3dd94}{Socket\+HTTPClient\+\_\+\+TLSFailed}}
+\begin{DoxyCompactList}\small\item\em TLS/\+SSL handshake or I/O failure. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_gaa0847dd6efa2f627e07173f29b29c8ae}{Socket\+HTTPClient\+\_\+\+Timeout}}
+\begin{DoxyCompactList}\small\item\em Request timeout exceeded. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga24ffae352f53c9580d861d3590b61e2a}{Socket\+HTTPClient\+\_\+\+Protocol\+Error}}
+\begin{DoxyCompactList}\small\item\em HTTP protocol error. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_gafd7d2611128ad32cc65cb256403c671f}{Socket\+HTTPClient\+\_\+\+Too\+Many\+Redirects}}
+\begin{DoxyCompactList}\small\item\em Redirect limit exceeded. \end{DoxyCompactList}\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga4ed14f04119b1dec3cb25c432b7a383d}{Socket\+HTTPClient\+\_\+\+Response\+Too\+Large}}
+\begin{DoxyCompactList}\small\item\em Response body exceeds limit. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+High-\/level HTTP client with connection pooling and protocol negotiation. 
+
+High-\/level HTTP client abstracting HTTP/1.\+1 and HTTP/2 with\+:
+\begin{DoxyItemize}
+\item Connection pooling with per-\/host limits
+\item Automatic protocol negotiation (ALPN for HTTP/2)
+\item Cookie handling (RFC 6265)
+\item Authentication (Basic/\+Digest/\+Bearer)
+\item Compression (gzip/deflate/brotli)
+\item Redirect following
+\item Both synchronous and asynchronous APIs
+\end{DoxyItemize}
+
+Dependencies (leveraged, not duplicated)\+:
+\begin{DoxyItemize}
+\item Socket\+HTTP for headers, URI, methods, status codes
+\item Socket\+HTTP1 for HTTP/1.\+1 parsing/serialization
+\item Socket\+HTTP2 for HTTP/2 protocol
+\item Socket\+Happy\+Eyeballs for fast connection establishment
+\item Socket\+DNS for asynchronous DNS resolution
+\item Socket\+Crypto for authentication (base64, MD5, SHA256)
+\end{DoxyItemize}
+
+Thread safety\+: Client instances are NOT thread-\/safe. Use one client per thread or external synchronization.
+
+PLATFORM REQUIREMENTS\+:
+\begin{DoxyItemize}
+\item POSIX-\/compliant system (Linux, BSD, mac\+OS)
+\item pthread for mutex synchronization
+\item Open\+SSL for TLS (optional, via SOCKET\+\_\+\+HAS\+\_\+\+TLS)
+\end{DoxyItemize}
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{group__http_ga2d57db3a9a6388315f253caa099e4205}{Socket\+HTTPClient\+\_\+new()} for client creation. 
+
+\doxylink{group__http_gafef425814e66932f7cf1f36e9356b70e}{Socket\+HTTPClient\+\_\+get()} for synchronous requests. 
+
+\doxylink{group__http_ga887d2e7f1b676b7a1bd44de4a2964e03}{Socket\+HTTPClient\+\_\+get\+\_\+async()} for asynchronous requests. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Typedef Documentation}
+\Hypertarget{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}\label{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201} 
+\index{SocketHTTPClient.h@{SocketHTTPClient.h}!SocketHTTPClient\_Callback@{SocketHTTPClient\_Callback}}
+\index{SocketHTTPClient\_Callback@{SocketHTTPClient\_Callback}!SocketHTTPClient.h@{SocketHTTPClient.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTPClient\_Callback}{SocketHTTPClient\_Callback}}
+{\footnotesize\ttfamily typedef void(\texorpdfstring{$\ast$}{*} Socket\+HTTPClient\+\_\+\+Callback) (\mbox{\hyperlink{group__http_ga1f0f539e54a607bea5559f6577f987df}{Socket\+HTTPClient\+\_\+\+Async\+Request\+\_\+T}} req, \mbox{\hyperlink{structSocketHTTPClient__Response}{Socket\+HTTPClient\+\_\+\+Response}} \texorpdfstring{$\ast$}{*}response, \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} error, void \texorpdfstring{$\ast$}{*}userdata)}
+
+Async completion callback 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30}\label{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30} 
+\index{SocketHTTPClient.h@{SocketHTTPClient.h}!SocketHTTPClient\_AuthType@{SocketHTTPClient\_AuthType}}
+\index{SocketHTTPClient\_AuthType@{SocketHTTPClient\_AuthType}!SocketHTTPClient.h@{SocketHTTPClient.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTPClient\_AuthType}{SocketHTTPClient\_AuthType}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30}{Socket\+HTTPClient\+\_\+\+Auth\+Type}}}
+
+Authentication scheme types \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP\_AUTH\_NONE@{HTTP\_AUTH\_NONE}!SocketHTTPClient.h@{SocketHTTPClient.h}}\index{SocketHTTPClient.h@{SocketHTTPClient.h}!HTTP\_AUTH\_NONE@{HTTP\_AUTH\_NONE}}}\Hypertarget{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c}\label{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a208f0926853b84d7acf3ce0669e9dc1c} 
+HTTP\+\_\+\+AUTH\+\_\+\+NONE&No authentication \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP\_AUTH\_BASIC@{HTTP\_AUTH\_BASIC}!SocketHTTPClient.h@{SocketHTTPClient.h}}\index{SocketHTTPClient.h@{SocketHTTPClient.h}!HTTP\_AUTH\_BASIC@{HTTP\_AUTH\_BASIC}}}\Hypertarget{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba}\label{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a946b7e60a754342e83205964b31a77ba} 
+HTTP\+\_\+\+AUTH\+\_\+\+BASIC&RFC 7617 -\/ Basic Authentication \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP\_AUTH\_DIGEST@{HTTP\_AUTH\_DIGEST}!SocketHTTPClient.h@{SocketHTTPClient.h}}\index{SocketHTTPClient.h@{SocketHTTPClient.h}!HTTP\_AUTH\_DIGEST@{HTTP\_AUTH\_DIGEST}}}\Hypertarget{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3}\label{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30a2de9030bd220adb7701f5cbdeadfc4a3} 
+HTTP\+\_\+\+AUTH\+\_\+\+DIGEST&RFC 7616 -\/ Digest Access Authentication \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP\_AUTH\_BEARER@{HTTP\_AUTH\_BEARER}!SocketHTTPClient.h@{SocketHTTPClient.h}}\index{SocketHTTPClient.h@{SocketHTTPClient.h}!HTTP\_AUTH\_BEARER@{HTTP\_AUTH\_BEARER}}}\Hypertarget{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96}\label{SocketHTTPClient_8h_a720036180c834b3f4b41f437d0ce1f30acda827d72fd9c0a84535434c81558c96} 
+HTTP\+\_\+\+AUTH\+\_\+\+BEARER&RFC 6750 -\/ Bearer Token (OAuth 2.\+0) \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}\label{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75} 
+\index{SocketHTTPClient.h@{SocketHTTPClient.h}!SocketHTTPClient\_Error@{SocketHTTPClient\_Error}}
+\index{SocketHTTPClient\_Error@{SocketHTTPClient\_Error}!SocketHTTPClient.h@{SocketHTTPClient.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTPClient\_Error}{SocketHTTPClient\_Error}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}}}
+
+Error codes for async operations
+
+Retryability by error code\+:
+\begin{DoxyItemize}
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+DNS\+: YES -\/ DNS may recover
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+CONNECT\+: YES -\/ Server may restart
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TLS\+: NO -\/ Configuration issue
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TIMEOUT\+: YES -\/ Transient congestion
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+PROTOCOL\+: NO -\/ Server bug
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+TOO\+\_\+\+MANY\+\_\+\+REDIRECTS\+: NO -\/ Redirect loop
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+RESPONSE\+\_\+\+TOO\+\_\+\+LARGE\+: NO -\/ Size limit
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+CANCELLED\+: NO -\/ User cancelled
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+OUT\+\_\+\+OF\+\_\+\+MEMORY\+: NO -\/ Resource exhaustion
+\item HTTPCLIENT\+\_\+\+ERROR\+\_\+\+LIMIT\+\_\+\+EXCEEDED\+: NO -\/ Pool limits reached 
+\end{DoxyItemize}\Hypertarget{SocketHTTPClient_8h_a5a9d40d261a12f620aba6b26e8fb714b}\label{SocketHTTPClient_8h_a5a9d40d261a12f620aba6b26e8fb714b} 
+\index{SocketHTTPClient.h@{SocketHTTPClient.h}!SocketHTTPClient\_SameSite@{SocketHTTPClient\_SameSite}}
+\index{SocketHTTPClient\_SameSite@{SocketHTTPClient\_SameSite}!SocketHTTPClient.h@{SocketHTTPClient.h}}
+\doxysubsubsection{\texorpdfstring{SocketHTTPClient\_SameSite}{SocketHTTPClient\_SameSite}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTPClient_8h_a5a9d40d261a12f620aba6b26e8fb714b}{Socket\+HTTPClient\+\_\+\+Same\+Site}}}
+
+Cookie Same\+Site attribute values 

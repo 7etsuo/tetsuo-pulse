@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Typedef for the internal timer heap structure.">
+<g id="a_Node000001"><a xlink:title="Binary min&#45;heap container for managing multiple SocketTimer_T instances.">
 <polygon fill="#999999" stroke="#666666" points="110,-19 0,-19 0,0 110,0 110,-19"/>
 <text text-anchor="middle" x="55" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTimer_heap_T</text>
 </a>
@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketTimer-private_8h.html#structSocketTimer__T" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="group__event__system.html#structSocketTimer__T" target="_top" xlink:title="Internal representation of a single scheduled timer event.">
 <polygon fill="white" stroke="#666666" points="96.5,-85 13.5,-85 13.5,-66 96.5,-66 96.5,-85"/>
 <text text-anchor="middle" x="55" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTimer_T</text>
 </a>

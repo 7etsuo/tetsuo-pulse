@@ -1,0 +1,363 @@
+\doxysection{include/http/\+Socket\+HTTP.h File Reference}
+\hypertarget{SocketHTTP_8h}{}\label{SocketHTTP_8h}\index{include/http/SocketHTTP.h@{include/http/SocketHTTP.h}}
+
+
+Protocol-\/agnostic HTTP types, header handling, URI parsing, and utilities.  
+
+
+{\ttfamily \#include $<$stddef.\+h$>$}\newline
+{\ttfamily \#include $<$stdint.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include $<$time.\+h$>$}\newline
+{\ttfamily \#include "{}core/\+Arena.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Except.\+h"{}}\newline
+Include dependency graph for Socket\+HTTP.\+h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:
+\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__MethodProperties}{Socket\+HTTP\+\_\+\+Method\+Properties}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__Header}{Socket\+HTTP\+\_\+\+Header}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__MediaType}{Socket\+HTTP\+\_\+\+Media\+Type}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__QualityValue}{Socket\+HTTP\+\_\+\+Quality\+Value}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__Request}{Socket\+HTTP\+\_\+\+Request}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP__Response}{Socket\+HTTP\+\_\+\+Response}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{group__http_ga67cb8ab40e2085b3682e91a79aea2553}{SOCKETHTTP\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+NAME}}~256
+\item 
+\#define \mbox{\hyperlink{group__http_ga711feea372680c3db3f52cb12954e8d8}{SOCKETHTTP\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+VALUE}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{group__http_ga7bb4c78960a2783f19b993f193932727}{SOCKETHTTP\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+SIZE}}~(64 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{group__http_ga2f5713c3b88ddc329d0119a789847ba6}{SOCKETHTTP\+\_\+\+MAX\+\_\+\+HEADERS}}~100
+\item 
+\#define \mbox{\hyperlink{group__http_ga13dfbee4ad8c1b29949c1fd0cc360f45}{SOCKETHTTP\+\_\+\+MAX\+\_\+\+URI\+\_\+\+LEN}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{group__http_ga613a2fead5a6288d5d4e794ba95adeee}{SOCKETHTTP\+\_\+\+DATE\+\_\+\+BUFSIZE}}~30
+\item 
+\#define \mbox{\hyperlink{group__http_ga7182eca7a6bd99ccbf0cb12b275adf9d}{HTTP\+\_\+\+STATUS\+\_\+\+CODE\+\_\+\+MIN}}~100
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+CODE\+\_\+\+MAX}~599
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+1\+XX\+\_\+\+MIN}~HTTP\+\_\+\+STATUS\+\_\+\+CONTINUE
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+1\+XX\+\_\+\+MAX}~199
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+2\+XX\+\_\+\+MIN}~HTTP\+\_\+\+STATUS\+\_\+\+OK
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+2\+XX\+\_\+\+MAX}~299
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+3\+XX\+\_\+\+MIN}~HTTP\+\_\+\+STATUS\+\_\+\+MULTIPLE\+\_\+\+CHOICES
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+3\+XX\+\_\+\+MAX}~399
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+4\+XX\+\_\+\+MIN}~HTTP\+\_\+\+STATUS\+\_\+\+BAD\+\_\+\+REQUEST
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+4\+XX\+\_\+\+MAX}~499
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+5\+XX\+\_\+\+MIN}~HTTP\+\_\+\+STATUS\+\_\+\+INTERNAL\+\_\+\+ERROR
+\item 
+\#define {\bfseries HTTP\+\_\+\+STATUS\+\_\+5\+XX\+\_\+\+MAX}~599
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structSocketHTTP__Headers}{Socket\+HTTP\+\_\+\+Headers}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}}
+\item 
+typedef int(\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga991d5a6b9f11673b53a19b7505224668}{Socket\+HTTP\+\_\+\+Header\+Callback}}) (const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t name\+\_\+len, const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t value\+\_\+len, void \texorpdfstring{$\ast$}{*}userdata)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} \{ \newline
+\mbox{\hyperlink{group__http_ggac46610efb2f138f9f5c58f9134f11a78abca6852c70f3b9617834ca911ee9e737}{HTTP\+\_\+\+VERSION\+\_\+0\+\_\+9}} = 9
+, \mbox{\hyperlink{group__http_ggac46610efb2f138f9f5c58f9134f11a78a3932308db22120ce049dd60f3430b814}{HTTP\+\_\+\+VERSION\+\_\+1\+\_\+0}} = 10
+, \mbox{\hyperlink{group__http_ggac46610efb2f138f9f5c58f9134f11a78af1a34119b438038bc609a273f9bc08c6}{HTTP\+\_\+\+VERSION\+\_\+1\+\_\+1}} = 11
+, \mbox{\hyperlink{group__http_ggac46610efb2f138f9f5c58f9134f11a78a2240d6f65d5af421be670655fed8b202}{HTTP\+\_\+\+VERSION\+\_\+2}} = 20
+, \newline
+\mbox{\hyperlink{group__http_ggac46610efb2f138f9f5c58f9134f11a78a907296c738aa0848b48cc07b0b776751}{HTTP\+\_\+\+VERSION\+\_\+3}} = 30
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} \{ \newline
+\mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659}{HTTP\+\_\+\+METHOD\+\_\+\+GET}} = 0
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa27e993d38ff6b43284014a10798b6223}{HTTP\+\_\+\+METHOD\+\_\+\+HEAD}}
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa1944682922ac79b2e682312d8f3f71e2}{HTTP\+\_\+\+METHOD\+\_\+\+POST}}
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8faf7557927b605c64f35f629b43823b1c9}{HTTP\+\_\+\+METHOD\+\_\+\+PUT}}
+, \newline
+\mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa761371f7807255b7912afbac2f665ffe}{HTTP\+\_\+\+METHOD\+\_\+\+DELETE}}
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa3755246bea87120e8311dc914d573fbf}{HTTP\+\_\+\+METHOD\+\_\+\+CONNECT}}
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8faf6b02f8ff0467dbdaebb24f0a996cdd4}{HTTP\+\_\+\+METHOD\+\_\+\+OPTIONS}}
+, \mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fa95b5b19305a14de1400aedfdec1c1eed}{HTTP\+\_\+\+METHOD\+\_\+\+TRACE}}
+, \newline
+\mbox{\hyperlink{group__http_ggaf6f90bb536a5cd085f4327bda4d3ee8fac1adf0f44043552b637a6235ae3ff283}{HTTP\+\_\+\+METHOD\+\_\+\+PATCH}}
+, {\bfseries HTTP\+\_\+\+METHOD\+\_\+\+UNKNOWN} = -\/1
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_gaceb714c26b828fe187a7fa72749ee75c}{Socket\+HTTP\+\_\+\+Status\+Code}} \{ \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+CONTINUE} = 100
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+SWITCHING\+\_\+\+PROTOCOLS} = 101
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca4edd1153b1090c6b04f41a9728184c69}{HTTP\+\_\+\+STATUS\+\_\+\+PROCESSING}} = 102
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75caff74945405d29d86c567878f1514dcb6}{HTTP\+\_\+\+STATUS\+\_\+\+EARLY\+\_\+\+HINTS}} = 103
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+OK} = 200
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+CREATED} = 201
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+ACCEPTED} = 202
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NON\+\_\+\+AUTHORITATIVE} = 203
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NO\+\_\+\+CONTENT} = 204
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+RESET\+\_\+\+CONTENT} = 205
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+PARTIAL\+\_\+\+CONTENT} = 206
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca5b5f6b48a150926864f66aa8882708df}{HTTP\+\_\+\+STATUS\+\_\+\+MULTI\+\_\+\+STATUS}} = 207
+, \newline
+\mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75caf60c8de8de4eb8fe02562aff8ee96f1f}{HTTP\+\_\+\+STATUS\+\_\+\+ALREADY\+\_\+\+REPORTED}} = 208
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75caadd5b6f83dd05c6de2ef12de1dd006cd}{HTTP\+\_\+\+STATUS\+\_\+\+IM\+\_\+\+USED}} = 226
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+MULTIPLE\+\_\+\+CHOICES} = 300
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+MOVED\+\_\+\+PERMANENTLY} = 301
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+FOUND} = 302
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+SEE\+\_\+\+OTHER} = 303
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NOT\+\_\+\+MODIFIED} = 304
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75cab13f90697368bfecc05dc5a8b18fc87c}{HTTP\+\_\+\+STATUS\+\_\+\+USE\+\_\+\+PROXY}} = 305
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+TEMPORARY\+\_\+\+REDIRECT} = 307
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75cac0f841f58eb31779ca76bb3cfb600267}{HTTP\+\_\+\+STATUS\+\_\+\+PERMANENT\+\_\+\+REDIRECT}} = 308
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+BAD\+\_\+\+REQUEST} = 400
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+UNAUTHORIZED} = 401
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+PAYMENT\+\_\+\+REQUIRED} = 402
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+FORBIDDEN} = 403
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NOT\+\_\+\+FOUND} = 404
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+METHOD\+\_\+\+NOT\+\_\+\+ALLOWED} = 405
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NOT\+\_\+\+ACCEPTABLE} = 406
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+PROXY\+\_\+\+AUTH\+\_\+\+REQUIRED} = 407
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+REQUEST\+\_\+\+TIMEOUT} = 408
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+CONFLICT} = 409
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+GONE} = 410
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+LENGTH\+\_\+\+REQUIRED} = 411
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+PRECONDITION\+\_\+\+FAILED} = 412
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+CONTENT\+\_\+\+TOO\+\_\+\+LARGE} = 413
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+URI\+\_\+\+TOO\+\_\+\+LONG} = 414
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+UNSUPPORTED\+\_\+\+MEDIA\+\_\+\+TYPE} = 415
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+RANGE\+\_\+\+NOT\+\_\+\+SATISFIABLE} = 416
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+EXPECTATION\+\_\+\+FAILED} = 417
+, \newline
+\mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca034d9620babe01011810fe384375a92b}{HTTP\+\_\+\+STATUS\+\_\+\+IM\+\_\+\+A\+\_\+\+TEAPOT}} = 418
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+MISDIRECTED\+\_\+\+REQUEST} = 421
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+UNPROCESSABLE\+\_\+\+CONTENT} = 422
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75caa6e28f289443c753660cddc9b4ce28a1}{HTTP\+\_\+\+STATUS\+\_\+\+LOCKED}} = 423
+, \newline
+\mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75cac268c2f9a1c531f403403a99da6a80cd}{HTTP\+\_\+\+STATUS\+\_\+\+FAILED\+\_\+\+DEPENDENCY}} = 424
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca92e9f9944fc5c40bd23de3ab5a7c9bfa}{HTTP\+\_\+\+STATUS\+\_\+\+TOO\+\_\+\+EARLY}} = 425
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+UPGRADE\+\_\+\+REQUIRED} = 426
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca9ddf391ade5190c8d685d998ef35e604}{HTTP\+\_\+\+STATUS\+\_\+\+PRECONDITION\+\_\+\+REQUIRED}} = 428
+, \newline
+\mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca892176fbdf3f79e2c888f677ea34d451}{HTTP\+\_\+\+STATUS\+\_\+\+TOO\+\_\+\+MANY\+\_\+\+REQUESTS}} = 429
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca136b0743cb135e8a710fda41f129dd09}{HTTP\+\_\+\+STATUS\+\_\+\+HEADER\+\_\+\+TOO\+\_\+\+LARGE}} = 431
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca8a21f739779622311f20253467449575}{HTTP\+\_\+\+STATUS\+\_\+\+UNAVAILABLE\+\_\+\+LEGAL}} = 451
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+INTERNAL\+\_\+\+ERROR} = 500
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+NOT\+\_\+\+IMPLEMENTED} = 501
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+BAD\+\_\+\+GATEWAY} = 502
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+SERVICE\+\_\+\+UNAVAILABLE} = 503
+, {\bfseries HTTP\+\_\+\+STATUS\+\_\+\+GATEWAY\+\_\+\+TIMEOUT} = 504
+, \newline
+{\bfseries HTTP\+\_\+\+STATUS\+\_\+\+VERSION\+\_\+\+NOT\+\_\+\+SUPPORTED} = 505
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75cac5f77dc9692876a7f19cabdc12d42c5d}{HTTP\+\_\+\+STATUS\+\_\+\+VARIANT\+\_\+\+ALSO\+\_\+\+NEGOTIATES}} = 506
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca2876de0bf7f4302883626399b868b49b}{HTTP\+\_\+\+STATUS\+\_\+\+INSUFFICIENT\+\_\+\+STORAGE}} = 507
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca5db103eeafcd3c0b245f42065a8a096f}{HTTP\+\_\+\+STATUS\+\_\+\+LOOP\+\_\+\+DETECTED}} = 508
+, \newline
+\mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75ca9f989de7a400bb10b4a75613504bd889}{HTTP\+\_\+\+STATUS\+\_\+\+NOT\+\_\+\+EXTENDED}} = 510
+, \mbox{\hyperlink{group__http_ggaceb714c26b828fe187a7fa72749ee75cae60954618af03c3b7f9a24f6e57974c7}{HTTP\+\_\+\+STATUS\+\_\+\+NETWORK\+\_\+\+AUTH\+\_\+\+REQUIRED}} = 511
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_ga905b7faf61f39aaa3cfcfed80d1675d5}{Socket\+HTTP\+\_\+\+Status\+Category}} \{ \newline
+\mbox{\hyperlink{group__http_gga905b7faf61f39aaa3cfcfed80d1675d5a45a7cf54667d5b2df0ec0a24fdab8249}{HTTP\+\_\+\+STATUS\+\_\+\+INFORMATIONAL}} = 1
+, \mbox{\hyperlink{group__http_gga905b7faf61f39aaa3cfcfed80d1675d5a37bc28ad2189c682b316e17c9357e8d0}{HTTP\+\_\+\+STATUS\+\_\+\+SUCCESSFUL}} = 2
+, \mbox{\hyperlink{group__http_gga905b7faf61f39aaa3cfcfed80d1675d5a3298165f45b28384f35c073b19e1f80b}{HTTP\+\_\+\+STATUS\+\_\+\+REDIRECTION}} = 3
+, \mbox{\hyperlink{group__http_gga905b7faf61f39aaa3cfcfed80d1675d5ad0050914cb5041feedb0d11d04e7151b}{HTTP\+\_\+\+STATUS\+\_\+\+CLIENT\+\_\+\+ERROR}} = 4
+, \newline
+\mbox{\hyperlink{group__http_gga905b7faf61f39aaa3cfcfed80d1675d5a271ea994d1cabf358e86b2f9c7e327ad}{HTTP\+\_\+\+STATUS\+\_\+\+SERVER\+\_\+\+ERROR}} = 5
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_gada5478cfca166a354a76529faf4f7a40}{Socket\+HTTP\+\_\+\+URIResult}} \{ \newline
+{\bfseries URI\+\_\+\+PARSE\+\_\+\+OK} = 0
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40a71143b8d56a7fb09d79501fda009d42d}{URI\+\_\+\+PARSE\+\_\+\+ERROR}}
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40adf4790f5ca0ea927d28a863dacb6debc}{URI\+\_\+\+PARSE\+\_\+\+INVALID\+\_\+\+SCHEME}}
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40a73494dfae9cdc850d7666e848fb4f643}{URI\+\_\+\+PARSE\+\_\+\+INVALID\+\_\+\+HOST}}
+, \newline
+\mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40a6a1261c7a60d12c7de4a4c533ea7a2e3}{URI\+\_\+\+PARSE\+\_\+\+INVALID\+\_\+\+PORT}}
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40a983773f1ed0b4d54287a3e9cd966e332}{URI\+\_\+\+PARSE\+\_\+\+INVALID\+\_\+\+PATH}}
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40a31dc815f91549634b800232703469599}{URI\+\_\+\+PARSE\+\_\+\+INVALID\+\_\+\+QUERY}}
+, \mbox{\hyperlink{group__http_ggada5478cfca166a354a76529faf4f7a40adb75f5f064e0160c721f20d7a7b4f41f}{URI\+\_\+\+PARSE\+\_\+\+TOO\+\_\+\+LONG}}
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_ga5b16a96fcd7f45cd6d9e1929c9d9ab80}{Socket\+HTTP\+\_\+\+Coding}} \{ \newline
+{\bfseries HTTP\+\_\+\+CODING\+\_\+\+IDENTITY} = 0
+, {\bfseries HTTP\+\_\+\+CODING\+\_\+\+CHUNKED}
+, {\bfseries HTTP\+\_\+\+CODING\+\_\+\+GZIP}
+, {\bfseries HTTP\+\_\+\+CODING\+\_\+\+DEFLATE}
+, \newline
+\mbox{\hyperlink{group__http_gga5b16a96fcd7f45cd6d9e1929c9d9ab80a331210a9d5b239c64af76967d10c8eae}{HTTP\+\_\+\+CODING\+\_\+\+COMPRESS}}
+, \mbox{\hyperlink{group__http_gga5b16a96fcd7f45cd6d9e1929c9d9ab80aeddff3b1c4a68dd8596314dd9b293c59}{HTTP\+\_\+\+CODING\+\_\+\+BR}}
+, {\bfseries HTTP\+\_\+\+CODING\+\_\+\+UNKNOWN} = -\/1
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gafd6a702248ad5bce0c0d6f1825795f1e}{Socket\+HTTP\+\_\+version\+\_\+string}} (\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} version)
+\begin{DoxyCompactList}\small\item\em Get version string. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} \mbox{\hyperlink{group__http_ga2c1cc8d1f48f39b8a3cabe4a47aaa295}{Socket\+HTTP\+\_\+version\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}str, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Parse version string. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gaeebb1299d256377b2abc6756c77827ef}{Socket\+HTTP\+\_\+method\+\_\+name}} (\mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} method)
+\begin{DoxyCompactList}\small\item\em Get method name string. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} \mbox{\hyperlink{group__http_ga98ea0fbffa4e6f97e009b3772c251007}{Socket\+HTTP\+\_\+method\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}str, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Parse method string. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{structSocketHTTP__MethodProperties}{Socket\+HTTP\+\_\+\+Method\+Properties}} \mbox{\hyperlink{group__http_ga80b627d3253567e6c73b94ddd6fe1bb5}{Socket\+HTTP\+\_\+method\+\_\+properties}} (\mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} method)
+\begin{DoxyCompactList}\small\item\em Get method semantic properties. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gac30c95d487cc694a02c2b46796c27d07}{Socket\+HTTP\+\_\+method\+\_\+valid}} (const char \texorpdfstring{$\ast$}{*}str, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Check if string is valid HTTP method token. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gad0f790ccec22e5c3862f7d07abc81038}{Socket\+HTTP\+\_\+status\+\_\+reason}} (int code)
+\begin{DoxyCompactList}\small\item\em Get reason phrase for status code. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga905b7faf61f39aaa3cfcfed80d1675d5}{Socket\+HTTP\+\_\+\+Status\+Category}} \mbox{\hyperlink{group__http_gafa90f0cd5d3fa4e281b6debe6fed8fe6}{Socket\+HTTP\+\_\+status\+\_\+category}} (int code)
+\begin{DoxyCompactList}\small\item\em Get status code category. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga13f50bb573333c5a0fe6ed5308392b1d}{Socket\+HTTP\+\_\+status\+\_\+valid}} (int code)
+\begin{DoxyCompactList}\small\item\em Check if status code is valid. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} \mbox{\hyperlink{group__http_ga99b788a59c808ad4e1860b7e64514aa2}{Socket\+HTTP\+\_\+\+Headers\+\_\+new}} (Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Create new header collection. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga10295fab9419b6257a90c16506b7842f}{Socket\+HTTP\+\_\+\+Headers\+\_\+clear}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers)
+\begin{DoxyCompactList}\small\item\em Remove all headers. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga564aa2d79c404e093b07c56e7d7910eb}{Socket\+HTTP\+\_\+\+Headers\+\_\+add}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, const char \texorpdfstring{$\ast$}{*}value)
+\begin{DoxyCompactList}\small\item\em Add header (null-\/terminated strings). \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gad2775245710f3cb5fd00b123f464d38b}{Socket\+HTTP\+\_\+\+Headers\+\_\+add\+\_\+n}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t name\+\_\+len, const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t value\+\_\+len)
+\begin{DoxyCompactList}\small\item\em Add header with explicit lengths. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga917a5a8b8b780832c025f47c596c4bec}{Socket\+HTTP\+\_\+\+Headers\+\_\+set}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, const char \texorpdfstring{$\ast$}{*}value)
+\begin{DoxyCompactList}\small\item\em Set header (replace if exists). \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga14656f39c3a134218da1afd58407bda1}{Socket\+HTTP\+\_\+\+Headers\+\_\+get}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name)
+\begin{DoxyCompactList}\small\item\em Get first header value (case-\/insensitive). \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga0e659368f81323c6e7c32f65cf1c00df}{Socket\+HTTP\+\_\+\+Headers\+\_\+get\+\_\+int}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, int64\+\_\+t \texorpdfstring{$\ast$}{*}value)
+\begin{DoxyCompactList}\small\item\em Get header value as integer. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gafd71cd43385e40af664f2a8c15b7c204}{Socket\+HTTP\+\_\+\+Headers\+\_\+get\+\_\+all}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, const char \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*}values, size\+\_\+t max\+\_\+values)
+\begin{DoxyCompactList}\small\item\em Get all values for header. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga894520d65dc4573481c9a4028f73ae11}{Socket\+HTTP\+\_\+\+Headers\+\_\+has}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name)
+\begin{DoxyCompactList}\small\item\em Check if header exists. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gaf6d60c59d9931264a36c064557345dac}{Socket\+HTTP\+\_\+\+Headers\+\_\+contains}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name, const char \texorpdfstring{$\ast$}{*}token)
+\begin{DoxyCompactList}\small\item\em Check if header contains token. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga870e78c2dec0d6c8bc9f65eeaf9fbd1e}{Socket\+HTTP\+\_\+\+Headers\+\_\+remove}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name)
+\begin{DoxyCompactList}\small\item\em Remove first header with name. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gaba9e8498c0a0715dd0169e6a345d29ad}{Socket\+HTTP\+\_\+\+Headers\+\_\+remove\+\_\+all}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, const char \texorpdfstring{$\ast$}{*}name)
+\begin{DoxyCompactList}\small\item\em Remove all headers with name. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gae4243f40c1fae6cc9a78eb51119cefb8}{Socket\+HTTP\+\_\+\+Headers\+\_\+count}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers)
+\begin{DoxyCompactList}\small\item\em Get total header count. \end{DoxyCompactList}\item 
+const \mbox{\hyperlink{structSocketHTTP__Header}{Socket\+HTTP\+\_\+\+Header}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gaea574c084c4037fd97b0566bd02d3ec7}{Socket\+HTTP\+\_\+\+Headers\+\_\+at}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, size\+\_\+t index)
+\begin{DoxyCompactList}\small\item\em Get header by index. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga2dc4cb8e02de1b8ed00826becde57f77}{Socket\+HTTP\+\_\+\+Headers\+\_\+iterate}} (\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} headers, \mbox{\hyperlink{group__http_ga991d5a6b9f11673b53a19b7505224668}{Socket\+HTTP\+\_\+\+Header\+Callback}} callback, void \texorpdfstring{$\ast$}{*}userdata)
+\begin{DoxyCompactList}\small\item\em Iterate over all headers. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga9cd7416c4d2d906c57303c814cfffa05}{Socket\+HTTP\+\_\+header\+\_\+name\+\_\+valid}} (const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Validate header name. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gafcd22b68210c4a6e922bbb88f34caacd}{Socket\+HTTP\+\_\+header\+\_\+value\+\_\+valid}} (const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Validate header value. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gada5478cfca166a354a76529faf4f7a40}{Socket\+HTTP\+\_\+\+URIResult}} \mbox{\hyperlink{group__http_gacadf7ec10cae4332222ee074c58bbd9b}{Socket\+HTTP\+\_\+\+URI\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}uri, size\+\_\+t len, \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}result, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Parse URI. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_gaf635e39c16e4337fd63e0adf72e2a255}{Socket\+HTTP\+\_\+\+URI\+\_\+result\+\_\+string}} (\mbox{\hyperlink{group__http_gada5478cfca166a354a76529faf4f7a40}{Socket\+HTTP\+\_\+\+URIResult}} result)
+\begin{DoxyCompactList}\small\item\em Get error description. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga0d205bd6286796dbdb3413766a6f1a50}{Socket\+HTTP\+\_\+\+URI\+\_\+get\+\_\+port}} (const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}uri, int default\+\_\+port)
+\begin{DoxyCompactList}\small\item\em Get port with default fallback. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gabfed4438fa6b1f93409a582efd4a8448}{Socket\+HTTP\+\_\+\+URI\+\_\+is\+\_\+secure}} (const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}uri)
+\begin{DoxyCompactList}\small\item\em Check if URI uses secure scheme. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga4ca8a7d8ff0dd1bd86cb2c06e4cf7e28}{Socket\+HTTP\+\_\+\+URI\+\_\+encode}} (const char \texorpdfstring{$\ast$}{*}input, size\+\_\+t len, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Percent-\/encode string. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga68e3ed44f86aa5b9ce778bf3ff1fb868}{Socket\+HTTP\+\_\+\+URI\+\_\+decode}} (const char \texorpdfstring{$\ast$}{*}input, size\+\_\+t len, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Percent-\/decode string. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga11a8df3a30b4d1001c6c504f4289ebae}{Socket\+HTTP\+\_\+\+URI\+\_\+build}} (const \mbox{\hyperlink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI}} \texorpdfstring{$\ast$}{*}uri, char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Build URI string from components. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gad1bd59d68c6362c7a547785c53709163}{Socket\+HTTP\+\_\+date\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}date\+\_\+str, size\+\_\+t len, time\+\_\+t \texorpdfstring{$\ast$}{*}time\+\_\+out)
+\begin{DoxyCompactList}\small\item\em Parse HTTP-\/date. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga3bcf9f5487eca065ac77e28cdcb03482}{Socket\+HTTP\+\_\+date\+\_\+format}} (time\+\_\+t t, char \texorpdfstring{$\ast$}{*}output)
+\begin{DoxyCompactList}\small\item\em Format time as HTTP-\/date (IMF-\/fixdate) \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_gaf43ac3bfe3ff58d22f57a10efcbcfbea}{Socket\+HTTP\+\_\+\+Media\+Type\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t len, \mbox{\hyperlink{structSocketHTTP__MediaType}{Socket\+HTTP\+\_\+\+Media\+Type}} \texorpdfstring{$\ast$}{*}result, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Parse Content-\/\+Type header. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga2a544671be752e72e6c35dfc237037ed}{Socket\+HTTP\+\_\+\+Media\+Type\+\_\+matches}} (const \mbox{\hyperlink{structSocketHTTP__MediaType}{Socket\+HTTP\+\_\+\+Media\+Type}} \texorpdfstring{$\ast$}{*}type, const char \texorpdfstring{$\ast$}{*}pattern)
+\begin{DoxyCompactList}\small\item\em Check if media type matches pattern. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_ga2bd50a204ccbbe78fc2938162d2a4248}{Socket\+HTTP\+\_\+parse\+\_\+accept}} (const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t len, \mbox{\hyperlink{structSocketHTTP__QualityValue}{Socket\+HTTP\+\_\+\+Quality\+Value}} \texorpdfstring{$\ast$}{*}results, size\+\_\+t max\+\_\+results, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Parse Accept-\/style header. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga5b16a96fcd7f45cd6d9e1929c9d9ab80}{Socket\+HTTP\+\_\+\+Coding}} \mbox{\hyperlink{group__http_ga91f3dc78f39a6c965a14d718b2066f52}{Socket\+HTTP\+\_\+coding\+\_\+parse}} (const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t len)
+\begin{DoxyCompactList}\small\item\em Parse coding name. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga0868f224eab429e1d2216651beee04fa}{Socket\+HTTP\+\_\+coding\+\_\+name}} (\mbox{\hyperlink{group__http_ga5b16a96fcd7f45cd6d9e1929c9d9ab80}{Socket\+HTTP\+\_\+\+Coding}} coding)
+\begin{DoxyCompactList}\small\item\em Get coding name string. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_ga4f683bdd1ab1acf36a383a7be5f5b6d2}{Socket\+HTTP\+\_\+\+Failed}}
+\begin{DoxyCompactList}\small\item\em Socket\+HTTP\+\_\+\+Failed -\/ Generic HTTP module failure. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Protocol-\/agnostic HTTP types, header handling, URI parsing, and utilities. 
+
+Provides protocol-\/agnostic HTTP types, header handling, URI parsing, and date/media type utilities. Foundation for HTTP/1.\+1 and HTTP/2.
+
+Features\+:
+\begin{DoxyItemize}
+\item HTTP methods with semantic properties (safe, idempotent, cacheable)
+\item HTTP status codes with reason phrases and categories
+\item Header collection with O(1) case-\/insensitive lookup
+\item RFC 3986 URI parsing with percent-\/encoding support and syntax validation
+\item HTTP-\/date parsing (all 3 formats per RFC 9110)
+\item Media type parsing with token validation and escape handling
+\item Content negotiation (Accept header q-\/value parsing)
+\end{DoxyItemize}
+
+Thread safety\+: All functions are thread-\/safe (no global state). Header collections are not thread-\/safe; use external synchronization if sharing across threads.
+
+Security notes\+:
+\begin{DoxyItemize}
+\item Rejects control characters and invalid syntax in URI components
+\item Validates host as reg-\/name or basic IPv6 literal
+\item Media types/parameters validated as HTTP tokens (RFC 7230)
+\item Per-\/component length limits prevent resource exhaustion
+\item Header names/values validated to reject injection attacks
+\item Integer overflow protection on all size calculations
+\end{DoxyItemize}
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method} for HTTP methods. 
+
+\doxylink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T} for header collections. 
+
+\doxylink{structSocketHTTP__URI}{Socket\+HTTP\+\_\+\+URI} for URI parsing. 
+
+Socket\+HTTP1\+\_\+T for HTTP/1.\+1 protocol implementation. 
+
+Socket\+HTTP2\+\_\+T for HTTP/2 protocol implementation. 
+
+\doxylink{group__http_gaba14ae9994f5645e5aa8488f905aad54}{Socket\+HTTPClient\+\_\+T} for HTTP client functionality. 
+
+\doxylink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T} for HTTP server functionality. 
+\end{DoxySeeAlso}

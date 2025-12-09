@@ -236,7 +236,7 @@
 <!-- Node11 -->
 <g id="Node000011" class="node">
 <title>Node11</title>
-<g id="a_Node000011"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000011"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="1192.18,-129 1086.18,-129 1086.18,-110 1192.18,-110 1192.18,-129"/>
 <text text-anchor="middle" x="1139.18" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -254,7 +254,7 @@
 <!-- Node20 -->
 <g id="Node000020" class="node">
 <title>Node20</title>
-<g id="a_Node000020"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000020"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="614.18,-129 518.18,-129 518.18,-110 614.18,-110 614.18,-129"/>
 <text text-anchor="middle" x="566.18" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

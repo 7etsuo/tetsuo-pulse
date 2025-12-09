@@ -1,21 +1,99 @@
 /**
  * @file SocketTLS-private.h
  * @ingroup security
- * @brief TLS internal shared definitions and helper functions.
+ * @brief Internal TLS module shared definitions, macros, and helper functions.
  *
- * Internal header for all TLS module implementation files. Contains shared
- * helper function declarations, error handling macros, internal types,
- * and the SocketTLSContext_T structure definition.
- * NOT part of public API - do not include from application code.
+ * Private header included by TLS .c files. Provides:
+ * - Thread-local error handling and exception macros
+ * - Security validation for files, hostnames, keys
+ * - Internal structures for pinning, SNI, ALPN, CRL auto-refresh
+ * - OpenSSL error formatting and SSL access utilities
+ * - Ex_data index management for context association
  *
- * Thread safety: Internal functions are not thread-safe unless noted.
+ * NOT part of public API - applications must not include this header.
  *
- * @see SocketTLS.h for public TLS API.
- * @see SocketTLSContext.h for public TLS context API.
+ *  Features
+ *
+ * - RAISE_TLS_ERROR* macros with thread-local detailed exceptions
+ * - tls_validate_file_path() for secure credential loading
+ * - tls_secure_free_pkey() for zeroized key cleanup
+ * - tls_validate_hostname() for RFC-compliant SNI
+ * - Certificate pinning with SPKI SHA256 and constant-time lookup
+ * - ALPN temp buffer management to prevent UAF in callbacks
+ * - CRL mutex-protected auto-refresh scheduling
+ *
+ *  Platform Requirements
+ *
+ * - OpenSSL/LibreSSL with TLS 1.2+ (1.3 recommended)
+ * - POSIX pthreads for mutexes and thread-local storage (__thread)
+ * - Unix stat/lstat for symlink detection in validation
+ * - CLOCK_MONOTONIC for timing (CRL refresh, timeouts)
+ * - _GNU_SOURCE enabled for extensions
+ *
+ *  Thread Safety
+ *
+ * - Macros: Thread-safe via thread-local storage
+ * - Inline functions: Yes where noted (read-only or pure)
+ * - Structs: Conditional; use mutexes for shared access
+ *
+ * @internal
+ *
+ * @warning Misuse can lead to security vulnerabilities (e.g., symlink attacks,
+ * timing leaks)
+ *
+ * @see SocketTLS.h for public Socket TLS operations
+ * @see SocketTLSContext.h for public context API
+ * @see docs/SECURITY.md for TLS hardening guide
  */
 
 #ifndef SOCKETTLS_PRIVATE_INCLUDED
 #define SOCKETTLS_PRIVATE_INCLUDED
+
+/**
+ * @file SocketTLS-private.h
+ * @ingroup security
+ * @brief Internal TLS module shared definitions, macros, and helper functions.
+ *
+ * Private header included by TLS .c files. Provides:
+ * - Thread-local error handling and exception macros
+ * - Security validation for files, hostnames, keys
+ * - Internal structures for pinning, SNI, ALPN, CRL auto-refresh
+ * - OpenSSL error formatting and SSL access utilities
+ * - Ex_data index management for context association
+ *
+ * NOT part of public API - applications must not include this header.
+ *
+ *  Features
+ * - RAISE_TLS_ERROR* macros with thread-local detailed exceptions
+ * - tls_validate_file_path() for secure credential loading
+ * - tls_secure_free_pkey() for zeroized key cleanup
+ * - tls_validate_hostname() for RFC-compliant SNI
+ * - Certificate pinning with SPKI SHA256 and constant-time lookup
+ * - ALPN temp buffer management to prevent UAF in callbacks
+ * - CRL mutex-protected auto-refresh scheduling
+ *
+ *  Platform Requirements
+ * - OpenSSL/LibreSSL with TLS 1.2+ (1.3 recommended)
+ * - POSIX pthreads for mutexes and thread-local storage (__thread)
+ * - Unix stat/lstat for symlink detection in validation
+ * - CLOCK_MONOTONIC for timing (CRL refresh, timeouts)
+ * - _GNU_SOURCE enabled for extensions
+ *
+ *  Thread Safety
+ * - Macros: Thread-safe via thread-local storage
+ * - Inline functions: Yes where noted (read-only or pure)
+ * - Structs: Conditional; use mutexes for shared access
+ *
+ * @internal
+ *
+ * @warning Misuse can lead to security vulnerabilities (e.g., symlink attacks,
+ * timing leaks)
+ *
+ * @see SocketTLS.h for public Socket TLS operations
+ * @see SocketTLSContext.h for public context API
+ * @see docs/SECURITY.md for TLS hardening guide
+ * @see docs/ERROR_HANDLING.md for exception usage
+ */
 
 #if SOCKET_HAS_TLS
 
@@ -44,26 +122,31 @@
  */
 
 /**
- * @brief tls_error_buf - Thread-local TLS error message buffer (see SocketTLS.h for details).
+ * @brief tls_error_buf - Thread-local TLS error message buffer (see
+ * SocketTLS.h for details).
  * @ingroup security
  *
  * Declared in SocketTLS.h. Used by all TLS macros for error reporting.
  */
 
 /**
- * @brief SocketTLS_DetailedException - Thread-local exception for TLS module errors.
+ * @brief SocketTLS_DetailedException - Thread-local exception for TLS module
+ * errors.
  * @ingroup security
- * @var SocketTLS_DetailedException
  *
- * Thread-local copy of SocketTLS exceptions to prevent race conditions when multiple
- * threads raise TLS exceptions simultaneously. Each thread gets its own copy populated
- * with details from tls_error_buf before raising.
+ * Thread-local exception type for TLS module errors (declared in .c files via
+ * SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLS)). Prevents race conditions in
+ * multi-threaded environments by providing per-thread exception storage
+ * populated with tls_error_buf details.
  *
- * Declared via SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLS) in implementation files.
- * Used by RAISE_TLS_ERROR* macros for detailed error reporting.
+ * Used by RAISE_TLS_ERROR* macros for detailed reporting.
  *
- * @see SOCKET_DECLARE_MODULE_EXCEPTION() in SocketUtil.h for pattern
- * @see tls_error_buf for associated error message buffer
+ * @note Not a global var; thread-local instance.
+ *
+ * @see SOCKET_DECLARE_MODULE_EXCEPTION() in core/SocketUtil.h for declaration
+ * pattern
+ * @see tls_error_buf for error message buffer
+ * @see core/Except.h for exception handling system
  */
 
 /**
@@ -142,8 +225,8 @@
  * - Verifies handshake is complete
  * - Ensures SSL object is available
  *
- * Returns SSL* pointer on success for immediate use, raises exception on failure.
- * Used by all TLS send/receive operations to ensure proper state.
+ * Returns SSL* pointer on success for immediate use, raises exception on
+ * failure. Used by all TLS send/receive operations to ensure proper state.
  *
  * @return SSL* pointer for immediate use in TLS operations
  */
@@ -277,9 +360,10 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
  * @ingroup security
  * @param context Context string for the error message.
  *
- * Formats the current OpenSSL error queue into tls_error_buf prefixed with the given context.
- * Clears the error queue after formatting to prevent interference with subsequent operations.
- * Used internally for consistent error reporting in TLS functions.
+ * Formats the current OpenSSL error queue into tls_error_buf prefixed with the
+ * given context. Clears the error queue after formatting to prevent
+ * interference with subsequent operations. Used internally for consistent
+ * error reporting in TLS functions.
  *
  * @threadsafe Yes - operates on thread-local error buffer.
  * @see tls_handle_ssl_error() for SSL error state mapping.
@@ -312,26 +396,29 @@ tls_format_openssl_error (const char *context)
  */
 
 /**
- * @brief Validate file path for certificates, keys, or CAs against security threats.
+ * @brief Validate file path for certificates, keys, or CAs against security
+ * threats.
  * @ingroup security
  * @param path Null-terminated file path string to validate.
  * @return 1 if path passes all security checks, 0 otherwise.
  *
- * Comprehensive validation to mitigate path traversal, symlink following, and injection attacks:
+ * Comprehensive validation to mitigate path traversal, symlink following, and
+ * injection attacks:
  * - Length limits and non-empty check
  * - Blocks traversal patterns like "/../", "\\..\\", etc.
  * - Rejects control characters and embedded nulls
  * - Detects and rejects symlinks via lstat (if accessible)
  * - Case-insensitive on Windows patterns if needed (platform-specific)
  *
- * Essential for secure loading of TLS credentials from potentially untrusted sources.
+ * Essential for secure loading of TLS credentials from potentially untrusted
+ * sources.
  *
  * @threadsafe Yes - pure string and stat operations, no shared state.
  * @see tls_validate_hostname() for SNI name validation.
  * @see tls_secure_free_pkey() for secure key handling post-load.
- * @note lstat failure (e.g., no permission) allows validation to proceed conservatively.
+ * @note lstat failure (e.g., no permission) allows validation to proceed
+ * conservatively.
  */
-
 
 /* ============================================================================
  * ALPN Temp Buffer Management (for UAF fix in selection callback)
@@ -371,8 +458,8 @@ extern int tls_get_alpn_ex_idx (void);
  *
  * Frees any arena-allocated ALPN protocol string stored in the SSL's ex_data
  * using tls_get_alpn_ex_idx and clears the ex_data slot to NULL.
- * Prevents memory leaks in ALPN callbacks; safe for repeated calls or non-ALPN SSLs.
- * Called internally before SSL_free in socket TLS cleanup.
+ * Prevents memory leaks in ALPN callbacks; safe for repeated calls or non-ALPN
+ * SSLs. Called internally before SSL_free in socket TLS cleanup.
  *
  * @see tls_get_alpn_ex_idx() for the ex_data index used.
  * @see Arena_dispose() indirect via buffer free.
@@ -481,7 +568,8 @@ tls_secure_free_pkey (EVP_PKEY *pkey)
  * - No empty labels, proper dot separation
  * - Basic IDN support via punycode assumption (caller normalizes)
  *
- * Prevents invalid SNI attacks like label injection or buffer overflows in virtual servers.
+ * Prevents invalid SNI attacks like label injection or buffer overflows in
+ * virtual servers.
  *
  * @threadsafe Yes - pure string parsing, no side effects.
  * @see RFC 6066 for TLS SNI extension details.
@@ -551,7 +639,12 @@ tls_validate_hostname (const char *hostname)
  */
 typedef struct
 {
-  unsigned char hash[SOCKET_TLS_PIN_HASH_LEN]; /* SHA256 digest (32 bytes) */
+  unsigned char
+      hash[SOCKET_TLS_PIN_HASH_LEN]; /**< SHA256 digest of the
+                                        SubjectPublicKeyInfo (SPKI) DER
+                                        encoding (32 bytes). OWASP-recommended
+                                        for pinning as it targets key material.
+                                      */
 } TLSCertPin;
 
 /**
@@ -567,25 +660,26 @@ typedef struct
  */
 typedef struct
 {
-  TLSCertPin *pins; /* Array of SHA256 hashes (arena-allocated) */
-  size_t count;     /* Number of pins */
-  size_t capacity;  /* Allocated capacity */
-  int enforce;      /* 1 = fail on mismatch, 0 = warn only (default: 1) */
-  pthread_mutex_t
-      lock; /* Protects pinning configuration and access for thread safety */
+  TLSCertPin *pins; /**< Array of SHA256 hashes (arena-allocated). */
+  size_t count;     /**< Number of pins in the array. */
+  size_t capacity;  /**< Allocated capacity of the pins array. */
+  int enforce; /**< 1 = fail on mismatch (strict), 0 = warn only (default: 1).
+                */
+  pthread_mutex_t lock; /**< Mutex protecting pinning configuration and
+                           verification for thread safety. */
 } TLSContextPinning;
 
 /**
  * @brief Structure for managing SNI certificate mappings in TLS context.
  * @ingroup security
  *
- * Holds arrays mapping hostnames to certificate files, private keys, and pre-loaded
- * X509 chains and EVP_PKEY objects. Supports multiple mappings per hostname and
- * a default entry (NULL hostnames). Used for dynamic certificate selection
- * based on SNI during TLS handshakes.
+ * Holds arrays mapping hostnames to certificate files, private keys, and
+ * pre-loaded X509 chains and EVP_PKEY objects. Supports multiple mappings per
+ * hostname and a default entry (NULL hostnames). Used for dynamic certificate
+ * selection based on SNI during TLS handshakes.
  *
- * Memory is arena-allocated; chains are owned by STACK_OF(X509) (references only).
- * Thread-safe via context-level locking.
+ * Memory is arena-allocated; chains are owned by STACK_OF(X509) (references
+ * only). Thread-safe via context-level locking.
  *
  * @see SocketTLSContext_add_sni_cert() for adding mappings.
  * @see tls_validate_hostname() for SNI hostname validation.
@@ -593,28 +687,28 @@ typedef struct
  */
 typedef struct
 {
-  char **hostnames;  /* Array of hostname strings (arena-allocated, NULL for
-                        default) */
-  char **cert_files; /* Array of certificate file paths (arena-allocated) */
-  char **key_files;  /* Array of private key file paths (arena-allocated) */
-  STACK_OF (X509)
-  **chains; /* Pre-loaded certificate chains for each entry (sk_X509 owns
-               cert refs; leaf at index 0, followed by intermediates) */
-  EVP_PKEY **pkeys; /* Pre-loaded private key objects */
-  size_t count;     /* Number of certificate mappings */
-  size_t capacity;  /* Allocated capacity */
+  char **hostnames;  /**< Array of hostname strings (arena-allocated, NULL for
+                        default entry). */
+  char **cert_files; /**< Array of certificate file paths (arena-allocated). */
+  char **key_files;  /**< Array of private key file paths (arena-allocated). */
+  STACK_OF (X509) * *chains; /**< Pre-loaded certificate chains for each entry
+                                (sk_X509 owns cert refs; leaf at index 0,
+                                followed by intermediates). */
+  EVP_PKEY **pkeys; /**< Pre-loaded private key objects for each entry. */
+  size_t count;     /**< Number of certificate mappings. */
+  size_t capacity;  /**< Allocated capacity. */
 } TLSContextSNICerts;
 
 /**
  * @brief Configuration for ALPN protocol negotiation.
  * @ingroup security
  *
- * Manages the list of supported ALPN protocols, selection callback, and storage
- * for the negotiated protocol string. Used during TLS handshake for protocol
- * negotiation with peers.
+ * Manages the list of supported ALPN protocols, selection callback, and
+ * storage for the negotiated protocol string. Used during TLS handshake for
+ * protocol negotiation with peers.
  *
- * Protocols are null-terminated strings; callback allows custom selection logic.
- * Thread-safe via context mutex for modifications.
+ * Protocols are null-terminated strings; callback allows custom selection
+ * logic. Thread-safe via context mutex for modifications.
  *
  * @see SocketTLSContext_set_alpn_protocols() for configuring protocols.
  * @see SocketTLSContext_set_alpn_callback() for custom selection.
@@ -623,15 +717,19 @@ typedef struct
  */
 typedef struct
 {
-  const char **protocols;         /* Array of protocol strings */
-  size_t count;                   /* Number of protocols */
-  const char *selected;           /* Negotiated protocol (for clients) */
-  SocketTLSAlpnCallback callback; /* Custom selection callback */
-  void *callback_user_data;       /* User data for callback */
+  const char **protocols; /**< Array of supported ALPN protocol strings
+                             (null-terminated). */
+  size_t count;           /**< Number of protocols in the array. */
+  const char *selected;   /**< Negotiated protocol string (for clients; set
+                             during handshake). */
+  SocketTLSAlpnCallback
+      callback;             /**< Custom ALPN selection callback (if set). */
+  void *callback_user_data; /**< Opaque user data passed to the callback. */
 } TLSContextALPN;
 
 /**
- * @brief TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates, verification, ALPN, and session caching.
+ * @brief TLS context structure for managing OpenSSL SSL_CTX with secure
+ * defaults, certificates, verification, ALPN, and session caching.
  * @ingroup security
  *
  * Manages OpenSSL SSL_CTX with secure defaults, certificates, verification,
@@ -639,25 +737,34 @@ typedef struct
  */
 struct T
 {
-  SSL_CTX *ssl_ctx;            /* OpenSSL context */
-  Arena_T arena;               /* Arena for allocations */
-  int is_server;               /* 1 for server, 0 for client */
-  int session_cache_enabled;   /* Session cache flag */
-  size_t session_cache_size;   /* Session cache size */
-  size_t cache_hits;           /* Session resumptions (hits) */
-  size_t cache_misses;         /* Full handshakes */
-  size_t cache_stores;         /* New sessions stored */
-  pthread_mutex_t stats_mutex; /* Thread-safe stats update */
+  SSL_CTX *ssl_ctx; /**< OpenSSL SSL_CTX object for TLS sessions. */
+  Arena_T arena;    /**< Memory arena for internal allocations. */
+  int is_server;    /**< 1 for server context, 0 for client context. */
+  int session_cache_enabled; /**< Flag to enable session caching (default: 1).
+                              */
+  size_t session_cache_size; /**< Maximum number of sessions in cache (default:
+                                1024). */
+  size_t cache_hits;         /**< Number of session resumptions (hits). */
+  size_t cache_misses; /**< Number of full handshakes due to cache misses. */
+  size_t cache_stores; /**< Number of new sessions stored in cache. */
+  pthread_mutex_t
+      stats_mutex; /**< Mutex for thread-safe updates to cache statistics. */
 
   /* Session tickets */
-  unsigned char ticket_key[SOCKET_TLS_TICKET_KEY_LEN]; /* Session ticket key */
-  int tickets_enabled; /* 1 if session tickets enabled */
+  unsigned char
+      ticket_key[SOCKET_TLS_TICKET_KEY_LEN]; /**< Session ticket encryption key
+                                                (48 bytes). Used for stateless
+                                                session resumption. */
+  int tickets_enabled; /**< 1 if session tickets are enabled (servers by
+                          default). */
 
   /* OCSP stapling */
-  SocketTLSOcspGenCallback ocsp_gen_cb; /* Dynamic OCSP callback */
-  void *ocsp_gen_arg;                   /* Arg for OCSP gen cb */
-  const unsigned char *ocsp_response;   /* Static response bytes */
-  size_t ocsp_len;                      /* Response length */
+  SocketTLSOcspGenCallback ocsp_gen_cb; /**< Dynamic OCSP response generation
+                                           callback for stapling. */
+  void *ocsp_gen_arg; /**< User argument passed to OCSP gen callback. */
+  const unsigned char *ocsp_response; /**< Static OCSP response bytes for
+                                         stapling (alternative to dynamic). */
+  size_t ocsp_len; /**< Length of static OCSP response bytes. */
 
   /* SNI certificate mapping */
   TLSContextSNICerts sni_certs;
@@ -666,9 +773,11 @@ struct T
   TLSContextALPN alpn;
 
   /* Custom verification callback */
-  SocketTLSVerifyCallback verify_callback;
-  void *verify_user_data;
-  TLSVerifyMode verify_mode; /* Stored verification mode */
+  SocketTLSVerifyCallback verify_callback; /**< Custom X509 verify callback for
+                                              peer certificate validation. */
+  void *verify_user_data; /**< Opaque user data passed to verify callback. */
+  TLSVerifyMode verify_mode; /**< Stored verification mode (e.g.,
+                                TLS_VERIFY_NONE, TLS_VERIFY_PEER). */
 
   /* Certificate pinning (SPKI SHA256) */
   TLSContextPinning pinning;
@@ -704,8 +813,8 @@ struct T
  * @param ctx SocketTLSContext_T instance.
  *
  * Thread-safe macro to lock the CRL refresh mutex. Logs error and raises
- * SocketTLS_Failed if pthread_mutex_lock fails (e.g., deadlock or invalid mutex).
- * Ensures exclusive access to CRL auto-refresh state and operations.
+ * SocketTLS_Failed if pthread_mutex_lock fails (e.g., deadlock or invalid
+ * mutex). Ensures exclusive access to CRL auto-refresh state and operations.
  *
  * @warning Not recursive; avoid calling from within locked sections.
  * @see CRL_UNLOCK(ctx) to release the lock.
@@ -760,13 +869,16 @@ struct T
 /**
  * @brief Raise a SocketTLSContext module exception using current error state.
  * @ingroup security
- * @param exception Specific SocketTLSContext exception type (e.g., SocketTLSContext_Failed).
+ * @param exception Specific SocketTLSContext exception type (e.g.,
+ * SocketTLSContext_Failed).
  *
- * Uses the thread-local error buffer (tls_error_buf) populated by prior error formatting
- * macros like TLS_ERROR_MSG or tls_format_openssl_error. Creates a detailed exception
- * copy via SOCKET_RAISE_MODULE_ERROR to avoid races in multi-threaded environments.
+ * Uses the thread-local error buffer (tls_error_buf) populated by prior error
+ * formatting macros like TLS_ERROR_MSG or tls_format_openssl_error. Creates a
+ * detailed exception copy via SOCKET_RAISE_MODULE_ERROR to avoid races in
+ * multi-threaded environments.
  *
- * Intended for context-level operations where OpenSSL or allocation errors occur.
+ * Intended for context-level operations where OpenSSL or allocation errors
+ * occur.
  *
  * @see RAISE_CTX_ERROR_MSG() for exceptions with custom formatted messages.
  * @see SocketTLS_DetailedException for thread-local exception details.
@@ -802,7 +914,8 @@ struct T
  * @param ... Variable arguments for formatting.
  *
  * Similar to RAISE_CTX_ERROR_MSG but uses __VA_ARGS__ for better handling of
- * zero-argument cases in some compilers. Formats into tls_error_buf and raises.
+ * zero-argument cases in some compilers. Formats into tls_error_buf and
+ * raises.
  *
  * @throws SocketTLSContext exception with formatted details.
  * @see RAISE_CTX_ERROR_MSG() primary formatted exception macro.
@@ -818,10 +931,11 @@ struct T
 /**
  * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
- * @param x Parameter or variable that is intentionally unused (e.g., in asserts only).
+ * @param x Parameter or variable that is intentionally unused (e.g., in
+ * asserts only).
  *
- * Casts the parameter to void to inform the compiler it is deliberately unused.
- * Common in callback functions or when params are used conditionally.
+ * Casts the parameter to void to inform the compiler it is deliberately
+ * unused. Common in callback functions or when params are used conditionally.
  *
  * @note Use (void)param; style for single use; macro for readability.
  * @see socket_util_unused() if available in core utils.
@@ -836,13 +950,15 @@ struct T
 /**
  * @brief Raise a SocketTLSContext exception from an OpenSSL error.
  * @ingroup security
- * @param context Descriptive context for the error (e.g., "SSL_CTX_new failed").
+ * @param context Descriptive context for the error (e.g., "SSL_CTX_new
+ * failed").
  *
- * Formats the current OpenSSL error queue using tls_format_openssl_error and raises
- * SocketTLSContext_Failed with the details in the thread-local exception.
- * Clears the OpenSSL error queue after handling.
+ * Formats the current OpenSSL error queue using tls_format_openssl_error and
+ * raises SocketTLSContext_Failed with the details in the thread-local
+ * exception. Clears the OpenSSL error queue after handling.
  *
- * @throws SocketTLSContext_Failed Always raised with formatted OpenSSL error details.
+ * @throws SocketTLSContext_Failed Always raised with formatted OpenSSL error
+ * details.
  * @see tls_format_openssl_error() for error message formatting.
  * @see ERR_get_error() for accessing OpenSSL error queue.
  */
@@ -857,9 +973,9 @@ extern void ctx_raise_openssl_error (const char *context);
  * @return Pointer to the duplicated string in the arena.
  * @throws SocketTLS_Failed if Arena_alloc fails.
  *
- * Performs strlen + 1 allocation, copies the string, and handles allocation failure
- * by raising an exception with the provided error context.
- * Used to centralize arena-based string duplication in TLS context code.
+ * Performs strlen + 1 allocation, copies the string, and handles allocation
+ * failure by raising an exception with the provided error context. Used to
+ * centralize arena-based string duplication in TLS context code.
  *
  * @see ctx_arena_alloc() for general-purpose allocation helper.
  * @see Arena_alloc() underlying memory allocation.
@@ -888,8 +1004,9 @@ ctx_arena_strdup (SocketTLSContext_T ctx, const char *str,
  * @return Pointer to allocated memory block.
  * @throws SocketTLS_Failed if Arena_alloc returns NULL.
  *
- * Allocates memory using the context's arena and raises an exception on failure
- * with the specified error context. Centralizes allocation patterns in TLS code.
+ * Allocates memory using the context's arena and raises an exception on
+ * failure with the specified error context. Centralizes allocation patterns in
+ * TLS code.
  *
  * @see ctx_arena_strdup() for string-specific allocation.
  * @see Arena_alloc() underlying allocator with file/line tracking.
@@ -910,9 +1027,9 @@ ctx_arena_alloc (SocketTLSContext_T ctx, size_t size, const char *error_msg)
  * @brief Global ex_data index for storing SocketTLSContext_T in SSL_CTX.
  * @ingroup security
  *
- * Used to associate SocketTLSContext_T instances with their corresponding OpenSSL SSL_CTX objects.
- * Allows retrieving the library context from OpenSSL callbacks and internal operations.
- * Lazily initialized once per process.
+ * Used to associate SocketTLSContext_T instances with their corresponding
+ * OpenSSL SSL_CTX objects. Allows retrieving the library context from OpenSSL
+ * callbacks and internal operations. Lazily initialized once per process.
  *
  * @see SSL_CTX_set_ex_data() for OpenSSL ex_data usage.
  */
@@ -949,13 +1066,15 @@ extern SocketTLSContext_T tls_context_get_from_ssl_ctx (SSL_CTX *ssl_ctx);
 /**
  * @brief Allocate and initialize a new SocketTLSContext_T.
  * @ingroup security
- * @param method OpenSSL SSL_METHOD (e.g., TLS_server_method(), TLS_client_method())
+ * @param method OpenSSL SSL_METHOD (e.g., TLS_server_method(),
+ * TLS_client_method())
  * @param is_server 1 for server context, 0 for client context
  * @return New SocketTLSContext_T instance
- * @throws SocketTLS_Failed on allocation failure, OpenSSL errors, or invalid params
+ * @throws SocketTLS_Failed on allocation failure, OpenSSL errors, or invalid
+ * params
  *
- * Creates arena, sets up SSL_CTX with secure defaults, initializes internal state.
- * Intended for internal use by SocketTLSContext_new*() functions.
+ * Creates arena, sets up SSL_CTX with secure defaults, initializes internal
+ * state. Intended for internal use by SocketTLSContext_new*() functions.
  *
  * @see SocketTLSContext_new_server() for high-level server context creation
  * @see SocketTLSContext_new_client() for high-level client context creation
@@ -989,15 +1108,19 @@ tls_pinning_init (TLSContextPinning *pinning)
 }
 
 /**
- * @brief Compute SPKI SHA256 hash from X509 certificate for pinning verification.
+ * @brief Compute SPKI SHA256 hash from X509 certificate for pinning
+ * verification.
  * @ingroup security
  * @param cert Input X509 certificate object.
- * @param out_hash Output buffer for the 32-byte SHA256 hash (must be at least SOCKET_TLS_PIN_HASH_LEN).
- * @return 0 on success, -1 on failure (e.g., invalid certificate or DER extraction error).
+ * @param out_hash Output buffer for the 32-byte SHA256 hash (must be at least
+ * SOCKET_TLS_PIN_HASH_LEN).
+ * @return 0 on success, -1 on failure (e.g., invalid certificate or DER
+ * extraction error).
  *
- * Extracts the SubjectPublicKeyInfo (SPKI) DER from the certificate and computes its SHA256 digest.
- * This method is recommended by OWASP for certificate pinning as it targets the public key material,
- * surviving certificate renewals with the same key.
+ * Extracts the SubjectPublicKeyInfo (SPKI) DER from the certificate and
+ * computes its SHA256 digest. This method is recommended by OWASP for
+ * certificate pinning as it targets the public key material, surviving
+ * certificate renewals with the same key.
  *
  * @see tls_pinning_check_chain() for verifying chain against pins.
  * @see tls_pinning_find() for constant-time hash matching.
@@ -1016,7 +1139,8 @@ extern int tls_pinning_extract_spki_hash (const X509 *cert,
  *
  * Iterates through the certificate chain, extracts SPKI hashes for each cert,
  * and checks against configured pins using constant-time comparison.
- * Logs warnings or errors based on enforce mode; may raise exceptions in strict mode.
+ * Logs warnings or errors based on enforce mode; may raise exceptions in
+ * strict mode.
  *
  * Called during TLS verification callback to enforce pinning policy.
  *

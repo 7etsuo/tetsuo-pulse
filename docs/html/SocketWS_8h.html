@@ -325,7 +325,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga5c38be960976fd0d55b7328d1786ed9d" id="r_ga5c38be960976fd0d55b7328d1786ed9d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga5c38be960976fd0d55b7328d1786ed9d">SocketWS_process</a> (SocketWS_T ws, unsigned events)</td></tr>
 <tr class="memdesc:ga5c38be960976fd0d55b7328d1786ed9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process socket events to advance WebSocket state machine.  <br /></td></tr>
 <tr class="separator:ga5c38be960976fd0d55b7328d1786ed9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0049a0e0f8a4218c5d5b3dbf8181b92f" id="r_ga0049a0e0f8a4218c5d5b3dbf8181b92f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0049a0e0f8a4218c5d5b3dbf8181b92f">SocketWS_enable_auto_ping</a> (SocketWS_T ws, <a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
+<tr class="memitem:ga0049a0e0f8a4218c5d5b3dbf8181b92f" id="r_ga0049a0e0f8a4218c5d5b3dbf8181b92f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0049a0e0f8a4218c5d5b3dbf8181b92f">SocketWS_enable_auto_ping</a> (SocketWS_T ws, SocketPoll_T poll)</td></tr>
 <tr class="memdesc:ga0049a0e0f8a4218c5d5b3dbf8181b92f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable automatic periodic PING for connection keepalive.  <br /></td></tr>
 <tr class="separator:ga0049a0e0f8a4218c5d5b3dbf8181b92f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaedcf20cd5206a2cd971a60a98a58ff5f" id="r_gaedcf20cd5206a2cd971a60a98a58ff5f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaedcf20cd5206a2cd971a60a98a58ff5f">SocketWS_disable_auto_ping</a> (SocketWS_T ws)</td></tr>
@@ -340,7 +340,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga89d42ff813f81187667d894e0da0fce0" id="r_ga89d42ff813f81187667d894e0da0fce0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga89d42ff813f81187667d894e0da0fce0">SocketWS_last_error</a> (SocketWS_T ws)</td></tr>
 <tr class="memdesc:ga89d42ff813f81187667d894e0da0fce0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the most recent error code for this WebSocket instance.  <br /></td></tr>
 <tr class="separator:ga89d42ff813f81187667d894e0da0fce0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1bfa823bd6275bfdcb9bab6f26ab90ee" id="r_ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga1bfa823bd6275bfdcb9bab6f26ab90ee">SocketWS_error_string</a> (<a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> error)</td></tr>
+<tr class="memitem:ga1bfa823bd6275bfdcb9bab6f26ab90ee" id="r_ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga1bfa823bd6275bfdcb9bab6f26ab90ee">SocketWS_error_string</a> (<a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>)</td></tr>
 <tr class="memdesc:ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a human-readable string describing a WebSocket error code.  <br /></td></tr>
 <tr class="separator:ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -398,9 +398,9 @@ Variables</h2></td></tr>
 <dd>
 <a class="el" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> for HTTP upgrade parsing. </dd>
 <dd>
-<a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> for event loop integration. </dd>
+SocketPoll_T for event loop integration. </dd>
 <dd>
-<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> for auto-ping timer integration. </dd>
+<a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> for auto-ping timer integration. </dd>
 <dd>
 <a class="el" href="group__http.html">HTTP Modules</a> for HTTP upgrade details. </dd>
 <dd>

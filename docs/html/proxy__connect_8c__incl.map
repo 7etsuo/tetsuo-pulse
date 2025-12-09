@@ -16,14 +16,14 @@
 <area shape="poly" id="edge39_Node000001_Node000027" title=" " alt="" coords="1810,33,1616,78,1614,73,1809,28"/>
 <area shape="rect" id="Node000031" href="$SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling." alt="" coords="1896,152,2059,177"/>
 <area shape="poly" id="edge65_Node000001_Node000031" title=" " alt="" coords="1870,29,1961,140,1957,143,1866,33"/>
-<area shape="rect" id="Node000032" href="$SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support." alt="" coords="1697,225,1813,251"/>
+<area shape="rect" id="Node000032" href="$SocketTLS_8h.html" title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement." alt="" coords="1697,225,1813,251"/>
 <area shape="poly" id="edge64_Node000001_Node000032" title=" " alt="" coords="1855,32,1769,213,1764,211,1851,30"/>
 <area shape="rect" id="Node000007" title=" " alt="" coords="1736,592,1808,617"/>
 <area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="1775,544,1775,578,1769,578,1769,544"/>
 <area shape="poly" id="edge8_Node000008_Node000006" title=" " alt="" coords="1394,322,1500,372,1636,443,1744,509,1742,513,1633,448,1498,377,1391,326"/>
-<area shape="rect" id="Node000009" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="353,445,495,471"/>
+<area shape="rect" id="Node000009" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="353,445,495,471"/>
 <area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="1309,320,1091,339,954,355,815,375,633,410,482,445,481,440,631,405,814,369,953,350,1091,334,1309,314"/>
-<area shape="rect" id="Node000018" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1332,372,1460,397"/>
+<area shape="rect" id="Node000018" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1332,372,1460,397"/>
 <area shape="poly" id="edge19_Node000008_Node000018" title=" " alt="" coords="1375,323,1389,358,1384,360,1370,325"/>
 <area shape="rect" id="Node000020" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="827,372,997,397"/>
 <area shape="poly" id="edge24_Node000008_Node000020" title=" " alt="" coords="1310,324,999,373,998,367,1309,319"/>

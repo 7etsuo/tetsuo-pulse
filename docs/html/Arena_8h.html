@@ -146,10 +146,10 @@ Macros</h2></td></tr>
 <tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque arena type for memory management.  <br /></td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7897b95c53808a539b0f7a18587a9b54" id="r_ga7897b95c53808a539b0f7a18587a9b54"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga7897b95c53808a539b0f7a18587a9b54">ALLOC</a>(arena,  nbytes)&#160;&#160;&#160;  (<a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> ((arena), (nbytes), __FILE__, __LINE__))</td></tr>
-<tr class="memdesc:ga7897b95c53808a539b0f7a18587a9b54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate memory from arena with automatic debug info.  <br /></td></tr>
+<tr class="memdesc:ga7897b95c53808a539b0f7a18587a9b54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience macro for Arena_alloc with automatic source location tracking.  <br /></td></tr>
 <tr class="separator:ga7897b95c53808a539b0f7a18587a9b54"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf5249a1778cd6cf5db0e2e410b292934" id="r_gaf5249a1778cd6cf5db0e2e410b292934"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaf5249a1778cd6cf5db0e2e410b292934">CALLOC</a>(arena,  count,  nbytes)&#160;&#160;&#160;  (<a class="el" href="group__foundation.html#ga3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> ((arena), (count), (nbytes), __FILE__, __LINE__))</td></tr>
-<tr class="memdesc:gaf5249a1778cd6cf5db0e2e410b292934"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize memory from arena with automatic debug info.  <br /></td></tr>
+<tr class="memdesc:gaf5249a1778cd6cf5db0e2e410b292934"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convenience macro for zero-initialized multi-element allocation with source tracking.  <br /></td></tr>
 <tr class="separator:gaf5249a1778cd6cf5db0e2e410b292934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
@@ -160,19 +160,19 @@ Typedefs</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga6a6d6890eb6ed1248ae1a5f0c677c7a4" id="r_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a> (void)</td></tr>
-<tr class="memdesc:ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new memory arena.  <br /></td></tr>
+<tr class="memdesc:ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new memory arena with initial capacity and thread-safe protection.  <br /></td></tr>
 <tr class="separator:ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6842e66018614df08139e67826cf3e0d" id="r_ga6842e66018614df08139e67826cf3e0d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> *ap)</td></tr>
-<tr class="memdesc:ga6842e66018614df08139e67826cf3e0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of an arena and all its allocations.  <br /></td></tr>
+<tr class="memdesc:ga6842e66018614df08139e67826cf3e0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of an arena and all its allocations, freeing underlying memory chunks.  <br /></td></tr>
 <tr class="separator:ga6842e66018614df08139e67826cf3e0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad93b1dd7d771cbed846dcc3c5c836917" id="r_gad93b1dd7d771cbed846dcc3c5c836917"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t nbytes, const char *file, int line)</td></tr>
-<tr class="memdesc:gad93b1dd7d771cbed846dcc3c5c836917"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate memory from arena.  <br /></td></tr>
+<tr class="memdesc:gad93b1dd7d771cbed846dcc3c5c836917"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate raw memory block from the specified arena.  <br /></td></tr>
 <tr class="separator:gad93b1dd7d771cbed846dcc3c5c836917"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3b920b3eed0306dc5afb36934955f6a2" id="r_ga3b920b3eed0306dc5afb36934955f6a2"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga3b920b3eed0306dc5afb36934955f6a2">Arena_calloc</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t count, size_t nbytes, const char *file, int line)</td></tr>
-<tr class="memdesc:ga3b920b3eed0306dc5afb36934955f6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize memory from arena.  <br /></td></tr>
+<tr class="memdesc:ga3b920b3eed0306dc5afb36934955f6a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize a block of memory elements from the arena.  <br /></td></tr>
 <tr class="separator:ga3b920b3eed0306dc5afb36934955f6a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0af0c54c1c64ff88ad43aadd48ce3ebe" id="r_ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga0af0c54c1c64ff88ad43aadd48ce3ebe">Arena_clear</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear all allocations in arena but keep arena active.  <br /></td></tr>
+<tr class="memdesc:ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the arena by invalidating all current allocations while preserving the arena for reuse.  <br /></td></tr>
 <tr class="separator:ga0af0c54c1c64ff88ad43aadd48ce3ebe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -197,7 +197,7 @@ Variables</h2></td></tr>
 <li>Global free chunk cache protected by separate mutex</li>
 <li>Safe to use same arena from multiple threads or one arena per thread</li>
 </ul>
-<p>Usage: Arena_T arena = <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Create a new memory arena.">Arena_new()</a>; void *ptr = <a class="el" href="group__foundation.html#ga7897b95c53808a539b0f7a18587a9b54" title="Allocate memory from arena with automatic debug info.">ALLOC(arena, 100)</a>; // Allocate 100 bytes // ... use memory ... Arena_clear(arena); // Clear all allocations but keep arena // OR Arena_dispose(&amp;arena); // Free everything including arena itself</p>
+<p>Usage: Arena_T arena = <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4" title="Create a new memory arena with initial capacity and thread-safe protection.">Arena_new()</a>; void *ptr = <a class="el" href="group__foundation.html#ga7897b95c53808a539b0f7a18587a9b54" title="Convenience macro for Arena_alloc with automatic source location tracking.">ALLOC(arena, 100)</a>; // Allocate 100 bytes // ... use memory ... Arena_clear(arena); // Clear all allocations but keep arena // OR Arena_dispose(&amp;arena); // Free everything including arena itself</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> for the opaque arena type. </dd>
 <dd>
 <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a> for arena creation. </dd>

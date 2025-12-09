@@ -147,7 +147,7 @@
 <!-- Node33 -->
 <g id="Node000033" class="node">
 <title>Node33</title>
-<g id="a_Node000033"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000033"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title="Core DTLS API for secure UDP sockets.">
 <polygon fill="white" stroke="#666666" points="1677,-299.5 1582,-299.5 1582,-280.5 1677,-280.5 1677,-299.5"/>
 <text text-anchor="middle" x="1629.5" y="-287.5" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketDTLS.h</text>
 </a>
@@ -498,7 +498,7 @@
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000016"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="515.5,-129 409.5,-129 409.5,-110 515.5,-110 515.5,-129"/>
 <text text-anchor="middle" x="462.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -651,7 +651,7 @@
 <!-- Node24 -->
 <g id="Node000024" class="node">
 <title>Node24</title>
-<g id="a_Node000024"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for the SocketCommon module.">
+<g id="a_Node000024"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for SocketCommon module providing shared socket infrastructure.">
 <polygon fill="white" stroke="#666666" points="671,-305 552,-305 552,-275 671,-275 671,-305"/>
 <text text-anchor="start" x="560" y="-293" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketCommon</text>
 <text text-anchor="middle" x="611.5" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">&#45;private.h</text>
@@ -769,7 +769,7 @@
 <!-- Node26 -->
 <g id="Node000026" class="node">
 <title>Node26</title>
-<g id="a_Node000026"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000026"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="1411.5,-129 1315.5,-129 1315.5,-110 1411.5,-110 1411.5,-129"/>
 <text text-anchor="middle" x="1363.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -1084,7 +1084,7 @@
 <!-- Node38 -->
 <g id="Node000038" class="node">
 <title>Node38</title>
-<g id="a_Node000038"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
+<g id="a_Node000038"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">
 <polygon fill="white" stroke="#666666" points="1013,-299.5 926,-299.5 926,-280.5 1013,-280.5 1013,-299.5"/>
 <text text-anchor="middle" x="969.5" y="-287.5" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLS.h</text>
 </a>

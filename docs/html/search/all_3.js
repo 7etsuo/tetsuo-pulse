@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['401_20retry_0',['Automatic 401 Retry',['../http_guide.html#autotoc_md104',1,'']]]
+  ['4_20list_20management_0',['4. List Management',['../SocketSYNProtect_8h.html#autotoc_md161',1,'']]],
+  ['401_20retry_1',['Automatic 401 Retry',['../http_guide.html#autotoc_md892',1,'']]]
 ];

@@ -1,0 +1,8 @@
+<map id="include/http/SocketHTTPClient&#45;config.h" name="include/http/SocketHTTPClient&#45;config.h">
+<area shape="rect" id="Node000001" title="Configuration constants for HTTP client with compile&#45;time override support." alt="" coords="5,5,208,45"/>
+<area shape="rect" id="Node000002" href="$SocketHTTPClient-private_8h.html" title="Internal HTTP client structures and connection pooling." alt="" coords="5,167,208,207"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,57,71,75,63,94,61,113,67,132,89,165,85,168,62,134,56,114,57,93,66,72,78,54"/>
+<area shape="rect" id="Node000003" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client with connection pooling and protocol negotiation." alt="" coords="73,93,287,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="136,54,171,91,167,95,132,57"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="162,131,126,168,122,165,158,127"/>
+</map>

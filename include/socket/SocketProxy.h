@@ -9,20 +9,28 @@
  *
  * Provides high-performance proxy tunneling for applications requiring
  * HTTP CONNECT (RFC 7230) or SOCKS (RFC 1928/1929) protocols.
- * Integrates seamlessly with core socket primitives, async I/O, DNS resolution,
- * and TLS for end-to-end secure tunneling.
+ * Integrates seamlessly with core socket primitives, async I/O, DNS
+ * resolution, and TLS for end-to-end secure tunneling.
  *
  * Key capabilities:
- * - **Protocols**: HTTP CONNECT (with Basic auth), SOCKS4/4a/5/5H (with password auth).
- * - **Modes**: Synchronous convenience or full asynchronous with event loop integration.
- * - **Features**: URL-based config parsing, timeouts, secure credential handling, HappyEyeballs racing.
- * - **Integration**: SocketHTTP1 for parsing, SocketTLS for HTTPS proxies, SocketPool for management.
+ * - **Protocols**: HTTP CONNECT (with Basic auth), SOCKS4/4a/5/5H (with
+ * password auth).
+ * - **Modes**: Synchronous convenience or full asynchronous with event loop
+ * integration.
+ * - **Features**: URL-based config parsing, timeouts, secure credential
+ * handling, HappyEyeballs racing.
+ * - **Integration**: SocketHTTP1 for parsing, SocketTLS for HTTPS proxies,
+ * SocketPool for management.
  *
  * Usage patterns:
- * - Direct connect: `SocketProxy_connect(config, target, port)` - blocks until tunneled socket ready.
- * - Tunnel existing: `SocketProxy_tunnel(sock, config, target, port)` - handshake on pre-connected sock.
- * - Async full: `SocketProxy_Conn_start(dns, poll, config, target, port)` - non-blocking from resolution.
- * - Async hybrid: `SocketProxy_Conn_new(config, target, port)` - block connect, async handshake.
+ * - Direct connect: `SocketProxy_connect(config, target, port)` - blocks until
+ * tunneled socket ready.
+ * - Tunnel existing: `SocketProxy_tunnel(sock, config, target, port)` -
+ * handshake on pre-connected sock.
+ * - Async full: `SocketProxy_Conn_start(dns, poll, config, target, port)` -
+ * non-blocking from resolution.
+ * - Async hybrid: `SocketProxy_Conn_new(config, target, port)` - block
+ * connect, async handshake.
  *
  * Security:
  * - Credentials zeroed after use.
@@ -63,9 +71,6 @@
  * @see SocketHappyEyeballs for connects.
  * @see SocketPool for management.
  */
-
-
-
 
 #ifndef SOCKETPROXY_INCLUDED
 #define SOCKETPROXY_INCLUDED
@@ -249,12 +254,17 @@ extern const Except_T SocketProxy_Failed;
 typedef enum
 {
   SOCKET_PROXY_NONE = 0, /**< No proxy - direct connection to target. */
-  SOCKET_PROXY_HTTP,     /**< HTTP CONNECT method (RFC 7231). Supports Basic auth. */
-  SOCKET_PROXY_HTTPS,    /**< HTTPS CONNECT - TLS-encrypted connection to proxy before handshake. */
-  SOCKET_PROXY_SOCKS4,   /**< SOCKS4 protocol - IPv4 addresses only, no auth. */
-  SOCKET_PROXY_SOCKS4A,  /**< SOCKS4a extension - supports domain name resolution at proxy. */
-  SOCKET_PROXY_SOCKS5,   /**< SOCKS5 protocol (RFC 1928) - supports IPv6, auth, UDP. */
-  SOCKET_PROXY_SOCKS5H   /**< SOCKS5 with hostname resolution performed by proxy server. */
+  SOCKET_PROXY_HTTP,  /**< HTTP CONNECT method (RFC 7231). Supports Basic auth.
+                       */
+  SOCKET_PROXY_HTTPS, /**< HTTPS CONNECT - TLS-encrypted connection to proxy
+                         before handshake. */
+  SOCKET_PROXY_SOCKS4,  /**< SOCKS4 protocol - IPv4 addresses only, no auth. */
+  SOCKET_PROXY_SOCKS4A, /**< SOCKS4a extension - supports domain name
+                           resolution at proxy. */
+  SOCKET_PROXY_SOCKS5,  /**< SOCKS5 protocol (RFC 1928) - supports IPv6, auth,
+                           UDP. */
+  SOCKET_PROXY_SOCKS5H  /**< SOCKS5 with hostname resolution performed by proxy
+                           server. */
 } SocketProxyType;
 
 /* ============================================================================
@@ -276,21 +286,27 @@ typedef enum
  */
 typedef enum
 {
-  PROXY_OK                    = 0, /**< Success: tunnel established and ready for use. */
-  PROXY_IN_PROGRESS,               /**< Asynchronous operation still in progress. */
-  PROXY_ERROR,                     /**< Generic proxy error (unspecified cause). */
-  PROXY_ERROR_CONNECT,             /**< Failed to establish connection to proxy server. */
-  PROXY_ERROR_AUTH_REQUIRED,       /**< Proxy requires authentication not provided. */
-  PROXY_ERROR_AUTH_FAILED,         /**< Provided credentials rejected by proxy. */
-  PROXY_ERROR_FORBIDDEN,           /**< Proxy forbids connection to specified target. */
-  PROXY_ERROR_HOST_UNREACHABLE,    /**< Target host cannot be reached (SOCKS5 code 3). */
-  PROXY_ERROR_NETWORK_UNREACHABLE, /**< Target network unreachable (SOCKS5 code 4). */
-  PROXY_ERROR_CONNECTION_REFUSED,  /**< Connection refused by target (SOCKS5 code 5). */
-  PROXY_ERROR_TTL_EXPIRED,         /**< TTL expired en route to target (SOCKS5 code 6). */
-  PROXY_ERROR_PROTOCOL,            /**< Protocol-level error (invalid response, etc.). */
-  PROXY_ERROR_UNSUPPORTED,         /**< Command or address type not supported by proxy. */
-  PROXY_ERROR_TIMEOUT,             /**< Operation timed out (connect or handshake). */
-  PROXY_ERROR_CANCELLED            /**< Operation explicitly cancelled by user. */
+  PROXY_OK = 0,        /**< Success: tunnel established and ready for use. */
+  PROXY_IN_PROGRESS,   /**< Asynchronous operation still in progress. */
+  PROXY_ERROR,         /**< Generic proxy error (unspecified cause). */
+  PROXY_ERROR_CONNECT, /**< Failed to establish connection to proxy server. */
+  PROXY_ERROR_AUTH_REQUIRED, /**< Proxy requires authentication not provided.
+                              */
+  PROXY_ERROR_AUTH_FAILED,   /**< Provided credentials rejected by proxy. */
+  PROXY_ERROR_FORBIDDEN, /**< Proxy forbids connection to specified target. */
+  PROXY_ERROR_HOST_UNREACHABLE, /**< Target host cannot be reached (SOCKS5 code
+                                   3). */
+  PROXY_ERROR_NETWORK_UNREACHABLE, /**< Target network unreachable (SOCKS5 code
+                                      4). */
+  PROXY_ERROR_CONNECTION_REFUSED,  /**< Connection refused by target (SOCKS5
+                                      code 5). */
+  PROXY_ERROR_TTL_EXPIRED, /**< TTL expired en route to target (SOCKS5 code 6).
+                            */
+  PROXY_ERROR_PROTOCOL, /**< Protocol-level error (invalid response, etc.). */
+  PROXY_ERROR_UNSUPPORTED, /**< Command or address type not supported by proxy.
+                            */
+  PROXY_ERROR_TIMEOUT,     /**< Operation timed out (connect or handshake). */
+  PROXY_ERROR_CANCELLED    /**< Operation explicitly cancelled by user. */
 } SocketProxy_Result;
 
 /* ============================================================================
@@ -318,16 +334,19 @@ typedef enum
  */
 typedef enum
 {
-  PROXY_STATE_IDLE         = 0, /**< Initial state: connection not started. */
-  PROXY_STATE_CONNECTING_PROXY, /**< Resolving/connecting to proxy server via HappyEyeballs. */
-  PROXY_STATE_TLS_TO_PROXY,     /**< Performing TLS handshake to HTTPS proxy. */
-  PROXY_STATE_HANDSHAKE_SEND,   /**< Sending proxy protocol request (CONNECT or SOCKS). */
-  PROXY_STATE_HANDSHAKE_RECV,   /**< Awaiting and parsing proxy response. */
-  PROXY_STATE_AUTH_SEND,        /**< Sending SOCKS5 authentication subnegotiation. */
-  PROXY_STATE_AUTH_RECV,        /**< Receiving SOCKS5 auth response. */
-  PROXY_STATE_CONNECTED,        /**< Success: tunnel ready for target communication. */
-  PROXY_STATE_FAILED,           /**< Terminal: operation failed with error. */
-  PROXY_STATE_CANCELLED         /**< Terminal: operation cancelled by user. */
+  PROXY_STATE_IDLE = 0,         /**< Initial state: connection not started. */
+  PROXY_STATE_CONNECTING_PROXY, /**< Resolving/connecting to proxy server via
+                                   HappyEyeballs. */
+  PROXY_STATE_TLS_TO_PROXY,   /**< Performing TLS handshake to HTTPS proxy. */
+  PROXY_STATE_HANDSHAKE_SEND, /**< Sending proxy protocol request (CONNECT or
+                                 SOCKS). */
+  PROXY_STATE_HANDSHAKE_RECV, /**< Awaiting and parsing proxy response. */
+  PROXY_STATE_AUTH_SEND, /**< Sending SOCKS5 authentication subnegotiation. */
+  PROXY_STATE_AUTH_RECV, /**< Receiving SOCKS5 auth response. */
+  PROXY_STATE_CONNECTED, /**< Success: tunnel ready for target communication.
+                          */
+  PROXY_STATE_FAILED,    /**< Terminal: operation failed with error. */
+  PROXY_STATE_CANCELLED  /**< Terminal: operation cancelled by user. */
 } SocketProxy_State;
 
 /* ============================================================================
@@ -359,28 +378,38 @@ typedef enum
  */
 typedef struct SocketProxy_Config
 {
-  SocketProxyType type; /**< @brief Proxy protocol type (e.g., SOCKET_PROXY_SOCKS5). */
+  SocketProxyType
+      type; /**< @brief Proxy protocol type (e.g., SOCKET_PROXY_SOCKS5). */
 
   /** @brief Proxy server details. */
-  const char *host; /**< Proxy hostname or IP address. Must remain valid during operation. */
-  int port;         /**< Proxy port. 0 uses default for type (SOCKS:1080, HTTP:8080). */
+  const char *host; /**< Proxy hostname or IP address. Must remain valid during
+                       operation. */
+  int port; /**< Proxy port. 0 uses default for type (SOCKS:1080, HTTP:8080).
+             */
 
-  /** @brief Optional authentication credentials for SOCKS5 or HTTP Basic auth. */
-  const char *username; /**< Username string. NULL if no auth required. Borrowed reference. */
-  const char *password; /**< Password string. NULL if no auth or username NULL. Securely handled. */
+  /** @brief Optional authentication credentials for SOCKS5 or HTTP Basic auth.
+   */
+  const char *username; /**< Username string. NULL if no auth required.
+                           Borrowed reference. */
+  const char *password; /**< Password string. NULL if no auth or username NULL.
+                           Securely handled. */
 
   /** @brief HTTP CONNECT-specific options. */
-  SocketHTTP_Headers_T extra_headers; /**< Additional request headers. NULL for none. Owned by caller. */
+  SocketHTTP_Headers_T extra_headers; /**< Additional request headers. NULL for
+                                         none. Owned by caller. */
 
 #if SOCKET_HAS_TLS
   /** @brief TLS configuration for HTTPS proxies (TLS to proxy server). */
-  SocketTLSContext_T tls_ctx; /**< TLS context. NULL uses secure system defaults if available.
-                                 Requires #if SOCKET_HAS_TLS. */
+  SocketTLSContext_T
+      tls_ctx; /**< TLS context. NULL uses secure system defaults if available.
+                  Requires #if SOCKET_HAS_TLS. */
 #endif
 
   /** @brief Timeout configuration (0 = use module defaults). */
-  int connect_timeout_ms;   /**< Timeout for connecting to proxy server (default: 30s). */
-  int handshake_timeout_ms; /**< Timeout for proxy protocol handshake and auth (default: 30s). */
+  int connect_timeout_ms; /**< Timeout for connecting to proxy server (default:
+                             30s). */
+  int handshake_timeout_ms; /**< Timeout for proxy protocol handshake and auth
+                               (default: 30s). */
 } SocketProxy_Config;
 
 /* ============================================================================
@@ -410,10 +439,11 @@ extern void SocketProxy_config_defaults (SocketProxy_Config *config);
  * @ingroup core_io
  * @param url Null-terminated proxy URL string.
  * @param config Output: populated configuration structure.
- * @param arena Optional arena for allocating parsed strings (host, user, pass).
- *              If NULL, uses thread-local static buffer (overwritten on next call).
+ * @param arena Optional arena for allocating parsed strings (host, user,
+ * pass). If NULL, uses thread-local static buffer (overwritten on next call).
  *
- * @return 0 on successful parse, -1 on invalid URL format or allocation failure.
+ * @return 0 on successful parse, -1 on invalid URL format or allocation
+ * failure.
  *
  * Supported schemes (case-insensitive):
  * - http://[user:pass@]host[:port]   (HTTP CONNECT)
@@ -488,23 +518,25 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
 /**
  * @brief Perform proxy handshake on pre-connected socket to establish tunnel.
  * @ingroup core_io
- * @param socket Pre-connected Socket_T to proxy server (non-blocking recommended).
- * @param proxy Proxy configuration (type, auth, headers, timeouts). Host/port must match socket connection.
+ * @param socket Pre-connected Socket_T to proxy server (non-blocking
+ * recommended).
+ * @param proxy Proxy configuration (type, auth, headers, timeouts). Host/port
+ * must match socket connection.
  * @param target_host Target hostname/IP to request tunnel for (sent to proxy).
  * @param target_port Target port to request (1-65535).
- * @param arena Optional arena for temporary allocations (e.g., TLS context, buffers).
- *              If NULL, uses internal arena (limited lifetime).
+ * @param arena Optional arena for temporary allocations (e.g., TLS context,
+ * buffers). If NULL, uses internal arena (limited lifetime).
  *
- * @return PROXY_OK on success (tunnel established), other SocketProxy_Result on failure.
- *         Socket remains owned by caller; state updated for tunneling.
+ * @return PROXY_OK on success (tunnel established), other SocketProxy_Result
+ * on failure. Socket remains owned by caller; state updated for tunneling.
  *
  * @throws SocketProxy_Failed on handshake, auth, or protocol errors.
  *
  * @threadsafe No - modifies socket state and uses shared internal resources.
  *
  * Use this for custom connection flows (e.g., connection pooling, custom DNS).
- * Assumes socket already connected to proxy->host:proxy->port via Socket_connect()
- * or equivalent. Performs:
+ * Assumes socket already connected to proxy->host:proxy->port via
+ * Socket_connect() or equivalent. Performs:
  * - Optional TLS handshake (HTTPS proxy)
  * - Protocol-specific handshake (CONNECT, SOCKS request/response)
  * - Authentication subnegotiation (SOCKS5)
@@ -519,7 +551,8 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
  * @warning Config and arena must outlive the operation.
  * @warning For async, use SocketProxy_Conn_start() with external poll/DNS.
  *
- * @see SocketProxy_connect() for full synchronous connection (socket creation included).
+ * @see SocketProxy_connect() for full synchronous connection (socket creation
+ * included).
  * @see SocketProxy_Config for TLS and timeout config.
  * @see @ref security "Security module" for HTTPS proxy TLS requirements.
  * @see docs/PROXY.md#custom-socket for advanced usage examples.
@@ -548,23 +581,27 @@ SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
  * @return New SocketProxy_Conn_T context on success, NULL on init failure.
  * @throws SocketProxy_Failed on invalid config or resource allocation error.
  *
- * @threadsafe No - context tied to specific dns/poll instances; single-thread use.
+ * @threadsafe No - context tied to specific dns/poll instances; single-thread
+ * use.
  *
  * This low-level API provides complete control for integrating proxy tunneling
- * into custom event loops. It uses provided DNS for non-blocking resolution and
- * poll for I/O events. No blocking calls after initialization.
+ * into custom event loops. It uses provided DNS for non-blocking resolution
+ * and poll for I/O events. No blocking calls after initialization.
  *
  * Integration pattern:
  * - Register conn->fd with poll if not auto-registered.
- * - Loop: SocketPoll_wait() → SocketProxy_Conn_process() → check SocketProxy_Conn_poll()
- * - On completion: Extract socket with SocketProxy_Conn_socket(), then free conn.
+ * - Loop: SocketPoll_wait() → SocketProxy_Conn_process() → check
+ * SocketProxy_Conn_poll()
+ * - On completion: Extract socket with SocketProxy_Conn_socket(), then free
+ * conn.
  * - Cleanup: SocketProxy_Conn_cancel() or free during progress.
  *
- * Handles: DNS resolution, TCP connect (HappyEyeballs), TLS (HTTPS), handshake,
- * auth, error recovery within timeouts.
+ * Handles: DNS resolution, TCP connect (HappyEyeballs), TLS (HTTPS),
+ * handshake, auth, error recovery within timeouts.
  *
  * @note dns and poll ownership remains with caller; conn does not free them.
- * @note Context internally manages timers via poll; no external SocketTimer needed.
+ * @note Context internally manages timers via poll; no external SocketTimer
+ * needed.
  * @warning Failure to process events promptly may cause timeouts or stalls.
  * @warning Cancel or free during active state closes underlying socket.
  *
@@ -581,23 +618,26 @@ extern T SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
                                  const char *target_host, int target_port);
 
 /**
- * @brief Create proxy connection context with blocking proxy connect, async handshake.
+ * @brief Create proxy connection context with blocking proxy connect, async
+ * handshake.
  * @ingroup core_io
  * @param proxy Proxy configuration (copied; strings borrowed).
  * @param target_host Target hostname or IP for tunneling.
  * @param target_port Target port (1-65535).
  *
  * @return New SocketProxy_Conn_T on success, NULL on failure.
- * @throws SocketProxy_Failed on config validation or initial resource allocation failure.
+ * @throws SocketProxy_Failed on config validation or initial resource
+ * allocation failure.
  *
  * @threadsafe Yes - creates isolated instance with internal resources.
  *
- * Convenience wrapper for simpler async integration: performs blocking TCP connect
- * and DNS resolution to proxy server (up to connect_timeout_ms), then switches to
- * non-blocking mode for handshake, TLS, auth via internal poll/timer/DNS instances.
+ * Convenience wrapper for simpler async integration: performs blocking TCP
+ * connect and DNS resolution to proxy server (up to connect_timeout_ms), then
+ * switches to non-blocking mode for handshake, TLS, auth via internal
+ * poll/timer/DNS instances.
  *
- * Unlike SocketProxy_Conn_start(), this blocks briefly for proxy reachability but
- * allows event-driven completion of protocol negotiation.
+ * Unlike SocketProxy_Conn_start(), this blocks briefly for proxy reachability
+ * but allows event-driven completion of protocol negotiation.
  *
  * Post-init usage same as async API:
  * - Poll loop: process events → SocketProxy_Conn_process() → check completion
@@ -606,11 +646,14 @@ extern T SocketProxy_Conn_start (SocketDNS_T dns, SocketPoll_T poll,
  * Internal resources auto-managed; no external dns/poll required from caller.
  *
  * @note Blocks only for proxy connect phase; handshake fully async.
- * @note Suitable for apps with existing event loops but wanting quick proxy validation.
- * @warning Still requires poll integration for full non-blocking after connect.
+ * @note Suitable for apps with existing event loops but wanting quick proxy
+ * validation.
+ * @warning Still requires poll integration for full non-blocking after
+ * connect.
  * @warning Internal poll uses epoll/kqueue; ensure compatible with app loop.
  *
- * @see SocketProxy_Conn_start() for fully non-blocking from start (requires external resources).
+ * @see SocketProxy_Conn_start() for fully non-blocking from start (requires
+ * external resources).
  * @see SocketProxy_connect() for fully synchronous end-to-end.
  * @see SocketProxy_Conn_process() and friends for runtime management.
  * @see @ref event_system "Event System" for poll backend details.
@@ -628,7 +671,8 @@ extern T SocketProxy_Conn_new (const SocketProxy_Config *proxy,
  *         0 if still in progress.
  *
  * Call after SocketProxy_Conn_process() in event loop to detect completion.
- * On true, check SocketProxy_Conn_state() or SocketProxy_Conn_result() for outcome.
+ * On true, check SocketProxy_Conn_state() or SocketProxy_Conn_result() for
+ * outcome.
  *
  * @threadsafe No - reads shared connection state.
  *
@@ -643,9 +687,9 @@ extern int SocketProxy_Conn_poll (T conn);
  * @ingroup core_io
  * @param conn Proxy connection context to process.
  *
- * Call this after detecting events on SocketProxy_Conn_fd() via your poll loop.
- * Performs non-blocking I/O: reads/writes protocol messages, handles timeouts,
- * advances through handshake phases (TLS, auth, connect response).
+ * Call this after detecting events on SocketProxy_Conn_fd() via your poll
+ * loop. Performs non-blocking I/O: reads/writes protocol messages, handles
+ * timeouts, advances through handshake phases (TLS, auth, connect response).
  *
  * May transition state and potentially complete operation; always follow with
  * SocketProxy_Conn_poll() to check.
@@ -720,13 +764,15 @@ extern void SocketProxy_Conn_cancel (T conn);
  * @ingroup core_io
  * @param conn Pointer to SocketProxy_Conn_T (set to NULL on success).
  *
- * Frees all allocated resources: socket, internal buffers, timers, DNS requests.
- * If operation pending, auto-cancels first (closes socket, signals completion).
- * Idempotent and null-safe: handles NULL pointer or already-freed context.
+ * Frees all allocated resources: socket, internal buffers, timers, DNS
+ * requests. If operation pending, auto-cancels first (closes socket, signals
+ * completion). Idempotent and null-safe: handles NULL pointer or already-freed
+ * context.
  *
  * Call after successful socket extraction or on error/cancel.
  * For internal resources (from SocketProxy_Conn_new()), fully self-contained.
- * For external (SocketProxy_Conn_start()), does not free user-provided dns/poll.
+ * For external (SocketProxy_Conn_start()), does not free user-provided
+ * dns/poll.
  *
  * @threadsafe No - frees shared state; avoid concurrent access.
  *
@@ -793,7 +839,8 @@ extern SocketProxy_Result SocketProxy_Conn_result (T conn);
  *
  * @return Const string describing failure (e.g., "Authentication failed"),
  *         or NULL if not in FAILED state or no specific message.
- *         String allocated from internal arena; valid until SocketProxy_Conn_free().
+ *         String allocated from internal arena; valid until
+ * SocketProxy_Conn_free().
  *
  * Provides diagnostic details beyond SocketProxy_Conn_result() code,
  * including protocol responses, system errors, or timeout reasons.
@@ -822,8 +869,8 @@ extern const char *SocketProxy_Conn_error (T conn);
  * @ingroup core_io
  * @param conn Proxy connection context.
  *
- * @return Socket FD to monitor with SocketPoll_add(), or -1 if no active socket
- *         (init, completed, or failed state).
+ * @return Socket FD to monitor with SocketPoll_add(), or -1 if no active
+ * socket (init, completed, or failed state).
  *
  * For custom poll loops: add this FD with SocketProxy_Conn_events() mask.
  * Context auto-manages registration if using internal poll, but expose for
@@ -848,8 +895,8 @@ extern int SocketProxy_Conn_fd (T conn);
  * @param conn Proxy connection context.
  *
  * @return Bitmask of SocketPoll_Events (POLL_READ | POLL_WRITE | POLL_ERROR)
- *         required for current state (e.g., READ for response, WRITE for request).
- *         0 if no polling needed (terminal states).
+ *         required for current state (e.g., READ for response, WRITE for
+ * request). 0 if no polling needed (terminal states).
  *
  * Dynamically updates based on state: e.g., WRITE during send phases,
  * READ during recv. Use with SocketPoll_mod() to update registration.
@@ -920,8 +967,8 @@ extern const char *SocketProxy_result_string (SocketProxy_Result result);
  * @ingroup core_io
  * @param state State enum value to stringify.
  *
- * @return Static const char* (e.g., "PROXY_STATE_CONNECTED", "PROXY_STATE_FAILED").
- *         Never NULL; covers all states.
+ * @return Static const char* (e.g., "PROXY_STATE_CONNECTED",
+ * "PROXY_STATE_FAILED"). Never NULL; covers all states.
  *
  * For debugging, logging, or state machine visualization.
  * Compact format suitable for trace output.

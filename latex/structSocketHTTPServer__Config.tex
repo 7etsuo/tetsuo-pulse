@@ -1,0 +1,138 @@
+\doxysection{Socket\+HTTPServer\+\_\+\+Config Struct Reference}
+\hypertarget{structSocketHTTPServer__Config}{}\label{structSocketHTTPServer__Config}\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPServer.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_aaa846da9282ae7cc08293d9e3ae100c5}{port}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTPServer__Config_ab0bf8c280cce766a64efd9064f93bef2}{bind\+\_\+address}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_a92d76f73dd8d83287a36bdd3643022ea}{backlog}}
+\item 
+Socket\+TLSContext\+\_\+T \mbox{\hyperlink{structSocketHTTPServer__Config_a2bbd51b98734877f1e4dd9e0176b82b7}{tls\+\_\+context}}
+\item 
+\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} \mbox{\hyperlink{structSocketHTTPServer__Config_ae89b5a0849cde455e84fb2eb41309cb0}{max\+\_\+version}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_aba94ad7a26eb19a5fa9eb671ac38e39b}{enable\+\_\+h2c\+\_\+upgrade}}
+\item 
+\Hypertarget{structSocketHTTPServer__Config_a4e960d114a23d30cead50fdb3189525b}\label{structSocketHTTPServer__Config_a4e960d114a23d30cead50fdb3189525b} 
+size\+\_\+t {\bfseries max\+\_\+header\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTPServer__Config_ac1e10ab5e4e74aac02cefdf9c5555bae}\label{structSocketHTTPServer__Config_ac1e10ab5e4e74aac02cefdf9c5555bae} 
+size\+\_\+t {\bfseries max\+\_\+body\+\_\+size}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_acee81724c46b258607d762187f5b25ac}{request\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_a1e78410c99812889132c0977539d170b}{keepalive\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_aae5feb01178bcf0f41095d30ec718240}{request\+\_\+read\+\_\+timeout\+\_\+ms}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_a7c6c518a1861c3ee10b133297d47444c}{response\+\_\+write\+\_\+timeout\+\_\+ms}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Config_aba7a435867737c5dda694445481fbc7c}{max\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Config_a411213143aa7aa44c27de10d645da50c}{max\+\_\+requests\+\_\+per\+\_\+connection}}
+\item 
+int \mbox{\hyperlink{structSocketHTTPServer__Config_a5ed0dc426933e2d4fc092685c2f37d3b}{max\+\_\+connections\+\_\+per\+\_\+client}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Config_aff8dceb976118d9ad3726cac957f6e97}{max\+\_\+concurrent\+\_\+requests}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP server configuration 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPServer__Config_a92d76f73dd8d83287a36bdd3643022ea}\label{structSocketHTTPServer__Config_a92d76f73dd8d83287a36bdd3643022ea} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!backlog@{backlog}}
+\index{backlog@{backlog}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{backlog}{backlog}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::backlog}
+
+Listen backlog \Hypertarget{structSocketHTTPServer__Config_ab0bf8c280cce766a64efd9064f93bef2}\label{structSocketHTTPServer__Config_ab0bf8c280cce766a64efd9064f93bef2} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!bind\_address@{bind\_address}}
+\index{bind\_address@{bind\_address}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{bind\_address}{bind\_address}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HTTPServer\+\_\+\+Config\+::bind\+\_\+address}
+
+Bind address (NULL = all interfaces) \Hypertarget{structSocketHTTPServer__Config_aba94ad7a26eb19a5fa9eb671ac38e39b}\label{structSocketHTTPServer__Config_aba94ad7a26eb19a5fa9eb671ac38e39b} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!enable\_h2c\_upgrade@{enable\_h2c\_upgrade}}
+\index{enable\_h2c\_upgrade@{enable\_h2c\_upgrade}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{enable\_h2c\_upgrade}{enable\_h2c\_upgrade}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::enable\+\_\+h2c\+\_\+upgrade}
+
+Allow HTTP/2 upgrade (default\+: 0) \Hypertarget{structSocketHTTPServer__Config_a1e78410c99812889132c0977539d170b}\label{structSocketHTTPServer__Config_a1e78410c99812889132c0977539d170b} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!keepalive\_timeout\_ms@{keepalive\_timeout\_ms}}
+\index{keepalive\_timeout\_ms@{keepalive\_timeout\_ms}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{keepalive\_timeout\_ms}{keepalive\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::keepalive\+\_\+timeout\+\_\+ms}
+
+Keep-\/alive timeout \Hypertarget{structSocketHTTPServer__Config_aff8dceb976118d9ad3726cac957f6e97}\label{structSocketHTTPServer__Config_aff8dceb976118d9ad3726cac957f6e97} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!max\_concurrent\_requests@{max\_concurrent\_requests}}
+\index{max\_concurrent\_requests@{max\_concurrent\_requests}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_concurrent\_requests}{max\_concurrent\_requests}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Config\+::max\+\_\+concurrent\+\_\+requests}
+
+Max concurrent requests (HTTP/2) \Hypertarget{structSocketHTTPServer__Config_aba7a435867737c5dda694445481fbc7c}\label{structSocketHTTPServer__Config_aba7a435867737c5dda694445481fbc7c} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!max\_connections@{max\_connections}}
+\index{max\_connections@{max\_connections}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_connections}{max\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Config\+::max\+\_\+connections}
+
+Total max connections \Hypertarget{structSocketHTTPServer__Config_a5ed0dc426933e2d4fc092685c2f37d3b}\label{structSocketHTTPServer__Config_a5ed0dc426933e2d4fc092685c2f37d3b} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!max\_connections\_per\_client@{max\_connections\_per\_client}}
+\index{max\_connections\_per\_client@{max\_connections\_per\_client}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_connections\_per\_client}{max\_connections\_per\_client}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::max\+\_\+connections\+\_\+per\+\_\+client}
+
+Max connections per client IP \Hypertarget{structSocketHTTPServer__Config_a411213143aa7aa44c27de10d645da50c}\label{structSocketHTTPServer__Config_a411213143aa7aa44c27de10d645da50c} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!max\_requests\_per\_connection@{max\_requests\_per\_connection}}
+\index{max\_requests\_per\_connection@{max\_requests\_per\_connection}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_requests\_per\_connection}{max\_requests\_per\_connection}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Config\+::max\+\_\+requests\+\_\+per\+\_\+connection}
+
+Max requests per connection \Hypertarget{structSocketHTTPServer__Config_ae89b5a0849cde455e84fb2eb41309cb0}\label{structSocketHTTPServer__Config_ae89b5a0849cde455e84fb2eb41309cb0} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!max\_version@{max\_version}}
+\index{max\_version@{max\_version}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_version}{max\_version}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} Socket\+HTTPServer\+\_\+\+Config\+::max\+\_\+version}
+
+Max HTTP version (default\+: HTTP/2) \Hypertarget{structSocketHTTPServer__Config_aaa846da9282ae7cc08293d9e3ae100c5}\label{structSocketHTTPServer__Config_aaa846da9282ae7cc08293d9e3ae100c5} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!port@{port}}
+\index{port@{port}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{port}{port}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::port}
+
+Listen port \Hypertarget{structSocketHTTPServer__Config_aae5feb01178bcf0f41095d30ec718240}\label{structSocketHTTPServer__Config_aae5feb01178bcf0f41095d30ec718240} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!request\_read\_timeout\_ms@{request\_read\_timeout\_ms}}
+\index{request\_read\_timeout\_ms@{request\_read\_timeout\_ms}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{request\_read\_timeout\_ms}{request\_read\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::request\+\_\+read\+\_\+timeout\+\_\+ms}
+
+Max time to read complete request \Hypertarget{structSocketHTTPServer__Config_acee81724c46b258607d762187f5b25ac}\label{structSocketHTTPServer__Config_acee81724c46b258607d762187f5b25ac} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!request\_timeout\_ms@{request\_timeout\_ms}}
+\index{request\_timeout\_ms@{request\_timeout\_ms}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{request\_timeout\_ms}{request\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::request\+\_\+timeout\+\_\+ms}
+
+Idle timeout between requests \Hypertarget{structSocketHTTPServer__Config_a7c6c518a1861c3ee10b133297d47444c}\label{structSocketHTTPServer__Config_a7c6c518a1861c3ee10b133297d47444c} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!response\_write\_timeout\_ms@{response\_write\_timeout\_ms}}
+\index{response\_write\_timeout\_ms@{response\_write\_timeout\_ms}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{response\_write\_timeout\_ms}{response\_write\_timeout\_ms}}
+{\footnotesize\ttfamily int Socket\+HTTPServer\+\_\+\+Config\+::response\+\_\+write\+\_\+timeout\+\_\+ms}
+
+Max time to send complete response \Hypertarget{structSocketHTTPServer__Config_a2bbd51b98734877f1e4dd9e0176b82b7}\label{structSocketHTTPServer__Config_a2bbd51b98734877f1e4dd9e0176b82b7} 
+\index{SocketHTTPServer\_Config@{SocketHTTPServer\_Config}!tls\_context@{tls\_context}}
+\index{tls\_context@{tls\_context}!SocketHTTPServer\_Config@{SocketHTTPServer\_Config}}
+\doxysubsubsection{\texorpdfstring{tls\_context}{tls\_context}}
+{\footnotesize\ttfamily Socket\+TLSContext\+\_\+T Socket\+HTTPServer\+\_\+\+Config\+::tls\+\_\+context}
+
+TLS context (NULL = HTTP only) 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPServer_8h}{Socket\+HTTPServer.\+h}}\end{DoxyCompactItemize}

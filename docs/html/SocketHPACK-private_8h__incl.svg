@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Internal HPACK header compression structures and constants.">
+<g id="a_Node000001"><a xlink:title=" ">
 <polygon fill="#999999" stroke="#666666" points="298.45,-239 176.45,-239 176.45,-220 298.45,-220 298.45,-239"/>
 <text text-anchor="middle" x="237.45" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">SocketHPACK&#45;private.h</text>
 </a>
@@ -66,7 +66,7 @@ var sectionId = 'dynsection-0';
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression (RFC 7541) for HTTP/2.">
+<g id="a_Node000002"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">
 <polygon fill="white" stroke="#666666" points="207.95,-184 98.95,-184 98.95,-165 207.95,-165 207.95,-184"/>
 <text text-anchor="middle" x="153.45" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHPACK.h</text>
 </a>
@@ -264,7 +264,7 @@ var sectionId = 'dynsection-0';
 <!-- Node10 -->
 <g id="Node000010" class="node">
 <title>Node10</title>
-<g id="a_Node000010"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000010"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="503.45,-129 397.45,-129 397.45,-110 503.45,-110 503.45,-129"/>
 <text text-anchor="middle" x="450.45" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

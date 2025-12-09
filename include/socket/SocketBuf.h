@@ -12,19 +12,80 @@
  *
  * Provides efficient buffering for network I/O operations using a
  * circular buffer implementation. This minimizes memory copies and
- * provides O(1) operations for all buffer operations.
+ * provides O(1) operations for most buffer operations (O(n) for data copies).
  *
  * Features:
- * - Zero-copy read/write operations where possible
- * - Thread-safe design (when used with proper synchronization)
- * - Automatic wraparound handling
- * - Memory managed by Arena allocator
+ * - Zero-copy read/write pointers for integration with system calls like
+ * send/recv
+ * - Dynamic resizing with SocketBuf_reserve()
+ * - Secure clearing for sensitive data (e.g., keys, credentials)
+ * - Thread-conditional safety with external synchronization
+ * - Automatic wraparound handling - no manual offset management needed
+ * - Arena-based memory management for efficient allocation/deallocation
  *
- * The buffer automatically handles wraparound, so users don't need
- * to worry about circular buffer complexities.
+ * ## Basic Usage
  *
- * @see SocketBuf_new() for buffer creation.
- * @see SocketBuf_write() and SocketBuf_read() for I/O operations.
+ * @code{.c}
+ * #include "socket/SocketBuf.h"
+ * #include "core/Arena.h"
+ * #include <string.h>
+ * #include <assert.h>
+ *
+ * Arena_T arena = Arena_new();
+ * TRY {
+ *     SocketBuf_T buf = SocketBuf_new(arena, 4096);
+ *
+ *     // Write data
+ *     const char *msg = "Hello, SocketBuf!";
+ *     size_t written = SocketBuf_write(buf, msg, strlen(msg));
+ *     assert(written == strlen(msg));
+ *     assert(SocketBuf_available(buf) == strlen(msg));
+ *
+ *     // Read data (copy)
+ *     char readbuf[1024] = {0};
+ *     size_t read_len = SocketBuf_read(buf, readbuf, sizeof(readbuf));
+ *     assert(read_len == strlen(msg));
+ *     assert(strcmp(readbuf, msg) == 0);
+ *
+ *     // Zero-copy read for transmission
+ *     size_t len;
+ *     const void *data_ptr = SocketBuf_readptr(buf, &len);
+ *     if (data_ptr) {
+ *         // e.g., send(socket, data_ptr, len, 0);
+ *         SocketBuf_consume(buf, len);  // Remove after use
+ *     }
+ *
+ *     SocketBuf_release(&buf);
+ * } EXCEPT(SocketBuf_Failed) {
+ *     // Handle errors: allocation failure, invalid ops
+ *     fprintf(stderr, "Buffer error: %s\n", Except_message(Except_stack));
+ * } FINALLY {
+ *     // Release already called in TRY
+ * } END_TRY;
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ * ## Security Considerations
+ *
+ * For buffers holding sensitive data (e.g., TLS keys, passwords):
+ *
+ * @code{.c}
+ * // Before reuse or disposal
+ * SocketBuf_secureclear(buf);  // Overwrites with zeros
+ *
+ * // Or clear non-sensitive
+ * SocketBuf_clear(buf);  // Faster, but leaves remnants
+ * @endcode
+ *
+ * @note Integrate with SocketPool_T for per-connection buffers in servers.
+ * @warning Never retain pointers from readptr/writeptr across mutating calls.
+ * @complexity Most ops O(1); data ops O(n) where n=bytes transferred.
+ *
+ * @see SocketBuf_new() for creation.
+ * @see SocketBuf_write() / SocketBuf_read() for basic I/O.
+ * @see Socket_readptr() / Socket_writeptr() for zero-copy patterns.
+ * @see @ref connection_mgmt::SocketPool_T "SocketPool_T" for pool usage.
+ * @see docs/ASYNC_IO.md for advanced I/O integration.
  */
 
 #include "core/Except.h"
@@ -53,11 +114,12 @@
 typedef struct T *T;
 
 /**
- * @brief Exception indicating failure in buffer operations such as allocation or resize errors.
+ * @brief Exception indicating failure in buffer operations such as allocation
+ * or resize errors.
  * @ingroup core_io
  *
- * Raised when internal buffer operations fail due to memory exhaustion, invalid parameters,
- * or other runtime errors.
+ * Raised when internal buffer operations fail due to memory exhaustion,
+ * invalid parameters, or other runtime errors.
  *
  * @see SocketBuf_new() for allocation failure cases.
  * @see SocketBuf_reserve() for resize failure cases.
@@ -67,19 +129,64 @@ typedef struct T *T;
 extern const Except_T SocketBuf_Failed;
 
 /**
- * @brief Create a new circular buffer.
+ * @brief Create a new circular buffer with specified initial capacity.
  * @ingroup core_io
- * @param arena Arena for memory allocation (required for buffer memory management).
- * @param capacity Initial buffer capacity in bytes (must be > 0).
- * @return New buffer instance or NULL on failure (exception raised).
- * @throws SocketBuf_Failed if arena allocation fails or invalid parameters.
- * @note The buffer uses arena allocation, so memory lifecycle is tied to the arena.
- * @threadsafe Yes - creation is thread-safe.
  *
- * @see Arena_T in @ref foundation for arena details.
- * @see SocketBuf_release() for releasing the buffer handle.
- * @see SocketPool_T in @ref connection_mgmt for using buffers in connection pools.
- * @see SocketHTTP1_Parser_T in @ref http for HTTP/1.1 parsing buffers.
+ * Allocates and initializes a circular buffer instance using the provided
+ * arena. The buffer starts empty with the given capacity. Capacity can grow
+ * dynamically via SocketBuf_reserve() if needed.
+ *
+ * @param[in] arena Arena for all buffer memory allocations (must not be NULL).
+ * @param[in] capacity Initial buffer size in bytes (must be > 0; power-of-2
+ * recommended for alignment).
+ *
+ * @return Newly created buffer instance.
+ *
+ * @throws SocketBuf_Failed If arena allocation fails (ENOMEM), capacity <= 0,
+ * or arena NULL.
+ *
+ * @threadsafe Yes - safe to call from any thread; returns independent
+ * instance.
+ *
+ * @complexity O(1) - single allocation via arena; O(capacity) for initial
+ * zeroing if implemented.
+ *
+ * ## Basic Usage
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * SocketBuf_T buf = NULL;
+ * TRY {
+ *     buf = SocketBuf_new(arena, 4096);  // 4KB buffer
+ *     // Use buf...
+ * } EXCEPT(SocketBuf_Failed) {
+ *     // Allocation failed - handle error
+ *     fprintf(stderr, "Failed to create buffer: %s\n",
+ * Except_message(Except_stack));
+ *     // buf remains NULL
+ * } FINALLY {
+ *     if (buf) SocketBuf_release(&buf);
+ * } END_TRY;
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ * ## In Connection Pools
+ *
+ * Buffers are commonly created per-connection in SocketPool_T:
+ *
+ * @code{.c}
+ * Connection_T conn = SocketPool_add(pool, socket);
+ * SocketBuf_T inbuf = Connection_inbuf(conn);  // Pool-managed buffer
+ * @endcode
+ *
+ * @note Buffer lifecycle tied to arena - dispose arena to free all buffers at
+ * once.
+ * @warning Capacity=0 or very small may lead to frequent resizes; choose
+ * appropriately.
+ * @see SocketBuf_reserve() for dynamic growth.
+ * @see SocketBuf_release() for handle invalidation (not memory free).
+ * @see Arena_new() / Arena_dispose() in @ref foundation for arena lifecycle.
+ * @see @ref connection_mgmt::SocketPool_T "SocketPool_T" for integrated usage.
  */
 extern T SocketBuf_new (Arena_T arena, size_t capacity);
 
@@ -88,12 +195,14 @@ extern T SocketBuf_new (Arena_T arena, size_t capacity);
  * @ingroup core_io
  * @param buf Pointer to the buffer handle (set to NULL on success).
  *
- * This function nullifies the buffer pointer but does not free the underlying memory,
- * as it is managed by the arena. It prevents use-after-free or dangling pointer issues.
+ * This function nullifies the buffer pointer but does not free the underlying
+ * memory, as it is managed by the arena. It prevents use-after-free or
+ * dangling pointer issues.
  *
  * @note Arena-managed memory persists until Arena_dispose() or Arena_clear().
  * @note No exception thrown; idempotent if *buf is already NULL.
- * @threadsafe Yes - safe to call concurrently if no overlapping access to *buf.
+ * @threadsafe Yes - safe to call concurrently if no overlapping access to
+ * *buf.
  *
  * @see SocketBuf_new() for buffer creation.
  * @see Arena_dispose() in @ref foundation for full memory cleanup.
@@ -111,7 +220,8 @@ extern void SocketBuf_release (T *buf);
  * @throws SocketBuf_Failed if buffer is invalid or data is NULL with len > 0.
  * @note Writes as much as possible; partial writes possible if space limited.
  * @note Handles internal wraparound transparently.
- * @note Performance: O(n) time where n = bytes written, due to potential memcpy.
+ * @note Performance: O(n) time where n = bytes written, due to potential
+ * memcpy.
  * @threadsafe No - concurrent writes may corrupt buffer; use locks externally.
  *
  * @see SocketBuf_space() to check available write space before writing.
@@ -167,7 +277,8 @@ extern size_t SocketBuf_peek (T buf, void *data, size_t len);
  * @param buf The buffer to modify.
  * @param len Number of bytes to discard.
  * @throws SocketBuf_Failed if buffer is invalid or len > available data.
- * @note Behavior undefined (assert in debug) if len > SocketBuf_available(buf).
+ * @note Behavior undefined (assert in debug) if len >
+ * SocketBuf_available(buf).
  * @note Efficient for skipping known-length headers or invalid data.
  * @note Performance: O(1) - only updates internal pointers.
  * @threadsafe No - modifies shared state; requires locking for concurrency.
@@ -244,8 +355,10 @@ extern int SocketBuf_full (const T buf);
  * @ingroup core_io
  * @param buf The buffer to clear.
  * @throws SocketBuf_Failed if buffer is invalid.
- * @note Only updates read/write pointers; memory contents may remain until overwritten.
- * @warning Not suitable for sensitive data - use SocketBuf_secureclear() to prevent leakage.
+ * @note Only updates read/write pointers; memory contents may remain until
+ * overwritten.
+ * @warning Not suitable for sensitive data - use SocketBuf_secureclear() to
+ * prevent leakage.
  * @note Performance: O(1) - no memory operations.
  * @threadsafe No - modifies buffer state.
  *
@@ -261,14 +374,17 @@ extern void SocketBuf_clear (T buf);
  * @ingroup core_io
  * @param buf The buffer containing potentially sensitive data.
  * @throws SocketBuf_Failed if buffer is invalid.
- * @note Overwrites entire buffer capacity with zeros before resetting pointers.
- * @note Essential for cryptographic keys, credentials, or PII to mitigate timing attacks or memory dumps.
+ * @note Overwrites entire buffer capacity with zeros before resetting
+ * pointers.
+ * @note Essential for cryptographic keys, credentials, or PII to mitigate
+ * timing attacks or memory dumps.
  * @warning Performance: O(n) where n = current capacity; slower than clear().
  * @threadsafe No - writes to shared memory; lock before use in multi-thread.
  *
  * @see SocketBuf_clear() for non-secure fast reset.
  * @see @ref security "Security Module" for TLS/crypto integration.
- * @see SocketPool_T in @ref connection_mgmt for connection buffer secure cleanup.
+ * @see SocketPool_T in @ref connection_mgmt for connection buffer secure
+ * cleanup.
  * @see SocketTLS_send() in @ref security for secure I/O patterns.
  */
 extern void SocketBuf_secureclear (T buf);
@@ -278,8 +394,10 @@ extern void SocketBuf_secureclear (T buf);
  * @ingroup core_io
  * @param buf The buffer to potentially resize.
  * @param min_space Required minimum free space after operation.
- * @throws SocketBuf_Failed if reallocation fails or arithmetic overflow occurs.
- * @note Strategy: doubles capacity or sets to max(current, min_space); copies data.
+ * @throws SocketBuf_Failed if reallocation fails or arithmetic overflow
+ * occurs.
+ * @note Strategy: doubles capacity or sets to max(current, min_space); copies
+ * data.
  * @note May trigger on write if space insufficient (configurable?).
  * @note Validates internal invariants post-resize.
  * @threadsafe No - concurrent resize undefined; serialize access.
@@ -294,7 +412,8 @@ extern void SocketBuf_reserve (T buf, size_t min_space);
  * @brief Validate internal buffer consistency without assertions.
  * @ingroup core_io
  * @param buf The buffer to validate (const, read-only access).
- * @return true if all invariants hold (e.g., pointers valid, no overflow), false otherwise.
+ * @return true if all invariants hold (e.g., pointers valid, no overflow),
+ * false otherwise.
  * @note Intended for debugging, fuzzing, or production integrity checks.
  * @note Does not modify buffer; suitable for periodic health checks.
  * @note Performance: O(1) typically, may scan in debug modes.
@@ -309,11 +428,14 @@ extern bool SocketBuf_check_invariants (const T buf);
  * @brief Obtain a direct pointer to readable data for zero-copy access.
  * @ingroup core_io
  * @param buf The buffer.
- * @param len Output parameter: number of contiguous bytes available at *return.
+ * @param len Output parameter: number of contiguous bytes available at
+ * *return.
  * @return Pointer to start of readable data, or NULL if buffer empty.
  *            The pointed data is valid until next write/consume operation.
- * @note Guarantees contiguous block; may be less than available() due to wraparound.
- * @note Caller must not retain pointer across mutating calls (write, consume, etc.).
+ * @note Guarantees contiguous block; may be less than available() due to
+ * wraparound.
+ * @note Caller must not retain pointer across mutating calls (write, consume,
+ * etc.).
  * @note Performance: O(1).
  * @threadsafe Conditional - pointer invalidates on concurrent mutation.
  *
@@ -348,7 +470,8 @@ extern void *SocketBuf_writeptr (T buf, size_t *len);
  * @param buf The buffer where data was written.
  * @param len Exact number of bytes written at the pointer from writeptr().
  * @throws SocketBuf_Failed if buffer is invalid or len > available space.
- * @note Must match or be <= the len from corresponding SocketBuf_writeptr() call.
+ * @note Must match or be <= the len from corresponding SocketBuf_writeptr()
+ * call.
  * @note Behavior undefined (assert in debug) if len exceeds available space.
  * @note Updates internal write position and available space.
  * @note Performance: O(1).

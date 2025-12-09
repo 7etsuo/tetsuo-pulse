@@ -361,22 +361,22 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gaf25e213512222a83030da6049be7c659" id="r_gaf25e213512222a83030da6049be7c659"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a> (<a class="el" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> *config, <a class="el" href="group__http2.html#gabdba00019b45cc844046f038c7c7d590">SocketHTTP2_Role</a> role)</td></tr>
-<tr class="memdesc:gaf25e213512222a83030da6049be7c659"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize config with RFC defaults.  <br /></td></tr>
+<tr class="memdesc:gaf25e213512222a83030da6049be7c659"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize HTTP/2 configuration with safe RFC-compliant defaults.  <br /></td></tr>
 <tr class="separator:gaf25e213512222a83030da6049be7c659"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaac497f685932335cce6c3868243edf3c" id="r_gaac497f685932335cce6c3868243edf3c"><td class="memItemLeft" align="right" valign="top">SocketHTTP2_Conn_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a> (Socket_T socket, const <a class="el" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:gaac497f685932335cce6c3868243edf3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create HTTP/2 connection.  <br /></td></tr>
+<tr class="memdesc:gaac497f685932335cce6c3868243edf3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new HTTP/2 connection instance.  <br /></td></tr>
 <tr class="separator:gaac497f685932335cce6c3868243edf3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga13128ca7c1208a2a4694ea9926e2ff20" id="r_ga13128ca7c1208a2a4694ea9926e2ff20"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a> (SocketHTTP2_Conn_T *conn)</td></tr>
-<tr class="memdesc:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free connection and all streams.  <br /></td></tr>
+<tr class="memdesc:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of HTTP/2 connection and release all resources.  <br /></td></tr>
 <tr class="separator:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3d2680dfe3afbbf9c6e9f09dad9f91d0" id="r_ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a> (SocketHTTP2_Conn_T conn)</td></tr>
-<tr class="memdesc:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform HTTP/2 connection preface.  <br /></td></tr>
+<tr class="memdesc:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete HTTP/2 connection preface and initial settings exchange.  <br /></td></tr>
 <tr class="separator:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaecd0eb2455f15e9c9cea360331dcff5b" id="r_gaecd0eb2455f15e9c9cea360331dcff5b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a> (SocketHTTP2_Conn_T conn, unsigned events)</td></tr>
-<tr class="memdesc:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process incoming data.  <br /></td></tr>
+<tr class="memdesc:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process socket events and HTTP/2 frames.  <br /></td></tr>
 <tr class="separator:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga667e2c409b1c71f702559904a823c6af" id="r_ga667e2c409b1c71f702559904a823c6af"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a> (SocketHTTP2_Conn_T conn)</td></tr>
-<tr class="memdesc:ga667e2c409b1c71f702559904a823c6af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flush pending output.  <br /></td></tr>
+<tr class="memdesc:ga667e2c409b1c71f702559904a823c6af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flush pending HTTP/2 frames to socket.  <br /></td></tr>
 <tr class="separator:ga667e2c409b1c71f702559904a823c6af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab805b04d372fb6fdc75a5495d2cde2b2" id="r_gab805b04d372fb6fdc75a5495d2cde2b2"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2_Conn_socket</a> (SocketHTTP2_Conn_T conn)</td></tr>
 <tr class="memdesc:gab805b04d372fb6fdc75a5495d2cde2b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying socket.  <br /></td></tr>
@@ -486,7 +486,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga57e81dab63e8dd6a94d9c2366b2cad61" id="r_ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga57e81dab63e8dd6a94d9c2366b2cad61">SocketHTTP2_frame_type_string</a> (<a class="el" href="group__http2.html#gaeb74330a70e149eb7b10547a6b83fa0a">SocketHTTP2_FrameType</a> type)</td></tr>
 <tr class="memdesc:ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get frame type name@type Frame type.  <br /></td></tr>
 <tr class="separator:ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1972e0a26eb71569d6d561bae3a85da8" id="r_ga1972e0a26eb71569d6d561bae3a85da8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8">SocketHTTP2_stream_state_string</a> (<a class="el" href="group__http2.html#ga6a90f4be9250fb7b967b5deefc0df5dc">SocketHTTP2_StreamState</a> state)</td></tr>
+<tr class="memitem:ga1972e0a26eb71569d6d561bae3a85da8" id="r_ga1972e0a26eb71569d6d561bae3a85da8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8">SocketHTTP2_stream_state_string</a> (<a class="el" href="group__http2.html#ga6a90f4be9250fb7b967b5deefc0df5dc">SocketHTTP2_StreamState</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
 <tr class="memdesc:ga1972e0a26eb71569d6d561bae3a85da8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get stream state name@state Stream state.  <br /></td></tr>
 <tr class="separator:ga1972e0a26eb71569d6d561bae3a85da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga439a2fd76b902c7218ea92c9cfd2a9c3" id="r_ga439a2fd76b902c7218ea92c9cfd2a9c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga439a2fd76b902c7218ea92c9cfd2a9c3">SocketHTTP2_frame_header_parse</a> (const unsigned char *data, size_t input_len, <a class="el" href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a> *header)</td></tr>
@@ -592,11 +592,11 @@ type</td>
 </div><div class="memdoc">
 <div class="textblock"><p>HTTP/2 connection configuration. </p>
 <p>Configuration parameters for HTTP/2 connections, including settings to send to peer and local limits for resource management.</p>
-<p>Defaults provided by <a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize config with RFC defaults.">SocketHTTP2_config_defaults()</a>. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize config with RFC defaults.">SocketHTTP2_config_defaults()</a> to initialize with RFC-compliant values. </dd>
+<p>Defaults provided by <a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize HTTP/2 configuration with safe RFC-compliant defaults.">SocketHTTP2_config_defaults()</a>. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize HTTP/2 configuration with safe RFC-compliant defaults.">SocketHTTP2_config_defaults()</a> to initialize with RFC-compliant values. </dd>
 <dd>
 <a class="el" href="group__http2.html#ga4040b0e6d05a8901e50c497254a8176d" title="HTTP/2 settings parameters (RFC 9113 Section 6.5.2)">SocketHTTP2_SettingsId</a> for setting identifiers. </dd>
 <dd>
-<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create HTTP/2 connection.">SocketHTTP2_Conn_new()</a> which uses this config. </dd></dl>
+<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> which uses this config. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l00445">445</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 </div><table class="fieldtable">
@@ -749,7 +749,7 @@ value</td>
 </div><div class="memdoc">
 <p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> error </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01051">1051</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01411">1411</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -766,7 +766,7 @@ value</td>
 </div><div class="memdoc">
 <p>Data available </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01019">1019</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01379">1379</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -783,7 +783,7 @@ value</td>
 </div><div class="memdoc">
 <p>GOAWAY received </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01050">1050</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01410">1410</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -800,7 +800,7 @@ value</td>
 </div><div class="memdoc">
 <p>Headers ready </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01018">1018</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01378">1378</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -817,7 +817,7 @@ value</td>
 </div><div class="memdoc">
 <p>PING response received </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01049">1049</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01409">1409</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -834,7 +834,7 @@ value</td>
 </div><div class="memdoc">
 <p>Push promise received </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01023">1023</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01383">1383</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -851,7 +851,7 @@ value</td>
 </div><div class="memdoc">
 <p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> event types SETTINGS acknowledged </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01048">1048</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01408">1408</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -868,7 +868,7 @@ value</td>
 </div><div class="memdoc">
 <p>Stream ended normally </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01021">1021</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01381">1381</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +885,7 @@ value</td>
 </div><div class="memdoc">
 <p>Stream reset by peer </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01022">1022</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01382">1382</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -902,7 +902,7 @@ value</td>
 </div><div class="memdoc">
 <p>Stream event types New stream started </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01017">1017</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01377">1377</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -919,7 +919,7 @@ value</td>
 </div><div class="memdoc">
 <p>Trailers ready </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01020">1020</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01380">1380</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -936,7 +936,7 @@ value</td>
 </div><div class="memdoc">
 <p>Window increased </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01024">1024</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01384">1384</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1572,7 @@ value</td>
 </div><div class="memdoc">
 <p><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> event callback </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01056">1056</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01416">1416</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1589,7 +1589,7 @@ value</td>
 </div><div class="memdoc">
 <p>Stream event callback </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01029">1029</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP2_8h_source.html#l01389">1389</a> of file <a class="el" href="SocketHTTP2_8h_source.html">SocketHTTP2.h</a>.</p>
 
 </div>
 </div>
@@ -1609,7 +1609,7 @@ value</td>
 <p>HTTP/2 error codes for RST_STREAM and GOAWAY (RFC 9113 Section 7) </p>
 <p>Standard error codes used in RST_STREAM and GOAWAY frames. HTTP2_NO_ERROR indicates graceful closure without error. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaa7c75e897126298258fbde690c8baaa5" title="Get error code description.">SocketHTTP2_error_string()</a> for descriptive strings. </dd>
 <dd>
-<a class="el" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5" title="Send GOAWAY frame.">SocketHTTP2_Conn_goaway()</a> to send GOAWAY with error code. </dd>
+<a class="el" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5" title="Send GOAWAY frame.">SocketHTTP2_Conn_goaway()</a> to send GOAWAY with <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> code. </dd>
 <dd>
 <a class="el" href="group__http2.html#ga5a81c4cf3cbde03b2b22b763e50d8d17" title="Close HTTP/2 stream.">SocketHTTP2_Stream_close()</a> to send RST_STREAM. </dd></dl>
 <table class="fieldtable">
@@ -1703,9 +1703,9 @@ value</td>
 </div><div class="memdoc">
 
 <p>HTTP/2 endpoint role. </p>
-<p>Determines client or server behavior in connection setup and frame processing. Clients initiate with preface; servers validate it. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize config with RFC defaults.">SocketHTTP2_config_defaults()</a> which requires role. </dd>
+<p>Determines client or server behavior in connection setup and frame processing. Clients initiate with preface; servers validate it. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize HTTP/2 configuration with safe RFC-compliant defaults.">SocketHTTP2_config_defaults()</a> which requires role. </dd>
 <dd>
-<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create HTTP/2 connection.">SocketHTTP2_Conn_new()</a> for role-based connection creation. </dd></dl>
+<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for role-based connection creation. </dd></dl>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458" name="ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458"></a>HTTP2_ROLE_CLIENT&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e" name="ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e"></a>HTTP2_ROLE_SERVER&#160;</td><td class="fielddoc"></td></tr>
@@ -1757,7 +1757,7 @@ value</td>
 </div><div class="memdoc">
 
 <p>HTTP/2 stream states (RFC 9113 Section 5.1) </p>
-<p>Stream lifecycle states managed by HTTP/2 state machine. Transitions driven by frame receipt and endpoint actions. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga769baab55e16f038f085a579eac6aab3" title="Get stream state.">SocketHTTP2_Stream_state()</a> to query current state. </dd>
+<p>Stream lifecycle states managed by HTTP/2 state machine. Transitions driven by frame receipt and endpoint actions. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga769baab55e16f038f085a579eac6aab3" title="Get stream state.">SocketHTTP2_Stream_state()</a> to query current <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd>
 <dd>
 <a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8" title="Get stream state name@state Stream state.">SocketHTTP2_stream_state_string()</a> for string names. </dd></dl>
 <table class="fieldtable">
@@ -1809,15 +1809,91 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Initialize config with RFC defaults. </p>
+<p>Initialize HTTP/2 configuration with safe RFC-compliant defaults. </p>
+<p>Populates the <a class="el" href="group__http2.html#structSocketHTTP2__Config" title="HTTP/2 connection configuration.">SocketHTTP2_Config</a> structure with recommended default values from RFC 9113 Section 6.5.2, plus library-specific security and performance settings. This ensures secure and efficient operation out-of-the-box.</p>
+<p>Key defaults set:</p><ul>
+<li>Header table size: 4096 bytes</li>
+<li>Enable push: 1 for servers, 0 for clients (clients can't push)</li>
+<li>Max concurrent streams: 100</li>
+<li>Initial window size: 65535 bytes</li>
+<li>Max frame size: 16384 bytes</li>
+<li>Max header list size: 16KB</li>
+<li>Stream open rate: 100/sec with 10 burst (DoS protection)</li>
+<li>Stream close rate: 200/sec with 20 burst</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> window: 1MB</li>
+<li>Timeouts: 30s for settings/ping acknowledgments</li>
+</ul>
+<p>Role-specific:</p><ul>
+<li>Servers: Push enabled by default</li>
+<li>Clients: Push disabled (per RFC, clients don't initiate push)</li>
+</ul>
+<p>The function zeros the entire struct first, then sets explicit values. Call this before customizing settings for <a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a>.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">config</td><td>Configuration structure to initialize </td></tr>
-    <tr><td class="paramname">role</td><td>Client or server role </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">config</td><td>Configuration structure to populate (must not be NULL) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">role</td><td>Client or server role (affects enable_push)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>void (no return value)</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">None</td><td>- pure initialization, no side effects or allocations</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - operates only on provided struct, no shared state</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md323"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> config;</div>
+<div class="line"><a class="code hl_function" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a>(&amp;config, <a class="code hl_enumvalue" href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458">HTTP2_ROLE_CLIENT</a>);</div>
+<div class="line"><span class="comment">// Customize</span></div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#a4f948d55c4fc6947b5da693aad073731">max_concurrent_streams</a> = 50;</div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#a27e2a7a74af88f8ce2403fe7405acf6e">initial_window_size</a> = 32768;</div>
+<div class="line"><span class="comment">// Use in connection</span></div>
+<div class="line">SocketHTTP2_Conn_T conn = <a class="code hl_function" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a>(sock, &amp;config, arena);</div>
+<div class="ttc" id="agroup__http2_html_a27e2a7a74af88f8ce2403fe7405acf6e"><div class="ttname"><a href="group__http2.html#a27e2a7a74af88f8ce2403fe7405acf6e">SocketHTTP2_Config::initial_window_size</a></div><div class="ttdeci">uint32_t initial_window_size</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00459">SocketHTTP2.h:459</a></div></div>
+<div class="ttc" id="agroup__http2_html_a4f948d55c4fc6947b5da693aad073731"><div class="ttname"><a href="group__http2.html#a4f948d55c4fc6947b5da693aad073731">SocketHTTP2_Config::max_concurrent_streams</a></div><div class="ttdeci">uint32_t max_concurrent_streams</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00452">SocketHTTP2.h:452</a></div></div>
+<div class="ttc" id="agroup__http2_html_gaac497f685932335cce6c3868243edf3c"><div class="ttname"><a href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a></div><div class="ttdeci">SocketHTTP2_Conn_T SocketHTTP2_Conn_new(Socket_T socket, const SocketHTTP2_Config *config, Arena_T arena)</div><div class="ttdoc">Create a new HTTP/2 connection instance.</div></div>
+<div class="ttc" id="agroup__http2_html_gaf25e213512222a83030da6049be7c659"><div class="ttname"><a href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a></div><div class="ttdeci">void SocketHTTP2_config_defaults(SocketHTTP2_Config *config, SocketHTTP2_Role role)</div><div class="ttdoc">Initialize HTTP/2 configuration with safe RFC-compliant defaults.</div></div>
+<div class="ttc" id="agroup__http2_html_ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458"><div class="ttname"><a href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458">HTTP2_ROLE_CLIENT</a></div><div class="ttdeci">@ HTTP2_ROLE_CLIENT</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00424">SocketHTTP2.h:424</a></div></div>
+<div class="ttc" id="agroup__http2_html_structSocketHTTP2__Config"><div class="ttname"><a href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a></div><div class="ttdoc">HTTP/2 connection configuration.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00445">SocketHTTP2.h:446</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md324"></a>
+Server Configuration</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> config;</div>
+<div class="line"><a class="code hl_function" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a>(&amp;config, <a class="code hl_enumvalue" href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e">HTTP2_ROLE_SERVER</a>);</div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#ade8731b7297accc9c4ab533cb8a91dcf">enable_push</a> = 0; <span class="comment">// Disable if not needed</span></div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#a4f948d55c4fc6947b5da693aad073731">max_concurrent_streams</a> = 1000; <span class="comment">// Higher for busy servers</span></div>
+<div class="ttc" id="agroup__http2_html_ade8731b7297accc9c4ab533cb8a91dcf"><div class="ttname"><a href="group__http2.html#ade8731b7297accc9c4ab533cb8a91dcf">SocketHTTP2_Config::enable_push</a></div><div class="ttdeci">uint32_t enable_push</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00451">SocketHTTP2.h:451</a></div></div>
+<div class="ttc" id="agroup__http2_html_ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e"><div class="ttname"><a href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e">HTTP2_ROLE_SERVER</a></div><div class="ttdeci">@ HTTP2_ROLE_SERVER</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00426">SocketHTTP2.h:425</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md325"></a>
+Default Values Table</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Setting   </th><th class="markdownTableHeadNone">Client Default   </th><th class="markdownTableHeadNone">Server Default   </th><th class="markdownTableHeadNone">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">header_table_size   </td><td class="markdownTableBodyNone">4096   </td><td class="markdownTableBodyNone">4096   </td><td class="markdownTableBodyNone">HPACK dynamic table size    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">enable_push   </td><td class="markdownTableBodyNone">0   </td><td class="markdownTableBodyNone">1   </td><td class="markdownTableBodyNone">Server push support    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_concurrent_streams   </td><td class="markdownTableBodyNone">100   </td><td class="markdownTableBodyNone">100   </td><td class="markdownTableBodyNone">Max simultaneous streams    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">initial_window_size   </td><td class="markdownTableBodyNone">65535   </td><td class="markdownTableBodyNone">65535   </td><td class="markdownTableBodyNone">Stream flow control window    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_frame_size   </td><td class="markdownTableBodyNone">16384   </td><td class="markdownTableBodyNone">16384   </td><td class="markdownTableBodyNone">Largest frame payload    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">max_header_list_size   </td><td class="markdownTableBodyNone">16KB   </td><td class="markdownTableBodyNone">16KB   </td><td class="markdownTableBodyNone">Decompressed headers limit    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_stream_open_rate   </td><td class="markdownTableBodyNone">100/sec   </td><td class="markdownTableBodyNone">100/sec   </td><td class="markdownTableBodyNone">DoS protection rate   </td></tr>
+</table>
+<dl class="section note"><dt>Note</dt><dd>All unset fields zeroed; explicitly set any custom values after call </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Defaults tuned for security; increasing limits may expose to DoS </dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - simple struct assignment</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#structSocketHTTP2__Config" title="HTTP/2 connection configuration.">SocketHTTP2_Config</a> for full field documentation </dd>
+<dd>
+<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> which uses this config </dd>
+<dd>
+<a class="el" href="group__http2.html#ga4040b0e6d05a8901e50c497254a8176d" title="HTTP/2 settings parameters (RFC 9113 Section 6.5.2)">SocketHTTP2_SettingsId</a> for settings identifiers </dd></dl>
 
 </div>
 </div>
@@ -1881,15 +1957,65 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Flush pending output. </p>
+<p>Flush pending HTTP/2 frames to socket. </p>
+<p>Sends all buffered output frames from the send buffer to the underlying socket. Handles partial sends and EAGAIN by returning 1 (would block). Call this after Conn_process() or after sending data/headers to ensure timely delivery.</p>
+<p>Behavior:</p><ul>
+<li>Loops until send buffer empty or socket blocks</li>
+<li>Uses <a class="el" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b" title="Send data.">Socket_send()</a> for transmission</li>
+<li>Updates send window on successful sends</li>
+<li>On EAGAIN/0: returns 1, caller should poll for WRITE</li>
+<li>On error: returns -1, errno set (e.g. ECONNRESET)</li>
+</ul>
+<p>Non-blocking friendly; integrates with event loops.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a></td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> with buffered output</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error </dd></dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>0 all sent, 1 would block (partial send), -1 error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Socket_Failed</td><td>Socket send error (connection closed, reset) </td></tr>
+    <tr><td class="paramname">SocketHTTP2_FlowControlError</td><td>If send window exhausted (rare, internal)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies send buffer and windows</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md334"></a>
+Usage in Event Loop</h2>
+<div class="fragment"><div class="line"><span class="comment">// After processing input</span></div>
+<div class="line"><span class="keywordtype">int</span> r = <a class="code hl_function" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a>(conn, events);</div>
+<div class="line"><span class="keywordflow">if</span> (r &gt;= 0) {</div>
+<div class="line">    <span class="keywordtype">int</span> f = <a class="code hl_function" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a>(conn);</div>
+<div class="line">    <span class="keywordflow">if</span> (f == 1) {</div>
+<div class="line">        <span class="comment">// Register for POLL_WRITE</span></div>
+<div class="line">        <a class="code hl_function" href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a>(poll, <a class="code hl_function" href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2_Conn_socket</a>(conn), <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a>, conn);</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__event__system_html_ga3755cc4d5ed8838ce2261f0efd1d5d85"><div class="ttname"><a href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a></div><div class="ttdeci">void SocketPoll_mod(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Update event monitoring and/or user data for a registered socket.</div></div>
+<div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a></div><div class="ttdeci">@ POLL_WRITE</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00164">SocketPoll.h:164</a></div></div>
+<div class="ttc" id="agroup__http2_html_ga667e2c409b1c71f702559904a823c6af"><div class="ttname"><a href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a></div><div class="ttdeci">int SocketHTTP2_Conn_flush(SocketHTTP2_Conn_T conn)</div><div class="ttdoc">Flush pending HTTP/2 frames to socket.</div></div>
+<div class="ttc" id="agroup__http2_html_gab805b04d372fb6fdc75a5495d2cde2b2"><div class="ttname"><a href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2_Conn_socket</a></div><div class="ttdeci">Socket_T SocketHTTP2_Conn_socket(SocketHTTP2_Conn_T conn)</div><div class="ttdoc">Get underlying socket.</div></div>
+<div class="ttc" id="agroup__http2_html_gaecd0eb2455f15e9c9cea360331dcff5b"><div class="ttname"><a href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a></div><div class="ttdeci">int SocketHTTP2_Conn_process(SocketHTTP2_Conn_T conn, unsigned events)</div><div class="ttdoc">Process socket events and HTTP/2 frames.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md335"></a>
+Return Value Table</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Value   </th><th class="markdownTableHeadNone">Meaning   </th><th class="markdownTableHeadNone">Next Action    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">0   </td><td class="markdownTableBodyNone">All data sent   </td><td class="markdownTableBodyNone">Normal    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">1   </td><td class="markdownTableBodyNone">Partial send, need WRITE   </td><td class="markdownTableBodyNone">Poll for write    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">-1   </td><td class="markdownTableBodyNone">Error   </td><td class="markdownTableBodyNone">Check errno, cleanup   </td></tr>
+</table>
+<dl class="section note"><dt>Note</dt><dd>Buffers frames for efficient batched sending </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Must call regularly to avoid head-of-line blocking </dd></dl>
+<dl class="section user"><dt>Complexity\n O(k) where k bytes sent - linear in output size</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b" title="Process socket events and HTTP/2 frames.">SocketHTTP2_Conn_process()</a> before flush for full cycle </dd>
+<dd>
+Socket_send_window() to check available capacity </dd></dl>
 
 </div>
 </div>
@@ -1917,14 +2043,61 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Free connection and all streams. </p>
+<p>Dispose of HTTP/2 connection and release all resources. </p>
+<p>Cleans up the connection instance, including all associated streams, internal buffers, HPACK state, rate limiters, and other resources. The underlying socket is NOT closed; caller must close it separately if needed. Sets the pointer to NULL after cleanup.</p>
+<p>Cleanup order:</p><ul>
+<li>Free HPACK encoder and decoder</li>
+<li>Release stream open/close rate limiters</li>
+<li>Release receive and send buffers</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> struct memory returned to arena (not freed explicitly)</li>
+<li>All streams automatically cleaned via arena or explicit free</li>
+</ul>
+<p>Safe to call on NULL or already-freed pointer (no-op). Call this in FINALLY block or after error to prevent leaks.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">conn</td><td>Pointer to connection (will be set to NULL)</td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td>Pointer to connection (set to NULL on success)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>void</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">None</td><td>- idempotent cleanup, no allocations or side effects</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - assumes exclusive access to conn pointer</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md328"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line">SocketHTTP2_Conn_T conn = <a class="code hl_function" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a>(sock, config, arena);</div>
+<div class="line"><span class="keywordflow">if</span> (conn) {</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">        <span class="comment">// Use connection: handshake, process events, etc.</span></div>
+<div class="line">        <a class="code hl_function" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a>(conn, events);</div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a> (SocketHTTP2_Error) {</div>
+<div class="line">        <a class="code hl_function" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5">SocketHTTP2_Conn_goaway</a>(conn, <a class="code hl_enumvalue" href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9a1bb78671b75564a3eb2ff5aceccd90dc">HTTP2_PROTOCOL_ERROR</a>, NULL, 0);</div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">        <a class="code hl_function" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a>(&amp;conn);  <span class="comment">// Safe even if NULL</span></div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// Close socket separately if needed</span></div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;sock);</div>
+<div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+<div class="ttc" id="agroup__http2_html_ga13128ca7c1208a2a4694ea9926e2ff20"><div class="ttname"><a href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a></div><div class="ttdeci">void SocketHTTP2_Conn_free(SocketHTTP2_Conn_T *conn)</div><div class="ttdoc">Dispose of HTTP/2 connection and release all resources.</div></div>
+<div class="ttc" id="agroup__http2_html_ga572c83da10b0028e5c8eba35daad06d5"><div class="ttname"><a href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5">SocketHTTP2_Conn_goaway</a></div><div class="ttdeci">int SocketHTTP2_Conn_goaway(SocketHTTP2_Conn_T conn, SocketHTTP2_ErrorCode error_code, const void *debug_data, size_t debug_len)</div><div class="ttdoc">Send GOAWAY frame.</div></div>
+<div class="ttc" id="agroup__http2_html_gga0dae3fde0d9081ed887d2476442f6ee9a1bb78671b75564a3eb2ff5aceccd90dc"><div class="ttname"><a href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9a1bb78671b75564a3eb2ff5aceccd90dc">HTTP2_PROTOCOL_ERROR</a></div><div class="ttdeci">@ HTTP2_PROTOCOL_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP2_8h_source.html#l00320">SocketHTTP2.h:320</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Does NOT send GOAWAY or close socket; use Conn_goaway() for graceful shutdown </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Failing to call free() leaks arena allocations; always pair with new() </dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n is number of active streams - frees all streams</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for creation </dd>
+<dd>
+<a class="el" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5" title="Send GOAWAY frame.">SocketHTTP2_Conn_goaway()</a> for graceful shutdown before free </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga0af0c54c1c64ff88ad43aadd48ce3ebe" title="Reset the arena by invalidating all current allocations while preserving the arena for reuse.">Arena_clear()</a> or <a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d" title="Dispose of an arena and all its allocations, freeing underlying memory chunks.">Arena_dispose()</a> for arena lifecycle </dd></dl>
 
 </div>
 </div>
@@ -2108,16 +2281,82 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Perform HTTP/2 connection preface. </p>
+<p>Complete HTTP/2 connection preface and initial settings exchange. </p>
+<p>Advances the connection through the initial HTTP/2 handshake state machine (RFC 9113 Section 3.4-3.5). This includes sending/receiving the connection preface, exchanging SETTINGS frames, and acknowledging them. Call repeatedly until returns 0 (complete).</p>
+<p>State transitions:</p><ul>
+<li>CLIENT from INIT: Send preface magic + initial SETTINGS, advance to PREFACE_SENT</li>
+<li>SERVER from INIT: Wait for client preface (via Conn_process), then send SETTINGS</li>
+<li>Both: Send settings if not sent, wait for peer ACK</li>
+<li>On mutual ACK: Transition to READY state, optional window update if needed</li>
+</ul>
+<p>Return values:</p><ul>
+<li>0: Handshake complete (READY state), ready for stream operations</li>
+<li>1: In progress (waiting for peer response or I/O)</li>
+<li>-1: Error (invalid state, send failure); check errno or last error</li>
+</ul>
+<p>Integrate with event loop: Call when POLL_READ/WRITE on socket during handshake. Errors may require Conn_goaway() and Conn_free().</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a></td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td>Active connection (must not be NULL)</td></tr>
   </table>
   </dd>
 </dl>
-<p>Client sends: "PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n" + SETTINGS Server expects preface, sends SETTINGS</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on complete, 1 if in progress, -1 on error </dd></dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>0 complete, 1 in progress, -1 error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTP2_Failed</td><td>Send failure during handshake (socket error, flow control) </td></tr>
+    <tr><td class="paramname">SocketHTTP2_ProtocolError</td><td>Invalid preface or settings ACK timeout</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies connection state</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md329"></a>
+Usage Example (Client)</h2>
+<div class="fragment"><div class="line">SocketHTTP2_Conn_T conn = <a class="code hl_function" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a>(sock, &amp;config, arena);</div>
+<div class="line"><span class="keywordtype">int</span> status;</div>
+<div class="line"><span class="keywordflow">while</span> ((status = <a class="code hl_function" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a>(conn)) == 1) {</div>
+<div class="line">    <span class="comment">// Wait for socket events</span></div>
+<div class="line">    <span class="keywordtype">unsigned</span> events = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, timeout); <span class="comment">// Pseudo</span></div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a>(conn, events);</div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a>(conn);</div>
+<div class="line">}</div>
+<div class="line"><span class="keywordflow">if</span> (status &lt; 0) {</div>
+<div class="line">    <span class="comment">// Handle error: log, goaway, free</span></div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a>(&amp;conn);</div>
+<div class="line">    <span class="keywordflow">return</span> -1;</div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// Now in READY: create streams, send requests</span></div>
+<div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
+<div class="ttc" id="agroup__http2_html_ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><div class="ttname"><a href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a></div><div class="ttdeci">int SocketHTTP2_Conn_handshake(SocketHTTP2_Conn_T conn)</div><div class="ttdoc">Complete HTTP/2 connection preface and initial settings exchange.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md330"></a>
+Server Usage</h2>
+<div class="fragment"><div class="line"><span class="comment">// After Conn_new (INIT state)</span></div>
+<div class="line"><span class="comment">// Handshake driven by Conn_process on incoming data</span></div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_function" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a>(conn) == 1) {</div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a>(conn, <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>);</div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// On 0: ready for client-initiated streams</span></div>
+<div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00163">SocketPoll.h:163</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md331"></a>
+Return Value Table</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Value   </th><th class="markdownTableHeadNone">State   </th><th class="markdownTableHeadNone">Action    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">0   </td><td class="markdownTableBodyNone">READY   </td><td class="markdownTableBodyNone">Proceed to streams    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">1   </td><td class="markdownTableBodyNone">In progress   </td><td class="markdownTableBodyNone">Continue polling/processing    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">-1   </td><td class="markdownTableBodyNone">Error   </td><td class="markdownTableBodyNone">Check error, cleanup   </td></tr>
+</table>
+<dl class="section note"><dt>Note</dt><dd>May send initial WINDOW_UPDATE if connection window &gt; default </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Call before any stream operations; undefined if skipped </dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) per call - state machine steps</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> before handshake </dd>
+<dd>
+<a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b" title="Process socket events and HTTP/2 frames.">SocketHTTP2_Conn_process()</a> for I/O during handshake </dd>
+<dd>
+SocketHTTP2_Conn_state() to query (private, for debug) </dd></dl>
 
 </div>
 </div>
@@ -2233,23 +2472,79 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Create HTTP/2 connection. </p>
+<p>Create a new HTTP/2 connection instance. </p>
+<p>Initializes an HTTP/2 connection over the provided socket. The connection supports both client and server roles, with automatic handling of preface, settings exchange, and flow control. Memory is allocated from the provided arena for lifecycle management.</p>
+<p>Detailed behavior:</p><ul>
+<li>Validates inputs (socket and arena required)</li>
+<li>Applies default config if NULL provided (client role default)</li>
+<li>Initializes local and peer settings, flow control windows</li>
+<li>Generates random hash seed for stream table security</li>
+<li>Sets up rate limiting for stream opens/closes to prevent DoS</li>
+<li>Initializes internal buffers, HPACK decoder/encoder, stream hash table</li>
+<li>Sets initial next stream ID based on role (odd for client, even for server)</li>
+</ul>
+<p>Edge cases:</p><ul>
+<li>If config-&gt;role is invalid, behavior undefined (assert in debug)</li>
+<li>Socket must be connected TCP; UDP not supported</li>
+<li>For encrypted h2, call after TLS handshake completes</li>
+<li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> starts in INIT state; call <a class="el" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0" title="Complete HTTP/2 connection preface and initial settings exchange.">SocketHTTP2_Conn_handshake()</a> to complete setup</li>
+</ul>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">socket</td><td>Underlying TCP socket (after TLS handshake for h2) </td></tr>
-    <tr><td class="paramname">config</td><td>Configuration (NULL for defaults) </td></tr>
-    <tr><td class="paramname">arena</td><td>Memory arena</td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">socket</td><td>Underlying TCP socket (connected, after TLS for h2) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">config</td><td>Optional configuration; NULL uses client defaults </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">arena</td><td>Memory arena for allocations (must outlive connection)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>New connection instance </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>New HTTP/2 connection instance, or NULL on failure (check Except)</dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">SocketHTTP2_ProtocolError</td><td>on allocation failure </td></tr>
+    <tr><td class="paramname">SocketHTTP2_Failed</td><td>Allocation or initialization failure (arena full, rate limit alloc fail, random bytes fail) </td></tr>
+    <tr><td class="paramname">Arena_Failed</td><td>Underlying memory allocation failure</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes (arena must be thread-safe or thread-local)</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - but arena must be thread-local or synchronized; creates independent instance</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md326"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Client connection</span></div>
+<div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
+<div class="line">Socket_T sock = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, <span class="stringliteral">&quot;example.com&quot;</span>, 443);</div>
+<div class="line"><span class="comment">// Assume TLS handshake done...</span></div>
+<div class="line"><a class="code hl_struct" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> config;</div>
+<div class="line"><a class="code hl_function" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a>(&amp;config, <a class="code hl_enumvalue" href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590a2e00d0d9453a99443244c64e1013d458">HTTP2_ROLE_CLIENT</a>);</div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#ade8731b7297accc9c4ab533cb8a91dcf">enable_push</a> = 0; <span class="comment">// Disable server push</span></div>
+<div class="line">SocketHTTP2_Conn_T conn = <a class="code hl_function" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a>(sock, &amp;config, arena);</div>
+<div class="line"><span class="keywordflow">if</span> (conn) {</div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a>(conn);</div>
+<div class="line">    <span class="comment">// Use connection...</span></div>
+<div class="line">    <a class="code hl_function" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a>(&amp;conn);</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
+<div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket with specified domain, type, and protocol.</div></div>
+<div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md327"></a>
+Server Connection</h2>
+<div class="fragment"><div class="line"><span class="comment">// Server side (after accept)</span></div>
+<div class="line"><a class="code hl_struct" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> config;</div>
+<div class="line"><a class="code hl_function" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a>(&amp;config, <a class="code hl_enumvalue" href="group__http2.html#ggabdba00019b45cc844046f038c7c7d590acf94ddf824fa513af626e9fcaf922f0e">HTTP2_ROLE_SERVER</a>);</div>
+<div class="line">config.<a class="code hl_variable" href="group__http2.html#a4f948d55c4fc6947b5da693aad073731">max_concurrent_streams</a> = 100;</div>
+<div class="line">SocketHTTP2_Conn_T conn = <a class="code hl_function" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a>(accepted_sock, &amp;config, arena);</div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> is not thread-safe; use one per event loop/thread </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Socket must remain valid until Conn_free(); do not close externally </dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - fixed allocations and initializations</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659" title="Initialize HTTP/2 configuration with safe RFC-compliant defaults.">SocketHTTP2_config_defaults()</a> for config setup </dd>
+<dd>
+<a class="el" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0" title="Complete HTTP/2 connection preface and initial settings exchange.">SocketHTTP2_Conn_handshake()</a> to complete preface/settings exchange </dd>
+<dd>
+<a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20" title="Dispose of HTTP/2 connection and release all resources.">SocketHTTP2_Conn_free()</a> for cleanup </dd>
+<dd>
+<a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b" title="Process socket events and HTTP/2 frames.">SocketHTTP2_Conn_process()</a> for event processing </dd></dl>
 
 </div>
 </div>
@@ -2334,17 +2629,84 @@ value</td>
 </table>
 </div><div class="memdoc">
 
-<p>Process incoming data. </p>
+<p>Process socket events and HTTP/2 frames. </p>
+<p>Main event loop entry point for HTTP/2 connections. Handles reading from socket, parsing frames, dispatching to frame handlers, and invoking stream callbacks. Call this when the underlying socket has POLL_READ or POLL_WRITE events.</p>
+<p>Behavior:</p><ul>
+<li>Reads available data from socket into internal receive buffer</li>
+<li>Verifies client preface on server (if initial state)</li>
+<li>Processes complete frames from buffer (loop until buffer empty or partial)</li>
+<li>Dispatches frames to handlers (DATA, HEADERS, SETTINGS, etc.)</li>
+<li>Updates flow control windows, stream states</li>
+<li>Invokes user callbacks for stream events (headers, data, end, reset)</li>
+<li>Handles errors: may send GOAWAY, transition to error state</li>
+</ul>
+<p>During handshake: advances state via internal calls to Conn_handshake After ready: processes multiplexed streams</p>
+<p>Return:</p><ul>
+<li>0: Success, processed all available data</li>
+<li>1: Partial frame, need more data (continue polling)</li>
+<li>-1: Error (protocol violation, socket error); connection may be invalid</li>
+</ul>
+<p>Pair with Conn_flush() after process to send pending responses. Integrate with SocketPoll or similar for non-blocking I/O.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> </td></tr>
-    <tr><td class="paramname">events</td><td>Poll events (POLL_READ, POLL_WRITE, etc.)</td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td>HTTP/2 connection </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">events</td><td>Bitmask of poll events (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)</td></tr>
   </table>
   </dd>
 </dl>
-<p>Call when socket is readable/writable. Processes frames and invokes callbacks for stream events.</p>
-<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error </dd></dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>0 success, 1 need more data, -1 error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTP2_ProtocolError</td><td>Frame parsing or protocol violation </td></tr>
+    <tr><td class="paramname">SocketHTTP2_FlowControlError</td><td>Window overflow or underflow </td></tr>
+    <tr><td class="paramname">SocketHTTP2_StreamError</td><td>Stream-specific error </td></tr>
+    <tr><td class="paramname">Socket_Failed</td><td>Underlying socket read error</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies connection and stream states</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md332"></a>
+Event Loop Integration</h2>
+<div class="fragment"><div class="line">SocketPoll_T poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1024);</div>
+<div class="line"><a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, <a class="code hl_function" href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2_Conn_socket</a>(conn), <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a> | <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a>, conn);</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *events;</div>
+<div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;events, timeout_ms);</div>
+<div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; n; i++) {</div>
+<div class="line">        SocketHTTP2_Conn_T c = events[i].<a class="code hl_variable" href="group__event__system.html#acb5b92ec2f2954ee3baa024a74ce4655">data</a>;</div>
+<div class="line">        <span class="keywordtype">int</span> r = <a class="code hl_function" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a>(c, events[i].events);</div>
+<div class="line">        <span class="keywordflow">if</span> (r &lt; 0) {</div>
+<div class="line">            <span class="comment">// Error: log, goaway, free</span></div>
+<div class="line">            <a class="code hl_function" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5">SocketHTTP2_Conn_goaway</a>(c, <a class="code hl_enumvalue" href="group__http2.html#gga0dae3fde0d9081ed887d2476442f6ee9a1bb78671b75564a3eb2ff5aceccd90dc">HTTP2_PROTOCOL_ERROR</a>, NULL, 0);</div>
+<div class="line">            <a class="code hl_function" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a>(&amp;c);</div>
+<div class="line">        }</div>
+<div class="line">        <a class="code hl_function" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a>(c); <span class="comment">// Send pending frames</span></div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__event__system_html_acb5b92ec2f2954ee3baa024a74ce4655"><div class="ttname"><a href="group__event__system.html#acb5b92ec2f2954ee3baa024a74ce4655">SocketEvent_T::data</a></div><div class="ttdeci">void * data</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00190">SocketPoll.h:190</a></div></div>
+<div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for I/O event monitoring within the poll instance.</div></div>
+<div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
+<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00187">SocketPoll.h:188</a></div></div>
+<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md333"></a>
+Error Handling</h2>
+<p>On -1 return:</p><ul>
+<li>Check <a class="el" href="group__foundation.html#ga46f8d730d28e8c5cbd55e3cbe4c83945" title="Socket_geterrorcode - Convert last errno to normalized SocketErrorCode.">Socket_geterrorcode()</a> or last except</li>
+<li>Send GOAWAY if protocol error</li>
+<li>Remove from poll, free connection</li>
+<li>Log peer IP/port for security monitoring</li>
+</ul>
+<dl class="section note"><dt>Note</dt><dd>Events param currently unused (always processes read); future opt for write </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Must call after poll events on socket FD; blocking calls undefined </dd></dl>
+<dl class="section user"><dt>Complexity\n O(m) where m is number of frames processed - linear in input size</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af" title="Flush pending HTTP/2 frames to socket.">SocketHTTP2_Conn_flush()</a> to send responses after process </dd>
+<dd>
+<a class="el" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0" title="Complete HTTP/2 connection preface and initial settings exchange.">SocketHTTP2_Conn_handshake()</a> advanced internally during early calls </dd>
+<dd>
+SocketPoll integration example above </dd>
+<dd>
+<a class="el" href="group__http2.html#ga990cec8dae4a5eb79e28e30039038a98">SocketHTTP2_StreamCallback</a> for event notifications </dd></dl>
 
 </div>
 </div>
@@ -3920,7 +4282,7 @@ value</td>
 </div><div class="memdoc">
 
 <p>Protocol-level error (connection must close) </p>
-<p>Thrown for fatal protocol errors requiring connection termination. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20" title="Free connection and all streams.">SocketHTTP2_Conn_free()</a> for cleanup after error. </dd></dl>
+<p>Thrown for fatal protocol errors requiring connection termination. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20" title="Dispose of HTTP/2 connection and release all resources.">SocketHTTP2_Conn_free()</a> for cleanup after <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>. </dd></dl>
 
 </div>
 </div>

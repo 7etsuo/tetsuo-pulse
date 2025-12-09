@@ -38,7 +38,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000006"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="366.5,-129 260.5,-129 260.5,-110 366.5,-110 366.5,-129"/>
 <text text-anchor="middle" x="313.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node24 -->
 <g id="Node000024" class="node">
 <title>Node24</title>
-<g id="a_Node000024"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Asynchronous I/O operations using platform&#45;optimized mechanisms.">
+<g id="a_Node000024"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Platform&#45;optimized asynchronous I/O for high&#45;performance networking.">
 <polygon fill="white" stroke="#666666" points="1264.5,-294 1148.5,-294 1148.5,-275 1264.5,-275 1264.5,-294"/>
 <text text-anchor="middle" x="1206.5" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketAsync.h</text>
 </a>
@@ -317,7 +317,7 @@
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000016"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="1020.5,-129 924.5,-129 924.5,-110 1020.5,-110 1020.5,-129"/>
 <text text-anchor="middle" x="972.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

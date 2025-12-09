@@ -1,12 +1,12 @@
 <map id="SocketPoll&#45;private.h" name="SocketPoll&#45;private.h">
-<area shape="rect" id="Node000001" title="Internal implementation details for SocketPoll module." alt="" coords="660,5,799,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="660,5,799,31"/>
 <area shape="rect" id="Node000002" title=" " alt="" coords="22,372,98,397"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="662,33,517,62,339,105,253,132,176,161,115,193,92,210,76,227,60,258,53,294,53,329,57,358,52,359,48,329,48,293,55,257,71,224,89,206,112,189,174,156,251,127,338,100,516,57,661,28"/>
 <area shape="rect" id="Node000003" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="1186,372,1282,397"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="799,24,914,41,1042,68,1099,86,1146,108,1177,133,1186,148,1190,163,1190,239,1193,272,1201,305,1223,359,1218,361,1196,307,1188,273,1184,239,1184,164,1181,150,1173,137,1143,113,1097,91,1040,73,913,46,799,29"/>
-<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1356,372,1498,397"/>
+<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1356,372,1498,397"/>
 <area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="799,17,961,25,1058,33,1154,46,1242,64,1315,89,1344,104,1365,122,1379,141,1384,163,1384,239,1387,272,1396,305,1417,359,1412,361,1390,306,1382,273,1379,239,1379,164,1374,143,1361,125,1341,109,1313,94,1241,70,1153,51,1057,39,961,30,799,23"/>
-<area shape="rect" id="Node000016" href="$SocketTimer-private_8h.html" title="Internal timer implementation details and heap management." alt="" coords="86,225,264,251"/>
+<area shape="rect" id="Node000016" href="$SocketTimer-private_8h.html" title="Internal implementation details for the high&#45;performance SocketTimer module." alt="" coords="86,225,264,251"/>
 <area shape="poly" id="edge16_Node000001_Node000016" title=" " alt="" coords="700,33,383,154,216,222,214,218,381,150,698,28"/>
 <area shape="rect" id="Node000019" href="$SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="1508,299,1631,324"/>
 <area shape="poly" id="edge23_Node000001_Node000019" title=" " alt="" coords="799,16,943,17,1118,24,1206,32,1285,42,1352,57,1401,76,1432,97,1460,122,1506,180,1540,238,1562,284,1557,287,1536,240,1502,183,1456,126,1429,101,1399,81,1351,62,1284,48,1205,37,1118,29,942,22,799,21"/>
@@ -14,9 +14,9 @@
 <area shape="poly" id="edge35_Node000001_Node000024" title=" " alt="" coords="724,33,650,142,645,139,719,30"/>
 <area shape="rect" id="Node000025" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="671,225,788,251"/>
 <area shape="poly" id="edge63_Node000001_Node000025" title=" " alt="" coords="732,31,732,211,727,211,727,31"/>
-<area shape="rect" id="Node000033" href="$SocketPoll__backend_8h.html" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="767,79,943,104"/>
+<area shape="rect" id="Node000033" href="$SocketPoll__backend_8h.html" title="Defines internal backend abstraction for cross&#45;platform polling." alt="" coords="767,79,943,104"/>
 <area shape="poly" id="edge59_Node000001_Node000033" title=" " alt="" coords="751,28,824,69,821,74,748,33"/>
-<area shape="rect" id="Node000034" href="$SocketAsync_8h.html" title="Asynchronous I/O operations using platform&#45;optimized mechanisms." alt="" coords="394,152,548,177"/>
+<area shape="rect" id="Node000034" href="$SocketAsync_8h.html" title="Platform&#45;optimized asynchronous I/O for high&#45;performance networking." alt="" coords="394,152,548,177"/>
 <area shape="poly" id="edge64_Node000001_Node000034" title=" " alt="" coords="710,33,505,148,502,143,708,29"/>
 <area shape="rect" id="Node000004" title=" " alt="" coords="1263,445,1332,471"/>
 <area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="1246,396,1280,433,1276,437,1242,399"/>
@@ -69,7 +69,7 @@
 <area shape="poly" id="edge38_Node000024_Node000025" title=" " alt="" coords="649,175,704,215,701,219,646,180"/>
 <area shape="poly" id="edge39_Node000025_Node000005" title=" " alt="" coords="671,253,610,268,538,293,465,328,431,349,399,374,377,403,362,434,358,431,372,400,396,370,428,345,462,323,536,288,608,263,670,247"/>
 <area shape="poly" id="edge40_Node000025_Node000007" title=" " alt="" coords="785,248,1359,367,1358,372,784,253"/>
-<area shape="rect" id="Node000026" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="932,372,1060,397"/>
+<area shape="rect" id="Node000026" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="932,372,1060,397"/>
 <area shape="poly" id="edge41_Node000025_Node000026" title=" " alt="" coords="752,249,964,363,962,368,750,253"/>
 <area shape="rect" id="Node000028" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="644,299,815,324"/>
 <area shape="poly" id="edge46_Node000025_Node000028" title=" " alt="" coords="732,251,732,285,727,285,727,251"/>

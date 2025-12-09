@@ -14,7 +14,7 @@
 <area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="996,25,868,32,722,44,597,60,554,70,532,81,512,106,498,136,490,168,486,201,487,265,495,314,490,315,482,265,480,201,484,167,493,134,507,103,528,77,553,65,596,55,722,38,868,27,995,20"/>
 <area shape="rect" id="Node000023" href="$SocketDgram-private_8h.html" title="Internal implementation details for datagram (UDP) socket structure." alt="" coords="827,79,972,119"/>
 <area shape="poly" id="edge30_Node000001_Node000023" title=" " alt="" coords="1047,33,955,75,952,70,1045,28"/>
-<area shape="rect" id="Node000033" href="$SocketDTLS_8h.html" title=" " alt="" coords="2115,174,2241,199"/>
+<area shape="rect" id="Node000033" href="$SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets." alt="" coords="2115,174,2241,199"/>
 <area shape="poly" id="edge58_Node000001_Node000033" title=" " alt="" coords="1112,28,1170,48,1234,76,1251,87,1262,98,1274,108,1291,116,1366,134,1463,145,1573,150,1690,153,1918,154,2017,157,2096,164,2120,168,2120,174,2095,169,2017,162,1918,159,1690,158,1572,156,1462,150,1365,139,1289,121,1271,112,1259,102,1247,92,1231,81,1169,53,1110,33"/>
 <area shape="rect" id="Node000035" href="$SocketDTLSConfig_8h.html" title="DTLS configuration constants and secure defaults." alt="" coords="587,86,751,111"/>
 <area shape="poly" id="edge65_Node000001_Node000035" title=" " alt="" coords="1013,33,741,86,740,81,1012,28"/>
@@ -53,7 +53,7 @@
 <area shape="poly" id="edge15_Node000009_Node000014" title=" " alt="" coords="437,354,281,381,216,394,186,403,181,413,181,422,194,440,218,456,248,469,245,474,216,460,190,443,176,423,176,411,183,399,214,389,280,376,436,349"/>
 <area shape="rect" id="Node000015" title=" " alt="" coords="469,401,527,427"/>
 <area shape="poly" id="edge17_Node000009_Node000015" title=" " alt="" coords="501,354,501,388,495,388,495,354"/>
-<area shape="rect" id="Node000016" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="551,401,693,427"/>
+<area shape="rect" id="Node000016" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="551,401,693,427"/>
 <area shape="poly" id="edge20_Node000009_Node000016" title=" " alt="" coords="519,351,591,392,589,397,517,356"/>
 <area shape="poly" id="edge25_Node000016_Node000006" title=" " alt="" coords="671,424,869,472,868,477,669,429"/>
 <area shape="poly" id="edge21_Node000016_Node000010" title=" " alt="" coords="551,428,186,482,186,477,551,423"/>
@@ -70,7 +70,7 @@
 <area shape="poly" id="edge28_Node000016_Node000021" title=" " alt="" coords="609,429,560,468,556,464,606,425"/>
 <area shape="rect" id="Node000022" title=" " alt="" coords="595,475,663,500"/>
 <area shape="poly" id="edge29_Node000016_Node000022" title=" " alt="" coords="626,427,629,461,624,461,620,427"/>
-<area shape="rect" id="Node000024" href="$SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module." alt="" coords="741,167,900,207"/>
+<area shape="rect" id="Node000024" href="$SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure." alt="" coords="741,167,900,207"/>
 <area shape="poly" id="edge31_Node000023_Node000024" title=" " alt="" coords="884,121,849,158,845,155,880,117"/>
 <area shape="poly" id="edge32_Node000024_Node000005" title=" " alt="" coords="831,206,909,387,904,389,826,208"/>
 <area shape="poly" id="edge34_Node000024_Node000009" title=" " alt="" coords="782,209,536,324,534,320,779,204"/>
@@ -83,7 +83,7 @@
 <area shape="poly" id="edge57_Node000024_Node000029" title=" " alt="" coords="863,205,957,254,1010,288,1060,326,1090,357,1114,388,1110,392,1086,361,1056,330,1007,292,954,259,861,209"/>
 <area shape="poly" id="edge36_Node000025_Node000007" title=" " alt="" coords="1357,267,1474,274,1629,294,1714,311,1800,334,1884,363,1965,399,2005,429,2036,462,2032,465,2002,433,1962,404,1882,368,1798,339,1713,316,1628,299,1473,279,1357,272"/>
 <area shape="poly" id="edge37_Node000025_Node000016" title=" " alt="" coords="1245,283,689,401,688,396,1244,277"/>
-<area shape="rect" id="Node000026" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1759,401,1887,427"/>
+<area shape="rect" id="Node000026" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1759,401,1887,427"/>
 <area shape="poly" id="edge38_Node000025_Node000026" title=" " alt="" coords="1340,278,1769,395,1768,400,1339,283"/>
 <area shape="poly" id="edge43_Node000025_Node000028" title=" " alt="" coords="1301,280,1301,314,1295,314,1295,280"/>
 <area shape="poly" id="edge41_Node000026_Node000006" title=" " alt="" coords="1759,424,1690,429,965,485,965,480,1690,424,1759,418"/>
@@ -118,7 +118,7 @@
 <area shape="poly" id="edge75_Node000037_Node000006" title=" " alt="" coords="1106,114,1061,136,1016,169,958,224,917,272,886,327,859,402,856,414,859,426,872,447,890,464,886,468,868,450,854,428,851,414,854,401,881,325,912,269,954,220,1012,165,1058,132,1104,109"/>
 <area shape="poly" id="edge69_Node000037_Node000007" title=" " alt="" coords="1191,109,1228,116,1342,135,1440,147,1608,163,1689,173,1773,189,1868,214,1978,252,2047,278,2074,295,2099,327,2113,352,2118,376,2116,400,2107,428,2095,449,2079,467,2075,463,2091,446,2102,426,2111,399,2113,376,2108,354,2094,329,2070,299,2045,282,1976,257,1867,219,1772,194,1688,178,1608,168,1440,152,1342,140,1227,121,1190,114"/>
 <area shape="poly" id="edge73_Node000037_Node000036" title=" " alt="" coords="1048,113,899,136,729,169,716,173,714,168,728,164,898,131,1048,108"/>
-<area shape="rect" id="Node000038" href="$SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support." alt="" coords="1240,174,1356,199"/>
+<area shape="rect" id="Node000038" href="$SocketTLS_8h.html" title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement." alt="" coords="1240,174,1356,199"/>
 <area shape="poly" id="edge70_Node000037_Node000038" title=" " alt="" coords="1157,109,1265,165,1262,170,1155,114"/>
 <area shape="rect" id="Node000039" title=" " alt="" coords="1026,174,1159,199"/>
 <area shape="poly" id="edge74_Node000037_Node000039" title=" " alt="" coords="1131,113,1107,162,1102,160,1126,110"/>

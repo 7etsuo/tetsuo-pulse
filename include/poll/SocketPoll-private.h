@@ -3,39 +3,80 @@
 
 /**
  * @file SocketPoll-private.h
- * @brief Internal implementation details for SocketPoll module.
+ * @defgroup poll_private SocketPoll Private Implementation Details
+ * @brief Internal structures and utilities for cross-platform event polling.
  * @ingroup event_system
+ * @internal
  *
- * Defines private types and structures used by the SocketPoll implementation.
- * Not part of the public API - for internal implementation use only.
+ * This header exposes private implementation details for the SocketPoll
+ * module, enabling efficient event multiplexing across platforms
+ * (epoll/kqueue/poll). Includes hash tables for fast socket/FD mappings,
+ * internal state structure, exception macros, and integration points for
+ * timers and async I/O.
  *
- * Key Components:
- * - SocketData: Hash table entries for O(1) socket-to-userdata mapping
- * - FdSocketEntry: Reverse mapping from file descriptor to socket for event translation
- * - SocketPoll_T: Main poll instance structure with all internal state
- * - Thread-safe exception handling macros
- * - Internal timer heap access functions
+ * Not part of the public API - for module-internal use and maintenance only.
+ * Subject to change without notice; use public SocketPoll.h for API.
  *
- * Hash Table Design:
- * - Golden ratio hash function for optimal collision resistance
- * - Separate tables for socket->data and fd->socket mappings
- * - Thread-safe operations with mutex protection
- * - Efficient O(1) average-case lookups for event processing
+ *  Key Components
  *
- * Thread Safety:
- * - Public operations are thread-safe via mutex protection
- * - Internal functions assume caller holds appropriate locks
- * - Hash table operations are protected by poll instance mutex
- * - Memory allocations use arena for efficient cleanup
+ * | Component | Purpose | Key Features |
+ * |-----------|---------|--------------|
+ * | SocketData | Socket-to-userdata hash mapping | O(1) lookup, chained
+ * collisions, arena-allocated | | FdSocketEntry | FD-to-socket reverse mapping
+ * | Event translation from backend FDs to Socket_T | | SocketPoll_T | Core
+ * instance state | Backend, mutex, hash tables, event arrays, extensions | |
+ * RAISE_POLL_ERROR | Exception macro | Thread-safe error raising with detailed
+ * messages | | socketpoll_get_timer_heap | Timer integration | Access to
+ * internal timer heap for SocketTimer |
  *
- * @note Not part of public API - subject to change without notice.
- * @note Thread-safe where noted; internal functions may not be.
- * @see SocketPoll.h for public API.
- * @see SocketPoll_backend.h for backend abstraction layer.
- * @see @ref foundation for memory management patterns.
- * @see @ref core_io for socket primitives that integrate with polling.
- * @see docs/cross-platform-backends.md for backend implementation patterns.
- * @see socket_util_hash_fd() for hash function implementation details.
+ *  Hash Table Design
+ *
+ * - **Algorithm**: Golden ratio multiplication hash with random seed for
+ * security
+ * - **Tables**: Separate chains for socket_data_map (Socket_T -> userdata) and
+ * fd_to_socket_map (fd -> Socket_T)
+ * - **Size**: SOCKET_DATA_HASH_SIZE (prime for distribution, default 1021)
+ * - **Performance**: O(1) average lookup/insert/delete; mutex-protected for
+ * concurrency
+ * - **Security**: Hash seed mitigates DoS via predictable collisions
+ *
+ *  Thread Safety Model
+ *
+ * - **Public API**: Fully thread-safe; acquires/releases instance mutex
+ * - **Internal Functions**: Assume caller holds poll->mutex; not safe
+ * otherwise
+ * - **Data Structures**: Hash tables and arrays protected by mutex
+ * - **Memory**: Arena allocations safe within mutex scope; no external locking
+ * needed
+ * - **Backends**: Serialized via mutex; backend_wait() exclusive
+ *
+ *  Architecture Integration
+ *
+ * ```
+ * Application --> SocketPoll_add/mod/del/wait (public API)
+ *                  |
+ *                  v (mutex lock)
+ * Internal: Hash tables <--> Backend (epoll/kqueue/poll)
+ *                  |
+ *                  v
+ * Event Translation: FD events -> SocketEvent_T -> user callbacks
+ * Extensions: Timer heap processing during wait(), async I/O delegation
+ * ```
+ *
+ * @note Use only within SocketPoll and dependent modules (e.g., SocketTimer)
+ * @note All allocations from poll->arena for lifecycle management
+ * @note Compile with -DSOCKET_DATA_HASH_SIZE=N to tune table size
+ * @warning Internal functions may change ABI; prefer public wrappers
+ * @complexity Most operations O(1) avg due to hashing; wait() O(n_events)
+ *
+ * @see SocketPoll.h for public event polling API
+ * @see SocketPoll_backend.h for platform backend abstraction
+ * @see @ref event_system for full event system overview
+ * @see @ref foundation for arena and exception patterns
+ * @see docs/ASYNC_IO.md for async integration guide
+ * @see docs/cross-platform-backends.md for backend details
+ * @see socket_util_hash_fd() for underlying hash implementation
+ * @{
  */
 
 #include <pthread.h>
@@ -50,62 +91,153 @@
 #include "socket/SocketAsync.h"
 
 /**
- * @brief Opaque type macro for internal SocketPoll_T structure definition.
+ * @brief Opaque type alias macro enabling private struct definition.
  * @ingroup event_system
+ * @internal
  *
- * Standard opaque pointer pattern used for private implementation hiding.
- * Allows compile-time definition of struct T while keeping internal fields
- * inaccessible from public headers.
+ * Defines T as SocketPoll_T for use in private headers and .c files.
+ * Enables forward declaration and full struct definition in implementation
+ * while maintaining opaque type in public API (include/socket/SocketPoll.h).
  *
- * @note Used only in private implementation files (.c and -private.h).
- * @note Matches public typedef in SocketPoll.h for ABI compatibility.
+ * Pattern: #define T Module_T then typedef struct T *T in private, #undef T
+ * before public includes Ensures ABI stability: public sees pointer, private
+ * sees full struct. // fixed
  *
- * @see SocketPoll_T in SocketPoll.h for public opaque type.
- * @see struct T below for complete internal structure.
+ * Purpose and Benefits
+ *
+ * - Encapsulation: Hides internals from users/extensions
+ * - Binary Compatibility: Struct changes don't break public ABI
+ * - Compile-Time: Allows sizeof(T) and field access in .c only
+ * - Consistency: Matches foundation module patterns (Arena_T, etc.)
+ *
+ * Usage restricted to SocketPoll-private.h and SocketPoll.c.
+ *
+ * @note Defined after includes, undefined before #endif
+ * @note Public API: extern functions take/return SocketPoll_T (pointer)
+ * @note Private: struct T { ... } defines actual layout
+ * @warning Undefine before public includes to avoid conflicts
+ * @complexity N/A - preprocessor macro
+ *
+ * @see SocketPoll.h public typedef struct SocketPoll_T *SocketPoll_T;
+ * @see struct T full private definition below
+ * @see @ref foundation opaque type patterns in core modules
+ * @see Arena.h example of similar pattern
  */
 #define T SocketPoll_T
 
 /**
- * @brief Configured hash table size for internal socket data and FD-to-socket mappings.
+ * @brief Compile-time constant for hash table capacity in socket mappings.
  * @ingroup event_system
+ * @internal
  *
- * Aliases the global SOCKET_HASH_TABLE_SIZE (default: 1021) for consistent hash table sizing
- * across modules. Enables O(1) average-case lookups during event processing and socket management.
- * The size is chosen as a prime number for optimal hash distribution with the golden ratio hash function.
+ * Defines the number of buckets in internal hash tables (socket_data_map and
+ * fd_to_socket_map). Aliases SOCKET_HASH_TABLE_SIZE from SocketConfig.h
+ * (default prime: 1021) for module consistency. Prime size + golden ratio hash
+ * minimizes collisions for even distribution.
  *
- * @note Value can be overridden at compile-time via -DSOCKET_HASH_TABLE_SIZE=N in CMake.
- * @note Larger sizes reduce collisions but increase memory usage for hash tables.
- * @note Used for both socket_data_map and fd_to_socket_map arrays.
+ * Memory: sizeof(SocketData* [size]) + sizeof(FdSocketEntry* [size]) ~ 16KB
+ * default (64-bit). Performance: Larger reduces chain lengths, improving
+ * worst-case to near O(1).
  *
- * @see SocketConfig.h for SOCKET_HASH_TABLE_SIZE definition and configuration.
- * @see socket_util_hash_fd() and socket_util_hash_uint() for hash functions.
- * @see SocketData for socket-to-data mapping entries.
- * @see FdSocketEntry for FD-to-socket reverse mapping entries.
- * @see @ref foundation for hash table design patterns in foundation modules.
+ *  Configuration Guidelines
+ *
+ * | Value | Scenario | Pros | Cons |
+ * |-------|----------|------|------|
+ * | 1021 (default) | General apps (1K-10K conns) | Balanced | Minor collisions
+ * possible | | 4093-16381 | High-load servers (>10K conns) | Low collisions |
+ * Increased memory (~64KB+) | | 251-509 | Embedded/low-mem | Low footprint |
+ * Higher collision risk |
+ *
+ * Override via CMake: cmake -DSOCKET_HASH_TABLE_SIZE=4093 ..
+ *
+ * @note Must be compile-time constant; affects struct T layout
+ * @note Prime recommended for hash quality; powers-of-2 suboptimal
+ * @note Shared across modules for consistency; change impacts all
+ * @complexity Influences avg chain length: collisions ~ 1/size
+ * @warning Non-prime sizes degrade performance; test under load
+ * @note Used in struct T array declarations; sizeof impacts cache
+ *
+ * @see SocketConfig.h SOCKET_HASH_TABLE_SIZE source
+ * @see socket_util_hash_fd() FD hashing
+ * @see socket_util_hash_uint() general uint hashing
+ * @see poll_fd_hash() module-specific seeded hash
+ * @see SocketData table entries
+ * @see FdSocketEntry reverse entries
+ * @see struct T poll->*_map arrays using this
+ * @see @ref foundation hashing best practices
  */
 #define SOCKET_DATA_HASH_SIZE SOCKET_HASH_TABLE_SIZE
 
 /* ==================== Internal Type Definitions ==================== */
 
 /**
- * @brief Hash table entry for socket-to-userdata mapping.
+ * @brief Linked-list node for socket-to-userdata mapping in internal hash
+ * table.
  * @ingroup event_system
+ * @internal
  *
- * Used in internal hash table for O(1) average-case socket-to-userdata lookup
- * during event processing. Hash table uses golden ratio multiplication hash
- * function for optimal distribution and collision resistance.
+ * Represents a single entry in the socket_data_map hash table, enabling O(1)
+ * average-case lookup of user data during event delivery. Each entry chains
+ * via 'next' for collision resolution using open hashing.
  *
- * Thread Safety: Access protected by poll instance mutex for all operations.
- * Memory Management: Allocated from poll's arena for efficient cleanup.
+ * The mapping is essential for translating backend events (fd + events) to
+ * user-facing SocketEvent_T (socket + data + events), preserving userdata
+ * registered via SocketPoll_add().
  *
- * @see socket_data_add_unlocked() for hash table insertion (internal).
- * @see socket_data_lookup_unlocked() for hash table lookup (returns user data).
- * @see socket_data_remove_unlocked() for hash table deletion (internal).
- * @see SocketPoll_mod() for updating user data and monitored events.
- * @see SocketPoll_add() for public interface that uses this mapping.
- * @see @ref foundation for hash function implementation details.
- * @see socket_util_hash_fd() for hash function implementation.
- * @see poll_fd_hash() for seeded FD hashing used internally.
+ * Thread Safety: All access (read/write) protected by poll->mutex.
+ * Memory Management: Arena-allocated; no manual free, cleaned via
+ * Arena_dispose().
+ *
+ *  Structure Fields
+ *
+ * | Field  | Type              | Description |
+ * |--------|-------------------|-------------|
+ * | socket | Socket_T          | Registered socket identifier for matching
+ * events | | data   | void *            | Userdata payload from
+ * SocketPoll_add()/mod() | | next   | struct SocketData * | Chain pointer for
+ * hash collisions |
+ *
+ *  Internal Usage Pattern
+ *
+ * @code{.c}
+ * // Simplified insertion (internal, mutex-held)
+ * SocketData *entry = CALLOC(poll->arena, 1, sizeof(*entry));
+ * entry->socket = socket;
+ * entry->data = userdata;
+ * unsigned idx = poll_fd_hash(poll, Socket_fd(socket));
+ * entry->next = poll->socket_data_map[idx];
+ * poll->socket_data_map[idx] = entry;
+ * poll->registered_count++;
+ * @endcode
+ *
+ * @code{.c}
+ * // Simplified lookup during event processing
+ * unsigned idx = poll_fd_hash(poll, event_fd);
+ * for (SocketData *entry = poll->socket_data_map[idx]; entry; entry =
+ * entry->next) { if (Socket_fd(entry->socket) == event_fd) { SocketEvent_T ev
+ * = { .socket = entry->socket, .data = entry->data, .events = ... };
+ *         // Deliver ev to user
+ *         break;
+ *     }
+ * }
+ * @endcode
+ *
+ * @complexity Insert/Lookup/Delete: O(1) average, O(n_bucket) worst-case
+ * @threadsafe No - requires poll->mutex held by caller
+ * @note Chain length minimized by prime table size and quality hash
+ * @warning Userdata 'data' must not be freed while socket registered
+ * @note Used only in SocketPoll.c; not accessible via public API
+ *
+ * @see FdSocketEntry for FD-to-socket reverse mapping
+ * @see socket_data_add_unlocked() for insertion helper
+ * @see socket_data_lookup_unlocked() for lookup helper
+ * @see socket_data_remove_unlocked() for removal helper
+ * @see SocketPoll_add() public interface populating this structure
+ * @see SocketPoll_mod() for userdata updates
+ * @see SocketEvent_T for event structure using retrieved data
+ * @see @ref event_system for event delivery pipeline
+ * @see socket_util_hash_fd() underlying hash computation
+ * @see poll_fd_hash() seeded variant for this module
  */
 typedef struct SocketData
 {
@@ -115,28 +247,73 @@ typedef struct SocketData
 } SocketData;
 
 /**
- * @brief Hash table entry for file descriptor to socket reverse mapping.
+ * @brief Linked-list node for FD-to-socket reverse mapping in internal hash
+ * table.
  * @ingroup event_system
+ * @internal
  *
- * Enables O(1) reverse lookup from file descriptor to Socket_T during event
- * translation. Required because polling backends return raw file descriptors,
- * but SocketPoll API returns Socket_T objects with associated user data.
+ * Critical structure for translating raw file descriptors from polling
+ * backends (epoll/kqueue/poll) back to higher-level Socket_T objects during
+ * event processing. Enables the pipeline: backend FD events -> SocketEvent_T
+ * with full context.
  *
- * Used in event translation pipeline:
- * 1. Backend returns (fd, events) pairs from backend_wait()
- * 2. backend_get_event() provides fd->events mapping
- * 3. Reverse lookup finds Socket_T for each fd
- * 4. Forward lookup retrieves user data for each socket
- * 5. SocketEvent_T populated with (socket, data, events)
+ * Without this mapping, event delivery would require linear scans over all
+ * registered sockets, degrading to O(n) performance. Hashing ensures O(1)
+ * average resolution.
  *
- * Thread Safety: Access protected by poll instance mutex for all operations.
- * Memory Management: Allocated from poll's arena for efficient cleanup.
+ * Thread Safety: Protected by poll->mutex for concurrent access.
+ * Memory Management: Arena-allocated from poll->arena; collective cleanup.
  *
- * @see translate_backend_events_to_socket_events() for general event translation implementation.
- * @see backend_get_event() for backend event retrieval interface.
- * @see SocketEvent_T for final translated event structure.
- * @see SocketPoll_wait() for complete event processing pipeline.
- * @see translate_from_epoll() for epoll-specific event translation example.
+ *  Structure Fields
+ *
+ * | Field | Type                   | Description |
+ * |-------|------------------------|-------------|
+ * | fd    | int                    | Raw file descriptor from socket |
+ * | socket| Socket_T               | Associated opaque socket wrapper |
+ * | next  | struct FdSocketEntry * | Collision chain pointer |
+ *
+ *  Event Translation Role
+ *
+ * Part of the core event processing pipeline:
+ *
+ * 1. SocketPoll_wait() calls backend_wait() -> array of (fd, backend_events)
+ * 2. For each fd: lookup FdSocketEntry via hash(fd) -> get Socket_T
+ * 3. For each Socket_T: lookup SocketData via hash(Socket_T) -> get userdata
+ * 4. Construct SocketEvent_T {socket, data, events} for user delivery
+ * 5. Return array to caller
+ *
+ *  Internal Usage Example
+ *
+ * @code{.c}
+ * // During event wait processing (internal, mutex-held)
+ * ssize_t nevents = backend_wait(poll->backend, ...);
+ * for (int i = 0; i < nevents; i++) {
+ *     int fd = backend_get_fd(poll->backend, i);
+ *     unsigned idx = poll_fd_hash(poll, fd);
+ *     FdSocketEntry *fse = poll->fd_to_socket_map[idx];
+ *     while (fse && fse->fd != fd) fse = fse->next;
+ *     if (fse) {
+ *         Socket_T sock = fse->socket;
+ *         // Proceed to SocketData lookup and event construction
+ *     }
+ * }
+ * @endcode
+ *
+ * @complexity Lookup: O(1) avg / O(chain) worst; chains short due to hashing
+ * @threadsafe No - caller must hold poll->mutex
+ * @note FD uniqueness assumed; one-to-one mapping per registered socket
+ * @warning FD reuse by kernel possible; removal on socket del prevents stale
+ * entries
+ * @note Synced with socket_data_map during add/mod/del operations
+ *
+ * @see SocketData for complementary socket-to-data mapping
+ * @see translate_backend_events_to_socket_events() master translation function
+ * @see backend_get_event() backend-specific event extraction
+ * @see SocketEvent_T output structure after translation
+ * @see SocketPoll_wait() orchestrates the full pipeline
+ * @see translate_from_epoll() example epoll translation using this
+ * @see poll_fd_hash() hash computation for FD indexing
+ * @see @ref event_system for complete event flow
  */
 typedef struct FdSocketEntry
 {
@@ -146,40 +323,83 @@ typedef struct FdSocketEntry
 } FdSocketEntry;
 
 /**
- * @brief Complete internal state for SocketPoll instance.
+ * @brief Opaque internal state structure for SocketPoll instance.
  * @ingroup event_system
+ * @internal
  *
- * Contains all state for a socket polling instance including backend,
- * event arrays, hash tables, synchronization primitives, and optional
- * extensions. Thread-safe through mutex protection for all operations.
- * All memory allocated from arena for efficient cleanup on destruction.
+ * Encapsulates complete runtime state for a polling instance, including
+ * platform backend, configuration, registered sockets mappings, event buffers,
+ * synchronization, and optional extensions like timers and async I/O. Designed
+ * for efficient operation with O(1) lookups via hashing and arena-based memory
+ * management.
  *
- * Core Components:
- * - backend: Platform-specific polling implementation (epoll/kqueue/poll)
- * - maxevents: Configurable limit on events per wait() call
- * - default_timeout_ms: Configurable default timeout for wait operations
- * - registered_count/max_registered: Resource usage tracking and limits
- * - socketevents: Pre-allocated array for translated SocketEvent_T structures
+ * All fields are private and accessed only within the module or trusted
+ * dependents. Thread safety enforced via embedded mutex; direct access
+ * bypasses protection.
  *
- * Hash Tables (O(1) lookups):
- * - socket_data_map: Socket_T -> user data mapping for event delivery
- * - fd_to_socket_map: File descriptor -> Socket_T reverse mapping for translation
- * - hash_seed: Random seed for collision resistance in hash functions
+ *  State Categories
  *
- * Extensions:
- * - mutex: Pthread mutex for thread-safe operations
- * - async: Optional SocketAsync context for high-throughput I/O
- * - timer_heap: SocketTimer heap for integrated timer management
+ * | Category       | Fields                          | Role |
+ * |----------------|---------------------------------|------|
+ * | Backend        | backend                         | Platform I/O
+ * multiplexing (epoll/kqueue/poll) | | Configuration  | maxevents,
+ * default_timeout_ms   | Limits and defaults for wait operations | |
+ * Registration   | registered_count, max_registered| Active sockets count and
+ * capacity enforcement | | Events         | socketevents                    |
+ * Output buffer for translated events | | Memory         | arena | Single
+ * source for all internal allocations | | Mappings       | socket_data_map[],
+ * fd_to_socket_map[], hash_seed | Fast bidirectional lookups | |
+ * Synchronization| mutex                           | Pthread lock for
+ * concurrent access | | Extensions     | async, timer_heap               |
+ * Optional advanced I/O and timing |
  *
- * Memory Layout: All components allocated from arena for single cleanup operation.
+ *  Initialization and Lifecycle
  *
- * @see PollBackend_T for backend abstraction layer.
- * @see SocketData for socket-to-userdata hash table entries.
- * @see FdSocketEntry for file descriptor reverse mapping entries.
- * @see SocketTimer_heap_T for integrated timer heap.
- * @see SocketAsync_T for optional async I/O context.
- * @see Arena_T for memory management.
- * @see SocketPoll_new() for instance creation.
+ * - Created by SocketPoll_new(): initializes backend, allocates arrays/tables,
+ * seeds hash
+ * - Registered sockets populate hash tables via add/mod operations
+ * - wait() loops: backend_wait() -> translate -> deliver events -> process
+ * timers
+ * - Destroyed by SocketPoll_free(): clears tables, disposes arena, closes
+ * backend
+ *
+ * Memory: Everything arena-allocated for O(1) cleanup; no leaks on exceptions.
+ *
+ *  Access Pattern
+ *
+ * @code{.c}
+ * // Safe internal access (mutex required)
+ * pthread_mutex_lock(&poll->mutex);
+ * TRY {
+ *     // Modify state, e.g., poll->registered_count++;
+ *     // Hash table operations, backend calls
+ *     backend_add(poll->backend, Socket_fd(sock), events);
+ * } EXCEPT(SocketPoll_Failed) {
+ *     // Rollback changes if partial
+ *     RERAISE;
+ * } FINALLY {
+ *     pthread_mutex_unlock(&poll->mutex);
+ * } END_TRY;
+ * @endcode
+ *
+ * @threadsafe Partial - mutex enables; direct field access unsafe in MT env
+ * @complexity Individual field O(1); table ops O(1) avg
+ * @note Layout optimized for cache locality; arrays contiguous
+ * @note hash_seed randomized to prevent hash DoS attacks
+ * @warning NULL extensions require checks; feature-dependent
+ * @note Backend may embed platform-specific state (e.g., epoll_fd)
+ *
+ * @see SocketPoll_new() initialization
+ * @see SocketPoll_free() cleanup
+ * @see PollBackend_T platform layer
+ * @see SocketData socket mappings
+ * @see FdSocketEntry FD mappings
+ * @see SocketTimer_heap_T timers
+ * @see SocketAsync_T async
+ * @see Arena_T allocation
+ * @see pthread_mutex_t locking
+ * @see @ref event_system overview
+ * @see docs/cross-platform-backends.md backends
  */
 struct T
 {
@@ -203,68 +423,161 @@ struct T
 /* ==================== Exception Handling ==================== */
 
 /**
- * @brief Thread-safe exception raising with detailed error messages.
+ * @brief Module-specific exception raising macro for SocketPoll errors.
  * @ingroup event_system
+ * @internal
+ * @param e Exception type (e.g., SocketPoll_Failed)
  *
- * Uses centralized SOCKET_RAISE_MODULE_ERROR macro from SocketUtil.h
- * which handles thread-local exception copying to prevent race conditions
- * when multiple threads raise the same exception type simultaneously.
+ * Convenience wrapper over SOCKET_RAISE_MODULE_ERROR for SocketPoll module
+ * exceptions. Ensures thread-safe raising by copying to thread-local exception
+ * state, avoiding races in multi-threaded environments where multiple errors
+ * occur concurrently.
  *
- * Thread Safety Mechanism:
- * - Creates thread-local copy of SocketPoll_DetailedException
- * - Populates copy with current error message from socket_error_buf
- * - Raises the copy, leaving global exception unchanged for other threads
+ * Integrates with foundation Except_T system and SocketUtil error formatting.
+ * Automatically populates detailed message from thread-local error buffer.
  *
- * Usage Pattern:
- * @code
- * SOCKET_ERROR_FMT("Operation failed on fd=%d", fd);
- * RAISE_POLL_ERROR(SocketPoll_Failed);
+ *  Thread Safety Features
+ *
+ * - Thread-local exception copy prevents global state corruption
+ * - Compatible with TRY/EXCEPT/FINALLY/END_TRY blocks
+ * - Safe in signal handlers? No - not async-signal-safe due to TLS
+ *
+ *  Usage Patterns
+ *
+ * # Basic Error with errno
+ *
+ * @code{.c}
+ * if (some_syscall() == -1) {
+ *     SOCKET_ERROR_FMT("bind failed: %s", strerror(errno));
+ *     RAISE_POLL_ERROR(SocketPoll_Failed);
+ * }
  * @endcode
  *
- * Error Message Population:
- * - Use SOCKET_ERROR_FMT() for formatted messages with errno
- * - Use SOCKET_ERROR_MSG() for simple messages without errno
- * - Messages stored in thread-local socket_error_buf
+ * # Custom Message
  *
- * @threadsafe Yes - Uses thread-local exception copies.
- * @note Thread-local SocketPoll_DetailedException declared in SocketPoll.c.
- * @note Error message must be populated before calling this macro.
- * @see SOCKET_RAISE_MODULE_ERROR for implementation details.
- * @see SocketPoll_Failed for the exception type definition.
- * @see @ref error_handling for complete exception handling patterns.
- * @see SOCKET_ERROR_FMT for error message formatting macros.
- * @see SOCKET_ERROR_MSG for simple error messages.
- * @see SocketUtil.h for centralized exception handling utilities.
+ * @code{.c}
+ * if (condition_invalid) {
+ *     SOCKET_ERROR_MSG("Invalid maxevents=%d (<0)", maxevents);
+ *     RAISE_POLL_ERROR(SocketPoll_InvalidParam);
+ * }
+ * @endcode
+ *
+ * # In TRY Block
+ *
+ * @code{.c}
+ * TRY {
+ *     // Operations that may fail
+ *     backend_init(...);
+ * } EXCEPT(SocketPoll_Failed) {
+ *     // Local handling
+ *     LOG_ERROR("Backend init failed: %s", Except_message(Except_stack));
+ *     RERAISE;  // Or return error code
+ * } END_TRY;
+ * @endcode
+ *
+ *  Supported Exception Types
+ *
+ * Defined in SocketPoll.h (public) or private exceptions:
+ * - SocketPoll_Failed: General failure (system calls, allocations)
+ * - SocketPoll_InvalidParam: Caller error (null pointers, invalid limits)
+ * - SocketPoll_Closed: Socket closed unexpectedly
+ * - Others module-specific
+ *
+ * @note Precede with SOCKET_ERROR_*() macro to set message
+ * @note Declares local SocketPoll_DetailedException in SocketPoll.c
+ * @note Message buffer size: SOCKET_ERROR_BUF_SIZE (256 bytes)
+ * @complexity O(1) - TLS copy and raise
+ * @threadsafe Yes - per-thread exception stack and buffers
+ * @warning Not async-signal-safe; avoid in signal handlers
+ * @note Integrates with RAISE_POLL_ERROR in private code only
+ *
+ * @see SocketUtil.h SOCKET_RAISE_MODULE_ERROR base macro
+ * @see SocketPoll_Failed primary exception
+ * @see @ref foundation Except_T system
+ * @see @ref error_handling patterns and best practices
+ * @see SOCKET_ERROR_FMT() with errno formatting
+ * @see SOCKET_ERROR_MSG() custom messages
+ * @see Except_stack thread-local stack
  */
 #define RAISE_POLL_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketPoll, e)
 
 /* ==================== Timer Heap Access ==================== */
 
 /**
- * @brief Access timer heap for internal SocketTimer integration.
+ * @brief Retrieve integrated timer heap from SocketPoll instance.
  * @ingroup event_system
- * @param poll Poll instance.
- * @return Timer heap pointer or NULL if not available.
- * @threadsafe No - Internal use only, assumes caller holds poll mutex.
+ * @internal
+ * @param[in] poll Non-NULL SocketPoll_T instance
+ * @return Pointer to SocketTimer_heap_T or NULL
+ * @threadsafe No - Internal accessor; requires poll->mutex held by caller
  *
- * Provides access to the internal timer heap used for SocketTimer integration.
- * The timer heap manages all active timers with efficient O(log n) operations
- * for insertion, deletion, and timeout processing.
+ * Safe getter for the optional timer heap extension embedded in SocketPoll_T.
+ * Enables SocketTimer module to manage timers with automatic processing during
+ * SocketPoll_wait() calls, integrating timeouts into the main event loop
+ * without extra poll() syscalls.
  *
- * @note Used by SocketTimer module for timer heap integration.
- * @note Returns NULL if timer heap not initialized (timer integration disabled).
- * @note Caller must hold poll instance mutex before calling.
- * @note Timer heap is automatically processed during SocketPoll_wait() calls.
+ * The heap supports priority queue operations for timer expiration, using heap
+ * structure for O(log n) insert/cancel and O(1) peek nearest timeout.
  *
- * @see SocketTimer_heap_T for timer heap structure definition.
- * @see SocketTimer_add() for public timer creation interface.
- * @see SocketPoll_wait() for automatic timer processing during event waits.
- * @see SocketTimer_heap_T for complete timer heap documentation.
- * @see SocketTimer-private.h for timer heap internal details.
- * @see @ref foundation for timer heap memory management patterns.
+ * Timer integration optional: compiled/enabled via feature flags; NULL if
+ * disabled.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * // In SocketTimer.c or similar dependent module
+ * TRY {
+ *     SocketTimer_heap_T *heap = socketpoll_get_timer_heap(poll);
+ *     if (!heap) {
+ *         RAISE_MSG(SocketTimer_Failed, "Timer heap unavailable");
+ *     }
+ *     // Insert timer or perform heap operations
+ *     SocketTimer_heap_insert(heap, delay_ms, callback, userdata);
+ * } EXCEPT(SocketTimer_Failed) {
+ *     // Handle gracefully or propagate
+ * } END_TRY;
+ * @endcode
+ *
+ *  Return Conditions
+ *
+ * | Value | Condition |
+ * |-------|-----------|
+ * | Non-NULL | Heap initialized and ready |
+ * | NULL | poll NULL, feature disabled, or init failed |
+ *
+ * @return Internal timer heap pointer or NULL if unavailable
+ *
+ * @throws None - accessor only; caller handles NULL via check/RAISE
+ *
+ * @complexity O(1) - direct poll->timer_heap field return
+ *
+ * @note Call within mutex lock: pthread_mutex_lock(&poll->mutex); ... unlock
+ * @note Heap processed automatically: wait() checks nearest timeout before
+ * backend_wait()
+ * @note Disabled if SOCKET_TIMER_INTEGRATION not defined or poll_new failed
+ * init
+ * @warning Do not free returned heap; owned by poll, freed on
+ * SocketPoll_free()
+ * @note Used exclusively by SocketTimer; not for general-purpose timer mgmt
+ *
+ * @see SocketPoll_wait() implicit timer processing
+ * @see SocketTimer_add() public API using this internally
+ * @see SocketTimer_heap_T heap structure and ops
+ * @see SocketTimer_heap_insert() example heap usage
+ * @see SocketTimer-private.h full private timer details
+ * @see poll->timer_heap field embedding this
+ * @see @ref event_system timer-event integration
+ * @see @ref foundation arena management for heap
  */
 extern SocketTimer_heap_T *socketpoll_get_timer_heap (T poll);
 
 #undef T
+
+/**
+ * @} */ /* poll_private */
+
+/* ==================== End of Private Implementation ==================== */
+
+/** @} */ /* end of poll_private group - internal details */
 
 #endif /* SOCKETPOLL_PRIVATE_INCLUDED */

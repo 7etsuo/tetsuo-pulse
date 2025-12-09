@@ -113,13 +113,10 @@ $(document).ready(function(){initNavTree('SocketPoll-private_8h.html',''); initR
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
-<a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">SocketPoll-private.h File Reference<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a></div></div></div>
+<a href="#var-members">Variables</a>  </div>
+  <div class="headertitle"><div class="title">SocketPoll-private.h File Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Internal implementation details for SocketPoll module.  
-<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;pthread.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketConfig_8h_source.html">core/SocketConfig.h</a>&quot;</code><br />
@@ -139,75 +136,24 @@ $(document).ready(function(){initNavTree('SocketPoll-private_8h.html',''); initR
 </div>
 <p><a href="SocketPoll-private_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
-Data Structures</h2></td></tr>
-<tr class="memitem:structSocketData" id="r_structSocketData"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structSocketData">SocketData</a></td></tr>
-<tr class="memdesc:structSocketData"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash table entry for socket-to-userdata mapping.  <a href="group__event__system.html#structSocketData">More...</a><br /></td></tr>
-<tr class="separator:structSocketData"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structFdSocketEntry" id="r_structFdSocketEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structFdSocketEntry">FdSocketEntry</a></td></tr>
-<tr class="memdesc:structFdSocketEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash table entry for file descriptor to socket reverse mapping.  <a href="group__event__system.html#structFdSocketEntry">More...</a><br /></td></tr>
-<tr class="separator:structFdSocketEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketPoll__T" id="r_structSocketPoll__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a></td></tr>
-<tr class="memdesc:structSocketPoll__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete internal state for SocketPoll instance.  <a href="group__event__system.html#structSocketPoll__T">More...</a><br /></td></tr>
-<tr class="separator:structSocketPoll__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a></td></tr>
-<tr class="memdesc:ga0acb682b8260ab1c60b918599864e2e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type macro for internal <a class="el" href="group__event__system.html#structSocketPoll__T" title="Complete internal state for SocketPoll instance.">SocketPoll_T</a> structure definition.  <br /></td></tr>
+<tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__poll__private.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;SocketPoll_T</td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7c0e59971e52bc0a110b2a7066ea2732" id="r_ga7c0e59971e52bc0a110b2a7066ea2732"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga7c0e59971e52bc0a110b2a7066ea2732">SOCKET_DATA_HASH_SIZE</a>&#160;&#160;&#160;<a class="el" href="group__foundation.html#ga9aab9f1282519c6c66aca1271deffe84">SOCKET_HASH_TABLE_SIZE</a></td></tr>
-<tr class="memdesc:ga7c0e59971e52bc0a110b2a7066ea2732"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configured hash table size for internal socket data and FD-to-socket mappings.  <br /></td></tr>
+<tr class="memdesc:ga7c0e59971e52bc0a110b2a7066ea2732"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compile-time constant for hash table capacity in socket mappings.  <br /></td></tr>
 <tr class="separator:ga7c0e59971e52bc0a110b2a7066ea2732"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga55f5cf0f097a98b03e1511d1b6bd91b2" id="r_ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga55f5cf0f097a98b03e1511d1b6bd91b2">RAISE_POLL_ERROR</a>(e)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (SocketPoll, e)</td></tr>
-<tr class="memdesc:ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-safe exception raising with detailed error messages.  <br /></td></tr>
+<tr class="memdesc:ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Module-specific exception raising macro for SocketPoll errors.  <br /></td></tr>
 <tr class="separator:ga55f5cf0f097a98b03e1511d1b6bd91b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
-Functions</h2></td></tr>
-<tr class="memitem:gaf791d7d3363309127dbdd94e4181b8c3" id="r_gaf791d7d3363309127dbdd94e4181b8c3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaf791d7d3363309127dbdd94e4181b8c3">socketpoll_get_timer_heap</a> (<a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
-<tr class="memdesc:gaf791d7d3363309127dbdd94e4181b8c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Access timer heap for internal SocketTimer integration.  <br /></td></tr>
-<tr class="separator:gaf791d7d3363309127dbdd94e4181b8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:gac76e53ad178174f0f70747acfc5f83a2" id="r_gac76e53ad178174f0f70747acfc5f83a2"><td class="memItemLeft" align="right" valign="top">*Ensures ABI&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gac76e53ad178174f0f70747acfc5f83a2">stability</a></td></tr>
+<tr class="memdesc:gac76e53ad178174f0f70747acfc5f83a2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type alias macro enabling private struct definition.  <br /></td></tr>
+<tr class="separator:gac76e53ad178174f0f70747acfc5f83a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Internal implementation details for SocketPoll module. </p>
-<p>Defines private types and structures used by the SocketPoll implementation. Not part of the public API - for internal implementation use only.</p>
-<p>Key Components:</p><ul>
-<li><a class="el" href="group__event__system.html#structSocketData" title="Hash table entry for socket-to-userdata mapping.">SocketData</a>: Hash table entries for O(1) socket-to-userdata mapping</li>
-<li><a class="el" href="group__event__system.html#structFdSocketEntry" title="Hash table entry for file descriptor to socket reverse mapping.">FdSocketEntry</a>: Reverse mapping from file descriptor to socket for event translation</li>
-<li><a class="el" href="group__event__system.html#structSocketPoll__T" title="Complete internal state for SocketPoll instance.">SocketPoll_T</a>: Main poll instance structure with all internal state</li>
-<li>Thread-safe exception handling macros</li>
-<li>Internal timer heap access functions</li>
-</ul>
-<p>Hash Table Design:</p><ul>
-<li>Golden ratio hash function for optimal collision resistance</li>
-<li>Separate tables for socket-&gt;data and fd-&gt;socket mappings</li>
-<li>Thread-safe operations with mutex protection</li>
-<li>Efficient O(1) average-case lookups for event processing</li>
-</ul>
-<p>Thread Safety:</p><ul>
-<li>Public operations are thread-safe via mutex protection</li>
-<li>Internal functions assume caller holds appropriate locks</li>
-<li>Hash table operations are protected by poll instance mutex</li>
-<li>Memory allocations use arena for efficient cleanup</li>
-</ul>
-<dl class="section note"><dt>Note</dt><dd>Not part of public API - subject to change without notice. </dd>
-<dd>
-Thread-safe where noted; internal functions may not be. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">SocketPoll.h</a> for public API. </dd>
-<dd>
-<a class="el" href="SocketPoll__backend_8h.html" title="Abstract interface for platform-specific polling implementations.">SocketPoll_backend.h</a> for backend abstraction layer. </dd>
-<dd>
-<a class="el" href="group__foundation.html">Core Foundation Modules</a> for memory management patterns. </dd>
-<dd>
-<a class="el" href="group__core__io.html">Core I/O Modules</a> for socket primitives that integrate with polling. </dd>
-<dd>
-docs/cross-platform-backends.md for backend implementation patterns. </dd>
-<dd>
-<a class="el" href="group__foundation.html#ga62f7a03bb960ab153cb4b8dd0f114980" title="Hash file descriptor using golden ratio multiplicative.">socket_util_hash_fd()</a> for hash function implementation details. </dd></dl>
-
-<p class="definition">Definition in file <a class="el" href="SocketPoll-private_8h_source.html">SocketPoll-private.h</a>.</p>
-</div></div><!-- contents -->
+</div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

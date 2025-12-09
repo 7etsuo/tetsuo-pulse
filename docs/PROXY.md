@@ -1,4 +1,4 @@
-# Proxy Guide {#proxy_guide}
+# Proxy Tunneling Guide {#proxy_guide}
 
 Complete guide to proxy tunneling support in the Socket Library.
 
@@ -175,6 +175,20 @@ typedef struct SocketProxy_Config {
 | HTTP CONNECT | 8080 |
 | HTTPS CONNECT | 8080 |
 
+### URL Format {#url-format}
+
+Supported schemes (case-insensitive):
+- http://[user:pass@]host[:port]   (HTTP CONNECT)
+- https://[user:pass@]host[:port]  (HTTPS CONNECT, requires TLS)
+- socks4://host[:port]             (SOCKS4)
+- socks4a://host[:port]            (SOCKS4a)
+- socks5://[user:pass@]host[:port] (SOCKS5)
+- socks5h://[user:pass@]host[:port](SOCKS5 hostname resolution)
+
+Port defaults: HTTP/HTTPS=8080, SOCKS=1080.
+Userinfo parsing supports % encoding; passwords securely handled.
+Does not support IPv6 literals in URL (use hostname or SocketDNS).
+
 ### URL Parser
 
 Parse proxy URLs into configuration:
@@ -220,7 +234,7 @@ if (sock) {
 }
 ```
 
-### Using Existing Socket
+### Using Existing Socket {#custom-socket}
 
 If you need control over socket creation:
 
@@ -239,7 +253,7 @@ if (result == PROXY_OK) {
 
 ---
 
-## Asynchronous API
+## Asynchronous API {#async-api}
 
 For non-blocking operation in event loops, the library provides two async APIs:
 
@@ -285,7 +299,7 @@ if (SocketProxy_Conn_result(conn) == PROXY_OK) {
 SocketProxy_Conn_free(&conn);
 ```
 
-### Blocking Connect API
+### Blocking Connect API {#hybrid-api}
 
 Use `SocketProxy_Conn_new()` when you want blocking connection to the proxy
 server followed by async handshake. This is simpler but blocks during the
@@ -541,6 +555,33 @@ IDLE ─────► CONNECTING_PROXY ─────► TLS_TO_PROXY (HTTPS 
 - URL parser with `arena=NULL` uses thread-local buffer
 
 ---
+
+## Behaviors and Limitations {#behaviors}
+
+### Behaviors
+
+- **HTTP CONNECT**: Uses HTTP/1.1 CONNECT method. Supports Basic auth via Authorization header. Proxy sees target host:port in request.
+- **SOCKS5**: Supports TCP CONNECT command (0x01). Username/password auth method (0x02). Handles IPv4/IPv6/domain addresses.
+- **DNS Resolution**: Local for most types; proxy-side for SOCKS4a/SOCKS5H (hides DNS from local network).
+- **TLS to Proxy**: For HTTPS proxy type, performs full TLS handshake to proxy before CONNECT. Target TLS done separately on tunnel.
+- **Error Mapping**: Protocol-specific errors (e.g., SOCKS5 reply codes, HTTP status) mapped to SocketProxy_Result. Detailed message in SocketProxy_Conn_error().
+- **Timeouts**: Separate connect and handshake timeouts. Internal retries for transient errors (e.g., EAGAIN).
+
+### Limitations
+
+- **Single Hop**: No support for proxy chaining (multiple proxies).
+- **TCP Only**: UDP tunneling (SOCKS5 UDP ASSOCIATE) not implemented.
+- **Auth**: SOCKS5 username/password only; no GSSAPI or other methods.
+- **URL Parsing**: No IPv6 literal support in URL (use hostnames). Limited %encoding in userinfo.
+- **No Auto-Discovery**: No PAC file or WPAD support; manual config only.
+- **Memory Ownership**: Config strings borrowed; must persist during operation. Arena recommended for dynamic allocs.
+- **Thread Safety**: Sync API thread-safe; async Conn_T instances single-thread only.
+- **Platform**: POSIX only; Windows support experimental.
+
+@see SocketProxy_Result for unified error codes.
+@see SocketProxy_Conn_error() for detailed messages.
+@see docs/SECURITY.md for authentication and TLS recommendations.
+@see docs/ERROR_HANDLING.md for exception handling in sync mode.
 
 ## See Also
 

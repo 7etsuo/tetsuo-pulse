@@ -22,6 +22,24 @@
 
 const Except_T SocketHTTP_Failed = { &SocketHTTP_Failed, "HTTP core failure" };
 
+/**
+ * @internal
+ * @brief Exception for HTTP core parsing failures.
+ */
+const Except_T SocketHTTP_ParseError = { &SocketHTTP_Failed, "HTTP core parse error" };
+
+/**
+ * @internal
+ * @brief Exception for invalid URI syntax or validation errors.
+ */
+const Except_T SocketHTTP_InvalidURI = { &SocketHTTP_Failed, "Invalid URI syntax" };
+
+/**
+ * @internal
+ * @brief Exception for invalid HTTP header names or values.
+ */
+const Except_T SocketHTTP_InvalidHeader = { &SocketHTTP_Failed, "Invalid HTTP header" };
+
 /* ============================================================================
  * Character Classification Tables
  * ============================================================================

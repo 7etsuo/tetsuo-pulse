@@ -417,7 +417,7 @@ var sectionId = 'dynsection-0';
 <!-- Node18 -->
 <g id="Node000018" class="node">
 <title>Node18</title>
-<g id="a_Node000018"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000018"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="421.5,-129 315.5,-129 315.5,-110 421.5,-110 421.5,-129"/>
 <text text-anchor="middle" x="368.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -435,7 +435,7 @@ var sectionId = 'dynsection-0';
 <!-- Node23 -->
 <g id="Node000023" class="node">
 <title>Node23</title>
-<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="1115.5,-184 1019.5,-184 1019.5,-165 1115.5,-165 1115.5,-184"/>
 <text text-anchor="middle" x="1067.5" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -867,7 +867,7 @@ var sectionId = 'dynsection-0';
 <!-- Node34 -->
 <g id="Node000034" class="node">
 <title>Node34</title>
-<g id="a_Node000034"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
+<g id="a_Node000034"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">
 <polygon fill="white" stroke="#666666" points="1280,-294 1145,-294 1145,-275 1280,-275 1280,-294"/>
 <text text-anchor="middle" x="1212.5" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketReconnect.h</text>
 </a>

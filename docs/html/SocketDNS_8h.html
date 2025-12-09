@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('SocketDNS_8h.html',''); initResizable(
 </div><!--header-->
 <div class="contents">
 
-<p>Asynchronous DNS resolution API.  
+<p>Asynchronous DNS resolution API for non-blocking network applications.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &lt;netdb.h&gt;</code><br />
@@ -152,7 +152,7 @@ Typedefs</h2></td></tr>
 <tr class="memitem:gaec7a4f82232cde2b125b4b1e1df03b1f" id="r_gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="memItemLeft" align="right" valign="top">typedef <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f">Request_T</a></td></tr>
 <tr class="memdesc:gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer to DNS resolution request structure.  <br /></td></tr>
 <tr class="separator:gaec7a4f82232cde2b125b4b1e1df03b1f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga88905fdf7322b96426e000683280445d" id="r_ga88905fdf7322b96426e000683280445d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga88905fdf7322b96426e000683280445d">SocketDNS_Callback</a>) (<a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int error, void *data)</td></tr>
+<tr class="memitem:ga88905fdf7322b96426e000683280445d" id="r_ga88905fdf7322b96426e000683280445d"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga88905fdf7322b96426e000683280445d">SocketDNS_Callback</a>) (<a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, struct addrinfo *result, int <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, void *data)</td></tr>
 <tr class="memdesc:ga88905fdf7322b96426e000683280445d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback function for async DNS resolution.  <br /></td></tr>
 <tr class="separator:ga88905fdf7322b96426e000683280445d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -162,7 +162,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga799f4d96c77eef54ecb9be5523b591fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new asynchronous DNS resolver.  <br /></td></tr>
 <tr class="separator:ga799f4d96c77eef54ecb9be5523b591fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabdc83f21f67b5b8557f35d7ffa4c839c" id="r_gabdc83f21f67b5b8557f35d7ffa4c839c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gabdc83f21f67b5b8557f35d7ffa4c839c">SocketDNS_free</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> *dns)</td></tr>
-<tr class="memdesc:gabdc83f21f67b5b8557f35d7ffa4c839c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free a DNS resolver.  <br /></td></tr>
+<tr class="memdesc:gabdc83f21f67b5b8557f35d7ffa4c839c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of DNS resolver and release all resources.  <br /></td></tr>
 <tr class="separator:gabdc83f21f67b5b8557f35d7ffa4c839c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga380629d9c1650963341d1fe1dacd3253" id="r_ga380629d9c1650963341d1fe1dacd3253"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f">Request_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253">SocketDNS_resolve</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *host, int port, <a class="el" href="group__dns.html#ga47df31a4c5b1861e6bc33bf91effa388">SocketDNS_Callback</a> callback, void *data)</td></tr>
 <tr class="memdesc:ga380629d9c1650963341d1fe1dacd3253"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start asynchronous DNS resolution.  <br /></td></tr>
@@ -183,13 +183,13 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga390b733f1a522dcaccede3adf56fece0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set resolver request timeout in milliseconds.  <br /></td></tr>
 <tr class="separator:ga390b733f1a522dcaccede3adf56fece0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9228880ada42145db04298282b5f0c80" id="r_ga9228880ada42145db04298282b5f0c80"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga9228880ada42145db04298282b5f0c80">SocketDNS_pollfd</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
-<tr class="memdesc:ga9228880ada42145db04298282b5f0c80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get pollable file descriptor for SocketPoll integration.  <br /></td></tr>
+<tr class="memdesc:ga9228880ada42145db04298282b5f0c80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get file descriptor for integration with SocketPoll (completion notifications).  <br /></td></tr>
 <tr class="separator:ga9228880ada42145db04298282b5f0c80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad8f2fa5ee464e84f44b4b6059b4813e5" id="r_gad8f2fa5ee464e84f44b4b6059b4813e5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gad8f2fa5ee464e84f44b4b6059b4813e5">SocketDNS_check</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
 <tr class="memdesc:gad8f2fa5ee464e84f44b4b6059b4813e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for completed requests (non-blocking).  <br /></td></tr>
 <tr class="separator:gad8f2fa5ee464e84f44b4b6059b4813e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8f7c4c4455c9158ccd272fe8c15235b5" id="r_ga8f7c4c4455c9158ccd272fe8c15235b5"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5">SocketDNS_getresult</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, <a class="el" href="group__dns.html#gaec7a4f82232cde2b125b4b1e1df03b1f">Request_T</a> req)</td></tr>
-<tr class="memdesc:ga8f7c4c4455c9158ccd272fe8c15235b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get result of completed request.  <br /></td></tr>
+<tr class="memdesc:ga8f7c4c4455c9158ccd272fe8c15235b5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve completed DNS resolution result, transferring ownership to caller.  <br /></td></tr>
 <tr class="separator:ga8f7c4c4455c9158ccd272fe8c15235b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga69d8d4c9f020bf781d541df7ecaf5acf" id="r_ga69d8d4c9f020bf781d541df7ecaf5acf"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga69d8d4c9f020bf781d541df7ecaf5acf">SocketDNS_geterror</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const struct <a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req)</td></tr>
 <tr class="memdesc:ga69d8d4c9f020bf781d541df7ecaf5acf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error code for completed request.  <br /></td></tr>
@@ -201,7 +201,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga494e7ef72d567b90e5fdcb1df6501ea5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a completed request from pre-resolved addrinfo.  <br /></td></tr>
 <tr class="separator:ga494e7ef72d567b90e5fdcb1df6501ea5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab988727825887d34e87d144d30c30c2f" id="r_gab988727825887d34e87d144d30c30c2f"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *host, int port, const struct addrinfo *hints, int timeout_ms)</td></tr>
-<tr class="memdesc:gab988727825887d34e87d144d30c30c2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronous DNS resolution with timeout guarantee.  <br /></td></tr>
+<tr class="memdesc:gab988727825887d34e87d144d30c30c2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronous DNS resolution with optional timeout guarantee.  <br /></td></tr>
 <tr class="separator:gab988727825887d34e87d144d30c30c2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
@@ -211,7 +211,46 @@ Variables</h2></td></tr>
 <tr class="separator:ga329324a0e4a1450a6b968b375bb9b333"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Asynchronous DNS resolution API. </p>
+<div class="textblock"><p>Asynchronous DNS resolution API for non-blocking network applications. </p>
+<p>Header for the SocketDNS module providing thread-pool based async getaddrinfo() replacement. Eliminates blocking DNS lookups that can hang applications for 30+ seconds, with built-in DoS protection, timeout guarantees, and SocketPoll integration.</p>
+<h2><a class="anchor" id="autotoc_md258"></a>
+Features</h2>
+<ul>
+<li>Async resolution via worker threads (no main thread block)</li>
+<li>Callback or polling completion modes</li>
+<li>Bounded queue to prevent memory exhaustion DoS</li>
+<li>Per-request and default timeouts</li>
+<li>Sync wrapper with guaranteed timeout</li>
+<li>Thread-safe; integrates with event loops</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md259"></a>
+Typical Usage Patterns</h2>
+<h3><a class="anchor" id="autotoc_md260"></a>
+Async with Callback</h3>
+<p>Submit requests; callback handles result in worker thread (thread-safe impl required).</p>
+<h3><a class="anchor" id="autotoc_md261"></a>
+Async Polling</h3>
+<p>Submit, monitor pollfd, drain check(), fetch results.</p>
+<h3><a class="anchor" id="autotoc_md262"></a>
+Sync with Timeout</h3>
+<p>Use resolve_sync for blocking but protected calls.</p>
+<h2><a class="anchor" id="autotoc_md263"></a>
+Platform Requirements</h2>
+<ul>
+<li>POSIX threads (pthreads)</li>
+<li>getaddrinfo(3) support</li>
+<li>CLOCK_MONOTONIC for timeouts</li>
+<li>Unix-like pipe for signaling</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md264"></a>
+Related Headers</h2>
+<ul>
+<li><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">core/Except.h</a>: Exception handling</li>
+<li><a class="el" href="Arena_8h.html" title="Arena-based memory allocator for efficient bulk memory management.">core/Arena.h</a>: Internal memory (opaque)</li>
+<li><a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">poll/SocketPoll.h</a>: Event integration</li>
+<li><a class="el" href="SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules.">socket/SocketCommon.h</a>: Address utils</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd></dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
 </div></div><!-- contents -->

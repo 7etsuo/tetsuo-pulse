@@ -2186,8 +2186,8 @@
     <member kind="typedef">
       <type>struct SocketIPTracker_T *</type>
       <name>SocketIPTracker_T</name>
-      <anchorfile>SocketIPTracker_8h.html</anchorfile>
-      <anchor>a763b573474982e2761d5b7fbdf9155fc</anchor>
+      <anchorfile>group__ip__tracker.html</anchorfile>
+      <anchor>ga763b573474982e2761d5b7fbdf9155fc</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -2277,8 +2277,8 @@
     <member kind="variable">
       <type>const Except_T</type>
       <name>SocketIPTracker_Failed</name>
-      <anchorfile>SocketIPTracker_8h.html</anchorfile>
-      <anchor>a4692098ecf52e6929c8763f0fa9fe222</anchor>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4692098ecf52e6929c8763f0fa9fe222</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -3408,63 +3408,13 @@
     <name>SocketRetry.h</name>
     <path>include/core/</path>
     <filename>SocketRetry_8h.html</filename>
-    <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
     <class kind="struct">SocketRetry_Policy</class>
     <class kind="struct">SocketRetry_Stats</class>
-    <member kind="define">
-      <type>#define</type>
+    <member kind="typedef">
+      <type>struct T *</type>
       <name>T</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga9e4c6bdc5f6ab59683cef18bb3f58211</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga1b9f06edcbcdd60e892086a4b8c2b9ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae4c30a1ed41ff40ca11fbdb21c2ec947</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MULTIPLIER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga2addc89cb7a7a9b6e75f3cd51eef65ac</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_JITTER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gafbe9a9852b0477755c295af74aa0f2c7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_MAX_ATTEMPTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga6245d4aca908bb154e7cd34f6a36d8dd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>struct SocketRetry_T *</type>
-      <name>SocketRetry_T</name>
-      <anchorfile>SocketRetry_8h.html</anchorfile>
-      <anchor>a419cec86f54612ef9204c059be3ec0a9</anchor>
+      <anchor>ga24514489b0962fafe8414bfae95aa268</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -3480,76 +3430,6 @@
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>gaebff54019f122cf3c0cb72a8ec2ed1b8</anchor>
       <arglist>)(int error, int attempt, void *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketRetry_T</type>
-      <name>SocketRetry_new</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac4c2c785391a4a69f76ddb4d9d25f19e</anchor>
-      <arglist>(const SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_free</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gad758455d31f43b861881522be0982d62</anchor>
-      <arglist>(SocketRetry_T *retry)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_execute</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae9cb61aec8d7c8934a7481ed21e3bedf</anchor>
-      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, SocketRetry_ShouldRetry should_retry, void *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_execute_simple</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga3a533ebca7a1e19c736a6a1debc07336</anchor>
-      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, void *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_get_stats</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaa606e706f22216af24351ee324c0a468</anchor>
-      <arglist>(const SocketRetry_T retry, SocketRetry_Stats *stats)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_reset</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaceefc84a75ae5e4ed461d0139ceefaa3</anchor>
-      <arglist>(SocketRetry_T retry)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_get_policy</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga16584da7cc4271a025fd7d831446d028</anchor>
-      <arglist>(const SocketRetry_T retry, SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_set_policy</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga29d7511f7531f4a23bd88f656df4636e</anchor>
-      <arglist>(SocketRetry_T retry, const SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_policy_defaults</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae60e4575d034cfe56be8b50e94ad5481</anchor>
-      <arglist>(SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_calculate_delay</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga04fda3694b0be59a6427d2188af4e9de</anchor>
-      <arglist>(const SocketRetry_Policy *policy, int attempt)</arglist>
     </member>
     <member kind="variable">
       <type>const Except_T</type>
@@ -3721,10 +3601,46 @@
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="SocketRateLimit_8h" name="SocketRateLimit.h" local="yes" import="no" module="no" objc="no">core/SocketRateLimit.h</includes>
     <includes id="SocketSYNProtect_8h" name="SocketSYNProtect.h" local="yes" import="no" module="no" objc="no">core/SocketSYNProtect.h</includes>
+    <includes id="SocketUtil_8h" name="SocketUtil.h" local="yes" import="no" module="no" objc="no">core/SocketUtil.h</includes>
     <class kind="struct">SocketSYN_IPEntry</class>
     <class kind="struct">SocketSYN_WhitelistEntry</class>
     <class kind="struct">SocketSYN_BlacklistEntry</class>
     <class kind="struct">SocketSYNProtect_T</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_IP_HASH_SIZE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3714b05d28ef69f2bc3b95b17abde741</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_LIST_HASH_SIZE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2e75c0e89d959bd3fa395f8307c1ba65</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_INITIAL_SCORE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae82758ef1761626baf114a11955520e1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_TRUSTED_SCORE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga94b45dbd0567c33d239bcfe0b8de2391</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_MAX_CIDR_ENTRIES</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga89596d086483db6027b30bdd41bb04dd</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>unsigned</type>
       <name>synprotect_hash_ip</name>
@@ -3761,46 +3677,251 @@
     <includes id="Arena_8h" name="Arena.h" local="yes" import="no" module="no" objc="no">core/Arena.h</includes>
     <includes id="Except_8h" name="Except.h" local="yes" import="no" module="no" objc="no">core/Except.h</includes>
     <includes id="SocketConfig_8h" name="SocketConfig.h" local="yes" import="no" module="no" objc="no">core/SocketConfig.h</includes>
+    <class kind="struct">SocketSYN_IPState</class>
+    <class kind="struct">SocketSYNProtect_Config</class>
+    <class kind="struct">SocketSYNProtect_Stats</class>
     <member kind="define">
       <type>#define</type>
       <name>T</name>
-      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
-      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>**Exception Types ****Action and Reputation Enums ****Per IP State Structure ****Configuration Structure ***Window</type>
-      <name>Settings</name>
       <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9b34699e9829231f24474ab63710e297</anchor>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable">
-      <type>*Rate</type>
-      <name>Thresholds</name>
-      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
-      <anchor>a1dd0f9a5b8850a568dd2a1e50db96d11</anchor>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketSYN_Action</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaca8f2a71ab649ccd408fd3fdb3b693b9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable">
-      <type>*Response</type>
-      <name>Tuning</name>
-      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
-      <anchor>a77551b5e29d34b1582b469e4ffe5274c</anchor>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_ALLOW</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8</anchor>
       <arglist></arglist>
     </member>
-    <member kind="variable">
-      <type>*Score Adjustment</type>
-      <name>Rates</name>
-      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
-      <anchor>a5fbbb4948dfc45e96b5a869ee426a3c8</anchor>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_THROTTLE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_CHALLENGE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_BLOCK</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketSYN_Reputation</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad7b655dd229bc52cb32ec3cc1674d423</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_TRUSTED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a3c7fc4e1a973261af722ef5a72067c34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_NEUTRAL</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a3af21cd252d430b04f39badf787d06a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_SUSPECT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423ac0634349dad12cd7a8d2a74b9b7cf1be</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_HOSTILE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a5f79b45826a9103f4f8346e74286ad9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>SocketSYNProtect_T</type>
+      <name>SocketSYNProtect_new</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5f5d6f2ac8cbd366d57c1e8e55983143</anchor>
+      <arglist>(Arena_T arena, const SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_free</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9f5cc1e61a0b44b8b1b330ae54382511</anchor>
+      <arglist>(SocketSYNProtect_T *protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_config_defaults</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gade1b436117d4a0854881ac52ce43f115</anchor>
+      <arglist>(SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_configure</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga59e979862677789482cb5f297f544001</anchor>
+      <arglist>(SocketSYNProtect_T protect, const SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketSYN_Action</type>
+      <name>SocketSYNProtect_check</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga45b12919783a7ba4426db4134fda1a5f</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip, SocketSYN_IPState *state_out)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_report_success</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga979954abc96c529d1205d432fc13c661</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_report_failure</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga573fee7bcaf625b171053b87159af53e</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip, int error_code)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_add</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2a601f0c4520ae271b27a49c5bd19108</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_add_cidr</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga67fef0b3b6d93c87648e8b0caa1c4bc0</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *cidr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_whitelist_remove</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa2b5e921cf7b0b24e270870f0ddc92be</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_contains</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5036b24b808b28a69de280c9ce0727fc</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_whitelist_clear</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga50962d47d9b56957714f313e2051e1bf</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_blacklist_add</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga02eca11c24cc41b3f1fafdcbcae6e485</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip, int duration_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_blacklist_remove</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4e67e158bb567ffb7620738ba28b16f8</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_blacklist_contains</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga88d4fb38017492beca3f130d311dadd5</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_blacklist_clear</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9519e23838092f497693c4a488789f1b</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_get_ip_state</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga36629010083cc94526b37d57cc40bbce</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip, SocketSYN_IPState *state)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_stats</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga602057379b47f0e3dbf46b6efd70a09a</anchor>
+      <arglist>(SocketSYNProtect_T protect, SocketSYNProtect_Stats *stats)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_stats_reset</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga59f2d1168a808c2c2d0584b031d96422</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketSYNProtect_action_name</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6be6d5871d5869421280eb62f3492ca3</anchor>
+      <arglist>(SocketSYN_Action action)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketSYNProtect_reputation_name</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaaf2b0ff9a3054e262ba32b395c2abe50</anchor>
+      <arglist>(SocketSYN_Reputation rep)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketSYNProtect_cleanup</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga89041cde278498408febb062da3dd23b</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_clear_all</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae797fcaf42654cdba172ab72a327a8b1</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_reset</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga01aa18277f6346e8803de9f705573528</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
     <member kind="variable">
-      <type>*Memory</type>
-      <name>Management</name>
-      <anchorfile>SocketSYNProtect_8h.html</anchorfile>
-      <anchor>ada2973e4b9503f689cdc4e0d908d6214</anchor>
+      <type>const Except_T</type>
+      <name>SocketSYNProtect_Failed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacfbf054296946c43e621dcf10b9295a9</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -5251,34 +5372,6 @@
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>struct SocketDNS_T *</type>
-      <name>allocate_dns_resolver</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga0c5a84436f8b4c2c2159a9ae95ec6e6f</anchor>
-      <arglist>(void)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>initialize_dns_fields</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga6c7a4f5e6d71025f70a9ce5815567d19</anchor>
-      <arglist>(struct SocketDNS_T *dns)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>initialize_dns_components</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga558e7ea40aee65f859eef6c434f750e0</anchor>
-      <arglist>(struct SocketDNS_T *dns)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setup_thread_attributes</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga62b1aab7c7e7de783b56183c7a62863d</anchor>
-      <arglist>(pthread_attr_t *attr)</arglist>
-    </member>
-    <member kind="function">
       <type>int</type>
       <name>create_single_worker_thread</name>
       <anchorfile>group__dns.html</anchorfile>
@@ -5472,13 +5565,6 @@
       <name>hash_table_remove</name>
       <anchorfile>group__dns.html</anchorfile>
       <anchor>gadbfe83ac3fd8daf74a5189130d35eb54</anchor>
-      <arglist>(struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>queue_append</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>gae886927eaa45cdd51372735713b90058</anchor>
       <arglist>(struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)</arglist>
     </member>
     <member kind="function">
@@ -5868,22 +5954,22 @@
     <member kind="define">
       <type>#define</type>
       <name>HPACK_DFA_EOS</name>
-      <anchorfile>SocketHPACK-private_8h.html</anchorfile>
-      <anchor>a881cd71b1434a2a5a11bd50cb61d312d</anchor>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga881cd71b1434a2a5a11bd50cb61d312d</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HPACK_DFA_ERROR</name>
-      <anchorfile>SocketHPACK-private_8h.html</anchorfile>
-      <anchor>a2065e9129b247f7f4ab0b363095f1839</anchor>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga2065e9129b247f7f4ab0b363095f1839</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HPACK_DFA_SYM2</name>
-      <anchorfile>SocketHPACK-private_8h.html</anchorfile>
-      <anchor>a76662d61395b8b2c9f2034c074083b4f</anchor>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga76662d61395b8b2c9f2034c074083b4f</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
@@ -7453,6 +7539,27 @@
       <anchor>ga4f683bdd1ab1acf36a383a7be5f5b6d2</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_ParseError</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>gab3d5ad7e5994f2d6dc5cc732bba2f901</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_InvalidURI</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>ga05591446a711d5a6b9d967748d9bc60e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_InvalidHeader</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>ga737d1c3fbff9be0590c8d0790600906a</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>SocketHTTP1-private.h</name>
@@ -7529,247 +7636,247 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTP1_DEFAULT_URI_BUF_SIZE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a4738efb4bea5ccacccfc1be5a105cb13</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga4738efb4bea5ccacccfc1be5a105cb13</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTP1_DEFAULT_REASON_BUF_SIZE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a362225da7c45277cb41d4135c22e635b</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga362225da7c45277cb41d4135c22e635b</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>aa750a4a233ab27ba2857e2ab63258535</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gaa750a4a233ab27ba2857e2ab63258535</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a5943569b15eb4a4ad46e352e21ea14ea</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga5943569b15eb4a4ad46e352e21ea14ea</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>HTTP1_CharClass</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522d</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga7159889d7065ff0d078e4b7170bc522d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_CTL</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_SP</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_HTAB</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_CR</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_LF</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_COLON</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_SLASH</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_DOT</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_DIGIT</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_HEX</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_ALPHA</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_H</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_T</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_P</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_TCHAR</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_VCHAR</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_OBS</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_CC_INVALID</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_NUM_CLASSES</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
       <type></type>
       <name>HTTP1_Action</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37e</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gaf958f972f68a3e764050f88c3475f37e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_NONE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STORE_METHOD</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STORE_URI</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STORE_REASON</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STORE_NAME</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STORE_VALUE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_METHOD_END</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_URI_END</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_VERSION_MAJ</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_VERSION_MIN</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_STATUS_DIGIT</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_REASON_END</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_HEADER_END</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_HEADERS_DONE</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
       <name>HTTP1_ACT_ERROR</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>af958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
@@ -8080,36 +8187,36 @@
     <member kind="variable">
       <type>const uint8_t</type>
       <name>http1_char_class</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a8132b7d377746bbf6e235a4d127deb17</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga8132b7d377746bbf6e235a4d127deb17</anchor>
       <arglist>[256]</arglist>
     </member>
     <member kind="variable">
       <type>const uint8_t</type>
       <name>http1_req_state</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>ad7f1459235d97c9cb2f1c4960a7dbc30</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gad7f1459235d97c9cb2f1c4960a7dbc30</anchor>
       <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
     </member>
     <member kind="variable">
       <type>const uint8_t</type>
       <name>http1_resp_state</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a11bb00a4258fe1bb4ece5df41c2c9d3f</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga11bb00a4258fe1bb4ece5df41c2c9d3f</anchor>
       <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
     </member>
     <member kind="variable">
       <type>const uint8_t</type>
       <name>http1_req_action</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a75ad7bc5978265a3fab598023b737c92</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga75ad7bc5978265a3fab598023b737c92</anchor>
       <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
     </member>
     <member kind="variable">
       <type>const uint8_t</type>
       <name>http1_resp_action</name>
-      <anchorfile>SocketHTTP1-private_8h.html</anchorfile>
-      <anchor>a9c08453987f874f606969a88b5d593ca</anchor>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga9c08453987f874f606969a88b5d593ca</anchor>
       <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
     </member>
   </compound>
@@ -10003,84 +10110,84 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ERROR_BUFSIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga27a6899380c014f0f1a08432877602b2</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_POOL_HASH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga2a80107d7741ba2a46baf779f7928730</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_POOL_LARGE_HASH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gae7f6a04a117e98e557b38a582158c4bb</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_POOL_LARGE_THRESHOLD</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gafaff4a2f91f9687bf4149fde554c11b8</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_IO_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga51703354cc9bc0603b78726aefab346f</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gad6976b035b7becf34c067ecbfe122a99</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga86b91e7fbe633ea8ca189984af9b3547</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga02939decbb5546f8c00a4af02891beaf</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga9668cac2b62d9570871b2865fcc2d562</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_REDIRECTS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga64838d8d2643dbec1c43f8e50055dbf7</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga6495bfe151f30ebab1389fa05229498d</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga48547cb7f217429e34d7fa5c925d9dea</anchor>
       <arglist></arglist>
     </member>
@@ -10101,35 +10208,35 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_RETRIES</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga43548f5c8b02196dd3bd71ccb9836c26</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga1827f78650d15ca622a674b130a2b926</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gaf7e91b18a488977f7e7d333f0f7c0611</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gafe6a8409016e05e46305b9f7042c7c7a</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga2d9b8b306cf8b1a3a926e909f969315f</anchor>
       <arglist></arglist>
     </member>
@@ -10157,7 +10264,7 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga4a61970445f2f7a4a8d23da8680fc09b</anchor>
       <arglist></arglist>
     </member>
@@ -10234,119 +10341,119 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_AUTH_CREDENTIALS_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gaba4e506b5b48afa5c9e19f692619db35</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DIGEST_A_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga3db68e362a4cd23917b2e2b6dc05ef22</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DIGEST_RESPONSE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga19c913be80fdc2a1778a5cf592fa5a32</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DIGEST_CNONCE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga3e4e900df8359ef28d95b0ead64dbcf5</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga1fbe044368878287464a35d2887c23cf</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DIGEST_NC_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga78e4b4357664a978b08470dc5110b5e9</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_REQUEST_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga3de25c3d345626920f73bd6ceb4faefe</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_BODY_CHUNK_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga9252df768faf5ccb5438f1e0e9d68b33</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_HOST_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga14236d3d25877900fe49a8c2b7c90e25</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_COOKIE_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga2bf0debe9f0685663a1f5b1fcaf56510</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_AUTH_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gae0d219a3146b29914fb7f7169c6aa566</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga81ac4eefb96b3c919042f5fdd1ea361d</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_URI_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga1421459188743de98f5eb1d489d70ec0</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_MAX_SET_COOKIES</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga134a20a8c6c468864bb0d94e9d9abb91</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ACCEPT_ENCODING_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga846e1eb9e4ecd57dc03a065776981e0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_CONTENT_LENGTH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga4063c6077aa71b96a83dbe475a59e5a9</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_RETRY_JITTER_FACTOR</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga441f1405cd4774e167f08b83b3b1e117</anchor>
       <arglist></arglist>
     </member>
@@ -10360,35 +10467,35 @@
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_DEFAULT_USER_AGENT</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gad23bab3060a93bc022b891a925e34f94</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_IDENTITY</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>ga1a94747fcfaf987c84d4a91bc3bd7513</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_GZIP</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gaca301afd15b5701276655faf5cdf3104</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_DEFLATE</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gae68f134e13b2a94d9f4f5973fc02bf3c</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>HTTPCLIENT_ENCODING_BR</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http__client.html</anchorfile>
       <anchor>gacf069f17c344d63494b465eb5dcec7b8</anchor>
       <arglist></arglist>
     </member>
@@ -11420,69 +11527,6 @@
       <anchor>gga2f08f039d21b354ac9e74c026ffa84a6a789a51a79c10caae10604554eb601e74</anchor>
       <arglist></arglist>
     </member>
-    <member kind="function">
-      <type>ServerConnection *</type>
-      <name>connection_new</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga661e9beac05d8c8b41df73120537c6af</anchor>
-      <arglist>(SocketHTTPServer_T server, Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_close</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gabe51462e112b59f52cbb1febfaeba7c9</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_read</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gacd94ab9df9f26bb81487c46553875ae7</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_send_data</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga2e72171bf90e61315849daf7c5d37468</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn, const void *data, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_reset_for_keepalive</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gab3d869a4f2a51f1ec8e05a3772337efc</anchor>
-      <arglist>(ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_finish_request</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga653a3ae6a5a9aeef25204f77a644c3bf</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_parse_request</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1e34ed26286555466cb14bdd7bcdba86</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_send_response</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga31ded50da5af2355d60b5f78c18866ab</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_send_error</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gad8b6fd9be8c2566fe7f029efc270e6a3</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn, int status, const char *body)</arglist>
-    </member>
   </compound>
   <compound kind="file">
     <name>SocketHTTPServer.h</name>
@@ -12081,13 +12125,10 @@
     <includes id="SocketPoll__backend_8h" name="SocketPoll_backend.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll_backend.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketAsync_8h" name="SocketAsync.h" local="yes" import="no" module="no" objc="no">socket/SocketAsync.h</includes>
-    <class kind="struct">SocketData</class>
-    <class kind="struct">FdSocketEntry</class>
-    <class kind="struct">SocketPoll_T</class>
     <member kind="define">
       <type>#define</type>
       <name>T</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__poll__private.html</anchorfile>
       <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
     </member>
@@ -12105,12 +12146,12 @@
       <anchor>ga55f5cf0f097a98b03e1511d1b6bd91b2</anchor>
       <arglist>(e)</arglist>
     </member>
-    <member kind="function">
-      <type>SocketTimer_heap_T *</type>
-      <name>socketpoll_get_timer_heap</name>
+    <member kind="variable">
+      <type>*Ensures ABI</type>
+      <name>stability</name>
       <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gaf791d7d3363309127dbdd94e4181b8c3</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
+      <anchor>gac76e53ad178174f0f70747acfc5f83a2</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -12268,49 +12309,49 @@
     <member kind="define">
       <type>#define</type>
       <name>VALIDATE_MAXEVENTS</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>gad5c973c74b3941d078d573439e92c65b</anchor>
       <arglist>(maxevents, event_type)</arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>VALIDATE_FD</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>ga72ef813749c8c54d8f8ccf64ba724a0a</anchor>
       <arglist>(fd)</arglist>
     </member>
     <member kind="typedef">
       <type>struct PollBackend_T *</type>
       <name>PollBackend_T</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>gadd97c2d63f6b491ef855bd928211e71b</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
       <type>PollBackend_T</type>
       <name>backend_new</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>gaa198b207e04b5bb6bec2746c7d86b735</anchor>
       <arglist>(Arena_T arena, int maxevents)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>backend_free</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>ga30a767499b3aa80b77e4fb63368be228</anchor>
       <arglist>(PollBackend_T backend)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>backend_add</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>gaa51ec4e5f966a860cdd9359c36e977c6</anchor>
       <arglist>(PollBackend_T backend, int fd, unsigned events)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>backend_mod</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>ga4b929e888a5088e59cd045c41759363e</anchor>
       <arglist>(PollBackend_T backend, int fd, unsigned events)</arglist>
     </member>
@@ -12394,20 +12435,6 @@
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
-    </member>
-    <member kind="function">
-      <type>struct Connection *</type>
-      <name>SocketPool_connections_allocate_array</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>gade1f70a34432ae896e257fb0ee350c26</anchor>
-      <arglist>(size_t maxconns)</arglist>
-    </member>
-    <member kind="function">
-      <type>Connection_T *</type>
-      <name>SocketPool_connections_allocate_hash_table</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga21e158d703adc910946bca1ec5ca6b86</anchor>
-      <arglist>(Arena_T arena)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -12509,13 +12536,6 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>SocketPool_connections_release_buffers</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga9cd17434558e5aa3cd77339b3043cd3a</anchor>
-      <arglist>(Connection_T conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
       <name>SocketPool_connections_reset_slot</name>
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>gacf51388d2a06f1d1b1caa4d55fe29159</anchor>
@@ -12534,13 +12554,6 @@
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>ga93e4d3464b3def2864e59849788aaf11</anchor>
       <arglist>(Connection_T conn, time_t now)</arglist>
-    </member>
-    <member kind="function">
-      <type>Socket_T *</type>
-      <name>SocketPool_cleanup_allocate_buffer</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga42428b94afc3df0714036baf96dbc1f3</anchor>
-      <arglist>(Arena_T arena, size_t maxconns)</arglist>
     </member>
     <member kind="function">
       <type>unsigned</type>
@@ -13150,6 +13163,13 @@
     <includes id="SocketRateLimit_8h" name="SocketRateLimit.h" local="yes" import="no" module="no" objc="no">core/SocketRateLimit.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketCommon-private_8h" name="SocketCommon-private.h" local="yes" import="no" module="no" objc="no">socket/SocketCommon-private.h</includes>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_debug_live_count</name>
+      <anchorfile>group__socket__live__utils.html</anchorfile>
+      <anchor>gaa8cacd863c275e6e12f7c63b65708e1b</anchor>
+      <arglist>(void)</arglist>
+    </member>
   </compound>
   <compound kind="file">
     <name>Socket.h</name>
@@ -13200,6 +13220,13 @@
       <anchorfile>group__core__io.html</anchorfile>
       <anchor>gae7c6b82ec5bf6be8131532de9ade5caf</anchor>
       <arglist>(int fd)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_debug_live_count</name>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>gaa8cacd863c275e6e12f7c63b65708e1b</anchor>
+      <arglist>(void)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
@@ -14112,8 +14139,8 @@
     <member kind="function">
       <type>void</type>
       <name>SocketCommon_init_base</name>
-      <anchorfile>SocketCommon-private_8h.html</anchorfile>
-      <anchor>a1aa5d2cb4d591e902973e55dc9f1282d</anchor>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>ga1aa5d2cb4d591e902973e55dc9f1282d</anchor>
       <arglist>(SocketBase_T base, int fd, int domain, int type, int protocol, Except_T exc_type)</arglist>
     </member>
     <member kind="function">
@@ -14196,8 +14223,8 @@
     <member kind="function">
       <type>int</type>
       <name>socketcommon_sanitize_timeout</name>
-      <anchorfile>SocketCommon-private_8h.html</anchorfile>
-      <anchor>ac37fe3d789eae0e522f29fca1ec49956</anchor>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>gac37fe3d789eae0e522f29fca1ec49956</anchor>
       <arglist>(int timeout_ms)</arglist>
     </member>
     <member kind="variable">
@@ -14625,252 +14652,252 @@
     <member kind="define">
       <type>#define</type>
       <name>T</name>
-      <anchorfile>SocketDgram_8h.html</anchorfile>
-      <anchor>a0acb682b8260ab1c60b918599864e2e5</anchor>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
       <arglist></arglist>
     </member>
     <member kind="function">
       <type>SocketDgram_T</type>
       <name>SocketDgram_new</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gad6902c87ab5883f155dab2adfa950c52</anchor>
       <arglist>(int domain, int protocol)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_free</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga020169c79640786afa4c36fd1dc965e4</anchor>
       <arglist>(SocketDgram_T *socket)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_bind</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga0c81d9ef1d90e7ab34dd7286f13878ee</anchor>
       <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gabcb18c16142d3b5ef49bee08a96e15fa</anchor>
       <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_sendto</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga08371cbf32cb15528b42e189f8267923</anchor>
       <arglist>(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_recvfrom</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gada4b76edaec59a44eb5bc959e6948d3f</anchor>
       <arglist>(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_send</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga08b2ab199a5c50a654683ba1ddb4d004</anchor>
       <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_recv</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gaf832ef8734ab4dfb43ad639470461bda</anchor>
       <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_sendall</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gadc08ada68a6f9a6922d4e2b0b8f4c081</anchor>
       <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_recvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gaf96de127ecced1b5d8166e6a039e664c</anchor>
       <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_sendv</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga2527bddec3459405a6a989de06727a2f</anchor>
       <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_recvv</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga485908b4ff4a79f514f8e86ec6030107</anchor>
       <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_sendvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gaa208c4a07e76579c3e924ee31ea02777</anchor>
       <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
     </member>
     <member kind="function">
       <type>ssize_t</type>
       <name>SocketDgram_recvvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga31fd826092fb6b9c1a3b11953568f2d6</anchor>
       <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setnonblocking</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga1817a8561af1801a9baa7630bc277ce6</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setreuseaddr</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga74995a7164d93c4e958da6642e0f317d</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setreuseport</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga9770b3c571ac6a900071db266a632816</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setbroadcast</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga637a1a778f293e4843f2355a9299d381</anchor>
       <arglist>(SocketDgram_T socket, int enable)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_joinmulticast</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gae25dbfe6a79cb46494ec438accb53db0</anchor>
       <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_leavemulticast</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga53cb8e627cf35e3d0c6db85e3bc33bab</anchor>
       <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setttl</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga22d94185a6ccf28eceb98d69240ba3d2</anchor>
       <arglist>(SocketDgram_T socket, int ttl)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_settimeout</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gafe579d108c83517ff9ceeac750139bc4</anchor>
       <arglist>(SocketDgram_T socket, int timeout_sec)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_gettimeout</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga99243c75f546aab2534b529611b647f8</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_getbroadcast</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gae6c2bde38c3a7addb7cfffe98a253f60</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_getttl</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga6b91970d4ffe2a7162c4104b0b6de78f</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_getrcvbuf</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gab0dd532f19eef5d8220480e06cc3a7db</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_getsndbuf</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gaf54f02197f8c0dc53fbdf333d476aae2</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_isconnected</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga73455982ede6d44649f85adb25c4bda2</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_isbound</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga06d3085b3b7287330e8cb49d6d9a4da1</anchor>
       <arglist>(SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_fd</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga54e91e6824df0c114a5e6a4d79e5c6fb</anchor>
       <arglist>(const SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>const char *</type>
       <name>SocketDgram_getlocaladdr</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga9822234959be9508363bb3c0f2bd47b7</anchor>
       <arglist>(const SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_getlocalport</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga8b2685e6ad39d1c2fc16df7234f7a87a</anchor>
       <arglist>(const SocketDgram_T socket)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>SocketDgram_setcloexec</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>gacc7a0ae08dfe973bee1067aa4a6869d2</anchor>
       <arglist>(SocketDgram_T socket, int enable)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>SocketDgram_debug_live_count</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga0e8f0a454d58b2ff87878e39960c9187</anchor>
       <arglist>(void)</arglist>
     </member>
     <member kind="variable">
       <type>const Except_T</type>
       <name>SocketDgram_Failed</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__socket__dgram.html</anchorfile>
       <anchor>ga28354c49d1726c674932f420a57bb21d</anchor>
       <arglist></arglist>
     </member>
@@ -14885,8 +14912,6 @@
     <includes id="SocketPoll_8h" name="SocketPoll.h" local="yes" import="no" module="no" objc="no">poll/SocketPoll.h</includes>
     <includes id="Socket_8h" name="Socket.h" local="yes" import="no" module="no" objc="no">socket/Socket.h</includes>
     <includes id="SocketHappyEyeballs_8h" name="SocketHappyEyeballs.h" local="yes" import="no" module="no" objc="no">socket/SocketHappyEyeballs.h</includes>
-    <class kind="struct">SocketHE_Attempt_T</class>
-    <class kind="struct">SocketHE_AddressEntry_T</class>
     <class kind="struct">SocketHE_T</class>
     <member kind="define">
       <type>#define</type>
@@ -14901,13 +14926,6 @@
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gaa146f664c1a8f3c05b5aa72766bc9c90</anchor>
       <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HE_FOREACH_ATTEMPT</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>gabbef7b94e157f9c32222e8176b395da4</anchor>
-      <arglist>(he, iter)</arglist>
     </member>
     <member kind="enumeration">
       <type></type>
@@ -14938,6 +14956,69 @@
       <name>HE_ATTEMPT_FAILED</name>
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gga9ceb0606fea5b72366bbd21ff047c84faefa9d91f6d5fa3393216eaefc01af056</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct addrinfo *</type>
+      <name>addr</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>gabf6dc3901a5139f2f7f093db3003b798</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketHE_AttemptState</type>
+      <name>state</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a701136b6320d53560cfe228535884502</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>error</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a11614f44ef4d939bdd984953346a7572</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>start_time_ms</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>ad2a2dd6f82dee045d069868263a0081f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct SocketHE_Attempt *</type>
+      <name>next</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>a8cfef7a67b323a611a42e8eab03eed22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>SocketHE_Attempt_T</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>af65fb424e04e284ceab8f880af2832ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>family</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>ga4417150d9f858949bd9ea8794995ebcc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>tried</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>aac39ea8065d9b2b99c2b8a4a7c4ca130</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>SocketHE_AddressEntry_T</name>
+      <anchorfile>SocketHappyEyeballs-private_8h.html</anchorfile>
+      <anchor>af903d297eea34d40f3c6459193a0d080</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -15733,112 +15814,112 @@
     <member kind="function">
       <type>int</type>
       <name>proxy_socks5_send_greeting</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga0fcced421154218776f5077fa437f58e</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks5_recv_method</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga3695eb1c73d0f31fe1ac6d51f677ab73</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>proxy_socks5_send_auth</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>gaf0c10ebe07ba3206fd7e5e6725960e9a</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks5_recv_auth</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga54e8297c18caa6bb448daa0d1dceafeb</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>proxy_socks5_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>gad730a252b44728ae21660f2d168b66e3</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks5_recv_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>gae140af2a9af5d32b1786df145d2ccc07</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks5_reply_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga4799fc5a08ded667f5518862c078c1bd</anchor>
       <arglist>(int reply)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>proxy_socks4_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga93a6b1c4f6b287b308b18207368ad092</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>proxy_socks4a_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga904ce0bf17f24e2e2783aaf8f1491c03</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks4_recv_response</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga82d72fd16b045c8660210f9ad861a879</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_socks4_reply_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga2f17a3a05ffed99bade9280577b4bb25</anchor>
       <arglist>(int reply)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>proxy_http_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga58484981c55e00df7a24b50671aefa87</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_http_recv_response</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga56bdb1756a98a60198184587c4902265</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>SocketProxy_Result</type>
       <name>proxy_http_status_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga9afd213292a65fd6db0e416fa37a433b</anchor>
       <arglist>(int status)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>socketproxy_advance_state</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>gada1416d62b5113240c93bd3020dc4b68</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>socketproxy_set_error</name>
-      <anchorfile>group__core__io.html</anchorfile>
+      <anchorfile>group__proxy__private.html</anchorfile>
       <anchor>ga590a8e0ece3a282a17f59778b6f9d757</anchor>
       <arglist>(struct SocketProxy_Conn_T *conn, SocketProxy_Result result, const char *fmt,...)</arglist>
     </member>
@@ -16333,15 +16414,15 @@
     <member kind="define">
       <type>#define</type>
       <name>SOCKET_RECONNECT_ERROR_BUFSIZE</name>
-      <anchorfile>SocketReconnect-private_8h.html</anchorfile>
-      <anchor>acb408f000a8df7938e79ddf2a1e26ae7</anchor>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>gacb408f000a8df7938e79ddf2a1e26ae7</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>SOCKET_RECONNECT_MAX_HOST_LEN</name>
-      <anchorfile>SocketReconnect-private_8h.html</anchorfile>
-      <anchor>a2b81d768340db7dd2d315d1037f85c5e</anchor>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga2b81d768340db7dd2d315d1037f85c5e</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
@@ -16369,26 +16450,47 @@
       <anchor>ggad94358cbf0bb7d00f70705a6c5245433a41651f787427ec87c589c4c5c912a6f9</anchor>
       <arglist></arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static int64_t</type>
-      <name>socketreconnect_get_time_ms</name>
-      <anchorfile>SocketReconnect-private_8h.html</anchorfile>
-      <anchor>a49a845dde592e98929009e21b76b3ad2</anchor>
-      <arglist>(void)</arglist>
+    <member kind="function">
+      <type></type>
+      <name>if</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga0450dbfcd56214ed2989e6ff4d97b25d</anchor>
+      <arglist>(SocketCrypto_random_bytes(&amp;value, sizeof(value))==0)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static int64_t</type>
-      <name>socketreconnect_elapsed_ms</name>
-      <anchorfile>SocketReconnect-private_8h.html</anchorfile>
-      <anchor>a8bb049b5716726216dec25cd2dfa2380</anchor>
-      <arglist>(int64_t start_ms)</arglist>
+    <member kind="function">
+      <type></type>
+      <name>if</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>gaab33e6c19aa5cf524e12e3c40b50574a</anchor>
+      <arglist>(seed==0)</arglist>
     </member>
-    <member kind="function" static="yes">
-      <type>static double</type>
-      <name>socketreconnect_random_double</name>
-      <anchorfile>SocketReconnect-private_8h.html</anchorfile>
-      <anchor>af32eb5a9b0c1e5f36ac86ab624dd3564</anchor>
-      <arglist>(void)</arglist>
+    <member kind="function">
+      <type></type>
+      <name>return</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga230fd1711fa730b54c9262bf533767f6</anchor>
+      <arglist>(double) seed/(double) 0xFFFFFFFFU</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>delta</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga7a21408446fbd8c658853d5f53e2c76f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>else</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga0544c3fe466e421738dae463968b70ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>seed</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>gab31f6ed1e7e88c7cca70910409c6bbee</anchor>
+      <arglist></arglist>
     </member>
   </compound>
   <compound kind="file">
@@ -18559,6 +18661,41 @@
     <class kind="struct">SocketTLSContext_T</class>
     <member kind="define">
       <type>#define</type>
+      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
+      <anchorfile>SocketTLS-private_8h.html</anchorfile>
+      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
+      <anchorfile>SocketTLS-private_8h.html</anchorfile>
+      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
+      <anchorfile>SocketTLS-private_8h.html</anchorfile>
+      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
+      <anchorfile>SocketTLS-private_8h.html</anchorfile>
+      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKETTLS_PRIVATE_INCLUDED</name>
+      <anchorfile>SocketTLS-private_8h.html</anchorfile>
+      <anchor>ad5ce3a15306a84e563c3eb3d814a17b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
       <name>RAISE_TLS_ERROR</name>
       <anchorfile>group__security.html</anchorfile>
       <anchor>gaaa5d5a165d617e880e0761f54333d859</anchor>
@@ -19286,8 +19423,8 @@
     <member kind="typedef">
       <type>const char *(*</type>
       <name>SocketTLSAlpnCallback</name>
-      <anchorfile>SocketTLSContext_8h.html</anchorfile>
-      <anchor>aa53566f8d54960bb2d44516a50f67c70</anchor>
+      <anchorfile>group__tls__context.html</anchorfile>
+      <anchor>gaa53566f8d54960bb2d44516a50f67c70</anchor>
       <arglist>)(const char **client_protos, size_t client_count, void *user_data)</arglist>
     </member>
     <member kind="enumeration">
@@ -19851,6 +19988,20 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>size_t</type>
+      <name>completed</name>
+      <anchorfile>structAsyncRequest.html</anchorfile>
+      <anchor>a97ce18b35bfe90ed417444a26204ae42</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>submitted_at</name>
+      <anchorfile>structAsyncRequest.html</anchorfile>
+      <anchor>a92413df1e46f462915a2f6bfb4b68793</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>SocketAsync_Flags</type>
       <name>flags</name>
       <anchorfile>structAsyncRequest.html</anchorfile>
@@ -20120,32 +20271,6 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>FdSocketEntry</name>
-    <filename>group__event__system.html</filename>
-    <anchor>structFdSocketEntry</anchor>
-    <member kind="variable">
-      <type>int</type>
-      <name>fd</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a6e281de117ccb3201b590ba4184adb62</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>Socket_T</type>
-      <name>socket</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>adf65761f33705691e1fdae79ae0e8f24</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct FdSocketEntry *</type>
-      <name>next</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>aec49f71e7b318291b9270ff95811c7b9</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
     <name>HeaderEntry</name>
     <filename>group__http.html</filename>
     <anchor>structHeaderEntry</anchor>
@@ -20201,137 +20326,137 @@
   </compound>
   <compound kind="struct">
     <name>HPACK_DynamicEntry</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structHPACK__DynamicEntry</anchor>
     <member kind="variable">
       <type>char *</type>
       <name>name</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>aaf38824aa9d15e2897bc4175df8cf174</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>name_len</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ae5cff4f699f7bc99322b1b05cc0a941c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>char *</type>
       <name>value</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a0c2ef0e32af91b0095cb1d4e2b68640a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>value_len</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ae5a6402faf5340e8f53e13371ccb8b34</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>HPACK_HuffmanSymbol</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structHPACK__HuffmanSymbol</anchor>
     <member kind="variable">
       <type>uint32_t</type>
       <name>code</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ab8f97d8476a1a8b8a464ff039bf7d4f8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint8_t</type>
       <name>bits</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>af601652287a777c885cfed6c61046257</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>HPACK_HuffmanTransition</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structHPACK__HuffmanTransition</anchor>
     <member kind="variable">
       <type>uint8_t</type>
       <name>next_state</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a26f953198c6ca62e58fafbfbdb65ed9d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint8_t</type>
       <name>flags</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a4d1e72ef25a0ef39679a5931d7665b70</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint8_t</type>
       <name>sym</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ac2555f64670eb57686cd77bb36676b1f</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>HPACK_StaticEntry</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structHPACK__StaticEntry</anchor>
     <member kind="variable">
       <type>const char *</type>
       <name>name</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a49643b573332398ec78e425dc5e3e980</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>value</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ad0e5ee57a7c3de1e823b3d43b5b647a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint8_t</type>
       <name>name_len</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>af6a73615ec19eadf253cb4fa8cc034f9</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint8_t</type>
       <name>value_len</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a73f42f0a717d6d4e4f8c38845a001ea7</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>HTTP1_TokenBuf</name>
-    <filename>group__http.html</filename>
+    <filename>group__http1__private.html</filename>
     <anchor>structHTTP1__TokenBuf</anchor>
     <member kind="variable">
       <type>char *</type>
       <name>data</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a6dc59ad68c0c3609d4426582eff20ad4</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>len</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a031b669ec44709ed42b56a778f12d147</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>capacity</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>afedc506305fd7d721f9234791d64f914</anchor>
       <arglist></arglist>
     </member>
@@ -21026,32 +21151,6 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>SocketData</name>
-    <filename>group__event__system.html</filename>
-    <anchor>structSocketData</anchor>
-    <member kind="variable">
-      <type>Socket_T</type>
-      <name>socket</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a235a818367962ab1444d564fc9ecb733</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>data</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a942b54345de6283838d63e9de0378440</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct SocketData *</type>
-      <name>next</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a60a4b17af0ea783aea433d16a8f1767b</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
     <name>SocketDgram_T</name>
     <filename>SocketDgram-private_8h.html</filename>
     <anchor>structSocketDgram__T</anchor>
@@ -21648,86 +21747,6 @@
     </member>
   </compound>
   <compound kind="struct">
-    <name>SocketHE_AddressEntry_T</name>
-    <filename>group__async__io.html</filename>
-    <anchor>structSocketHE__AddressEntry__T</anchor>
-    <member kind="variable">
-      <type>struct addrinfo *</type>
-      <name>addr</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a27515d0d3a60d3d5790e582ce1b6432d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>family</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a62b62e50bd95cd705cce6d0681180963</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>tried</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>ad9b187dc05cf715fccd015f990e3ea72</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct SocketHE_AddressEntry *</type>
-      <name>next</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a81c5f63f206f0bd49c39409a2043f65f</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>SocketHE_Attempt_T</name>
-    <filename>group__async__io.html</filename>
-    <anchor>structSocketHE__Attempt__T</anchor>
-    <member kind="variable">
-      <type>Socket_T</type>
-      <name>socket</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a6d7c20ae3edf7159f276525c8f4b90bc</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct addrinfo *</type>
-      <name>addr</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>ab02a910ca4b1f3516cd1a7e91b93c5b9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketHE_AttemptState</type>
-      <name>state</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a6a8a1e41faa0a08ba7cc5a368d177d75</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>error</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a500878af707470819de9519582e95aaa</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>start_time_ms</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a276531d1271e611910bd33f70fe32ed4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct SocketHE_Attempt *</type>
-      <name>next</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>a12005585efa1da9b04101a452aa2eb4d</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
     <name>SocketHE_Config_T</name>
     <filename>group__async__io.html</filename>
     <anchor>structSocketHE__Config__T</anchor>
@@ -21943,67 +21962,67 @@
       <type>char</type>
       <name>error_buf</name>
       <anchorfile>group__async__io.html</anchorfile>
-      <anchor>ad658a91e1c063809e9d8c33d9669cbb1</anchor>
-      <arglist>[256]</arglist>
+      <anchor>a53be6d234730141d247e0e078dbf266c</anchor>
+      <arglist>[SOCKET_HE_ERROR_BUFSIZE]</arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>SocketHPACK_Decoder</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structSocketHPACK__Decoder</anchor>
     <member kind="variable">
       <type>SocketHPACK_Table_T</type>
       <name>table</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a263eaf0e8a043fb3312aa04c66b27916</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_header_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>aff8c1c127b63ee1304e7e5e353af8a17</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_header_list_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ad481cccc9c93cae9589e32e117ff75b5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>settings_max_table_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a52a71c17f16f11abc5cc3c164e30d2aa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>adf82bc9df6877c14cb5c94a5f6bd4716</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>decode_input_bytes</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>adddcba989971c8c7ef82134dec31cb9a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>decode_output_bytes</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ad4ddfdec635a15924237dc94757270c0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>max_expansion_ratio</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>acc40a2ae4da1308222a5518f834dad82</anchor>
       <arglist></arglist>
     </member>
@@ -22043,47 +22062,47 @@
   </compound>
   <compound kind="struct">
     <name>SocketHPACK_Encoder</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structSocketHPACK__Encoder</anchor>
     <member kind="variable">
       <type>SocketHPACK_Table_T</type>
       <name>table</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a9c27fe02791883c173fe35ec57063755</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>pending_table_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a41fbbf708db674889957fd945907a96a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>pending_table_size_update</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a15c308cf5bef84fedc07a69a2e131450</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>huffman_encode</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ad947e2f67bc1041dd00883aa3d8aaf29</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>use_indexing</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a22c7126c261d1170ddda78e5ca50560b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>aadf9716eef8a648d913f5ba781273dc8</anchor>
       <arglist></arglist>
     </member>
@@ -22156,61 +22175,61 @@
   </compound>
   <compound kind="struct">
     <name>SocketHPACK_Table</name>
-    <filename>group__http.html</filename>
+    <filename>group__hpack__private.html</filename>
     <anchor>structSocketHPACK__Table</anchor>
     <member kind="variable">
       <type>HPACK_DynamicEntry *</type>
       <name>entries</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>acdfefc6df12fb449f04b83dfe53600b2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>capacity</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a6c163c2869d04eb47de479cdbf01d5d7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>head</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ac484c8a394da7962c59f388aecf3a6fd</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>tail</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a57a896d93426cece2640353814e6cdf6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>count</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a78b5dcfe765af4dbaf0cd5c27c926ba0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>aa26d4af777700af33e7dd9a719e9c696</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>max_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>ab6a428895561bc70efa6cdbf9f7f9588</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__hpack__private.html</anchorfile>
       <anchor>a8ef1bc9523a821cd345ea3cecf64464f</anchor>
       <arglist></arglist>
     </member>
@@ -22306,255 +22325,255 @@
   </compound>
   <compound kind="union">
     <name>SocketHTTP1_Parser.message</name>
-    <filename>group__http.html</filename>
+    <filename>group__http1__private.html</filename>
     <anchor>unionSocketHTTP1__Parser_8message</anchor>
     <member kind="variable">
       <type>SocketHTTP_Request</type>
       <name>request</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a10573b873d2fa5a365d558a45e328e47</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP_Response</type>
       <name>response</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ad1fc8eaf36937be0c3ba8cfe0a2c1bfe</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>SocketHTTP1_Parser</name>
-    <filename>group__http.html</filename>
+    <filename>group__http1__private.html</filename>
     <anchor>structSocketHTTP1__Parser</anchor>
     <member kind="variable">
       <type>SocketHTTP1_ParseMode</type>
       <name>mode</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>acd145190bb7e19de6c8b42586b1b0354</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP1_Config</type>
       <name>config</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a3d96f651ddeab7a00fb68cb9b99695e6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>accd5458faed6ef1f34cb65a0cc12aa0b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP1_State</type>
       <name>state</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ad5f1a079687596906d79fa4e60e15e8e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP1_Result</type>
       <name>error</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a9117c9e7af21c15a180db074e915df35</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_InternalState</type>
       <name>internal_state</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a59b25a05680d878aca624561077982b8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>union SocketHTTP1_Parser::@5</type>
       <name>message</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>aa49632e1fcd2e6a562ca7d01e28f4397</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP_Headers_T</type>
       <name>headers</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a5e8e9e461616744c5ebbe9885bd352f6</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP_Headers_T</type>
       <name>trailers</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>aa6efd63091c74ba19846acea80e8787b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_TokenBuf</type>
       <name>method_buf</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a3146d516c866f1dccc43b84e18d9f610</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_TokenBuf</type>
       <name>uri_buf</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a5639598ae919204afb6020d3ab8030be</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_TokenBuf</type>
       <name>reason_buf</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a2d0644bd1f620a875c4b312436f4d795</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_TokenBuf</type>
       <name>name_buf</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a0e828c213c3b96d1279e00af3c612892</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>HTTP1_TokenBuf</type>
       <name>value_buf</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a136f12996389424e0e478780becfce59</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>header_count</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>acc0adc0559835a6c549755a8eb61bc02</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>total_header_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ad1c2e38ac86c05fc7d418effc6c626c8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>line_length</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a30ab25275921ceae31776a938f341d47</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>header_line_length</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>aeb54d4bf74e056da7a753e453150782f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>trailer_count</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a0fb8a9b6fc919859079c1086e639bba5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>total_trailer_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a11315f5146e52612d93ec5868bc3104a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketHTTP1_BodyMode</type>
       <name>body_mode</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ab1b80b0f96a917c41ac8f0437555893b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>content_length</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a773d1b3e5fad717184dcf01ae582a25d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>body_remaining</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a7629ffec89033850c262e7d281df6828</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>body_complete</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a6ac2a00e745636335e4a1d599173e5af</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>chunk_size</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a167cdfa2600bd0f99e516fbb71b8a046</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>chunk_remaining</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ad9fb01c1bcd5004f376c8ec7e8683a64</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>version_major</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>ad51c9e10c282cf020e0420ae1453705c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>version_minor</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a8268ce88ae5d195297845f0d0faacdd5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>status_code</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a8355b8178c709946cfeb00afa51d7c61</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>keepalive</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>aeaf5349f4e647986b53e7d001deda977</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>is_upgrade</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a79b38bdc25505c329af786f4b4a67942</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>const char *</type>
       <name>upgrade_protocol</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a14c97a6e638a4ffcb10931b993379f00</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>expects_continue</name>
-      <anchorfile>group__http.html</anchorfile>
+      <anchorfile>group__http1__private.html</anchorfile>
       <anchor>a1222b1fbaf91f5c88598905f5fee27d9</anchor>
       <arglist></arglist>
     </member>
@@ -24811,77 +24830,77 @@
       <type>uint64_t</type>
       <name>count</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ae65da7d40c1b636bd5d688c6ab36176a</anchor>
+      <anchor>gae65da7d40c1b636bd5d688c6ab36176a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>sum</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a4088038d1883a118b9818b15772582b0</anchor>
+      <anchor>ga4088038d1883a118b9818b15772582b0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>min</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ad353d502eaa2af3ba9f5027c024bdad1</anchor>
+      <anchor>gad353d502eaa2af3ba9f5027c024bdad1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>max</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a92aa2bf4c9b19983fa3417159929df81</anchor>
+      <anchor>ga92aa2bf4c9b19983fa3417159929df81</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>mean</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a39b4ba97214ae557d6664a60881731ee</anchor>
+      <anchor>ga39b4ba97214ae557d6664a60881731ee</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p50</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a8b172fd16d7a741708785715acde4b57</anchor>
+      <anchor>ga8b172fd16d7a741708785715acde4b57</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p75</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a86b3fe4f2f16158efcd05739be0be2c7</anchor>
+      <anchor>ga86b3fe4f2f16158efcd05739be0be2c7</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p90</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ae642be44e4add2bc25d809c22cf75a28</anchor>
+      <anchor>gae642be44e4add2bc25d809c22cf75a28</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p95</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a5009b287c8bfd50a87d3278be6b76d6b</anchor>
+      <anchor>ga5009b287c8bfd50a87d3278be6b76d6b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p99</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
+      <anchor>ga4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>double</type>
       <name>p999</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a117aeb2403d9212a3476a0f5f506d1ba</anchor>
+      <anchor>ga117aeb2403d9212a3476a0f5f506d1ba</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -24893,28 +24912,28 @@
       <type>uint64_t</type>
       <name>timestamp_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>af00d4802f4ec042ec70c2b6cca0ef439</anchor>
+      <anchor>gaf00d4802f4ec042ec70c2b6cca0ef439</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>counters</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ac3d167ae7fb495b924c2b9ace863445a</anchor>
+      <anchor>gac3d167ae7fb495b924c2b9ace863445a</anchor>
       <arglist>[SOCKET_COUNTER_METRIC_COUNT]</arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>gauges</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a052116cbac741e511d1354dcee03aa14</anchor>
+      <anchor>ga052116cbac741e511d1354dcee03aa14</anchor>
       <arglist>[SOCKET_GAUGE_METRIC_COUNT]</arglist>
     </member>
     <member kind="variable">
       <type>SocketMetrics_HistogramSnapshot</type>
       <name>histograms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a2df8269ceffa8db53191bb61ce5a4e08</anchor>
+      <anchor>ga2df8269ceffa8db53191bb61ce5a4e08</anchor>
       <arglist>[SOCKET_HISTOGRAM_METRIC_COUNT]</arglist>
     </member>
   </compound>
@@ -24928,102 +24947,6 @@
       <anchorfile>group__foundation.html</anchorfile>
       <anchor>ad4bec382c27642da1ce45dcf676684e6</anchor>
       <arglist>[SOCKET_METRIC_COUNT]</arglist>
-    </member>
-  </compound>
-  <compound kind="struct">
-    <name>SocketPoll_T</name>
-    <filename>group__event__system.html</filename>
-    <anchor>structSocketPoll__T</anchor>
-    <member kind="variable">
-      <type>PollBackend_T</type>
-      <name>backend</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a88a87bcdd916ff495a756adc1e9f06d7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>maxevents</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a658db3993da32f677a948cd36d276a83</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>default_timeout_ms</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a5aeb90d7138a60d98bcf5948da12e9f5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>registered_count</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a2fa65b0698266106795cd06f53b277a2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>max_registered</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>afd944e224b0b04685b0e0b94716965be</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketEvent_T *</type>
-      <name>socketevents</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>aef3fbc97c09600c5f16b65d2bdbda6f0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>Arena_T</type>
-      <name>arena</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a31237bda8b145cd7a4c4b1b2591ee3dc</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketData *</type>
-      <name>socket_data_map</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a80bda4f02a183fc02340510cc79b5112</anchor>
-      <arglist>[1021]</arglist>
-    </member>
-    <member kind="variable">
-      <type>FdSocketEntry *</type>
-      <name>fd_to_socket_map</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a5a9bf570afcf7c0d4ac9a9311f3a27b0</anchor>
-      <arglist>[1021]</arglist>
-    </member>
-    <member kind="variable">
-      <type>pthread_mutex_t</type>
-      <name>mutex</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a56fa157efc7ff3aa02cdb75e57ee2f89</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketAsync_T</type>
-      <name>async</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a33dcc6465ff521360c191ee1b699fc47</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>SocketTimer_heap_T *</type>
-      <name>timer_heap</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>a377ea71b38ec41e5e223d479077024e2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>unsigned</type>
-      <name>hash_seed</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>af8c9fe4c2e7f12115a135c69c9e7fbdb</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
@@ -25699,54 +25622,54 @@
   </compound>
   <compound kind="struct">
     <name>SocketRateLimit_T</name>
-    <filename>SocketRateLimit-private_8h.html</filename>
+    <filename>group__utilities.html</filename>
     <anchor>structSocketRateLimit__T</anchor>
     <member kind="variable">
       <type>size_t</type>
       <name>tokens_per_sec</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>ade353acd0ab4faa3f8775023a48b3725</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>bucket_size</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>a671d83b003e2e93b8510dd25efa20f39</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>tokens</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>a93a780870f78b3668747961949604339</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>last_refill_ms</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>a9b9090fee313ce8aafde3f3bb1100933</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>pthread_mutex_t</type>
       <name>mutex</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>a0b4e983c00cf356f73a2e735953472fa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>a73b888de24b69327ad5b89c35fd258a0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>initialized</name>
-      <anchorfile>SocketRateLimit-private_8h.html</anchorfile>
+      <anchorfile>group__utilities.html</anchorfile>
       <anchor>af3112ff0c0da07cee2a9f25f8d93e231</anchor>
       <arglist></arglist>
     </member>
@@ -25821,173 +25744,173 @@
   </compound>
   <compound kind="struct">
     <name>SocketReconnect_T</name>
-    <filename>group__connection__mgmt.html</filename>
+    <filename>group__reconnect__private.html</filename>
     <anchor>structSocketReconnect__T</anchor>
     <member kind="variable">
       <type>SocketReconnect_Policy_T</type>
       <name>policy</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>ad5fa2306cda2167c0288bf4fc2885f55</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>char *</type>
       <name>host</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a84b94071188ac92ecae8453cdbe0a604</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>port</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a9e409328803ca46c73908e0f6b35b275</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a6c7913840f62959b714f4a0b952f7df3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Socket_T</type>
       <name>socket</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a8a5a023250774eb20e665286b9f1126c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketReconnect_Callback</type>
       <name>callback</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>ac327afc59d110b4feded1c24acc20bd0</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketReconnect_HealthCheck</type>
       <name>health_check</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a9cca95f98967cbc2c1884604c38fe53a</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>void *</type>
       <name>userdata</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a31140778b660ef58bf93500821501979</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketReconnect_State</type>
       <name>state</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a2ce9284086f2282054019a446b65f720</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketReconnect_CircuitState</type>
       <name>circuit_state</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>aa5865aa0b188f50f624785067341cb9d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>attempt_count</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>ae7667416df66d9ff7f22a686e91173fa</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>consecutive_failures</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a42da393060d75d41640ab7069af73dbe</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>total_attempts</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a93f6f4ab97532b4b9db422a1f19b882d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>total_successes</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>acde4740d8c3de915c4185a0dcd967f35</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>state_start_time_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a0f4e3c63a4b32a25fa04cd59ff2cb119</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>last_attempt_time_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a54ee3868401a010bbeeca9679a842537</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>last_success_time_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>ae2d7b54aa971f1bc9a282176425f895c</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>backoff_until_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>ac2cfa6c7de296d34b8cc110d7d0a6c5b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>circuit_open_time_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a72f1c5f160e7e5caa258655949081197</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>last_health_check_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a38bbb8f63052882c9251d6fb641c7b3f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>current_backoff_delay_ms</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>acfa676687672966b58f578529cc8d90b</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>connect_in_progress</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a687b3c6cdc5b1250373bf27cd278b5f8</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>char</type>
       <name>error_buf</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a5b09dfa6f3fb92343adc72e8ed34ecdb</anchor>
       <arglist>[256]</arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>last_error</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchorfile>group__reconnect__private.html</anchorfile>
       <anchor>a52dfbb00e9f5b907cb163d55418fa039</anchor>
       <arglist></arglist>
     </member>
@@ -26040,28 +25963,28 @@
       <type>int</type>
       <name>attempts</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a7b978de556278e018fccc199dadd4a7d</anchor>
+      <anchor>ga7b978de556278e018fccc199dadd4a7d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>last_error</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a560a11b7408ab6b745312cc2552aa387</anchor>
+      <anchor>ga560a11b7408ab6b745312cc2552aa387</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>total_delay_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>aba725a298fa2b675bcdc8ea77ba8b27e</anchor>
+      <anchor>gaba725a298fa2b675bcdc8ea77ba8b27e</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>total_time_ms</name>
       <anchorfile>group__utilities.html</anchorfile>
-      <anchor>a939cbbd0e2c2537391a2e970991a1c9d</anchor>
+      <anchor>ga939cbbd0e2c2537391a2e970991a1c9d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -26288,8 +26211,8 @@
       <type>char</type>
       <name>ip</name>
       <anchorfile>group__security.html</anchorfile>
-      <anchor>af6192c1c59e850a84962309bd35c099b</anchor>
-      <arglist>[SOCKET_IP_MAX_LEN]</arglist>
+      <anchor>a66674f54cd2ca9d0d08dba940c041801</anchor>
+      <arglist>[64]</arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
@@ -26340,6 +26263,81 @@
     </member>
   </compound>
   <compound kind="struct">
+    <name>SocketSYN_IPState</name>
+    <filename>group__security.html</filename>
+    <anchor>structSocketSYN__IPState</anchor>
+    <member kind="variable">
+      <type>char</type>
+      <name>ip</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a856b3a23c98e17f5c213a3d26a0a9590</anchor>
+      <arglist>[64]</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>window_start_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a346232b13c475cfaaa53eff914d4a0dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>attempts_current</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a6d2446089e798132b58c0333ba78cb3e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>attempts_previous</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a4cbf6f33a74f2df4daeacbff135931a8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>successes</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>abe2bcfaef720a4a375fe1c67b92c37d6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint32_t</type>
+      <name>failures</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a77f8fbce111a5f7338f8cc8cb4a7bca9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>last_attempt_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a7b49dd6e199c1e1e91b1eb71fc245509</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>block_until_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ae664aa07891130d5bb60edf6a1d72bf7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketSYN_Reputation</type>
+      <name>rep</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a3f543090a343b51bdf4e7930e182366d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>aaa43aaa7c28639d949e57ac1e14b2189</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
     <name>SocketSYN_WhitelistEntry</name>
     <filename>group__security.html</filename>
     <anchor>structSocketSYN__WhitelistEntry</anchor>
@@ -26347,8 +26345,8 @@
       <type>char</type>
       <name>ip</name>
       <anchorfile>group__security.html</anchorfile>
-      <anchor>a06f3c7f58d3c85af53e9f947254f53e5</anchor>
-      <arglist>[SOCKET_IP_MAX_LEN]</arglist>
+      <anchor>a14151e2533ade1a3e3b03eb39fa31f40</anchor>
+      <arglist>[64]</arglist>
     </member>
     <member kind="variable">
       <type>int</type>
@@ -26383,6 +26381,219 @@
       <name>next</name>
       <anchorfile>group__security.html</anchorfile>
       <anchor>a928ee55787cda89dc8241101a6bfa7a7</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketSYNProtect_Config</name>
+    <filename>group__security.html</filename>
+    <anchor>structSocketSYNProtect__Config</anchor>
+    <member kind="variable">
+      <type>int</type>
+      <name>window_duration_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a73ebdc5d7fdeb3217b8c0dfc99347bbb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_attempts_per_window</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a5f9976be0331359859284315ebf66e1a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>max_global_per_second</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a575daabf11edf0ee687ff8a547240c77</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>min_success_ratio</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a906abceb1945a950293d0c050f6c376b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>throttle_delay_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>af8dd3acb9ac939027f76995bac4b2cf5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>block_duration_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a58785babfc923ba70d9c8f0d5b7a44cf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>challenge_defer_sec</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a732b2bfe41c8d449ea5be9401f818eb3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_throttle</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a1d688c73198839dedc956d3b8912f66d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_challenge</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a5e02553a2f9e15f3d1c9f79d82529388</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_block</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ab9ce44543382518e5ed2a7471dd67413</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_decay_per_sec</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ad86ba3309adf0a1b6ee5ef26f7031281</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_penalty_attempt</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>af65955bb61462c59140d05b5dabb1a94</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_penalty_failure</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ae55192b1a0a6bf438bf424cd87f9572a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>float</type>
+      <name>score_reward_success</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ad6ecd5f04a5c197c4a740ee02611fdae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_tracked_ips</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a2a865bdf6cf3990a6d2e100c96164d80</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_whitelist</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a0acad8adbb06f59ee96249bb1f5a417b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>max_blacklist</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a7429afc5fc724582c34ce06cb3d3f5fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>unsigned</type>
+      <name>hash_seed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ae8aea9e4cc570341d5cc8901f3cb814e</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="struct">
+    <name>SocketSYNProtect_Stats</name>
+    <filename>group__security.html</filename>
+    <anchor>structSocketSYNProtect__Stats</anchor>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_attempts</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a6e80ed205ec9330c6291d010863f810b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_allowed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a158331134454296a07e713e4efe46ae1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_throttled</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a109c6d0a07655ac0ab5a48b5ba09c5ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_challenged</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a03ba7e002b3ac41d8aa5e9042cd99211</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_blocked</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a7c029f370305000dd71a42aaa52c393a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_whitelisted</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a5a571ad87a6efbfaa2c7521f8589fa80</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>total_blacklisted</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a614ae093175b9319c4523296d16569d8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>current_tracked_ips</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a5c6dc902b20931d955219b937f8ed2d6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>current_blocked_ips</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a62d7ed28eb018dac7c46b19f7447a420</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>lru_evictions</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>a0e134430eac30ed54777c52221adec76</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>uptime_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>addc5d09c4b26fa03979894a037830a03</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -26634,101 +26845,101 @@
   </compound>
   <compound kind="struct">
     <name>SocketTimer_heap_T</name>
-    <filename>SocketTimer-private_8h.html</filename>
+    <filename>group__event__system.html</filename>
     <anchor>structSocketTimer__heap__T</anchor>
     <member kind="variable">
       <type>struct SocketTimer_T **</type>
       <name>timers</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a546b1db23427498d6d17f913a203c683</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>count</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a5f7e444e7943597fa7d510072da85559</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>capacity</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a719a334242bd551e439fadcdf85cc7d5</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>next_id</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>aef1a8571b21ab39180d69365a8bbb0a2</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>Arena_T</type>
       <name>arena</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a9ed59a6ac8ae4bc38e66ce5138286f1d</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>pthread_mutex_t</type>
       <name>mutex</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a698e2aa8ebea1e347733059e4de77665</anchor>
       <arglist></arglist>
     </member>
   </compound>
   <compound kind="struct">
     <name>SocketTimer_T</name>
-    <filename>SocketTimer-private_8h.html</filename>
+    <filename>group__event__system.html</filename>
     <anchor>structSocketTimer__T</anchor>
     <member kind="variable">
       <type>int64_t</type>
       <name>expiry_ms</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>af4c657d2a6dced76ca87a3214878a8de</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int64_t</type>
       <name>interval_ms</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a420d42e1d3c0288bf9bb505fc8fcf1b1</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>SocketTimerCallback</type>
       <name>callback</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>aff80a635f3f8e99d2a20e1d0a46674a3</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>void *</type>
       <name>userdata</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>ab3ccb2b76d027a31b3ec829323639c08</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>int</type>
       <name>cancelled</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a038e1cecaf5f6a57d82521cd40f9c24f</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>uint64_t</type>
       <name>id</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>ae3f246704f321c316d308121213b1b66</anchor>
       <arglist></arglist>
     </member>
     <member kind="variable">
       <type>size_t</type>
       <name>heap_index</name>
-      <anchorfile>SocketTimer-private_8h.html</anchorfile>
+      <anchorfile>group__event__system.html</anchorfile>
       <anchor>a6773d27e4dd53f972df13651ed8bf518</anchor>
       <arglist></arglist>
     </member>
@@ -27758,6 +27969,7 @@
     <name>foundation</name>
     <title>Core Foundation Modules</title>
     <filename>group__foundation.html</filename>
+    <subgroup>socket_live_utils</subgroup>
     <file>Arena.h</file>
     <file>Except.h</file>
     <file>SocketConfig.h</file>
@@ -29383,9 +29595,23 @@
     </member>
   </compound>
   <compound kind="group">
+    <name>ip_tracker</name>
+    <title>IP Connection Tracking</title>
+    <filename>group__ip__tracker.html</filename>
+    <file>SocketIPTracker.h</file>
+    <member kind="typedef">
+      <type>struct SocketIPTracker_T *</type>
+      <name>SocketIPTracker_T</name>
+      <anchorfile>group__ip__tracker.html</anchorfile>
+      <anchor>ga763b573474982e2761d5b7fbdf9155fc</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="group">
     <name>utilities</name>
-    <title>Utility Modules</title>
+    <title>Utilities</title>
     <filename>group__utilities.html</filename>
+    <subgroup>socket_live_utils</subgroup>
     <file>SocketMetrics.h</file>
     <file>SocketRateLimit-private.h</file>
     <file>SocketRateLimit.h</file>
@@ -29393,6 +29619,7 @@
     <file>SocketUTF8.h</file>
     <class kind="struct">SocketMetrics_HistogramSnapshot</class>
     <class kind="struct">SocketMetrics_Snapshot</class>
+    <class kind="struct">SocketRateLimit_T</class>
     <class kind="struct">SocketRetry_Policy</class>
     <class kind="struct">SocketRetry_Stats</class>
     <class kind="struct">SocketUTF8_State</class>
@@ -29582,55 +29809,6 @@
     </member>
     <member kind="define">
       <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MAX_ATTEMPTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga9e4c6bdc5f6ab59683cef18bb3f58211</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_INITIAL_DELAY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga1b9f06edcbcdd60e892086a4b8c2b9ba</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MAX_DELAY_MS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae4c30a1ed41ff40ca11fbdb21c2ec947</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_MULTIPLIER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga2addc89cb7a7a9b6e75f3cd51eef65ac</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_DEFAULT_JITTER</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gafbe9a9852b0477755c295af74aa0f2c7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_RETRY_MAX_ATTEMPTS</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga6245d4aca908bb154e7cd34f6a36d8dd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
       <name>SOCKET_UTF8_MAX_BYTES</name>
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>gac2c24c8a574da982e47bc14c90c51fcb</anchor>
@@ -29683,6 +29861,13 @@
       <name>SOCKET_UTF8_4BYTE_MIN</name>
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>gad3cc04d775e04588a8446aedca62326f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct T *</type>
+      <name>T</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga24514489b0962fafe8414bfae95aa268</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -30461,6 +30646,690 @@
       <anchor>ggae8b6c527962e3019992746f49aac247ba6dbaccc954823626b88b579a7f6d6fb0</anchor>
       <arglist></arglist>
     </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_COUNTER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga15ccb5af3b5e42916f5a329763c5b73da3b97886e5e49aa6cd10fbecc97717a23</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_GAUGE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga15ccb5af3b5e42916f5a329763c5b73dae412561b9220367088fbc0b4badbb54d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_TYPE_HISTOGRAM</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga15ccb5af3b5e42916f5a329763c5b73daf4eb6f92091cf411d473f95656d5ffea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_POOL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a5c4b42ef28417b53a62e04c52ed9102c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_HTTP_CLIENT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a13c2a6f9a020cfb48e871fad684c67b2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_HTTP_SERVER</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a1efa2be51eaef017fa79e7ab729c6058</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_TLS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a512451cf5b9457ed15e4433001c3afb0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_DNS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66ac4e87e55794a5eda33f91a320d85d2ac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_SOCKET</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66aaedb13c47c45a45c7414ed6eb2985a2f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_POLL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66aad530adfdedefa080ca04f67a5154581</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_METRIC_CAT_COUNT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga33af252a522ec94fe17be7f5e6aecf66a48dd3ffeeff316169d3afead7dd7f5ff</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_CREATED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea23bac1496677cbfff2ead8150ad6c67b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_DESTROYED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0b0528da3ffe7351fa991416ab138ad9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea49233167e0dcbfa60f3ca6d980e76e44</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_REUSED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea70f4cf0b9927a60fedbeff0cc47ac25c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_CONNECTIONS_EVICTED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa7076d6bed0ebfc621bbbaa8eb373ae6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_DRAIN_STARTED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6bca8daae014fc82bb7b7b08c12d744a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POOL_DRAIN_COMPLETED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9760372f2bb1ab740a09959e21a99802</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaf1511efc40227013ff639abf4f4d9b13</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6528013f375d126375f32f18bdf25222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_REQUESTS_TIMEOUT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea507a12413d55f789ffe5e9c565dd99e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_SENT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea47ea62eaadbbbb19ebbea31ef087f01c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_BYTES_RECEIVED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea55ecbc6f23460ffb5901a53f8b2ad5e3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_CLIENT_RETRIES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea091def884e648a2cedaacaff2dd6cec6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead8207230f2d1b6bd84abe11c6be841f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea137f714bad61f63fbb3a6b70ac730363</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_BYTES_SENT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea8147ac333d05a2289a840bc971df80e8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea488ec1787e7822bba4dbe180a2f4b324</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea82505a4094f64e44e3efaebb91dcdcd7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_1XX</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea5ac222dcd2941ded4d577ee70f7a6d02</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_2XX</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0fd5fbc4a0cad3431306f26e94c4a6b1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_3XX</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea60781cacece44aec6d71297d0756d831</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_4XX</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaf947fe39578c5421c0ee798b7afbc7c5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_HTTP_RESPONSES_5XX</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9ea9f8afe24ace748c8c4b612530cc72</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_HANDSHAKES_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaaf7d0baea6e4e3930da7314edbfa7bb6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_HANDSHAKES_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac310776f7b4aae593e90730f0e213d2b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_SESSION_REUSE_COUNT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CERT_VERIFY_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea2b3cf1bb5dcf3df362a38b24521eda00</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_RENEGOTIATIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_PINNING_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea1123d27ca90ba8abe74f33cd98e3385c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CT_VERIFICATION_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea9708c06f97d86ece5ebfca3baf3a7f7e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_TLS_CRL_CHECK_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6e4638e88f27c45dca6b2c0b1b27ef27</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_HANDSHAKES_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3a29654ecced6f3de9989af568f8d592</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_HANDSHAKES_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa8976118ea565782357f220d181dbd34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_COOKIES_GENERATED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea515eb7dc187e9a2746c17c6309bf5281</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_COOKIE_VERIFICATION_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea11af47970a03a26c436ef1bc616485e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_REPLAY_PACKETS_DETECTED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea4ecac180c7f1bff26623a21bdf276e63</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DTLS_FRAGMENT_FAILURES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead4c08a4071bac7bc3be7021dcded790f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac8439ab5fccc233ac13d82aaff13f42d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea14e93ae606e4404c3b3e9183126a67ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_TIMEOUT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea763f84409208d14e38c7c586263b7e7e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_QUERIES_CANCELLED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeac504adb93c00ae711283026876673d40</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_CACHE_HITS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea1cde4dca10c4717a6e50c171ac14f70a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_DNS_CACHE_MISSES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea19512f0a4c325655cce541b490c62b3d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CREATED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeab856f40396326b740f635ecdec4b78cb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CLOSED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeacc9f32e8a51e4720b53f2f4c6018c055</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CONNECT_SUCCESS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea4d7c9119fae6202cf8c5bcc1f6cf32ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_CONNECT_FAILED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea012e33d28bff41de7468fbb3099c6f9a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SOCKET_ACCEPT_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea8748be5c6643b3ebccebb8e3b0c9efaf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_WAKEUPS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead596032b7866cc489959efe27c8a161c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_EVENTS_DISPATCHED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa519ace23a45810a059ff78ea83f242b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_POLL_TIMEOUT_EXPIRATIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea33ddef985af75f21110138587921557b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_HEADER_SIZE_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea87c5cab0d076faf0d8545269857630c0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea469ad98c6f71e2eb6108ebc62901782e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaefa721fc08c63dceb684b172e52db5e7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_MEMORY_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeab6e4bc443557892912c5bfe9d9f841bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea229217bf0b8e0b6f3de27e979cf7ef79</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_STREAMS_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea6ccae8e4b2e293d7e632a18173313ed4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_LIMIT_HEADER_LIST_EXCEEDED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea3978f99611080420a4340adb5651ddbd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_ATTEMPTS_TOTAL</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea114c39672ec4a163cdf4098cf8a0a6eb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_ALLOWED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa2bdcf00107013bb1ad170891a037fe0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_THROTTLED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceeaa59d06736065393b3eb7dc485f908731</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_CHALLENGED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea249dcb3f8a49e03f275b8ce71919e339</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_BLOCKED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceead26d8e35ef134d11c6b749b3129ee546</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_WHITELISTED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea13baf5d07c8a93a675dcfef0abe26b98</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_BLACKLISTED</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea108cb443d96bcb01a2befa326f800baa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_CTR_SYNPROTECT_LRU_EVICTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea49e65f7d780e8f5b401428c372738ca1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_COUNTER_METRIC_COUNT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga1c2d3a4ca0a94b5d52917b2020796ceea0c101f986764f3478eafe2c1bf1b7ea3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_ACTIVE_CONNECTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa446185d2f544667977af003ef330602a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_IDLE_CONNECTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac47f1bdaf5d0df3ffae6504fbe1884d6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_PENDING_CONNECTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa984ad78555d7b236536ee2311528a4b4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POOL_SIZE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffade5a4447463c80b1cf103c0e4474b38d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_CLIENT_ACTIVE_REQUESTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffabb4d6a47fdc81281817010e07eb1bab8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_CLIENT_OPEN_CONNECTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffaea6ddc03976de41a6a7aa39a90cea006</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffad93011513d4df141b8a1c75c061eb601</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_ACTIVE_REQUESTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa46d69a1bc861fd2e34b032d700d60d47</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_HTTP_SERVER_QUEUED_REQUESTS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa701762a5f2fe51a57539f8368e40fdd4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_TLS_ACTIVE_SESSIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa42520d99aa0fce9b66eee159a3fcb9bd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_TLS_CACHED_SESSIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa6a3c6ce4d17be23ecb15647fc6fb950a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DTLS_ACTIVE_SESSIONS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa30428b3ed5b61e0877f63406775e9713</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_PENDING_QUERIES</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffaabcab9f22c06831d559b83e6195b66ae</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_WORKER_THREADS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa9fe5f07b11823411a057ec5f61f26c9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_DNS_CACHE_SIZE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffade63dd14fcf55271418604c47509c3f1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SOCKET_OPEN_FDS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa5597c8e13a2ae6ea7f622fab80e00fa3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POLL_REGISTERED_FDS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa49bc0db3a4078ebb6dfc37dbf2fa5e2d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_POLL_ACTIVE_TIMERS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac5f5f50c18cbd1e4df4c6f566520b865</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SYNPROTECT_TRACKED_IPS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa2ac4f038181ceef8dd45e2b9fd680156</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAU_SYNPROTECT_BLOCKED_IPS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffac6f8904f525325cef938129163b2f0c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_GAUGE_METRIC_COUNT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga9c3c61abc039bebe2eda8b6f9b0574ffa543681a9ea9c38dcc7219e1dde7e7ba4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_ACQUIRE_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ead858cc3443872f53a524e2a285b9ca07</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_CONNECTION_AGE_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea5572c534600bddc6ca7fbb15691343aa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_POOL_IDLE_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1eadfcc746d42cc93726a3af20e9fefe517</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_REQUEST_LATENCY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea197f63027af31a6a5783184aa9ae4fbd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_CONNECT_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1eabb53719cb13c0d7cf1836a5797224335</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_TTFB_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea99e50c80c5ed5aba18f505ab29941e01</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_CLIENT_RESPONSE_SIZE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1eae6a142e47042024c332d29373618dadf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_RESPONSE_SIZE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea6bbd73226e6de01dad82d740f3285e15</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_HTTP_SERVER_REQUEST_SIZE</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea8709b38d3289c4c5953d05c883a422ef</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_TLS_HANDSHAKE_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ead64e5997211c75d4abaa90cd98b8ab39</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_DTLS_HANDSHAKE_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea60c53d1297cc720618318af476b452d1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_DNS_QUERY_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1ea1f82aed60677494fd74769d1b2c975b7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HIST_SOCKET_CONNECT_TIME_MS</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1eafff7ca822fdc69eb6319d04487b88e63</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SOCKET_HISTOGRAM_METRIC_COUNT</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gga92d395571ae200be798481ea090e0e1eaeb16a87bb4144f588f27145249e184b7</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>int</type>
       <name>SocketMetrics_init</name>
@@ -30735,76 +31604,6 @@
       <arglist>(void)</arglist>
     </member>
     <member kind="function">
-      <type>SocketRetry_T</type>
-      <name>SocketRetry_new</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gac4c2c785391a4a69f76ddb4d9d25f19e</anchor>
-      <arglist>(const SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_free</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gad758455d31f43b861881522be0982d62</anchor>
-      <arglist>(SocketRetry_T *retry)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_execute</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae9cb61aec8d7c8934a7481ed21e3bedf</anchor>
-      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, SocketRetry_ShouldRetry should_retry, void *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_execute_simple</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga3a533ebca7a1e19c736a6a1debc07336</anchor>
-      <arglist>(SocketRetry_T retry, SocketRetry_Operation operation, void *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_get_stats</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaa606e706f22216af24351ee324c0a468</anchor>
-      <arglist>(const SocketRetry_T retry, SocketRetry_Stats *stats)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_reset</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gaceefc84a75ae5e4ed461d0139ceefaa3</anchor>
-      <arglist>(SocketRetry_T retry)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_get_policy</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga16584da7cc4271a025fd7d831446d028</anchor>
-      <arglist>(const SocketRetry_T retry, SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_set_policy</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga29d7511f7531f4a23bd88f656df4636e</anchor>
-      <arglist>(SocketRetry_T retry, const SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketRetry_policy_defaults</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>gae60e4575d034cfe56be8b50e94ad5481</anchor>
-      <arglist>(SocketRetry_Policy *policy)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketRetry_calculate_delay</name>
-      <anchorfile>group__utilities.html</anchorfile>
-      <anchor>ga04fda3694b0be59a6427d2188af4e9de</anchor>
-      <arglist>(const SocketRetry_Policy *policy, int attempt)</arglist>
-    </member>
-    <member kind="function">
       <type>SocketUTF8_Result</type>
       <name>SocketUTF8_validate</name>
       <anchorfile>group__utilities.html</anchorfile>
@@ -30889,6 +31688,111 @@
       <arglist>(SocketUTF8_Result result)</arglist>
     </member>
     <member kind="variable">
+      <type>uint64_t</type>
+      <name>SocketMetrics_HistogramSnapshot::count</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gae65da7d40c1b636bd5d688c6ab36176a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::sum</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga4088038d1883a118b9818b15772582b0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::min</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gad353d502eaa2af3ba9f5027c024bdad1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::max</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga92aa2bf4c9b19983fa3417159929df81</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::mean</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga39b4ba97214ae557d6664a60881731ee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p50</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga8b172fd16d7a741708785715acde4b57</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p75</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga86b3fe4f2f16158efcd05739be0be2c7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p90</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gae642be44e4add2bc25d809c22cf75a28</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p95</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga5009b287c8bfd50a87d3278be6b76d6b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p99</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga4d8eaa0353371329afd9e8ebc7cd5fd0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>double</type>
+      <name>SocketMetrics_HistogramSnapshot::p999</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga117aeb2403d9212a3476a0f5f506d1ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>SocketMetrics_Snapshot::timestamp_ms</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gaf00d4802f4ec042ec70c2b6cca0ef439</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>uint64_t</type>
+      <name>SocketMetrics_Snapshot::counters</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gac3d167ae7fb495b924c2b9ace863445a</anchor>
+      <arglist>[SOCKET_COUNTER_METRIC_COUNT]</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>SocketMetrics_Snapshot::gauges</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga052116cbac741e511d1354dcee03aa14</anchor>
+      <arglist>[SOCKET_GAUGE_METRIC_COUNT]</arglist>
+    </member>
+    <member kind="variable">
+      <type>SocketMetrics_HistogramSnapshot</type>
+      <name>SocketMetrics_Snapshot::histograms</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga2df8269ceffa8db53191bb61ce5a4e08</anchor>
+      <arglist>[SOCKET_HISTOGRAM_METRIC_COUNT]</arglist>
+    </member>
+    <member kind="variable">
       <type>const Except_T</type>
       <name>SocketRateLimit_Failed</name>
       <anchorfile>group__utilities.html</anchorfile>
@@ -30938,10 +31842,2378 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>int</type>
+      <name>SocketRetry_Stats::attempts</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga7b978de556278e018fccc199dadd4a7d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketRetry_Stats::last_error</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga560a11b7408ab6b745312cc2552aa387</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>SocketRetry_Stats::total_delay_ms</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>gaba725a298fa2b675bcdc8ea77ba8b27e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>SocketRetry_Stats::total_time_ms</name>
+      <anchorfile>group__utilities.html</anchorfile>
+      <anchor>ga939cbbd0e2c2537391a2e970991a1c9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>const Except_T</type>
       <name>SocketUTF8_Failed</name>
       <anchorfile>group__utilities.html</anchorfile>
       <anchor>ga96b509b874774db6b22b3f25438a21d2</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="group">
+    <name>security</name>
+    <title>Security Modules</title>
+    <filename>group__security.html</filename>
+    <subgroup>ip_tracker</subgroup>
+    <subgroup>dtls</subgroup>
+    <subgroup>dtls_config</subgroup>
+    <subgroup>dtls_context</subgroup>
+    <subgroup>tls_config</subgroup>
+    <subgroup>tls_context</subgroup>
+    <file>SocketSYNProtect-private.h</file>
+    <file>SocketSYNProtect.h</file>
+    <file>SocketDTLS-private.h</file>
+    <file>SocketDTLSConfig.h</file>
+    <file>SocketTLS-private.h</file>
+    <file>SocketTLS.h</file>
+    <file>SocketTLSConfig.h</file>
+    <class kind="struct">SocketSYN_IPEntry</class>
+    <class kind="struct">SocketSYN_WhitelistEntry</class>
+    <class kind="struct">SocketSYN_BlacklistEntry</class>
+    <class kind="struct">SocketSYNProtect_T</class>
+    <class kind="struct">SocketSYN_IPState</class>
+    <class kind="struct">SocketSYNProtect_Config</class>
+    <class kind="struct">SocketSYNProtect_Stats</class>
+    <class kind="struct">DTLSContextCookie</class>
+    <class kind="struct">DTLSContextALPN</class>
+    <class kind="struct">SocketDTLSContext_T</class>
+    <class kind="struct">TLSCertPin</class>
+    <class kind="struct">TLSContextPinning</class>
+    <class kind="struct">TLSContextSNICerts</class>
+    <class kind="struct">TLSContextALPN</class>
+    <class kind="struct">SocketTLSContext_T</class>
+    <class kind="struct">SocketTLSConfig_T</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_WINDOW_MS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae062b2bac82d2ca78edc6658135b25a4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_MAX_PER_WINDOW</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8c43db9a86f5f49f85c535b7e01a9cd2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf02ac0a68cee3923b135a1e423622f61</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae0b03e45dca47aec6f4203011b1161f3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaae5bbd0b37027680dfa2c0c58773fef6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaff44ca76156e6010520f4d231fbf7109</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_DEFER_SEC</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga7883d7f2995a8046776d818de6dbaa2e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_SCORE_THROTTLE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8a91a7da051b6462f126bc329f1e5cda</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_SCORE_CHALLENGE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga67a51dcadef9eb934f3342e9e02f6fd5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_SCORE_BLOCK</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9608aa5a6bbbe4cbc60c9442d094cfd0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_SCORE_DECAY</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8b8d879d7477b5a59170487f2ef38cd0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4122f191a253666fdb691929b3cd4173</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_PENALTY_FAILURE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4f01c6ca60bf199d42dde59f0159074c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_REWARD_SUCCESS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9a0acbe7229a03abfe70205717d511c4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga842d1a441b3a55a43f2066087ff6ff59</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_MAX_WHITELIST</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac1a28d9573c05725ca3abb96239b83ee</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_DEFAULT_MAX_BLACKLIST</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac82e2e73ae29b0b0e8699d8b81bb29c3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_TRUSTED_SCORE_THRESHOLD</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab0908a428243a18d0260754d417e023a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_IPV6_ADDR_BYTES</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga812e1a3066fafa145324e13ec013cb47</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_IPV4_ADDR_BYTES</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae1b769b5903588b4e6cbd40864a30d8e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_BITS_PER_BYTE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0c869f123d7c29c39cfe7d1dedd998a0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>IOV_MAX</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga25080e819a36fcf9aede01a6e7298ea4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_HAS_TCP_DEFER_ACCEPT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab97bd3e7337b376f6be804f25d4d9c6d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_HAS_SO_ACCEPTFILTER</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga219b0a63c1ee02ecb27a9c932da08a51</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_IP_HASH_SIZE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3714b05d28ef69f2bc3b95b17abde741</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_LIST_HASH_SIZE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2e75c0e89d959bd3fa395f8307c1ba65</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_INITIAL_SCORE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae82758ef1761626baf114a11955520e1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_TRUSTED_SCORE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga94b45dbd0567c33d239bcfe0b8de2391</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_SYN_MAX_CIDR_ENTRIES</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga89596d086483db6027b30bdd41bb04dd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_DTLS_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1cfa464ec20b460ebee063b82b6100bf</anchor>
+      <arglist>(exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_DTLS_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaafbc899f00128359bdc6d2f9d02e8944</anchor>
+      <arglist>(exception, msg)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>REQUIRE_DTLS_ENABLED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga04c1b681fb568ffc8c89a37bcdcbcf80</anchor>
+      <arglist>(socket, exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>DTLS_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacca68f6e3be556e42dcd9ab54da96ded</anchor>
+      <arglist>(msg)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>DTLS_ERROR_FMT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4e97bd0cd12ea34b564755e1a377d02f</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>VALIDATE_DTLS_IO_READY</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga223a7b4bdc35b2cd8c8828e3fd709414</anchor>
+      <arglist>(socket, exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_DTLS_CTX_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4fae8ada292cad16870182392605c800</anchor>
+      <arglist>(exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_DTLS_CTX_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac6bd008a794ad4ea28353a67d189fd7c</anchor>
+      <arglist>(exception, msg)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>DTLS_UNUSED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad7d623f22e9e764aba13c6b053c1506f</anchor>
+      <arglist>(x)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_TLS_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaaa5d5a165d617e880e0761f54333d859</anchor>
+      <arglist>(exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_TLS_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa846eebc97332827b77e55db99ba9895</anchor>
+      <arglist>(exception, fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>REQUIRE_TLS_ENABLED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6bcf5ec61bfa6d15fb692b360e8ab2c7</anchor>
+      <arglist>(socket, exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>TLS_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga839d12558ca20b9a5fd8fa25fa7db99a</anchor>
+      <arglist>(msg)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>TLS_ERROR_FMT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab9caf93eecdc58f0e12ae64ebe268290</anchor>
+      <arglist>(fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>VALIDATE_TLS_IO_READY</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0d2d601289b5057ded1c7f81dd3212dc</anchor>
+      <arglist>(socket, exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>CRL_LOCK</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa514b917b04e794f8081ad2b4c4a3418</anchor>
+      <arglist>(ctx)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>CRL_UNLOCK</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga53ced6e38182130231a1ce309700ded4</anchor>
+      <arglist>(ctx)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_CTX_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga179054cc1104e4de13a76ab914dae33b</anchor>
+      <arglist>(exception)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_CTX_ERROR_MSG</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1239b3e52ccbd1cbfec9b485e6f83214</anchor>
+      <arglist>(exception, fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_CTX_ERROR_FMT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga20e5da948c90e67bb0a186f7a58416fc</anchor>
+      <arglist>(exception, fmt,...)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>TLS_UNUSED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga7ff1ea56cca8070de8806165d1b107ea</anchor>
+      <arglist>(x)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>struct SocketTLS_T *</type>
+      <name>SocketTLS_T</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga63e73c93350813167a68162c5cb3d819</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>int(*</type>
+      <name>SocketTLSVerifyCallback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac9a12208531822c8304c23dcbcb8ba97</anchor>
+      <arglist>)(int preverify_ok, X509_STORE_CTX *x509_ctx, SocketTLSContext_T tls_ctx, Socket_T socket, void *user_data)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketTLSCrlCallback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga60686895b6fbdd1290a6f6176484bf5b</anchor>
+      <arglist>)(SocketTLSContext_T ctx, const char *path, int success, void *user_data)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>OCSP_RESPONSE *(*</type>
+      <name>SocketTLSOcspGenCallback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1acd7a590114ffbf4307a6f5a3bab35c</anchor>
+      <arglist>)(SSL *ssl, void *arg)</arglist>
+    </member>
+    <member kind="typedef">
+      <type>X509 *(*</type>
+      <name>SocketTLSCertLookupCallback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5c2914ee879d575869932c3a3aed4863</anchor>
+      <arglist>)(X509_STORE_CTX *store_ctx, X509_NAME *name, void *user_data)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketSYN_Action</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaca8f2a71ab649ccd408fd3fdb3b693b9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_ALLOW</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_THROTTLE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9a57b3e54beba358c83e8a91f2136d61d9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_CHALLENGE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9a47e6cde53adccac1b4948afbc22b16d1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_ACTION_BLOCK</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggaca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketSYN_Reputation</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad7b655dd229bc52cb32ec3cc1674d423</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_TRUSTED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a3c7fc4e1a973261af722ef5a72067c34</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_NEUTRAL</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a3af21cd252d430b04f39badf787d06a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_SUSPECT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423ac0634349dad12cd7a8d2a74b9b7cf1be</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SYN_REP_HOSTILE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad7b655dd229bc52cb32ec3cc1674d423a5f79b45826a9103f4f8346e74286ad9d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>DTLSHandshakeState</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8e83c28a6ad188b97243c4b237ee075a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_NOT_STARTED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aac64c8906fdc9860f22cacc933593f01d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_IN_PROGRESS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aad8f8ad815c25bf8e696b02a71795f66d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_WANT_READ</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aaa17434dadb8cec2cfe51d9437f6fdbd9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_WANT_WRITE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aad5e0e23bed76e7569444db7c50c38fc8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_COOKIE_EXCHANGE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa206e6713dc03f89a32b4567221dedb78</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_COMPLETE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa11985350a6b101701d89412f26fdeba5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>DTLS_HANDSHAKE_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa929e6faa551a280db427a04ae5ced133</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>TLSHandshakeState</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad092160c037d01929df1bb8d5b75b43c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_NOT_STARTED</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_IN_PROGRESS</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43ca445915a69a47e09546e8d5b275eedf2a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_WANT_READ</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43cab268d75e71356121ccf44e8e5f4ab592</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_WANT_WRITE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_COMPLETE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_HANDSHAKE_ERROR</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>TLSVerifyMode</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac32c3958835b92ff683ae15f78448694</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_VERIFY_NONE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggac32c3958835b92ff683ae15f78448694a0ada1cef646c3b57e9a793035dcc0a6f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_VERIFY_PEER</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggac32c3958835b92ff683ae15f78448694ae56010acbcb7edcdcd7707be028cc6fe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_VERIFY_FAIL_IF_NO_PEER_CERT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggac32c3958835b92ff683ae15f78448694a29928ea4593855bb860f7a0bb8eb027d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>TLS_VERIFY_CLIENT_ONCE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ggac32c3958835b92ff683ae15f78448694abbcde32e72faadf92044da1ccc76f183</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>CTValidationMode</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4d930163393a67950a5378e540c0e939</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CT_VALIDATION_PERMISSIVE</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>CT_VALIDATION_STRICT</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>SocketIPTracker_T</type>
+      <name>SocketIPTracker_new</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab87cad57ddf1ed19226cf8535456bbde</anchor>
+      <arglist>(Arena_T arena, int max_per_ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_free</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1a9850f5f3c08335dd18e2a8dbfaed39</anchor>
+      <arglist>(SocketIPTracker_T *tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketIPTracker_track</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga796a06e82e58c6fea3deaf767101dea3</anchor>
+      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_release</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga340ee75715f9dd3a6446dc3ec2c528dc</anchor>
+      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketIPTracker_count</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga01a74a09256ae28c23c79244f6b832c0</anchor>
+      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_setmax</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3ae1930faa05574038978e46612e5385</anchor>
+      <arglist>(SocketIPTracker_T tracker, int max_per_ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketIPTracker_getmax</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2633ef22c045d2a4ab7f260b508bd5fc</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_setmaxunique</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9f416e973e3f32b1c9cf2a2b620214f4</anchor>
+      <arglist>(SocketIPTracker_T tracker, size_t max_unique)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketIPTracker_getmaxunique</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0e4510d8147198039726bd8250b95afb</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketIPTracker_total</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3e69b52a3b64cbba1b17711c9961095f</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketIPTracker_unique_ips</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad8639fe1f640949b820cd1496a67ca56</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketIPTracker_clear</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga47055e396eb7fa4f633bb19ec7720620</anchor>
+      <arglist>(SocketIPTracker_T tracker)</arglist>
+    </member>
+    <member kind="function">
+      <type>unsigned</type>
+      <name>synprotect_hash_ip</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga93f5774d64aab235b0af3908cf5fa15a</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip, unsigned table_size)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static float</type>
+      <name>synprotect_clamp_score</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacf287a7019c5ff677321e8b5fa390cf2</anchor>
+      <arglist>(float score)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>synprotect_min</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga10a168a8c7d6d98660b8371b9b886fa8</anchor>
+      <arglist>(int64_t a, int64_t b)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int64_t</type>
+      <name>synprotect_max</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga86342ee431726d93daa749ed5eae611a</anchor>
+      <arglist>(int64_t a, int64_t b)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketSYNProtect_T</type>
+      <name>SocketSYNProtect_new</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5f5d6f2ac8cbd366d57c1e8e55983143</anchor>
+      <arglist>(Arena_T arena, const SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_free</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9f5cc1e61a0b44b8b1b330ae54382511</anchor>
+      <arglist>(SocketSYNProtect_T *protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_config_defaults</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gade1b436117d4a0854881ac52ce43f115</anchor>
+      <arglist>(SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_configure</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga59e979862677789482cb5f297f544001</anchor>
+      <arglist>(SocketSYNProtect_T protect, const SocketSYNProtect_Config *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketSYN_Action</type>
+      <name>SocketSYNProtect_check</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga45b12919783a7ba4426db4134fda1a5f</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip, SocketSYN_IPState *state_out)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_report_success</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga979954abc96c529d1205d432fc13c661</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_report_failure</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga573fee7bcaf625b171053b87159af53e</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *client_ip, int error_code)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_add</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2a601f0c4520ae271b27a49c5bd19108</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_add_cidr</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga67fef0b3b6d93c87648e8b0caa1c4bc0</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *cidr)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_whitelist_remove</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa2b5e921cf7b0b24e270870f0ddc92be</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_whitelist_contains</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5036b24b808b28a69de280c9ce0727fc</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_whitelist_clear</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga50962d47d9b56957714f313e2051e1bf</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_blacklist_add</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga02eca11c24cc41b3f1fafdcbcae6e485</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip, int duration_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_blacklist_remove</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4e67e158bb567ffb7620738ba28b16f8</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_blacklist_contains</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga88d4fb38017492beca3f130d311dadd5</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_blacklist_clear</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9519e23838092f497693c4a488789f1b</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketSYNProtect_get_ip_state</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga36629010083cc94526b37d57cc40bbce</anchor>
+      <arglist>(SocketSYNProtect_T protect, const char *ip, SocketSYN_IPState *state)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_stats</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga602057379b47f0e3dbf46b6efd70a09a</anchor>
+      <arglist>(SocketSYNProtect_T protect, SocketSYNProtect_Stats *stats)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_stats_reset</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga59f2d1168a808c2c2d0584b031d96422</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketSYNProtect_action_name</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6be6d5871d5869421280eb62f3492ca3</anchor>
+      <arglist>(SocketSYN_Action action)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketSYNProtect_reputation_name</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaaf2b0ff9a3054e262ba32b395c2abe50</anchor>
+      <arglist>(SocketSYN_Reputation rep)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketSYNProtect_cleanup</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga89041cde278498408febb062da3dd23b</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_clear_all</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae797fcaf42654cdba172ab72a327a8b1</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketSYNProtect_reset</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga01aa18277f6346e8803de9f705573528</anchor>
+      <arglist>(SocketSYNProtect_T protect)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static SSL *</type>
+      <name>dtls_socket_get_ssl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8d5647f2b71d9cd5c60e6a1c385854dd</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static DTLSHandshakeState</type>
+      <name>dtls_handle_ssl_error</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaff7268760d38bc90af34fdbf313ecbb5</anchor>
+      <arglist>(SocketDgram_T socket, SSL *ssl, int ssl_result)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>dtls_format_openssl_error</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga52868028efe42ac286ffdcad2e5f8a51</anchor>
+      <arglist>(const char *context)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>dtls_validate_file_path</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga43a9d75df4015935d50b33c528342d80</anchor>
+      <arglist>(const char *path)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>dtls_cookie_generate_cb</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae37473787004b0ea65d2ee0b51702f44</anchor>
+      <arglist>(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketDTLSContext_T</type>
+      <name>dtls_context_get_from_ssl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae23a324083d5bf71680d6fc525477a7a</anchor>
+      <arglist>(const SSL *ssl)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDTLS_enable</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad2f26460b23a711e0fa74605371cf127</anchor>
+      <arglist>(SocketDgram_T socket, SocketDTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDTLS_set_peer</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf742a2fb837173f6fd8d347e5bc1d1d3</anchor>
+      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDTLS_set_hostname</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabf3857e3cea92190f4c6eca7a8418be3</anchor>
+      <arglist>(SocketDgram_T socket, const char *hostname)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDTLS_set_mtu</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga804d5dd4b27255e3c9c28c58a2914a18</anchor>
+      <arglist>(SocketDgram_T socket, size_t mtu)</arglist>
+    </member>
+    <member kind="function">
+      <type>DTLSHandshakeState</type>
+      <name>SocketDTLS_handshake</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga17e8bd79af2c5a20b5dbb9e8dff6f84c</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>DTLSHandshakeState</type>
+      <name>SocketDTLS_handshake_loop</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga095bfc830b421398fbecacb1ac3d6755</anchor>
+      <arglist>(SocketDgram_T socket, int timeout_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>DTLSHandshakeState</type>
+      <name>SocketDTLS_listen</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0e2af3b3ad31869d659162ea06cf667b</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDTLS_send</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9fe6acb926cc7fbc8c4f0239834b5460</anchor>
+      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDTLS_recv</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac4fc033d5799456ce6d1b1417228c7e1</anchor>
+      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDTLS_sendto</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4e060f6143e7c9896452a6e0654041e5</anchor>
+      <arglist>(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDTLS_recvfrom</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac974bd84fcd68c06870530c11908170f</anchor>
+      <arglist>(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketDTLS_get_cipher</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga12039ba9c9513fbf9df6e02f997d09ab</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketDTLS_get_version</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4651d3701fdc086051bc90cecb79b11e</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>SocketDTLS_get_verify_result</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad0e45780e041b9ddb58956d9f0fb20d1</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDTLS_is_session_reused</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaeeca3aaa5a1e0f7fbb22b16a465421fd</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketDTLS_get_alpn_selected</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae91ad38ad7d4a00961f342e3366d7097</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketDTLS_get_mtu</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga7752aae6c38da47f187f8d766b4ae12e</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDTLS_shutdown</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab42fd91bb31edaf15149d75920446a0a</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDTLS_is_shutdown</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaad0b27539517934a510df081364e08ab</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDTLS_is_enabled</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga861c0da7896b4275fb38ee2d0ac73af1</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDTLS_is_handshake_done</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae702a60aae194a098bdc6af32549f1ae</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>DTLSHandshakeState</type>
+      <name>SocketDTLS_get_last_state</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga42abbf654fe23dd417b2115dc00590db</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static SSL *</type>
+      <name>tls_socket_get_ssl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac08c4201eb8ac29014cead5bf4a17adb</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static TLSHandshakeState</type>
+      <name>tls_handle_ssl_error</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6e8705fd2d3c92c43e4b8105d38f3854</anchor>
+      <arglist>(Socket_T socket, SSL *ssl, int ssl_result)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>tls_format_openssl_error</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga603f6b5acb264e31bf6a0f71d5b48be5</anchor>
+      <arglist>(const char *context)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>tls_get_alpn_ex_idx</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab904e51ebbeabc985c3988fc0980776e</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>tls_cleanup_alpn_temp</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5521981e692a3cdd4176000e2282398f</anchor>
+      <arglist>(SSL *ssl)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>tls_secure_free_pkey</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabf9cbcc9cfbd30df1d1252ccaf34b8d0</anchor>
+      <arglist>(EVP_PKEY *pkey)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static int</type>
+      <name>tls_validate_hostname</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaebeabc646fbd6961894512930a822ca9</anchor>
+      <arglist>(const char *hostname)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>ctx_raise_openssl_error</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga88ff84e8a0b38713099d838de6404163</anchor>
+      <arglist>(const char *context)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static char *</type>
+      <name>ctx_arena_strdup</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac1dcd2082d3c29e557a920685766c44c</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *str, const char *error_msg)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void *</type>
+      <name>ctx_arena_alloc</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9acf6c44e3887d6570aa5a3750a2b802</anchor>
+      <arglist>(SocketTLSContext_T ctx, size_t size, const char *error_msg)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>tls_context_get_from_ssl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaafa8d212678f77cf8c99a4e4914b6d97</anchor>
+      <arglist>(const SSL *ssl)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>tls_context_get_from_ssl_ctx</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacc208c7e1bc1f93a93e8db60903527fa</anchor>
+      <arglist>(SSL_CTX *ssl_ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>ctx_alloc_and_init</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1e43ba6d103cbc8f43b748cf2ddf4b9a</anchor>
+      <arglist>(const SSL_METHOD *method, int is_server)</arglist>
+    </member>
+    <member kind="function" static="yes">
+      <type>static void</type>
+      <name>tls_pinning_init</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga726c939b0e3e55893537751d2ea87dd8</anchor>
+      <arglist>(TLSContextPinning *pinning)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>tls_pinning_extract_spki_hash</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga828d1176538dad4796620257b2e9a4cb</anchor>
+      <arglist>(const X509 *cert, unsigned char *out_hash)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>tls_pinning_check_chain</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5757cbf91f1a33f9da5ceedd6e7c19a9</anchor>
+      <arglist>(SocketTLSContext_T ctx, const STACK_OF(X509) *chain)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>tls_pinning_find</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5de766a20624317123f664a08d5ca13d</anchor>
+      <arglist>(const TLSCertPin *pins, size_t count, const unsigned char *hash)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLS_enable</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab9a8fb788aa1f0d21b5773bc43a48d6f</anchor>
+      <arglist>(Socket_T socket, SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLS_set_hostname</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga15d2c8f4eaea80114bbd2123da025e56</anchor>
+      <arglist>(Socket_T socket, const char *hostname)</arglist>
+    </member>
+    <member kind="function">
+      <type>TLSHandshakeState</type>
+      <name>SocketTLS_handshake</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaeaa77dd7852b535baf17b53ee2518454</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>TLSHandshakeState</type>
+      <name>SocketTLS_handshake_loop</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga439248f2ff7b87470520de0607569d06</anchor>
+      <arglist>(Socket_T socket, int timeout_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>TLSHandshakeState</type>
+      <name>SocketTLS_handshake_auto</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga54a01327e253586278c0f740c2764010</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLS_shutdown</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab11506db6f41f31e9fc170b3d0e848f1</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketTLS_send</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabdb38e692dde58bbec4ab905eeb8b3aa</anchor>
+      <arglist>(Socket_T socket, const void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketTLS_recv</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1c71fc02141cd9e6da4fdf1c88dbbaf3</anchor>
+      <arglist>(Socket_T socket, void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketTLS_get_cipher</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0859f0a6e05840bdc037c3765e22b7b1</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketTLS_get_version</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaef0f67021658d05419f1da479be2957e</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>SocketTLS_get_verify_result</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4fd56e743762151aa449744a8d574164</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketTLS_get_verify_error_string</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga39a966c33421653c64f78261f24ee1f1</anchor>
+      <arglist>(Socket_T socket, char *buf, size_t size)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLS_is_session_reused</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga315ccceb9cb5b74d8b90f1439ce57344</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketTLS_get_alpn_selected</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga56acd283757bb0af4f4d59d3c0f218ea</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLS_config_defaults</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga122ad62f86b4477f7be54d55b769d58b</anchor>
+      <arglist>(SocketTLSConfig_T *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>SocketTLSContext_new_server</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga79a403f2f54f21c90a92e9cb73e24cbc</anchor>
+      <arglist>(const char *cert_file, const char *key_file, const char *ca_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>SocketTLSContext_new_client</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga7fe51da14439d768bdf72f4ed8fbb022</anchor>
+      <arglist>(const char *ca_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTLSContext_T</type>
+      <name>SocketTLSContext_new</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga69b7880fa99df9a39b4db5259a9e1234</anchor>
+      <arglist>(const SocketTLSConfig_T *config)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_load_certificate</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1e2af3e4421c3c20c7dbc4b99cfb4211</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *cert_file, const char *key_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_add_certificate</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga92be47dab18fc79c409fc8b450e7aa0d</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *hostname, const char *cert_file, const char *key_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_load_ca</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac4de1881e05f041a3d5016cba7d5a045</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *ca_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_verify_mode</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga71084c00bec22f65b90301188868b759</anchor>
+      <arglist>(SocketTLSContext_T ctx, TLSVerifyMode mode)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_free</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaea7ca3e656e9b58706fafc3232147203</anchor>
+      <arglist>(SocketTLSContext_T *ctx_p)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_verify_callback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2712efd6f1918aa87a3120547c0cf64d</anchor>
+      <arglist>(SocketTLSContext_T ctx, SocketTLSVerifyCallback callback, void *user_data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_load_crl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8bf03223d7c3b3cd28f8d03fe082d15e</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_refresh_crl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9ea9577387ebc9edb186a6c491c67ab4</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_reload_crl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac5ba25c0153bc63b6087cff6304f4938</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_crl_auto_refresh</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac049c86b0b5edba0a7bcb73ca2e1e2eb</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *crl_path, long interval_seconds, SocketTLSCrlCallback callback, void *user_data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_cancel_crl_auto_refresh</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab4bee293124b9d83681f9471f0519689</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_crl_check_refresh</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga516c739f9ab7a0a5968279aba78a250c</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>long</type>
+      <name>SocketTLSContext_crl_next_refresh_ms</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1e822bd45ec2dad56c13d541dcd0c23d</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_ocsp_response</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacad0c368922de598277e4237779504b7</anchor>
+      <arglist>(SocketTLSContext_T ctx, const unsigned char *response, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_ocsp_gen_callback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0b49040701aa37f11720d9539c046347</anchor>
+      <arglist>(SocketTLSContext_T ctx, SocketTLSOcspGenCallback cb, void *arg)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLS_get_ocsp_status</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae1a1b2392cfa8dd68e636bbef9df443f</anchor>
+      <arglist>(Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_ocsp_stapling</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga414fb627189037256afd8c4e015b74d1</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_ocsp_stapling_enabled</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga7f214a19238ce8cd567d6ad6efa806c9</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_cert_lookup_callback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae1d9ff9d7e15f5a798d316ddf6ec6d53</anchor>
+      <arglist>(SocketTLSContext_T ctx, SocketTLSCertLookupCallback callback, void *user_data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_min_protocol</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa7703e1d2c80b49601af8237e81729ef</anchor>
+      <arglist>(SocketTLSContext_T ctx, int version)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_max_protocol</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad094c4db92c9979bcde108166193abee</anchor>
+      <arglist>(SocketTLSContext_T ctx, int version)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_cipher_list</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2e731151980c8c30a7fbb18da74ddffa</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *ciphers)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_alpn_protos</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4fcc29a81cf5c643ee9a56deb46b9ec8</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char **protos, size_t count)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_alpn_callback</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab7c088402bdf132a710551ebe2268ed0</anchor>
+      <arglist>(SocketTLSContext_T ctx, SocketTLSAlpnCallback callback, void *user_data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_session_cache</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6f0a68e802e789df40eaa28cb641a422</anchor>
+      <arglist>(SocketTLSContext_T ctx, size_t max_sessions, long timeout_seconds)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_session_cache_size</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga51fa29a23c87a8f2a9c7b71b6731fb50</anchor>
+      <arglist>(SocketTLSContext_T ctx, size_t size)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_get_cache_stats</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga2093721c235cb8ebc83e90606abdcb33</anchor>
+      <arglist>(SocketTLSContext_T ctx, size_t *hits, size_t *misses, size_t *stores)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_session_tickets</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae7d40e475eec529625a3d6ba74d23f4a</anchor>
+      <arglist>(SocketTLSContext_T ctx, const unsigned char *key, size_t key_len)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_add_pin</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga34caeef50e78017625d2eb62142a7e45</anchor>
+      <arglist>(SocketTLSContext_T ctx, const unsigned char *sha256_hash)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_add_pin_hex</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gafd50881da0db97098204ff6fa920bb26</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *hex_hash)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_add_pin_from_cert</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa535f69cf93b2f0dec403e71336b0682</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *cert_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_add_pin_from_x509</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacf5982c65823fa0eedc34d8d933710a9</anchor>
+      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_clear_pins</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae201aacce977d32ab0187dd8b97d6c9a</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_pin_enforcement</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8a972b0da962c5515936444b6921182d</anchor>
+      <arglist>(SocketTLSContext_T ctx, int enforce)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_get_pin_enforcement</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9d03fb564c11628d54e76a1c177b8494</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>size_t</type>
+      <name>SocketTLSContext_get_pin_count</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaec2e531425cc03bff359517f60aa474c</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_has_pins</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaea37c149f7babbf14c28caf0ffef97cf</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_verify_pin</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac051204c676250b114e00af223055686</anchor>
+      <arglist>(SocketTLSContext_T ctx, const unsigned char *sha256_hash)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_verify_cert_pin</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae69fbca6dae1712eb7abd1f1b268926b</anchor>
+      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_enable_ct</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf27bede9402c6c8c7541143e019c635f</anchor>
+      <arglist>(SocketTLSContext_T ctx, CTValidationMode mode)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_ct_enabled</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3b70029e86352f55e3710673ba30c23f</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>CTValidationMode</type>
+      <name>SocketTLSContext_get_ct_mode</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf18e867664012c78a758c5454f62c367</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTLSContext_set_ctlog_list_file</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gada967caf61c070399281b088b35ed78a</anchor>
+      <arglist>(SocketTLSContext_T ctx, const char *log_file)</arglist>
+    </member>
+    <member kind="function">
+      <type>void *</type>
+      <name>SocketTLSContext_get_ssl_ctx</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga6e8aae1b6b1182d3f83b8673fdbbe945</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTLSContext_is_server</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga39bd71708494c1c833d3064c3a70f8ad</anchor>
+      <arglist>(SocketTLSContext_T ctx)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketIPTracker_Failed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4692098ecf52e6929c8763f0fa9fe222</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketSYNProtect_Failed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacfbf054296946c43e621dcf10b9295a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_Failed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga083605c4d8e6ea5658b72883f8e41be9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_HandshakeFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gadffbcee0cdd3e2ea80a6a03a73755085</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_VerifyFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf1324e42b633182c01b0157ebfba0e9e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_CookieFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga69b6e30fa30bd7fe0a621d807796d73f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_TimeoutExpired</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga9a2543bc8c6671e774391f4861d4fa5d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDTLS_ShutdownFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga28d15a7e6fc136b5d542236ef27f0be6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>tls_context_exdata_idx</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaf6dd40cb19f09e9fffb7f30594372db2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>char</type>
+      <name>tls_error_buf</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8ca0182ebb7a93df98871664989b949b</anchor>
+      <arglist>[]</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_Failed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabc011202dd4f2e080b6ea8eb0f24287e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_HandshakeFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga82be75dd764021fb64cd6824768e2254</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_VerifyFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabe406e483a861198db5bca58300f1728</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_ProtocolError</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gad97195716332983bae10a77f275740bd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_ShutdownFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gaa724dbe4115729ef621c0f1f74b5afd6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTLS_PinVerifyFailed</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga445003fff70029dd096df971801be0e4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_ctx</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga1189362a5c97fc90222e06232de1bdfe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_ssl</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga539711122c1eb94e27ac1d1f98581e4f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketDgram_T::dtls_enabled</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga8b5dc596873a18adc6003b2595394223</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketDgram_T::dtls_handshake_done</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga5a3d07842374d449a9fa61fab416edc8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketDgram_T::dtls_shutdown_done</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga701871c2fa48e90c055fc70524d65b04</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketDgram_T::dtls_last_handshake_state</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga3b8a6cfd63b8f12340dec5f778111c90</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketDgram_T::dtls_mtu</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gab4c14b4e6c07e5f1ff646987622a611a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>char *</type>
+      <name>SocketDgram_T::dtls_sni_hostname</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga4fdda17cd54e1f2365c69210a28b7c7c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>char *</type>
+      <name>SocketDgram_T::dtls_peer_host</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga0430ae66a05abe2f9a50e79656d05b84</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>SocketDgram_T::dtls_peer_port</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga560ea9583d1317b5992f825e4f9367e2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>struct addrinfo *</type>
+      <name>SocketDgram_T::dtls_peer_res</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga62d63165a3c926aaf21241ac798e0fe3</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>SocketDgram_T::dtls_peer_cache_ts</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga40b959d65731e8a1462d8e6ef01d4a75</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_rbio</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gac9279985541f6f5feae01827ec148bd5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_wbio</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga36e474764992051d21d2f5bbc2fcf4b2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_read_buf</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>ga627026386fc506cec37e59271659a1cb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>void *</type>
+      <name>SocketDgram_T::dtls_write_buf</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gabc75afb656bc9e46f3953b6fc0feb8c4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketDgram_T::dtls_read_buf_len</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gae8075af8c029579e8f939ac57d7a5699</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>size_t</type>
+      <name>SocketDgram_T::dtls_write_buf_len</name>
+      <anchorfile>group__security.html</anchorfile>
+      <anchor>gacb96f6937a0f3c07e23f5073629f6bb4</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="group">
+    <name>event_system</name>
+    <title>Event System Modules</title>
+    <filename>group__event__system.html</filename>
+    <subgroup>poll_private</subgroup>
+    <subgroup>event_system_backend</subgroup>
+    <file>SocketTimer-private.h</file>
+    <file>SocketTimer.h</file>
+    <file>SocketPoll.h</file>
+    <class kind="struct">SocketTimer_T</class>
+    <class kind="struct">SocketTimer_heap_T</class>
+    <class kind="struct">SocketEvent_T</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_POLL_EVENTS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gab6d7f45fcb5eae5fe42694e8e123cab4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>POLL_INITIAL_FDS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga673275383493d8cff8bc582fef311e42</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>POLL_INITIAL_FD_MAP_SIZE</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga211a6387523fa6487af971831aabf461</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>POLL_FD_MAP_EXPAND_INCREMENT</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga834e79d67b92d737d55e4ba2b0684025</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_TIMER_TIMEOUT_MS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gad738dd2be8abca1d0353d31f888ba3eb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_TIMER_DELAY_MS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga7f5492f9166c78ee14f4b69362ccaf51</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_ERROR_BUFSIZE</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gab56cfec8835c59bfb69bb1c1cb128c93</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_HEAP_INITIAL_CAPACITY</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga115b76003aaf131241e5b091a63b3285</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_HEAP_GROWTH_FACTOR</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gaca5f033531acb4f68ba5823ce2b769d7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_MAX_TIMERS_PER_HEAP</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga53de6720fd3fc8accf99751c1e4e0d50</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_MIN_DELAY_MS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gab0ced17c77c552330176b69557fb83fc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_MIN_INTERVAL_MS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga59221d1781370448def350dafb2d7e24</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_INITIAL_ID</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gacd3100d409a6fd3f6d160700ba6c64c6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_EVENT_MAX_HANDLERS</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga76ac815951cb4cbc800c781eb143b8cb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_DEFAULT_POLL_TIMEOUT</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga71cb10d1eefc15616a20bcd7ae21e875</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_TIMER_INVALID_HEAP_INDEX</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga2829aac1405cdf86f8ef8b6eb3ecf365</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_DATA_HASH_SIZE</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga7c0e59971e52bc0a110b2a7066ea2732</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>RAISE_POLL_ERROR</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga55f5cf0f097a98b03e1511d1b6bd91b2</anchor>
+      <arglist>(e)</arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_POLL_TIMEOUT_USE_DEFAULT</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0fc8aa94a3e9bb10cb26d85c6474d04e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="typedef">
+      <type>void(*</type>
+      <name>SocketTimerCallback</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gafb51f69cdbf1b882a7a4226959c4fca7</anchor>
+      <arglist>)(void *userdata)</arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>SocketPoll_Events</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga9e8943c9cb47aba63dda4ad9083142b6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POLL_READ</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POLL_WRITE</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POLL_ERROR</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>POLL_HANGUP</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTimer_heap_T *</type>
+      <name>SocketTimer_heap_new</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga18f3d33b3f70cc8620fef042ca65e66a</anchor>
+      <arglist>(Arena_T arena)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTimer_heap_free</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga3257343cc10ae56314c03abd8311d873</anchor>
+      <arglist>(SocketTimer_heap_T **heap)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketTimer_heap_push</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga04afe41789d51a71d4a03883a89ad61c</anchor>
+      <arglist>(SocketTimer_heap_T *heap, struct SocketTimer_T *timer)</arglist>
+    </member>
+    <member kind="function">
+      <type>struct SocketTimer_T *</type>
+      <name>SocketTimer_heap_pop</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga9e40363cf44bb1025f2269ddc2cef0d2</anchor>
+      <arglist>(SocketTimer_heap_T *heap)</arglist>
+    </member>
+    <member kind="function">
+      <type>struct SocketTimer_T *</type>
+      <name>SocketTimer_heap_peek</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0961e214a845a52c242176ed425095a3</anchor>
+      <arglist>(SocketTimer_heap_T *heap)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>SocketTimer_heap_peek_delay</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga0f7deeb47aba9580052152bbf036c419</anchor>
+      <arglist>(SocketTimer_heap_T *heap)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTimer_process_expired</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga888ed4acbf5d1ca29bdafc07f346566e</anchor>
+      <arglist>(SocketTimer_heap_T *heap)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTimer_heap_cancel</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga8af1dd7cd2864bea6226054f1ff9b22b</anchor>
+      <arglist>(SocketTimer_heap_T *heap, struct SocketTimer_T *timer)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>SocketTimer_heap_remaining</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga69365f1c685576d76414fbb43fe2248b</anchor>
+      <arglist>(SocketTimer_heap_T *heap, const struct SocketTimer_T *timer)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTimer_T</type>
+      <name>SocketTimer_add</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga2537cebf106e583079ec472086a26d65</anchor>
+      <arglist>(SocketPoll_T poll, int64_t delay_ms, SocketTimerCallback callback, void *userdata)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketTimer_T</type>
+      <name>SocketTimer_add_repeating</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga6961bde0e491d732450b66577294d097</anchor>
+      <arglist>(SocketPoll_T poll, int64_t interval_ms, SocketTimerCallback callback, void *userdata)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketTimer_cancel</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga6f7ca05c6cfc7c69ddc3d676a681bc62</anchor>
+      <arglist>(SocketPoll_T poll, SocketTimer_T timer)</arglist>
+    </member>
+    <member kind="function">
+      <type>int64_t</type>
+      <name>SocketTimer_remaining</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga4c5519b89e0bba69f26d03b6893ba779</anchor>
+      <arglist>(SocketPoll_T poll, SocketTimer_T timer)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketPoll_T</type>
+      <name>SocketPoll_new</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gac1fbd1a09d564f7988b0e427e5707ca7</anchor>
+      <arglist>(int maxevents)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_free</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gaca744c50badbdb869c52088b9f32f8d2</anchor>
+      <arglist>(SocketPoll_T *poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_add</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e</anchor>
+      <arglist>(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_mod</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga3755cc4d5ed8838ce2261f0efd1d5d85</anchor>
+      <arglist>(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_del</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga3074c5a225a7c49880951ecfb984498f</anchor>
+      <arglist>(SocketPoll_T poll, Socket_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_getdefaulttimeout</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga1bb5e288308c3de5a479b27366bba257</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_setdefaulttimeout</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga945845cc57758a91e47a75ef17064d2a</anchor>
+      <arglist>(SocketPoll_T poll, int timeout)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_wait</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gaa3d47365dd18329d50ee636284839738</anchor>
+      <arglist>(SocketPoll_T poll, SocketEvent_T **events, int timeout)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketAsync_T</type>
+      <name>SocketPoll_get_async</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga665b3363d16ab859ec60e69a792d1ff0</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_getmaxregistered</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga16688a9e444183863bab8051f57fe688</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketPoll_setmaxregistered</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga35d4052d444bcab4cae26f41cf5729eb</anchor>
+      <arglist>(SocketPoll_T poll, int max)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketPoll_getregisteredcount</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gac79e719de24f09f84eb3816b3ab60c65</anchor>
+      <arglist>(SocketPoll_T poll)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>backend_del</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gae9ec719e250346605c00e5b3efb2e7d8</anchor>
+      <arglist>(PollBackend_T backend, int fd)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>backend_wait</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga5b2c06638f0c76ea3c6c2f38503d266b</anchor>
+      <arglist>(PollBackend_T backend, int timeout_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>backend_get_event</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gad998de1df9f46711f5c3b4dc0257f548</anchor>
+      <arglist>(const PollBackend_T backend, int index, int *fd_out, unsigned *events_out)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>backend_name</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga2edb00f128ad773d62c8f11c516153d9</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketTimer_Failed</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>ga2f0acf311c238671c6d9d14d4cc7c158</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>*Ensures ABI</type>
+      <name>stability</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gac76e53ad178174f0f70747acfc5f83a2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketPoll_Failed</name>
+      <anchorfile>group__event__system.html</anchorfile>
+      <anchor>gab4754362476e3ffc3e000b1cbcc2a6f0</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -31062,34 +34334,6 @@
       <anchorfile>group__dns.html</anchorfile>
       <anchor>ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb</anchor>
       <arglist></arglist>
-    </member>
-    <member kind="function">
-      <type>struct SocketDNS_T *</type>
-      <name>allocate_dns_resolver</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga0c5a84436f8b4c2c2159a9ae95ec6e6f</anchor>
-      <arglist>(void)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>initialize_dns_fields</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga6c7a4f5e6d71025f70a9ce5815567d19</anchor>
-      <arglist>(struct SocketDNS_T *dns)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>initialize_dns_components</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga558e7ea40aee65f859eef6c434f750e0</anchor>
-      <arglist>(struct SocketDNS_T *dns)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>setup_thread_attributes</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>ga62b1aab7c7e7de783b56183c7a62863d</anchor>
-      <arglist>(pthread_attr_t *attr)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -31285,13 +34529,6 @@
       <name>hash_table_remove</name>
       <anchorfile>group__dns.html</anchorfile>
       <anchor>gadbfe83ac3fd8daf74a5189130d35eb54</anchor>
-      <arglist>(struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>queue_append</name>
-      <anchorfile>group__dns.html</anchorfile>
-      <anchor>gae886927eaa45cdd51372735713b90058</anchor>
       <arglist>(struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)</arglist>
     </member>
     <member kind="function">
@@ -31572,7 +34809,6 @@
     <name>hpack_private</name>
     <title>HPACK Private Implementation Details</title>
     <filename>group__hpack__private.html</filename>
-    <file>SocketHPACK-private.h</file>
     <class kind="struct">HPACK_DynamicEntry</class>
     <class kind="struct">SocketHPACK_Table</class>
     <class kind="struct">SocketHPACK_Encoder</class>
@@ -31643,6 +34879,27 @@
       <anchor>gafd975c9395b773cfe1f998aa0e0168b2</anchor>
       <arglist></arglist>
     </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HPACK_DFA_EOS</name>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga881cd71b1434a2a5a11bd50cb61d312d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HPACK_DFA_ERROR</name>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga2065e9129b247f7f4ab0b363095f1839</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HPACK_DFA_SYM2</name>
+      <anchorfile>group__hpack__private.html</anchorfile>
+      <anchor>ga76662d61395b8b2c9f2034c074083b4f</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="function">
       <type>size_t</type>
       <name>hpack_table_evict</name>
@@ -31691,15 +34948,10 @@
     <name>http</name>
     <title>HTTP Modules</title>
     <filename>group__http.html</filename>
-    <subgroup>hpack_private</subgroup>
     <subgroup>hpack</subgroup>
     <subgroup>http1</subgroup>
     <subgroup>http2_private</subgroup>
     <subgroup>http2</subgroup>
-    <subgroup>http_client_limits</subgroup>
-    <subgroup>http_client_retry</subgroup>
-    <subgroup>http_client_cookie</subgroup>
-    <subgroup>http_client_auth</subgroup>
     <subgroup>http_client</subgroup>
     <subgroup>http_error_macros</subgroup>
     <subgroup>http_server_connection_mgmt</subgroup>
@@ -31710,7 +34962,6 @@
     <file>SocketHTTP1-private.h</file>
     <file>SocketHTTP1.h</file>
     <file>SocketHTTP2-private.h</file>
-    <file>SocketHTTPClient-config.h</file>
     <file>SocketHTTPClient-private.h</file>
     <file>SocketHTTPServer-private.h</file>
     <file>SocketHTTPServer.h</file>
@@ -32060,286 +35311,6 @@
       <name>HTTP2_WINDOW_UPDATE_SIZE</name>
       <anchorfile>group__http.html</anchorfile>
       <anchor>ga79f3559df943e5fd9cc5e075902b432d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ERROR_BUFSIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga27a6899380c014f0f1a08432877602b2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_POOL_HASH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga2a80107d7741ba2a46baf779f7928730</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_POOL_LARGE_HASH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gae7f6a04a117e98e557b38a582158c4bb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_POOL_LARGE_THRESHOLD</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gafaff4a2f91f9687bf4149fde554c11b8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_IO_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga51703354cc9bc0603b78726aefab346f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gad6976b035b7becf34c067ecbfe122a99</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga86b91e7fbe633ea8ca189984af9b3547</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga02939decbb5546f8c00a4af02891beaf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga9668cac2b62d9570871b2865fcc2d562</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_REDIRECTS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga64838d8d2643dbec1c43f8e50055dbf7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga6495bfe151f30ebab1389fa05229498d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga48547cb7f217429e34d7fa5c925d9dea</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_RETRIES</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga43548f5c8b02196dd3bd71ccb9836c26</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1827f78650d15ca622a674b130a2b926</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gaf7e91b18a488977f7e7d333f0f7c0611</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gafe6a8409016e05e46305b9f7042c7c7a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga2d9b8b306cf8b1a3a926e909f969315f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga4a61970445f2f7a4a8d23da8680fc09b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_AUTH_CREDENTIALS_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gaba4e506b5b48afa5c9e19f692619db35</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DIGEST_A_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga3db68e362a4cd23917b2e2b6dc05ef22</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DIGEST_RESPONSE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga19c913be80fdc2a1778a5cf592fa5a32</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DIGEST_CNONCE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga3e4e900df8359ef28d95b0ead64dbcf5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1fbe044368878287464a35d2887c23cf</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DIGEST_NC_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga78e4b4357664a978b08470dc5110b5e9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_REQUEST_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga3de25c3d345626920f73bd6ceb4faefe</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_BODY_CHUNK_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga9252df768faf5ccb5438f1e0e9d68b33</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_HOST_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga14236d3d25877900fe49a8c2b7c90e25</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_COOKIE_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga2bf0debe9f0685663a1f5b1fcaf56510</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_AUTH_HEADER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gae0d219a3146b29914fb7f7169c6aa566</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga81ac4eefb96b3c919042f5fdd1ea361d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_URI_BUFFER_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1421459188743de98f5eb1d489d70ec0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_MAX_SET_COOKIES</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga134a20a8c6c468864bb0d94e9d9abb91</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ACCEPT_ENCODING_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga846e1eb9e4ecd57dc03a065776981e0b</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_CONTENT_LENGTH_SIZE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga4063c6077aa71b96a83dbe475a59e5a9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_RETRY_JITTER_FACTOR</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga441f1405cd4774e167f08b83b3b1e117</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_DEFAULT_USER_AGENT</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gad23bab3060a93bc022b891a925e34f94</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ENCODING_IDENTITY</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1a94747fcfaf987c84d4a91bc3bd7513</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ENCODING_GZIP</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gaca301afd15b5701276655faf5cdf3104</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ENCODING_DEFLATE</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gae68f134e13b2a94d9f4f5973fc02bf3c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HTTPCLIENT_ENCODING_BR</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gacf069f17c344d63494b465eb5dcec7b8</anchor>
       <arglist></arglist>
     </member>
     <member kind="define">
@@ -34492,69 +37463,6 @@
       <arglist>(SocketHTTPClient_Response *response)</arglist>
     </member>
     <member kind="function">
-      <type>ServerConnection *</type>
-      <name>connection_new</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga661e9beac05d8c8b41df73120537c6af</anchor>
-      <arglist>(SocketHTTPServer_T server, Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_close</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gabe51462e112b59f52cbb1febfaeba7c9</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_read</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gacd94ab9df9f26bb81487c46553875ae7</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_send_data</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga2e72171bf90e61315849daf7c5d37468</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn, const void *data, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_reset_for_keepalive</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gab3d869a4f2a51f1ec8e05a3772337efc</anchor>
-      <arglist>(ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_finish_request</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga653a3ae6a5a9aeef25204f77a644c3bf</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>connection_parse_request</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga1e34ed26286555466cb14bdd7bcdba86</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_send_response</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>ga31ded50da5af2355d60b5f78c18866ab</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>connection_send_error</name>
-      <anchorfile>group__http.html</anchorfile>
-      <anchor>gad8b6fd9be8c2566fe7f029efc270e6a3</anchor>
-      <arglist>(SocketHTTPServer_T server, ServerConnection *conn, int status, const char *body)</arglist>
-    </member>
-    <member kind="function">
       <type>void</type>
       <name>SocketHTTPServer_config_defaults</name>
       <anchorfile>group__http.html</anchorfile>
@@ -34897,6 +37805,27 @@
       <anchor>ga4f683bdd1ab1acf36a383a7be5f5b6d2</anchor>
       <arglist></arglist>
     </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_ParseError</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>gab3d5ad7e5994f2d6dc5cc732bba2f901</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_InvalidURI</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>ga05591446a711d5a6b9d967748d9bc60e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketHTTP_InvalidHeader</name>
+      <anchorfile>group__http.html</anchorfile>
+      <anchor>ga737d1c3fbff9be0590c8d0790600906a</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="variable" static="yes">
       <type>static const unsigned char</type>
       <name>HTTP2_CLIENT_PREFACE</name>
@@ -34927,9 +37856,300 @@
     </member>
   </compound>
   <compound kind="group">
+    <name>http1_private</name>
+    <title>HTTP/1.1 Parser Internal Implementation</title>
+    <filename>group__http1__private.html</filename>
+    <file>SocketHTTP1-private.h</file>
+    <class kind="struct">HTTP1_TokenBuf</class>
+    <class kind="struct">SocketHTTP1_Parser</class>
+    <class kind="union">SocketHTTP1_Parser.message</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP1_DEFAULT_URI_BUF_SIZE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga4738efb4bea5ccacccfc1be5a105cb13</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP1_DEFAULT_REASON_BUF_SIZE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga362225da7c45277cb41d4135c22e635b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gaa750a4a233ab27ba2857e2ab63258535</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga5943569b15eb4a4ad46e352e21ea14ea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>HTTP1_CharClass</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga7159889d7065ff0d078e4b7170bc522d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_CTL</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_SP</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_HTAB</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_CR</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_LF</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_COLON</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_SLASH</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_DOT</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_DIGIT</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_HEX</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_ALPHA</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_H</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_T</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_P</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_TCHAR</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_VCHAR</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_OBS</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_CC_INVALID</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_NUM_CLASSES</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gga7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumeration">
+      <type></type>
+      <name>HTTP1_Action</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gaf958f972f68a3e764050f88c3475f37e</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_NONE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STORE_METHOD</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STORE_URI</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STORE_REASON</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STORE_NAME</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STORE_VALUE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_METHOD_END</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_URI_END</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_VERSION_MAJ</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_VERSION_MIN</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_STATUS_DIGIT</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_REASON_END</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_HEADER_END</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_HEADERS_DONE</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>HTTP1_ACT_ERROR</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ggaf958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>const uint8_t</type>
+      <name>http1_char_class</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga8132b7d377746bbf6e235a4d127deb17</anchor>
+      <arglist>[256]</arglist>
+    </member>
+    <member kind="variable">
+      <type>const uint8_t</type>
+      <name>http1_req_state</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>gad7f1459235d97c9cb2f1c4960a7dbc30</anchor>
+      <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
+    </member>
+    <member kind="variable">
+      <type>const uint8_t</type>
+      <name>http1_resp_state</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga11bb00a4258fe1bb4ece5df41c2c9d3f</anchor>
+      <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
+    </member>
+    <member kind="variable">
+      <type>const uint8_t</type>
+      <name>http1_req_action</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga75ad7bc5978265a3fab598023b737c92</anchor>
+      <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
+    </member>
+    <member kind="variable">
+      <type>const uint8_t</type>
+      <name>http1_resp_action</name>
+      <anchorfile>group__http1__private.html</anchorfile>
+      <anchor>ga9c08453987f874f606969a88b5d593ca</anchor>
+      <arglist>[HTTP1_NUM_STATES][HTTP1_NUM_CLASSES]</arglist>
+    </member>
+  </compound>
+  <compound kind="group">
     <name>http1</name>
     <title>HTTP/1.1 Parser and Serializer Module</title>
     <filename>group__http1.html</filename>
+    <subgroup>http1_private</subgroup>
     <class kind="struct">SocketHTTP1_Config</class>
     <member kind="define">
       <type>#define</type>
@@ -36647,12 +39867,297 @@
     <name>http_client</name>
     <title>HTTP Client Module</title>
     <filename>group__http__client.html</filename>
+    <subgroup>http_client_limits</subgroup>
+    <subgroup>http_client_retry</subgroup>
+    <subgroup>http_client_cookie</subgroup>
+    <subgroup>http_client_auth</subgroup>
+    <file>SocketHTTPClient-config.h</file>
     <file>SocketHTTPClient.h</file>
     <class kind="struct">SocketHTTPClient_Auth</class>
     <class kind="struct">SocketHTTPClient_Config</class>
     <class kind="struct">SocketHTTPClient_Response</class>
     <class kind="struct">SocketHTTPClient_Cookie</class>
     <class kind="struct">SocketHTTPClient_PoolStats</class>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ERROR_BUFSIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga27a6899380c014f0f1a08432877602b2</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_POOL_HASH_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga2a80107d7741ba2a46baf779f7928730</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_POOL_LARGE_HASH_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae7f6a04a117e98e557b38a582158c4bb</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_POOL_LARGE_THRESHOLD</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gafaff4a2f91f9687bf4149fde554c11b8</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_IO_BUFFER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga51703354cc9bc0603b78726aefab346f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad6976b035b7becf34c067ecbfe122a99</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_REQUEST_TIMEOUT_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga86b91e7fbe633ea8ca189984af9b3547</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_DNS_TIMEOUT_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga02939decbb5546f8c00a4af02891beaf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_IDLE_TIMEOUT_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga9668cac2b62d9570871b2865fcc2d562</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_REDIRECTS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga64838d8d2643dbec1c43f8e50055dbf7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga6495bfe151f30ebab1389fa05229498d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_TOTAL_CONNS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga48547cb7f217429e34d7fa5c925d9dea</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_RETRIES</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga43548f5c8b02196dd3bd71ccb9836c26</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_INITIAL_DELAY_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1827f78650d15ca622a674b130a2b926</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_MAX_DELAY_MS</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaf7e91b18a488977f7e7d333f0f7c0611</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_ON_CONNECT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gafe6a8409016e05e46305b9f7042c7c7a</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_RETRY_ON_TIMEOUT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga2d9b8b306cf8b1a3a926e909f969315f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_MAX_RESPONSE_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga4a61970445f2f7a4a8d23da8680fc09b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_CREDENTIALS_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaba4e506b5b48afa5c9e19f692619db35</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_A_BUFFER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga3db68e362a4cd23917b2e2b6dc05ef22</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_RESPONSE_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga19c913be80fdc2a1778a5cf592fa5a32</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_CNONCE_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga3e4e900df8359ef28d95b0ead64dbcf5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_CNONCE_HEX_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1fbe044368878287464a35d2887c23cf</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DIGEST_NC_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga78e4b4357664a978b08470dc5110b5e9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_REQUEST_BUFFER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga3de25c3d345626920f73bd6ceb4faefe</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_BODY_CHUNK_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga9252df768faf5ccb5438f1e0e9d68b33</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_HOST_HEADER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga14236d3d25877900fe49a8c2b7c90e25</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_COOKIE_HEADER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga2bf0debe9f0685663a1f5b1fcaf56510</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_HEADER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae0d219a3146b29914fb7f7169c6aa566</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_AUTH_HEADER_LARGE_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga81ac4eefb96b3c919042f5fdd1ea361d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_URI_BUFFER_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1421459188743de98f5eb1d489d70ec0</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_MAX_SET_COOKIES</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga134a20a8c6c468864bb0d94e9d9abb91</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ACCEPT_ENCODING_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga846e1eb9e4ecd57dc03a065776981e0b</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_CONTENT_LENGTH_SIZE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga4063c6077aa71b96a83dbe475a59e5a9</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_RETRY_JITTER_FACTOR</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga441f1405cd4774e167f08b83b3b1e117</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_DEFAULT_USER_AGENT</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gad23bab3060a93bc022b891a925e34f94</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ENCODING_IDENTITY</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>ga1a94747fcfaf987c84d4a91bc3bd7513</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ENCODING_GZIP</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gaca301afd15b5701276655faf5cdf3104</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ENCODING_DEFLATE</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gae68f134e13b2a94d9f4f5973fc02bf3c</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>HTTPCLIENT_ENCODING_BR</name>
+      <anchorfile>group__http__client.html</anchorfile>
+      <anchor>gacf069f17c344d63494b465eb5dcec7b8</anchor>
+      <arglist></arglist>
+    </member>
     <member kind="typedef">
       <type>void(*</type>
       <name>SocketHTTPClient_Callback</name>
@@ -37144,482 +40649,76 @@
     <filename>group__http__server__connection__mgmt.html</filename>
   </compound>
   <compound kind="group">
-    <name>event_system</name>
-    <title>Event System Modules</title>
-    <filename>group__event__system.html</filename>
-    <file>SocketTimer-private.h</file>
-    <file>SocketTimer.h</file>
-    <file>SocketPoll-private.h</file>
-    <file>SocketPoll.h</file>
+    <name>poll_private</name>
+    <title>SocketPoll Private Implementation Details</title>
+    <filename>group__poll__private.html</filename>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__poll__private.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="group">
+    <name>event_system_backend</name>
+    <title>Polling Backend Interface</title>
+    <filename>group__event__system__backend.html</filename>
+    <subgroup>backend_functions</subgroup>
     <file>SocketPoll_backend.h</file>
-    <class kind="struct">SocketData</class>
-    <class kind="struct">FdSocketEntry</class>
-    <class kind="struct">SocketPoll_T</class>
-    <class kind="struct">SocketEvent_T</class>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_MAX_POLL_EVENTS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gab6d7f45fcb5eae5fe42694e8e123cab4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>POLL_INITIAL_FDS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga673275383493d8cff8bc582fef311e42</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>POLL_INITIAL_FD_MAP_SIZE</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga211a6387523fa6487af971831aabf461</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>POLL_FD_MAP_EXPAND_INCREMENT</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga834e79d67b92d737d55e4ba2b0684025</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_MAX_TIMER_TIMEOUT_MS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gad738dd2be8abca1d0353d31f888ba3eb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_MAX_TIMER_DELAY_MS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga7f5492f9166c78ee14f4b69362ccaf51</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_ERROR_BUFSIZE</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gab56cfec8835c59bfb69bb1c1cb128c93</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_HEAP_INITIAL_CAPACITY</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga115b76003aaf131241e5b091a63b3285</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_HEAP_GROWTH_FACTOR</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gaca5f033531acb4f68ba5823ce2b769d7</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_MAX_TIMERS_PER_HEAP</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga53de6720fd3fc8accf99751c1e4e0d50</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_MIN_DELAY_MS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gab0ced17c77c552330176b69557fb83fc</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_MIN_INTERVAL_MS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga59221d1781370448def350dafb2d7e24</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_INITIAL_ID</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gacd3100d409a6fd3f6d160700ba6c64c6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_EVENT_MAX_HANDLERS</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga76ac815951cb4cbc800c781eb143b8cb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_DEFAULT_POLL_TIMEOUT</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga71cb10d1eefc15616a20bcd7ae21e875</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_TIMER_INVALID_HEAP_INDEX</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga2829aac1405cdf86f8ef8b6eb3ecf365</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_DATA_HASH_SIZE</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga7c0e59971e52bc0a110b2a7066ea2732</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_POLL_ERROR</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga55f5cf0f097a98b03e1511d1b6bd91b2</anchor>
-      <arglist>(e)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_POLL_TIMEOUT_USE_DEFAULT</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0fc8aa94a3e9bb10cb26d85c6474d04e</anchor>
-      <arglist></arglist>
-    </member>
     <member kind="define">
       <type>#define</type>
       <name>VALIDATE_MAXEVENTS</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>gad5c973c74b3941d078d573439e92c65b</anchor>
       <arglist>(maxevents, event_type)</arglist>
     </member>
     <member kind="define">
       <type>#define</type>
       <name>VALIDATE_FD</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>ga72ef813749c8c54d8f8ccf64ba724a0a</anchor>
       <arglist>(fd)</arglist>
     </member>
     <member kind="typedef">
-      <type>void(*</type>
-      <name>SocketTimerCallback</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gafb51f69cdbf1b882a7a4226959c4fca7</anchor>
-      <arglist>)(void *userdata)</arglist>
-    </member>
-    <member kind="typedef">
       <type>struct PollBackend_T *</type>
       <name>PollBackend_T</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__event__system__backend.html</anchorfile>
       <anchor>gadd97c2d63f6b491ef855bd928211e71b</anchor>
       <arglist></arglist>
     </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>SocketPoll_Events</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga9e8943c9cb47aba63dda4ad9083142b6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>POLL_READ</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>POLL_WRITE</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>POLL_ERROR</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6a29422ea3bfa0fde21ed413e6f9d7b0d9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>POLL_HANGUP</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gga9e8943c9cb47aba63dda4ad9083142b6aaa263b6ed4ed526b0d9c55f0c2702f4c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTimer_heap_T *</type>
-      <name>SocketTimer_heap_new</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga18f3d33b3f70cc8620fef042ca65e66a</anchor>
-      <arglist>(Arena_T arena)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTimer_heap_free</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga3257343cc10ae56314c03abd8311d873</anchor>
-      <arglist>(SocketTimer_heap_T **heap)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTimer_heap_push</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga04afe41789d51a71d4a03883a89ad61c</anchor>
-      <arglist>(SocketTimer_heap_T *heap, struct SocketTimer_T *timer)</arglist>
-    </member>
-    <member kind="function">
-      <type>struct SocketTimer_T *</type>
-      <name>SocketTimer_heap_pop</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga9e40363cf44bb1025f2269ddc2cef0d2</anchor>
-      <arglist>(SocketTimer_heap_T *heap)</arglist>
-    </member>
-    <member kind="function">
-      <type>struct SocketTimer_T *</type>
-      <name>SocketTimer_heap_peek</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0961e214a845a52c242176ed425095a3</anchor>
-      <arglist>(SocketTimer_heap_T *heap)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64_t</type>
-      <name>SocketTimer_heap_peek_delay</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga0f7deeb47aba9580052152bbf036c419</anchor>
-      <arglist>(SocketTimer_heap_T *heap)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTimer_process_expired</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga888ed4acbf5d1ca29bdafc07f346566e</anchor>
-      <arglist>(SocketTimer_heap_T *heap)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTimer_heap_cancel</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga8af1dd7cd2864bea6226054f1ff9b22b</anchor>
-      <arglist>(SocketTimer_heap_T *heap, struct SocketTimer_T *timer)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64_t</type>
-      <name>SocketTimer_heap_remaining</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga69365f1c685576d76414fbb43fe2248b</anchor>
-      <arglist>(SocketTimer_heap_T *heap, const struct SocketTimer_T *timer)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTimer_T</type>
-      <name>SocketTimer_add</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga2537cebf106e583079ec472086a26d65</anchor>
-      <arglist>(SocketPoll_T poll, int64_t delay_ms, SocketTimerCallback callback, void *userdata)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTimer_T</type>
-      <name>SocketTimer_add_repeating</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga6961bde0e491d732450b66577294d097</anchor>
-      <arglist>(SocketPoll_T poll, int64_t interval_ms, SocketTimerCallback callback, void *userdata)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTimer_cancel</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga6f7ca05c6cfc7c69ddc3d676a681bc62</anchor>
-      <arglist>(SocketPoll_T poll, SocketTimer_T timer)</arglist>
-    </member>
-    <member kind="function">
-      <type>int64_t</type>
-      <name>SocketTimer_remaining</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga4c5519b89e0bba69f26d03b6893ba779</anchor>
-      <arglist>(SocketPoll_T poll, SocketTimer_T timer)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTimer_heap_T *</type>
-      <name>socketpoll_get_timer_heap</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gaf791d7d3363309127dbdd94e4181b8c3</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketPoll_T</type>
-      <name>SocketPoll_new</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gac1fbd1a09d564f7988b0e427e5707ca7</anchor>
-      <arglist>(int maxevents)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_free</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gaca744c50badbdb869c52088b9f32f8d2</anchor>
-      <arglist>(SocketPoll_T *poll)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_add</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e</anchor>
-      <arglist>(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_mod</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga3755cc4d5ed8838ce2261f0efd1d5d85</anchor>
-      <arglist>(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_del</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga3074c5a225a7c49880951ecfb984498f</anchor>
-      <arglist>(SocketPoll_T poll, Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketPoll_getdefaulttimeout</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga1bb5e288308c3de5a479b27366bba257</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_setdefaulttimeout</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga945845cc57758a91e47a75ef17064d2a</anchor>
-      <arglist>(SocketPoll_T poll, int timeout)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketPoll_wait</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gaa3d47365dd18329d50ee636284839738</anchor>
-      <arglist>(SocketPoll_T poll, SocketEvent_T **events, int timeout)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketAsync_T</type>
-      <name>SocketPoll_get_async</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga665b3363d16ab859ec60e69a792d1ff0</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketPoll_getmaxregistered</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga16688a9e444183863bab8051f57fe688</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketPoll_setmaxregistered</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga35d4052d444bcab4cae26f41cf5729eb</anchor>
-      <arglist>(SocketPoll_T poll, int max)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketPoll_getregisteredcount</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gac79e719de24f09f84eb3816b3ab60c65</anchor>
-      <arglist>(SocketPoll_T poll)</arglist>
-    </member>
+  </compound>
+  <compound kind="group">
+    <name>backend_functions</name>
+    <title>Backend Function API</title>
+    <filename>group__backend__functions.html</filename>
     <member kind="function">
       <type>PollBackend_T</type>
       <name>backend_new</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>gaa198b207e04b5bb6bec2746c7d86b735</anchor>
       <arglist>(Arena_T arena, int maxevents)</arglist>
     </member>
     <member kind="function">
       <type>void</type>
       <name>backend_free</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>ga30a767499b3aa80b77e4fb63368be228</anchor>
       <arglist>(PollBackend_T backend)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>backend_add</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>gaa51ec4e5f966a860cdd9359c36e977c6</anchor>
       <arglist>(PollBackend_T backend, int fd, unsigned events)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
       <name>backend_mod</name>
-      <anchorfile>group__event__system.html</anchorfile>
+      <anchorfile>group__backend__functions.html</anchorfile>
       <anchor>ga4b929e888a5088e59cd045c41759363e</anchor>
       <arglist>(PollBackend_T backend, int fd, unsigned events)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>backend_del</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gae9ec719e250346605c00e5b3efb2e7d8</anchor>
-      <arglist>(PollBackend_T backend, int fd)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>backend_wait</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga5b2c06638f0c76ea3c6c2f38503d266b</anchor>
-      <arglist>(PollBackend_T backend, int timeout_ms)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>backend_get_event</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gad998de1df9f46711f5c3b4dc0257f548</anchor>
-      <arglist>(const PollBackend_T backend, int index, int *fd_out, unsigned *events_out)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>backend_name</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga2edb00f128ad773d62c8f11c516153d9</anchor>
-      <arglist>(void)</arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTimer_Failed</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>ga2f0acf311c238671c6d9d14d4cc7c158</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketPoll_Failed</name>
-      <anchorfile>group__event__system.html</anchorfile>
-      <anchor>gab4754362476e3ffc3e000b1cbcc2a6f0</anchor>
-      <arglist></arglist>
     </member>
   </compound>
   <compound kind="group">
@@ -37732,6 +40831,20 @@
       <name>T</name>
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RECONNECT_ERROR_BUFSIZE</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>gacb408f000a8df7938e79ddf2a1e26ae7</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="define">
+      <type>#define</type>
+      <name>SOCKET_RECONNECT_MAX_HOST_LEN</name>
+      <anchorfile>group__connection__mgmt.html</anchorfile>
+      <anchor>ga2b81d768340db7dd2d315d1037f85c5e</anchor>
       <arglist></arglist>
     </member>
     <member kind="typedef">
@@ -37920,20 +41033,6 @@
       <arglist></arglist>
     </member>
     <member kind="function">
-      <type>struct Connection *</type>
-      <name>SocketPool_connections_allocate_array</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>gade1f70a34432ae896e257fb0ee350c26</anchor>
-      <arglist>(size_t maxconns)</arglist>
-    </member>
-    <member kind="function">
-      <type>Connection_T *</type>
-      <name>SocketPool_connections_allocate_hash_table</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga21e158d703adc910946bca1ec5ca6b86</anchor>
-      <arglist>(Arena_T arena)</arglist>
-    </member>
-    <member kind="function">
       <type>void</type>
       <name>SocketPool_connections_initialize_slot</name>
       <anchorfile>group__connection__mgmt.html</anchorfile>
@@ -38033,13 +41132,6 @@
     </member>
     <member kind="function">
       <type>void</type>
-      <name>SocketPool_connections_release_buffers</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga9cd17434558e5aa3cd77339b3043cd3a</anchor>
-      <arglist>(Connection_T conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
       <name>SocketPool_connections_reset_slot</name>
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>gacf51388d2a06f1d1b1caa4d55fe29159</anchor>
@@ -38058,13 +41150,6 @@
       <anchorfile>group__connection__mgmt.html</anchorfile>
       <anchor>ga93e4d3464b3def2864e59849788aaf11</anchor>
       <arglist>(Connection_T conn, time_t now)</arglist>
-    </member>
-    <member kind="function">
-      <type>Socket_T *</type>
-      <name>SocketPool_cleanup_allocate_buffer</name>
-      <anchorfile>group__connection__mgmt.html</anchorfile>
-      <anchor>ga42428b94afc3df0714036baf96dbc1f3</anchor>
-      <arglist>(Arena_T arena, size_t maxconns)</arglist>
     </member>
     <member kind="function">
       <type>unsigned</type>
@@ -38677,10 +41762,29 @@
     </member>
   </compound>
   <compound kind="group">
+    <name>socket_live_utils</name>
+    <title>Live Socket Counting Utilities</title>
+    <filename>group__socket__live__utils.html</filename>
+    <member kind="function">
+      <type>int</type>
+      <name>Socket_debug_live_count</name>
+      <anchorfile>group__socket__live__utils.html</anchorfile>
+      <anchor>gaa8cacd863c275e6e12f7c63b65708e1b</anchor>
+      <arglist>(void)</arglist>
+    </member>
+  </compound>
+  <compound kind="group">
+    <name>socket_tls_utils</name>
+    <title>Internal TLS Field Utilities</title>
+    <filename>group__socket__tls__utils.html</filename>
+  </compound>
+  <compound kind="group">
     <name>core_io</name>
     <title>Core I/O Modules</title>
     <filename>group__core__io.html</filename>
     <subgroup>dns</subgroup>
+    <subgroup>socket_live_utils</subgroup>
+    <subgroup>socket_tls_utils</subgroup>
     <subgroup>proxy_private</subgroup>
     <subgroup>proxy</subgroup>
     <file>Socket-private.h</file>
@@ -38689,7 +41793,6 @@
     <file>SocketCommon-private.h</file>
     <file>SocketCommon.h</file>
     <file>SocketDgram-private.h</file>
-    <file>SocketDgram.h</file>
     <file>SocketIO.h</file>
     <file>SocketProxy-private.h</file>
     <file>SocketProxy.h</file>
@@ -39520,6 +42623,13 @@
       <arglist>(int fd)</arglist>
     </member>
     <member kind="function">
+      <type>int</type>
+      <name>Socket_debug_live_count</name>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>gaa8cacd863c275e6e12f7c63b65708e1b</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="function">
       <type>void</type>
       <name>Socket_bind</name>
       <anchorfile>group__core__io.html</anchorfile>
@@ -40228,6 +43338,20 @@
     </member>
     <member kind="function">
       <type>void</type>
+      <name>SocketCommon_init_base</name>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>ga1aa5d2cb4d591e902973e55dc9f1282d</anchor>
+      <arglist>(SocketBase_T base, int fd, int domain, int type, int protocol, Except_T exc_type)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>socketcommon_sanitize_timeout</name>
+      <anchorfile>group__core__io.html</anchorfile>
+      <anchor>gac37fe3d789eae0e522f29fca1ec49956</anchor>
+      <arglist>(int timeout_ms)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
       <name>SocketCommon_setup_hints</name>
       <anchorfile>group__core__io.html</anchorfile>
       <anchor>ga47abb5d32959260cc8251419d652de1b</anchor>
@@ -40556,244 +43680,6 @@
       <arglist>(void)</arglist>
     </member>
     <member kind="function">
-      <type>SocketDgram_T</type>
-      <name>SocketDgram_new</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gad6902c87ab5883f155dab2adfa950c52</anchor>
-      <arglist>(int domain, int protocol)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_free</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga020169c79640786afa4c36fd1dc965e4</anchor>
-      <arglist>(SocketDgram_T *socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_bind</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga0c81d9ef1d90e7ab34dd7286f13878ee</anchor>
-      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gabcb18c16142d3b5ef49bee08a96e15fa</anchor>
-      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_sendto</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga08371cbf32cb15528b42e189f8267923</anchor>
-      <arglist>(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_recvfrom</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gada4b76edaec59a44eb5bc959e6948d3f</anchor>
-      <arglist>(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_send</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga08b2ab199a5c50a654683ba1ddb4d004</anchor>
-      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_recv</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gaf832ef8734ab4dfb43ad639470461bda</anchor>
-      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_sendall</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gadc08ada68a6f9a6922d4e2b0b8f4c081</anchor>
-      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_recvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gaf96de127ecced1b5d8166e6a039e664c</anchor>
-      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_sendv</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga2527bddec3459405a6a989de06727a2f</anchor>
-      <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_recvv</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga485908b4ff4a79f514f8e86ec6030107</anchor>
-      <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_sendvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gaa208c4a07e76579c3e924ee31ea02777</anchor>
-      <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDgram_recvvall</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga31fd826092fb6b9c1a3b11953568f2d6</anchor>
-      <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setnonblocking</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga1817a8561af1801a9baa7630bc277ce6</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setreuseaddr</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga74995a7164d93c4e958da6642e0f317d</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setreuseport</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga9770b3c571ac6a900071db266a632816</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setbroadcast</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga637a1a778f293e4843f2355a9299d381</anchor>
-      <arglist>(SocketDgram_T socket, int enable)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_joinmulticast</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gae25dbfe6a79cb46494ec438accb53db0</anchor>
-      <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_leavemulticast</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga53cb8e627cf35e3d0c6db85e3bc33bab</anchor>
-      <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setttl</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga22d94185a6ccf28eceb98d69240ba3d2</anchor>
-      <arglist>(SocketDgram_T socket, int ttl)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_settimeout</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gafe579d108c83517ff9ceeac750139bc4</anchor>
-      <arglist>(SocketDgram_T socket, int timeout_sec)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_gettimeout</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga99243c75f546aab2534b529611b647f8</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_getbroadcast</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gae6c2bde38c3a7addb7cfffe98a253f60</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_getttl</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga6b91970d4ffe2a7162c4104b0b6de78f</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_getrcvbuf</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gab0dd532f19eef5d8220480e06cc3a7db</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_getsndbuf</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gaf54f02197f8c0dc53fbdf333d476aae2</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_isconnected</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga73455982ede6d44649f85adb25c4bda2</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_isbound</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga06d3085b3b7287330e8cb49d6d9a4da1</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_fd</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga54e91e6824df0c114a5e6a4d79e5c6fb</anchor>
-      <arglist>(const SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketDgram_getlocaladdr</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga9822234959be9508363bb3c0f2bd47b7</anchor>
-      <arglist>(const SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_getlocalport</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga8b2685e6ad39d1c2fc16df7234f7a87a</anchor>
-      <arglist>(const SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDgram_setcloexec</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gacc7a0ae08dfe973bee1067aa4a6869d2</anchor>
-      <arglist>(SocketDgram_T socket, int enable)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDgram_debug_live_count</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga0e8f0a454d58b2ff87878e39960c9187</anchor>
-      <arglist>(void)</arglist>
-    </member>
-    <member kind="function">
       <type>ssize_t</type>
       <name>socket_send_internal</name>
       <anchorfile>group__core__io.html</anchorfile>
@@ -40897,118 +43783,6 @@
       <anchorfile>group__core__io.html</anchorfile>
       <anchor>gaed6f15d7cead4ae400033b6811f283e6</anchor>
       <arglist>(int64_t start_ms)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_socks5_send_greeting</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga0fcced421154218776f5077fa437f58e</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks5_recv_method</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga3695eb1c73d0f31fe1ac6d51f677ab73</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_socks5_send_auth</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gaf0c10ebe07ba3206fd7e5e6725960e9a</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks5_recv_auth</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga54e8297c18caa6bb448daa0d1dceafeb</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_socks5_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gad730a252b44728ae21660f2d168b66e3</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks5_recv_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gae140af2a9af5d32b1786df145d2ccc07</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks5_reply_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga4799fc5a08ded667f5518862c078c1bd</anchor>
-      <arglist>(int reply)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_socks4_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga93a6b1c4f6b287b308b18207368ad092</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_socks4a_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga904ce0bf17f24e2e2783aaf8f1491c03</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks4_recv_response</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga82d72fd16b045c8660210f9ad861a879</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_socks4_reply_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga2f17a3a05ffed99bade9280577b4bb25</anchor>
-      <arglist>(int reply)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>proxy_http_send_connect</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga58484981c55e00df7a24b50671aefa87</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_http_recv_response</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga56bdb1756a98a60198184587c4902265</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketProxy_Result</type>
-      <name>proxy_http_status_to_result</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga9afd213292a65fd6db0e416fa37a433b</anchor>
-      <arglist>(int status)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>socketproxy_advance_state</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>gada1416d62b5113240c93bd3020dc4b68</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>socketproxy_set_error</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga590a8e0ece3a282a17f59778b6f9d757</anchor>
-      <arglist>(struct SocketProxy_Conn_T *conn, SocketProxy_Result result, const char *fmt,...)</arglist>
     </member>
     <member kind="function">
       <type>int</type>
@@ -41257,13 +44031,6 @@
     </member>
     <member kind="variable">
       <type>const Except_T</type>
-      <name>SocketDgram_Failed</name>
-      <anchorfile>group__core__io.html</anchorfile>
-      <anchor>ga28354c49d1726c674932f420a57bb21d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
       <name>SocketProxy_Failed</name>
       <anchorfile>group__core__io.html</anchorfile>
       <anchor>ga8c1385083c8f3a50e20e1ce11faec7b1</anchor>
@@ -41287,8 +44054,6 @@
     <file>SocketHappyEyeballs.h</file>
     <class kind="struct">AsyncRequest</class>
     <class kind="struct">SocketAsync_T</class>
-    <class kind="struct">SocketHE_Attempt_T</class>
-    <class kind="struct">SocketHE_AddressEntry_T</class>
     <class kind="struct">SocketHE_T</class>
     <class kind="struct">SocketHE_Config_T</class>
     <member kind="define">
@@ -41325,13 +44090,6 @@
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>gaa146f664c1a8f3c05b5aa72766bc9c90</anchor>
       <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>HE_FOREACH_ATTEMPT</name>
-      <anchorfile>group__async__io.html</anchorfile>
-      <anchor>gabbef7b94e157f9c32222e8176b395da4</anchor>
-      <arglist>(he, iter)</arglist>
     </member>
     <member kind="define">
       <type>#define</type>
@@ -41587,6 +44345,20 @@
       <arglist></arglist>
     </member>
     <member kind="variable">
+      <type>struct addrinfo *</type>
+      <name>addr</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>gabf6dc3901a5139f2f7f093db3003b798</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type>int</type>
+      <name>family</name>
+      <anchorfile>group__async__io.html</anchorfile>
+      <anchor>ga4417150d9f858949bd9ea8794995ebcc</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
       <type>const Except_T</type>
       <name>SocketHE_Failed</name>
       <anchorfile>group__async__io.html</anchorfile>
@@ -41640,6 +44412,264 @@
       <name>SOCKET_HE_PORT_STR_SIZE</name>
       <anchorfile>group__async__io.html</anchorfile>
       <anchor>ga07e470dce144233028bfd6d2193e8c03</anchor>
+      <arglist></arglist>
+    </member>
+  </compound>
+  <compound kind="group">
+    <name>socket_dgram</name>
+    <title>Datagram Sockets</title>
+    <filename>group__socket__dgram.html</filename>
+    <file>SocketDgram.h</file>
+    <member kind="define">
+      <type>#define</type>
+      <name>T</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="function">
+      <type>SocketDgram_T</type>
+      <name>SocketDgram_new</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gad6902c87ab5883f155dab2adfa950c52</anchor>
+      <arglist>(int domain, int protocol)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_free</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga020169c79640786afa4c36fd1dc965e4</anchor>
+      <arglist>(SocketDgram_T *socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_bind</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga0c81d9ef1d90e7ab34dd7286f13878ee</anchor>
+      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_connect</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gabcb18c16142d3b5ef49bee08a96e15fa</anchor>
+      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_sendto</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga08371cbf32cb15528b42e189f8267923</anchor>
+      <arglist>(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_recvfrom</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gada4b76edaec59a44eb5bc959e6948d3f</anchor>
+      <arglist>(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_send</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga08b2ab199a5c50a654683ba1ddb4d004</anchor>
+      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_recv</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gaf832ef8734ab4dfb43ad639470461bda</anchor>
+      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_sendall</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gadc08ada68a6f9a6922d4e2b0b8f4c081</anchor>
+      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_recvall</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gaf96de127ecced1b5d8166e6a039e664c</anchor>
+      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_sendv</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga2527bddec3459405a6a989de06727a2f</anchor>
+      <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_recvv</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga485908b4ff4a79f514f8e86ec6030107</anchor>
+      <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_sendvall</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gaa208c4a07e76579c3e924ee31ea02777</anchor>
+      <arglist>(SocketDgram_T socket, const struct iovec *iov, int iovcnt)</arglist>
+    </member>
+    <member kind="function">
+      <type>ssize_t</type>
+      <name>SocketDgram_recvvall</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga31fd826092fb6b9c1a3b11953568f2d6</anchor>
+      <arglist>(SocketDgram_T socket, struct iovec *iov, int iovcnt)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setnonblocking</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga1817a8561af1801a9baa7630bc277ce6</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setreuseaddr</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga74995a7164d93c4e958da6642e0f317d</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setreuseport</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga9770b3c571ac6a900071db266a632816</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setbroadcast</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga637a1a778f293e4843f2355a9299d381</anchor>
+      <arglist>(SocketDgram_T socket, int enable)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_joinmulticast</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gae25dbfe6a79cb46494ec438accb53db0</anchor>
+      <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_leavemulticast</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga53cb8e627cf35e3d0c6db85e3bc33bab</anchor>
+      <arglist>(SocketDgram_T socket, const char *group, const char *interface)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setttl</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga22d94185a6ccf28eceb98d69240ba3d2</anchor>
+      <arglist>(SocketDgram_T socket, int ttl)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_settimeout</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gafe579d108c83517ff9ceeac750139bc4</anchor>
+      <arglist>(SocketDgram_T socket, int timeout_sec)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_gettimeout</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga99243c75f546aab2534b529611b647f8</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_getbroadcast</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gae6c2bde38c3a7addb7cfffe98a253f60</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_getttl</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga6b91970d4ffe2a7162c4104b0b6de78f</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_getrcvbuf</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gab0dd532f19eef5d8220480e06cc3a7db</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_getsndbuf</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gaf54f02197f8c0dc53fbdf333d476aae2</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_isconnected</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga73455982ede6d44649f85adb25c4bda2</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_isbound</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga06d3085b3b7287330e8cb49d6d9a4da1</anchor>
+      <arglist>(SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_fd</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga54e91e6824df0c114a5e6a4d79e5c6fb</anchor>
+      <arglist>(const SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>const char *</type>
+      <name>SocketDgram_getlocaladdr</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga9822234959be9508363bb3c0f2bd47b7</anchor>
+      <arglist>(const SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_getlocalport</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga8b2685e6ad39d1c2fc16df7234f7a87a</anchor>
+      <arglist>(const SocketDgram_T socket)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>SocketDgram_setcloexec</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>gacc7a0ae08dfe973bee1067aa4a6869d2</anchor>
+      <arglist>(SocketDgram_T socket, int enable)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>SocketDgram_debug_live_count</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga0e8f0a454d58b2ff87878e39960c9187</anchor>
+      <arglist>(void)</arglist>
+    </member>
+    <member kind="variable">
+      <type>const Except_T</type>
+      <name>SocketDgram_Failed</name>
+      <anchorfile>group__socket__dgram.html</anchorfile>
+      <anchor>ga28354c49d1726c674932f420a57bb21d</anchor>
       <arglist></arglist>
     </member>
   </compound>
@@ -42063,6 +45093,118 @@
       <anchor>gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd</anchor>
       <arglist></arglist>
     </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_socks5_send_greeting</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga0fcced421154218776f5077fa437f58e</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks5_recv_method</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga3695eb1c73d0f31fe1ac6d51f677ab73</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_socks5_send_auth</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>gaf0c10ebe07ba3206fd7e5e6725960e9a</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks5_recv_auth</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga54e8297c18caa6bb448daa0d1dceafeb</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_socks5_send_connect</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>gad730a252b44728ae21660f2d168b66e3</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks5_recv_connect</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>gae140af2a9af5d32b1786df145d2ccc07</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks5_reply_to_result</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga4799fc5a08ded667f5518862c078c1bd</anchor>
+      <arglist>(int reply)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_socks4_send_connect</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga93a6b1c4f6b287b308b18207368ad092</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_socks4a_send_connect</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga904ce0bf17f24e2e2783aaf8f1491c03</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks4_recv_response</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga82d72fd16b045c8660210f9ad861a879</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_socks4_reply_to_result</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga2f17a3a05ffed99bade9280577b4bb25</anchor>
+      <arglist>(int reply)</arglist>
+    </member>
+    <member kind="function">
+      <type>int</type>
+      <name>proxy_http_send_connect</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga58484981c55e00df7a24b50671aefa87</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_http_recv_response</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga56bdb1756a98a60198184587c4902265</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>SocketProxy_Result</type>
+      <name>proxy_http_status_to_result</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga9afd213292a65fd6db0e416fa37a433b</anchor>
+      <arglist>(int status)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>socketproxy_advance_state</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>gada1416d62b5113240c93bd3020dc4b68</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn)</arglist>
+    </member>
+    <member kind="function">
+      <type>void</type>
+      <name>socketproxy_set_error</name>
+      <anchorfile>group__proxy__private.html</anchorfile>
+      <anchor>ga590a8e0ece3a282a17f59778b6f9d757</anchor>
+      <arglist>(struct SocketProxy_Conn_T *conn, SocketProxy_Result result, const char *fmt,...)</arglist>
+    </member>
   </compound>
   <compound kind="group">
     <name>proxy</name>
@@ -42137,6 +45279,50 @@
     <name>reconnect_private</name>
     <title>SocketReconnect Private Implementation Details</title>
     <filename>group__reconnect__private.html</filename>
+    <file>SocketReconnect-private.h</file>
+    <class kind="struct">SocketReconnect_T</class>
+    <member kind="function">
+      <type></type>
+      <name>if</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga0450dbfcd56214ed2989e6ff4d97b25d</anchor>
+      <arglist>(SocketCrypto_random_bytes(&amp;value, sizeof(value))==0)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>if</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>gaab33e6c19aa5cf524e12e3c40b50574a</anchor>
+      <arglist>(seed==0)</arglist>
+    </member>
+    <member kind="function">
+      <type></type>
+      <name>return</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga230fd1711fa730b54c9262bf533767f6</anchor>
+      <arglist>(double) seed/(double) 0xFFFFFFFFU</arglist>
+    </member>
+    <member kind="variable">
+      <type>int64_t</type>
+      <name>delta</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga7a21408446fbd8c658853d5f53e2c76f</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>else</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>ga0544c3fe466e421738dae463968b70ba</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="variable">
+      <type></type>
+      <name>seed</name>
+      <anchorfile>group__reconnect__private.html</anchorfile>
+      <anchor>gab31f6ed1e7e88c7cca70910409c6bbee</anchor>
+      <arglist></arglist>
+    </member>
   </compound>
   <compound kind="group">
     <name>websocket</name>
@@ -42973,6 +46159,12 @@
     </member>
   </compound>
   <compound kind="group">
+    <name>dtls</name>
+    <title>Datagram TLS (DTLS) Module</title>
+    <filename>group__dtls.html</filename>
+    <file>SocketDTLS.h</file>
+  </compound>
+  <compound kind="group">
     <name>dtls_config</name>
     <title>DTLS Configuration Constants</title>
     <filename>group__dtls__config.html</filename>
@@ -43341,1642 +46533,6 @@
     </member>
   </compound>
   <compound kind="group">
-    <name>security</name>
-    <title>Security Modules</title>
-    <filename>group__security.html</filename>
-    <subgroup>dtls_config</subgroup>
-    <subgroup>dtls_context</subgroup>
-    <subgroup>tls_config</subgroup>
-    <file>SocketIPTracker.h</file>
-    <file>SocketSYNProtect-private.h</file>
-    <file>SocketSYNProtect.h</file>
-    <file>SocketDTLS-private.h</file>
-    <file>SocketDTLS.h</file>
-    <file>SocketDTLSConfig.h</file>
-    <file>SocketTLS-private.h</file>
-    <file>SocketTLS.h</file>
-    <file>SocketTLSConfig.h</file>
-    <file>SocketTLSContext.h</file>
-    <class kind="struct">SocketSYN_IPEntry</class>
-    <class kind="struct">SocketSYN_WhitelistEntry</class>
-    <class kind="struct">SocketSYN_BlacklistEntry</class>
-    <class kind="struct">SocketSYNProtect_T</class>
-    <class kind="struct">DTLSContextCookie</class>
-    <class kind="struct">DTLSContextALPN</class>
-    <class kind="struct">SocketDTLSContext_T</class>
-    <class kind="struct">TLSCertPin</class>
-    <class kind="struct">TLSContextPinning</class>
-    <class kind="struct">TLSContextSNICerts</class>
-    <class kind="struct">TLSContextALPN</class>
-    <class kind="struct">SocketTLSContext_T</class>
-    <class kind="struct">SocketTLSConfig_T</class>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_WINDOW_MS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae062b2bac82d2ca78edc6658135b25a4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_MAX_PER_WINDOW</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8c43db9a86f5f49f85c535b7e01a9cd2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_GLOBAL_PER_SEC</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf02ac0a68cee3923b135a1e423622f61</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_MIN_SUCCESS_RATIO</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae0b03e45dca47aec6f4203011b1161f3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_THROTTLE_DELAY_MS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaae5bbd0b37027680dfa2c0c58773fef6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_BLOCK_DURATION_MS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaff44ca76156e6010520f4d231fbf7109</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_DEFER_SEC</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga7883d7f2995a8046776d818de6dbaa2e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_SCORE_THROTTLE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8a91a7da051b6462f126bc329f1e5cda</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_SCORE_CHALLENGE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga67a51dcadef9eb934f3342e9e02f6fd5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_SCORE_BLOCK</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9608aa5a6bbbe4cbc60c9442d094cfd0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_SCORE_DECAY</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8b8d879d7477b5a59170487f2ef38cd0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_PENALTY_ATTEMPT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4122f191a253666fdb691929b3cd4173</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_PENALTY_FAILURE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4f01c6ca60bf199d42dde59f0159074c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_REWARD_SUCCESS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9a0acbe7229a03abfe70205717d511c4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_MAX_TRACKED_IPS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga842d1a441b3a55a43f2066087ff6ff59</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_MAX_WHITELIST</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac1a28d9573c05725ca3abb96239b83ee</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_DEFAULT_MAX_BLACKLIST</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac82e2e73ae29b0b0e8699d8b81bb29c3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_SYN_TRUSTED_SCORE_THRESHOLD</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab0908a428243a18d0260754d417e023a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_IPV6_ADDR_BYTES</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga812e1a3066fafa145324e13ec013cb47</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_IPV4_ADDR_BYTES</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae1b769b5903588b4e6cbd40864a30d8e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_BITS_PER_BYTE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0c869f123d7c29c39cfe7d1dedd998a0</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>IOV_MAX</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga25080e819a36fcf9aede01a6e7298ea4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_HAS_TCP_DEFER_ACCEPT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab97bd3e7337b376f6be804f25d4d9c6d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>SOCKET_HAS_SO_ACCEPTFILTER</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga219b0a63c1ee02ecb27a9c932da08a51</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_DTLS_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1cfa464ec20b460ebee063b82b6100bf</anchor>
-      <arglist>(exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_DTLS_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaafbc899f00128359bdc6d2f9d02e8944</anchor>
-      <arglist>(exception, msg)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>REQUIRE_DTLS_ENABLED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga04c1b681fb568ffc8c89a37bcdcbcf80</anchor>
-      <arglist>(socket, exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>DTLS_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacca68f6e3be556e42dcd9ab54da96ded</anchor>
-      <arglist>(msg)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>DTLS_ERROR_FMT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4e97bd0cd12ea34b564755e1a377d02f</anchor>
-      <arglist>(fmt,...)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>VALIDATE_DTLS_IO_READY</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga223a7b4bdc35b2cd8c8828e3fd709414</anchor>
-      <arglist>(socket, exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_DTLS_CTX_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4fae8ada292cad16870182392605c800</anchor>
-      <arglist>(exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_DTLS_CTX_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac6bd008a794ad4ea28353a67d189fd7c</anchor>
-      <arglist>(exception, msg)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>DTLS_UNUSED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad7d623f22e9e764aba13c6b053c1506f</anchor>
-      <arglist>(x)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_TLS_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaaa5d5a165d617e880e0761f54333d859</anchor>
-      <arglist>(exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_TLS_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaa846eebc97332827b77e55db99ba9895</anchor>
-      <arglist>(exception, fmt,...)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>REQUIRE_TLS_ENABLED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga6bcf5ec61bfa6d15fb692b360e8ab2c7</anchor>
-      <arglist>(socket, exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>TLS_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga839d12558ca20b9a5fd8fa25fa7db99a</anchor>
-      <arglist>(msg)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>TLS_ERROR_FMT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab9caf93eecdc58f0e12ae64ebe268290</anchor>
-      <arglist>(fmt,...)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>VALIDATE_TLS_IO_READY</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0d2d601289b5057ded1c7f81dd3212dc</anchor>
-      <arglist>(socket, exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>CRL_LOCK</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaa514b917b04e794f8081ad2b4c4a3418</anchor>
-      <arglist>(ctx)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>CRL_UNLOCK</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga53ced6e38182130231a1ce309700ded4</anchor>
-      <arglist>(ctx)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_CTX_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga179054cc1104e4de13a76ab914dae33b</anchor>
-      <arglist>(exception)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_CTX_ERROR_MSG</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1239b3e52ccbd1cbfec9b485e6f83214</anchor>
-      <arglist>(exception, fmt,...)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>RAISE_CTX_ERROR_FMT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga20e5da948c90e67bb0a186f7a58416fc</anchor>
-      <arglist>(exception, fmt,...)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>TLS_UNUSED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga7ff1ea56cca8070de8806165d1b107ea</anchor>
-      <arglist>(x)</arglist>
-    </member>
-    <member kind="define">
-      <type>#define</type>
-      <name>T</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0acb682b8260ab1c60b918599864e2e5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>struct SocketTLS_T *</type>
-      <name>SocketTLS_T</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga63e73c93350813167a68162c5cb3d819</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="typedef">
-      <type>int(*</type>
-      <name>SocketTLSVerifyCallback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac9a12208531822c8304c23dcbcb8ba97</anchor>
-      <arglist>)(int preverify_ok, X509_STORE_CTX *x509_ctx, SocketTLSContext_T tls_ctx, Socket_T socket, void *user_data)</arglist>
-    </member>
-    <member kind="typedef">
-      <type>void(*</type>
-      <name>SocketTLSCrlCallback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga60686895b6fbdd1290a6f6176484bf5b</anchor>
-      <arglist>)(SocketTLSContext_T ctx, const char *path, int success, void *user_data)</arglist>
-    </member>
-    <member kind="typedef">
-      <type>OCSP_RESPONSE *(*</type>
-      <name>SocketTLSOcspGenCallback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1acd7a590114ffbf4307a6f5a3bab35c</anchor>
-      <arglist>)(SSL *ssl, void *arg)</arglist>
-    </member>
-    <member kind="typedef">
-      <type>X509 *(*</type>
-      <name>SocketTLSCertLookupCallback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga5c2914ee879d575869932c3a3aed4863</anchor>
-      <arglist>)(X509_STORE_CTX *store_ctx, X509_NAME *name, void *user_data)</arglist>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>DTLSHandshakeState</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8e83c28a6ad188b97243c4b237ee075a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_NOT_STARTED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aac64c8906fdc9860f22cacc933593f01d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_IN_PROGRESS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aad8f8ad815c25bf8e696b02a71795f66d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_WANT_READ</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aaa17434dadb8cec2cfe51d9437f6fdbd9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_WANT_WRITE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aad5e0e23bed76e7569444db7c50c38fc8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_COOKIE_EXCHANGE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa206e6713dc03f89a32b4567221dedb78</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_COMPLETE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa11985350a6b101701d89412f26fdeba5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>DTLS_HANDSHAKE_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga8e83c28a6ad188b97243c4b237ee075aa929e6faa551a280db427a04ae5ced133</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>TLSHandshakeState</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad092160c037d01929df1bb8d5b75b43c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_NOT_STARTED</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_IN_PROGRESS</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43ca445915a69a47e09546e8d5b275eedf2a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_WANT_READ</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43cab268d75e71356121ccf44e8e5f4ab592</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_WANT_WRITE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_COMPLETE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_HANDSHAKE_ERROR</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>TLSVerifyMode</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac32c3958835b92ff683ae15f78448694</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_VERIFY_NONE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggac32c3958835b92ff683ae15f78448694a0ada1cef646c3b57e9a793035dcc0a6f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_VERIFY_PEER</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggac32c3958835b92ff683ae15f78448694ae56010acbcb7edcdcd7707be028cc6fe</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_VERIFY_FAIL_IF_NO_PEER_CERT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggac32c3958835b92ff683ae15f78448694a29928ea4593855bb860f7a0bb8eb027d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>TLS_VERIFY_CLIENT_ONCE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ggac32c3958835b92ff683ae15f78448694abbcde32e72faadf92044da1ccc76f183</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumeration">
-      <type></type>
-      <name>CTValidationMode</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4d930163393a67950a5378e540c0e939</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>CT_VALIDATION_PERMISSIVE</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga4d930163393a67950a5378e540c0e939aea499abb40ae318f0fd2b596ce6cbaa8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="enumvalue">
-      <name>CT_VALIDATION_STRICT</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="function">
-      <type>SocketIPTracker_T</type>
-      <name>SocketIPTracker_new</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab87cad57ddf1ed19226cf8535456bbde</anchor>
-      <arglist>(Arena_T arena, int max_per_ip)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketIPTracker_free</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1a9850f5f3c08335dd18e2a8dbfaed39</anchor>
-      <arglist>(SocketIPTracker_T *tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketIPTracker_track</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga796a06e82e58c6fea3deaf767101dea3</anchor>
-      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketIPTracker_release</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga340ee75715f9dd3a6446dc3ec2c528dc</anchor>
-      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketIPTracker_count</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga01a74a09256ae28c23c79244f6b832c0</anchor>
-      <arglist>(SocketIPTracker_T tracker, const char *ip)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketIPTracker_setmax</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga3ae1930faa05574038978e46612e5385</anchor>
-      <arglist>(SocketIPTracker_T tracker, int max_per_ip)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketIPTracker_getmax</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga2633ef22c045d2a4ab7f260b508bd5fc</anchor>
-      <arglist>(SocketIPTracker_T tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketIPTracker_setmaxunique</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9f416e973e3f32b1c9cf2a2b620214f4</anchor>
-      <arglist>(SocketIPTracker_T tracker, size_t max_unique)</arglist>
-    </member>
-    <member kind="function">
-      <type>size_t</type>
-      <name>SocketIPTracker_getmaxunique</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0e4510d8147198039726bd8250b95afb</anchor>
-      <arglist>(SocketIPTracker_T tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>size_t</type>
-      <name>SocketIPTracker_total</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga3e69b52a3b64cbba1b17711c9961095f</anchor>
-      <arglist>(SocketIPTracker_T tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>size_t</type>
-      <name>SocketIPTracker_unique_ips</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad8639fe1f640949b820cd1496a67ca56</anchor>
-      <arglist>(SocketIPTracker_T tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketIPTracker_clear</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga47055e396eb7fa4f633bb19ec7720620</anchor>
-      <arglist>(SocketIPTracker_T tracker)</arglist>
-    </member>
-    <member kind="function">
-      <type>unsigned</type>
-      <name>synprotect_hash_ip</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga93f5774d64aab235b0af3908cf5fa15a</anchor>
-      <arglist>(SocketSYNProtect_T protect, const char *ip, unsigned table_size)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static float</type>
-      <name>synprotect_clamp_score</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacf287a7019c5ff677321e8b5fa390cf2</anchor>
-      <arglist>(float score)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static int64_t</type>
-      <name>synprotect_min</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga10a168a8c7d6d98660b8371b9b886fa8</anchor>
-      <arglist>(int64_t a, int64_t b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static int64_t</type>
-      <name>synprotect_max</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga86342ee431726d93daa749ed5eae611a</anchor>
-      <arglist>(int64_t a, int64_t b)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static SSL *</type>
-      <name>dtls_socket_get_ssl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8d5647f2b71d9cd5c60e6a1c385854dd</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static DTLSHandshakeState</type>
-      <name>dtls_handle_ssl_error</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaff7268760d38bc90af34fdbf313ecbb5</anchor>
-      <arglist>(SocketDgram_T socket, SSL *ssl, int ssl_result)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>dtls_format_openssl_error</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga52868028efe42ac286ffdcad2e5f8a51</anchor>
-      <arglist>(const char *context)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static int</type>
-      <name>dtls_validate_file_path</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga43a9d75df4015935d50b33c528342d80</anchor>
-      <arglist>(const char *path)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>dtls_cookie_generate_cb</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae37473787004b0ea65d2ee0b51702f44</anchor>
-      <arglist>(SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketDTLSContext_T</type>
-      <name>dtls_context_get_from_ssl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae23a324083d5bf71680d6fc525477a7a</anchor>
-      <arglist>(const SSL *ssl)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDTLS_enable</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad2f26460b23a711e0fa74605371cf127</anchor>
-      <arglist>(SocketDgram_T socket, SocketDTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDTLS_set_peer</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf742a2fb837173f6fd8d347e5bc1d1d3</anchor>
-      <arglist>(SocketDgram_T socket, const char *host, int port)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDTLS_set_hostname</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabf3857e3cea92190f4c6eca7a8418be3</anchor>
-      <arglist>(SocketDgram_T socket, const char *hostname)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDTLS_set_mtu</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga804d5dd4b27255e3c9c28c58a2914a18</anchor>
-      <arglist>(SocketDgram_T socket, size_t mtu)</arglist>
-    </member>
-    <member kind="function">
-      <type>DTLSHandshakeState</type>
-      <name>SocketDTLS_handshake</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga17e8bd79af2c5a20b5dbb9e8dff6f84c</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>DTLSHandshakeState</type>
-      <name>SocketDTLS_handshake_loop</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga095bfc830b421398fbecacb1ac3d6755</anchor>
-      <arglist>(SocketDgram_T socket, int timeout_ms)</arglist>
-    </member>
-    <member kind="function">
-      <type>DTLSHandshakeState</type>
-      <name>SocketDTLS_listen</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0e2af3b3ad31869d659162ea06cf667b</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDTLS_send</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9fe6acb926cc7fbc8c4f0239834b5460</anchor>
-      <arglist>(SocketDgram_T socket, const void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDTLS_recv</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac4fc033d5799456ce6d1b1417228c7e1</anchor>
-      <arglist>(SocketDgram_T socket, void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDTLS_sendto</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4e060f6143e7c9896452a6e0654041e5</anchor>
-      <arglist>(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketDTLS_recvfrom</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac974bd84fcd68c06870530c11908170f</anchor>
-      <arglist>(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketDTLS_get_cipher</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga12039ba9c9513fbf9df6e02f997d09ab</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketDTLS_get_version</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4651d3701fdc086051bc90cecb79b11e</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>SocketDTLS_get_verify_result</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad0e45780e041b9ddb58956d9f0fb20d1</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDTLS_is_session_reused</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaeeca3aaa5a1e0f7fbb22b16a465421fd</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketDTLS_get_alpn_selected</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae91ad38ad7d4a00961f342e3366d7097</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>size_t</type>
-      <name>SocketDTLS_get_mtu</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga7752aae6c38da47f187f8d766b4ae12e</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketDTLS_shutdown</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab42fd91bb31edaf15149d75920446a0a</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDTLS_is_shutdown</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaad0b27539517934a510df081364e08ab</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDTLS_is_enabled</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga861c0da7896b4275fb38ee2d0ac73af1</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketDTLS_is_handshake_done</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae702a60aae194a098bdc6af32549f1ae</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>DTLSHandshakeState</type>
-      <name>SocketDTLS_get_last_state</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga42abbf654fe23dd417b2115dc00590db</anchor>
-      <arglist>(SocketDgram_T socket)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static SSL *</type>
-      <name>tls_socket_get_ssl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac08c4201eb8ac29014cead5bf4a17adb</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static TLSHandshakeState</type>
-      <name>tls_handle_ssl_error</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga6e8705fd2d3c92c43e4b8105d38f3854</anchor>
-      <arglist>(Socket_T socket, SSL *ssl, int ssl_result)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>tls_format_openssl_error</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga603f6b5acb264e31bf6a0f71d5b48be5</anchor>
-      <arglist>(const char *context)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>tls_get_alpn_ex_idx</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab904e51ebbeabc985c3988fc0980776e</anchor>
-      <arglist>(void)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>tls_cleanup_alpn_temp</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga5521981e692a3cdd4176000e2282398f</anchor>
-      <arglist>(SSL *ssl)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>tls_secure_free_pkey</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabf9cbcc9cfbd30df1d1252ccaf34b8d0</anchor>
-      <arglist>(EVP_PKEY *pkey)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static int</type>
-      <name>tls_validate_hostname</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaebeabc646fbd6961894512930a822ca9</anchor>
-      <arglist>(const char *hostname)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>ctx_raise_openssl_error</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga88ff84e8a0b38713099d838de6404163</anchor>
-      <arglist>(const char *context)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static char *</type>
-      <name>ctx_arena_strdup</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac1dcd2082d3c29e557a920685766c44c</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *str, const char *error_msg)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static void *</type>
-      <name>ctx_arena_alloc</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9acf6c44e3887d6570aa5a3750a2b802</anchor>
-      <arglist>(SocketTLSContext_T ctx, size_t size, const char *error_msg)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>tls_context_get_from_ssl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaafa8d212678f77cf8c99a4e4914b6d97</anchor>
-      <arglist>(const SSL *ssl)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>tls_context_get_from_ssl_ctx</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacc208c7e1bc1f93a93e8db60903527fa</anchor>
-      <arglist>(SSL_CTX *ssl_ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>ctx_alloc_and_init</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1e43ba6d103cbc8f43b748cf2ddf4b9a</anchor>
-      <arglist>(const SSL_METHOD *method, int is_server)</arglist>
-    </member>
-    <member kind="function" static="yes">
-      <type>static void</type>
-      <name>tls_pinning_init</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga726c939b0e3e55893537751d2ea87dd8</anchor>
-      <arglist>(TLSContextPinning *pinning)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>tls_pinning_extract_spki_hash</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga828d1176538dad4796620257b2e9a4cb</anchor>
-      <arglist>(const X509 *cert, unsigned char *out_hash)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>tls_pinning_check_chain</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga5757cbf91f1a33f9da5ceedd6e7c19a9</anchor>
-      <arglist>(SocketTLSContext_T ctx, const STACK_OF(X509) *chain)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>tls_pinning_find</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga5de766a20624317123f664a08d5ca13d</anchor>
-      <arglist>(const TLSCertPin *pins, size_t count, const unsigned char *hash)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLS_enable</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab9a8fb788aa1f0d21b5773bc43a48d6f</anchor>
-      <arglist>(Socket_T socket, SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLS_set_hostname</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga15d2c8f4eaea80114bbd2123da025e56</anchor>
-      <arglist>(Socket_T socket, const char *hostname)</arglist>
-    </member>
-    <member kind="function">
-      <type>TLSHandshakeState</type>
-      <name>SocketTLS_handshake</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaeaa77dd7852b535baf17b53ee2518454</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>TLSHandshakeState</type>
-      <name>SocketTLS_handshake_loop</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga439248f2ff7b87470520de0607569d06</anchor>
-      <arglist>(Socket_T socket, int timeout_ms)</arglist>
-    </member>
-    <member kind="function">
-      <type>TLSHandshakeState</type>
-      <name>SocketTLS_handshake_auto</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga54a01327e253586278c0f740c2764010</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLS_shutdown</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab11506db6f41f31e9fc170b3d0e848f1</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketTLS_send</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabdb38e692dde58bbec4ab905eeb8b3aa</anchor>
-      <arglist>(Socket_T socket, const void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>ssize_t</type>
-      <name>SocketTLS_recv</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1c71fc02141cd9e6da4fdf1c88dbbaf3</anchor>
-      <arglist>(Socket_T socket, void *buf, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketTLS_get_cipher</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0859f0a6e05840bdc037c3765e22b7b1</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketTLS_get_version</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaef0f67021658d05419f1da479be2957e</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>SocketTLS_get_verify_result</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4fd56e743762151aa449744a8d574164</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketTLS_get_verify_error_string</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga39a966c33421653c64f78261f24ee1f1</anchor>
-      <arglist>(Socket_T socket, char *buf, size_t size)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLS_is_session_reused</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga315ccceb9cb5b74d8b90f1439ce57344</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>const char *</type>
-      <name>SocketTLS_get_alpn_selected</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga56acd283757bb0af4f4d59d3c0f218ea</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLS_config_defaults</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga122ad62f86b4477f7be54d55b769d58b</anchor>
-      <arglist>(SocketTLSConfig_T *config)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>SocketTLSContext_new_server</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga79a403f2f54f21c90a92e9cb73e24cbc</anchor>
-      <arglist>(const char *cert_file, const char *key_file, const char *ca_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>SocketTLSContext_new_client</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga7fe51da14439d768bdf72f4ed8fbb022</anchor>
-      <arglist>(const char *ca_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>SocketTLSContext_T</type>
-      <name>SocketTLSContext_new</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga69b7880fa99df9a39b4db5259a9e1234</anchor>
-      <arglist>(const SocketTLSConfig_T *config)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_load_certificate</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1e2af3e4421c3c20c7dbc4b99cfb4211</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *cert_file, const char *key_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_add_certificate</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga92be47dab18fc79c409fc8b450e7aa0d</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *hostname, const char *cert_file, const char *key_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_load_ca</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac4de1881e05f041a3d5016cba7d5a045</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *ca_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_verify_mode</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga71084c00bec22f65b90301188868b759</anchor>
-      <arglist>(SocketTLSContext_T ctx, TLSVerifyMode mode)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_free</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaea7ca3e656e9b58706fafc3232147203</anchor>
-      <arglist>(SocketTLSContext_T *ctx_p)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_verify_callback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga2712efd6f1918aa87a3120547c0cf64d</anchor>
-      <arglist>(SocketTLSContext_T ctx, SocketTLSVerifyCallback callback, void *user_data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_load_crl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8bf03223d7c3b3cd28f8d03fe082d15e</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_refresh_crl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9ea9577387ebc9edb186a6c491c67ab4</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_reload_crl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac5ba25c0153bc63b6087cff6304f4938</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *crl_path)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_crl_auto_refresh</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac049c86b0b5edba0a7bcb73ca2e1e2eb</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *crl_path, long interval_seconds, SocketTLSCrlCallback callback, void *user_data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_cancel_crl_auto_refresh</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab4bee293124b9d83681f9471f0519689</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_crl_check_refresh</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga516c739f9ab7a0a5968279aba78a250c</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>long</type>
-      <name>SocketTLSContext_crl_next_refresh_ms</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1e822bd45ec2dad56c13d541dcd0c23d</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_ocsp_response</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacad0c368922de598277e4237779504b7</anchor>
-      <arglist>(SocketTLSContext_T ctx, const unsigned char *response, size_t len)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_ocsp_gen_callback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0b49040701aa37f11720d9539c046347</anchor>
-      <arglist>(SocketTLSContext_T ctx, SocketTLSOcspGenCallback cb, void *arg)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLS_get_ocsp_status</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae1a1b2392cfa8dd68e636bbef9df443f</anchor>
-      <arglist>(Socket_T socket)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_enable_ocsp_stapling</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga414fb627189037256afd8c4e015b74d1</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_ocsp_stapling_enabled</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga7f214a19238ce8cd567d6ad6efa806c9</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_cert_lookup_callback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae1d9ff9d7e15f5a798d316ddf6ec6d53</anchor>
-      <arglist>(SocketTLSContext_T ctx, SocketTLSCertLookupCallback callback, void *user_data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_min_protocol</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaa7703e1d2c80b49601af8237e81729ef</anchor>
-      <arglist>(SocketTLSContext_T ctx, int version)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_max_protocol</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad094c4db92c9979bcde108166193abee</anchor>
-      <arglist>(SocketTLSContext_T ctx, int version)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_cipher_list</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga2e731151980c8c30a7fbb18da74ddffa</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *ciphers)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_alpn_protos</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4fcc29a81cf5c643ee9a56deb46b9ec8</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char **protos, size_t count)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_alpn_callback</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab7c088402bdf132a710551ebe2268ed0</anchor>
-      <arglist>(SocketTLSContext_T ctx, SocketTLSAlpnCallback callback, void *user_data)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_enable_session_cache</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga6f0a68e802e789df40eaa28cb641a422</anchor>
-      <arglist>(SocketTLSContext_T ctx, size_t max_sessions, long timeout_seconds)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_session_cache_size</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga51fa29a23c87a8f2a9c7b71b6731fb50</anchor>
-      <arglist>(SocketTLSContext_T ctx, size_t size)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_get_cache_stats</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga2093721c235cb8ebc83e90606abdcb33</anchor>
-      <arglist>(SocketTLSContext_T ctx, size_t *hits, size_t *misses, size_t *stores)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_enable_session_tickets</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae7d40e475eec529625a3d6ba74d23f4a</anchor>
-      <arglist>(SocketTLSContext_T ctx, const unsigned char *key, size_t key_len)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_add_pin</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga34caeef50e78017625d2eb62142a7e45</anchor>
-      <arglist>(SocketTLSContext_T ctx, const unsigned char *sha256_hash)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_add_pin_hex</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gafd50881da0db97098204ff6fa920bb26</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *hex_hash)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_add_pin_from_cert</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaa535f69cf93b2f0dec403e71336b0682</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *cert_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_add_pin_from_x509</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacf5982c65823fa0eedc34d8d933710a9</anchor>
-      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_clear_pins</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae201aacce977d32ab0187dd8b97d6c9a</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_pin_enforcement</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8a972b0da962c5515936444b6921182d</anchor>
-      <arglist>(SocketTLSContext_T ctx, int enforce)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_get_pin_enforcement</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9d03fb564c11628d54e76a1c177b8494</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>size_t</type>
-      <name>SocketTLSContext_get_pin_count</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaec2e531425cc03bff359517f60aa474c</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_has_pins</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaea37c149f7babbf14c28caf0ffef97cf</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_verify_pin</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac051204c676250b114e00af223055686</anchor>
-      <arglist>(SocketTLSContext_T ctx, const unsigned char *sha256_hash)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_verify_cert_pin</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae69fbca6dae1712eb7abd1f1b268926b</anchor>
-      <arglist>(SocketTLSContext_T ctx, const X509 *cert)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_enable_ct</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf27bede9402c6c8c7541143e019c635f</anchor>
-      <arglist>(SocketTLSContext_T ctx, CTValidationMode mode)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_ct_enabled</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga3b70029e86352f55e3710673ba30c23f</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>CTValidationMode</type>
-      <name>SocketTLSContext_get_ct_mode</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf18e867664012c78a758c5454f62c367</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>void</type>
-      <name>SocketTLSContext_set_ctlog_list_file</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gada967caf61c070399281b088b35ed78a</anchor>
-      <arglist>(SocketTLSContext_T ctx, const char *log_file)</arglist>
-    </member>
-    <member kind="function">
-      <type>void *</type>
-      <name>SocketTLSContext_get_ssl_ctx</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga6e8aae1b6b1182d3f83b8673fdbbe945</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="function">
-      <type>int</type>
-      <name>SocketTLSContext_is_server</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga39bd71708494c1c833d3064c3a70f8ad</anchor>
-      <arglist>(SocketTLSContext_T ctx)</arglist>
-    </member>
-    <member kind="variable">
-      <type>**Exception Types ****Action and Reputation Enums ****Per IP State Structure ****Configuration Structure ***Window</type>
-      <name>Settings</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9b34699e9829231f24474ab63710e297</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_Failed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga083605c4d8e6ea5658b72883f8e41be9</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_HandshakeFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gadffbcee0cdd3e2ea80a6a03a73755085</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_VerifyFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf1324e42b633182c01b0157ebfba0e9e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_CookieFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga69b6e30fa30bd7fe0a621d807796d73f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_TimeoutExpired</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga9a2543bc8c6671e774391f4861d4fa5d</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketDTLS_ShutdownFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga28d15a7e6fc136b5d542236ef27f0be6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>tls_context_exdata_idx</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaf6dd40cb19f09e9fffb7f30594372db2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>char</type>
-      <name>tls_error_buf</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8ca0182ebb7a93df98871664989b949b</anchor>
-      <arglist>[]</arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_Failed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabc011202dd4f2e080b6ea8eb0f24287e</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_HandshakeFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga82be75dd764021fb64cd6824768e2254</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_VerifyFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabe406e483a861198db5bca58300f1728</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_ProtocolError</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gad97195716332983bae10a77f275740bd</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_ShutdownFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gaa724dbe4115729ef621c0f1f74b5afd6</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>const Except_T</type>
-      <name>SocketTLS_PinVerifyFailed</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga445003fff70029dd096df971801be0e4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_ctx</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga1189362a5c97fc90222e06232de1bdfe</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_ssl</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga539711122c1eb94e27ac1d1f98581e4f</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketDgram_T::dtls_enabled</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga8b5dc596873a18adc6003b2595394223</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketDgram_T::dtls_handshake_done</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga5a3d07842374d449a9fa61fab416edc8</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketDgram_T::dtls_shutdown_done</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga701871c2fa48e90c055fc70524d65b04</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketDgram_T::dtls_last_handshake_state</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga3b8a6cfd63b8f12340dec5f778111c90</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>size_t</type>
-      <name>SocketDgram_T::dtls_mtu</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gab4c14b4e6c07e5f1ff646987622a611a</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>char *</type>
-      <name>SocketDgram_T::dtls_sni_hostname</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga4fdda17cd54e1f2365c69210a28b7c7c</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>char *</type>
-      <name>SocketDgram_T::dtls_peer_host</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga0430ae66a05abe2f9a50e79656d05b84</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int</type>
-      <name>SocketDgram_T::dtls_peer_port</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga560ea9583d1317b5992f825e4f9367e2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>struct addrinfo *</type>
-      <name>SocketDgram_T::dtls_peer_res</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga62d63165a3c926aaf21241ac798e0fe3</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>int64_t</type>
-      <name>SocketDgram_T::dtls_peer_cache_ts</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga40b959d65731e8a1462d8e6ef01d4a75</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_rbio</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gac9279985541f6f5feae01827ec148bd5</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_wbio</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga36e474764992051d21d2f5bbc2fcf4b2</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_read_buf</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>ga627026386fc506cec37e59271659a1cb</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>void *</type>
-      <name>SocketDgram_T::dtls_write_buf</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gabc75afb656bc9e46f3953b6fc0feb8c4</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>size_t</type>
-      <name>SocketDgram_T::dtls_read_buf_len</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gae8075af8c029579e8f939ac57d7a5699</anchor>
-      <arglist></arglist>
-    </member>
-    <member kind="variable">
-      <type>size_t</type>
-      <name>SocketDgram_T::dtls_write_buf_len</name>
-      <anchorfile>group__security.html</anchorfile>
-      <anchor>gacb96f6937a0f3c07e23f5073629f6bb4</anchor>
-      <arglist></arglist>
-    </member>
-  </compound>
-  <compound kind="group">
     <name>tls_config</name>
     <title>TLS Configuration Constants</title>
     <filename>group__tls__config.html</filename>
@@ -45192,6 +46748,19 @@
       <arglist></arglist>
     </member>
   </compound>
+  <compound kind="group">
+    <name>tls_context</name>
+    <title>TLS Context Management</title>
+    <filename>group__tls__context.html</filename>
+    <file>SocketTLSContext.h</file>
+    <member kind="typedef">
+      <type>const char *(*</type>
+      <name>SocketTLSAlpnCallback</name>
+      <anchorfile>group__tls__context.html</anchorfile>
+      <anchor>gaa53566f8d54960bb2d44516a50f67c70</anchor>
+      <arglist>)(const char **client_protos, size_t client_count, void *user_data)</arglist>
+    </member>
+  </compound>
   <compound kind="page">
     <name>http1_page</name>
     <title>HTTP/1.1 Module Overview</title>
@@ -45201,6 +46770,11 @@
     <name>proxy_guide</name>
     <title>Proxy Tunneling Guide</title>
     <filename>proxy_guide.html</filename>
+    <docanchor file="proxy_guide.html" title="URL Format">url-format</docanchor>
+    <docanchor file="proxy_guide.html" title="Using Existing Socket">custom-socket</docanchor>
+    <docanchor file="proxy_guide.html" title="Asynchronous API">async-api</docanchor>
+    <docanchor file="proxy_guide.html" title="Blocking Connect API">hybrid-api</docanchor>
+    <docanchor file="proxy_guide.html" title="Behaviors and Limitations">behaviors</docanchor>
   </compound>
   <compound kind="page">
     <name>async_io_guide</name>

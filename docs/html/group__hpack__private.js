@@ -1,57 +1,59 @@
 var group__hpack__private =
 [
-    [ "SocketHPACK-private.h", "SocketHPACK-private_8h.html", null ],
-    [ "HPACK_DynamicEntry", "group__http.html#structHPACK__DynamicEntry", [
-      [ "name", "group__http.html#aaf38824aa9d15e2897bc4175df8cf174", null ],
-      [ "name_len", "group__http.html#ae5cff4f699f7bc99322b1b05cc0a941c", null ],
-      [ "value", "group__http.html#a0c2ef0e32af91b0095cb1d4e2b68640a", null ],
-      [ "value_len", "group__http.html#ae5a6402faf5340e8f53e13371ccb8b34", null ]
+    [ "HPACK_DynamicEntry", "group__hpack__private.html#structHPACK__DynamicEntry", [
+      [ "name", "group__hpack__private.html#aaf38824aa9d15e2897bc4175df8cf174", null ],
+      [ "name_len", "group__hpack__private.html#ae5cff4f699f7bc99322b1b05cc0a941c", null ],
+      [ "value", "group__hpack__private.html#a0c2ef0e32af91b0095cb1d4e2b68640a", null ],
+      [ "value_len", "group__hpack__private.html#ae5a6402faf5340e8f53e13371ccb8b34", null ]
     ] ],
-    [ "SocketHPACK_Table_T", "group__http.html#structSocketHPACK__Table", [
-      [ "arena", "group__http.html#a8ef1bc9523a821cd345ea3cecf64464f", null ],
-      [ "capacity", "group__http.html#a6c163c2869d04eb47de479cdbf01d5d7", null ],
-      [ "count", "group__http.html#a78b5dcfe765af4dbaf0cd5c27c926ba0", null ],
-      [ "entries", "group__http.html#acdfefc6df12fb449f04b83dfe53600b2", null ],
-      [ "head", "group__http.html#ac484c8a394da7962c59f388aecf3a6fd", null ],
-      [ "max_size", "group__http.html#ab6a428895561bc70efa6cdbf9f7f9588", null ],
-      [ "size", "group__http.html#aa26d4af777700af33e7dd9a719e9c696", null ],
-      [ "tail", "group__http.html#a57a896d93426cece2640353814e6cdf6", null ]
+    [ "SocketHPACK_Table_T", "group__hpack__private.html#structSocketHPACK__Table", [
+      [ "arena", "group__hpack__private.html#a8ef1bc9523a821cd345ea3cecf64464f", null ],
+      [ "capacity", "group__hpack__private.html#a6c163c2869d04eb47de479cdbf01d5d7", null ],
+      [ "count", "group__hpack__private.html#a78b5dcfe765af4dbaf0cd5c27c926ba0", null ],
+      [ "entries", "group__hpack__private.html#acdfefc6df12fb449f04b83dfe53600b2", null ],
+      [ "head", "group__hpack__private.html#ac484c8a394da7962c59f388aecf3a6fd", null ],
+      [ "max_size", "group__hpack__private.html#ab6a428895561bc70efa6cdbf9f7f9588", null ],
+      [ "size", "group__hpack__private.html#aa26d4af777700af33e7dd9a719e9c696", null ],
+      [ "tail", "group__hpack__private.html#a57a896d93426cece2640353814e6cdf6", null ]
     ] ],
-    [ "SocketHPACK_Encoder_T", "group__http.html#structSocketHPACK__Encoder", [
-      [ "arena", "group__http.html#aadf9716eef8a648d913f5ba781273dc8", null ],
-      [ "huffman_encode", "group__http.html#ad947e2f67bc1041dd00883aa3d8aaf29", null ],
-      [ "pending_table_size", "group__http.html#a41fbbf708db674889957fd945907a96a", null ],
-      [ "pending_table_size_update", "group__http.html#a15c308cf5bef84fedc07a69a2e131450", null ],
-      [ "table", "group__http.html#a9c27fe02791883c173fe35ec57063755", null ],
-      [ "use_indexing", "group__http.html#a22c7126c261d1170ddda78e5ca50560b", null ]
+    [ "SocketHPACK_Encoder_T", "group__hpack__private.html#structSocketHPACK__Encoder", [
+      [ "arena", "group__hpack__private.html#aadf9716eef8a648d913f5ba781273dc8", null ],
+      [ "huffman_encode", "group__hpack__private.html#ad947e2f67bc1041dd00883aa3d8aaf29", null ],
+      [ "pending_table_size", "group__hpack__private.html#a41fbbf708db674889957fd945907a96a", null ],
+      [ "pending_table_size_update", "group__hpack__private.html#a15c308cf5bef84fedc07a69a2e131450", null ],
+      [ "table", "group__hpack__private.html#a9c27fe02791883c173fe35ec57063755", null ],
+      [ "use_indexing", "group__hpack__private.html#a22c7126c261d1170ddda78e5ca50560b", null ]
     ] ],
-    [ "SocketHPACK_Decoder_T", "group__http.html#structSocketHPACK__Decoder", [
-      [ "arena", "group__http.html#adf82bc9df6877c14cb5c94a5f6bd4716", null ],
-      [ "decode_input_bytes", "group__http.html#adddcba989971c8c7ef82134dec31cb9a", null ],
-      [ "decode_output_bytes", "group__http.html#ad4ddfdec635a15924237dc94757270c0", null ],
-      [ "max_expansion_ratio", "group__http.html#acc40a2ae4da1308222a5518f834dad82", null ],
-      [ "max_header_list_size", "group__http.html#ad481cccc9c93cae9589e32e117ff75b5", null ],
-      [ "max_header_size", "group__http.html#aff8c1c127b63ee1304e7e5e353af8a17", null ],
-      [ "settings_max_table_size", "group__http.html#a52a71c17f16f11abc5cc3c164e30d2aa", null ],
-      [ "table", "group__http.html#a263eaf0e8a043fb3312aa04c66b27916", null ]
+    [ "SocketHPACK_Decoder_T", "group__hpack__private.html#structSocketHPACK__Decoder", [
+      [ "arena", "group__hpack__private.html#adf82bc9df6877c14cb5c94a5f6bd4716", null ],
+      [ "decode_input_bytes", "group__hpack__private.html#adddcba989971c8c7ef82134dec31cb9a", null ],
+      [ "decode_output_bytes", "group__hpack__private.html#ad4ddfdec635a15924237dc94757270c0", null ],
+      [ "max_expansion_ratio", "group__hpack__private.html#acc40a2ae4da1308222a5518f834dad82", null ],
+      [ "max_header_list_size", "group__hpack__private.html#ad481cccc9c93cae9589e32e117ff75b5", null ],
+      [ "max_header_size", "group__hpack__private.html#aff8c1c127b63ee1304e7e5e353af8a17", null ],
+      [ "settings_max_table_size", "group__hpack__private.html#a52a71c17f16f11abc5cc3c164e30d2aa", null ],
+      [ "table", "group__hpack__private.html#a263eaf0e8a043fb3312aa04c66b27916", null ]
     ] ],
-    [ "HPACK_StaticEntry", "group__http.html#structHPACK__StaticEntry", [
-      [ "name", "group__http.html#a49643b573332398ec78e425dc5e3e980", null ],
-      [ "name_len", "group__http.html#af6a73615ec19eadf253cb4fa8cc034f9", null ],
-      [ "value", "group__http.html#ad0e5ee57a7c3de1e823b3d43b5b647a0", null ],
-      [ "value_len", "group__http.html#a73f42f0a717d6d4e4f8c38845a001ea7", null ]
+    [ "HPACK_StaticEntry", "group__hpack__private.html#structHPACK__StaticEntry", [
+      [ "name", "group__hpack__private.html#a49643b573332398ec78e425dc5e3e980", null ],
+      [ "name_len", "group__hpack__private.html#af6a73615ec19eadf253cb4fa8cc034f9", null ],
+      [ "value", "group__hpack__private.html#ad0e5ee57a7c3de1e823b3d43b5b647a0", null ],
+      [ "value_len", "group__hpack__private.html#a73f42f0a717d6d4e4f8c38845a001ea7", null ]
     ] ],
-    [ "HPACK_HuffmanSymbol", "group__http.html#structHPACK__HuffmanSymbol", [
-      [ "bits", "group__http.html#af601652287a777c885cfed6c61046257", null ],
-      [ "code", "group__http.html#ab8f97d8476a1a8b8a464ff039bf7d4f8", null ]
+    [ "HPACK_HuffmanSymbol", "group__hpack__private.html#structHPACK__HuffmanSymbol", [
+      [ "bits", "group__hpack__private.html#af601652287a777c885cfed6c61046257", null ],
+      [ "code", "group__hpack__private.html#ab8f97d8476a1a8b8a464ff039bf7d4f8", null ]
     ] ],
-    [ "HPACK_HuffmanTransition", "group__http.html#structHPACK__HuffmanTransition", [
-      [ "flags", "group__http.html#a4d1e72ef25a0ef39679a5931d7665b70", null ],
-      [ "next_state", "group__http.html#a26f953198c6ca62e58fafbfbdb65ed9d", null ],
-      [ "sym", "group__http.html#ac2555f64670eb57686cd77bb36676b1f", null ]
+    [ "HPACK_HuffmanTransition", "group__hpack__private.html#structHPACK__HuffmanTransition", [
+      [ "flags", "group__hpack__private.html#a4d1e72ef25a0ef39679a5931d7665b70", null ],
+      [ "next_state", "group__hpack__private.html#a26f953198c6ca62e58fafbfbdb65ed9d", null ],
+      [ "sym", "group__hpack__private.html#ac2555f64670eb57686cd77bb36676b1f", null ]
     ] ],
     [ "HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE", "group__hpack__private.html#gae0304bbcc6c90643a7e3a2d274533d10", null ],
     [ "HPACK_DFA_ACCEPT", "group__hpack__private.html#gafd975c9395b773cfe1f998aa0e0168b2", null ],
+    [ "HPACK_DFA_EOS", "group__hpack__private.html#ga881cd71b1434a2a5a11bd50cb61d312d", null ],
+    [ "HPACK_DFA_ERROR", "group__hpack__private.html#ga2065e9129b247f7f4ab0b363095f1839", null ],
+    [ "HPACK_DFA_SYM2", "group__hpack__private.html#ga76662d61395b8b2c9f2034c074083b4f", null ],
     [ "HPACK_HUFFMAN_EOS", "group__hpack__private.html#ga879c884f8d47c7fa563e0ef3d94b0c9e", null ],
     [ "HPACK_HUFFMAN_MAX_BITS", "group__hpack__private.html#gac142229a8069073871247a112e183378", null ],
     [ "HPACK_HUFFMAN_NUM_STATES", "group__hpack__private.html#ga9bec6ff24fdb0960bbd7b095b0f52fff", null ],

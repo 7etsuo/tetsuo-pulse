@@ -1,0 +1,57 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_EXCMD	mixed	/number, pattern, mixed, or combineV2/
+!_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
+!_TAG_PROC_CWD	/home/tetsuo/git/tetsuo-socket/examples/	//
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	5.9.0	//
+BUFFER_SIZE	graceful_shutdown.c	/^#define BUFFER_SIZE /;"	d	file:
+DEFAULT_PORT	graceful_shutdown.c	/^#define DEFAULT_PORT /;"	d	file:
+DRAIN_TIMEOUT_MS	graceful_shutdown.c	/^#define DRAIN_TIMEOUT_MS /;"	d	file:
+EXAMPLE_LIBS	CMakeLists.txt	/^set(EXAMPLE_LIBS socket_static)$/;"	v
+MAX_CLIENTS	websocket_server.c	/^#define MAX_CLIENTS /;"	d	file:
+MAX_CONNECTIONS	graceful_shutdown.c	/^#define MAX_CONNECTIONS /;"	d	file:
+POLL_TIMEOUT_MS	graceful_shutdown.c	/^#define POLL_TIMEOUT_MS /;"	d	file:
+add_ws_client	websocket_server.c	/^add_ws_client (SocketWS_T ws)$/;"	f	typeref:typename:int	file:
+check_signal_pipe	graceful_shutdown.c	/^check_signal_pipe (void)$/;"	f	typeref:typename:int	file:
+cleanup_signal_handling	graceful_shutdown.c	/^cleanup_signal_handling (void)$/;"	f	typeref:typename:void	file:
+example_graceful_shutdown	CMakeLists.txt	/^add_executable(example_graceful_shutdown graceful_shutdown.c)$/;"	t
+example_http2_client	CMakeLists.txt	/^add_executable(example_http2_client http2_client.c)$/;"	t
+example_http_get	CMakeLists.txt	/^add_executable(example_http_get http_get.c)$/;"	t
+example_http_post	CMakeLists.txt	/^add_executable(example_http_post http_post.c)$/;"	t
+example_http_server	CMakeLists.txt	/^add_executable(example_http_server http_server.c)$/;"	t
+example_proxy_connect	CMakeLists.txt	/^add_executable(example_proxy_connect proxy_connect.c)$/;"	t
+g_last_signal	graceful_shutdown.c	/^static volatile sig_atomic_t g_last_signal = 0;$/;"	v	typeref:typename:volatile sig_atomic_t	file:
+g_signal_pipe	graceful_shutdown.c	/^static int g_signal_pipe[2] = { -1, -1 };$/;"	v	typeref:typename:int[2]	file:
+handle_client_data	graceful_shutdown.c	/^handle_client_data (Socket_T client, SocketBuf_T inbuf, SocketBuf_T outbuf)$/;"	f	typeref:typename:int	file:
+http_version_string	http2_client.c	/^http_version_string (SocketHTTP_Version version)$/;"	f	typeref:typename:const char *	file:
+json_payload	http_post.c	/^static const char *json_payload = "{\\n"$/;"	v	typeref:typename:const char *	file:
+main	graceful_shutdown.c	/^main (int argc, char *argv[])$/;"	f	typeref:typename:int
+main	http2_client.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	http_get.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	http_post.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	http_server.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	proxy_connect.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	websocket_client.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+main	websocket_server.c	/^main (int argc, char **argv)$/;"	f	typeref:typename:int
+print_usage	proxy_connect.c	/^print_usage (const char *program)$/;"	f	typeref:typename:void	file:
+process_websocket_clients	websocket_server.c	/^process_websocket_clients (void)$/;"	f	typeref:typename:void	file:
+proxy_result_string	proxy_connect.c	/^proxy_result_string (SocketProxy_Result result)$/;"	f	typeref:typename:const char *	file:
+proxy_type_name	proxy_connect.c	/^proxy_type_name (SocketProxyType type)$/;"	f	typeref:typename:const char *	file:
+remove_ws_client	websocket_server.c	/^remove_ws_client (SocketWS_T ws)$/;"	f	typeref:typename:void	file:
+request_handler	http_server.c	/^request_handler (SocketHTTPServer_Request_T req, void *userdata)$/;"	f	typeref:typename:void	file:
+request_handler	websocket_server.c	/^request_handler (SocketHTTPServer_Request_T req, void *userdata)$/;"	f	typeref:typename:void	file:
+running	http_server.c	/^static volatile int running = 1;$/;"	v	typeref:typename:volatile int	file:
+running	websocket_client.c	/^static volatile int running = 1;$/;"	v	typeref:typename:volatile int	file:
+running	websocket_server.c	/^static volatile int running = 1;$/;"	v	typeref:typename:volatile int	file:
+setup_signal_handling	graceful_shutdown.c	/^setup_signal_handling (void)$/;"	f	typeref:typename:int	file:
+signal_handler	graceful_shutdown.c	/^signal_handler (int signo)$/;"	f	typeref:typename:void	file:
+signal_handler	http_server.c	/^signal_handler (int signo)$/;"	f	typeref:typename:void	file:
+signal_handler	websocket_client.c	/^signal_handler (int signo)$/;"	f	typeref:typename:void	file:
+signal_handler	websocket_server.c	/^signal_handler (int signo)$/;"	f	typeref:typename:void	file:
+ws_clients	websocket_server.c	/^static SocketWS_T ws_clients[MAX_CLIENTS];$/;"	v	typeref:typename:SocketWS_T[]	file:
+ws_count	websocket_server.c	/^static int ws_count = 0;$/;"	v	typeref:typename:int	file:

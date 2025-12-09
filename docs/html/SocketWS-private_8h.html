@@ -157,7 +157,7 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:structSocketWS__Handshake"><td class="mdescLeft">&#160;</td><td class="mdescRight">Context for WebSocket HTTP upgrade handshake.  <a href="group__websocket.html#structSocketWS__Handshake">More...</a><br /></td></tr>
 <tr class="separator:structSocketWS__Handshake"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketWS" id="r_structSocketWS"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#structSocketWS">SocketWS_T</a></td></tr>
-<tr class="memdesc:structSocketWS"><td class="mdescLeft">&#160;</td><td class="mdescRight">Main WebSocket connection context (opaque in public header).  <a href="group__websocket.html#structSocketWS">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketWS"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque WebSocket connection context holding all protocol state.  <a href="group__websocket.html#structSocketWS">More...</a><br /></td></tr>
 <tr class="separator:structSocketWS"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -279,16 +279,16 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga61d40db3bbab58f4459e01c6bc2c1271" id="r_ga61d40db3bbab58f4459e01c6bc2c1271"><td class="memItemLeft" align="right" valign="top">char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga61d40db3bbab58f4459e01c6bc2c1271">ws_copy_string</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, const char *str)</td></tr>
-<tr class="memdesc:ga61d40db3bbab58f4459e01c6bc2c1271"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copies a string into the provided arena.  <br /></td></tr>
+<tr class="memdesc:ga61d40db3bbab58f4459e01c6bc2c1271"><td class="mdescLeft">&#160;</td><td class="mdescRight">Arena-allocated duplicate of input string.  <br /></td></tr>
 <tr class="separator:ga61d40db3bbab58f4459e01c6bc2c1271"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae9a311879f7320da8320ad3498a99e34" id="r_gae9a311879f7320da8320ad3498a99e34"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gae9a311879f7320da8320ad3498a99e34">ws_send_control_frame</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#ga174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a> opcode, const unsigned char *payload, size_t len)</td></tr>
-<tr class="memdesc:gae9a311879f7320da8320ad3498a99e34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends a WebSocket control frame (PING, PONG, or CLOSE).  <br /></td></tr>
+<tr class="memdesc:gae9a311879f7320da8320ad3498a99e34"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends WebSocket control frame: PING, PONG, or CLOSE.  <br /></td></tr>
 <tr class="separator:gae9a311879f7320da8320ad3498a99e34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9e85c4df84bca9d7182a1196c4e0c723" id="r_ga9e85c4df84bca9d7182a1196c4e0c723"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga9e85c4df84bca9d7182a1196c4e0c723">ws_send_data_frame</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#ga174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a> opcode, const unsigned char *data, size_t len, int fin)</td></tr>
 <tr class="memdesc:ga9e85c4df84bca9d7182a1196c4e0c723"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sends a WebSocket data frame (TEXT or BINARY).  <br /></td></tr>
 <tr class="separator:ga9e85c4df84bca9d7182a1196c4e0c723"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae2e70a359f4a97f9eb37d3805c776e4f" id="r_gae2e70a359f4a97f9eb37d3805c776e4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gae2e70a359f4a97f9eb37d3805c776e4f">ws_frame_reset</a> (<a class="el" href="group__websocket.html#structSocketWS__FrameParse">SocketWS_FrameParse</a> *frame)</td></tr>
-<tr class="memdesc:gae2e70a359f4a97f9eb37d3805c776e4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resets the frame parsing state to initial for the next incoming frame.  <br /></td></tr>
+<tr class="memdesc:gae2e70a359f4a97f9eb37d3805c776e4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset frame parser to initial state for new incoming frame.  <br /></td></tr>
 <tr class="separator:gae2e70a359f4a97f9eb37d3805c776e4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8ec0a78346a127f0919e6b9e61e79ecf" id="r_ga8ec0a78346a127f0919e6b9e61e79ecf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga8ec0a78346a127f0919e6b9e61e79ecf">ws_frame_parse_header</a> (<a class="el" href="group__websocket.html#structSocketWS__FrameParse">SocketWS_FrameParse</a> *frame, const unsigned char *data, size_t len, size_t *consumed)</td></tr>
 <tr class="memdesc:ga8ec0a78346a127f0919e6b9e61e79ecf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Incrementally parses WebSocket frame header from input data.  <br /></td></tr>
@@ -338,7 +338,7 @@ Functions</h2></td></tr>
 <tr class="memitem:gad66f78da53262b5c3047bb39ad410a32" id="r_gad66f78da53262b5c3047bb39ad410a32"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gad66f78da53262b5c3047bb39ad410a32">ws_message_finalize</a> (SocketWS_T ws)</td></tr>
 <tr class="memdesc:gad66f78da53262b5c3047bb39ad410a32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalizes message assembly on last fragment and delivers to user.  <br /></td></tr>
 <tr class="separator:gad66f78da53262b5c3047bb39ad410a32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga894fa2a0c6b617c386a9c3a462d5782c" id="r_ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga894fa2a0c6b617c386a9c3a462d5782c">ws_auto_ping_start</a> (SocketWS_T ws, <a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
+<tr class="memitem:ga894fa2a0c6b617c386a9c3a462d5782c" id="r_ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga894fa2a0c6b617c386a9c3a462d5782c">ws_auto_ping_start</a> (SocketWS_T ws, SocketPoll_T poll)</td></tr>
 <tr class="memdesc:ga894fa2a0c6b617c386a9c3a462d5782c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Starts the automatic PING timer for keepalive.  <br /></td></tr>
 <tr class="separator:ga894fa2a0c6b617c386a9c3a462d5782c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga8b50ea33ceb9a7b2b23a060c88dafe65" id="r_ga8b50ea33ceb9a7b2b23a060c88dafe65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga8b50ea33ceb9a7b2b23a060c88dafe65">ws_auto_ping_stop</a> (SocketWS_T ws)</td></tr>
@@ -353,7 +353,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga434b1ea5d42a6c1be49a4f9e054453a0" id="r_ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga434b1ea5d42a6c1be49a4f9e054453a0">ws_fill_recv_buffer</a> (SocketWS_T ws)</td></tr>
 <tr class="memdesc:ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills the receive buffer from the underlying socket.  <br /></td></tr>
 <tr class="separator:ga434b1ea5d42a6c1be49a4f9e054453a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab26b26aa679375629c245be95eaaf222" id="r_gab26b26aa679375629c245be95eaaf222"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gab26b26aa679375629c245be95eaaf222">ws_set_error</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> error, const char *fmt,...)</td></tr>
+<tr class="memitem:gab26b26aa679375629c245be95eaaf222" id="r_gab26b26aa679375629c245be95eaaf222"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gab26b26aa679375629c245be95eaaf222">ws_set_error</a> (SocketWS_T ws, <a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a>, const char *fmt,...)</td></tr>
 <tr class="memdesc:gab26b26aa679375629c245be95eaaf222"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the last error code and formats error message.  <br /></td></tr>
 <tr class="separator:gab26b26aa679375629c245be95eaaf222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf415773c31b2c3cd0c3b2635c22dd567" id="r_gaf415773c31b2c3cd0c3b2635c22dd567"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaf415773c31b2c3cd0c3b2635c22dd567">ws_is_control_opcode</a> (<a class="el" href="group__websocket.html#ga174740343c7f920060f8640f23600c7b">SocketWS_Opcode</a> opcode)</td></tr>
@@ -372,19 +372,19 @@ Functions</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ga0fadbd57ccfb278acb88c94cc609c265" id="r_ga0fadbd57ccfb278acb88c94cc609c265"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0fadbd57ccfb278acb88c94cc609c265">SocketWS_DetailedException</a></td></tr>
-<tr class="memdesc:ga0fadbd57ccfb278acb88c94cc609c265"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Main WebSocket connection context (opaque in public header).">SocketWS</a> module.  <br /></td></tr>
+<tr class="memdesc:ga0fadbd57ccfb278acb88c94cc609c265"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module.  <br /></td></tr>
 <tr class="separator:ga0fadbd57ccfb278acb88c94cc609c265"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal implementation details for WebSocket module. </p>
-<p>Contains private structures, constants, and helper functions for <a class="el" href="group__websocket.html#structSocketWS" title="Main WebSocket connection context (opaque in public header).">SocketWS</a>. Not for public use - API unstable and may change without notice.</p>
+<p>Contains private structures, constants, and helper functions for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a>. Not for public use - API unstable and may change without notice.</p>
 <p>References:</p><ul>
 <li>RFC 6455: The WebSocket Protocol</li>
 <li>RFC 7692: Compression Extensions for WebSocket (permessage-deflate)</li>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h</a> for public API. </dd>
 <dd>
-<a class="el" href="group__websocket.html">WebSocket Modules</a> for module overview (if defined). </dd></dl>
+<a class="el" href="group__websocket.html">WebSocket Modules</a> for module overview (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> defined). </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -404,7 +404,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00641">641</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00677">677</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>

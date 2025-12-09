@@ -10,7 +10,7 @@
 <area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="1086,38,1127,77,1123,80,1083,42"/>
 <area shape="rect" id="Node000014" href="$proxy__connect_8c.html" title=" " alt="" coords="1230,152,1349,177"/>
 <area shape="poly" id="edge15_Node000001_Node000014" title=" " alt="" coords="1113,33,1159,51,1204,76,1249,114,1282,150,1278,153,1246,118,1201,81,1156,56,1111,38"/>
-<area shape="rect" id="Node000015" href="$SocketTLS-private_8h.html" title="TLS internal shared definitions and helper functions." alt="" coords="1265,79,1407,104"/>
+<area shape="rect" id="Node000015" href="$SocketTLS-private_8h.html" title="Internal TLS module shared definitions, macros, and helper functions." alt="" coords="1265,79,1407,104"/>
 <area shape="poly" id="edge14_Node000001_Node000015" title=" " alt="" coords="1120,32,1292,76,1291,81,1119,37"/>
 <area shape="rect" id="Node000003" href="$SocketHTTPClient-private_8h.html" title="Internal HTTP client structures and connection pooling." alt="" coords="5,152,192,177"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="322,110,145,154,144,149,321,105"/>

@@ -10,6 +10,7 @@ var group__async__io =
         [ "REQ_RECV", "structAsyncRequest.html#ab9d05308faa0dbde36947041cae9b557a538fe022a3e0d32bbf94772f7bea8744", null ]
       ] ],
       [ "cb", "structAsyncRequest.html#a12f4e9eea9831ce68a7d5fe3f2d95299", null ],
+      [ "completed", "structAsyncRequest.html#a97ce18b35bfe90ed417444a26204ae42", null ],
       [ "flags", "structAsyncRequest.html#aea6737d612b19f67039a3b964296d75d", null ],
       [ "len", "structAsyncRequest.html#aad2756b33edeb735ce95bdf649436557", null ],
       [ "next", "structAsyncRequest.html#aba98d55934cebbfcb77b5e06f436e678", null ],
@@ -17,6 +18,7 @@ var group__async__io =
       [ "request_id", "structAsyncRequest.html#a1e4187db497a0c1a6a5bfc33c3263922", null ],
       [ "send_buf", "structAsyncRequest.html#a3f6a2349b587fff223a0d9b26436ab9d", null ],
       [ "socket", "structAsyncRequest.html#a5c56cb6ca9bd3fd2bbee64ea1e3d03ef", null ],
+      [ "submitted_at", "structAsyncRequest.html#a92413df1e46f462915a2f6bfb4b68793", null ],
       [ "type", "structAsyncRequest.html#aa615ecb4ba24d20abcc3c64bb1066736", null ],
       [ "user_data", "structAsyncRequest.html#a04f4c4fd7de6ea470e08eb545ce8ea62", null ]
     ] ],
@@ -29,20 +31,6 @@ var group__async__io =
       [ "next_request_id", "group__async__io.html#a0c707446c2cede8cd7bee21a22592815", null ],
       [ "requests", "group__async__io.html#aac8070e36e54bb9ad8147e45d8b75575", null ]
     ] ],
-    [ "SocketHE_Attempt_T", "group__async__io.html#structSocketHE__Attempt__T", [
-      [ "addr", "group__async__io.html#ab02a910ca4b1f3516cd1a7e91b93c5b9", null ],
-      [ "error", "group__async__io.html#a500878af707470819de9519582e95aaa", null ],
-      [ "next", "group__async__io.html#a12005585efa1da9b04101a452aa2eb4d", null ],
-      [ "socket", "group__async__io.html#a6d7c20ae3edf7159f276525c8f4b90bc", null ],
-      [ "start_time_ms", "group__async__io.html#a276531d1271e611910bd33f70fe32ed4", null ],
-      [ "state", "group__async__io.html#a6a8a1e41faa0a08ba7cc5a368d177d75", null ]
-    ] ],
-    [ "SocketHE_AddressEntry_T", "group__async__io.html#structSocketHE__AddressEntry__T", [
-      [ "addr", "group__async__io.html#a27515d0d3a60d3d5790e582ce1b6432d", null ],
-      [ "family", "group__async__io.html#a62b62e50bd95cd705cce6d0681180963", null ],
-      [ "next", "group__async__io.html#a81c5f63f206f0bd49c39409a2043f65f", null ],
-      [ "tried", "group__async__io.html#ad9b187dc05cf715fccd015f990e3ea72", null ]
-    ] ],
     [ "SocketHE_T", "group__async__io.html#structSocketHE__T", [
       [ "addresses", "group__async__io.html#a6c4cf3aa4f9960ef00dbd7bfb664d15f", null ],
       [ "arena", "group__async__io.html#a5169929482a5d5802c28ce9a8564083a", null ],
@@ -53,7 +41,7 @@ var group__async__io =
       [ "dns_complete", "group__async__io.html#aee70d363ad60a557390043a4c5facf67", null ],
       [ "dns_error", "group__async__io.html#aa121090386dd73b5f4d3baa210ade4b6", null ],
       [ "dns_request", "group__async__io.html#af2a815ad1815bfc78cb6d018b8e7ac8b", null ],
-      [ "error_buf", "group__async__io.html#ad658a91e1c063809e9d8c33d9669cbb1", null ],
+      [ "error_buf", "group__async__io.html#a53be6d234730141d247e0e078dbf266c", null ],
       [ "fallback_timer_armed", "group__async__io.html#af55fc86d74b971f71f4a236ab1a908ee", null ],
       [ "first_attempt_time_ms", "group__async__io.html#a8e2cdbeca7dfaef55ebb8d4e0dde26c9", null ],
       [ "host", "group__async__io.html#a9d47f78c56dbd6d1c7499dcb57ba3f00", null ],
@@ -77,7 +65,6 @@ var group__async__io =
       [ "prefer_ipv6", "group__async__io.html#a2286078d8352300a92ddd005f756ae8b", null ],
       [ "total_timeout_ms", "group__async__io.html#a30f77ee5bd25329726485101935e8a2a", null ]
     ] ],
-    [ "HE_FOREACH_ATTEMPT", "group__async__io.html#gabbef7b94e157f9c32222e8176b395da4", null ],
     [ "SOCKET_DEFAULT_IO_URING_ENTRIES", "group__async__io.html#gaa0d6d53cd106cb84028fd2e568b0216b", null ],
     [ "SOCKET_HE_DEFAULT_ATTEMPT_TIMEOUT_MS", "group__async__io.html#ga66b65910ea1f4b358406d1fb9add485e", null ],
     [ "SOCKET_HE_DEFAULT_DNS_TIMEOUT_MS", "group__async__io.html#ga0eca938e489f47d663007b6c0a7ab18f", null ],
@@ -130,6 +117,8 @@ var group__async__io =
     [ "SocketHappyEyeballs_result", "group__async__io.html#gaeedc2998806b4e465a999688333bae1d", null ],
     [ "SocketHappyEyeballs_start", "group__async__io.html#gaac613520b1e674db06e60155150fef63", null ],
     [ "SocketHappyEyeballs_state", "group__async__io.html#ga3307a26e1e23ff4be5d2e33895e6ae79", null ],
+    [ "addr", "group__async__io.html#gabf6dc3901a5139f2f7f093db3003b798", null ],
+    [ "family", "group__async__io.html#ga4417150d9f858949bd9ea8794995ebcc", null ],
     [ "SocketAsync_Failed", "group__async__io.html#ga55b9b96eff9c17f45ff5bfb37f431075", null ],
     [ "SocketHE_Failed", "group__async__io.html#ga2189771ae05195653ab16170d72a251d", null ]
 ];

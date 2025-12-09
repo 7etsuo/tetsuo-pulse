@@ -114,11 +114,11 @@ $(document).ready(function(){initNavTree('SocketPoll__backend_8h.html',''); init
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a>  </div>
-  <div class="headertitle"><div class="title">SocketPoll_backend.h File Reference<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketPoll_backend.h File Reference<div class="ingroups"><a class="el" href="group__event__system.html">Event System Modules</a> &raquo; <a class="el" href="group__event__system__backend.html">Polling Backend Interface</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
-<p>Abstract interface for platform-specific polling implementations.  
+<p>Defines internal backend abstraction for cross-platform polling.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketPoll_8h_source.html">poll/SocketPoll.h</a>&quot;</code><br />
@@ -142,40 +142,40 @@ $(document).ready(function(){initNavTree('SocketPoll__backend_8h.html',''); init
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
-<tr class="memitem:gad5c973c74b3941d078d573439e92c65b" id="r_gad5c973c74b3941d078d573439e92c65b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gad5c973c74b3941d078d573439e92c65b">VALIDATE_MAXEVENTS</a>(maxevents,  event_type)</td></tr>
-<tr class="memdesc:gad5c973c74b3941d078d573439e92c65b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate maxevents parameter with overflow protection.  <br /></td></tr>
+<tr class="memitem:gad5c973c74b3941d078d573439e92c65b" id="r_gad5c973c74b3941d078d573439e92c65b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#gad5c973c74b3941d078d573439e92c65b">VALIDATE_MAXEVENTS</a>(maxevents,  event_type)</td></tr>
+<tr class="memdesc:gad5c973c74b3941d078d573439e92c65b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safeguard macro for validating maxevents against invalid values and overflow risks.  <br /></td></tr>
 <tr class="separator:gad5c973c74b3941d078d573439e92c65b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga72ef813749c8c54d8f8ccf64ba724a0a" id="r_ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a>(fd)</td></tr>
-<tr class="memdesc:ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate file descriptor parameter for backend operations.  <br /></td></tr>
+<tr class="memitem:ga72ef813749c8c54d8f8ccf64ba724a0a" id="r_ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a>(fd)</td></tr>
+<tr class="memdesc:ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Essential macro to validate file descriptors before backend system calls.  <br /></td></tr>
 <tr class="separator:ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
-<tr class="memitem:gadd97c2d63f6b491ef855bd928211e71b" id="r_gadd97c2d63f6b491ef855bd928211e71b"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></td></tr>
-<tr class="memdesc:gadd97c2d63f6b491ef855bd928211e71b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type for platform-specific polling backend instances.  <br /></td></tr>
+<tr class="memitem:gadd97c2d63f6b491ef855bd928211e71b" id="r_gadd97c2d63f6b491ef855bd928211e71b"><td class="memItemLeft" align="right" valign="top">typedef struct <a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></td></tr>
+<tr class="memdesc:gadd97c2d63f6b491ef855bd928211e71b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for platform-specific polling backend implementation.  <br /></td></tr>
 <tr class="separator:gadd97c2d63f6b491ef855bd928211e71b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gaa198b207e04b5bb6bec2746c7d86b735" id="r_gaa198b207e04b5bb6bec2746c7d86b735"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaa198b207e04b5bb6bec2746c7d86b735">backend_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int maxevents)</td></tr>
-<tr class="memdesc:gaa198b207e04b5bb6bec2746c7d86b735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backend Interface - Abstract Polling Operations.  <br /></td></tr>
+<tr class="memitem:gaa198b207e04b5bb6bec2746c7d86b735" id="r_gaa198b207e04b5bb6bec2746c7d86b735"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__functions.html#gaa198b207e04b5bb6bec2746c7d86b735">backend_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, int maxevents)</td></tr>
+<tr class="memdesc:gaa198b207e04b5bb6bec2746c7d86b735"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and initialize a platform-optimized polling backend.  <br /></td></tr>
 <tr class="separator:gaa198b207e04b5bb6bec2746c7d86b735"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga30a767499b3aa80b77e4fb63368be228" id="r_ga30a767499b3aa80b77e4fb63368be228"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga30a767499b3aa80b77e4fb63368be228">backend_free</a> (<a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend)</td></tr>
-<tr class="memdesc:ga30a767499b3aa80b77e4fb63368be228"><td class="mdescLeft">&#160;</td><td class="mdescRight">Close backend resources.  <br /></td></tr>
+<tr class="memitem:ga30a767499b3aa80b77e4fb63368be228" id="r_ga30a767499b3aa80b77e4fb63368be228"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__functions.html#ga30a767499b3aa80b77e4fb63368be228">backend_free</a> (<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend)</td></tr>
+<tr class="memdesc:ga30a767499b3aa80b77e4fb63368be228"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform backend cleanup: close platform resources but retain arena memory.  <br /></td></tr>
 <tr class="separator:ga30a767499b3aa80b77e4fb63368be228"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaa51ec4e5f966a860cdd9359c36e977c6" id="r_gaa51ec4e5f966a860cdd9359c36e977c6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a> (<a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd, unsigned events)</td></tr>
-<tr class="memdesc:gaa51ec4e5f966a860cdd9359c36e977c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add socket to poll set.  <br /></td></tr>
+<tr class="memitem:gaa51ec4e5f966a860cdd9359c36e977c6" id="r_gaa51ec4e5f966a860cdd9359c36e977c6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a> (<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd, unsigned events)</td></tr>
+<tr class="memdesc:gaa51ec4e5f966a860cdd9359c36e977c6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register file descriptor for I/O event notifications.  <br /></td></tr>
 <tr class="separator:gaa51ec4e5f966a860cdd9359c36e977c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga4b929e888a5088e59cd045c41759363e" id="r_ga4b929e888a5088e59cd045c41759363e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga4b929e888a5088e59cd045c41759363e">backend_mod</a> (<a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd, unsigned events)</td></tr>
-<tr class="memdesc:ga4b929e888a5088e59cd045c41759363e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modify monitored events.  <br /></td></tr>
+<tr class="memitem:ga4b929e888a5088e59cd045c41759363e" id="r_ga4b929e888a5088e59cd045c41759363e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__backend__functions.html#ga4b929e888a5088e59cd045c41759363e">backend_mod</a> (<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd, unsigned events)</td></tr>
+<tr class="memdesc:ga4b929e888a5088e59cd045c41759363e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update event monitoring configuration for existing file descriptor.  <br /></td></tr>
 <tr class="separator:ga4b929e888a5088e59cd045c41759363e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gae9ec719e250346605c00e5b3efb2e7d8" id="r_gae9ec719e250346605c00e5b3efb2e7d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gae9ec719e250346605c00e5b3efb2e7d8">backend_del</a> (<a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd)</td></tr>
+<tr class="memitem:gae9ec719e250346605c00e5b3efb2e7d8" id="r_gae9ec719e250346605c00e5b3efb2e7d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gae9ec719e250346605c00e5b3efb2e7d8">backend_del</a> (<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int fd)</td></tr>
 <tr class="memdesc:gae9ec719e250346605c00e5b3efb2e7d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove socket from poll set.  <br /></td></tr>
 <tr class="separator:gae9ec719e250346605c00e5b3efb2e7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga5b2c06638f0c76ea3c6c2f38503d266b" id="r_ga5b2c06638f0c76ea3c6c2f38503d266b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a> (<a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int timeout_ms)</td></tr>
+<tr class="memitem:ga5b2c06638f0c76ea3c6c2f38503d266b" id="r_ga5b2c06638f0c76ea3c6c2f38503d266b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a> (<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int timeout_ms)</td></tr>
 <tr class="memdesc:ga5b2c06638f0c76ea3c6c2f38503d266b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Wait for events.  <br /></td></tr>
 <tr class="separator:ga5b2c06638f0c76ea3c6c2f38503d266b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad998de1df9f46711f5c3b4dc0257f548" id="r_gad998de1df9f46711f5c3b4dc0257f548"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gad998de1df9f46711f5c3b4dc0257f548">backend_get_event</a> (const <a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int index, int *fd_out, unsigned *events_out)</td></tr>
+<tr class="memitem:gad998de1df9f46711f5c3b4dc0257f548" id="r_gad998de1df9f46711f5c3b4dc0257f548"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gad998de1df9f46711f5c3b4dc0257f548">backend_get_event</a> (const <a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, int index, int *fd_out, unsigned *events_out)</td></tr>
 <tr class="memdesc:gad998de1df9f46711f5c3b4dc0257f548"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get event details for index.  <br /></td></tr>
 <tr class="separator:gad998de1df9f46711f5c3b4dc0257f548"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga2edb00f128ad773d62c8f11c516153d9" id="r_ga2edb00f128ad773d62c8f11c516153d9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga2edb00f128ad773d62c8f11c516153d9">backend_name</a> (void)</td></tr>
@@ -183,48 +183,13 @@ Functions</h2></td></tr>
 <tr class="separator:ga2edb00f128ad773d62c8f11c516153d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Abstract interface for platform-specific polling implementations. </p>
-<p>Defines the internal backend abstraction layer that all polling implementations must conform to. Not part of the public API - for backend implementors only.</p>
-<p>Supported Backend Implementations:</p><ul>
-<li>epoll (Linux): High-performance edge-triggered I/O multiplexing</li>
-<li>kqueue (BSD/macOS): High-performance event notification system</li>
-<li>poll (POSIX): Portable level-triggered fallback for other systems</li>
-</ul>
-<p>Backend Selection Strategy:</p><ul>
-<li>Compile-time selection via CMake based on platform capabilities</li>
-<li>Linux kernel 2.6.8+: epoll (optimal performance, edge-triggered)</li>
-<li>BSD/macOS systems: kqueue (optimal performance, edge-triggered)</li>
-<li>Other POSIX-compliant systems: poll (portable, level-triggered)</li>
-</ul>
-<p>Interface Contract:</p><ul>
-<li>All backends provide identical API for SocketPoll operations</li>
-<li>Memory management through Arena_T for efficient cleanup</li>
-<li>Error reporting via errno (POSIX standard)</li>
-<li>Event translation to SocketPoll_Events format</li>
-<li>Thread safety handled at SocketPoll layer</li>
-</ul>
-<p>Implementation Notes:</p><ul>
-<li>Backend implementations in src/poll/ directory</li>
-<li>Automatic selection via build system platform detection</li>
-<li>Each backend provides identical behavior with platform-optimized performance</li>
-</ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#gadd97c2d63f6b491ef855bd928211e71b" title="Opaque type for platform-specific polling backend instances.">PollBackend_T</a> for backend type definition. </dd>
+<div class="textblock"><p>Defines internal backend abstraction for cross-platform polling. </p>
+<p>Not part of public API - include <a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">SocketPoll.h</a> for application use. Backend implementors must provide epoll/kqueue/poll specific code in src/poll/.</p>
+<dl class="section note"><dt>Note</dt><dd>Internal header; subject to change without notice. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Backends assume non-threaded access; do not use concurrently.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system__backend.html">Polling Backend Interface</a> for interface details </dd>
 <dd>
-<a class="el" href="group__event__system.html#gaa198b207e04b5bb6bec2746c7d86b735" title="Backend Interface - Abstract Polling Operations.">backend_new()</a> for backend instance creation. </dd>
-<dd>
-<a class="el" href="group__event__system.html#gaa51ec4e5f966a860cdd9359c36e977c6" title="Add socket to poll set.">backend_add()</a> for socket registration interface. </dd>
-<dd>
-<a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> for event waiting interface. </dd>
-<dd>
-<a class="el" href="group__event__system.html">Event System Modules</a> for complete polling system documentation. </dd>
-<dd>
-<a class="el" href="group__foundation.html">Core Foundation Modules</a> for arena-based memory management patterns. </dd>
-<dd>
-<a class="el" href="group__core__io.html">Core I/O Modules</a> for socket integration requirements. </dd>
-<dd>
-src/poll/ for backend source implementations (epoll, kqueue, poll). </dd>
-<dd>
-<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for event system usage in async contexts. </dd></dl>
+<a class="el" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b" title="Opaque handle for platform-specific polling backend implementation.">PollBackend_T</a> for opaque backend type </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
 </div></div><!-- contents -->

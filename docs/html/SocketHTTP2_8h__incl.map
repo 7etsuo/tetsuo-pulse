@@ -10,7 +10,7 @@
 <area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="394,32,373,94,367,135,370,177,384,212,379,214,365,178,362,135,368,93,389,30"/>
 <area shape="rect" id="Node000006" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="595,299,698,324"/>
 <area shape="poly" id="edge8_Node000001_Node000006" title=" " alt="" coords="427,28,467,49,508,77,547,112,575,143,598,178,623,224,636,255,644,284,639,286,631,257,619,226,594,180,571,146,544,116,505,81,464,53,424,33"/>
-<area shape="rect" id="Node000008" href="$SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="380,152,526,177"/>
+<area shape="rect" id="Node000008" href="$SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541)." alt="" coords="380,152,526,177"/>
 <area shape="poly" id="edge9_Node000001_Node000008" title=" " alt="" coords="404,30,446,138,441,140,399,32"/>
 <area shape="rect" id="Node000009" href="$SocketHTTP_8h.html" title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities." alt="" coords="172,152,305,177"/>
 <area shape="poly" id="edge15_Node000001_Node000009" title=" " alt="" coords="384,33,325,81,261,144,257,140,322,77,380,29"/>
@@ -33,9 +33,9 @@
 <area shape="rect" id="Node000010" title=" " alt="" coords="164,225,222,251"/>
 <area shape="poly" id="edge19_Node000009_Node000010" title=" " alt="" coords="233,179,210,215,205,212,229,176"/>
 <area shape="poly" id="edge23_Node000011_Node000006" title=" " alt="" coords="792,106,665,288,660,285,788,103"/>
-<area shape="rect" id="Node000012" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1542,225,1684,251"/>
+<area shape="rect" id="Node000012" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1542,225,1684,251"/>
 <area shape="poly" id="edge24_Node000011_Node000012" title=" " alt="" coords="857,97,1023,118,1224,149,1404,185,1553,219,1552,225,1403,191,1223,155,1022,123,857,102"/>
-<area shape="rect" id="Node000021" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="734,225,862,251"/>
+<area shape="rect" id="Node000021" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="734,225,862,251"/>
 <area shape="poly" id="edge34_Node000011_Node000021" title=" " alt="" coords="801,104,801,212,796,212,796,104"/>
 <area shape="rect" id="Node000023" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="1041,152,1212,177"/>
 <area shape="poly" id="edge39_Node000011_Node000023" title=" " alt="" coords="852,101,1061,146,1060,152,850,107"/>

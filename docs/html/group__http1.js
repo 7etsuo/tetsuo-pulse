@@ -1,5 +1,6 @@
 var group__http1 =
 [
+    [ "HTTP/1.1 Parser Internal Implementation", "group__http1__private.html", "group__http1__private" ],
     [ "SocketHTTP1_Config", "group__http1.html#structSocketHTTP1__Config", [
       [ "allow_obs_fold", "group__http1.html#acf3abe5c5f8346ef4dc94771023f0c65", null ],
       [ "max_chunk_ext", "group__http1.html#ad923d4eab20cacfa9e43a265dc456c7b", null ],

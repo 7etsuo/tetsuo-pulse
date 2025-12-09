@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
+<g id="a_Node000001"><a xlink:title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">
 <polygon fill="#999999" stroke="#666666" points="228,-129 125,-129 125,-110 228,-110 228,-129"/>
 <text text-anchor="middle" x="176.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect.h</text>
 </a>
@@ -48,7 +48,7 @@
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="SocketReconnect-private_8h.html" target="_top" xlink:title="Internal implementation details for automatic reconnection framework.">
+<g id="a_Node000005"><a xlink:href="SocketReconnect-private_8h.html" target="_top" xlink:title="Private header for SocketReconnect module internals.">
 <polygon fill="white" stroke="#666666" points="306,-74 171,-74 171,-55 306,-55 306,-74"/>
 <text text-anchor="middle" x="238.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect&#45;private.h</text>
 </a>

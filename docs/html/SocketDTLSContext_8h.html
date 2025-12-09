@@ -150,16 +150,16 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga0e99fc1644e610eb26324fb12cb96a57" id="r_ga0e99fc1644e610eb26324fb12cb96a57"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a> (const char *cert_file, const char *key_file, const char *ca_file)</td></tr>
-<tr class="memdesc:ga0e99fc1644e610eb26324fb12cb96a57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create server DTLS context with cert/key.  <br /></td></tr>
+<tr class="memdesc:ga0e99fc1644e610eb26324fb12cb96a57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a server-side DTLS context with certificate and key loading.  <br /></td></tr>
 <tr class="separator:ga0e99fc1644e610eb26324fb12cb96a57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gafa2f96caa6d90a1fae0ce4f8fb52970a" id="r_gafa2f96caa6d90a1fae0ce4f8fb52970a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a">SocketDTLSContext_new_client</a> (const char *ca_file)</td></tr>
-<tr class="memdesc:gafa2f96caa6d90a1fae0ce4f8fb52970a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create client DTLS context.  <br /></td></tr>
+<tr class="memdesc:gafa2f96caa6d90a1fae0ce4f8fb52970a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a client-side DTLS context with optional CA for server verification.  <br /></td></tr>
 <tr class="separator:gafa2f96caa6d90a1fae0ce4f8fb52970a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf05f6e0175668dd52a2d68af50f67983" id="r_gaf05f6e0175668dd52a2d68af50f67983"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#gaf05f6e0175668dd52a2d68af50f67983">SocketDTLSContext_free</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> *ctx_p)</td></tr>
-<tr class="memdesc:gaf05f6e0175668dd52a2d68af50f67983"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of DTLS context and resources.  <br /></td></tr>
+<tr class="memdesc:gaf05f6e0175668dd52a2d68af50f67983"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of a DTLS context, freeing all associated resources.  <br /></td></tr>
 <tr class="separator:gaf05f6e0175668dd52a2d68af50f67983"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga52fb3ca5d16466a21ac871ad2217904c" id="r_ga52fb3ca5d16466a21ac871ad2217904c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga52fb3ca5d16466a21ac871ad2217904c">SocketDTLSContext_load_certificate</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx, const char *cert_file, const char *key_file)</td></tr>
-<tr class="memdesc:ga52fb3ca5d16466a21ac871ad2217904c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load server certificate and private key.  <br /></td></tr>
+<tr class="memdesc:ga52fb3ca5d16466a21ac871ad2217904c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load and configure server certificate and private key into the DTLS context.  <br /></td></tr>
 <tr class="separator:ga52fb3ca5d16466a21ac871ad2217904c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga210798613a063bb2be1fdf07a5d9648c" id="r_ga210798613a063bb2be1fdf07a5d9648c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga210798613a063bb2be1fdf07a5d9648c">SocketDTLSContext_load_ca</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx, const char *ca_file)</td></tr>
 <tr class="memdesc:ga210798613a063bb2be1fdf07a5d9648c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Load trusted CA certificates.  <br /></td></tr>
@@ -168,19 +168,19 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga167f13bc2d88dd59da040a6423cbb741"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set certificate verification policy.  <br /></td></tr>
 <tr class="separator:ga167f13bc2d88dd59da040a6423cbb741"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabbffd63c9a5c7551ecaf8f89a4034eb4" id="r_gabbffd63c9a5c7551ecaf8f89a4034eb4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#gabbffd63c9a5c7551ecaf8f89a4034eb4">SocketDTLSContext_enable_cookie_exchange</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:gabbffd63c9a5c7551ecaf8f89a4034eb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable stateless cookie DoS protection.  <br /></td></tr>
+<tr class="memdesc:gabbffd63c9a5c7551ecaf8f89a4034eb4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable cookie exchange mechanism for stateless DoS protection in DTLS servers.  <br /></td></tr>
 <tr class="separator:gabbffd63c9a5c7551ecaf8f89a4034eb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga19b67aa468ee1ad317683b1839b26e7b" id="r_ga19b67aa468ee1ad317683b1839b26e7b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga19b67aa468ee1ad317683b1839b26e7b">SocketDTLSContext_set_cookie_secret</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx, const unsigned char *secret, size_t len)</td></tr>
-<tr class="memdesc:ga19b67aa468ee1ad317683b1839b26e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set cookie HMAC secret key.  <br /></td></tr>
+<tr class="memdesc:ga19b67aa468ee1ad317683b1839b26e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure the HMAC secret key for DTLS cookie generation.  <br /></td></tr>
 <tr class="separator:ga19b67aa468ee1ad317683b1839b26e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga488bdfe1b7d278bbcb2d2f80a9540df5" id="r_ga488bdfe1b7d278bbcb2d2f80a9540df5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga488bdfe1b7d278bbcb2d2f80a9540df5">SocketDTLSContext_rotate_cookie_secret</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ga488bdfe1b7d278bbcb2d2f80a9540df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generate new cookie secret.  <br /></td></tr>
+<tr class="memdesc:ga488bdfe1b7d278bbcb2d2f80a9540df5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rotate the DTLS cookie HMAC secret key to a new random value.  <br /></td></tr>
 <tr class="separator:ga488bdfe1b7d278bbcb2d2f80a9540df5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga473e4425731c220ae48a1bfec9ba279d" id="r_ga473e4425731c220ae48a1bfec9ba279d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga473e4425731c220ae48a1bfec9ba279d">SocketDTLSContext_set_mtu</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx, size_t mtu)</td></tr>
-<tr class="memdesc:ga473e4425731c220ae48a1bfec9ba279d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set link MTU for DTLS record sizing.  <br /></td></tr>
+<tr class="memdesc:ga473e4425731c220ae48a1bfec9ba279d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configure the path MTU for DTLS record fragmentation and padding.  <br /></td></tr>
 <tr class="separator:ga473e4425731c220ae48a1bfec9ba279d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9edc0ddb77ac1a52c2d65e202d6c4fdc" id="r_ga9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga9edc0ddb77ac1a52c2d65e202d6c4fdc">SocketDTLSContext_get_mtu</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ga9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get configured MTU.  <br /></td></tr>
+<tr class="memdesc:ga9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the currently configured path MTU from the DTLS context.  <br /></td></tr>
 <tr class="separator:ga9edc0ddb77ac1a52c2d65e202d6c4fdc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gad674b683e396a1af639691d9a18c6aa0" id="r_gad674b683e396a1af639691d9a18c6aa0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#gad674b683e396a1af639691d9a18c6aa0">SocketDTLSContext_set_min_protocol</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx, int version)</td></tr>
 <tr class="memdesc:gad674b683e396a1af639691d9a18c6aa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set minimum supported DTLS version.  <br /></td></tr>
@@ -204,13 +204,13 @@ Functions</h2></td></tr>
 <tr class="memdesc:gaf81e36256b380aaf7060607a22842d20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set handshake timeout parameters.  <br /></td></tr>
 <tr class="separator:gaf81e36256b380aaf7060607a22842d20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3319b2d0dcdfd165af1cb81448cdb9f9" id="r_ga3319b2d0dcdfd165af1cb81448cdb9f9"><td class="memItemLeft" align="right" valign="top">void *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga3319b2d0dcdfd165af1cb81448cdb9f9">SocketDTLSContext_get_ssl_ctx</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ga3319b2d0dcdfd165af1cb81448cdb9f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying OpenSSL SSL_CTX*.  <br /></td></tr>
+<tr class="memdesc:ga3319b2d0dcdfd165af1cb81448cdb9f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal accessor for the underlying OpenSSL SSL_CTX pointer.  <br /></td></tr>
 <tr class="separator:ga3319b2d0dcdfd165af1cb81448cdb9f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga25c64fa874902c37b8aafcd9601b7cef" id="r_ga25c64fa874902c37b8aafcd9601b7cef"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#ga25c64fa874902c37b8aafcd9601b7cef">SocketDTLSContext_is_server</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:ga25c64fa874902c37b8aafcd9601b7cef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if context is server-mode.  <br /></td></tr>
+<tr class="memdesc:ga25c64fa874902c37b8aafcd9601b7cef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if the DTLS context is configured for server role.  <br /></td></tr>
 <tr class="separator:ga25c64fa874902c37b8aafcd9601b7cef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf77697da681e01b26f48c9472f13efad" id="r_gaf77697da681e01b26f48c9472f13efad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dtls__context.html#gaf77697da681e01b26f48c9472f13efad">SocketDTLSContext_has_cookie_exchange</a> (<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx)</td></tr>
-<tr class="memdesc:gaf77697da681e01b26f48c9472f13efad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if cookie exchange enabled.  <br /></td></tr>
+<tr class="memdesc:gaf77697da681e01b26f48c9472f13efad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query if cookie exchange (DoS protection) is enabled on the context.  <br /></td></tr>
 <tr class="separator:gaf77697da681e01b26f48c9472f13efad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -232,9 +232,9 @@ Functions</h2></td></tr>
 <li>OpenSSL 1.1.1+ or LibreSSL with DTLS support</li>
 <li>POSIX threads (pthread) for thread-safe error reporting</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57" title="Create server DTLS context with cert/key.">SocketDTLSContext_new_server()</a> for server context creation. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57" title="Create a server-side DTLS context with certificate and key loading.">SocketDTLSContext_new_server()</a> for server context creation. </dd>
 <dd>
-<a class="el" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a" title="Create client DTLS context.">SocketDTLSContext_new_client()</a> for client context creation. </dd>
+<a class="el" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a" title="Create a client-side DTLS context with optional CA for server verification.">SocketDTLSContext_new_client()</a> for client context creation. </dd>
 <dd>
 <a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a> for applying DTLS to UDP sockets. </dd>
 <dd>

@@ -1,6 +1,6 @@
 var dir_472464c21f3697a4351aeeea96351180 =
 [
-    [ "Socket-private.h", "Socket-private_8h.html", null ],
+    [ "Socket-private.h", "Socket-private_8h.html", "Socket-private_8h" ],
     [ "Socket.h", "Socket_8h.html", "Socket_8h" ],
     [ "SocketAsync-private.h", "SocketAsync-private_8h.html", null ],
     [ "SocketAsync.h", "SocketAsync_8h.html", "SocketAsync_8h" ],

@@ -1,10 +1,14 @@
 <map id="ServerConnection" name="ServerConnection">
-<area shape="rect" id="Node000001" title="Core internal structure representing an active HTTP client connection." alt="" coords="79,183,205,209"/>
-<area shape="poly" id="edge4_Node000001_Node000001" title=" " alt="" coords="221,187,232,196,224,204,206,207,205,202,222,199,227,196,218,192"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="32,93,111,119"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,128,135,181,130,185,87,131"/>
-<area shape="rect" id="Node000003" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,45,74,93,69,93,69,45"/>
-<area shape="rect" id="Node000004" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="135,93,290,119"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="197,131,154,185,149,181,193,128"/>
+<area shape="rect" id="Node000001" title="Core internal structure representing an active HTTP client connection." alt="" coords="164,271,291,297"/>
+<area shape="poly" id="edge6_Node000001_Node000001" title=" " alt="" coords="306,275,317,284,309,292,291,295,291,290,307,287,312,284,303,280"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="117,181,196,207"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,216,220,269,216,273,172,219"/>
+<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,133,159,181,154,181,154,133"/>
+<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
+<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
+<area shape="rect" id="Node000006" href="$group__http.html#structSocketHTTP__Request" title="Protocol&#45;agnostic representation of an HTTP request message." alt="" coords="221,181,375,207"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="282,219,239,273,235,269,278,216"/>
 </map>

@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="SocketDTLS_8h.html" target="_top" xlink:title="Core DTLS API for secure UDP sockets.">
 <polygon fill="white" stroke="#666666" points="97,-74 16,-74 16,-55 97,-55 97,-74"/>
 <text text-anchor="middle" x="56.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLS.h</text>
 </a>

@@ -126,7 +126,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
               else
                 {
                   printf ("[%s] Too many WebSocket clients\n", client);
-                  SocketWS_close (ws, WS_CLOSE_TRY_AGAIN_LATER, "Too many clients");
+                  SocketWS_close (ws, WS_CLOSE_TRY_AGAIN_LATER,
+                                  "Too many clients");
                   SocketWS_free (&ws);
                 }
             }
@@ -167,7 +168,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
             "  <p>Connect to test the WebSocket echo functionality.</p>\n"
             "  <p><button onclick=\"connect()\">Connect</button>\n"
             "     <button onclick=\"disconnect()\">Disconnect</button></p>\n"
-            "  <p><input type=\"text\" id=\"msg\" placeholder=\"Enter message\">\n"
+            "  <p><input type=\"text\" id=\"msg\" placeholder=\"Enter "
+            "message\">\n"
             "     <button onclick=\"sendMsg()\">Send</button></p>\n"
             "  <h3>Log:</h3>\n"
             "  <div id=\"log\"></div>\n"
@@ -185,7 +187,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
             "      ws = new WebSocket(url);\n"
             "      ws.onopen = () => log('Connected!');\n"
             "      ws.onmessage = (e) => log('Received: ' + e.data);\n"
-            "      ws.onclose = (e) => { log('Disconnected: ' + e.code); ws = null; };\n"
+            "      ws.onclose = (e) => { log('Disconnected: ' + e.code); ws = "
+            "null; };\n"
             "      ws.onerror = () => log('Error');\n"
             "    }\n"
             "    function disconnect() {\n"
@@ -199,7 +202,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
             "        input.value = '';\n"
             "      }\n"
             "    }\n"
-            "    document.getElementById('msg').addEventListener('keypress', (e) => {\n"
+            "    document.getElementById('msg').addEventListener('keypress', "
+            "(e) => {\n"
             "      if (e.key === 'Enter') sendMsg();\n"
             "    });\n"
             "  </script>\n"
@@ -207,7 +211,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
             "</html>\n";
 
       SocketHTTPServer_Request_status (req, 200);
-      SocketHTTPServer_Request_header (req, "Content-Type", "text/html; charset=utf-8");
+      SocketHTTPServer_Request_header (req, "Content-Type",
+                                       "text/html; charset=utf-8");
       SocketHTTPServer_Request_body_string (req, html);
     }
   else
@@ -235,13 +240,14 @@ process_websocket_clients (void)
       if (SocketWS_state (ws) == WS_STATE_CLOSED)
         {
           printf ("WebSocket client disconnected\n");
-          remove_ws_client (ws);  /* Remove from array first */
-          SocketWS_free (&ws);    /* Then free the WebSocket */
-          i--; /* Adjust index after removal */
+          remove_ws_client (ws); /* Remove from array first */
+          SocketWS_free (&ws);   /* Then free the WebSocket */
+          i--;                   /* Adjust index after removal */
           continue;
         }
 
-      /* Try to receive a message (non-blocking would require poll integration) */
+      /* Try to receive a message (non-blocking would require poll integration)
+       */
       if (SocketWS_recv_available (ws))
         {
           SocketWS_Message msg;
@@ -269,8 +275,8 @@ process_websocket_clients (void)
               /* Connection closed */
               printf ("WebSocket client closed connection (code: %d)\n",
                       SocketWS_close_code (ws));
-              remove_ws_client (ws);  /* Remove from array first */
-              SocketWS_free (&ws);    /* Then free the WebSocket */
+              remove_ws_client (ws); /* Remove from array first */
+              SocketWS_free (&ws);   /* Then free the WebSocket */
               i--;
             }
         }
@@ -348,7 +354,8 @@ main (int argc, char **argv)
         /* Close all WebSocket connections */
         for (int i = 0; i < ws_count; i++)
           {
-            SocketWS_close (ws_clients[i], WS_CLOSE_GOING_AWAY, "Server shutdown");
+            SocketWS_close (ws_clients[i], WS_CLOSE_GOING_AWAY,
+                            "Server shutdown");
             SocketWS_free (&ws_clients[i]);
           }
         ws_count = 0;
@@ -377,4 +384,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

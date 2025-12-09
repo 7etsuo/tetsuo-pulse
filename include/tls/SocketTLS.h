@@ -1,39 +1,255 @@
 /**
  * @defgroup security Security Modules
- * @brief TLS encryption and security protection mechanisms.
+ * @brief Comprehensive security protections for network applications with
+ * TLS 1.3 hardening and DDoS mitigation.
  *
- * The Security group provides comprehensive security features including
- * TLS encryption, certificate validation, SYN flood protection, and
- * IP filtering. Key components include:
- * - SocketTLS (tls): TLS/SSL socket integration with TLS 1.3 support
- * - SocketTLSContext (tls-context): TLS context management and certificates
- * - SocketSYNProtect (syn-protect): SYN flood protection
- * - SocketDTLS (dtls): DTLS for UDP sockets with cookie protection
- * - SocketIPTracker (ip-tracker): IP-based rate limiting and filtering
+ * The Security modules provide production-grade defenses against common
+ * threats including man-in-the-middle attacks, SYN floods, and IP-based abuse.
+ * Key focus areas: strict TLS configuration, certificate validation, adaptive
+ * rate limiting, and connection filtering. Designed for seamless integration
+ * with Socket core without performance penalties.
  *
- * @see @ref core_io for socket primitives that can be secured.
- * @see @ref http for TLS integration in HTTP clients/servers.
- * @see SocketTLS_enable() for enabling TLS on sockets.
- * @see SocketDTLS_enable() for DTLS on UDP sockets.
- * @see SocketSYNProtect_T for SYN flood protection.
+ * ## Architecture Overview
+ *
+ * ```
+ * ┌───────────────────────────────────────────────────────────┐
+ * │                    Application Layer                      │
+ * │  SocketPool, SocketHTTPClient, SocketHTTPServer, Custom   │
+ * │  Services, etc.                                           │
+ * └─────────────┬─────────────────────────────────────────────┘
+ *               │ Uses / Integrates
+ * ┌─────────────▼─────────────────────────────────────────────┐
+ * │                 Security Layer                            │
+ * │  ┌────────────┐  ┌────────────┐  ┌──────────────────┐    │
+ * │  │ SocketTLS  │  │SocketSYN   │  │ SocketDTLS       │    │
+ * │  │/DTLS       │◄►│Protect     │  │/IPTracker        │    │
+ * │  └────────────┘  └────────────┘  └──────────────────┘    │
+ * │              │         │                │                 │
+ * │   TLS Crypto │  SYN    │     UDP/DTLS   │  Rate Limits    │
+ * └──────────────┼─────────┼────────────────┼─────────────────┘
+ *                │         │                │
+ * ┌─────────────▼─────────▼────────────────▼─────────────────┐
+ * │              Foundation + Core I/O Layer                  │
+ * │  Arena, Except, Socket, SocketConfig, SocketUtil          │
+ * └───────────────────────────────────────────────────────────┘
+ * ```
+ *
+ * ## Module Relationships
+ *
+ * - **Depends on**: @ref foundation (memory, exceptions, config), @ref core_io
+ * (Socket primitives)
+ * - **Used by**: @ref connection_mgmt (protected pools), @ref http (secure
+ * HTTP/2), @ref async_io (non-blocking TLS)
+ * - **Integrates with**: @ref event_system (poll during handshake), @ref
+ * utilities (timers, rate limits)
+ *
+ * ## Protection Mechanisms
+ *
+ * ### TLS/SSL Encryption
+ * - TLS 1.3 exclusive: PFS, secure ciphers, anti-downgrade
+ * - Client/server auth, SNI, ALPN, session resumption
+ * - Non-blocking handshake + secure I/O wrappers
+ *
+ * ### SYN Flood & DDoS Defense
+ * - Adaptive black/whitelisting with reputation scoring
+ * - Sliding window rate limiting per IP
+ * - Challenge-response cookies for UDP/DTLS
+ *
+ * ### IP & Traffic Control
+ * - Per-IP connection limits and tracking
+ * - Geoblocking, anomaly detection
+ * - Integration with SocketPool for server protection
+ *
+ * ## Security Philosophy
+ *
+ * - **Secure by Default**: No weak configs; TLS 1.3 only, verify peers
+ * - **Minimal Attack Surface**: No global state, thread-local errors
+ * - **Performance Oriented**: Zero-copy where possible, async-friendly
+ * - **Auditable**: Detailed logging, metrics, error categorization
+ *
+ * ## Configuration Best Practices
+ *
+ * | Aspect | Recommendation | Rationale |
+ * |--------|----------------|-----------|
+ * | TLS Version | TLS 1.3 only | Eliminates legacy vulns |
+ * | Cipher Suites | Modern PFS | Forward secrecy |
+ * | Verify Mode | TLS_VERIFY_PEER | Prevent MITM |
+ * | CA Store | System + custom | Trust chain validation |
+ * | Session Cache | Enabled with tickets | Performance without security loss |
+ *
+ * @warning Disable only for testing; production requires full verification
+ * @note Requires OpenSSL/LibreSSL; enabled via -DENABLE_TLS=ON in CMake
+ *
+ * @see @ref foundation "Foundation Modules" for base infrastructure
+ * @see @ref core_io "Core I/O Modules" for sockets secured by TLS
+ * @see @ref http "HTTP Modules" for TLS-secured protocols
+ * @see docs/SECURITY.md for hardening guide
+ * @see docs/TLS-CONFIG.md for detailed TLS setup
+ * @see docs/SYN-PROTECT.md for DDoS protection details
  * @{
  */
 
 /**
  * @file SocketTLS.h
  * @ingroup security
- * @brief TLS/SSL socket integration with TLS 1.3 support.
+ * @brief High-level TLS/SSL integration for secure Socket I/O with TLS 1.3
+ * enforcement.
  *
- * Features:
- * - TLS1.3-only (strict PFS, no legacy vulns)
- * - Transparent I/O integration
- * - Non-blocking handshake with poll
- * - SNI + hostname verification
- * - ALPN support
+ * This header provides the core API for enabling and managing TLS encryption
+ * on TCP sockets. It abstracts OpenSSL/LibreSSL complexities, offering
+ * non-blocking handshakes, secure send/recv, and post-handshake queries
+ * (ciphers, cert status). Exclusively supports TLS 1.3 for maximum security:
+ * PFS, secure defaults, no legacy support. Integrates seamlessly with
+ * SocketPoll for event-driven applications.
  *
- * @see SocketTLS_enable() for enabling TLS on existing sockets.
- * @see @ref SocketTLSContext_T for TLS context management.
- * @see @ref SocketDTLS_T for DTLS support on UDP sockets.
+ * ## Core Features
+ *
+ * - **TLS 1.3 Exclusive**: Enforced PFS, modern ciphers (AES-GCM, ChaCha20),
+ * anti-downgrade protection
+ * - **Async-Friendly**: Non-blocking handshake states for poll/epoll/kqueue
+ * integration
+ * - **Transparent I/O**: Drop-in SocketTLS_send/recv replacing
+ * Socket_send/recv post-handshake
+ * - **Certificate Handling**: Automatic verification, SNI, hostname checks,
+ * error details
+ * - **Protocol Negotiation**: ALPN for HTTP/2, WebSocket; session resumption
+ * support
+ * - **Error Reporting**: Thread-local tls_error_buf + exceptions for detailed
+ * diagnostics
+ * - **Graceful Shutdown**: Bidirectional close_notify to prevent truncation
+ * attacks
+ *
+ * ## Typical Workflow
+ *
+ * 1. Create Socket and connect/accept
+ * 2. Create SocketTLSContext (client/server config)
+ * 3. SocketTLS_enable(socket, ctx)
+ * 4. Set hostname (client) or certs (server)
+ * 5. Perform handshake (auto or manual)
+ * 6. Use secure I/O
+ * 7. Shutdown TLS before closing socket
+ *
+ * ## Client Usage Example
+ *
+ * @code{.c}
+ * #include "socket/Socket.h"
+ * #include "tls/SocketTLS.h"
+ * #include "tls/SocketTLSContext.h"
+ *
+ * TRY {
+ *     Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ *     Socket_setnonblocking(sock);
+ *     Socket_connect(sock, "www.example.com", 443);
+ *
+ *     SocketTLSContext_T ctx = SocketTLSContext_new_client(NULL); // Secure
+ * defaults SocketTLS_enable(sock, ctx); SocketTLS_set_hostname(sock,
+ * "www.example.com");
+ *
+ *     // Non-blocking handshake in event loop
+ *     TLSHandshakeState state = TLS_HANDSHAKE_NOT_STARTED;
+ *     while (state != TLS_HANDSHAKE_COMPLETE && state != TLS_HANDSHAKE_ERROR)
+ * { state = SocketTLS_handshake(sock); if (state == TLS_HANDSHAKE_WANT_READ ||
+ * state == TLS_HANDSHAKE_WANT_WRITE) {
+ *             // Add to poll, wait for events, then retry
+ *             // SocketPoll_wait(poll, ...)
+ *         }
+ *     }
+ *     REQUIRE(state == TLS_HANDSHAKE_COMPLETE);
+ *
+ *     // Verify cert
+ *     long verify = SocketTLS_get_verify_result(sock);
+ *     REQUIRE(verify == X509_V_OK);
+ *
+ *     // Secure I/O
+ *     const char *req = "GET / HTTP/1.1\r\nHost: www.example.com\r\n\r\n";
+ *     SocketTLS_send(sock, req, strlen(req));
+ *     char buf[4096];
+ *     ssize_t n = SocketTLS_recv(sock, buf, sizeof(buf));
+ *
+ * } EXCEPT(SocketTLS_Failed) {
+ *     SOCKET_LOG_ERROR_MSG("TLS failed: %s", tls_error_buf);
+ *     // Cleanup
+ * } FINALLY {
+ *     SocketTLS_shutdown(sock);
+ *     Socket_close(sock);
+ *     SocketTLSContext_free(&ctx);
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Server Usage Example
+ *
+ * @code{.c}
+ * Socket_T listener = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_bind(listener, "0.0.0.0", 443);
+ * Socket_listen(listener, SOMAXCONN);
+ * Socket_setnonblocking(listener);
+ *
+ * SocketTLSContext_T ctx = SocketTLSContext_new_server("server.crt",
+ * "server.key", NULL); SocketTLSContext_set_min_protocol(ctx, TLS1_3_VERSION);
+ * SocketTLSContext_load_ca(ctx, "ca-bundle.pem"); // Optional for client auth
+ *
+ * SocketPoll_T poll = SocketPoll_new(1024);
+ * SocketPoll_add(poll, listener, POLL_READ, listener);
+ *
+ * while (running) {
+ *     SocketEvent_T *evs; int nfds = SocketPoll_wait(poll, &evs, 100);
+ *     for (int i = 0; i < nfds; ++i) {
+ *         if (evs[i].socket == listener) {
+ *             Socket_T client = Socket_accept(listener);
+ *             Socket_setnonblocking(client);
+ *             SocketTLS_enable(client, ctx);
+ *             SocketPoll_add(poll, client, POLL_READ | POLL_WRITE, client);
+ *             // Handshake will occur on next events
+ *         } else {
+ *             // Handle events, including handshake progress
+ *             if (SocketTLS_enabled(evs[i].socket)) {
+ *                 TLSHandshakeState state =
+ * SocketTLS_handshake(evs[i].socket);
+ *                 // Update poll events based on WANT_READ/WRITE
+ *             }
+ *             // Process app data...
+ *         }
+ *     }
+ * }
+ * @endcode
+ *
+ * ## Error Handling & Best Practices
+ *
+ * - Always check SocketTLS_get_verify_result() after handshake; raise
+ * SocketTLS_VerifyFailed if != X509_V_OK
+ * - Use SocketTLS_handshake_auto() for simple cases with default timeouts
+ * - For production servers: Enable session tickets/cache, set cipher
+ * preferences, load system CAs
+ * - Monitor SocketTLS_get_alpn_selected() to route to HTTP/2 vs 1.1 handlers
+ * - Log tls_error_buf on exceptions for debugging
+ * - Integrate with SocketPool for connection limiting + SYNProtect
+ *
+ * ## Platform & Build Requirements
+ *
+ * - **TLS Backend**: OpenSSL >=1.1.1 or LibreSSL >=3.0 (CMake auto-detect)
+ * - **OS**: Linux, macOS, BSD, Windows (with WinTLS fallback planned)
+ * - **Build**: `cmake .. -DENABLE_TLS=ON`; requires libssl-dev/libressl-dev
+ * - **Headers**: #include "tls/SocketTLS.h" after "socket/Socket.h"
+ * - **Conditional**: #if SOCKET_HAS_TLS guards all TLS code
+ *
+ * @note Thread-safe for concurrent use on different sockets; avoid sharing
+ * contexts without refcounting
+ * @warning Incomplete shutdown may leak session state or allow truncation;
+ * always SocketTLS_shutdown()
+ * @warning Non-blocking mode requires proper event loop; blocking calls may
+ * deadlock
+ * @complexity
+ *   - Enable/Disable: O(1)
+ *   - Handshake: O(1) crypto ops + network RTTs
+ *   - Send/Recv: Amortized O(1) with buffering
+ *
+ * @see SocketTLSContext.h for advanced configuration (certs, protocols, ALPN,
+ * OCSP)
+ * @see SocketDTLS.h for DTLS/UDP variant with anti-DoS cookies
+ * @see SocketSYNProtect.h for integrating SYN flood protection
+ * @see docs/SECURITY.md#tls for TLS-specific security guidelines
+ * @see docs/ERROR_HANDLING.md for exception patterns
+ * @see docs/ASYNC_IO.md for poll integration details
  */
 
 #ifndef SOCKETTLS_INCLUDED
@@ -45,21 +261,86 @@
 #if SOCKET_HAS_TLS
 
 /**
- * @brief Thread-local error buffer for detailed TLS error messages.
+ * @brief Thread-local buffer for comprehensive TLS/OpenSSL error diagnostics
+ * and reporting.
  * @ingroup security
  * @var tls_error_buf
  *
- * Thread-local storage for formatting detailed error messages with OpenSSL
- * error codes and context information. Shared across all TLS implementation
- * files to provide consistent error reporting. Uses thread-local storage
- * to prevent race conditions between threads. Size: SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE.
+ * Dedicated per-thread buffer for storing formatted error strings from TLS
+ * operations. Combines OpenSSL ERR codes, X509 verify results, system errno,
+ * and contextual details (e.g., "SSL_connect: error:0A0C0103:SSL
+ * routines::certificate verify failed; hostname mismatch"). Enables
+ * consistent, detailed logging without repeated OpenSSL calls in error
+ * handlers.
  *
- * Access via macros like TLS_ERROR_MSG() or directly for custom formatting.
- * Automatically populated by error handling macros (RAISE_TLS_ERROR*).
+ * Fixed-size to avoid allocations under stress:
+ * SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE (256 bytes default). Automatically managed
+ * by library macros; thread-safe via TLS storage.
  *
- * @see RAISE_TLS_ERROR() for raising exceptions with error details
- * @see SocketTLS-private.h for internal TLS error macros
- * @note Thread-local: Each thread has independent buffer; no locking needed.
+ * ## Error String Format
+ *
+ * Typical contents:
+ * - Function name (e.g., SSL_read, X509_verify_cert)
+ * - OpenSSL error code (hex) and reason string
+ * - Verify errors (e.g., X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT)
+ * - Socket errno if applicable
+ * - Custom context from macros (e.g., fd, hostname)
+ *
+ * ## Access Patterns
+ *
+ * - **Automatic**: Populated on all SocketTLS_* exceptions
+ * - **Manual**: Use TLS_FORMAT_ERROR() macro for custom errors
+ * - **Logging**: Safe in EXCEPT blocks or callbacks
+ * - **Inspection**: Read-only during error handling; cleared post-recovery
+ *
+ * ## Usage in Error Handling
+ *
+ * @code{.c}
+ * #include "tls/SocketTLS.h"
+ * #include "core/Except.h"
+ *
+ * TRY {
+ *     SocketTLSContext_T ctx = SocketTLSContext_new_client("ca.pem");
+ *     SocketTLS_enable(sock, ctx);
+ *     SocketTLS_handshake_auto(sock);
+ * } EXCEPT(SocketTLS_VerifyFailed) {
+ *     // tls_error_buf contains verify details
+ *     const char *err = tls_error_buf;
+ *     SOCKET_LOG_ERROR_MSG("Cert verify failed: %s", err);
+ *     // Optional: Parse for specific X509 errors
+ *     long vresult = SocketTLS_get_verify_result(sock);
+ *     fprintf(stderr, "Verify code: %ld (%s)\n", vresult,
+ * SocketTLS_get_verify_error_string(sock, buf, sizeof(buf)));
+ *     // Decide: retry? blacklist peer? etc.
+ * } EXCEPT(SocketTLS_HandshakeFailed) {
+ *     SOCKET_LOG_ERROR_MSG("Handshake error details: %s", tls_error_buf);
+ *     // Analyze for protocol/cipher issues
+ * } FINALLY {
+ *     // Cleanup regardless
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Thread Safety & Limitations
+ *
+ * - **Thread-Local**: Each thread has isolated buffer; no mutex needed
+ * - **Size Limit**: Truncates if > BUFSIZE; sufficient for most errors
+ * - **Persistence**: Overwritten on next error in thread; copy if needed
+ * - **Platform**: __thread (GCC/Clang) or __declspec(thread) (MSVC)
+ *
+ * @note Define SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE before including headers to
+ * customize size
+ * @warning Buffer not null-terminated if truncated; use snprintf-safe reads
+ * @warning Avoid long-lived reads across async ops; use Socket_GetLastError()
+ * for snapshots
+ *
+ * @complexity O(1) - direct string formatting from ERR queue
+ *
+ * @see Socket_GetLastError() - high-level error string (leverages this buffer)
+ * @see SocketTLS_get_verify_error_string() - cert-specific details
+ * @see RAISE_TLS_ERROR() / TLS_RAISE_VERIFY_ERROR() - macros populating buffer
+ * @see SocketTLS-private.h - internal error macros and defines
+ * @see docs/ERROR_HANDLING.md - exception patterns and logging
+ * @see docs/SECURITY.md#tls-errors - TLS-specific error categorization
  */
 #ifdef _WIN32
 extern __declspec (thread) char tls_error_buf[];
@@ -85,7 +366,8 @@ typedef struct T *T;
  * Category: PROTOCOL
  * Retryable: NO - Usually indicates configuration or setup error.
  *
- * Used for generic TLS errors not covered by more specific exceptions like handshake or verification failures.
+ * Used for generic TLS errors not covered by more specific exceptions like
+ * handshake or verification failures.
  *
  * @see tls_error_buf for detailed OpenSSL error information.
  * @see Socket_GetLastError() for formatted error string.
@@ -105,7 +387,8 @@ extern const Except_T SocketTLS_Failed;
  * - Cipher suite negotiation failure
  * - Server rejection of connection parameters
  *
- * @see SocketTLS_handshake(), SocketTLS_handshake_loop(), SocketTLS_handshake_auto() for handshake APIs.
+ * @see SocketTLS_handshake(), SocketTLS_handshake_loop(),
+ * SocketTLS_handshake_auto() for handshake APIs.
  * @see SocketTLS_VerifyFailed for certificate issues during handshake.
  * @see tls_error_buf for OpenSSL-specific error details.
  */
@@ -139,10 +422,11 @@ extern const Except_T SocketTLS_VerifyFailed;
  * Category: PROTOCOL
  * Retryable: NO - Indicates malformed messages or desynchronization.
  *
- * Raised for errors in TLS record layer, handshake messages, or application data,
- * such as invalid records, decryption failures, or unexpected alerts.
+ * Raised for errors in TLS record layer, handshake messages, or application
+ * data, such as invalid records, decryption failures, or unexpected alerts.
  *
- * @see SocketTLS_send(), SocketTLS_recv() for I/O functions that can trigger this.
+ * @see SocketTLS_send(), SocketTLS_recv() for I/O functions that can trigger
+ * this.
  * @see tls_error_buf for specific protocol alert codes and details.
  * @see SocketTLS_HandshakeFailed for handshake-specific protocol issues.
  */
@@ -153,10 +437,12 @@ extern const Except_T SocketTLS_ProtocolError;
  * @ingroup security
  *
  * Category: PROTOCOL
- * Retryable: NO - Shutdown alert exchange failed; connection may be compromised.
+ * Retryable: NO - Shutdown alert exchange failed; connection may be
+ * compromised.
  *
  * Raised when the bidirectional close_notify alert cannot be completed,
- * typically due to peer abrupt disconnect, network errors, or prior protocol issues.
+ * typically due to peer abrupt disconnect, network errors, or prior protocol
+ * issues.
  *
  * @see SocketTLS_shutdown() for performing the shutdown sequence.
  * @see Socket_close() for underlying socket cleanup after shutdown attempt.
@@ -165,59 +451,221 @@ extern const Except_T SocketTLS_ProtocolError;
 extern const Except_T SocketTLS_ShutdownFailed;
 
 /**
- * @brief TLS handshake state enumeration for non-blocking operations.
+ * @brief TLS handshake progress states for non-blocking and event-driven
+ * operations.
  * @ingroup security
  *
- * Returned by SocketTLS_handshake() and related functions to indicate current status
- * and required next action (e.g., poll for READ or WRITE events).
- * Use in event loops: if WANT_READ, add socket to poll for POLL_READ; similarly for WRITE.
+ * Enum values indicate the current phase and required action during the TLS
+ * handshake process. Used by SocketTLS_handshake() family to signal status in
+ * async environments. Facilitates correct polling: WANT_READ/WRITE states
+ * guide SocketPoll event masks. ERROR state triggers cleanup and exception
+ * raising. COMPLETE enables secure data transfer.
  *
- * Values map to OpenSSL's SSL_ERROR_WANT_READ/WRITE and handshake phases.
+ * Directly corresponds to OpenSSL's internal handshake states and
+ * SSL_get_error() WANT_* codes. Typical sequence: NOT_STARTED → IN_PROGRESS →
+ * (WANT_* loops) → COMPLETE or ERROR.
  *
- * @see SocketTLS_handshake()
- * @see SocketTLS_handshake_loop()
- * @see SocketTLS_handshake_auto()
- * @see @ref event_system for SocketPoll integration.
- * @see SocketPoll_add() to monitor socket during handshake.
+ * ## State Table
+ *
+ * | Value | State              | Description | Recommended Action |
+ * |-------|--------------------|--------------------------------------------------|---------------------------------------------|
+ * | 0     | NOT_STARTED        | No handshake initiated yet | Invoke
+ * SocketTLS_handshake() first time     | | 1     | IN_PROGRESS        |
+ * Handshake messages exchanging (crypto active)    | Continue calling
+ * handshake in loop          | | 2     | WANT_READ          | Awaiting peer
+ * data (e.g., ServerHello, certs)    | Poll for POLL_READ, then retry
+ * handshake    | | 3     | WANT_WRITE         | Ready to send data (e.g.,
+ * ClientHello, keys)     | Poll for POLL_WRITE, then retry handshake   | | 4
+ * | COMPLETE           | Full auth + key exchange done; session secure    |
+ * Transition to app I/O (send/recv TLS)       | | 5     | ERROR              |
+ * Irrecoverable failure (check tls_error_buf)      | Raise exception,
+ * shutdown, close socket     |
+ *
+ * ## Async Event Loop Example
+ *
+ * @code{.c}
+ * #include "poll/SocketPoll.h"
+ * #include "tls/SocketTLS.h"
+ *
+ * static void handle_handshake(Socket_T sock, SocketPoll_T poll, void
+ * *userdata) { TLSHandshakeState state = SocketTLS_handshake(sock); unsigned
+ * events = 0;
+ *
+ *     switch (state) {
+ *     case TLS_HANDSHAKE_COMPLETE:
+ *         // Success: enable app events
+ *         SocketPoll_mod(poll, sock, POLL_READ | POLL_WRITE | POLL_ERROR |
+ * POLL_HUP, app_handler); SOCKET_LOG_INFO_MSG("TLS handshake complete for
+ * fd=%d", Socket_fd(sock)); break;
+ *
+ *     case TLS_HANDSHAKE_ERROR:
+ *         // Failure: log details, cleanup
+ *         SOCKET_LOG_ERROR_MSG("TLS handshake failed: %s", tls_error_buf);
+ *         SocketTLS_shutdown(sock);
+ *         Socket_close(sock);
+ *         break;
+ *
+ *     case TLS_HANDSHAKE_WANT_READ:
+ *         events = POLL_READ;
+ *         break;
+ *     case TLS_HANDSHAKE_WANT_WRITE:
+ *         events = POLL_WRITE;
+ *         break;
+ *     default: // IN_PROGRESS or NOT_STARTED
+ *         events = POLL_READ | POLL_WRITE; // Continue monitoring
+ *         break;
+ *     }
+ *
+ *     if (events) {
+ *         SocketPoll_mod(poll, sock, events | POLL_ERROR | POLL_HUP,
+ * handle_handshake);
+ *     }
+ * }
+ *
+ * // Usage: After SocketTLS_enable()
+ * SocketPoll_add(poll, sock, POLL_READ | POLL_WRITE, handle_handshake);
+ * @endcode
+ *
+ * @note Loop until COMPLETE or ERROR; avoid busy-waiting by polling
+ * @note For blocking sockets, prefer SocketTLS_handshake_auto() wrapper
+ * @warning Mismanaging WANT_* states causes hangs or infinite loops
+ * @warning ERROR may leave partial keys; always shutdown + close immediately
+ *
+ * @complexity O(1) per invocation; full handshake involves multiple crypto ops
+ * (DH/ECDH, sig verify)
+ *
+ * @see SocketTLS_handshake() - returns this enum per step
+ * @see SocketTLS_handshake_loop() - automated loop with timeout
+ * @see SocketTLS_handshake_auto() - timeout from socket config
+ * @see @ref event_system "Event System" for SocketPoll and async patterns
+ * @see SocketPoll_mod() - update events based on state
+ * @see docs/ASYNC_IO.md#tls-handshake for advanced async TLS
+ * @see SSL_get_error() / SSL_state() in OpenSSL for low-level details
  */
 typedef enum
 {
-  TLS_HANDSHAKE_NOT_STARTED = 0,   /**< Handshake not yet initiated */
-  TLS_HANDSHAKE_IN_PROGRESS = 1,   /**< Handshake in progress */
-  TLS_HANDSHAKE_WANT_READ = 2,     /**< Need to read from socket (data available) */
-  TLS_HANDSHAKE_WANT_WRITE = 3,    /**< Need to write to socket (buffer space available) */
-  TLS_HANDSHAKE_COMPLETE = 4,      /**< Handshake completed successfully */
-  TLS_HANDSHAKE_ERROR = 5          /**< Handshake failed */
+  TLS_HANDSHAKE_NOT_STARTED = 0, /**< Initial state: handshake not initiated */
+  TLS_HANDSHAKE_IN_PROGRESS = 1, /**< Active exchange of handshake messages */
+  TLS_HANDSHAKE_WANT_READ = 2,  /**< Blocked waiting for inbound TLS records */
+  TLS_HANDSHAKE_WANT_WRITE = 3, /**< Blocked waiting to send TLS records */
+  TLS_HANDSHAKE_COMPLETE = 4, /**< Successful completion; ready for app data */
+  TLS_HANDSHAKE_ERROR = 5     /**< Fatal error; abort connection */
 } TLSHandshakeState;
 
 /**
- * @brief TLS peer certificate verification mode enumeration.
+ * @brief Peer certificate verification policies configurable for TLS contexts.
  * @ingroup security
  *
- * Configures the policy for verifying peer certificates during the TLS handshake.
- * Defaults to TLS_VERIFY_PEER in secure configurations.
- * Values correspond to OpenSSL's SSL_VERIFY_* flags.
+ * Specifies the level of certificate validation during TLS handshakes.
+ * Controls whether to request/require peer certs, perform chain validation
+ * against trusted CAs, and handle missing certs. Bit flags allow combinations
+ * (e.g., PEER | FAIL_IF_NO_PEER_CERT for mTLS). Defaults to PEER mode in
+ * client/server contexts for balanced security/performance. Directly maps to
+ * OpenSSL SSL_VERIFY_* constants for compatibility.
  *
- * - TLS_VERIFY_NONE: Disable verification (insecure, use only for testing)
- * - TLS_VERIFY_PEER: Require and verify peer certificate against trust store
- * - TLS_VERIFY_FAIL_IF_NO_PEER_CERT: Fail if no certificate provided by peer
- * - TLS_VERIFY_CLIENT_ONCE: Verify client cert only once per session (server-side optimization)
+ * ## Mode Details & Recommendations
  *
- * @see SocketTLSContext_set_verify_mode() to set this mode in the context.
- * @see SocketTLS_VerifyFailed raised on verification errors.
- * @see SocketTLSContext_load_ca() for managing trusted CAs.
- * @see docs/SECURITY_GUIDE.md for verification best practices.
+ * | Mode                      | Value | Requires Cert? | Validates Chain? |
+ * Fails No Cert? | Best For                  |
+ * |---------------------------|-------|----------------|------------------|----------------|---------------------------|
+ * | TLS_VERIFY_NONE           | 0x00  | No             | No               | No
+ * | Testing, internal proxies | | TLS_VERIFY_PEER           | 0x01  | Yes
+ * (request)  | Yes              | No (warn)      | Standard client/server    |
+ * | TLS_VERIFY_FAIL_IF_NO_PEER_CERT | 0x02 | Yes (require) | Yes | Yes |
+ * Mutual TLS (mTLS)         | | TLS_VERIFY_CLIENT_ONCE    | 0x04  | Yes (once)
+ * | Yes (once)       | Per config     | Servers with resumption   |
+ *
+ * - **NONE**: Bypasses all checks; vulnerable to MITM, spoofing - avoid in
+ * prod
+ * - **PEER**: Requests cert, verifies if provided; allows anon for flexibility
+ * - **FAIL_IF_NO_PEER_CERT**: Enforces cert provision; ideal for auth-heavy
+ * apps
+ * - **CLIENT_ONCE**: Server opt - reuses prior verification on session resume
+ * (tickets)
+ *
+ * ## Server Configuration Example (mTLS)
+ *
+ * @code{.c}
+ * SocketTLSContext_T ctx = SocketTLSContext_new_server("server.crt",
+ * "server.key", NULL);
+ *
+ * // Require client certs with full validation
+ * SocketTLSContext_set_verify_mode(ctx,
+ *     TLS_VERIFY_PEER | TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+ *
+ * // Load trusted client CAs
+ * SocketTLSContext_load_verify_locations(ctx, "client-cas.pem", NULL);
+ *
+ * // Optional: depth limit (e.g., 2 for short chains)
+ * SocketTLSContext_set_verify_depth(ctx, 5);
+ *
+ * // Custom callback for revocation/pinning checks
+ * SocketTLSContext_set_verify_callback(ctx, verify_peer_cert, ctx);
+ *
+ * // Enable client cert request
+ * SocketTLSContext_set_client_ca_list(ctx, client_ca_list);
+ * @endcode
+ *
+ * ## Client Configuration Example
+ *
+ * @code{.c}
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client(NULL); // System CAs
+ * default
+ *
+ * // Standard server verification
+ * SocketTLSContext_set_verify_mode(ctx, TLS_VERIFY_PEER);
+ *
+ * // Strict: fail if server provides no/ invalid cert
+ * SocketTLSContext_set_verify_mode(ctx,
+ *     TLS_VERIFY_PEER | TLS_VERIFY_FAIL_IF_NO_PEER_CERT);
+ *
+ * // Load additional CAs (e.g., enterprise)
+ * SocketTLSContext_load_ca(ctx, "/etc/ssl/custom-ca.pem");
+ * @endcode
+ *
+ * ## Advanced Considerations
+ *
+ * - Combine with SocketTLSContext_set_verify_depth() to limit chain length
+ * - Use custom verify callback for OCSP stapling, CRL checks, cert pinning
+ * - For session resumption, CLIENT_ONCE optimizes but requires secure tickets
+ * - Always log verification failures via tls_error_buf and
+ * SocketTLS_get_verify_result()
+ *
+ * @note Default: TLS_VERIFY_PEER; override explicitly for custom policies
+ * @warning NONE exposes to active attacks; use TLS_VERIFY_PEER minimum in
+ * production
+ * @warning FAIL_IF_NO_PEER_CERT breaks compat with non-cert peers (e.g., some
+ * CDNs)
+ * @warning CLIENT_ONCE assumes secure resumption; vulnerable if tickets
+ * compromised
+ *
+ * @complexity O(chain length) for validation; cached in sessions
+ *
+ * @see SocketTLSContext_set_verify_mode() - set on context before enabling
+ * sockets
+ * @see SocketTLSContext_load_ca() - populate trust store
+ * @see SocketTLSContext_set_verify_callback() - hook for custom logic (e.g.,
+ * hostname)
+ * @see SocketTLSContext_set_verify_depth() - chain validation limits
+ * @see SocketTLS_VerifyFailed - exception triggered on failures
+ * @see SocketTLS_get_verify_result() - query result post-handshake
+ * @see docs/SECURITY.md#cert-validation for revocation, pinning guides
+ * @see X509_verify_cert() / SSL_CTX_set_verify() in OpenSSL docs
  */
 typedef enum
 {
-  TLS_VERIFY_NONE = 0,                    /**< No peer verification (insecure) */
-  TLS_VERIFY_PEER = 1,                    /**< Verify peer certificate */
-  TLS_VERIFY_FAIL_IF_NO_PEER_CERT = 2,    /**< Fail if no peer cert provided */
-  TLS_VERIFY_CLIENT_ONCE = 4              /**< Verify client once per session */
+  TLS_VERIFY_NONE
+  = 0, /**< Disable all cert verification (INSECURE - testing only) */
+  TLS_VERIFY_PEER = 1, /**< Request and validate peer cert if provided */
+  TLS_VERIFY_FAIL_IF_NO_PEER_CERT
+  = 2, /**< Fail handshake if no peer cert presented */
+  TLS_VERIFY_CLIENT_ONCE
+  = 4 /**< Servers: verify client cert once per logical session */
 } TLSVerifyMode;
 
 /**
- * @brief Opaque TLS context type for managing certificates, keys, and configuration.
+ * @brief Opaque TLS context type for managing certificates, keys, and
+ * configuration.
  * @ingroup security
  *
  * Handles OpenSSL SSL_CTX lifecycle, security policies, ALPN protocols,
@@ -225,7 +673,8 @@ typedef enum
  * Created via dedicated functions in SocketTLSContext.h and passed to
  * SocketTLS_enable() to secure sockets.
  *
- * @see SocketTLSContext.h for complete API and creation functions like SocketTLSContext_new_client().
+ * @see SocketTLSContext.h for complete API and creation functions like
+ * SocketTLSContext_new_client().
  * @see SocketTLSContext_new_server() for server contexts.
  * @see SocketTLS_enable() to apply context to a socket.
  * @see @ref security "Security Modules" for related protection features.
@@ -400,7 +849,8 @@ extern ssize_t SocketTLS_recv (Socket_T socket, void *buf, size_t len);
  *
  * @return Const string with cipher name, or NULL if unavailable
  * @throws None
- * @threadsafe Yes - reads immutable post-handshake state - reads immutable post-handshake state
+ * @threadsafe Yes - reads immutable post-handshake state - reads immutable
+ * post-handshake state
  *
  * @see SocketTLS_get_version() for protocol version.
  * @see SocketTLSContext_set_cipher_list() for configuring ciphers.
@@ -436,7 +886,8 @@ extern const char *SocketTLS_get_version (Socket_T socket);
  *
  * @return long verify result code (X509_V_OK = 0 on success)
  * @throws None (caller checks and may raise SocketTLS_VerifyFailed)
- * @threadsafe Yes - reads immutable post-handshake state (read-only post-handshake)
+ * @threadsafe Yes - reads immutable post-handshake state (read-only
+ * post-handshake)
  *
  * @see SocketTLS_VerifyFailed exception for handling verification failures.
  * @see SocketTLS_get_verify_error_string() for detailed error description.
@@ -502,7 +953,8 @@ extern int SocketTLS_is_session_reused (Socket_T socket);
  * @return Negotiated protocol string, or NULL if none negotiated or
  * unavailable
  * @throws None
- * @threadsafe Yes - reads immutable post-handshake state - reads immutable post-handshake state
+ * @threadsafe Yes - reads immutable post-handshake state - reads immutable
+ * post-handshake state
  *
  * @see SocketTLSContext_set_alpn_protos() for advertising supported protocols.
  * @see SocketTLSContext_set_alpn_callback() for custom protocol selection.

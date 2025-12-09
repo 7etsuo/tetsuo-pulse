@@ -1,0 +1,9 @@
+<map id="include/http/SocketHTTP1.h" name="include/http/SocketHTTP1.h">
+<area shape="rect" id="Node000001" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112)." alt="" coords="213,5,400,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTP1-private_8h.html" title="Internal HTTP/1.1 parser structures and DFA state machine." alt="" coords="5,79,181,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="264,38,146,81,144,76,262,33"/>
+<area shape="rect" id="Node000003" href="$SocketHTTPClient-private_8h.html" title="Internal HTTP client structures and connection pooling." alt="" coords="205,79,408,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="309,44,309,79,304,79,304,44"/>
+<area shape="rect" id="Node000004" href="$SocketHTTPServer-private_8h.html" title="Internal HTTP server structures and connection management." alt="" coords="433,79,639,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="354,33,482,76,480,81,352,38"/>
+</map>

@@ -6,14 +6,47 @@
  * @ingroup security
  * @brief TLS configuration constants, structure, and secure defaults.
  *
- * Defines secure defaults for TLS operations: TLS1.3-only protocols, modern cipher suites,
- * buffer sizes, timeouts, limits, and configuration structure (SocketTLSConfig_T).
- * Provides stub typedefs when TLS is disabled for compilation without OpenSSL/LibreSSL.
- * Includes initialization function SocketTLS_config_defaults() for the config struct.
+ * Defines secure defaults for TLS operations: TLS1.3-only protocols, modern
+ * cipher suites, buffer sizes, timeouts, limits, and configuration structure
+ * (SocketTLSConfig_T). Provides stub typedefs when TLS is disabled for
+ * compilation without OpenSSL/LibreSSL. Includes initialization function
+ * SocketTLS_config_defaults() for the config struct.
  *
- * All constants can be overridden before including this header to customize security parameters.
- * Enforces high-security posture by default: no legacy protocols/ciphers, strict version pinning.
+ * All constants can be overridden before including this header to customize
+ * security parameters. Enforces high-security posture by default: no legacy
+ * protocols/ciphers, strict version pinning.
  *
+ * ## Quick Start Example
+ *
+ * @code{.c}
+ * #include "tls/SocketTLSConfig.h"
+ * #include "tls/SocketTLSContext.h"
+ * #include "socket/Socket.h"
+ *
+ * // Initialize secure config
+ * SocketTLSConfig_T cfg;
+ * SocketTLS_config_defaults(&cfg);
+ *
+ * // Create context
+ * SocketTLSContext_T ctx = SocketTLSContext_new(&cfg);
+ *
+ * // Secure a socket
+ * TRY {
+ *     Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ *     Socket_connect(sock, "example.com", 443);
+ *     SocketTLS_enable(sock, ctx);
+ *     // ... perform TLS handshake and I/O ...
+ *     Socket_free(&sock);
+ * } EXCEPT(SocketTLS_Failed) {
+ *     // Handle TLS errors
+ * } END_TRY;
+ *
+ * SocketTLSContext_free(&ctx);
+ * @endcode
+ *
+ * @note Build with `cmake .. -DENABLE_TLS=ON` and link against
+ * OpenSSL/LibreSSL.
+ * @warning Always pair with proper certificate validation and key management.
  * @threadsafe Yes - compile-time constants and pure functions.
  *
  * @see SocketTLSConfig_T for customizable TLS parameters.
@@ -21,49 +54,132 @@
  * @see @ref SocketTLSContext_T for applying config to contexts.
  * @see @ref SocketTLS_T for TLS I/O operations.
  * @see SocketDTLSConfig.h for DTLS-specific constants.
+ * @see examples/https_client.c for full TLS client example.
  * @see @ref security "Security Modules" group.
  */
 
 /**
  * @defgroup tls_config TLS Configuration Constants
  * @ingroup security
- * @brief Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers, and security limits.
+ * @brief Secure default constants for TLS protocol versions, cipher suites,
+ * timeouts, buffers, and security limits.
  *
- * These constants define secure defaults for TLS operations and can be overridden before including this header.
- * Enforces TLS 1.3-only policy, modern ciphers, and protection against common attacks (DoS, overflows).
+ * These constants define secure defaults for TLS operations and can be
+ * overridden before including this header. Enforces TLS 1.3-only policy,
+ * modern ciphers, and protection against common attacks (DoS, overflows).
  * Provides stubs when TLS support is disabled (@ref SOCKET_HAS_TLS).
+ *
+ * ## Key Categories
+ *
+ * ### Protocol Control
+ * - Protocol versions pinned to TLS 1.3 for forward secrecy and anti-downgrade
+ * protection
+ *
+ * ### Cipher Security
+ * - Modern AEAD+PFS cipher suites (ECDHE with AES-GCM/ChaCha20-Poly1305)
+ *
+ * ### Timeout & Resource Limits
+ * - Defaults prevent slowloris attacks, buffer overflows, excessive memory use
+ * - Configurable via #define overrides
+ *
+ * ### Customization
+ * - Override constants before #include for environment-specific tuning
+ *
+ * ## Override Pattern
+ *
+ * @code{.c}
+ * // Example: Faster handshake for internal networks, prefer ChaCha20
+ * #define SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS 10000
+ * #define SOCKET_TLS13_CIPHERSUITES
+ * "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256" #include
+ * "SocketTLSConfig.h"
+ * @endcode
+ *
+ * @note Overrides are compile-time; changes require recompilation.
+ * @warning Validate custom settings with tools like testssl.sh or Qualys SSL
+ * Labs; improper config weakens security.
+ * @complexity Compile-time constants - no runtime overhead
  *
  * @{
  *
- * @see SocketTLSConfig_T for the configuration structure.
- * @see SocketTLS_config_defaults() for initializing configurations.
- * @see @ref SocketTLSContext_T for applying configurations to contexts.
- * @see SocketDTLSConfig.h for DTLS-specific constants.
+ * @see SocketTLSConfig_T for runtime configuration structure.
+ * @see SocketTLS_config_defaults() for initializing structures with these
+ * defaults.
+ * @see @ref SocketTLSContext_T for applying configs to TLS contexts.
+ * @see SocketDTLSConfig.h for DTLS variant constants.
+ * @see Individual @ref tls_config constants for detailed security rationale
+ * and usage.
  */
 
 /**
- * @brief TLS configuration parameters for customizing TLS protocol versions and other settings.
+ * @brief TLS configuration parameters for customizing TLS protocol versions
+ * and other settings.
  * @ingroup security
  *
- * This structure allows fine-grained control over TLS behavior, starting with protocol version limits.
- * Additional fields for cipher suites, timeouts, certificate policies, etc., will be added in future releases.
- * Always initialize with SocketTLS_config_defaults() before use to ensure secure defaults.
+ * This structure allows fine-grained control over TLS behavior, starting with
+ * protocol version limits. Additional fields for cipher suites, timeouts,
+ * certificate policies, etc., will be added in future releases. Always
+ * initialize with SocketTLS_config_defaults() before use to ensure secure
+ * defaults.
  *
- * @see SocketTLS_config_defaults() for initialization.
- * @see SocketTLSContext_new() for creating contexts with custom config.
- */struct SocketTLSConfig_T{
+ * Fields are set to secure defaults by SocketTLS_config_defaults(), but can be
+ * overridden for custom policies. Use with SocketTLSContext_new() for applying
+ * to new contexts.
+ *
+ * @threadsafe Yes - plain value struct; safe to read, copy, or assign between
+ * threads.
+ *
+ * ## Fields
+ *
+ * | Field       | Type | Description                                      |
+ * Default                          |
+ * |-------------|------|--------------------------------------------------|----------------------------------|
+ * | min_version | int  | Minimum supported TLS protocol version (OpenSSL
+ * constant like TLS1_3_VERSION) | SOCKET_TLS_MIN_VERSION | | max_version | int
+ * | Maximum supported TLS protocol version           | SOCKET_TLS_MAX_VERSION
+ * |
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Secure defaults (recommended)
+ * SocketTLSConfig_T config;
+ * SocketTLS_config_defaults(&config);
+ *
+ * // Optional customization (use cautiously)
+ * // config.min_version = TLS1_2_VERSION; // Only if required for legacy
+ *
+ * SocketTLSContext_T ctx = SocketTLSContext_new(&config);
+ * // ... use ctx to secure sockets ...
+ * SocketTLSContext_free(&ctx);
+ * @endcode
+ *
+ * @note Current API focuses on protocol versions; expansions planned for
+ * ciphers, timeouts, etc.
+ * @warning Lowering version limits exposes to known vulnerabilities; maintain
+ * TLS1.3 where possible.
+ * @complexity O(1) - simple struct assignment
+ *
+ * @see SocketTLS_config_defaults() for setting secure defaults.
+ * @see SocketTLSContext_new() for context creation with this config.
+ * @see @ref tls_config for constants used in defaults and overrides.
+ * @see @ref security for comprehensive TLS security features.
+ */
+struct SocketTLSConfig_T
+{
   /** Minimum supported TLS protocol version (e.g., TLS1_3_VERSION).
-   * Default value set by SocketTLS_config_defaults() to SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION).
+   * Default value set by SocketTLS_config_defaults() to SOCKET_TLS_MIN_VERSION
+   * (TLS1_3_VERSION).
    * @see SOCKET_TLS_MIN_VERSION
    */
   int min_version;
   /** Maximum supported TLS protocol version (e.g., TLS1_3_VERSION).
-   * Default value set by SocketTLS_config_defaults() to SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION).
+   * Default value set by SocketTLS_config_defaults() to SOCKET_TLS_MAX_VERSION
+   * (TLS1_3_VERSION).
    * @see SOCKET_TLS_MAX_VERSION
    */
   int max_version;
   /* Expand with ciphers, timeouts, etc. as API evolves */
-
 };
 
 typedef struct SocketTLSConfig_T SocketTLSConfig_T;
@@ -71,20 +187,56 @@ typedef struct SocketTLSConfig_T SocketTLSConfig_T;
  * @brief Initialize the TLS configuration with secure library defaults.
  * @ingroup security
  *
- * Populates the structure with safe defaults: sets min_version and max_version to
- * TLS 1.3 (SOCKET_TLS_MIN_VERSION == SOCKET_TLS_MAX_VERSION), zero-initializes other fields.
- * This enforces a strict TLS 1.3-only policy by default, disabling legacy protocols
- * for enhanced security against downgrade attacks.
+ * Populates the structure with safe defaults: sets min_version and max_version
+ * to TLS 1.3 (SOCKET_TLS_MIN_VERSION == SOCKET_TLS_MAX_VERSION),
+ * zero-initializes other fields. This enforces a strict TLS 1.3-only policy by
+ * default, disabling legacy protocols for enhanced security against downgrade
+ * attacks.
  *
  * No-op if config is NULL (no exception raised).
  *
- * @param config Pointer to SocketTLSConfig_T structure to initialize. Ignored if NULL.
+ * @param[in] config Pointer to SocketTLSConfig_T structure to initialize.
+ * Ignored if NULL.
  * @return void
- * @note Future versions will set additional defaults for ciphers, timeouts, etc.
  *
- * @see SocketTLSConfig_T for structure details.
- * @see SocketTLSContext_new() to create a TLS context using this configuration.
- * @see @ref security "Security Modules" for overview.
+ * @throws None - no exceptions raised, handles invalid input gracefully.
+ *
+ * @threadsafe Yes - pure function with no shared state or side effects; safe
+ * from any thread.
+ *
+ * ## Defaults Set
+ *
+ * | Field       | Value Set                             |
+ * |-------------|---------------------------------------|
+ * | min_version | SOCKET_TLS_MIN_VERSION (TLS1_3_VERSION)|
+ * | max_version | SOCKET_TLS_MAX_VERSION (TLS1_3_VERSION)|
+ * | other fields| 0 (zero-initialized)                  |
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketTLSConfig_T config;
+ * SocketTLS_config_defaults(&config);
+ *
+ * // Create custom context with secure defaults
+ * SocketTLSContext_T ctx = SocketTLSContext_new(&config);
+ * if (ctx) {
+ *     // Use context to secure sockets, e.g.:
+ *     // SocketTLS_enable(sock, ctx);
+ *     SocketTLSContext_free(&ctx);
+ * }
+ * @endcode
+ *
+ * @note Future versions will set additional defaults for ciphers, timeouts,
+ * cert policies, etc.
+ * @warning Defaults prioritize security; custom changes may reduce protection
+ * if not careful.
+ * @complexity O(1) - simple struct field assignments
+ *
+ * @see SocketTLSConfig_T for structure details and fields.
+ * @see SocketTLSContext_new() to create contexts using this configuration.
+ * @see @ref tls_config for constants defining the secure defaults.
+ * @see @ref security "Security Modules" for TLS security overview.
  */
 extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 
@@ -97,18 +249,43 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 
 /* ============================================================================
  * TLS Protocol Versions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief Minimum TLS protocol version - STRICT TLS 1.3 ONLY
  * @ingroup tls_config
  *
- * Enforces TLS 1.3 minimum for perfect forward secrecy and modern security.
- * Legacy protocols (SSL 2.0/3.0, TLS 1.0/1.1/1.2) are disabled to prevent
- * downgrade attacks and ensure high security posture.
+ * Enforces TLS 1.3 minimum for perfect forward secrecy (PFS) and modern
+ * cryptographic primitives. Legacy protocols (SSL 2.0/3.0, TLS 1.0/1.1/1.2)
+ * are explicitly disabled to prevent downgrade attacks (e.g., Logjam, FREAK)
+ * and ensure high security posture against known vulnerabilities.
  *
- * @see SOCKET_TLS_MAX_VERSION for maximum version
- * @see https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
+ * Used as default for SocketTLSConfig_T::min_version and applied via
+ * SocketTLSContext_set_min_protocol().
+ *
+ * ## Override Example
+ *
+ * @code{.c}
+ * // Allow TLS 1.2+ for legacy server compatibility (less secure)
+ * #define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION
+ * #include "SocketTLSConfig.h"
+ * @endcode
+ *
+ * @warning Overriding to versions below TLS1.3 exposes connections to
+ * deprecated ciphers, weaker key exchanges, and known attacks (e.g., POODLE,
+ * Lucky13, BEAST). Use only for unavoidable legacy interop; prefer upgrades.
+ * @note TLS1.3 provides 0-RTT resumption (with caveats), improved handshake,
+ * and mandatory PFS.
+ * @complexity Compile-time constant
+ *
+ * @see SOCKET_TLS_MAX_VERSION for maximum version pairing.
+ * @see SocketTLSConfig_T::min_version for runtime configuration field.
+ * @see SocketTLSContext_set_min_protocol() for context-specific setting.
+ * @see
+ * https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
+ * for cipher guidance.
+ * @see docs/SECURITY.md#tls-versions for detailed version security analysis.
  */
 #define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
 
@@ -116,33 +293,93 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @brief Maximum TLS protocol version - STRICT TLS 1.3 ONLY
  * @ingroup tls_config
  *
- * Limits maximum protocol to TLS 1.3 for security. TLS 1.4+ not yet defined.
- * This ensures consistent security guarantees across all connections.
+ * Limits maximum protocol to TLS 1.3 to ensure consistent security and prevent
+ * use of future potentially insecure versions until vetted. Currently TLS 1.4
+ * is undefined in OpenSSL. Paired with min_version for strict TLS1.3-only
+ * enforcement by default.
  *
- * @see SOCKET_TLS_MIN_VERSION for minimum version
+ * Used as default for SocketTLSConfig_T::max_version and applied via
+ * SocketTLSContext_set_max_protocol().
+ *
+ * ## Override Example
+ *
+ * @code{.c}
+ * // Not typically needed, but for future-proofing (hypothetical)
+ * #define SOCKET_TLS_MAX_VERSION 0x0304  // TLS 1.4 if defined later
+ * #include "SocketTLSConfig.h"
+ * @endcode
+ *
+ * @note Raising max_version requires OpenSSL support and security review of
+ * new protocols.
+ * @warning Allowing future versions without validation risks unknown
+ * vulnerabilities.
+ * @complexity Compile-time constant
+ *
+ * @see SOCKET_TLS_MIN_VERSION for minimum version pairing.
+ * @see SocketTLSConfig_T::max_version for runtime field.
+ * @see SocketTLSContext_set_max_protocol() for context setting.
+ * @see docs/SECURITY.md#tls-versions for version policy recommendations.
  */
 #define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
 
 /* ============================================================================
  * TLS Cipher Suites
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief TLS 1.3 Modern Cipher Suites (ECDHE-PFS only, AEAD ciphers)
  * @ingroup tls_config
  *
- * Modern cipher suites providing perfect forward secrecy and authenticated
- * encryption with associated data (AEAD). Prioritizes ChaCha20-Poly1305
- * for performance on systems without AES hardware acceleration.
+ * Modern cipher suites providing perfect forward secrecy (ECDHE key exchange)
+ * and authenticated encryption with associated data (AEAD modes). Prioritizes
+ * ChaCha20-Poly1305 for systems without AES-NI hardware acceleration, ensuring
+ * strong performance and security across devices.
  *
- * Order: AES-256-GCM (highest security), ChaCha20-Poly1305 (performance),
- * AES-128-GCM (compatibility).
+ * Order preference: AES-256-GCM (maximum security), ChaCha20-Poly1305
+ * (mobile/ARM optimized), AES-128-GCM (balanced compatibility).
  *
- * Excludes: CBC mode (vulnerable to padding attacks), RC4 (broken),
- * 3DES (weak), non-PFS ciphers (RSA key exchange).
+ * Excludes legacy/insecure options:
+ * - CBC modes (padding oracle attacks like Lucky13)
+ * - RC4 (broken stream cipher)
+ * - 3DES (weak, small key size)
+ * - Static RSA key exchange (no PFS)
+ * - Weak hashes (MD5, SHA1)
  *
- * @see https://wiki.mozilla.org/Security/Server_Side_TLS
- * @see https://www.ssllabs.com/ssltest/
+ * Used internally by SocketTLSContext_new*() functions as default cipher list.
+ *
+ * ## Override Example
+ *
+ * @code{.c}
+ * // Prefer ChaCha20 for non-AES hardware (e.g., embedded/mobile)
+ * #define SOCKET_TLS13_CIPHERSUITES
+ * "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384"
+ * #include "SocketTLSConfig.h"
+ * @endcode
+ *
+ * ## Security Properties Table
+ *
+ * | Suite                      | Key Exchange | Encryption | Integrity | Notes
+ * |
+ * |----------------------------|--------------|------------|-----------|-------|
+ * | TLS_AES_256_GCM_SHA384     | ECDHE        | AES-256-GCM| GCM       |
+ * Highest security, AES-NI accelerated | | TLS_CHACHA20_POLY1305_SHA256 |
+ * ECDHE      | ChaCha20   | Poly1305  | Software-friendly, resistant to timing
+ * attacks | | TLS_AES_128_GCM_SHA256     | ECDHE        | AES-128-GCM| GCM |
+ * Good balance, widely supported |
+ *
+ * @warning Custom orders/lists must maintain PFS+AEAD; validate with openssl
+ * ciphers -v or ssllabs.com. Removing suites may reduce compatibility; adding
+ * insecure ones compromises security.
+ * @note TLS1.3 mandates PFS and AEAD, eliminating many legacy issues.
+ * @complexity Compile-time string constant
+ *
+ * @see SocketTLSContext_set_cipher_list() for runtime override on contexts.
+ * @see https://wiki.mozilla.org/Security/Server_Side_TLS for Mozilla
+ * guidelines (intermediate+ profile).
+ * @see https://www.ssllabs.com/ssltest/ for server configuration testing.
+ * @see docs/SECURITY.md#ciphersuites for library-specific recommendations.
+ * @see @ref tls_config for related constants like timeouts and buffers.
  */
 #define SOCKET_TLS13_CIPHERSUITES                                             \
   "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_"      \
@@ -150,7 +387,8 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 
 /* ============================================================================
  * TLS Timeout Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief Default TLS handshake timeout in milliseconds

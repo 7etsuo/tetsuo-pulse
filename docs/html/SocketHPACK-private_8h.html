@@ -115,12 +115,9 @@ $(document).ready(function(){initNavTree('SocketHPACK-private_8h.html',''); init
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketHPACK-private.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a> &#124; <a class="el" href="group__http.html">HTTP Modules</a> &raquo; <a class="el" href="group__hpack__private.html">HPACK Private Implementation Details</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketHPACK-private.h File Reference<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Internal HPACK header compression structures and constants.  
-<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="SocketHPACK_8h_source.html">http/SocketHPACK.h</a>&quot;</code><br />
 <code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="SocketSecurity_8h_source.html">core/SocketSecurity.h</a>&quot;</code><br />
@@ -136,26 +133,26 @@ $(document).ready(function(){initNavTree('SocketHPACK-private_8h.html',''); init
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structHPACK__DynamicEntry" id="r_structHPACK__DynamicEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a></td></tr>
-<tr class="memdesc:structHPACK__DynamicEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK dynamic table storing a header field name-value pair.  <a href="group__http.html#structHPACK__DynamicEntry">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__DynamicEntry" id="r_structHPACK__DynamicEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a></td></tr>
+<tr class="memdesc:structHPACK__DynamicEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK dynamic table storing a header field name-value pair.  <a href="group__hpack__private.html#structHPACK__DynamicEntry">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__DynamicEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Table" id="r_structSocketHPACK__Table"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Table">SocketHPACK_Table_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Table"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamic table for storing header fields in HPACK compression (RFC 7541).  <a href="group__http.html#structSocketHPACK__Table">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Table" id="r_structSocketHPACK__Table"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Table">SocketHPACK_Table_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Table"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamic table for storing header fields in HPACK compression (RFC 7541).  <a href="group__hpack__private.html#structSocketHPACK__Table">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Table"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Encoder" id="r_structSocketHPACK__Encoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Encoder">SocketHPACK_Encoder_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Encoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header encoder.  <a href="group__http.html#structSocketHPACK__Encoder">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Encoder" id="r_structSocketHPACK__Encoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Encoder">SocketHPACK_Encoder_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Encoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header encoder.  <a href="group__hpack__private.html#structSocketHPACK__Encoder">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Encoder"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Decoder" id="r_structSocketHPACK__Decoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Decoder">SocketHPACK_Decoder_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Decoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header decoder.  <a href="group__http.html#structSocketHPACK__Decoder">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Decoder" id="r_structSocketHPACK__Decoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Decoder">SocketHPACK_Decoder_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Decoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header decoder.  <a href="group__hpack__private.html#structSocketHPACK__Decoder">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Decoder"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__StaticEntry" id="r_structHPACK__StaticEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__StaticEntry">HPACK_StaticEntry</a></td></tr>
-<tr class="memdesc:structHPACK__StaticEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure for entries in the HPACK static table (RFC 7541 Table 2).  <a href="group__http.html#structHPACK__StaticEntry">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__StaticEntry" id="r_structHPACK__StaticEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__StaticEntry">HPACK_StaticEntry</a></td></tr>
+<tr class="memdesc:structHPACK__StaticEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure for entries in the HPACK static table (RFC 7541 Table 2).  <a href="group__hpack__private.html#structHPACK__StaticEntry">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__StaticEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__HuffmanSymbol" id="r_structHPACK__HuffmanSymbol"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a></td></tr>
-<tr class="memdesc:structHPACK__HuffmanSymbol"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK Huffman encoding table for a specific symbol.  <a href="group__http.html#structHPACK__HuffmanSymbol">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__HuffmanSymbol" id="r_structHPACK__HuffmanSymbol"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a></td></tr>
+<tr class="memdesc:structHPACK__HuffmanSymbol"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK Huffman encoding table for a specific symbol.  <a href="group__hpack__private.html#structHPACK__HuffmanSymbol">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__HuffmanSymbol"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__HuffmanTransition" id="r_structHPACK__HuffmanTransition"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a></td></tr>
-<tr class="memdesc:structHPACK__HuffmanTransition"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition entry in the Huffman decoding DFA table.  <a href="group__http.html#structHPACK__HuffmanTransition">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__HuffmanTransition" id="r_structHPACK__HuffmanTransition"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a></td></tr>
+<tr class="memdesc:structHPACK__HuffmanTransition"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition entry in the Huffman decoding DFA table.  <a href="group__hpack__private.html#structHPACK__HuffmanTransition">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__HuffmanTransition"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -187,90 +184,34 @@ Macros</h2></td></tr>
 <tr class="memitem:gafd975c9395b773cfe1f998aa0e0168b2" id="r_gafd975c9395b773cfe1f998aa0e0168b2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafd975c9395b773cfe1f998aa0e0168b2">HPACK_DFA_ACCEPT</a>&#160;&#160;&#160;0x01</td></tr>
 <tr class="memdesc:gafd975c9395b773cfe1f998aa0e0168b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags for Huffman DFA transition behavior.  <br /></td></tr>
 <tr class="separator:gafd975c9395b773cfe1f998aa0e0168b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a881cd71b1434a2a5a11bd50cb61d312d" id="r_a881cd71b1434a2a5a11bd50cb61d312d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK-private_8h.html#a881cd71b1434a2a5a11bd50cb61d312d">HPACK_DFA_EOS</a>&#160;&#160;&#160;0x02</td></tr>
-<tr class="separator:a881cd71b1434a2a5a11bd50cb61d312d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2065e9129b247f7f4ab0b363095f1839" id="r_a2065e9129b247f7f4ab0b363095f1839"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK-private_8h.html#a2065e9129b247f7f4ab0b363095f1839">HPACK_DFA_ERROR</a>&#160;&#160;&#160;0x04</td></tr>
-<tr class="separator:a2065e9129b247f7f4ab0b363095f1839"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a76662d61395b8b2c9f2034c074083b4f" id="r_a76662d61395b8b2c9f2034c074083b4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK-private_8h.html#a76662d61395b8b2c9f2034c074083b4f">HPACK_DFA_SYM2</a>&#160;&#160;&#160;0x08</td></tr>
-<tr class="separator:a76662d61395b8b2c9f2034c074083b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga881cd71b1434a2a5a11bd50cb61d312d" id="r_ga881cd71b1434a2a5a11bd50cb61d312d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga881cd71b1434a2a5a11bd50cb61d312d">HPACK_DFA_EOS</a>&#160;&#160;&#160;0x02</td></tr>
+<tr class="separator:ga881cd71b1434a2a5a11bd50cb61d312d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2065e9129b247f7f4ab0b363095f1839" id="r_ga2065e9129b247f7f4ab0b363095f1839"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga2065e9129b247f7f4ab0b363095f1839">HPACK_DFA_ERROR</a>&#160;&#160;&#160;0x04</td></tr>
+<tr class="separator:ga2065e9129b247f7f4ab0b363095f1839"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga76662d61395b8b2c9f2034c074083b4f" id="r_ga76662d61395b8b2c9f2034c074083b4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga76662d61395b8b2c9f2034c074083b4f">HPACK_DFA_SYM2</a>&#160;&#160;&#160;0x08</td></tr>
+<tr class="separator:ga76662d61395b8b2c9f2034c074083b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gac25f68940182c09fbe7f99e847b9f34f" id="r_gac25f68940182c09fbe7f99e847b9f34f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f">hpack_table_evict</a> (SocketHPACK_Table_T table, size_t required_space)</td></tr>
-<tr class="memdesc:gac25f68940182c09fbe7f99e847b9f34f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evict oldest entries from dynamic table to free up required space.  <br /></td></tr>
+<tr class="memdesc:gac25f68940182c09fbe7f99e847b9f34f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evict oldest entries from the dynamic table to free space for new insertions.  <br /></td></tr>
 <tr class="separator:gac25f68940182c09fbe7f99e847b9f34f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8" id="r_ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8">hpack_entry_size</a> (size_t name_len, size_t value_len)</td></tr>
-<tr class="memdesc:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the size of a dynamic table entry per RFC 7541 Section 4.1.  <br /></td></tr>
+<tr class="memdesc:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1.  <br /></td></tr>
 <tr class="separator:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:gafedbf3fdd77193dc9d1419e9eaa8abd0" id="r_gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafedbf3fdd77193dc9d1419e9eaa8abd0">hpack_huffman_encode</a> [257]</td></tr>
+<tr class="memitem:gafedbf3fdd77193dc9d1419e9eaa8abd0" id="r_gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafedbf3fdd77193dc9d1419e9eaa8abd0">hpack_huffman_encode</a> [257]</td></tr>
 <tr class="memdesc:gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Precomputed Huffman encoding table for all 257 symbols.  <br /></td></tr>
 <tr class="separator:gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6ac50cbaa6f5bfc19372fa7b656342ef" id="r_ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga6ac50cbaa6f5bfc19372fa7b656342ef">hpack_huffman_decode</a> [256][16]</td></tr>
+<tr class="memitem:ga6ac50cbaa6f5bfc19372fa7b656342ef" id="r_ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga6ac50cbaa6f5bfc19372fa7b656342ef">hpack_huffman_decode</a> [256][16]</td></tr>
 <tr class="memdesc:ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">DFA table for Huffman decoding (state-machine transitions).  <br /></td></tr>
 <tr class="separator:ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68ff3c1525cfd78881c6140936758c78" id="r_ga68ff3c1525cfd78881c6140936758c78"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__StaticEntry">HPACK_StaticEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78">hpack_static_table</a> [61]</td></tr>
+<tr class="memitem:ga68ff3c1525cfd78881c6140936758c78" id="r_ga68ff3c1525cfd78881c6140936758c78"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__StaticEntry">HPACK_StaticEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78">hpack_static_table</a> [61]</td></tr>
 <tr class="memdesc:ga68ff3c1525cfd78881c6140936758c78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A).  <br /></td></tr>
 <tr class="separator:ga68ff3c1525cfd78881c6140936758c78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Internal HPACK header compression structures and constants. </p>
-
-<p class="definition">Definition in file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
-</div><h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="a881cd71b1434a2a5a11bd50cb61d312d" name="a881cd71b1434a2a5a11bd50cb61d312d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a881cd71b1434a2a5a11bd50cb61d312d">&#9670;&#160;</a></span>HPACK_DFA_EOS</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HPACK_DFA_EOS&#160;&#160;&#160;0x02</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>End-of-string symbol (256) emitted </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00302">302</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
-
-</div>
-</div>
-<a id="a2065e9129b247f7f4ab0b363095f1839" name="a2065e9129b247f7f4ab0b363095f1839"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2065e9129b247f7f4ab0b363095f1839">&#9670;&#160;</a></span>HPACK_DFA_ERROR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HPACK_DFA_ERROR&#160;&#160;&#160;0x04</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Invalid transition: decoding error </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00303">303</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
-
-</div>
-</div>
-<a id="a76662d61395b8b2c9f2034c074083b4f" name="a76662d61395b8b2c9f2034c074083b4f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a76662d61395b8b2c9f2034c074083b4f">&#9670;&#160;</a></span>HPACK_DFA_SYM2</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define HPACK_DFA_SYM2&#160;&#160;&#160;0x08</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<p>Additional secondary symbol available in this transition </p>
-
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00304">304</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
-
-</div>
-</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>

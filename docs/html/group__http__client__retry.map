@@ -1,4 +1,4 @@
 <map id="Retry Configuration Constants" name="Retry Configuration Constants">
-<area shape="rect" id="Node000002" href="$group__http.html" title="Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support." alt="" coords="5,13,116,38"/>
-<area shape="rect" id="Node000001" title="Parameters for automatic retry logic on transient failures." alt="" coords="164,5,299,45"/>
+<area shape="rect" id="Node000002" href="$group__http__client.html" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="5,13,147,38"/>
+<area shape="rect" id="Node000001" title="Parameters for automatic retry logic on transient failures." alt="" coords="195,5,329,45"/>
 </map>

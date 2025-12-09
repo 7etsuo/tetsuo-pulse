@@ -24,9 +24,9 @@
 <area shape="poly" id="edge11_Node000009_Node000002" title=" " alt="" coords="546,248,626,290,624,295,544,253"/>
 <area shape="poly" id="edge12_Node000009_Node000004" title=" " alt="" coords="504,253,431,294,429,289,501,248"/>
 <area shape="poly" id="edge15_Node000010_Node000004" title=" " alt="" coords="701,94,619,100,571,108,521,120,472,137,426,160,385,189,351,227,346,242,350,258,360,274,374,288,370,292,356,277,345,260,340,242,346,224,381,185,423,155,470,132,520,115,570,103,618,95,701,89"/>
-<area shape="rect" id="Node000011" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1454,225,1595,251"/>
+<area shape="rect" id="Node000011" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1454,225,1595,251"/>
 <area shape="poly" id="edge16_Node000010_Node000011" title=" " alt="" coords="820,98,964,120,1135,149,1314,186,1463,220,1462,225,1313,191,1134,155,963,125,819,104"/>
-<area shape="rect" id="Node000020" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="696,225,824,251"/>
+<area shape="rect" id="Node000020" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="696,225,824,251"/>
 <area shape="poly" id="edge26_Node000010_Node000020" title=" " alt="" coords="763,104,763,212,758,212,758,104"/>
 <area shape="rect" id="Node000022" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="952,152,1123,177"/>
 <area shape="poly" id="edge31_Node000010_Node000022" title=" " alt="" coords="805,101,980,146,979,151,804,107"/>

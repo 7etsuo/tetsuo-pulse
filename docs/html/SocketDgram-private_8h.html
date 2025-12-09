@@ -139,17 +139,17 @@ $(document).ready(function(){initNavTree('SocketDgram-private_8h.html',''); init
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketDgram__T" id="r_structSocketDgram__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></td></tr>
-<tr class="memdesc:structSocketDgram__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque handle for UDP/datagram sockets.  <a href="SocketDgram-private_8h.html#structSocketDgram__T">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketDgram__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opaque type representing a datagram socket instance.  <a href="SocketDgram-private_8h.html#structSocketDgram__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketDgram__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal implementation details for datagram (UDP) socket structure. </p>
-<p>Defines the private struct <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a>, embedding <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> and conditional DTLS fields. Intended for module-internal use only.</p>
+<p>Defines the private struct <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque type representing a datagram socket instance.">SocketDgram_T</a>, embedding <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> and conditional DTLS fields. Intended for module-internal use only.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> for public API and opaque type declaration. </dd>
 <dd>
-<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module.">SocketCommon-private.h</a> for base structure details. </dd>
+<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">SocketCommon-private.h</a> for base structure details. </dd>
 <dd>
-<a class="el" href="Socket-private_8h.html" title="Private implementation details for the Socket module, including internal structure definition....">Socket-private.h</a> for analogous stream socket structure. </dd></dl>
+<a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> for analogous stream socket structure. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketDgram-private_8h_source.html">SocketDgram-private.h</a>.</p>
 </div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -164,18 +164,46 @@ Data Structures</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<div class="textblock"><p>Opaque handle for UDP/datagram sockets. </p>
+<div class="textblock"><p>Opaque type representing a datagram socket instance. </p>
 <p>Forward declaration of the opaque UDP datagram socket type.</p>
-<p>Provides connectionless messaging capabilities for IPv4 and IPv6, including support for broadcast, multicast, and standard socket options. Builds on <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> for common functionality.</p>
-<dl class="section see"><dt>See also</dt><dd>Socket_T for connection-oriented (TCP) sockets. </dd>
+<p><a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque type representing a datagram socket instance.">SocketDgram_T</a> encapsulates a low-level socket FD with additional state for datagram-specific features like connected peer, multicast memberships, TTL, and buffer configurations. The internal structure extends <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> with UDP-specific fields (e.g., addrinfo cache for connect). Opaque to users; access via accessor functions only. Lifetime managed by new/free pair. Thread safety: Individual instances are safe for concurrent read/write if synchronized externally. No global state; each socket independent.</p>
+<p>Key internal behaviors:</p><ul>
+<li>Automatic FD tracking for leak detection via debug_live_count()</li>
+<li>Lazy initialization of options on first use</li>
+<li>Exception propagation via module's SocketDgram_Failed</li>
+<li>Integration hooks for poll backends and timers</li>
+</ul>
+<p>Usage: Create with <a class="el" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52" title="Create a new UDP/datagram socket with specified domain and protocol.">SocketDgram_new()</a>, configure, use for I/O, free when done. For high-performance, combine with SocketBuf for buffering and SocketPoll for multiplexing.</p>
+<dl class="section note"><dt>Note</dt><dd>Do not cast or access internals; violates opaque abstraction. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gad6902c87ab5883f155dab2adfa950c52" title="Create a new UDP socket.">SocketDgram_new()</a> for creation. </dd>
+Sockets use Arena_T internally if passed during advanced config (future extension). </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Freeing while in use by poll or timer callbacks leads to crashes; remove from loops first. </dd>
 <dd>
-<a class="el" href="group__core__io.html#ga020169c79640786afa4c36fd1dc965e4" title="Free a socket and close the connection.">SocketDgram_free()</a> for destruction. </dd>
+FD is closed on free; do not use raw fd after free.</dd></dl>
+<h2><a class="anchor" id="autotoc_md577"></a>
+Example Declaration and Use</h2>
+<div class="fragment"><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct </span><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> *<a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a>;  <span class="comment">// Opaque pointer</span></div>
+<div class="line"><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock;  <span class="comment">// Declare</span></div>
+<div class="line">sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(...);  <span class="comment">// Initialize</span></div>
+<div class="line"><span class="comment">// Accessors: SocketDgram_fd(sock), SocketDgram_getlocaladdr(sock)</span></div>
+<div class="line"><a class="code hl_function" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a>(&amp;sock);  <span class="comment">// Cleanup</span></div>
+<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00041">SocketDgram-private.h:42</a></div></div>
+<div class="ttc" id="agroup__socket__dgram_html_ga020169c79640786afa4c36fd1dc965e4"><div class="ttname"><a href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a></div><div class="ttdeci">void SocketDgram_free(SocketDgram_T *socket)</div><div class="ttdoc">Dispose of a datagram socket, closing the underlying file descriptor and freeing resources.</div></div>
+<div class="ttc" id="agroup__socket__dgram_html_gad6902c87ab5883f155dab2adfa950c52"><div class="ttname"><a href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a></div><div class="ttdeci">SocketDgram_T SocketDgram_new(int domain, int protocol)</div><div class="ttdoc">Create a new UDP/datagram socket with specified domain and protocol.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n Accessors O(1); creation O(1)</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> <a class="el" href="group__core__io.html#gaaaca3ee3e0d6c13e6ea304edba0e47ce">base</a> class for common fields (FD, flags) </dd>
 <dd>
-<a class="el" href="group__core__io.html">Core I/O module</a> for related primitives.</dd></dl>
+<a class="el" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52" title="Create a new UDP/datagram socket with specified domain and protocol.">SocketDgram_new()</a> / <a class="el" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4" title="Dispose of a datagram socket, closing the underlying file descriptor and freeing resources.">SocketDgram_free()</a> lifecycle functions </dd>
+<dd>
+<a class="el" href="group__socket__dgram.html#ga54e91e6824df0c114a5e6a4d79e5c6fb" title="Get underlying file descriptor.">SocketDgram_fd()</a> for underlying descriptor </dd>
+<dd>
+<a class="el" href="group__socket__dgram.html#ga06d3085b3b7287330e8cb49d6d9a4da1" title="Check if datagram socket is bound to an address.">SocketDgram_isbound()</a> / <a class="el" href="group__socket__dgram.html#ga73455982ede6d44649f85adb25c4bda2" title="Check if datagram socket is connected.">SocketDgram_isconnected()</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> queries </dd>
+<dd>
+<a class="el" href="group__socket__dgram.html">Datagram Sockets</a> for full API </dd>
+<dd>
+docs/MODULE-PATTERNS.md for opaque type patterns</dd></dl>
 <p>Required for DTLS operations over UDP. Full definition and operations provided in <a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> and <a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">socket/SocketDgram.h</a>.</p>
-<p>DTLS contexts are applied to <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a> instances via <a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a>.</p>
+<p>DTLS contexts are applied to <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque type representing a datagram socket instance.">SocketDgram_T</a> instances via <a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a>.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> for UDP socket creation, bind, send/recv, etc. </dd>
 <dd>
 <a class="el" href="group__security.html#gad2f26460b23a711e0fa74605371cf127" title="Enable DTLS encryption on a datagram socket.">SocketDTLS_enable()</a> for enabling DTLS on UDP sockets. </dd></dl>
@@ -195,28 +223,28 @@ Data Structures</h2></td></tr>
 <td class="fieldname">
 base</td>
 <td class="fielddoc">
-<p>Private structure for <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a> opaque type.</p>
-<p>Private structure for <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque handle for UDP/datagram sockets.">SocketDgram_T</a> opaque type.</p>
-<p>Embeds <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> for common socket fields (fd, arena, endpoints, timeouts, metrics). Includes conditional DTLS fields when #SOCKET_HAS_TLS is enabled, providing support for secure datagram encryption parallel to TLS in Socket_T.</p>
+<p>Private structure for <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque type representing a datagram socket instance.">SocketDgram_T</a> opaque type.</p>
+<p>Private structure for <a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T" title="Opaque type representing a datagram socket instance.">SocketDgram_T</a> opaque type.</p>
+<p>Embeds <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> for common socket fields (fd, arena, endpoints, timeouts, metrics). Includes conditional DTLS fields when #SOCKET_HAS_TLS is enabled, providing support for secure datagram encryption parallel to TLS in Socket_T.</p>
 <p>Common base structure shared with other socket types. Contains file descriptor, memory arena, local/remote addresses, timeouts, and metrics tracking.</p>
 <dl class="section note"><dt>Note</dt><dd>This structure is not part of the public API and may change without notice. Additional datagram-specific fields (e.g., multicast state) can be added here.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> for public interface. </dd>
 <dd>
-<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module.">SocketCommon-private.h</a> for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> details. </dd>
+<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">SocketCommon-private.h</a> for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> details. </dd>
 <dd>
-<a class="el" href="Socket-private_8h.html" title="Private implementation details for the Socket module, including internal structure definition....">Socket-private.h</a> for stream socket equivalent. </dd>
+<a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> for stream socket equivalent. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for DTLS fields usage (if enabled).  </dd></dl>
-<p>Embeds <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> for common socket fields (fd, arena, endpoints, timeouts, metrics). Includes conditional DTLS fields when #SOCKET_HAS_TLS is enabled, providing support for secure datagram encryption parallel to TLS in Socket_T.</p>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> enabled).  </dd></dl>
+<p>Embeds <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> for common socket fields (fd, arena, endpoints, timeouts, metrics). Includes conditional DTLS fields when #SOCKET_HAS_TLS is enabled, providing support for secure datagram encryption parallel to TLS in Socket_T.</p>
 <p>Common base structure shared with other socket types. Contains file descriptor, memory arena, local/remote addresses, timeouts, and metrics tracking.</p>
 <dl class="section note"><dt>Note</dt><dd>This structure is not part of the public API and may change without notice. Additional datagram-specific fields (e.g., multicast state) can be added here.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> for public interface. </dd>
 <dd>
-<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module.">SocketCommon-private.h</a> for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> details. </dd>
+<a class="el" href="SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure.">SocketCommon-private.h</a> for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> details. </dd>
 <dd>
-<a class="el" href="Socket-private_8h.html" title="Private implementation details for the Socket module, including internal structure definition....">Socket-private.h</a> for stream socket equivalent. </dd>
+<a class="el" href="Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities....">Socket-private.h</a> for stream socket equivalent. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for DTLS fields usage (if enabled). </dd></dl>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for DTLS fields usage (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> enabled). </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="ga1189362a5c97fc90222e06232de1bdfe" name="ga1189362a5c97fc90222e06232de1bdfe"></a>void *</td>
@@ -229,7 +257,7 @@ dtls_ctx</td>
 <p>These fields are included only when SOCKET_HAS_TLS is enabled at compile time. They provide Datagram TLS (DTLS) support, allowing TLS-secured UDP communications. Key differences from stream TLS: handles packet loss/reordering, MTU fragmentation, and uses memory BIOs for event-loop integration.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html">Security group</a> for TLS/DTLS modules. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for public DTLS API. </dd>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for public DTLS API. </dd>
 <dd>
 <a class="el" href="SocketDTLSConfig_8h.html" title="DTLS configuration constants and secure defaults.">SocketDTLSConfig.h</a> for configuration options.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#structSocketDTLSContext__T" title="SocketDTLSContext_T - DTLS Context Structure.">SocketDTLSContext_T</a> for public type. </dd>
@@ -241,7 +269,7 @@ dtls_ctx</td>
 <p>These fields are included only when SOCKET_HAS_TLS is enabled at compile time. They provide Datagram TLS (DTLS) support, allowing TLS-secured UDP communications. Key differences from stream TLS: handles packet loss/reordering, MTU fragmentation, and uses memory BIOs for event-loop integration.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html">Security group</a> for TLS/DTLS modules. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for public DTLS API. </dd>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for public DTLS API. </dd>
 <dd>
 <a class="el" href="SocketDTLSConfig_8h.html" title="DTLS configuration constants and secure defaults.">SocketDTLSConfig.h</a> for configuration options.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#structSocketDTLSContext__T" title="SocketDTLSContext_T - DTLS Context Structure.">SocketDTLSContext_T</a> for public type. </dd>
@@ -273,10 +301,10 @@ dtls_handshake_done</td>
 <p>Flag indicating whether the DTLS handshake has completed successfully. Set to 1 upon successful completion of the DTLS handshake process, 0 otherwise. This flag is used internally to determine if encrypted data transfer can begin.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL object used in handshake. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for public DTLS handshake functions.  </dd></dl>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for public DTLS handshake functions.  </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL object used in handshake. </dd>
 <dd>
-<a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for public DTLS handshake functions. </dd></dl>
+<a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for public DTLS handshake functions. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="ga3b8a6cfd63b8f12340dec5f778111c90" name="ga3b8a6cfd63b8f12340dec5f778111c90"></a>int</td>
@@ -287,10 +315,10 @@ dtls_last_handshake_state</td>
 <p>Records the last DTLS handshake state from the TLS library. Stores the result of the most recent DTLS handshake operation (e.g., DTLS_HANDSHAKE_WANT_READ). Used for resuming or error recovery in non-blocking handshake loops.</p>
 <dl class="section see"><dt>See also</dt><dd>SocketDTLSHandshakeState for possible values. </dd>
 <dd>
-<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this state.  </dd></dl>
+<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>.  </dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketDTLSHandshakeState for possible values. </dd>
 <dd>
-<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this state. </dd></dl>
+<a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL context providing this <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="gab4c14b4e6c07e5f1ff646987622a611a" name="gab4c14b4e6c07e5f1ff646987622a611a"></a>size_t</td>
@@ -299,10 +327,10 @@ dtls_mtu</td>
 <td class="fielddoc">
 <p>Configured Maximum Transmission Unit (MTU) for DTLS packets. Specifies the maximum size of DTLS records to avoid IP fragmentation. Typically set to path MTU minus DTLS overhead (e.g., 1200-1400 bytes).</p>
 <p>Configured Maximum Transmission Unit (MTU) for DTLS packets. Specifies the maximum size of DTLS records to avoid IP fragmentation. Typically set to path MTU minus DTLS overhead (e.g., 1200-1400 bytes).</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set link MTU for this connection.">SocketDTLS_set_mtu()</a> if public API exists, or configuration functions. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> public API exists, or configuration functions. </dd>
 <dd>
 <a class="el" href="group__security.html#ga1189362a5c97fc90222e06232de1bdfe">dtls_ctx</a> for context where MTU is applied.  </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set link MTU for this connection.">SocketDTLS_set_mtu()</a> if public API exists, or configuration functions. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18" title="Set per-connection MTU for DTLS record sizing.">SocketDTLS_set_mtu()</a> <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> public API exists, or configuration functions. </dd>
 <dd>
 <a class="el" href="group__security.html#ga1189362a5c97fc90222e06232de1bdfe">dtls_ctx</a> for context where MTU is applied. </dd></dl>
 </td></tr>
@@ -329,16 +357,16 @@ dtls_peer_host</td>
 <p>Cached peer hostname for efficient DTLS resolution. Arena-allocated string storing the last resolved hostname to avoid repeated DNS lookups. Part of the peer resolution cache with 30-second TTL.</p>
 <p>Cached peer resolution cache for efficient DTLS operations.</p>
 <p>Optimizes repeated sendto/recvfrom to the same host/port by caching addrinfo results with a 30-second TTL (monotonic time-based). Invalidated on resolution failure, expiry, or explicit reset. Reduces DNS overhead in persistent DTLS sessions.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for asynchronous DNS resolution used in population.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for asynchronous DNS resolution used in population.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga40b959d65731e8a1462d8e6ef01d4a75">dtls_peer_cache_ts</a> for cache timestamp. </dd>
 <dd>
-<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for DNS resolution used to populate this cache.  </dd></dl>
+<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for DNS resolution used to populate this cache.  </dd></dl>
 <p>Cached peer resolution cache for efficient DTLS operations.</p>
 <p>Optimizes repeated sendto/recvfrom to the same host/port by caching addrinfo results with a 30-second TTL (monotonic time-based). Invalidated on resolution failure, expiry, or explicit reset. Reduces DNS overhead in persistent DTLS sessions.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for asynchronous DNS resolution used in population.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for asynchronous DNS resolution used in population.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga40b959d65731e8a1462d8e6ef01d4a75">dtls_peer_cache_ts</a> for cache timestamp. </dd>
 <dd>
-<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for DNS resolution used to populate this cache. </dd></dl>
+<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for DNS resolution used to populate this cache. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="ga560ea9583d1317b5992f825e4f9367e2" name="ga560ea9583d1317b5992f825e4f9367e2"></a>int</td>
@@ -363,10 +391,10 @@ dtls_peer_res</td>
 <p>Cached resolved address information for peer. Pointer to addrinfo structure from getaddrinfo, holding IP addresses and socket params. Freed with freeaddrinfo() upon cache invalidation or socket free. Enables efficient sendto/recvfrom without re-resolving host each time.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga0430ae66a05abe2f9a50e79656d05b84">dtls_peer_host</a> and <a class="el" href="group__security.html#ga560ea9583d1317b5992f825e4f9367e2">dtls_peer_port</a> for cache keys. </dd>
 <dd>
-<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for resolution source.  </dd></dl>
+<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for resolution source.  </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga0430ae66a05abe2f9a50e79656d05b84">dtls_peer_host</a> and <a class="el" href="group__security.html#ga560ea9583d1317b5992f825e4f9367e2">dtls_peer_port</a> for cache keys. </dd>
 <dd>
-<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API.">SocketDNS.h</a> for resolution source. </dd></dl>
+<a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> for resolution source. </dd></dl>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="gac9279985541f6f5feae01827ec148bd5" name="gac9279985541f6f5feae01827ec148bd5"></a>void *</td>
@@ -447,10 +475,10 @@ dtls_shutdown_done</td>
 <td class="fielddoc">
 <p>Flag indicating whether the DTLS shutdown process has completed. Set to 1 after successful DTLS shutdown handshake or close_notify alert exchange, 0 otherwise. Used to track connection closure state for resource cleanup.</p>
 <p>Flag indicating whether the DTLS shutdown process has completed. Set to 1 after successful DTLS shutdown handshake or close_notify alert exchange, 0 otherwise. Used to track connection closure state for resource cleanup.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a" title="Perform graceful DTLS connection shutdown.">SocketDTLS_shutdown()</a> for initiating shutdown. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a" title="Initiate graceful DTLS connection shutdown.">SocketDTLS_shutdown()</a> for initiating shutdown. </dd>
 <dd>
 <a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL object involved in shutdown.  </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a" title="Perform graceful DTLS connection shutdown.">SocketDTLS_shutdown()</a> for initiating shutdown. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a" title="Initiate graceful DTLS connection shutdown.">SocketDTLS_shutdown()</a> for initiating shutdown. </dd>
 <dd>
 <a class="el" href="group__security.html#ga539711122c1eb94e27ac1d1f98581e4f">dtls_ssl</a> for the SSL object involved in shutdown. </dd></dl>
 </td></tr>

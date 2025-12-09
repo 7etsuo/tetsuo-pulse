@@ -10,9 +10,9 @@
 <area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="734,40,665,81,663,76,731,35"/>
 <area shape="rect" id="Node000008" href="$SocketProxy-private_8h.html" title="Internal structures and functions for SocketProxy module." alt="" coords="680,159,831,185"/>
 <area shape="poly" id="edge12_Node000001_Node000008" title=" " alt="" coords="765,45,759,159,753,159,759,44"/>
-<area shape="rect" id="Node000009" href="$SocketPoll-private_8h.html" title="Internal implementation details for SocketPoll module." alt="" coords="998,159,1137,185"/>
+<area shape="rect" id="Node000009" href="$SocketPoll-private_8h.html" title=" " alt="" coords="998,159,1137,185"/>
 <area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="813,33,865,52,921,76,995,119,1053,157,1050,161,993,123,918,81,863,57,811,38"/>
-<area shape="rect" id="Node000010" href="$SocketPoll__backend_8h.html" title="Abstract interface for platform&#45;specific polling implementations." alt="" coords="982,79,1134,104"/>
+<area shape="rect" id="Node000010" href="$SocketPoll__backend_8h.html" title="Defines internal backend abstraction for cross&#45;platform polling." alt="" coords="982,79,1134,104"/>
 <area shape="poly" id="edge10_Node000001_Node000010" title=" " alt="" coords="824,31,1011,76,1010,81,823,36"/>
 <area shape="rect" id="Node000011" href="$SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols." alt="" coords="801,79,907,104"/>
 <area shape="poly" id="edge13_Node000001_Node000011" title=" " alt="" coords="790,37,841,76,838,81,787,41"/>

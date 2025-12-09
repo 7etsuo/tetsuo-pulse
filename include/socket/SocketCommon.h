@@ -86,32 +86,106 @@ extern const Except_T SocketDgram_Failed;
 extern const Except_T SocketCommon_Failed;
 
 /**
- * @brief Initialize addrinfo hints structure for resolution.
+ * @brief Initialize addrinfo hints structure for address resolution
+ * operations.
  * @ingroup core_io
- * @param hints Hints structure to initialize (must be zeroed first with memset).
- * @param socktype Socket type (SOCK_STREAM or SOCK_DGRAM).
- * @param flags Additional flags (0 for connect/sendto, AI_PASSIVE for bind).
- * @note Sets ai_family to AF_UNSPEC for dual-stack support, ai_socktype, ai_protocol=0, ai_flags.
- * @see SocketCommon_resolve_address() for using initialized hints in resolution.
- * @see getaddrinfo(3) for full addrinfo hints documentation.
+ *
+ * Prepares a struct addrinfo hints for use with getaddrinfo() or
+ * SocketCommon_resolve_address(). This function ensures dual-stack IPv4/IPv6
+ * support by setting ai_family to AF_UNSPEC, and configures the socket type
+ * and additional resolution flags. The hints structure must be
+ * zero-initialized before calling this function to avoid garbage data.
+ *
+ * Important notes:
+ * - Always zero the hints structure first with memset(hints, 0,
+ * sizeof(*hints))
+ * - ai_protocol remains 0 (default protocol for socktype)
+ * - For binding operations, use AI_PASSIVE | AI_ADDRCONFIG flags
+ * - For connecting/sending, use AI_ADDRCONFIG for preferring configured
+ * interfaces
+ * - This setup enables Happy Eyeballs (RFC 6555) compatible resolution when
+ * used with SocketDNS
+ *
+ * @param[in,out] hints Pointer to addrinfo structure to initialize. Must point
+ * to valid memory. The structure will be zeroed and configured with standard
+ * values.
+ * @param[in] socktype Socket type: SOCK_STREAM for TCP, SOCK_DGRAM for UDP.
+ * @param[in] flags Resolution flags: e.g., AI_PASSIVE for bind, 0 for
+ * connect/sendto. Common combinations: AI_PASSIVE | AI_ADDRCONFIG for servers.
+ *
+ * @return None (void function)
+ *
+ * @throws None
+ *
+ * @threadsafe Yes - operates only on caller-provided structure, no shared
+ * state.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // For TCP server bind (passive mode)
+ * struct addrinfo hints, *res;
+ * SocketCommon_setup_hints(&hints, SOCK_STREAM, AI_PASSIVE | AI_ADDRCONFIG);
+ * int rv = getaddrinfo("0.0.0.0", "8080", &hints, &res);
+ * if (rv == 0) {
+ *     // Use res for binding
+ *     freeaddrinfo(res);
+ * }
+ * @endcode
+ *
+ * ## Client Connection Setup
+ *
+ * @code{.c}
+ * // For TCP client connect
+ * struct addrinfo hints;
+ * SocketCommon_setup_hints(&hints, SOCK_STREAM, AI_ADDRCONFIG);
+ * struct addrinfo *res;
+ * SocketCommon_resolve_address("example.com", 80, &hints, &res, Socket_Failed,
+ * AF_UNSPEC, 1);
+ * // Use res...
+ * SocketCommon_free_addrinfo(res);  // If copied, use this instead of
+ * freeaddrinfo
+ * @endcode
+ *
+ * @note Always pair with SocketCommon_resolve_address() for exception-safe
+ * resolution.
+ * @note For Unix domain sockets, set ai_family = AF_UNIX manually after this
+ * call.
+ * @note This function does not set ai_protocol; it defaults to 0
+ * (auto-select).
+ *
+ * @complexity O(1) - constant time memory operations
+ *
+ * @see SocketCommon_resolve_address() for complete resolution with error
+ * handling
+ * @see getaddrinfo(3) for POSIX specification
+ * @see Socket_bind() and Socket_connect() which use similar setup internally
+ * @see docs/ASYNC_IO.md for advanced resolution patterns with SocketDNS
  */
 void SocketCommon_setup_hints (struct addrinfo *hints, int socktype,
                                int flags);
 
 /**
- * @brief Resolve hostname/port to addrinfo structure using getaddrinfo wrapper.
+ * @brief Resolve hostname/port to addrinfo structure using getaddrinfo
+ * wrapper.
  * @ingroup core_io
  * @param host Hostname or IP address (NULL for wildcard/any).
  * @param port Port number (1 to SOCKET_MAX_PORT).
- * @param hints Addrinfo hints structure (prepared via SocketCommon_setup_hints()).
- * @param res Output pointer to resolved addrinfo list (caller must free with freeaddrinfo()).
+ * @param hints Addrinfo hints structure (prepared via
+ * SocketCommon_setup_hints()).
+ * @param res Output pointer to resolved addrinfo list (caller must free with
+ * freeaddrinfo()).
  * @param exception_type Exception type to raise on failure.
  * @param socket_family Preferred socket family to match (AF_UNSPEC for any).
- * @param use_exceptions If true, raise exceptions on failure; if false, return error codes and set errno.
+ * @param use_exceptions If true, raise exceptions on failure; if false, return
+ * error codes and set errno.
  * @return 0 on success, -1 on failure (if not using exceptions).
- * @throws Specified exception_type on resolution failure (getaddrinfo errors, invalid port, etc.).
- * @note Uses global DNS resolver (SocketCommon_get_dns_resolver()) for timeout guarantees if hostname provided.
- * @note Filters resolved addresses to match socket_family if specified (e.g., AF_INET only).
+ * @throws Specified exception_type on resolution failure (getaddrinfo errors,
+ * invalid port, etc.).
+ * @note Uses global DNS resolver (SocketCommon_get_dns_resolver()) for timeout
+ * guarantees if hostname provided.
+ * @note Filters resolved addresses to match socket_family if specified (e.g.,
+ * AF_INET only).
  * @note Caller responsible for validating and freeing the addrinfo chain.
  * @note Thread-safe: Yes (uses thread-local error buffers).
  * @see SocketCommon_setup_hints() for preparing hints structure.
@@ -128,53 +202,346 @@ int SocketCommon_resolve_address (const char *host, int port,
                                   int use_exceptions);
 
 /**
- * @brief Validate port number is in valid range
+ * @brief Validate that a port number is within the valid range for socket
+ * operations.
  * @ingroup core_io
- * @param port Port number to validate
- * @param exception_type Exception type to raise on invalid port
- * @throws Specified exception type if port is invalid
+ *
+ * Ensures the provided port is between 0 and 65535 inclusive. Port 0 is
+ * allowed for cases where the OS assigns an ephemeral port (e.g., during bind
+ * for outgoing connections). Invalid ports trigger an immediate exception
+ * raise with a descriptive message including the invalid value.
+ *
+ * This function is used internally by resolution and bind/connect operations
+ * to catch invalid port parameters early. It does not perform any system calls
+ * or allocations.
+ *
+ * Edge cases:
+ * - port < 0: Invalid, raises exception
+ * - port == 0: Valid (ephemeral)
+ * - port > 65535: Invalid, raises exception
+ * - Non-integer ports: Caller responsibility (port is int param)
+ *
+ * @param[in] port Port number to validate (int value).
+ * @param[in] exception_type Except_T type to raise on validation failure.
+ *
+ * @return None (void function) - raises exception on failure.
+ *
+ * @throws exception_type with message "Invalid port number: %d (must be
+ * 0-65535, 0 = OS-assigned)" where %d is the invalid port value.
+ *
+ * @threadsafe Yes - no shared state or system calls, pure validation.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // In connect or bind preparation
+ * TRY {
+ *     SocketCommon_validate_port(8080, Socket_Failed);
+ *     // Proceed with bind/connect using port 8080
+ * } EXCEPT(Socket_Failed) {
+ *     // This won't trigger for valid port
+ * } END_TRY;
+ * @endcode
+ *
+ * ## With Ephemeral Port
+ *
+ * @code{.c}
+ * int ephemeral_port = 0;  // OS assign
+ * SocketCommon_validate_port(ephemeral_port, Socket_Failed);  // Valid, no
+ * exception
+ * @endcode
+ *
+ * ## Invalid Port Handling
+ *
+ * @code{.c}
+ * TRY {
+ *     SocketCommon_validate_port(70000, Socket_Failed);  // Raises exception
+ * } EXCEPT(Socket_Failed) {
+ *     // Caught here with detailed message
+ *     const char *msg = Except_message(Except_stack);  // Access error details
+ *     SOCKET_LOG_ERROR_MSG("Port validation failed: %s", msg);
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Commonly called before getaddrinfo(), Socket_bind(), Socket_connect().
+ * @note For string ports, validate after parsing with strtol() or similar.
+ * @note Does not check privileged ports (<1024) - that's OS permission check.
+ *
+ * @complexity O(1) - simple integer comparison
+ *
+ * @see SocketCommon_validate_hostname() for host validation
+ * @see SocketCommon_resolve_address() which calls this internally
+ * @see docs/SECURITY.md for port security considerations
+ * @see SocketConfig.h for SOCKET_MAX_PORT definition (usually 65535)
  */
 void SocketCommon_validate_port (int port, Except_T exception_type);
 
 /**
- * @brief Validate hostname length
+ * @brief Validate that a hostname string is not excessively long for system
+ * buffers.
  * @ingroup core_io
- * @param host Hostname to validate
- * @param exception_type Exception type to raise on invalid hostname
- * @throws Specified exception type if hostname is too long
+ *
+ * Checks the length of the hostname string against the maximum allowed for
+ * system network functions (typically NI_MAXHOST or 255 bytes). Too long
+ * hostnames can cause failures in getaddrinfo(), getnameinfo(), etc. Raises
+ * exception with details on failure.
+ *
+ * This validation prevents buffer overflows or truncation in underlying system
+ * calls. Does not perform DNS resolution or syntax validation - only length
+ * check. NULL host is considered invalid (use
+ * SocketCommon_validate_host_not_null for that).
+ *
+ * Defined max length: SOCKET_MAX_HOSTNAME_LEN (from SocketConfig.h, usually
+ * 255)
+ *
+ * @param[in] host C-string hostname to validate (non-NULL expected).
+ * @param[in] exception_type Except_T to raise if length exceeds limit.
+ *
+ * @return None (void) - raises on failure.
+ *
+ * @throws exception_type with message detailing the length violation and max
+ * allowed.
+ *
+ * @threadsafe Yes - reads only, no shared state.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * const char *hostname = "example.com";
+ * TRY {
+ *     SocketCommon_validate_hostname(hostname, Socket_Failed);
+ *     // Safe to use in resolve_address or connect
+ *     SocketCommon_resolve_address(hostname, 80, &hints, &res, Socket_Failed,
+ * AF_UNSPEC, 1); } EXCEPT(Socket_Failed) { SOCKET_LOG_ERROR_MSG("Hostname too
+ * long: %s", hostname); } END_TRY;
+ * @endcode
+ *
+ * @note Call before resolution to catch early.
+ * @note For IP addresses, length check still applies but usually pass.
+ * @note Does not check for valid hostname format (use regex or library if
+ * needed).
+ *
+ * @complexity O(n) where n=strlen(host) - linear scan for length.
+ *
+ * @see SocketCommon_validate_port() companion function
+ * @see SocketCommon_validate_host_not_null() for NULL check
+ * @see SocketCommon_resolve_address() internal caller
+ * @see SocketConfig.h SOCKET_MAX_HOSTNAME_LEN constant
  */
 void SocketCommon_validate_hostname (const char *host,
                                      Except_T exception_type);
 
 /**
- * @brief Normalize wildcard host addresses to NULL
+ * @brief Normalize wildcard/any-address host strings to NULL for internal use.
  * @ingroup core_io
- * @param host Host string to normalize
- * @return NULL if wildcard ("0.0.0.0" or "::"), original host otherwise
+ *
+ * Converts common wildcard address strings to NULL, which is the canonical
+ * representation for "bind/connect to any interface" in socket operations.
+ * This simplifies internal logic in bind/connect where NULL host means
+ * INADDR_ANY.
+ *
+ * Recognized wildcards:
+ * - NULL input -> NULL (already canonical)
+ * - "0.0.0.0" -> NULL (IPv4 any)
+ * - "::" -> NULL (IPv6 any)
+ * Other strings returned unchanged (caller responsible for resolution).
+ *
+ * Does not perform DNS resolution or validation - pure string comparison.
+ * Case-sensitive match.
+ *
+ * @param[in] host Host string to normalize (may be NULL).
+ *
+ * @return NULL if input represents wildcard/any, otherwise original host
+ * string (const). Return value is always either NULL or the input pointer (no
+ * allocation).
+ *
+ * @throws None
+ *
+ * @threadsafe Yes - read-only string comparison, no shared state.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * const char *effective_host =
+ * SocketCommon_normalize_wildcard_host("0.0.0.0");
+ * // effective_host == NULL
+ * SocketCommon_resolve_address(effective_host, 8080, &hints, &res, ...);  //
+ * Resolves to any local addr
+ * @endcode
+ *
+ * ## Non-Wildcard
+ *
+ * @code{.c}
+ * const char *host = "192.168.1.1";
+ * const char *norm = SocketCommon_normalize_wildcard_host(host);
+ * // norm == host (unchanged)
+ * @endcode
+ *
+ * @note Used internally by Socket_bind() and Socket_connect() for canonical
+ * handling.
+ * @note Does not handle other wildcard forms like "any" or "*" - only numeric
+ * any addresses.
+ * @note For IPv6, only "::" recognized; full "::0" or others not normalized
+ * here.
+ *
+ * @complexity O(1) average - fixed string comparisons
+ *
+ * @see SocketCommon_resolve_address() which uses this for wildcard handling
+ * @see Socket_bind() and Socket_connect() consumers
  */
 const char *SocketCommon_normalize_wildcard_host (const char *host);
 
 /**
- * @brief Cache numeric address/port from sockaddr
+ * @brief Extract and cache human-readable numeric address and port from
+ * sockaddr structure.
  * @ingroup core_io
- * @param arena Arena to allocate cached address string
- * @param addr Socket address to format
- * @param addrlen Length of socket address
- * @param addr_out Output pointer updated to arena-allocated address string
- * @param port_out Output integer updated with numeric port (0 if unavailable)
- * @return 0 on success, -1 on failure (addr_out unchanged on failure)
+ *
+ * Converts a binary sockaddr (from getsockname, getpeername, etc.) to numeric
+ * string representation (IP:port) allocated from the provided arena. Uses
+ * getnameinfo() with NI_NUMERICHOST and NI_NUMERICSERV flags for numeric-only
+ * output (no reverse DNS).
+ *
+ * Purpose: Facilitates logging, metrics, debugging by providing string form of
+ * endpoints without repeated formatting or temporary allocations. Arena
+ * allocation ties lifetime to owning object (e.g., socket base).
+ *
+ * Supported families: AF_INET, AF_INET6, AF_UNIX (for Unix, addr_str may be
+ * path, port=0). On failure, outputs unchanged, error logged via SocketLog,
+ * errno not set.
+ *
+ * Edge cases:
+ * - Invalid addr/addrlen: Logs error, returns -1
+ * - Arena allocation fail: Returns -1, addr_out unchanged
+ * - Unsupported family: getnameinfo fails, returns -1
+ * - Unix domain: port=0, addr_str = socket path (if available)
+ *
+ * @param[in] arena Arena_T for allocating the address string copy. Must be
+ * valid.
+ * @param[in] addr const sockaddr* to format (IPv4, IPv6, Unix supported).
+ * @param[in] addrlen socklen_t length of addr structure.
+ * @param[out] addr_out char** set to arena-allocated numeric address string
+ * (e.g., "127.0.0.1" or "[::1]"). Unchanged on failure. Caller does not free -
+ * arena-managed.
+ * @param[out] port_out int* set to extracted port number (host byte order, 0
+ * if not available e.g., Unix).
+ *
+ * @return 0 on success (outputs populated), -1 on failure (getnameinfo or
+ * alloc error). On failure, error details logged via SOCKET_ERROR_MSG; check
+ * Socket_GetLastError().
+ *
+ * @throws None - returns error code instead of raising.
+ *
+ * @threadsafe Yes - local buffers, getnameinfo thread-safe on modern systems.
+ *
+ * ## Usage Example (After getsockname)
+ *
+ * @code{.c}
+ * struct sockaddr_storage local_addr;
+ * socklen_t len = sizeof(local_addr);
+ * getsockname(fd, (struct sockaddr*)&local_addr, &len);
+ *
+ * char *cached_addr;
+ * int cached_port;
+ * if (SocketCommon_cache_endpoint(arena, (struct sockaddr*)&local_addr, len,
+ *                                 &cached_addr, &cached_port) == 0) {
+ *     SOCKET_LOG_INFO_MSG("Bound to %s:%d", cached_addr, cached_port);
+ *     // cached_addr lifetime = arena
+ * } else {
+ *     SOCKET_LOG_WARN_MSG("Failed to cache local endpoint");
+ * }
+ * @endcode
+ *
+ * ## Peer Address Caching
+ *
+ * @code{.c}
+ * // After accept or connect
+ * struct sockaddr_storage peer;
+ * socklen_t peer_len = sizeof(peer);
+ * getpeername(sock_fd, (struct sockaddr*)&peer, &peer_len);
+ * char *peer_ip;
+ * int peer_port;
+ * SocketCommon_cache_endpoint(SocketBase_arena(base), (struct sockaddr*)&peer,
+ * peer_len, &peer_ip, &peer_port);
+ * // Use for logging: "Peer %s:%d connected", peer_ip, peer_port
+ * @endcode
+ *
+ * @note String format: IPv4 "x.x.x.x", IPv6 "[xxxx::xxxx]" per getnameinfo
+ * numeric.
+ * @note Port parsing from service string; fails gracefully to 0 if invalid.
+ * @note For Unix domain, addr_str may be path up to NI_MAXHOST length.
+ * @warning Buffers internally sized to NI_MAXHOST/NI_MAXSERV - truncation
+ * possible but rare.
+ *
+ * @complexity O(1) - getnameinfo bounded time, arena alloc constant.
+ *
+ * @see getnameinfo(3) for numeric formatting details
+ * @see SocketBase_T local/remote endpoint caching which uses this
+ * @see Socket_getlocaladdr/port, Socket_getpeeraddr/port public wrappers
+ * @see core/Arena.h for allocation management
  */
 int SocketCommon_cache_endpoint (Arena_T arena, const struct sockaddr *addr,
                                  socklen_t addrlen, char **addr_out,
                                  int *port_out);
 
 /**
- * @brief Set close-on-exec flag on file descriptor
+ * @brief Set or clear the close-on-exec (CLOEXEC) flag on a file descriptor.
  * @ingroup core_io
- * @param fd File descriptor to modify
- * @param enable 1 to enable CLOEXEC, 0 to disable
- * @return 0 on success, -1 on failure
- * @note Thread-safe: Yes (operates on single fd)
+ *
+ * Modifies the FD_CLOEXEC file descriptor flag using fcntl(F_SETFD) to control
+ * whether the file descriptor is automatically closed across execve() calls
+ * (e.g., fork+exec).
+ *
+ * Enabling CLOEXEC (enable=1) is a security best practice to prevent
+ * unintended FD leakage to child processes in multi-process applications.
+ * Disabling (enable=0) is rarely needed but supported for compatibility.
+ *
+ * This function is called automatically after socket(), accept(), etc., to
+ * ensure library sockets have CLOEXEC set by default (configurable via
+ * SocketConfig).
+ *
+ * On failure, sets errno to EBADF (invalid fd) or EINVAL (invalid flag).
+ *
+ * @param[in] fd File descriptor to modify (must be valid open FD).
+ * @param[in] enable Non-zero to set FD_CLOEXEC, 0 to clear it.
+ *
+ * @return 0 on success, -1 on failure (errno set).
+ *
+ * @throws None - uses return code/errno convention.
+ *
+ * @threadsafe Yes - fcntl operates on single FD atomically.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Enable CLOEXEC on newly created socket FD
+ * int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+ * if (SocketCommon_setcloexec(sock_fd, 1) < 0) {
+ *     close(sock_fd);
+ *     perror("Failed to set CLOEXEC");
+ *     return -1;
+ * }
+ * // Now safe for exec after fork
+ * @endcode
+ *
+ * ## Disable for Specific FD
+ *
+ * @code{.c}
+ * // Rare: clear CLOEXEC (e.g., for FD passing)
+ * SocketCommon_setcloexec(fd, 0);  // Allows FD to survive exec
+ * @endcode
+ *
+ * @note Automatically called by library after socket creation for security
+ * hardening.
+ * @note Equivalent to fcntl(fd, F_SETFD, enable ? FD_CLOEXEC : 0)
+ * @note On failure, check errno: EBADF invalid fd, EINVAL bad flag value.
+ * @warning Always enable CLOEXEC unless FD inheritance is explicitly needed
+ * (security risk).
+ *
+ * @complexity O(1) - single fcntl system call
+ *
+ * @see SocketCommon_has_cloexec() to query current flag state
+ * @see fcntl(2) F_SETFD/F_GETFD for POSIX details
+ * @see docs/SECURITY.md for FD leakage prevention best practices
  */
 int SocketCommon_setcloexec (int fd, int enable);
 
@@ -245,10 +612,12 @@ int SocketCommon_reverse_lookup (const struct sockaddr *addr,
  * @brief Validate and parse IP address string
  * @ingroup core_io
  * @param ip_str IP address string to validate
- * @param family Output pointer for address family (AF_INET or AF_INET6), can be NULL
+ * @param family Output pointer for address family (AF_INET or AF_INET6), can
+ * be NULL
  * @return 1 if valid IP address, 0 if invalid
  * @note Thread-safe: Yes
- * @note Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid.
+ * @note Validates both IPv4 and IPv6 addresses. Sets family to AF_INET for
+ * IPv4, AF_INET6 for IPv6, or AF_UNSPEC if invalid.
  */
 int SocketCommon_parse_ip (const char *ip_str, int *family);
 
@@ -256,7 +625,8 @@ int SocketCommon_parse_ip (const char *ip_str, int *family);
  * @brief Check if IP address matches CIDR range
  * @ingroup core_io
  * @param ip_str IP address string to check
- * @param cidr_str CIDR notation string (e.g., "192.168.1.0/24" or "2001:db8::/32")
+ * @param cidr_str CIDR notation string (e.g., "192.168.1.0/24" or
+ * "2001:db8::/32")
  * @return 1 if IP matches CIDR range, 0 if not, -1 on error
  * @note Thread-safe: Yes
  * @note Supports both IPv4 and IPv6 CIDR notation.
@@ -268,7 +638,8 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
  * @brief Opaque base structure for shared socket functionality.
  * @ingroup core_io
  *
- * Contains common fields shared across socket subtypes (Socket_T, SocketDgram_T, etc.):
+ * Contains common fields shared across socket subtypes (Socket_T,
+ * SocketDgram_T, etc.):
  * - File descriptor (fd)
  * - Memory arena for lifecycle management
  * - Local and remote endpoint information (addresses, ports)
@@ -279,10 +650,12 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
  * Subtypes embed a pointer to SocketBase_T for shared resource management.
  * Allocation: Use SocketCommon_new_base() which creates arena and initializes.
  * Deallocation: Use SocketCommon_free_base() in reverse order.
- * Thread Safety: Individual fields not thread-safe; protect with external mutexes if shared.
+ * Thread Safety: Individual fields not thread-safe; protect with external
+ * mutexes if shared.
  *
- * Rationale: Reduces code duplication in creation, initialization, cleanup across modules.
- * Ensures consistent resource acquisition/cleanup order per layered architecture rules.
+ * Rationale: Reduces code duplication in creation, initialization, cleanup
+ * across modules. Ensures consistent resource acquisition/cleanup order per
+ * layered architecture rules.
  */
 #define SocketBase_T SocketBase_T
 typedef struct SocketBase_T *SocketBase_T;
@@ -314,7 +687,8 @@ extern void SocketCommon_free_base (SocketBase_T *base_ptr);
  * @param optname Option name (SO_REUSEADDR, TCP_NODELAY, etc.)
  * @param value Value to set
  * @param exc_type Exception to raise on failure
- * @note Generic setter for standard socket options, unifies duplicated setsockopt calls
+ * @note Generic setter for standard socket options, unifies duplicated
+ * setsockopt calls
  * @note Thread-safe: Yes for own resources
  */
 extern void SocketCommon_set_option_int (SocketBase_T base, int level,
@@ -391,7 +765,8 @@ extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
  * @param iov Array of iovec structures to advance
  * @param iovcnt Number of iovec structures
  * @param bytes Bytes to advance (must <= total iov len)
- * @note Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len reduced
+ * @note Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len
+ * reduced
  * @throws SocketCommon_Failed if bytes > total iov len or invalid params
  * @note Thread-safe: Yes (local ops)
  * @note Unifies duplicated advance logic for sendvall/recvvall
@@ -404,10 +779,12 @@ extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt,
  * @ingroup core_io
  * @param iov Array of iovec structures to search
  * @param iovcnt Number of iovec structures
- * @param active_iovcnt Output for count of remaining iovecs from active position
+ * @param active_iovcnt Output for count of remaining iovecs from active
+ * position
  * @return Pointer to first iovec with iov_len > 0, or NULL if all empty
  * @note Thread-safe: Yes (read-only operation)
- * @note Used by sendvall/recvvall to find the next active buffer segment after partial I/O operations have consumed some of the iovec array.
+ * @note Used by sendvall/recvvall to find the next active buffer segment after
+ * partial I/O operations have consumed some of the iovec array.
  */
 extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov,
                                                    int iovcnt,
@@ -420,7 +797,8 @@ extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov,
  * @param copy Working copy that has been advanced
  * @param iovcnt Number of iovec structures
  * @note Updates the original iovec array to reflect progress made in the copy.
- * @note Used when recvvall needs to update caller's iovec on partial completion.
+ * @note Used when recvvall needs to update caller's iovec on partial
+ * completion.
  * @note Thread-safe: Yes (local ops)
  */
 extern void SocketCommon_sync_iov_progress (struct iovec *original,
@@ -436,7 +814,8 @@ extern void SocketCommon_sync_iov_progress (struct iovec *original,
  * @return Newly allocated copy of iovec array (caller must free)
  * @throws exc_type on allocation failure
  * @note Thread-safe: Yes
- * @note Common helper for sendvall/recvvall implementations. Consolidates duplicate calloc+memcpy patterns across Socket and SocketDgram modules.
+ * @note Common helper for sendvall/recvvall implementations. Consolidates
+ * duplicate calloc+memcpy patterns across Socket and SocketDgram modules.
  */
 extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
                                                   int iovcnt,
@@ -448,7 +827,8 @@ extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
  * @param fd File descriptor
  * @param enable True to enable FD_CLOEXEC
  * @param exc_type Raise on fail
- * @note Uses fcntl F_SETFD; called after socket()/socketpair()/accept() fallback
+ * @note Uses fcntl F_SETFD; called after socket()/socketpair()/accept()
+ * fallback
  */
 extern void SocketCommon_set_cloexec_fd (int fd, bool enable,
                                          Except_T exc_type);
@@ -476,7 +856,8 @@ extern int SocketCommon_try_bind_address (SocketBase_T base,
  * @param family Preferred family (AF_INET etc)
  * @param exc_type Raise on all fails
  * @return 0 success (bound to first successful), -1 fail
- * @note Loops addresses, calls try_bind_address, sets base local endpoint on success
+ * @note Loops addresses, calls try_bind_address, sets base local endpoint on
+ * success
  * @note Handles dual-stack, reuseaddr hints via set_option_int
  */
 extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
@@ -490,7 +871,8 @@ extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
  * @param err errno from bind
  * @param addr_str Addr string for log
  * @param exc_type Type to raise
- * @note Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal raise
+ * @note Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal
+ * raise
  */
 extern int SocketCommon_handle_bind_error (int err, const char *addr_str,
                                            Except_T exc_type);
@@ -500,7 +882,8 @@ extern int SocketCommon_handle_bind_error (int err, const char *addr_str,
  * @ingroup core_io
  * @param host Host string (NULL defaults to "any")
  * @param port Port number
- * @note Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES, etc.)
+ * @note Formats error in socket_error_buf based on errno (EADDRINUSE, EACCES,
+ * etc.)
  * @note Consolidated helper for Socket and SocketDgram bind error handling.
  * @note Does not raise - caller should raise after calling this.
  */
@@ -519,7 +902,8 @@ extern void SocketCommon_update_local_endpoint (SocketBase_T base);
  * @ingroup core_io
  * @param base Socket base to query
  * @return Socket family or AF_UNSPEC on error
- * @note Uses SO_DOMAIN on Linux, falls back to getsockname() on other platforms.
+ * @note Uses SO_DOMAIN on Linux, falls back to getsockname() on other
+ * platforms.
  */
 extern int SocketCommon_get_socket_family (SocketBase_T base);
 
@@ -539,8 +923,10 @@ extern void SocketCommon_validate_host_not_null (const char *host,
  * @ingroup core_io
  * @param src Source chain to copy (may be NULL)
  * @return malloc-allocated deep copy, or NULL on error
- * @note Deep copies the entire chain including ai_addr and ai_canonname fields.
- * @note Caller takes ownership and MUST free with SocketCommon_free_addrinfo().
+ * @note Deep copies the entire chain including ai_addr and ai_canonname
+ * fields.
+ * @note Caller takes ownership and MUST free with
+ * SocketCommon_free_addrinfo().
  * @note Do NOT use freeaddrinfo() on the result - it's undefined behavior.
  * @note No exceptions raised; returns NULL on malloc failure or src==NULL.
  * @note Thread-safe: Yes
@@ -552,8 +938,10 @@ SocketCommon_copy_addrinfo (const struct addrinfo *src);
  * @brief Free addrinfo chain created by copy_addrinfo
  * @ingroup core_io
  * @param ai Chain to free (may be NULL, safe no-op)
- * @note Frees all nodes in the chain including ai_addr and ai_canonname fields.
- * @note Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo.
+ * @note Frees all nodes in the chain including ai_addr and ai_canonname
+ * fields.
+ * @note Use this instead of freeaddrinfo() for chains from
+ * SocketCommon_copy_addrinfo.
  * @note Thread-safe: Yes
  */
 extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
@@ -568,7 +956,8 @@ extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
  * @ingroup core_io
  * @var socket_default_timeouts
  * @note Internal global variable.
- * @note Thread-safe access via SocketCommon_timeouts_getdefaults() and SocketCommon_timeouts_setdefaults().
+ * @note Thread-safe access via SocketCommon_timeouts_getdefaults() and
+ * SocketCommon_timeouts_setdefaults().
  * @note Modified only through public setter functions.
  * @see SocketCommon_timeouts_getdefaults()
  * @see SocketCommon_timeouts_setdefaults()
@@ -580,7 +969,8 @@ extern SocketTimeouts_T socket_default_timeouts;
  * @ingroup core_io
  * @var socket_default_timeouts_mutex
  * @note Internal synchronization primitive.
- * @note Ensures thread-safe modification and reading of socket_default_timeouts.
+ * @note Ensures thread-safe modification and reading of
+ * socket_default_timeouts.
  * @warning Do not use directly - use the provided getter/setter functions.
  */
 extern pthread_mutex_t socket_default_timeouts_mutex;
@@ -774,7 +1164,8 @@ typedef struct SocketDNS_T *SocketDNS_T;
  * @ingroup core_io
  * @return Global DNS resolver (lazily initialized on first call)
  * @note Thread-safe: Yes - uses pthread_once for initialization
- * @note The global DNS resolver is shared across all Socket and SocketDgram operations. It provides timeout guarantees for DNS resolution.
+ * @note The global DNS resolver is shared across all Socket and SocketDgram
+ * operations. It provides timeout guarantees for DNS resolution.
  */
 extern SocketDNS_T SocketCommon_get_dns_resolver (void);
 
@@ -783,7 +1174,8 @@ extern SocketDNS_T SocketCommon_get_dns_resolver (void);
  * @ingroup core_io
  * @param timeout_ms Timeout in milliseconds (0 = infinite, -1 = use default)
  * @note Thread-safe: Yes - protected by mutex
- * @note Affects all subsequent hostname resolution via Socket/SocketDgram APIs.
+ * @note Affects all subsequent hostname resolution via Socket/SocketDgram
+ * APIs.
  * @note Default: SOCKET_DEFAULT_DNS_TIMEOUT_MS (5000ms)
  * @note Setting timeout_ms to 0 disables timeout (infinite wait).
  * @note Setting timeout_ms to -1 resets to default.

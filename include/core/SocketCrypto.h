@@ -79,11 +79,12 @@
 #define SOCKET_CRYPTO_MD5_SIZE 16
 
 /**
- * @brief Fixed GUID string for WebSocket Sec-WebSocket-Accept computation (RFC 6455).
+ * @brief Fixed GUID string for WebSocket Sec-WebSocket-Accept computation (RFC
+ * 6455).
  * @ingroup foundation
  *
- * Magic GUID concatenated with client key for SHA-1 hashing in server handshake.
- * Per RFC 6455 Section 4.2.2.
+ * Magic GUID concatenated with client key for SHA-1 hashing in server
+ * handshake. Per RFC 6455 Section 4.2.2.
  *
  * @see SocketCrypto_websocket_accept()
  * @see SocketWS for WebSocket implementation.
@@ -105,8 +106,8 @@
  * @brief Size of Sec-WebSocket-Accept string buffer (Base64-encoded).
  * @ingroup foundation
  *
- * SHA-1 digest (20 bytes) Base64-encoded to 28 chars + null terminator = 29 bytes.
- * Per RFC 6455 Section 4.2.2.
+ * SHA-1 digest (20 bytes) Base64-encoded to 28 chars + null terminator = 29
+ * bytes. Per RFC 6455 Section 4.2.2.
  *
  * @see SocketCrypto_websocket_accept()
  */
@@ -146,16 +147,42 @@ extern const Except_T SocketCrypto_Failed;
  * Security: SHA-1 is cryptographically broken for signatures but acceptable
  * for WebSocket Sec-WebSocket-Accept computation per RFC 6455.
  *
- * @param input Input data.
- * @param input_len Length of input data in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
- * @param output Output buffer (must be at least SOCKET_CRYPTO_SHA1_SIZE bytes).
+ * @param[in] input Input data to hash.
+ * @param[in] input_len Length of input data in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid triggering security limits).
+ * @param[out] output Output buffer for the SHA-1 digest (must be pre-allocated
+ * with at least SOCKET_CRYPTO_SHA1_SIZE bytes).
  *
- * @throws SocketCrypto_Failed on error or if TLS not available.
- * @threadsafe Yes.
+ * @throws SocketCrypto_Failed If underlying crypto fails (e.g., OpenSSL
+ * error), invalid parameters (null output, excessive length), or
+ * #SOCKET_HAS_TLS == 0.
+ * @threadsafe Yes - no shared state, uses thread-local crypto contexts if
+ * available.
  *
- * @see SocketCrypto_sha256() for a stronger alternative.
- * @see SocketCrypto_websocket_accept() for WebSocket usage.
+ * @complexity O(input_len) - linear time proportional to input size.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * unsigned char digest[SOCKET_CRYPTO_SHA1_SIZE];
+ * const char *data = "example message";
+ * size_t len = strlen(data);
+ * TRY {
+ *     SocketCrypto_sha1(data, len, digest);
+ *     // digest now holds SHA-1 hash; safe to use in WebSocket handshake
+ * } EXCEPT(SocketCrypto_Failed) {
+ *     // Handle crypto failure (rare, e.g., no entropy)
+ * } END_TRY;
+ * @endcode
+ *
+ * @note SHA-1 is legacy; used primarily for WebSocket RFC 6455 compliance.
+ * @warning Do not use for new cryptographic signatures due to known collision
+ * attacks.
+ *
+ * @see SocketCrypto_sha256() for secure hashing alternative.
+ * @see SocketCrypto_websocket_accept() for WebSocket server handshake
+ * integration.
+ * @see docs/WEBSOCKET.md for full WebSocket security guide.
  */
 extern void SocketCrypto_sha1 (const void *input, size_t input_len,
                                unsigned char output[SOCKET_CRYPTO_SHA1_SIZE]);
@@ -166,16 +193,34 @@ extern void SocketCrypto_sha1 (const void *input, size_t input_len,
  *
  * Computes the SHA-256 message digest of the input data.
  *
- * @param input Input data.
- * @param input_len Length of input data in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
- * @param output Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes).
+ * @param[in] input Input data to hash.
+ * @param[in] input_len Length of input data in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid triggering security limits).
+ * @param[out] output Output buffer for the SHA-256 digest (must be
+ * pre-allocated with at least SOCKET_CRYPTO_SHA256_SIZE bytes).
  *
- * @throws SocketCrypto_Failed on error or if TLS not available.
- * @threadsafe Yes.
+ * @throws SocketCrypto_Failed If underlying crypto fails (e.g., OpenSSL
+ * error), invalid parameters (null output, excessive length), or
+ * #SOCKET_HAS_TLS == 0.
+ * @threadsafe Yes - no shared state.
  *
- * @see SocketCrypto_sha1() for legacy compatibility.
- * @see SocketCrypto_hmac_sha256() for message authentication.
+ * @complexity O(input_len) - linear time in input size.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * unsigned char hash[SOCKET_CRYPTO_SHA256_SIZE];
+ * const char *password = "user_password";
+ * SocketCrypto_sha256(password, strlen(password), hash);
+ * // Use hash for data integrity checks or key derivation (with salt/pepper)
+ * @endcode
+ *
+ * @note Recommended for general-purpose hashing where SHA-1 is insufficient.
+ * @warning Not suitable for password storage without additional salting/PBKDF.
+ *
+ * @see SocketCrypto_hmac_sha256() for keyed message authentication.
+ * @see SocketCrypto_secure_compare() to verify hashes securely.
+ * @see docs/SECURITY.md for cryptographic best practices.
  */
 extern void
 SocketCrypto_sha256 (const void *input, size_t input_len,
@@ -190,10 +235,11 @@ SocketCrypto_sha256 (const void *input, size_t input_len,
  * Security: MD5 is cryptographically broken. Only use where required by
  * specification (e.g., HTTP Digest authentication per RFC 7616).
  *
- * @param input Input data.
- * @param input_len Length of input data in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
- * @param output Output buffer (must be at least SOCKET_CRYPTO_MD5_SIZE bytes).
+ * @param[in] input Input data to hash.
+ * @param[in] input_len Length of input data in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid triggering security limits).
+ * @param[out] output Output buffer for the MD5 digest (must be pre-allocated
+ * with at least SOCKET_CRYPTO_MD5_SIZE bytes).
  *
  * @throws SocketCrypto_Failed on error or if TLS not available.
  * @threadsafe Yes.
@@ -217,15 +263,17 @@ extern void SocketCrypto_md5 (const void *input, size_t input_len,
  *
  * Used for cookie signing, session tokens, and message authentication.
  *
- * Security: Provides integrity and authenticity. Key should be at least 32 bytes
- * for full security.
+ * Security: Provides integrity and authenticity. Key should be at least 32
+ * bytes for full security.
  *
- * @param key HMAC key.
- * @param key_len Key length in bytes (recommended: 32+ bytes).
- * @param data Input data to authenticate.
- * @param data_len Data length in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
- * @param output Output buffer (must be at least SOCKET_CRYPTO_SHA256_SIZE bytes).
+ * @param[in] key HMAC key (should be cryptographically strong random bytes).
+ * @param[in] key_len Key length in bytes (recommended: >= 32 bytes for
+ * security).
+ * @param[in] data Input data to authenticate.
+ * @param[in] data_len Data length in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid triggering security limits).
+ * @param[out] output Output buffer for the HMAC-SHA256 digest (must be
+ * pre-allocated with at least SOCKET_CRYPTO_SHA256_SIZE bytes).
  *
  * @throws SocketCrypto_Failed on error or if TLS not available.
  * @threadsafe Yes.
@@ -247,16 +295,18 @@ SocketCrypto_hmac_sha256 (const void *key, size_t key_len, const void *data,
  * @brief Encode binary data to Base64 string (RFC 4648).
  * @ingroup foundation
  *
- * Encodes binary data as Base64 string per RFC 4648. Output is null-terminated.
+ * Encodes binary data as Base64 string per RFC 4648. Output is
+ * null-terminated.
  *
  * Required buffer size: ((input_len + 2) / 3) * 4 + 1 bytes.
  * Use @ref SocketCrypto_base64_encoded_size() to calculate required size.
  *
- * @param input Input binary data.
- * @param input_len Length of input data in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
- * @param output Output buffer for null-terminated Base64 string.
- * @param output_size Size of output buffer in bytes (must be sufficient).
+ * @param[in] input Input binary data to encode.
+ * @param[in] input_len Length of input data in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid triggering security limits).
+ * @param[out] output Output buffer for null-terminated Base64-encoded string.
+ * @param[in] output_size Size of output buffer in bytes (must be at least
+ * SocketCrypto_base64_encoded_size(input_len)).
  *
  * @return Length of encoded string (excluding null terminator) on success,
  * or -1 on error (insufficient output size or invalid input).
@@ -282,14 +332,16 @@ extern ssize_t SocketCrypto_base64_encode (const void *input, size_t input_len,
  * - Padding with '=' characters.
  * - Ignores whitespace per RFC 4648 Section 3.3.
  *
- * @param input Base64-encoded input string.
- * @param input_len Length of input (0 for null-terminated string auto-detection).
- * @param output Output buffer for decoded binary data.
- * @param output_size Size of output buffer in bytes (use
- * @ref SocketCrypto_base64_decoded_size() for max size).
+ * @param[in] input Base64-encoded input string (null-terminated if input_len
+ * == 0).
+ * @param[in] input_len Length of input string (0 for auto-detection via null
+ * terminator).
+ * @param[out] output Output buffer for decoded binary data.
+ * @param[in] output_size Size of output buffer in bytes (must be at least
+ * SocketCrypto_base64_decoded_size(input_len) to guarantee space).
  *
- * @return Length of decoded data on success, or -1 on error (invalid Base64 input,
- * insufficient output size).
+ * @return Length of decoded data on success, or -1 on error (invalid Base64
+ * input, insufficient output size).
  * @throws SocketCrypto_Failed if TLS not available or internal error.
  * @threadsafe Yes.
  *
@@ -310,8 +362,9 @@ extern ssize_t SocketCrypto_base64_decode (const char *input, size_t input_len,
  *
  * Formula: ((input_len + 2) / 3) * 4 + 1
  *
- * @param input_len Length of input data in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
+ * @param[in] input_len Length of input data in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION, though this function only computes
+ * size).
  *
  * @return Required output buffer size in bytes, including null terminator.
  * @threadsafe Yes.
@@ -325,12 +378,13 @@ extern size_t SocketCrypto_base64_encoded_size (size_t input_len);
  * @brief Calculate maximum buffer size needed for Base64 decoding.
  * @ingroup foundation
  *
- * Computes the maximum possible decoded size for @ref SocketCrypto_base64_decode().
- * Actual decoded size may be smaller due to padding.
+ * Computes the maximum possible decoded size for @ref
+ * SocketCrypto_base64_decode(). Actual decoded size may be smaller due to
+ * padding.
  *
  * Formula: (input_len * 3 / 4) rounded up, excluding padding.
  *
- * @param input_len Length of Base64 input string in bytes.
+ * @param[in] input_len Length of Base64 input string in bytes.
  *
  * @return Maximum possible decoded binary size in bytes.
  * @threadsafe Yes.
@@ -354,11 +408,13 @@ extern size_t SocketCrypto_base64_decoded_size (size_t input_len);
  *
  * Required output buffer size: input_len * 2 + 1 bytes.
  *
- * @param input Input binary data.
- * @param input_len Length of input in bytes (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION / 2 for output fit).
- * @param output Output buffer for null-terminated hex string.
- * @param lowercase Non-zero for lowercase (a-f), zero for uppercase (A-F).
+ * @param[in] input Input binary data to encode.
+ * @param[in] input_len Length of input in bytes (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION / 2 to fit output within limits).
+ * @param[out] output Output buffer for null-terminated hexadecimal string
+ * (must have space for 2 * input_len + 1 bytes).
+ * @param[in] lowercase 1 for lowercase hex digits (a-f), 0 for uppercase
+ * (A-F).
  *
  * @threadsafe Yes.
  *
@@ -379,15 +435,16 @@ extern void SocketCrypto_hex_encode (const void *input, size_t input_len,
  *
  * Required output capacity: input_len / 2 bytes.
  *
- * @param input Hex-encoded input string.
- * @param input_len Length of input string (0 for null-terminated auto-detect;
- * must be even).
- * @param output Output buffer for decoded binary data.
- * @param output_capacity Capacity of output buffer in bytes (at least
+ * @param[in] input Hex-encoded input string (supports A-F a-f 0-9).
+ * @param[in] input_len Length of input string (0 for auto-detect via null
+ * terminator; must be even number of hex digits).
+ * @param[out] output Output buffer for decoded binary data.
+ * @param[in] output_capacity Capacity of output buffer in bytes (at least
  * input_len / 2).
  *
- * @return Number of decoded bytes on success (min(input_len / 2, output_capacity)),
- * or -1 on error (odd length, invalid chars, insufficient capacity).
+ * @return Number of decoded bytes on success (min(input_len / 2,
+ * output_capacity)), or -1 on error (odd length, invalid chars, insufficient
+ * capacity).
  * @threadsafe Yes.
  *
  * @see SocketCrypto_hex_encode() for encoding.
@@ -410,9 +467,10 @@ extern ssize_t SocketCrypto_hex_decode (const char *input, size_t input_len,
  * Uses OpenSSL RAND_bytes() if available, falls back to /dev/urandom or
  * equivalent secure source.
  *
- * @param output Output buffer to fill with random bytes.
- * @param len Number of bytes to generate (must not exceed
- * @ref SOCKET_SECURITY_MAX_ALLOCATION).
+ * @param[out] output Output buffer to fill with cryptographically secure
+ * random bytes.
+ * @param[in] len Number of bytes to generate (must not exceed
+ * @ref SOCKET_SECURITY_MAX_ALLOCATION to avoid security limits).
  *
  * @return 0 on success, -1 on error (RNG failure or insufficient entropy).
  * @throws SocketCrypto_Failed on internal error.
@@ -452,9 +510,11 @@ extern uint32_t SocketCrypto_random_uint32 (void);
  * where GUID is "258EAFA5-E914-47DA-95CA-C5AB0DC85B11".
  * Per RFC 6455 Section 4.2.2 server handshake.
  *
- * @param client_key Client-provided Sec-WebSocket-Key (24 chars Base64).
- * @param output Output buffer (must be at least
- * @ref SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes; null-terminated on success).
+ * @param[in] client_key Client-provided Sec-WebSocket-Key header value
+ * (Base64, 24 chars).
+ * @param[out] output Output buffer for Sec-WebSocket-Accept value (must be at
+ * least SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE bytes; null-terminated on
+ * success).
  *
  * @return 0 on success, -1 on error (invalid key length or crypto failure).
  * @throws SocketCrypto_Failed on internal crypto error.
@@ -474,8 +534,8 @@ extern int SocketCrypto_websocket_accept (
  * 24 characters, and null-terminates the output.
  * Per RFC 6455 Section 4.1 client handshake.
  *
- * @param output Output buffer (must be at least
- * @ref SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes; null-terminated on success).
+ * @param[out] output Output buffer for generated Sec-WebSocket-Key (must be at
+ * least SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE bytes; null-terminated on success).
  *
  * @return 0 on success, -1 on error (RNG failure).
  * @throws SocketCrypto_Failed on internal error.
@@ -498,18 +558,19 @@ SocketCrypto_websocket_key (char output[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]);
  *
  * Compares two memory buffers in constant time, regardless of content, to
  * prevent timing side-channel attacks.
- * Essential for comparing MACs, hashes, signatures, or other security-sensitive
- * data where early exits could leak information.
+ * Essential for comparing MACs, hashes, signatures, or other
+ * security-sensitive data where early exits could leak information.
  *
- * @param a First buffer.
- * @param b Second buffer.
- * @param len Number of bytes to compare (0 returns 0).
+ * @param[in] a First buffer to compare.
+ * @param[in] b Second buffer to compare.
+ * @param[in] len Number of bytes to compare (0 if buffers equal).
  *
  * @return 0 if buffers are equal, non-zero otherwise.
  * @threadsafe Yes.
  *
  * @see SocketCrypto_hmac_sha256() for generating comparison values.
- * @see SocketCrypto_secure_clear() for cleaning sensitive data after comparison.
+ * @see SocketCrypto_secure_clear() for cleaning sensitive data after
+ * comparison.
  * @see @ref security "Security module" for protection mechanisms.
  */
 extern int SocketCrypto_secure_compare (const void *a, const void *b,
@@ -524,15 +585,36 @@ extern int SocketCrypto_secure_compare (const void *a, const void *b,
  * Essential for securely erasing passwords, private keys, and other sensitive
  * data from memory.
  *
- * @param ptr Buffer containing sensitive data to clear.
- * @param len Length of buffer in bytes.
+ * @param[in,out] ptr Buffer containing sensitive data to securely clear
+ * (overwritten with zeros).
+ * @param[in] len Length of buffer in bytes to clear.
  *
- * @threadsafe Yes.
- * @note Does not clear file system or swap; use full secure erase for that.
+ * @threadsafe Yes - uses volatile writes safe across threads.
  *
- * @see SocketBuf_secureclear() for buffer-specific clearing.
- * @see SocketCrypto_random_bytes() for generating sensitive data.
- * @see @ref security "Security module" for data protection best practices.
+ * @complexity O(len) - linear time to overwrite each byte.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * char credentials[128];  // Temporary storage for auth info
+ * // ... populate credentials ...
+ * TRY {
+ *     // Perform authentication or crypto op
+ * } FINALLY {
+ *     SocketCrypto_secure_clear(credentials, sizeof(credentials));
+ * } END_TRY;
+ * @endcode
+ *
+ * Use in FINALLY blocks to ensure clearing on all paths.
+ *
+ * @note Includes memory barriers to prevent dead-store elimination by
+ * compiler.
+ * @warning Insufficient against cold boot or memory dumps; layer with
+ * encryption.
+ *
+ * @see SocketHTTPClient-auth.c for HTTP auth credential clearing examples.
+ * @see docs/HTTP-REFACTOR.md#secure-clear for refactoring notes.
+ * @see @ref security for broader security features.
  */
 extern void SocketCrypto_secure_clear (void *ptr, size_t len);
 

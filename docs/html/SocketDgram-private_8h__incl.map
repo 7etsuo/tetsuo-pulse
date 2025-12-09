@@ -1,10 +1,10 @@
 <map id="SocketDgram&#45;private.h" name="SocketDgram&#45;private.h">
 <area shape="rect" id="Node000001" title="Internal implementation details for datagram (UDP) socket structure." alt="" coords="819,5,975,31"/>
-<area shape="rect" id="Node000002" href="$SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module." alt="" coords="818,79,977,119"/>
+<area shape="rect" id="Node000002" href="$SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure." alt="" coords="818,79,977,119"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="900,31,900,65,895,65,895,31"/>
 <area shape="rect" id="Node000003" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="652,313,748,339"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="883,121,721,304,717,301,879,117"/>
-<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="772,313,913,339"/>
+<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="772,313,913,339"/>
 <area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="895,120,883,167,851,301,846,299,877,166,890,119"/>
 <area shape="rect" id="Node000016" href="$SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="419,240,541,265"/>
 <area shape="poly" id="edge16_Node000002_Node000016" title=" " alt="" coords="847,121,525,238,524,233,845,116"/>
@@ -55,7 +55,7 @@
 <area shape="poly" id="edge24_Node000016_Node000021" title=" " alt="" coords="477,267,460,302,455,300,472,265"/>
 <area shape="poly" id="edge29_Node000022_Node000005" title=" " alt="" coords="957,191,1019,373,1014,374,952,193"/>
 <area shape="poly" id="edge30_Node000022_Node000007" title=" " alt="" coords="944,194,862,304,857,301,940,191"/>
-<area shape="rect" id="Node000023" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1039,313,1167,339"/>
+<area shape="rect" id="Node000023" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1039,313,1167,339"/>
 <area shape="poly" id="edge31_Node000022_Node000023" title=" " alt="" coords="965,191,1082,302,1079,306,961,194"/>
 <area shape="poly" id="edge36_Node000022_Node000025" title=" " alt="" coords="1010,188,1305,235,1304,240,1009,193"/>
 <area shape="poly" id="edge34_Node000023_Node000004" title=" " alt="" coords="1039,336,868,356,653,389,652,384,867,351,1038,331"/>

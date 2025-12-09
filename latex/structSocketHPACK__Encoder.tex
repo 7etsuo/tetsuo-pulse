@@ -1,0 +1,77 @@
+\doxysection{Socket\+HPACK\+\_\+\+Encoder Struct Reference}
+\hypertarget{structSocketHPACK__Encoder}{}\label{structSocketHPACK__Encoder}\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+
+
+{\ttfamily \#include $<$Socket\+HPACK-\/private.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HPACK\+\_\+\+Encoder\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=202pt]{structSocketHPACK__Encoder__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \mbox{\hyperlink{structSocketHPACK__Encoder_a0dcf583c9ed3343340fe5a35ac55b43d}{table}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Encoder_a8a7d4d8a46968add02f2db1f1409eed5}{pending\+\_\+table\+\_\+size}}
+\item 
+int \mbox{\hyperlink{structSocketHPACK__Encoder_aee663c87a5240baa38199ff4607e867b}{pending\+\_\+table\+\_\+size\+\_\+update}}
+\item 
+int \mbox{\hyperlink{structSocketHPACK__Encoder_a18863733e542a1dff583d9ed666d9e74}{huffman\+\_\+encode}}
+\item 
+int \mbox{\hyperlink{structSocketHPACK__Encoder_aa3ba523fe1635a7d05c2255a2c759732}{use\+\_\+indexing}}
+\item 
+Arena\+\_\+T \mbox{\hyperlink{structSocketHPACK__Encoder_aaf00c1e87eb6261ca23d06a18d07213b}{arena}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HPACK encoder implementation 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHPACK__Encoder_aaf00c1e87eb6261ca23d06a18d07213b}\label{structSocketHPACK__Encoder_aaf00c1e87eb6261ca23d06a18d07213b} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!arena@{arena}}
+\index{arena@{arena}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{arena}{arena}}
+{\footnotesize\ttfamily Arena\+\_\+T Socket\+HPACK\+\_\+\+Encoder\+::arena}
+
+Memory arena \Hypertarget{structSocketHPACK__Encoder_a18863733e542a1dff583d9ed666d9e74}\label{structSocketHPACK__Encoder_a18863733e542a1dff583d9ed666d9e74} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!huffman\_encode@{huffman\_encode}}
+\index{huffman\_encode@{huffman\_encode}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{huffman\_encode}{huffman\_encode}}
+{\footnotesize\ttfamily int Socket\+HPACK\+\_\+\+Encoder\+::huffman\+\_\+encode}
+
+Use Huffman encoding \Hypertarget{structSocketHPACK__Encoder_a8a7d4d8a46968add02f2db1f1409eed5}\label{structSocketHPACK__Encoder_a8a7d4d8a46968add02f2db1f1409eed5} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!pending\_table\_size@{pending\_table\_size}}
+\index{pending\_table\_size@{pending\_table\_size}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{pending\_table\_size}{pending\_table\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Encoder\+::pending\+\_\+table\+\_\+size}
+
+Pending size update (0 = none) \Hypertarget{structSocketHPACK__Encoder_aee663c87a5240baa38199ff4607e867b}\label{structSocketHPACK__Encoder_aee663c87a5240baa38199ff4607e867b} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!pending\_table\_size\_update@{pending\_table\_size\_update}}
+\index{pending\_table\_size\_update@{pending\_table\_size\_update}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{pending\_table\_size\_update}{pending\_table\_size\_update}}
+{\footnotesize\ttfamily int Socket\+HPACK\+\_\+\+Encoder\+::pending\+\_\+table\+\_\+size\+\_\+update}
+
+Flag for pending update \Hypertarget{structSocketHPACK__Encoder_a0dcf583c9ed3343340fe5a35ac55b43d}\label{structSocketHPACK__Encoder_a0dcf583c9ed3343340fe5a35ac55b43d} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!table@{table}}
+\index{table@{table}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{table}{table}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} Socket\+HPACK\+\_\+\+Encoder\+::table}
+
+Dynamic table \Hypertarget{structSocketHPACK__Encoder_aa3ba523fe1635a7d05c2255a2c759732}\label{structSocketHPACK__Encoder_aa3ba523fe1635a7d05c2255a2c759732} 
+\index{SocketHPACK\_Encoder@{SocketHPACK\_Encoder}!use\_indexing@{use\_indexing}}
+\index{use\_indexing@{use\_indexing}!SocketHPACK\_Encoder@{SocketHPACK\_Encoder}}
+\doxysubsubsection{\texorpdfstring{use\_indexing}{use\_indexing}}
+{\footnotesize\ttfamily int Socket\+HPACK\+\_\+\+Encoder\+::use\+\_\+indexing}
+
+Add to dynamic table 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHPACK-private_8h}{Socket\+HPACK-\/private.\+h}}\end{DoxyCompactItemize}

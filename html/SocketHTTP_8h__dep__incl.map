@@ -1,0 +1,26 @@
+<map id="include/http/SocketHTTP.h" name="include/http/SocketHTTP.h">
+<area shape="rect" id="Node000001" title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities." alt="" coords="510,5,689,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTP-private_8h.html" title="Internal HTTP core structures and helper functions." alt="" coords="5,79,175,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="498,35,186,81,175,83,174,78,186,76,497,30"/>
+<area shape="rect" id="Node000004" href="$SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112)." alt="" coords="441,86,627,111"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="583,43,546,87,542,84,579,40"/>
+<area shape="rect" id="Node000005" href="$SocketHTTPClient-private_8h.html" title="Internal HTTP client structures and connection pooling." alt="" coords="635,167,838,207"/>
+<area shape="poly" id="edge10_Node000001_Node000005" title=" " alt="" coords="619,39,723,165,719,168,615,43"/>
+<area shape="rect" id="Node000007" href="$SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control." alt="" coords="942,86,1129,111"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="677,30,972,83,971,89,676,36"/>
+<area shape="rect" id="Node000009" href="$SocketHTTPClient_8h.html" title="High&#45;level HTTP client with connection pooling and protocol negotiation." alt="" coords="703,86,917,111"/>
+<area shape="poly" id="edge11_Node000001_Node000009" title=" " alt="" coords="644,33,780,83,778,88,642,38"/>
+<area shape="rect" id="Node000010" href="$SocketHTTPServer_8h.html" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="199,86,416,111"/>
+<area shape="poly" id="edge13_Node000001_Node000010" title=" " alt="" coords="545,37,351,89,349,83,543,32"/>
+<area shape="rect" id="Node000003" href="$SocketHTTP1-private_8h.html" title="Internal HTTP/1.1 parser structures and DFA state machine." alt="" coords="67,167,243,207"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="115,128,143,165,139,168,111,131"/>
+<area shape="poly" id="edge4_Node000004_Node000003" title=" " alt="" coords="471,117,239,169,238,164,470,112"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="575,114,693,164,691,169,573,119"/>
+<area shape="rect" id="Node000006" href="$SocketHTTPServer-private_8h.html" title="Internal HTTP server structures and connection management." alt="" coords="268,167,475,207"/>
+<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="501,120,408,169,406,164,499,115"/>
+<area shape="poly" id="edge9_Node000007_Node000005" title=" " alt="" coords="982,118,803,169,802,164,981,113"/>
+<area shape="rect" id="Node000008" href="$SocketHTTP2-private_8h.html" title="Internal HTTP/2 connection and stream structures." alt="" coords="947,167,1123,207"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="1038,125,1038,166,1033,166,1033,125"/>
+<area shape="poly" id="edge12_Node000009_Node000005" title=" " alt="" coords="793,124,755,168,751,164,789,120"/>
+<area shape="poly" id="edge14_Node000010_Node000006" title=" " alt="" coords="326,121,359,165,355,168,322,124"/>
+</map>

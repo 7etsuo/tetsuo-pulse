@@ -168,5 +168,8 @@ var SocketHTTP_8h =
     [ "SocketHTTP_URI_result_string", "group__http.html#gaf635e39c16e4337fd63e0adf72e2a255", null ],
     [ "SocketHTTP_version_parse", "group__http.html#ga2c1cc8d1f48f39b8a3cabe4a47aaa295", null ],
     [ "SocketHTTP_version_string", "group__http.html#gafd6a702248ad5bce0c0d6f1825795f1e", null ],
-    [ "SocketHTTP_Failed", "group__http.html#ga4f683bdd1ab1acf36a383a7be5f5b6d2", null ]
+    [ "SocketHTTP_Failed", "group__http.html#ga4f683bdd1ab1acf36a383a7be5f5b6d2", null ],
+    [ "SocketHTTP_InvalidHeader", "group__http.html#ga737d1c3fbff9be0590c8d0790600906a", null ],
+    [ "SocketHTTP_InvalidURI", "group__http.html#ga05591446a711d5a6b9d967748d9bc60e", null ],
+    [ "SocketHTTP_ParseError", "group__http.html#gab3d5ad7e5994f2d6dc5cc732bba2f901", null ]
 ];

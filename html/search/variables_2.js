@@ -1,0 +1,27 @@
+var searchData=
+[
+  ['cacheable_0',['cacheable',['../structSocketHTTP__MethodProperties.html#a7c626100bb166521094c508c2907cab3',1,'SocketHTTP_MethodProperties']]],
+  ['capacity_1',['capacity',['../structSocketHPACK__Table.html#a952e2c6d39cda8a680917237a911a676',1,'SocketHPACK_Table::capacity'],['../structHTTP1__TokenBuf.html#afedc506305fd7d721f9234791d64f914',1,'HTTP1_TokenBuf::capacity']]],
+  ['charset_2',['charset',['../structSocketHTTP__MediaType.html#abe7481ae4410910ffa38160dd9b3adb1',1,'SocketHTTP_MediaType']]],
+  ['client_3',['client',['../structSocketHTTPClient__Request.html#aac0ae3aa22715192931d93465b6577fb',1,'SocketHTTPClient_Request']]],
+  ['client_5finitiated_5fcount_4',['client_initiated_count',['../structSocketHTTP2__Conn.html#a32ca2a00225f8fd4948561398ee0c426',1,'SocketHTTP2_Conn']]],
+  ['closed_5',['closed',['../structHTTPPoolEntry.html#ab102d805d6823e277f26799f7f78bf01',1,'HTTPPoolEntry']]],
+  ['code_6',['code',['../structHPACK__HuffmanSymbol.html#ab8f97d8476a1a8b8a464ff039bf7d4f8',1,'HPACK_HuffmanSymbol']]],
+  ['config_7',['config',['../structSocketHTTPClient.html#a79eb1225f7138ae50860a257bbfca078',1,'SocketHTTPClient']]],
+  ['conn_8',['conn',['../structSocketHTTP2__Stream.html#a843d469bf9cb83836e4d3442a98c7274',1,'SocketHTTP2_Stream::conn'],['../structSocketHTTPClient__AsyncRequest.html#aeb089e867d7308676e181f45078f871d',1,'SocketHTTPClient_AsyncRequest::conn']]],
+  ['conn_5farena_9',['conn_arena',['../structHTTPPoolEntry.html#a4ada73a8109f8ec9a5ec7eb4a255a3c9',1,'HTTPPoolEntry']]],
+  ['connect_5ftimeout_5fms_10',['connect_timeout_ms',['../structSocketHTTPClient__Config.html#ad0964ac6e0738a3c4914054529bb51a7',1,'SocketHTTPClient_Config']]],
+  ['connections_5fcreated_11',['connections_created',['../structSocketHTTPClient__PoolStats.html#a9a5d4cac43fdb9d880edef1dc778273a',1,'SocketHTTPClient_PoolStats']]],
+  ['connections_5ffailed_12',['connections_failed',['../structSocketHTTPClient__PoolStats.html#a1dfc46ee0c2d61f3facd7daf0d93f0a0',1,'SocketHTTPClient_PoolStats']]],
+  ['connections_5frejected_13',['connections_rejected',['../structSocketHTTPServer__Stats.html#a50103f8d84c5e9fd5cfc48c4bdadc4f2',1,'SocketHTTPServer_Stats']]],
+  ['connections_5ftimed_5fout_14',['connections_timed_out',['../structSocketHTTPClient__PoolStats.html#ac9548fe3f865ed4d99c7366b0f64937d',1,'SocketHTTPClient_PoolStats']]],
+  ['content_5flength_15',['content_length',['../structSocketHTTP__Request.html#ae3219b341f545b79118ded18769aad87',1,'SocketHTTP_Request::content_length'],['../structSocketHTTP__Response.html#ac2d2a613b98b909cc4f4c5c594187f4f',1,'SocketHTTP_Response::content_length']]],
+  ['continuation_5fframe_5fcount_16',['continuation_frame_count',['../structSocketHTTP2__Conn.html#af284b44083b4aed8d7d3e9c6c8f71542',1,'SocketHTTP2_Conn']]],
+  ['continuation_5fstream_5fid_17',['continuation_stream_id',['../structSocketHTTP2__Conn.html#a39e072d9eed8d88f40e771071aae0a05',1,'SocketHTTP2_Conn']]],
+  ['cookie_18',['cookie',['../structCookieEntry.html#a2ff05161d8f16a8dd1e648ad27e83e1d',1,'CookieEntry']]],
+  ['cookie_5fjar_19',['cookie_jar',['../structSocketHTTPClient.html#ac57df4a31ddb7c5afeaecec82d66610b',1,'SocketHTTPClient']]],
+  ['count_20',['count',['../structSocketHPACK__Table.html#a840d2c5efda1206bb3fd1dd99d558517',1,'SocketHPACK_Table::count'],['../structSocketHTTP__Headers.html#aa468602fb2370bb5e51f2777e22e9491',1,'SocketHTTP_Headers::count']]],
+  ['created_21',['created',['../structCookieEntry.html#af93187faf56bdd5108dbf59ebbdb7978',1,'CookieEntry']]],
+  ['created_5fat_22',['created_at',['../structHTTPPoolEntry.html#ad4e337e15ebff8d12e21dfe97c795f63',1,'HTTPPoolEntry']]],
+  ['current_5fcount_23',['current_count',['../structHTTPPool.html#aa929d981c71d22b8bfacf23e8263161a',1,'HTTPPool']]]
+];

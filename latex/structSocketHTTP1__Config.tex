@@ -1,0 +1,117 @@
+\doxysection{Socket\+HTTP1\+\_\+\+Config Struct Reference}
+\hypertarget{structSocketHTTP1__Config}{}\label{structSocketHTTP1__Config}\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+
+
+{\ttfamily \#include $<$Socket\+HTTP1.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a8f681f902def11b16a7eea20eb7f8e08}{max\+\_\+request\+\_\+line}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a8672fe4cd385d1f07f2a28af17f2bb33}{max\+\_\+header\+\_\+name}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a88447b7bd33d2baa80abe9ee97c64b21}{max\+\_\+header\+\_\+value}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_abfbe5b0b91d60339154b3b6c6ed7549e}{max\+\_\+headers}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a108f87a5b1d893862a9a53da200141b2}{max\+\_\+header\+\_\+size}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a210e4001f9c4495e5e59ec63992fafcf}{max\+\_\+chunk\+\_\+size}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_ad923d4eab20cacfa9e43a265dc456c7b}{max\+\_\+chunk\+\_\+ext}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_a92d57170c7f01130d0b2f55e869bc273}{max\+\_\+trailer\+\_\+size}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_ad52814be2bcde961f89fd28531af8471}{max\+\_\+header\+\_\+line}}
+\item 
+int \mbox{\hyperlink{structSocketHTTP1__Config_acf3abe5c5f8346ef4dc94771023f0c65}{allow\+\_\+obs\+\_\+fold}}
+\item 
+int \mbox{\hyperlink{structSocketHTTP1__Config_af0674dfcd3ff95d357c22a68ac7fcf36}{strict\+\_\+mode}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTP1__Config_aeda690045f7731461b2a5f29d9c3cc03}{max\+\_\+decompressed\+\_\+size}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Parser runtime configuration 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTP1__Config_acf3abe5c5f8346ef4dc94771023f0c65}\label{structSocketHTTP1__Config_acf3abe5c5f8346ef4dc94771023f0c65} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!allow\_obs\_fold@{allow\_obs\_fold}}
+\index{allow\_obs\_fold@{allow\_obs\_fold}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{allow\_obs\_fold}{allow\_obs\_fold}}
+{\footnotesize\ttfamily int Socket\+HTTP1\+\_\+\+Config\+::allow\+\_\+obs\+\_\+fold}
+
+Allow obsolete header folding (default\+: 0) \Hypertarget{structSocketHTTP1__Config_ad923d4eab20cacfa9e43a265dc456c7b}\label{structSocketHTTP1__Config_ad923d4eab20cacfa9e43a265dc456c7b} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_chunk\_ext@{max\_chunk\_ext}}
+\index{max\_chunk\_ext@{max\_chunk\_ext}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_chunk\_ext}{max\_chunk\_ext}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+chunk\+\_\+ext}
+
+Maximum chunk extension length (default\+: 1024) \Hypertarget{structSocketHTTP1__Config_a210e4001f9c4495e5e59ec63992fafcf}\label{structSocketHTTP1__Config_a210e4001f9c4495e5e59ec63992fafcf} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_chunk\_size@{max\_chunk\_size}}
+\index{max\_chunk\_size@{max\_chunk\_size}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_chunk\_size}{max\_chunk\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+chunk\+\_\+size}
+
+Maximum chunk size \Hypertarget{structSocketHTTP1__Config_aeda690045f7731461b2a5f29d9c3cc03}\label{structSocketHTTP1__Config_aeda690045f7731461b2a5f29d9c3cc03} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_decompressed\_size@{max\_decompressed\_size}}
+\index{max\_decompressed\_size@{max\_decompressed\_size}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_decompressed\_size}{max\_decompressed\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+decompressed\+\_\+size}
+
+Maximum decompressed body size (0=unlimited, default from Socket\+Security\+\_\+\+MAX\+\_\+\+BODY\+\_\+\+SIZE) \Hypertarget{structSocketHTTP1__Config_ad52814be2bcde961f89fd28531af8471}\label{structSocketHTTP1__Config_ad52814be2bcde961f89fd28531af8471} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_header\_line@{max\_header\_line}}
+\index{max\_header\_line@{max\_header\_line}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_header\_line}{max\_header\_line}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+header\+\_\+line}
+
+Maximum individual header line length (name + value + OWS + \textbackslash{}r~\newline
+) \Hypertarget{structSocketHTTP1__Config_a8672fe4cd385d1f07f2a28af17f2bb33}\label{structSocketHTTP1__Config_a8672fe4cd385d1f07f2a28af17f2bb33} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_header\_name@{max\_header\_name}}
+\index{max\_header\_name@{max\_header\_name}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_header\_name}{max\_header\_name}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+header\+\_\+name}
+
+Maximum header name length \Hypertarget{structSocketHTTP1__Config_a108f87a5b1d893862a9a53da200141b2}\label{structSocketHTTP1__Config_a108f87a5b1d893862a9a53da200141b2} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_header\_size@{max\_header\_size}}
+\index{max\_header\_size@{max\_header\_size}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_header\_size}{max\_header\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+header\+\_\+size}
+
+Maximum total header size \Hypertarget{structSocketHTTP1__Config_a88447b7bd33d2baa80abe9ee97c64b21}\label{structSocketHTTP1__Config_a88447b7bd33d2baa80abe9ee97c64b21} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_header\_value@{max\_header\_value}}
+\index{max\_header\_value@{max\_header\_value}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_header\_value}{max\_header\_value}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+header\+\_\+value}
+
+Maximum header value length \Hypertarget{structSocketHTTP1__Config_abfbe5b0b91d60339154b3b6c6ed7549e}\label{structSocketHTTP1__Config_abfbe5b0b91d60339154b3b6c6ed7549e} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_headers@{max\_headers}}
+\index{max\_headers@{max\_headers}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_headers}{max\_headers}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+headers}
+
+Maximum header count \Hypertarget{structSocketHTTP1__Config_a8f681f902def11b16a7eea20eb7f8e08}\label{structSocketHTTP1__Config_a8f681f902def11b16a7eea20eb7f8e08} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_request\_line@{max\_request\_line}}
+\index{max\_request\_line@{max\_request\_line}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_request\_line}{max\_request\_line}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+request\+\_\+line}
+
+Maximum request/status line length \Hypertarget{structSocketHTTP1__Config_a92d57170c7f01130d0b2f55e869bc273}\label{structSocketHTTP1__Config_a92d57170c7f01130d0b2f55e869bc273} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!max\_trailer\_size@{max\_trailer\_size}}
+\index{max\_trailer\_size@{max\_trailer\_size}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_trailer\_size}{max\_trailer\_size}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTP1\+\_\+\+Config\+::max\+\_\+trailer\+\_\+size}
+
+Maximum trailer size \Hypertarget{structSocketHTTP1__Config_af0674dfcd3ff95d357c22a68ac7fcf36}\label{structSocketHTTP1__Config_af0674dfcd3ff95d357c22a68ac7fcf36} 
+\index{SocketHTTP1\_Config@{SocketHTTP1\_Config}!strict\_mode@{strict\_mode}}
+\index{strict\_mode@{strict\_mode}!SocketHTTP1\_Config@{SocketHTTP1\_Config}}
+\doxysubsubsection{\texorpdfstring{strict\_mode}{strict\_mode}}
+{\footnotesize\ttfamily int Socket\+HTTP1\+\_\+\+Config\+::strict\+\_\+mode}
+
+Reject ambiguous input (default\+: 1) 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTP1_8h}{Socket\+HTTP1.\+h}}\end{DoxyCompactItemize}

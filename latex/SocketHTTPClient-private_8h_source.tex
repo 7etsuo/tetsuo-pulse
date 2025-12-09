@@ -1,0 +1,342 @@
+\doxysection{Socket\+HTTPClient-\/private.h}
+\hypertarget{SocketHTTPClient-private_8h_source}{}\label{SocketHTTPClient-private_8h_source}\index{include/http/SocketHTTPClient-\/private.h@{include/http/SocketHTTPClient-\/private.h}}
+\mbox{\hyperlink{SocketHTTPClient-private_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTPCLIENT\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#define\ SOCKETHTTPCLIENT\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00028\ }
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ "{}core/SocketUtil.h"{}}}
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP_8h}{http/SocketHTTP.h}}"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP1_8h}{http/SocketHTTP1.h}}"{}}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP2_8h}{http/SocketHTTP2.h}}"{}}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTPClient-config_8h}{http/SocketHTTPClient-\/config.h}}"{}}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTPClient_8h}{http/SocketHTTPClient.h}}"{}}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#include\ "{}socket/Socket.h"{}}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#include\ "{}socket/SocketBuf.h"{}}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \textcolor{preprocessor}{\#include\ <pthread.h>}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#include\ <time.h>}}
+\DoxyCodeLine{00040\ }
+\DoxyCodeLine{00041\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00042\ \textcolor{comment}{\ *\ Exception\ Handling\ (Centralized)}}
+\DoxyCodeLine{00043\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00044\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00045\ \textcolor{comment}{\ *\ REFACTOR:\ Uses\ centralized\ exception\ infrastructure\ from\ SocketUtil.h}}
+\DoxyCodeLine{00046\ \textcolor{comment}{\ *\ instead\ of\ module-\/specific\ thread-\/local\ buffers\ and\ exception\ copies.}}
+\DoxyCodeLine{00047\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00048\ \textcolor{comment}{\ *\ Benefits:}}
+\DoxyCodeLine{00049\ \textcolor{comment}{\ *\ -\/\ Single\ thread-\/local\ error\ buffer\ (socket\_error\_buf)\ for\ all\ modules}}
+\DoxyCodeLine{00050\ \textcolor{comment}{\ *\ -\/\ Consistent\ error\ formatting\ with\ SOCKET\_ERROR\_FMT/MSG\ macros}}
+\DoxyCodeLine{00051\ \textcolor{comment}{\ *\ -\/\ Thread-\/safe\ exception\ raising\ via\ SOCKET\_RAISE\_MODULE\_ERROR}}
+\DoxyCodeLine{00052\ \textcolor{comment}{\ *\ -\/\ Automatic\ logging\ integration\ via\ SocketLog\_emit}}
+\DoxyCodeLine{00053\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00054\ \textcolor{comment}{\ *\ The\ thread-\/local\ exception\ (HTTPClient\_DetailedException)\ is\ declared}}
+\DoxyCodeLine{00055\ \textcolor{comment}{\ *\ in\ SocketHTTPClient.c\ using\ SOCKET\_DECLARE\_MODULE\_EXCEPTION(HTTPClient).}}
+\DoxyCodeLine{00056\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00057\ }
+\DoxyCodeLine{00058\ \textcolor{comment}{/*\ Override\ log\ component\ for\ this\ module\ */}}
+\DoxyCodeLine{00059\ \textcolor{preprocessor}{\#undef\ SOCKET\_LOG\_COMPONENT}}
+\DoxyCodeLine{00060\ \textcolor{preprocessor}{\#define\ SOCKET\_LOG\_COMPONENT\ "{}HTTPClient"{}}}
+\DoxyCodeLine{00061\ }
+\DoxyCodeLine{00066\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ERROR\_FMT(fmt,\ ...)\ SOCKET\_ERROR\_FMT\ (fmt,\ \#\#\_\_VA\_ARGS\_\_)}}
+\DoxyCodeLine{00067\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ERROR\_MSG(fmt,\ ...)\ SOCKET\_ERROR\_MSG\ (fmt,\ \#\#\_\_VA\_ARGS\_\_)}}
+\DoxyCodeLine{00068\ }
+\DoxyCodeLine{00082\ \textcolor{preprocessor}{\#define\ RAISE\_HTTPCLIENT\_ERROR(e)\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\ \ SOCKET\_RAISE\_MODULE\_ERROR\ (SocketHTTPClient,\ e)}}
+\DoxyCodeLine{00084\ }
+\DoxyCodeLine{00085\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00086\ \textcolor{comment}{\ *\ Connection\ Pool\ Entry}}
+\DoxyCodeLine{00087\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00088\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00097\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}}
+\DoxyCodeLine{00098\ \{}
+\DoxyCodeLine{00099\ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structHTTPPoolEntry_aa6d4279116d6227d6271d1e31a959516}{host}};\ \ \ \ }
+\DoxyCodeLine{00100\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPoolEntry_acf0f6ed48d328591d5d1caf988d05ef0}{port}};\ \ \ \ \ \ }
+\DoxyCodeLine{00101\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPoolEntry_a69aedeb10418ebe293f847cb3edc93fc}{is\_secure}};\ }
+\DoxyCodeLine{00103\ \ \ \mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{SocketHTTP\_Version}}\ \mbox{\hyperlink{structHTTPPoolEntry_a8d065c98c445e3256a490a6eb71d9e27}{version}};\ }
+\DoxyCodeLine{00105\ \ \ \textcolor{comment}{/*\ Protocol-\/specific\ state\ */}}
+\DoxyCodeLine{00106\ \ \ \textcolor{keyword}{union}}
+\DoxyCodeLine{00107\ \ \ \{}
+\DoxyCodeLine{00108\ \ \ \ \ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00109\ \ \ \ \ \{}
+\DoxyCodeLine{00110\ \ \ \ \ \ \ Socket\_T\ socket;}
+\DoxyCodeLine{00111\ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser;}
+\DoxyCodeLine{00112\ \ \ \ \ \ \ SocketBuf\_T\ inbuf;}
+\DoxyCodeLine{00113\ \ \ \ \ \ \ SocketBuf\_T\ outbuf;}
+\DoxyCodeLine{00114\ \ \ \ \ \ \ Arena\_T}
+\DoxyCodeLine{00115\ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structHTTPPoolEntry_a4ada73a8109f8ec9a5ec7eb4a255a3c9}{conn\_arena}};\ }
+\DoxyCodeLine{00116\ \ \ \ \ \}\ h1;}
+\DoxyCodeLine{00117\ \ \ \ \ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00118\ \ \ \ \ \{}
+\DoxyCodeLine{00119\ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP2__Conn}{SocketHTTP2\_Conn\_T}}\ conn;}
+\DoxyCodeLine{00120\ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPoolEntry_a79159a493723b72c04ab94380394a5ff}{active\_streams}};\ }
+\DoxyCodeLine{00121\ \ \ \ \ \}\ h2;}
+\DoxyCodeLine{00122\ \ \ \}\ proto;}
+\DoxyCodeLine{00123\ }
+\DoxyCodeLine{00124\ \ \ time\_t\ \mbox{\hyperlink{structHTTPPoolEntry_ad4e337e15ebff8d12e21dfe97c795f63}{created\_at}};\ }
+\DoxyCodeLine{00125\ \ \ time\_t\ \mbox{\hyperlink{structHTTPPoolEntry_a9df59b3cf31861e7b8e1d26a7ba20629}{last\_used}};\ \ }
+\DoxyCodeLine{00126\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPoolEntry_a3b6c9901f8132c739908861f3f353bae}{in\_use}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00127\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPoolEntry_ab102d805d6823e277f26799f7f78bf01}{closed}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00129\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structHTTPPoolEntry_aa02514e2702a9be070ba838c09977e9d}{hash\_next}};\ }
+\DoxyCodeLine{00130\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structHTTPPoolEntry_a6e84a7ed47b4d0a45e40898870df0a2a}{next}};\ \ \ \ \ \ }
+\DoxyCodeLine{00131\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structHTTPPoolEntry_a37c8e777b33f04d904ab1a7c80839ebf}{prev}};\ \ \ \ \ \ }
+\DoxyCodeLine{00132\ \}\ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}};}
+\DoxyCodeLine{00133\ }
+\DoxyCodeLine{00134\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00135\ \textcolor{comment}{\ *\ Connection\ Pool}}
+\DoxyCodeLine{00136\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00137\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00145\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structHTTPPool}{HTTPPool}}}
+\DoxyCodeLine{00146\ \{}
+\DoxyCodeLine{00147\ \ \ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ **\mbox{\hyperlink{structHTTPPool_af5485c7d525070a52e2630208b950faf}{hash\_table}};\ }
+\DoxyCodeLine{00148\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHTTPPool_ac031f80933fd13b8fc7c84bd0c2d2095}{hash\_size}};\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00150\ \ \ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structHTTPPool_a220379a4224a90ff03c3a610dcae3b0d}{all\_conns}};\ \ \ \ }
+\DoxyCodeLine{00151\ \ \ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structHTTPPool_ae74d413d2a97949dd1fa200f429ef722}{free\_entries}};\ }
+\DoxyCodeLine{00153\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHTTPPool_a20e96d87701e7e491894c7a0b249d813}{max\_per\_host}};\ \ }
+\DoxyCodeLine{00154\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHTTPPool_a6455522fd4c139ebc162477b182d0de0}{max\_total}};\ \ \ \ \ }
+\DoxyCodeLine{00155\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHTTPPool_aa929d981c71d22b8bfacf23e8263161a}{current\_count}};\ }
+\DoxyCodeLine{00156\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structHTTPPool_aee832e5d3b6b1d574d2c3b556e8da755}{idle\_timeout\_ms}};\ \ }
+\DoxyCodeLine{00158\ \ \ Arena\_T\ \mbox{\hyperlink{structHTTPPool_ab1ecf967ace1b3f1d7534d9b344c3ede}{arena}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00159\ \ \ pthread\_mutex\_t\ \mbox{\hyperlink{structHTTPPool_ab56e88b1ac16fd1981b2607bd7e85bd7}{mutex}};\ }
+\DoxyCodeLine{00161\ \ \ \textcolor{comment}{/*\ Statistics\ */}}
+\DoxyCodeLine{00162\ \ \ \textcolor{keywordtype}{size\_t}\ total\_requests;}
+\DoxyCodeLine{00163\ \ \ \textcolor{keywordtype}{size\_t}\ reused\_connections;}
+\DoxyCodeLine{00164\ \ \ \textcolor{keywordtype}{size\_t}\ connections\_failed;}
+\DoxyCodeLine{00165\ \}\ \mbox{\hyperlink{structHTTPPool}{HTTPPool}};}
+\DoxyCodeLine{00166\ }
+\DoxyCodeLine{00167\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00168\ \textcolor{comment}{\ *\ Client\ Structure}}
+\DoxyCodeLine{00169\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00170\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00171\ }
+\DoxyCodeLine{00175\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient}}}
+\DoxyCodeLine{00176\ \{}
+\DoxyCodeLine{00177\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Config}{SocketHTTPClient\_Config}}\ \mbox{\hyperlink{structSocketHTTPClient_a79eb1225f7138ae50860a257bbfca078}{config}};\ }
+\DoxyCodeLine{00179\ \ \ \mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *\mbox{\hyperlink{structSocketHTTPClient_a40be2a9dba1121cca3b469eb786511e6}{pool}};\ }
+\DoxyCodeLine{00181\ \ \ \textcolor{comment}{/*\ Authentication\ */}}
+\DoxyCodeLine{00182\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Auth}{SocketHTTPClient\_Auth}}\ *\mbox{\hyperlink{structSocketHTTPClient_a534a744750deb1420d832522ff853732}{default\_auth}};\ }
+\DoxyCodeLine{00184\ \ \ \textcolor{comment}{/*\ Cookies\ */}}
+\DoxyCodeLine{00185\ \ \ \mbox{\hyperlink{structSocketHTTPClient__CookieJar}{SocketHTTPClient\_CookieJar\_T}}\ \mbox{\hyperlink{structSocketHTTPClient_ac57df4a31ddb7c5afeaecec82d66610b}{cookie\_jar}};\ }
+\DoxyCodeLine{00187\ \textcolor{preprocessor}{\#if\ SOCKET\_HAS\_TLS}}
+\DoxyCodeLine{00188\ \ \ \textcolor{comment}{/*\ TLS\ */}}
+\DoxyCodeLine{00189\ \ \ SocketTLSContext\_T\ default\_tls\_ctx;\ }
+\DoxyCodeLine{00190\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00191\ }
+\DoxyCodeLine{00192\ \ \ \textcolor{comment}{/*\ Last\ error\ */}}
+\DoxyCodeLine{00193\ \ \ \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{SocketHTTPClient\_Error}}\ last\_error;}
+\DoxyCodeLine{00194\ }
+\DoxyCodeLine{00195\ \ \ \textcolor{comment}{/*\ Thread\ safety\ */}}
+\DoxyCodeLine{00196\ \ \ pthread\_mutex\_t}
+\DoxyCodeLine{00197\ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTPClient_afd54946fcdd3fabca40799f0175715a6}{mutex}};\ }
+\DoxyCodeLine{00199\ \ \ \textcolor{comment}{/*\ Memory\ */}}
+\DoxyCodeLine{00200\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00201\ \};}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00203\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00204\ \textcolor{comment}{\ *\ Request\ Structure}}
+\DoxyCodeLine{00205\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00206\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00207\ }
+\DoxyCodeLine{00211\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPClient__Request}{SocketHTTPClient\_Request}}}
+\DoxyCodeLine{00212\ \{}
+\DoxyCodeLine{00213\ \ \ \mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ \mbox{\hyperlink{structSocketHTTPClient__Request_aac0ae3aa22715192931d93465b6577fb}{client}};\ }
+\DoxyCodeLine{00215\ \ \ \mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{SocketHTTP\_Method}}\ method;}
+\DoxyCodeLine{00216\ \ \ \mbox{\hyperlink{structSocketHTTP__URI}{SocketHTTP\_URI}}\ uri;}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00218\ \ \ \mbox{\hyperlink{structSocketHTTP__Headers}{SocketHTTP\_Headers\_T}}\ \mbox{\hyperlink{structSocketHTTPClient__Request_a5e76af3a10bbc72c2a0521db016e6a31}{headers}};\ }
+\DoxyCodeLine{00220\ \ \ \textcolor{comment}{/*\ Body\ */}}
+\DoxyCodeLine{00221\ \ \ \textcolor{keywordtype}{void}\ *body;}
+\DoxyCodeLine{00222\ \ \ \textcolor{keywordtype}{size\_t}\ body\_len;}
+\DoxyCodeLine{00223\ \ \ ssize\_t\ (*body\_stream\_cb)\ (\textcolor{keywordtype}{void}\ *buf,\ \textcolor{keywordtype}{size\_t}\ len,\ \textcolor{keywordtype}{void}\ *userdata);}
+\DoxyCodeLine{00224\ \ \ \textcolor{keywordtype}{void}\ *body\_stream\_userdata;}
+\DoxyCodeLine{00225\ }
+\DoxyCodeLine{00226\ \ \ \textcolor{comment}{/*\ Per-\/request\ overrides\ */}}
+\DoxyCodeLine{00227\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHTTPClient__Request_af15dfc2b5f4c958da6f963eccf5abe3f}{timeout\_ms}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00228\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Auth}{SocketHTTPClient\_Auth}}\ *\mbox{\hyperlink{structSocketHTTPClient__Request_a57a333e2b8a736d314ab0fee33277a2b}{auth}};\ }
+\DoxyCodeLine{00230\ \ \ \textcolor{comment}{/*\ Memory\ */}}
+\DoxyCodeLine{00231\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00232\ \};}
+\DoxyCodeLine{00233\ }
+\DoxyCodeLine{00234\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00235\ \textcolor{comment}{\ *\ Async\ Request\ Structure}}
+\DoxyCodeLine{00236\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00237\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00238\ }
+\DoxyCodeLine{00242\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00243\ \{}
+\DoxyCodeLine{00244\ \ \ ASYNC\_STATE\_IDLE\ =\ 0,}
+\DoxyCodeLine{00245\ \ \ ASYNC\_STATE\_CONNECTING,}
+\DoxyCodeLine{00246\ \ \ ASYNC\_STATE\_SENDING,}
+\DoxyCodeLine{00247\ \ \ ASYNC\_STATE\_RECEIVING\_HEADERS,}
+\DoxyCodeLine{00248\ \ \ ASYNC\_STATE\_RECEIVING\_BODY,}
+\DoxyCodeLine{00249\ \ \ ASYNC\_STATE\_COMPLETE,}
+\DoxyCodeLine{00250\ \ \ ASYNC\_STATE\_FAILED,}
+\DoxyCodeLine{00251\ \ \ ASYNC\_STATE\_CANCELLED}
+\DoxyCodeLine{00252\ \}\ \mbox{\hyperlink{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc}{HTTPAsyncState}};}
+\DoxyCodeLine{00253\ }
+\DoxyCodeLine{00257\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPClient__AsyncRequest}{SocketHTTPClient\_AsyncRequest}}}
+\DoxyCodeLine{00258\ \{}
+\DoxyCodeLine{00259\ \ \ \mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ client;}
+\DoxyCodeLine{00260\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Request}{SocketHTTPClient\_Request\_T}}\ request;}
+\DoxyCodeLine{00261\ }
+\DoxyCodeLine{00262\ \ \ \mbox{\hyperlink{SocketHTTPClient-private_8h_a79676ef844cfe95cf31f625403f121bc}{HTTPAsyncState}}\ state;}
+\DoxyCodeLine{00263\ \ \ \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{SocketHTTPClient\_Error}}\ error;}
+\DoxyCodeLine{00264\ }
+\DoxyCodeLine{00265\ \ \ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *\mbox{\hyperlink{structSocketHTTPClient__AsyncRequest_aeb089e867d7308676e181f45078f871d}{conn}};\ }
+\DoxyCodeLine{00267\ \ \ \textcolor{comment}{/*\ Response\ accumulation\ */}}
+\DoxyCodeLine{00268\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Response}{SocketHTTPClient\_Response}}\ response;}
+\DoxyCodeLine{00269\ }
+\DoxyCodeLine{00270\ \ \ \textcolor{comment}{/*\ Callback\ */}}
+\DoxyCodeLine{00271\ \ \ \mbox{\hyperlink{SocketHTTPClient_8h_a3cb9ba239e5a623795bae1ddfd084201}{SocketHTTPClient\_Callback}}\ callback;}
+\DoxyCodeLine{00272\ \ \ \textcolor{keywordtype}{void}\ *userdata;}
+\DoxyCodeLine{00273\ }
+\DoxyCodeLine{00274\ \ \ \textcolor{comment}{/*\ Linked\ list\ for\ pending\ requests\ */}}
+\DoxyCodeLine{00275\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPClient__AsyncRequest}{SocketHTTPClient\_AsyncRequest}}\ *next;}
+\DoxyCodeLine{00276\ \};}
+\DoxyCodeLine{00277\ }
+\DoxyCodeLine{00278\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00279\ \textcolor{comment}{\ *\ Cookie\ Storage}}
+\DoxyCodeLine{00280\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00281\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00282\ }
+\DoxyCodeLine{00286\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structCookieEntry}{CookieEntry}}}
+\DoxyCodeLine{00287\ \{}
+\DoxyCodeLine{00288\ \ \ \mbox{\hyperlink{structSocketHTTPClient__Cookie}{SocketHTTPClient\_Cookie}}\ \mbox{\hyperlink{structCookieEntry_a2ff05161d8f16a8dd1e648ad27e83e1d}{cookie}};\ }
+\DoxyCodeLine{00289\ \ \ time\_t\ \mbox{\hyperlink{structCookieEntry_af93187faf56bdd5108dbf59ebbdb7978}{created}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00290\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structCookieEntry}{CookieEntry}}\ *\mbox{\hyperlink{structCookieEntry_acc2ed5dab1f51c67adef8afa5d731a5b}{next}};\ \ \ \ \ \ \ }
+\DoxyCodeLine{00291\ \}\ \mbox{\hyperlink{structCookieEntry}{CookieEntry}};}
+\DoxyCodeLine{00292\ }
+\DoxyCodeLine{00296\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPClient__CookieJar}{SocketHTTPClient\_CookieJar}}}
+\DoxyCodeLine{00297\ \{}
+\DoxyCodeLine{00298\ \ \ \mbox{\hyperlink{structCookieEntry}{CookieEntry}}\ **hash\_table;}
+\DoxyCodeLine{00299\ \ \ \textcolor{keywordtype}{size\_t}\ hash\_size;}
+\DoxyCodeLine{00300\ \ \ \textcolor{keywordtype}{size\_t}\ count;}
+\DoxyCodeLine{00301\ \ \ \textcolor{keywordtype}{size\_t}\ max\_cookies;}
+\DoxyCodeLine{00302\ \ \ \textcolor{keywordtype}{unsigned}\ \mbox{\hyperlink{structSocketHTTPClient__CookieJar_a4f1c591a54c3361862f956dc6721b7a9}{hash\_seed}};\ }
+\DoxyCodeLine{00303\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00304\ \ \ pthread\_mutex\_t\ mutex;}
+\DoxyCodeLine{00305\ \};}
+\DoxyCodeLine{00306\ }
+\DoxyCodeLine{00307\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00308\ \textcolor{comment}{\ *\ Internal\ Helper\ Functions}}
+\DoxyCodeLine{00309\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00310\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00311\ }
+\DoxyCodeLine{00312\ \textcolor{comment}{/*\ Pool\ operations\ */}}
+\DoxyCodeLine{00313\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *httpclient\_pool\_new\ (Arena\_T\ arena,}
+\DoxyCodeLine{00314\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTPClient__Config}{SocketHTTPClient\_Config}}\ *config);}
+\DoxyCodeLine{00315\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ httpclient\_pool\_free\ (\mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *pool);}
+\DoxyCodeLine{00316\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *httpclient\_pool\_get\ (\mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *pool,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *host,}
+\DoxyCodeLine{00317\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ port,\ \textcolor{keywordtype}{int}\ is\_secure);}
+\DoxyCodeLine{00318\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ httpclient\_pool\_release\ (\mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *pool,\ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *entry);}
+\DoxyCodeLine{00319\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ httpclient\_pool\_close\ (\mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *pool,\ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *entry);}
+\DoxyCodeLine{00320\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ httpclient\_pool\_cleanup\_idle\ (\mbox{\hyperlink{structHTTPPool}{HTTPPool}}\ *pool);}
+\DoxyCodeLine{00321\ }
+\DoxyCodeLine{00322\ \textcolor{comment}{/*\ Connection\ management\ */}}
+\DoxyCodeLine{00323\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *httpclient\_connect\ (\mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ client,}
+\DoxyCodeLine{00324\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__URI}{SocketHTTP\_URI}}\ *uri);}
+\DoxyCodeLine{00325\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_send\_request\ (\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *conn,}
+\DoxyCodeLine{00326\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTPClient__Request}{SocketHTTPClient\_Request\_T}}\ req);}
+\DoxyCodeLine{00327\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_receive\_response\ (\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPoolEntry}}\ *conn,}
+\DoxyCodeLine{00328\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTPClient__Response}{SocketHTTPClient\_Response}}\ *response,}
+\DoxyCodeLine{00329\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Arena\_T\ arena);}
+\DoxyCodeLine{00330\ }
+\DoxyCodeLine{00331\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00332\ \textcolor{comment}{\ *\ Authentication\ Constants}}
+\DoxyCodeLine{00333\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00334\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00335\ }
+\DoxyCodeLine{00336\ \textcolor{comment}{/*\ Buffer\ sizes\ for\ Digest\ authentication\ fields\ */}}
+\DoxyCodeLine{00337\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_REALM\_MAX\_LEN\ 128}}
+\DoxyCodeLine{00338\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_NONCE\_MAX\_LEN\ 128}}
+\DoxyCodeLine{00339\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_OPAQUE\_MAX\_LEN\ 128}}
+\DoxyCodeLine{00340\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_QOP\_MAX\_LEN\ 64}}
+\DoxyCodeLine{00341\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_ALGORITHM\_MAX\_LEN\ 32}}
+\DoxyCodeLine{00342\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_PARAM\_NAME\_MAX\_LEN\ 32}}
+\DoxyCodeLine{00343\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_VALUE\_MAX\_LEN\ 256}}
+\DoxyCodeLine{00344\ }
+\DoxyCodeLine{00345\ \textcolor{comment}{/*\ Digest\ token\ constants\ */}}
+\DoxyCodeLine{00346\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_AUTH\ "{}auth"{}}}
+\DoxyCodeLine{00347\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_AUTH\_LEN\ 4}}
+\DoxyCodeLine{00348\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_TRUE\ "{}true"{}}}
+\DoxyCodeLine{00349\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_TRUE\_LEN\ 4}}
+\DoxyCodeLine{00350\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_STALE\ "{}stale"{}}}
+\DoxyCodeLine{00351\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_TOKEN\_STALE\_LEN\ 5}}
+\DoxyCodeLine{00352\ }
+\DoxyCodeLine{00353\ \textcolor{comment}{/*\ Digest\ prefixes\ and\ lengths\ */}}
+\DoxyCodeLine{00354\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_PREFIX\ "{}Digest\ "{}}}
+\DoxyCodeLine{00355\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_PREFIX\_LEN\ 7}}
+\DoxyCodeLine{00356\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_BASIC\_PREFIX\ "{}Basic\ "{}}}
+\DoxyCodeLine{00357\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_BASIC\_PREFIX\_LEN\ 6}}
+\DoxyCodeLine{00358\ }
+\DoxyCodeLine{00359\ \textcolor{comment}{/*\ Hex\ digest\ size\ (max\ of\ MD5/SHA256)\ */}}
+\DoxyCodeLine{00360\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_HEX\_SIZE\ (SOCKET\_CRYPTO\_SHA256\_SIZE\ *\ 2\ +\ 1)}}
+\DoxyCodeLine{00361\ }
+\DoxyCodeLine{00362\ \textcolor{comment}{/*\ Basic\ auth\ credentials\ buffer\ size\ defined\ in\ SocketHTTPClient-\/config.h\ */}}
+\DoxyCodeLine{00363\ }
+\DoxyCodeLine{00364\ \textcolor{comment}{/*\ Client\ nonce\ sizes\ */}}
+\DoxyCodeLine{00365\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_CNONCE\_SIZE\ 16}}
+\DoxyCodeLine{00366\ }
+\DoxyCodeLine{00367\ \textcolor{comment}{/*\ Temporary\ buffers\ for\ hash\ computations\ */}}
+\DoxyCodeLine{00368\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_A\_BUFFER\_SIZE\ 512}}
+\DoxyCodeLine{00369\ }
+\DoxyCodeLine{00370\ \textcolor{comment}{/*\ Authentication\ helpers\ (uses\ SocketCrypto)\ */}}
+\DoxyCodeLine{00371\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_auth\_basic\_header\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *username,}
+\DoxyCodeLine{00372\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *password,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00373\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00374\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_auth\_digest\_response\ (}
+\DoxyCodeLine{00375\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *username,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *password,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *realm,}
+\DoxyCodeLine{00376\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *nonce,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *uri,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *method,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *qop,}
+\DoxyCodeLine{00377\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *nc,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *cnonce,\ \textcolor{keywordtype}{int}\ use\_sha256,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00378\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00379\ }
+\DoxyCodeLine{00397\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{SocketHTTPClient-private_8h_a3fcfd7234a5afe59a88881771654b119}{httpclient\_auth\_digest\_challenge}}\ (}
+\DoxyCodeLine{00398\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *www\_authenticate,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *username,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *password,}
+\DoxyCodeLine{00399\ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *method,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *uri,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *nc\_value,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00400\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00401\ }
+\DoxyCodeLine{00420\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gae2f0b8ff528dfcd4951ea76392f84f9c}{httpclient\_auth\_bearer\_header}}\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *token,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00421\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00422\ }
+\DoxyCodeLine{00433\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{SocketHTTPClient-private_8h_a1cc79d996671eef21de4f871615e65f9}{httpclient\_auth\_is\_stale\_nonce}}\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *www\_authenticate);}
+\DoxyCodeLine{00434\ }
+\DoxyCodeLine{00435\ \textcolor{comment}{/*\ Cookie\ helpers\ */}}
+\DoxyCodeLine{00436\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_cookies\_for\_request\ (}
+\DoxyCodeLine{00437\ \ \ \ \ \mbox{\hyperlink{structSocketHTTPClient__CookieJar}{SocketHTTPClient\_CookieJar\_T}}\ jar,\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__URI}{SocketHTTP\_URI}}\ *uri,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00438\ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size,}
+\DoxyCodeLine{00439\ \ \ \ \ \textcolor{keywordtype}{int}\ enforce\_samesite);\ \textcolor{comment}{/*\ 1\ to\ enforce\ SameSite\ cookie\ policy\ */}}
+\DoxyCodeLine{00440\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_parse\_set\_cookie\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *value,\ \textcolor{keywordtype}{size\_t}\ len,}
+\DoxyCodeLine{00441\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__URI}{SocketHTTP\_URI}}\ *request\_uri,}
+\DoxyCodeLine{00442\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTPClient__Cookie}{SocketHTTPClient\_Cookie}}\ *cookie,}
+\DoxyCodeLine{00443\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ Arena\_T\ arena);}
+\DoxyCodeLine{00444\ }
+\DoxyCodeLine{00457\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{unsigned}}
+\DoxyCodeLine{00458\ httpclient\_host\_hash\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *host,\ \textcolor{keywordtype}{int}\ port,\ \textcolor{keywordtype}{size\_t}\ table\_size)}
+\DoxyCodeLine{00459\ \{}
+\DoxyCodeLine{00460\ \ \ \textcolor{keywordtype}{size\_t}\ host\_len\ =\ strlen\ (host);}
+\DoxyCodeLine{00461\ \ \ \textcolor{keywordtype}{unsigned}\ host\_hash}
+\DoxyCodeLine{00462\ \ \ \ \ \ \ =\ socket\_util\_hash\_djb2\_ci\_len\ (host,\ host\_len,\ table\_size);}
+\DoxyCodeLine{00463\ \ \ \textcolor{keywordtype}{unsigned}\ port\_hash\ =\ socket\_util\_hash\_uint\ ((\textcolor{keywordtype}{unsigned})port,\ table\_size);}
+\DoxyCodeLine{00464\ \ \ \textcolor{keywordtype}{unsigned}\ combined\ =\ host\_hash\ \string^\ port\_hash;}
+\DoxyCodeLine{00465\ \ \ \textcolor{keywordflow}{return}\ socket\_util\_hash\_uint\ (combined,\ table\_size);}
+\DoxyCodeLine{00466\ \}}
+\DoxyCodeLine{00467\ }
+\DoxyCodeLine{00468\ \textcolor{comment}{/*\ Retry\ helpers\ (from\ SocketHTTPClient-\/retry.c)\ */}}
+\DoxyCodeLine{00469\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_should\_retry\_error\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ client,}
+\DoxyCodeLine{00470\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{SocketHTTPClient\_Error}}\ error);}
+\DoxyCodeLine{00471\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_should\_retry\_status\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ client,}
+\DoxyCodeLine{00472\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ status);}
+\DoxyCodeLine{00473\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ httpclient\_calculate\_retry\_delay\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTPClient}{SocketHTTPClient\_T}}\ client,}
+\DoxyCodeLine{00474\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ attempt);}
+\DoxyCodeLine{00475\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ httpclient\_retry\_sleep\_ms\ (\textcolor{keywordtype}{int}\ ms);}
+\DoxyCodeLine{00476\ }
+\DoxyCodeLine{00477\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ clear\_response\_for\_retry\ (\mbox{\hyperlink{structSocketHTTP__Response}{SocketHTTP\_Response}}\ *response);}
+\DoxyCodeLine{00478\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}}
+\DoxyCodeLine{00479\ httpclient\_clear\_response\_for\_retry\ (\mbox{\hyperlink{structSocketHTTPClient__Response}{SocketHTTPClient\_Response}}\ *response);}
+\DoxyCodeLine{00480\ }
+\DoxyCodeLine{00481\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTPCLIENT\_PRIVATE\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

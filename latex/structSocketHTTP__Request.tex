@@ -1,0 +1,75 @@
+\doxysection{Socket\+HTTP\+\_\+\+Request Struct Reference}
+\hypertarget{structSocketHTTP__Request}{}\label{structSocketHTTP__Request}\index{SocketHTTP\_Request@{SocketHTTP\_Request}}
+
+
+{\ttfamily \#include $<$Socket\+HTTP.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HTTP\+\_\+\+Request\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=241pt]{structSocketHTTP__Request__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structSocketHTTP__Request_a7220f6d14675c5f0f23841deb4a802ee}\label{structSocketHTTP__Request_a7220f6d14675c5f0f23841deb4a802ee} 
+\mbox{\hyperlink{group__http_gaf6f90bb536a5cd085f4327bda4d3ee8f}{Socket\+HTTP\+\_\+\+Method}} {\bfseries method}
+\item 
+\Hypertarget{structSocketHTTP__Request_a72d0753b8c757a0ee4f22442e9e47c90}\label{structSocketHTTP__Request_a72d0753b8c757a0ee4f22442e9e47c90} 
+\mbox{\hyperlink{group__http_gac46610efb2f138f9f5c58f9134f11a78}{Socket\+HTTP\+\_\+\+Version}} {\bfseries version}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTP__Request_ae2157eb770dfdcdc9c457c219744a45e}{scheme}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTP__Request_aadf20a9361a4708c2399f5e92d9fdc86}{authority}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTP__Request_a6de2019fc645123141423c8831e1e196}{path}}
+\item 
+\Hypertarget{structSocketHTTP__Request_a927f21cde166c88a63a78b172dee5031}\label{structSocketHTTP__Request_a927f21cde166c88a63a78b172dee5031} 
+\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} {\bfseries headers}
+\item 
+\Hypertarget{structSocketHTTP__Request_abf4bf680af6104fca8a59bcb52316604}\label{structSocketHTTP__Request_abf4bf680af6104fca8a59bcb52316604} 
+int {\bfseries has\+\_\+body}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTP__Request_ae3219b341f545b79118ded18769aad87}{content\+\_\+length}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP Request (protocol-\/agnostic)
+
+This structure represents the semantics of an HTTP request, independent of the wire format (HTTP/1.\+1 vs HTTP/2). 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTP__Request_aadf20a9361a4708c2399f5e92d9fdc86}\label{structSocketHTTP__Request_aadf20a9361a4708c2399f5e92d9fdc86} 
+\index{SocketHTTP\_Request@{SocketHTTP\_Request}!authority@{authority}}
+\index{authority@{authority}!SocketHTTP\_Request@{SocketHTTP\_Request}}
+\doxysubsubsection{\texorpdfstring{authority}{authority}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HTTP\+\_\+\+Request\+::authority}
+
+host\mbox{[}\+:port\mbox{]} \Hypertarget{structSocketHTTP__Request_ae3219b341f545b79118ded18769aad87}\label{structSocketHTTP__Request_ae3219b341f545b79118ded18769aad87} 
+\index{SocketHTTP\_Request@{SocketHTTP\_Request}!content\_length@{content\_length}}
+\index{content\_length@{content\_length}!SocketHTTP\_Request@{SocketHTTP\_Request}}
+\doxysubsubsection{\texorpdfstring{content\_length}{content\_length}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTP\+\_\+\+Request\+::content\+\_\+length}
+
+-\/1 if unknown/chunked \Hypertarget{structSocketHTTP__Request_a6de2019fc645123141423c8831e1e196}\label{structSocketHTTP__Request_a6de2019fc645123141423c8831e1e196} 
+\index{SocketHTTP\_Request@{SocketHTTP\_Request}!path@{path}}
+\index{path@{path}!SocketHTTP\_Request@{SocketHTTP\_Request}}
+\doxysubsubsection{\texorpdfstring{path}{path}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HTTP\+\_\+\+Request\+::path}
+
+Path and query string \Hypertarget{structSocketHTTP__Request_ae2157eb770dfdcdc9c457c219744a45e}\label{structSocketHTTP__Request_ae2157eb770dfdcdc9c457c219744a45e} 
+\index{SocketHTTP\_Request@{SocketHTTP\_Request}!scheme@{scheme}}
+\index{scheme@{scheme}!SocketHTTP\_Request@{SocketHTTP\_Request}}
+\doxysubsubsection{\texorpdfstring{scheme}{scheme}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HTTP\+\_\+\+Request\+::scheme}
+
+"{}http"{} or "{}https"{} (for absolute-\/form) 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTP_8h}{Socket\+HTTP.\+h}}\end{DoxyCompactItemize}

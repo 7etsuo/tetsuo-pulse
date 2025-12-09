@@ -1,0 +1,453 @@
+\doxysection{include/http/\+Socket\+HTTP1-\/private.h File Reference}
+\hypertarget{SocketHTTP1-private_8h}{}\label{SocketHTTP1-private_8h}\index{include/http/SocketHTTP1-\/private.h@{include/http/SocketHTTP1-\/private.h}}
+
+
+Internal HTTP/1.\+1 parser structures and DFA state machine.  
+
+
+{\ttfamily \#include $<$string.\+h$>$}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP-\/private.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP1.\+h"{}}\newline
+Include dependency graph for Socket\+HTTP1-\/private.h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTP1-private_8h__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structHTTP1__TokenBuf}{HTTP1\+\_\+\+Token\+Buf}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTP1__Parser}{Socket\+HTTP1\+\_\+\+Parser}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_ad098b78544bfd51e17a57911075fe03f}{http1\+\_\+is\+\_\+tchar}}(c)~\mbox{\hyperlink{SocketHTTP-private_8h_a35666e507452b39f3bc5d3492983b312}{SOCKETHTTP\+\_\+\+IS\+\_\+\+TCHAR}} (c)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_aff5dc6e13b07479e1b825ecc2e11eb57}{http1\+\_\+is\+\_\+digit}}(c)~((c) $>$= \textquotesingle{}0\textquotesingle{} \&\& (c) $<$= \textquotesingle{}9\textquotesingle{})
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a2c15e8a2d79e8bf14c70d1696e051531}{http1\+\_\+is\+\_\+hex}}(c)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a683b2be81e4af9b09423fa3c2a5c7eb0}{http1\+\_\+hex\+\_\+value}}(c)~\mbox{\hyperlink{SocketHTTP-private_8h_a3c8b1550781514298036c503bcb8e87c}{SOCKETHTTP\+\_\+\+HEX\+\_\+\+VALUE}} (c)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a6594d0715c53c5e9e378da5b9ee77273}{http1\+\_\+is\+\_\+ows}}(c)~((c) == \textquotesingle{} \textquotesingle{} \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} (c) == \textquotesingle{}\textbackslash{}t\textquotesingle{})
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a9329808739b93de1cbadaaf106822798}{http1\+\_\+is\+\_\+vchar}}(c)~  ((unsigned char)(c) $>$= 0x21 \&\& (unsigned char)(c) $<$= 0x7E)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a4c7d8b975c0f5cab7a44547028b5d98a}{http1\+\_\+is\+\_\+obs\+\_\+text}}(c)~((unsigned char)(c) $>$= 0x80)
+\item 
+\#define \mbox{\hyperlink{SocketHTTP1-private_8h_a08806d6bccfe78181471506d451e0714}{http1\+\_\+is\+\_\+field\+\_\+vchar}}(c)~(\mbox{\hyperlink{SocketHTTP1-private_8h_a9329808739b93de1cbadaaf106822798}{http1\+\_\+is\+\_\+vchar}} (c) \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} \mbox{\hyperlink{SocketHTTP1-private_8h_a4c7d8b975c0f5cab7a44547028b5d98a}{http1\+\_\+is\+\_\+obs\+\_\+text}} (c))
+\item 
+\Hypertarget{SocketHTTP1-private_8h_ae09fc6308bb228c3eb507ec485846076}\label{SocketHTTP1-private_8h_ae09fc6308bb228c3eb507ec485846076} 
+\#define {\bfseries HTTP1\+\_\+\+DEFAULT\+\_\+\+METHOD\+\_\+\+BUF\+\_\+\+SIZE}~16
+\item 
+\Hypertarget{SocketHTTP1-private_8h_a4738efb4bea5ccacccfc1be5a105cb13}\label{SocketHTTP1-private_8h_a4738efb4bea5ccacccfc1be5a105cb13} 
+\#define {\bfseries HTTP1\+\_\+\+DEFAULT\+\_\+\+URI\+\_\+\+BUF\+\_\+\+SIZE}~256
+\item 
+\Hypertarget{SocketHTTP1-private_8h_a362225da7c45277cb41d4135c22e635b}\label{SocketHTTP1-private_8h_a362225da7c45277cb41d4135c22e635b} 
+\#define {\bfseries HTTP1\+\_\+\+DEFAULT\+\_\+\+REASON\+\_\+\+BUF\+\_\+\+SIZE}~64
+\item 
+\Hypertarget{SocketHTTP1-private_8h_aa750a4a233ab27ba2857e2ab63258535}\label{SocketHTTP1-private_8h_aa750a4a233ab27ba2857e2ab63258535} 
+\#define {\bfseries HTTP1\+\_\+\+DEFAULT\+\_\+\+HEADER\+\_\+\+NAME\+\_\+\+BUF\+\_\+\+SIZE}~64
+\item 
+\Hypertarget{SocketHTTP1-private_8h_a5943569b15eb4a4ad46e352e21ea14ea}\label{SocketHTTP1-private_8h_a5943569b15eb4a4ad46e352e21ea14ea} 
+\#define {\bfseries HTTP1\+\_\+\+DEFAULT\+\_\+\+HEADER\+\_\+\+VALUE\+\_\+\+BUF\+\_\+\+SIZE}~256
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522d}{HTTP1\+\_\+\+Char\+Class}} \{ \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959}{HTTP1\+\_\+\+CC\+\_\+\+CTL}} = 0
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9}{HTTP1\+\_\+\+CC\+\_\+\+SP}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad}{HTTP1\+\_\+\+CC\+\_\+\+HTAB}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245}{HTTP1\+\_\+\+CC\+\_\+\+CR}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74}{HTTP1\+\_\+\+CC\+\_\+\+LF}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f}{HTTP1\+\_\+\+CC\+\_\+\+COLON}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1}{HTTP1\+\_\+\+CC\+\_\+\+SLASH}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8}{HTTP1\+\_\+\+CC\+\_\+\+DOT}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a}{HTTP1\+\_\+\+CC\+\_\+\+DIGIT}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495}{HTTP1\+\_\+\+CC\+\_\+\+HEX}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4}{HTTP1\+\_\+\+CC\+\_\+\+ALPHA}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0}{HTTP1\+\_\+\+CC\+\_\+H}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61}{HTTP1\+\_\+\+CC\+\_\+T}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa}{HTTP1\+\_\+\+CC\+\_\+P}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60}{HTTP1\+\_\+\+CC\+\_\+\+TCHAR}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c}{HTTP1\+\_\+\+CC\+\_\+\+VCHAR}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e}{HTTP1\+\_\+\+CC\+\_\+\+OBS}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52}{HTTP1\+\_\+\+CC\+\_\+\+INVALID}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}
+ \}
+\item 
+enum \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37e}{HTTP1\+\_\+\+Action}} \{ \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129}{HTTP1\+\_\+\+ACT\+\_\+\+NONE}} = 0
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7}{HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+METHOD}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6}{HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+URI}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6}{HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+REASON}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af}{HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+NAME}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265}{HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+VALUE}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd}{HTTP1\+\_\+\+ACT\+\_\+\+METHOD\+\_\+\+END}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1}{HTTP1\+\_\+\+ACT\+\_\+\+URI\+\_\+\+END}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32}{HTTP1\+\_\+\+ACT\+\_\+\+VERSION\+\_\+\+MAJ}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d}{HTTP1\+\_\+\+ACT\+\_\+\+VERSION\+\_\+\+MIN}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6}{HTTP1\+\_\+\+ACT\+\_\+\+STATUS\+\_\+\+DIGIT}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664}{HTTP1\+\_\+\+ACT\+\_\+\+REASON\+\_\+\+END}}
+, \newline
+\mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c}{HTTP1\+\_\+\+ACT\+\_\+\+HEADER\+\_\+\+END}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495}{HTTP1\+\_\+\+ACT\+\_\+\+HEADERS\+\_\+\+DONE}}
+, \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39}{HTTP1\+\_\+\+ACT\+\_\+\+ERROR}}
+ \}
+\item 
+enum \mbox{\hyperlink{group__http_ga8cc947a0df8404588ec5ca3e179d4e57}{HTTP1\+\_\+\+Internal\+State}} \{ \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+START} = 0
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+METHOD}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+SP\+\_\+\+AFTER\+\_\+\+METHOD}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+URI}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+SP\+\_\+\+AFTER\+\_\+\+URI}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+STATUS\+\_\+\+CODE}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+SP\+\_\+\+AFTER\+\_\+\+STATUS}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+REASON}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+H}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+T1}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+T2}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+P}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+SLASH}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+MAJOR}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+DOT}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+VERSION\+\_\+\+MINOR}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+LINE\+\_\+\+CR}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+LINE\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+START}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+NAME}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+COLON}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+VALUE}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+VALUE\+\_\+\+OWS}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+CR}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADER\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+HEADERS\+\_\+\+END\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+BODY\+\_\+\+IDENTITY}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+BODY\+\_\+\+UNTIL\+\_\+\+CLOSE}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+SIZE}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+SIZE\+\_\+\+EXT}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+SIZE\+\_\+\+CR}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+SIZE\+\_\+\+LF}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+DATA}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+DATA\+\_\+\+CR}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+CHUNK\+\_\+\+DATA\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+START}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+NAME}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+COLON}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+VALUE}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+CR}
+, \newline
+{\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILER\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+TRAILERS\+\_\+\+END\+\_\+\+LF}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+COMPLETE}
+, {\bfseries HTTP1\+\_\+\+PS\+\_\+\+ERROR}
+, \newline
+{\bfseries HTTP1\+\_\+\+NUM\+\_\+\+STATES}
+ \}
+\begin{DoxyCompactList}\small\item\em Low-\/level parser states (DFA states) \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{SocketHTTP1-private_8h_a8132b7d377746bbf6e235a4d127deb17}{http1\+\_\+char\+\_\+class}} \mbox{[}256\mbox{]}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{SocketHTTP1-private_8h_ad7f1459235d97c9cb2f1c4960a7dbc30}{http1\+\_\+req\+\_\+state}} \mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{SocketHTTP1-private_8h_a11bb00a4258fe1bb4ece5df41c2c9d3f}{http1\+\_\+resp\+\_\+state}} \mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{SocketHTTP1-private_8h_a75ad7bc5978265a3fab598023b737c92}{http1\+\_\+req\+\_\+action}} \mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}
+\item 
+const uint8\+\_\+t \mbox{\hyperlink{SocketHTTP1-private_8h_a9c08453987f874f606969a88b5d593ca}{http1\+\_\+resp\+\_\+action}} \mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internal HTTP/1.\+1 parser structures and DFA state machine. 
+
+This header contains internal structures for the HTTP/1.\+1 parser implementation. NOT for public consumption -\/ use \doxylink{SocketHTTP1_8h}{Socket\+HTTP1.\+h} instead.
+
+Contains\+:
+\begin{DoxyItemize}
+\item Table-\/driven DFA character classification (following Socket\+UTF8 pattern)
+\item HTTP/1.\+1 state machine definitions and transition tables
+\item Parser internal structures and buffers
+\item Chunked encoding state machine
+\item Compression/decompression state (if enabled)
+\end{DoxyItemize}
+
+The parser uses a deterministic finite automaton (DFA) for O(n) parsing with single-\/pass validation and error detection.
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHTTP1_8h}{Socket\+HTTP1.\+h} for public HTTP/1.\+1 API. 
+
+Socket\+UTF8.\+c for similar table-\/driven DFA pattern. 
+
+\doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} for core HTTP internal structures. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHTTP1-private_8h_a683b2be81e4af9b09423fa3c2a5c7eb0}\label{SocketHTTP1-private_8h_a683b2be81e4af9b09423fa3c2a5c7eb0} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_hex\_value@{http1\_hex\_value}}
+\index{http1\_hex\_value@{http1\_hex\_value}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_hex\_value}{http1\_hex\_value}}
+{\footnotesize\ttfamily \#define http1\+\_\+hex\+\_\+value(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~\mbox{\hyperlink{SocketHTTP-private_8h_a3c8b1550781514298036c503bcb8e87c}{SOCKETHTTP\+\_\+\+HEX\+\_\+\+VALUE}} (c)}
+
+http1\+\_\+hex\+\_\+value -\/ Get numeric value of hex digit Uses SOCKETHTTP\+\_\+\+HEX\+\_\+\+VALUE from \doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} \Hypertarget{SocketHTTP1-private_8h_aff5dc6e13b07479e1b825ecc2e11eb57}\label{SocketHTTP1-private_8h_aff5dc6e13b07479e1b825ecc2e11eb57} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_digit@{http1\_is\_digit}}
+\index{http1\_is\_digit@{http1\_is\_digit}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_digit}{http1\_is\_digit}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+digit(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~((c) $>$= \textquotesingle{}0\textquotesingle{} \&\& (c) $<$= \textquotesingle{}9\textquotesingle{})}
+
+http1\+\_\+is\+\_\+digit -\/ Check if character is ASCII digit \Hypertarget{SocketHTTP1-private_8h_a08806d6bccfe78181471506d451e0714}\label{SocketHTTP1-private_8h_a08806d6bccfe78181471506d451e0714} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_field\_vchar@{http1\_is\_field\_vchar}}
+\index{http1\_is\_field\_vchar@{http1\_is\_field\_vchar}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_field\_vchar}{http1\_is\_field\_vchar}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+field\+\_\+vchar(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~(\mbox{\hyperlink{SocketHTTP1-private_8h_a9329808739b93de1cbadaaf106822798}{http1\+\_\+is\+\_\+vchar}} (c) \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} \mbox{\hyperlink{SocketHTTP1-private_8h_a4c7d8b975c0f5cab7a44547028b5d98a}{http1\+\_\+is\+\_\+obs\+\_\+text}} (c))}
+
+http1\+\_\+is\+\_\+field\+\_\+vchar -\/ Check if valid in header value field-\/vchar = VCHAR / obs-\/text \Hypertarget{SocketHTTP1-private_8h_a2c15e8a2d79e8bf14c70d1696e051531}\label{SocketHTTP1-private_8h_a2c15e8a2d79e8bf14c70d1696e051531} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_hex@{http1\_is\_hex}}
+\index{http1\_is\_hex@{http1\_is\_hex}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_hex}{http1\_is\_hex}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+hex(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})}
+
+{\bfseries Value\+:}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{\ \ (((c)\ >=\ \textcolor{charliteral}{'0'}\ \&\&\ (c)\ <=\ \textcolor{charliteral}{'9'})\ ||\ ((c)\ >=\ \textcolor{charliteral}{'a'}\ \&\&\ (c)\ <=\ \textcolor{charliteral}{'f'})\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}
+\DoxyCodeLine{\ \ \ ||\ ((c)\ >=\ \textcolor{charliteral}{'A'}\ \&\&\ (c)\ <=\ \textcolor{charliteral}{'F'}))}
+
+\end{DoxyCode}
+http1\+\_\+is\+\_\+hex -\/ Check if character is hexadecimal digit \Hypertarget{SocketHTTP1-private_8h_a4c7d8b975c0f5cab7a44547028b5d98a}\label{SocketHTTP1-private_8h_a4c7d8b975c0f5cab7a44547028b5d98a} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_obs\_text@{http1\_is\_obs\_text}}
+\index{http1\_is\_obs\_text@{http1\_is\_obs\_text}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_obs\_text}{http1\_is\_obs\_text}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+obs\+\_\+text(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~((unsigned char)(c) $>$= 0x80)}
+
+http1\+\_\+is\+\_\+obs\+\_\+text -\/ Check if character is obs-\/text (0x80-\/0x\+FF) \Hypertarget{SocketHTTP1-private_8h_a6594d0715c53c5e9e378da5b9ee77273}\label{SocketHTTP1-private_8h_a6594d0715c53c5e9e378da5b9ee77273} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_ows@{http1\_is\_ows}}
+\index{http1\_is\_ows@{http1\_is\_ows}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_ows}{http1\_is\_ows}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+ows(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~((c) == \textquotesingle{} \textquotesingle{} \texorpdfstring{$\vert$}{|}\texorpdfstring{$\vert$}{|} (c) == \textquotesingle{}\textbackslash{}t\textquotesingle{})}
+
+http1\+\_\+is\+\_\+ows -\/ Check if character is optional whitespace (SP or HTAB) \Hypertarget{SocketHTTP1-private_8h_ad098b78544bfd51e17a57911075fe03f}\label{SocketHTTP1-private_8h_ad098b78544bfd51e17a57911075fe03f} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_tchar@{http1\_is\_tchar}}
+\index{http1\_is\_tchar@{http1\_is\_tchar}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_tchar}{http1\_is\_tchar}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+tchar(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~\mbox{\hyperlink{SocketHTTP-private_8h_a35666e507452b39f3bc5d3492983b312}{SOCKETHTTP\+\_\+\+IS\+\_\+\+TCHAR}} (c)}
+
+http1\+\_\+is\+\_\+tchar -\/ Check if character is valid token character {\ttfamily }\+: Character to check
+
+Uses sockethttp\+\_\+tchar\+\_\+table from \doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} \Hypertarget{SocketHTTP1-private_8h_a9329808739b93de1cbadaaf106822798}\label{SocketHTTP1-private_8h_a9329808739b93de1cbadaaf106822798} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_is\_vchar@{http1\_is\_vchar}}
+\index{http1\_is\_vchar@{http1\_is\_vchar}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_is\_vchar}{http1\_is\_vchar}}
+{\footnotesize\ttfamily \#define http1\+\_\+is\+\_\+vchar(\begin{DoxyParamCaption}\item[{}]{c }\end{DoxyParamCaption})~  ((unsigned char)(c) $>$= 0x21 \&\& (unsigned char)(c) $<$= 0x7E)}
+
+http1\+\_\+is\+\_\+vchar -\/ Check if character is visible character (0x21-\/0x7E) 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37e}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37e} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_Action@{HTTP1\_Action}}
+\index{HTTP1\_Action@{HTTP1\_Action}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTP1\_Action}{HTTP1\_Action}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37e}{HTTP1\+\_\+\+Action}}}
+
+Actions to execute on state transitions \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_NONE@{HTTP1\_ACT\_NONE}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_NONE@{HTTP1\_ACT\_NONE}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129} 
+HTTP1\+\_\+\+ACT\+\_\+\+NONE&Just transition, no side effect \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STORE\_METHOD@{HTTP1\_ACT\_STORE\_METHOD}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STORE\_METHOD@{HTTP1\_ACT\_STORE\_METHOD}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7} 
+HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+METHOD&Store byte in method buffer \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STORE\_URI@{HTTP1\_ACT\_STORE\_URI}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STORE\_URI@{HTTP1\_ACT\_STORE\_URI}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea8976d09595dca9cef00fcb438fa6bca6} 
+HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+URI&Store byte in URI buffer \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STORE\_REASON@{HTTP1\_ACT\_STORE\_REASON}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STORE\_REASON@{HTTP1\_ACT\_STORE\_REASON}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae034d318b4cca1f898b851f04ddfcfd6} 
+HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+REASON&Store byte in reason buffer \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STORE\_NAME@{HTTP1\_ACT\_STORE\_NAME}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STORE\_NAME@{HTTP1\_ACT\_STORE\_NAME}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea5a085e1aa4236a762c1527db58dd07af} 
+HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+NAME&Store byte in header name buffer \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STORE\_VALUE@{HTTP1\_ACT\_STORE\_VALUE}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STORE\_VALUE@{HTTP1\_ACT\_STORE\_VALUE}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eae93bdd8cccc5aa883ce3d3fd06ab4265} 
+HTTP1\+\_\+\+ACT\+\_\+\+STORE\+\_\+\+VALUE&Store byte in header value buffer \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_METHOD\_END@{HTTP1\_ACT\_METHOD\_END}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_METHOD\_END@{HTTP1\_ACT\_METHOD\_END}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eabb939814a40037e1c13c687c8ccc7cdd} 
+HTTP1\+\_\+\+ACT\+\_\+\+METHOD\+\_\+\+END&Complete method token \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_URI\_END@{HTTP1\_ACT\_URI\_END}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_URI\_END@{HTTP1\_ACT\_URI\_END}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea2edf29ee0ba17961fdadf14d4e8390a1} 
+HTTP1\+\_\+\+ACT\+\_\+\+URI\+\_\+\+END&Complete URI \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_VERSION\_MAJ@{HTTP1\_ACT\_VERSION\_MAJ}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_VERSION\_MAJ@{HTTP1\_ACT\_VERSION\_MAJ}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6bd42e039f2194910f24fe2e9baf4e32} 
+HTTP1\+\_\+\+ACT\+\_\+\+VERSION\+\_\+\+MAJ&Store major version digit \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_VERSION\_MIN@{HTTP1\_ACT\_VERSION\_MIN}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_VERSION\_MIN@{HTTP1\_ACT\_VERSION\_MIN}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eacd5b9fc811ed1aa8eadadfcd6c747f2d} 
+HTTP1\+\_\+\+ACT\+\_\+\+VERSION\+\_\+\+MIN&Store minor version digit \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_STATUS\_DIGIT@{HTTP1\_ACT\_STATUS\_DIGIT}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_STATUS\_DIGIT@{HTTP1\_ACT\_STATUS\_DIGIT}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea6004b735355e1a41da8421def9915fe6} 
+HTTP1\+\_\+\+ACT\+\_\+\+STATUS\+\_\+\+DIGIT&Store status code digit \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_REASON\_END@{HTTP1\_ACT\_REASON\_END}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_REASON\_END@{HTTP1\_ACT\_REASON\_END}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea13fd71669c5a6cbf2e4c8dd59e02f664} 
+HTTP1\+\_\+\+ACT\+\_\+\+REASON\+\_\+\+END&Complete reason phrase \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_HEADER\_END@{HTTP1\_ACT\_HEADER\_END}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_HEADER\_END@{HTTP1\_ACT\_HEADER\_END}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea68e19ba60e9039b2fbf46d8324a0bc4c} 
+HTTP1\+\_\+\+ACT\+\_\+\+HEADER\+\_\+\+END&Complete current header \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_HEADERS\_DONE@{HTTP1\_ACT\_HEADERS\_DONE}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_HEADERS\_DONE@{HTTP1\_ACT\_HEADERS\_DONE}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37ea045de19d0b059cfefe230de8a67ed495} 
+HTTP1\+\_\+\+ACT\+\_\+\+HEADERS\+\_\+\+DONE&All headers complete \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_ACT\_ERROR@{HTTP1\_ACT\_ERROR}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_ACT\_ERROR@{HTTP1\_ACT\_ERROR}}}\Hypertarget{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39}\label{SocketHTTP1-private_8h_af958f972f68a3e764050f88c3475f37eac50a1c34d3ec25233a0894c8f77e8d39} 
+HTTP1\+\_\+\+ACT\+\_\+\+ERROR&Transition to error state \\
+\hline
+
+\end{DoxyEnumFields}
+\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522d}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522d} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CharClass@{HTTP1\_CharClass}}
+\index{HTTP1\_CharClass@{HTTP1\_CharClass}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HTTP1\_CharClass}{HTTP1\_CharClass}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522d}{HTTP1\+\_\+\+Char\+Class}}}
+
+Character classification for table-\/driven DFA Following Hoehrmann pattern from Socket\+UTF8.\+c \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_CTL@{HTTP1\_CC\_CTL}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_CTL@{HTTP1\_CC\_CTL}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da9db23894b03ef23df099870344ce4959} 
+HTTP1\+\_\+\+CC\+\_\+\+CTL&Control chars (0x00-\/0x1F except HTAB) -\/ invalid \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_SP@{HTTP1\_CC\_SP}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_SP@{HTTP1\_CC\_SP}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9} 
+HTTP1\+\_\+\+CC\+\_\+\+SP&Space (0x20) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_HTAB@{HTTP1\_CC\_HTAB}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_HTAB@{HTTP1\_CC\_HTAB}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad} 
+HTTP1\+\_\+\+CC\+\_\+\+HTAB&Horizontal tab (0x09) -\/ OWS \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_CR@{HTTP1\_CC\_CR}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_CR@{HTTP1\_CC\_CR}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac7ac5c77f0885c152c05c94e50d13245} 
+HTTP1\+\_\+\+CC\+\_\+\+CR&Carriage return (0x0D) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_LF@{HTTP1\_CC\_LF}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_LF@{HTTP1\_CC\_LF}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da88e498aff57ef14d2879cf5f597b8e74} 
+HTTP1\+\_\+\+CC\+\_\+\+LF&Line feed (0x0A) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_COLON@{HTTP1\_CC\_COLON}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_COLON@{HTTP1\_CC\_COLON}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da5d1f1c9df85b3e43f4047de25a238d1f} 
+HTTP1\+\_\+\+CC\+\_\+\+COLON&Colon \textquotesingle{}\+:\textquotesingle{} -\/ header separator \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_SLASH@{HTTP1\_CC\_SLASH}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_SLASH@{HTTP1\_CC\_SLASH}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da91a6cf99bc6eb9d9f3b2d9483e1800c1} 
+HTTP1\+\_\+\+CC\+\_\+\+SLASH&Slash \textquotesingle{}/\textquotesingle{} -\/ version separator \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_DOT@{HTTP1\_CC\_DOT}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_DOT@{HTTP1\_CC\_DOT}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da50e567115c48f8cfd0d3ca38fc2819c8} 
+HTTP1\+\_\+\+CC\+\_\+\+DOT&Dot \textquotesingle{}.\textquotesingle{} -\/ version separator \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_DIGIT@{HTTP1\_CC\_DIGIT}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_DIGIT@{HTTP1\_CC\_DIGIT}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a} 
+HTTP1\+\_\+\+CC\+\_\+\+DIGIT&0-\/9 \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_HEX@{HTTP1\_CC\_HEX}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_HEX@{HTTP1\_CC\_HEX}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495} 
+HTTP1\+\_\+\+CC\+\_\+\+HEX&a-\/f, A-\/F (hex only, not digit) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_ALPHA@{HTTP1\_CC\_ALPHA}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_ALPHA@{HTTP1\_CC\_ALPHA}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dae63f973c90eae4a6573009647c11bed4} 
+HTTP1\+\_\+\+CC\+\_\+\+ALPHA&A-\/\+Za-\/z (not H, T, P) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_H@{HTTP1\_CC\_H}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_H@{HTTP1\_CC\_H}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dac370e423157cab4c36d91a1348939fb0} 
+HTTP1\+\_\+\+CC\+\_\+H&\textquotesingle{}H\textquotesingle{} -\/ HTTP version start \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_T@{HTTP1\_CC\_T}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_T@{HTTP1\_CC\_T}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa68366a8095d1a601f86a34ba92e8a61} 
+HTTP1\+\_\+\+CC\+\_\+T&\textquotesingle{}T\textquotesingle{} -\/ HTTP version \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_P@{HTTP1\_CC\_P}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_P@{HTTP1\_CC\_P}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522daa32fd85089887c462c579d4b74ab45fa} 
+HTTP1\+\_\+\+CC\+\_\+P&\textquotesingle{}P\textquotesingle{} -\/ HTTP version \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_TCHAR@{HTTP1\_CC\_TCHAR}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_TCHAR@{HTTP1\_CC\_TCHAR}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60} 
+HTTP1\+\_\+\+CC\+\_\+\+TCHAR&Other token chars\+: !\#\$\%\&\textquotesingle{}\texorpdfstring{$\ast$}{*}+-\/.\texorpdfstring{$^\wedge$}{\string^}\+\_\+\`{}\texorpdfstring{$\vert$}{|}\texorpdfstring{$\sim$}{\string~} \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_VCHAR@{HTTP1\_CC\_VCHAR}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_VCHAR@{HTTP1\_CC\_VCHAR}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da0f625516d28b239c3572f25b619fc81c} 
+HTTP1\+\_\+\+CC\+\_\+\+VCHAR&Other visible chars (0x21-\/0x7E not above) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_OBS@{HTTP1\_CC\_OBS}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_OBS@{HTTP1\_CC\_OBS}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da485ac681b3192c75c140b62fb3509a4e} 
+HTTP1\+\_\+\+CC\+\_\+\+OBS&obs-\/text (0x80-\/0x\+FF) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_CC\_INVALID@{HTTP1\_CC\_INVALID}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_CC\_INVALID@{HTTP1\_CC\_INVALID}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522dad7fe4960cb4690af18e23e5ae579ad52} 
+HTTP1\+\_\+\+CC\+\_\+\+INVALID&Invalid (NUL, DEL, etc.) \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HTTP1\_NUM\_CLASSES@{HTTP1\_NUM\_CLASSES}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!HTTP1\_NUM\_CLASSES@{HTTP1\_NUM\_CLASSES}}}\Hypertarget{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}\label{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d} 
+HTTP1\+\_\+\+NUM\+\_\+\+CLASSES&Number of character classes \\
+\hline
+
+\end{DoxyEnumFields}
+
+
+\doxysubsection{Variable Documentation}
+\Hypertarget{SocketHTTP1-private_8h_a8132b7d377746bbf6e235a4d127deb17}\label{SocketHTTP1-private_8h_a8132b7d377746bbf6e235a4d127deb17} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_char\_class@{http1\_char\_class}}
+\index{http1\_char\_class@{http1\_char\_class}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_char\_class}{http1\_char\_class}}
+{\footnotesize\ttfamily const uint8\+\_\+t http1\+\_\+char\+\_\+class\mbox{[}256\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Character classification table (256 bytes) Maps each byte value to its HTTP1\+\_\+\+Char\+Class \Hypertarget{SocketHTTP1-private_8h_a75ad7bc5978265a3fab598023b737c92}\label{SocketHTTP1-private_8h_a75ad7bc5978265a3fab598023b737c92} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_req\_action@{http1\_req\_action}}
+\index{http1\_req\_action@{http1\_req\_action}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_req\_action}{http1\_req\_action}}
+{\footnotesize\ttfamily const uint8\+\_\+t http1\+\_\+req\+\_\+action\mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Action table for request parsing Indexed as\+: http1\+\_\+req\+\_\+action\mbox{[}state\mbox{]}\mbox{[}class\mbox{]} -\/\texorpdfstring{$>$}{>} action \Hypertarget{SocketHTTP1-private_8h_ad7f1459235d97c9cb2f1c4960a7dbc30}\label{SocketHTTP1-private_8h_ad7f1459235d97c9cb2f1c4960a7dbc30} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_req\_state@{http1\_req\_state}}
+\index{http1\_req\_state@{http1\_req\_state}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_req\_state}{http1\_req\_state}}
+{\footnotesize\ttfamily const uint8\+\_\+t http1\+\_\+req\+\_\+state\mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+State transition table for request parsing Indexed as\+: http1\+\_\+req\+\_\+state\mbox{[}state\mbox{]}\mbox{[}class\mbox{]} -\/\texorpdfstring{$>$}{>} next\+\_\+state \Hypertarget{SocketHTTP1-private_8h_a9c08453987f874f606969a88b5d593ca}\label{SocketHTTP1-private_8h_a9c08453987f874f606969a88b5d593ca} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_resp\_action@{http1\_resp\_action}}
+\index{http1\_resp\_action@{http1\_resp\_action}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_resp\_action}{http1\_resp\_action}}
+{\footnotesize\ttfamily const uint8\+\_\+t http1\+\_\+resp\+\_\+action\mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+Action table for response parsing Indexed as\+: http1\+\_\+resp\+\_\+action\mbox{[}state\mbox{]}\mbox{[}class\mbox{]} -\/\texorpdfstring{$>$}{>} action \Hypertarget{SocketHTTP1-private_8h_a11bb00a4258fe1bb4ece5df41c2c9d3f}\label{SocketHTTP1-private_8h_a11bb00a4258fe1bb4ece5df41c2c9d3f} 
+\index{SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}!http1\_resp\_state@{http1\_resp\_state}}
+\index{http1\_resp\_state@{http1\_resp\_state}!SocketHTTP1-\/private.h@{SocketHTTP1-\/private.h}}
+\doxysubsubsection{\texorpdfstring{http1\_resp\_state}{http1\_resp\_state}}
+{\footnotesize\ttfamily const uint8\+\_\+t http1\+\_\+resp\+\_\+state\mbox{[}HTTP1\+\_\+\+NUM\+\_\+\+STATES\mbox{]}\mbox{[}\mbox{\hyperlink{SocketHTTP1-private_8h_a7159889d7065ff0d078e4b7170bc522da23467a9180aa7acc92ee092b9177526d}{HTTP1\+\_\+\+NUM\+\_\+\+CLASSES}}\mbox{]}\hspace{0.3cm}{\ttfamily [extern]}}
+
+State transition table for response parsing Indexed as\+: http1\+\_\+resp\+\_\+state\mbox{[}state\mbox{]}\mbox{[}class\mbox{]} -\/\texorpdfstring{$>$}{>} next\+\_\+state 

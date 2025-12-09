@@ -22,17 +22,17 @@
 #include "http/SocketHTTPClient.h"
 
 /* Example JSON payload */
-static const char *json_payload
-    = "{\n"
-      "  \"name\": \"Socket Library\",\n"
-      "  \"version\": \"1.0.0\",\n"
-      "  \"features\": [\"HTTP/1.1\", \"HTTP/2\", \"WebSocket\", \"TLS 1.3\"]\n"
-      "}";
+static const char *json_payload = "{\n"
+                                  "  \"name\": \"Socket Library\",\n"
+                                  "  \"version\": \"1.0.0\",\n"
+                                  "  \"features\": [\"HTTP/1.1\", \"HTTP/2\", "
+                                  "\"WebSocket\", \"TLS 1.3\"]\n"
+                                  "}";
 
 int
 main (int argc, char **argv)
 {
-  const char * volatile url = "https://httpbin.org/post";
+  const char *volatile url = "https://httpbin.org/post";
   SocketHTTPClient_T client = NULL;
   SocketHTTPClient_Response response = { 0 };
   volatile int result = 0;
@@ -168,4 +168,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

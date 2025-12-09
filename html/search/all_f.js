@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['raise_5fhttpclient_5ferror_0',['RAISE_HTTPCLIENT_ERROR',['../group__http.html#ga579e19931e574af25ef4d1907a04f5c0',1,'SocketHTTPClient-private.h']]],
+  ['rate_5flimited_1',['rate_limited',['../structSocketHTTPServer__Stats.html#a867a300e62b5a1f57e5c0a93b4da436b',1,'SocketHTTPServer_Stats']]],
+  ['ratelimitentry_2',['RateLimitEntry',['../structRateLimitEntry.html',1,'']]],
+  ['realm_3',['realm',['../structSocketHTTPClient__Auth.html#a89774175b3f815b3c17b8b150347b453',1,'SocketHTTPClient_Auth']]],
+  ['reason_5fphrase_4',['reason_phrase',['../structSocketHTTP__Response.html#a5c725b3ff8d2ebe11a120842a05ac725',1,'SocketHTTP_Response']]],
+  ['recv_5fbuf_5',['recv_buf',['../structSocketHTTP2__Conn.html#aeb7544ab75407d3c2ae26ecdde1d863c',1,'SocketHTTP2_Conn::recv_buf'],['../structSocketHTTP2__Stream.html#a2a6dc405b08c68a454f61f1ca04f5155',1,'SocketHTTP2_Stream::recv_buf']]],
+  ['recv_5fwindow_6',['recv_window',['../structSocketHTTP2__Stream.html#abb429d012988d8fe28f41ebc5c805aed',1,'SocketHTTP2_Stream::recv_window'],['../structSocketHTTP2__Conn.html#a5147abf0bea114c8e1db9b046a746bf8',1,'SocketHTTP2_Conn::recv_window']]],
+  ['redirect_5fon_5fpost_7',['redirect_on_post',['../structSocketHTTPClient__Config.html#a847eaef5232b2ada9149eea8aa9d4d4c',1,'SocketHTTPClient_Config']]],
+  ['request_5fread_5ftimeout_5fms_8',['request_read_timeout_ms',['../structSocketHTTPServer__Config.html#aae5feb01178bcf0f41095d30ec718240',1,'SocketHTTPServer_Config']]],
+  ['request_5ftimeout_5fms_9',['request_timeout_ms',['../structSocketHTTPServer__Config.html#acee81724c46b258607d762187f5b25ac',1,'SocketHTTPServer_Config::request_timeout_ms'],['../structSocketHTTPClient__Config.html#a5d89d81bfb2401b06059048425fafb93',1,'SocketHTTPClient_Config::request_timeout_ms']]],
+  ['requests_5fper_5fsecond_10',['requests_per_second',['../structSocketHTTPServer__Stats.html#a311686f5e9dfdd93834bd160c3e04b8b',1,'SocketHTTPServer_Stats']]],
+  ['response_5fbody_11',['response_body',['../structSocketHTTP__MethodProperties.html#a56b452f5e749b9785b8926e469093417',1,'SocketHTTP_MethodProperties']]],
+  ['response_5fwrite_5ftimeout_5fms_12',['response_write_timeout_ms',['../structSocketHTTPServer__Config.html#a7c6c518a1861c3ee10b133297d47444c',1,'SocketHTTPServer_Config']]],
+  ['retry_5finitial_5fdelay_5fms_13',['retry_initial_delay_ms',['../structSocketHTTPClient__Config.html#a1b02030b2c83c6e7bd1812de2362ede3',1,'SocketHTTPClient_Config']]],
+  ['retry_5fmax_5fdelay_5fms_14',['retry_max_delay_ms',['../structSocketHTTPClient__Config.html#afd505949c45d0fb48c0810759cb66176',1,'SocketHTTPClient_Config']]],
+  ['retry_5fon_5f5xx_15',['retry_on_5xx',['../structSocketHTTPClient__Config.html#a86ed34fbe021d156e6ee5ac2bc8e9b6e',1,'SocketHTTPClient_Config']]],
+  ['retry_5fon_5fconnection_5ferror_16',['retry_on_connection_error',['../structSocketHTTPClient__Config.html#a6355fa7fdfcc9db5d6069189aef62928',1,'SocketHTTPClient_Config']]],
+  ['retry_5fon_5ftimeout_17',['retry_on_timeout',['../structSocketHTTPClient__Config.html#a58a60bcfb2edaa6accced6acd52191ad',1,'SocketHTTPClient_Config']]],
+  ['reused_5fconnections_18',['reused_connections',['../structSocketHTTPClient__PoolStats.html#a0bb94abb8c7aa981d1aae1d47469b316',1,'SocketHTTPClient_PoolStats']]],
+  ['role_19',['role',['../structSocketHTTP2__Conn.html#a5bc0c0b09108757103e1e97ded474fb8',1,'SocketHTTP2_Conn']]],
+  ['rst_5fcount_5fin_5fwindow_20',['rst_count_in_window',['../structSocketHTTP2__Conn.html#a63df69db98280a3a7bfb34a6be5f6e90',1,'SocketHTTP2_Conn']]],
+  ['rst_5fwindow_5fstart_5fms_21',['rst_window_start_ms',['../structSocketHTTP2__Conn.html#a6d1cac8e0a00a5969ded90f7e5e1ac6e',1,'SocketHTTP2_Conn']]]
+];

@@ -1,6 +1,6 @@
 <map id="RateLimitEntry" name="RateLimitEntry">
 <area shape="rect" id="Node000001" title="Linked list entry for per&#45;path rate limiters." alt="" coords="18,93,127,119"/>
 <area shape="poly" id="edge2_Node000001_Node000001" title=" " alt="" coords="142,97,154,106,146,114,128,117,127,111,143,109,149,106,140,102"/>
-<area shape="rect" id="Node000002" href="$SocketRateLimit-private_8h.html#structSocketRateLimit__T" title=" " alt="" coords="5,5,140,31"/>
+<area shape="rect" id="Node000002" href="$group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter." alt="" coords="5,5,140,31"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="75,45,75,93,70,93,70,45"/>
 </map>

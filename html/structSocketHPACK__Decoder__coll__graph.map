@@ -1,0 +1,7 @@
+<map id="SocketHPACK_Decoder" name="SocketHPACK_Decoder">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,181,169,207"/>
+<area shape="rect" id="Node000002" href="$structSocketHPACK__Table.html" title=" " alt="" coords="14,93,161,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="90,133,90,181,85,181,85,133"/>
+<area shape="rect" id="Node000003" href="$structHPACK__DynamicEntry.html" title=" " alt="" coords="9,5,166,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="90,45,90,93,85,93,85,45"/>
+</map>

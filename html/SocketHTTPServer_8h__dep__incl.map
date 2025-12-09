@@ -1,0 +1,5 @@
+<map id="include/http/SocketHTTPServer.h" name="include/http/SocketHTTPServer.h">
+<area shape="rect" id="Node000001" title="High&#45;level HTTP server supporting HTTP/1.1 and HTTP/2 protocols." alt="" coords="5,5,223,31"/>
+<area shape="rect" id="Node000002" href="$SocketHTTPServer-private_8h.html" title="Internal HTTP server structures and connection management." alt="" coords="11,79,217,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="117,44,117,79,111,79,111,44"/>
+</map>

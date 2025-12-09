@@ -21,7 +21,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="group__core__io.html" target="_top" xlink:title="Fundamental socket operations for TCP, UDP, and Unix domain sockets.The Core I/O group provides the b...">
+<g id="a_Node000002"><a xlink:href="group__core__io.html" target="_top" xlink:title="Fundamental socket primitives for TCP, UDP, Unix domain, and DNS operations.">
 <polygon fill="white" stroke="#666666" points="94,-26.57 0,-26.57 0,-7.57 94,-7.57 94,-26.57"/>
 <text text-anchor="middle" x="47" y="-14.57" font-family="Helvetica,sans-Serif" font-size="10.00">Core I/O Modules</text>
 </a>

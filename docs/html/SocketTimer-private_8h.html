@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('SocketTimer-private_8h.html',''); init
 </div><!--header-->
 <div class="contents">
 
-<p>Internal timer implementation details and heap management.  
+<p>Internal implementation details for the high-performance SocketTimer module.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTimer_8h_source.html">core/SocketTimer.h</a>&quot;</code><br />
@@ -143,10 +143,11 @@ $(document).ready(function(){initNavTree('SocketTimer-private_8h.html',''); init
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structSocketTimer__T" id="r_structSocketTimer__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a></td></tr>
+<tr class="memitem:structSocketTimer__T" id="r_structSocketTimer__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a></td></tr>
+<tr class="memdesc:structSocketTimer__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal representation of a single scheduled timer event.  <a href="group__event__system.html#structSocketTimer__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketTimer__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketTimer__heap__T" id="r_structSocketTimer__heap__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a></td></tr>
-<tr class="memdesc:structSocketTimer__heap__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Typedef for the internal timer heap structure.  <a href="SocketTimer-private_8h.html#structSocketTimer__heap__T">More...</a><br /></td></tr>
+<tr class="memitem:structSocketTimer__heap__T" id="r_structSocketTimer__heap__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a></td></tr>
+<tr class="memdesc:structSocketTimer__heap__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Binary min-heap container for managing multiple <a class="el" href="group__event__system.html#structSocketTimer__T" title="Internal representation of a single scheduled timer event.">SocketTimer_T</a> instances.  <a href="group__event__system.html#structSocketTimer__heap__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketTimer__heap__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -157,175 +158,101 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:ga18f3d33b3f70cc8620fef042ca65e66a" id="r_ga18f3d33b3f70cc8620fef042ca65e66a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga18f3d33b3f70cc8620fef042ca65e66a">SocketTimer_heap_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga18f3d33b3f70cc8620fef042ca65e66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new timer heap.  <br /></td></tr>
+<tr class="memitem:ga18f3d33b3f70cc8620fef042ca65e66a" id="r_ga18f3d33b3f70cc8620fef042ca65e66a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga18f3d33b3f70cc8620fef042ca65e66a">SocketTimer_heap_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
+<tr class="memdesc:ga18f3d33b3f70cc8620fef042ca65e66a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and initialize a new timer heap instance.  <br /></td></tr>
 <tr class="separator:ga18f3d33b3f70cc8620fef042ca65e66a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga3257343cc10ae56314c03abd8311d873" id="r_ga3257343cc10ae56314c03abd8311d873"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga3257343cc10ae56314c03abd8311d873">SocketTimer_heap_free</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> **heap)</td></tr>
-<tr class="memdesc:ga3257343cc10ae56314c03abd8311d873"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free timer heap structure and destroy mutex.  <br /></td></tr>
+<tr class="memitem:ga3257343cc10ae56314c03abd8311d873" id="r_ga3257343cc10ae56314c03abd8311d873"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga3257343cc10ae56314c03abd8311d873">SocketTimer_heap_free</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> **heap)</td></tr>
+<tr class="memdesc:ga3257343cc10ae56314c03abd8311d873"><td class="mdescLeft">&#160;</td><td class="mdescRight">Finalize and nullify timer heap handle: destroy mutex only.  <br /></td></tr>
 <tr class="separator:ga3257343cc10ae56314c03abd8311d873"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga04afe41789d51a71d4a03883a89ad61c" id="r_ga04afe41789d51a71d4a03883a89ad61c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga04afe41789d51a71d4a03883a89ad61c">SocketTimer_heap_push</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
+<tr class="memitem:ga04afe41789d51a71d4a03883a89ad61c" id="r_ga04afe41789d51a71d4a03883a89ad61c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga04afe41789d51a71d4a03883a89ad61c">SocketTimer_heap_push</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, struct <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
 <tr class="memdesc:ga04afe41789d51a71d4a03883a89ad61c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add timer to heap.  <br /></td></tr>
 <tr class="separator:ga04afe41789d51a71d4a03883a89ad61c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9e40363cf44bb1025f2269ddc2cef0d2" id="r_ga9e40363cf44bb1025f2269ddc2cef0d2"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga9e40363cf44bb1025f2269ddc2cef0d2">SocketTimer_heap_pop</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
+<tr class="memitem:ga9e40363cf44bb1025f2269ddc2cef0d2" id="r_ga9e40363cf44bb1025f2269ddc2cef0d2"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga9e40363cf44bb1025f2269ddc2cef0d2">SocketTimer_heap_pop</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
 <tr class="memdesc:ga9e40363cf44bb1025f2269ddc2cef0d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove and return earliest timer.  <br /></td></tr>
 <tr class="separator:ga9e40363cf44bb1025f2269ddc2cef0d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0961e214a845a52c242176ed425095a3" id="r_ga0961e214a845a52c242176ed425095a3"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0961e214a845a52c242176ed425095a3">SocketTimer_heap_peek</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
+<tr class="memitem:ga0961e214a845a52c242176ed425095a3" id="r_ga0961e214a845a52c242176ed425095a3"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0961e214a845a52c242176ed425095a3">SocketTimer_heap_peek</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
 <tr class="memdesc:ga0961e214a845a52c242176ed425095a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get earliest timer without removing.  <br /></td></tr>
 <tr class="separator:ga0961e214a845a52c242176ed425095a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga0f7deeb47aba9580052152bbf036c419" id="r_ga0f7deeb47aba9580052152bbf036c419"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0f7deeb47aba9580052152bbf036c419">SocketTimer_heap_peek_delay</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
+<tr class="memitem:ga0f7deeb47aba9580052152bbf036c419" id="r_ga0f7deeb47aba9580052152bbf036c419"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga0f7deeb47aba9580052152bbf036c419">SocketTimer_heap_peek_delay</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
 <tr class="memdesc:ga0f7deeb47aba9580052152bbf036c419"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get milliseconds until next timer expiry.  <br /></td></tr>
 <tr class="separator:ga0f7deeb47aba9580052152bbf036c419"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga888ed4acbf5d1ca29bdafc07f346566e" id="r_ga888ed4acbf5d1ca29bdafc07f346566e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga888ed4acbf5d1ca29bdafc07f346566e">SocketTimer_process_expired</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
+<tr class="memitem:ga888ed4acbf5d1ca29bdafc07f346566e" id="r_ga888ed4acbf5d1ca29bdafc07f346566e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga888ed4acbf5d1ca29bdafc07f346566e">SocketTimer_process_expired</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap)</td></tr>
 <tr class="memdesc:ga888ed4acbf5d1ca29bdafc07f346566e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fire all expired timers and return count.  <br /></td></tr>
 <tr class="separator:ga888ed4acbf5d1ca29bdafc07f346566e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8af1dd7cd2864bea6226054f1ff9b22b" id="r_ga8af1dd7cd2864bea6226054f1ff9b22b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga8af1dd7cd2864bea6226054f1ff9b22b">SocketTimer_heap_cancel</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
+<tr class="memitem:ga8af1dd7cd2864bea6226054f1ff9b22b" id="r_ga8af1dd7cd2864bea6226054f1ff9b22b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga8af1dd7cd2864bea6226054f1ff9b22b">SocketTimer_heap_cancel</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, struct <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
 <tr class="memdesc:ga8af1dd7cd2864bea6226054f1ff9b22b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mark timer as cancelled (lazy deletion).  <br /></td></tr>
 <tr class="separator:ga8af1dd7cd2864bea6226054f1ff9b22b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga69365f1c685576d76414fbb43fe2248b" id="r_ga69365f1c685576d76414fbb43fe2248b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga69365f1c685576d76414fbb43fe2248b">SocketTimer_heap_remaining</a> (<a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, const struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
+<tr class="memitem:ga69365f1c685576d76414fbb43fe2248b" id="r_ga69365f1c685576d76414fbb43fe2248b"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga69365f1c685576d76414fbb43fe2248b">SocketTimer_heap_remaining</a> (<a class="el" href="group__event__system.html#structSocketTimer__heap__T">SocketTimer_heap_T</a> *heap, const struct <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> *timer)</td></tr>
 <tr class="memdesc:ga69365f1c685576d76414fbb43fe2248b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get milliseconds until timer expiry.  <br /></td></tr>
 <tr class="separator:ga69365f1c685576d76414fbb43fe2248b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Internal timer implementation details and heap management. </p>
-<p>Private header containing internal structures and functions for the SocketTimer module. Not part of the public API - do not include directly from user code.</p>
-<p>Contains:</p><ul>
-<li>Timer heap implementation with binary heap operations</li>
-<li>Timer ID generation and management</li>
-<li>Internal timer structure definitions</li>
+<div class="textblock"><p>Internal implementation details for the high-performance SocketTimer module. </p>
+<p>This private header provides the core structures and functions implementing the timer subsystem's binary min-heap management, timer state tracking, and thread-safe operations. It is <b>not part of the public API</b> and should never be included directly in application code. Use only for library maintenance, debugging, or advanced internal customization.</p>
+<h2><a class="anchor" id="autotoc_md204"></a>
+Features</h2>
+<ul>
+<li>Efficient binary min-heap for O(log n) insert, delete, and minimum operations</li>
+<li>Lazy cancellation mechanism for pending timers (marked invalid, removed on pop)</li>
+<li>Unique 64-bit timer identifiers to prevent collisions and aid debugging</li>
+<li>Mutex-protected thread safety for concurrent access from multiple threads</li>
+<li>Arena-based memory allocation for predictable lifecycle management</li>
+<li>Monotonic clock integration (CLOCK_MONOTONIC) for reliable timing unaffected by system time changes</li>
 </ul>
-<dl class="section note"><dt>Note</dt><dd>Thread-safe where noted - heap operations use mutex protection. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTimer_8h.html" title="High-performance timer subsystem integrated with the event loop.">SocketTimer.h</a> for public timer API. </dd></dl>
+<h2><a class="anchor" id="autotoc_md205"></a>
+Architecture Overview</h2>
+<div class="fragment"><div class="line">┌──────────────────────────────────────┐</div>
+<div class="line">│          Public SocketTimer API      │</div>
+<div class="line">│   <a class="code hl_function" href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a>(), cancel(), etc.  │</div>
+<div class="line">└────────────────┬─────────────────────┘</div>
+<div class="line">                 │ Integrates with</div>
+<div class="line">┌────────────────▼─────────────────────┐</div>
+<div class="line">│       Private Heap Management        │</div>
+<div class="line">│ heap_push(), heap_pop(), process()   │</div>
+<div class="line">│   Binary heap + mutex protection     │</div>
+<div class="line">└────────────────┬─────────────────────┘</div>
+<div class="line">                 │ Depends on</div>
+<div class="line">┌────────────────▼─────────────────────┐</div>
+<div class="line">│         Foundation Layer             │</div>
+<div class="line">│     <a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> (memory), pthread mutex  │</div>
+<div class="line">└──────────────────────────────────────┘</div>
+<div class="ttc" id="agroup__event__system_html_ga2537cebf106e583079ec472086a26d65"><div class="ttname"><a href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a></div><div class="ttdeci">SocketTimer_T SocketTimer_add(SocketPoll_T poll, int64_t delay_ms, SocketTimerCallback callback, void *userdata)</div><div class="ttdoc">Add a one-shot timer to the event poll.</div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md206"></a>
+Module Relationships</h2>
+<ul>
+<li><b>Depends on</b>: Foundation modules (<a class="el" href="group__foundation.html">Core Foundation Modules</a>) including Arena_T for allocations and pthread for synchronization</li>
+<li><b>Used internally by</b>: SocketTimer public functions and SocketPoll_T event loop integration for automatic timer firing</li>
+<li><b>Provides support for</b>: Event system (<a class="el" href="group__event__system.html">Event System Modules</a>) components requiring precise, scalable timer scheduling</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md207"></a>
+Platform Requirements</h2>
+<ul>
+<li>POSIX-compliant OS with support for CLOCK_MONOTONIC (Linux, BSD, macOS)</li>
+<li>pthreads library for mutex operations (enabled via SOCKET_HAS_PTHREADS)</li>
+<li>C11 compiler with _GNU_SOURCE defined for clock_gettime() and related functions</li>
+<li>64-bit integers (int64_t, uint64_t) for timestamps and IDs</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md208"></a>
+Important Notes</h2>
+<ul>
+<li>All heap operations are thread-safe via internal mutex, but callbacks in process_expired() execute outside the lock to avoid deadlocks</li>
+<li>Timers use lazy deletion: cancelled timers are marked but physically removed only when popped from heap</li>
+<li>Memory management: Heap and timers allocated from provided Arena_T; dispose arena to free all</li>
+</ul>
+<dl class="section warning"><dt>Warning</dt><dd>This private API is unstable and may change between releases without notice. Always use public headers. </dd>
+<dd>
+Do not free individual timers manually; managed by heap and arena.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTimer_8h.html" title="High-performance timer subsystem integrated with the event loop.">SocketTimer.h</a> for the stable public interface </dd>
+<dd>
+<a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">SocketPoll.h</a> for event loop integration </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for asynchronous I/O patterns using timers </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception handling in timer operations </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketTimer-private_8h_source.html">SocketTimer-private.h</a>.</p>
-</div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
-<a name="structSocketTimer__T" id="structSocketTimer__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketTimer__T">&#9670;&#160;</a></span>SocketTimer_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketTimer_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketTimer-private_8h_source.html#l00048">48</a> of file <a class="el" href="SocketTimer-private_8h_source.html">SocketTimer-private.h</a>.</p>
-</div><table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="aff80a635f3f8e99d2a20e1d0a46674a3" name="aff80a635f3f8e99d2a20e1d0a46674a3"></a><a class="el" href="group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7">SocketTimerCallback</a></td>
-<td class="fieldname">
-callback</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a038e1cecaf5f6a57d82521cd40f9c24f" name="a038e1cecaf5f6a57d82521cd40f9c24f"></a>int</td>
-<td class="fieldname">
-cancelled</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="af4c657d2a6dced76ca87a3214878a8de" name="af4c657d2a6dced76ca87a3214878a8de"></a>int64_t</td>
-<td class="fieldname">
-expiry_ms</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a6773d27e4dd53f972df13651ed8bf518" name="a6773d27e4dd53f972df13651ed8bf518"></a>size_t</td>
-<td class="fieldname">
-heap_index</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ae3f246704f321c316d308121213b1b66" name="ae3f246704f321c316d308121213b1b66"></a>uint64_t</td>
-<td class="fieldname">
-id</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a420d42e1d3c0288bf9bb505fc8fcf1b1" name="a420d42e1d3c0288bf9bb505fc8fcf1b1"></a>int64_t</td>
-<td class="fieldname">
-interval_ms</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="ab3ccb2b76d027a31b3ec829323639c08" name="ab3ccb2b76d027a31b3ec829323639c08"></a>void *</td>
-<td class="fieldname">
-userdata</td>
-<td class="fielddoc">
-</td></tr>
-</table>
-
-</div>
-</div>
-<a name="structSocketTimer__heap__T" id="structSocketTimer__heap__T"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#structSocketTimer__heap__T">&#9670;&#160;</a></span>SocketTimer_heap_T</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">struct SocketTimer_heap_T</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<div class="textblock"><p>Typedef for the internal timer heap structure. </p>
-<p>Provides opaque access to the heap implementation. </p><dl class="section see"><dt>See also</dt><dd>struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__heap__T" title="Typedef for the internal timer heap structure.">SocketTimer_heap_T</a> for detailed fields. </dd>
-<dd>
-<a class="el" href="group__event__system.html#ga18f3d33b3f70cc8620fef042ca65e66a" title="Create a new timer heap.">SocketTimer_heap_new()</a> for creation. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketTimer-private_8h_source.html#l00081">81</a> of file <a class="el" href="SocketTimer-private_8h_source.html">SocketTimer-private.h</a>.</p>
-</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketTimer_heap_T:</div>
-<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
-</div>
-<div id="dynsection-2-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketTimer__heap__T__coll__graph.svg" width="158" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
-<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
-<table class="fieldtable">
-<tr><th colspan="3">Data Fields</th></tr>
-<tr><td class="fieldtype">
-<a id="a9ed59a6ac8ae4bc38e66ce5138286f1d" name="a9ed59a6ac8ae4bc38e66ce5138286f1d"></a><a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></td>
-<td class="fieldname">
-arena</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a719a334242bd551e439fadcdf85cc7d5" name="a719a334242bd551e439fadcdf85cc7d5"></a>size_t</td>
-<td class="fieldname">
-capacity</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a5f7e444e7943597fa7d510072da85559" name="a5f7e444e7943597fa7d510072da85559"></a>size_t</td>
-<td class="fieldname">
-count</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a698e2aa8ebea1e347733059e4de77665" name="a698e2aa8ebea1e347733059e4de77665"></a>pthread_mutex_t</td>
-<td class="fieldname">
-mutex</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="aef1a8571b21ab39180d69365a8bbb0a2" name="aef1a8571b21ab39180d69365a8bbb0a2"></a>uint64_t</td>
-<td class="fieldname">
-next_id</td>
-<td class="fielddoc">
-</td></tr>
-<tr><td class="fieldtype">
-<a id="a546b1db23427498d6d17f913a203c683" name="a546b1db23427498d6d17f913a203c683"></a>struct <a class="el" href="SocketTimer-private_8h.html#structSocketTimer__T">SocketTimer_T</a> **</td>
-<td class="fieldname">
-timers</td>
-<td class="fielddoc">
-</td></tr>
-</table>
-
-</div>
-</div>
-</div><!-- contents -->
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

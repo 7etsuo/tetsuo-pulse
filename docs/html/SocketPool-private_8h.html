@@ -177,14 +177,8 @@ Macros</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
-<tr class="memitem:gade1f70a34432ae896e257fb0ee350c26" id="r_gade1f70a34432ae896e257fb0ee350c26"><td class="memItemLeft" align="right" valign="top">struct <a class="el" href="group__connection__mgmt.html#structConnection">Connection</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gade1f70a34432ae896e257fb0ee350c26">SocketPool_connections_allocate_array</a> (size_t maxconns)</td></tr>
-<tr class="memdesc:gade1f70a34432ae896e257fb0ee350c26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate array of connection structures.  <br /></td></tr>
-<tr class="separator:gade1f70a34432ae896e257fb0ee350c26"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga21e158d703adc910946bca1ec5ca6b86" id="r_ga21e158d703adc910946bca1ec5ca6b86"><td class="memItemLeft" align="right" valign="top">Connection_T *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga21e158d703adc910946bca1ec5ca6b86">SocketPool_connections_allocate_hash_table</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga21e158d703adc910946bca1ec5ca6b86"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate hash table for connection lookup.  <br /></td></tr>
-<tr class="separator:ga21e158d703adc910946bca1ec5ca6b86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga88ab86be313053fde04989b904bb957a" id="r_ga88ab86be313053fde04989b904bb957a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga88ab86be313053fde04989b904bb957a">SocketPool_connections_initialize_slot</a> (struct <a class="el" href="group__connection__mgmt.html#structConnection">Connection</a> *conn)</td></tr>
-<tr class="memdesc:ga88ab86be313053fde04989b904bb957a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a connection slot to default state.  <br /></td></tr>
+<tr class="memdesc:ga88ab86be313053fde04989b904bb957a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and zero-initialize array of connection structures.  <br /></td></tr>
 <tr class="separator:ga88ab86be313053fde04989b904bb957a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0baf2c21ed54520dcaab3460a9a987f7" id="r_ga0baf2c21ed54520dcaab3460a9a987f7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga0baf2c21ed54520dcaab3460a9a987f7">SocketPool_connections_alloc_buffers</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t bufsize, Connection_T conn)</td></tr>
 <tr class="memdesc:ga0baf2c21ed54520dcaab3460a9a987f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate input/output buffers for connection.  <br /></td></tr>
@@ -225,11 +219,8 @@ Functions</h2></td></tr>
 <tr class="memitem:ga9710c881ae321ed9da843ca815ca0733" id="r_ga9710c881ae321ed9da843ca815ca0733"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9710c881ae321ed9da843ca815ca0733">remove_from_hash_table</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, Connection_T conn, Socket_T socket)</td></tr>
 <tr class="memdesc:ga9710c881ae321ed9da843ca815ca0733"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove connection from hash table.  <br /></td></tr>
 <tr class="separator:ga9710c881ae321ed9da843ca815ca0733"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga9cd17434558e5aa3cd77339b3043cd3a" id="r_ga9cd17434558e5aa3cd77339b3043cd3a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga9cd17434558e5aa3cd77339b3043cd3a">SocketPool_connections_release_buffers</a> (Connection_T conn)</td></tr>
-<tr class="memdesc:ga9cd17434558e5aa3cd77339b3043cd3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release connection's buffer resources.  <br /></td></tr>
-<tr class="separator:ga9cd17434558e5aa3cd77339b3043cd3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gacf51388d2a06f1d1b1caa4d55fe29159" id="r_gacf51388d2a06f1d1b1caa4d55fe29159"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gacf51388d2a06f1d1b1caa4d55fe29159">SocketPool_connections_reset_slot</a> (Connection_T conn)</td></tr>
-<tr class="memdesc:gacf51388d2a06f1d1b1caa4d55fe29159"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset connection slot to clean state.  <br /></td></tr>
+<tr class="memdesc:gacf51388d2a06f1d1b1caa4d55fe29159"><td class="mdescLeft">&#160;</td><td class="mdescRight">Securely clear (zero) connection's input/output buffers.  <br /></td></tr>
 <tr class="separator:gacf51388d2a06f1d1b1caa4d55fe29159"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5374f9969a32eb12ea7794b1f1a20d77" id="r_ga5374f9969a32eb12ea7794b1f1a20d77"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga5374f9969a32eb12ea7794b1f1a20d77">decrement_pool_count</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
 <tr class="memdesc:ga5374f9969a32eb12ea7794b1f1a20d77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decrement active connection count.  <br /></td></tr>
@@ -237,11 +228,8 @@ Functions</h2></td></tr>
 <tr class="memitem:ga93e4d3464b3def2864e59849788aaf11" id="r_ga93e4d3464b3def2864e59849788aaf11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga93e4d3464b3def2864e59849788aaf11">validate_saved_session</a> (Connection_T conn, time_t now)</td></tr>
 <tr class="memdesc:ga93e4d3464b3def2864e59849788aaf11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate TLS session for reuse.  <br /></td></tr>
 <tr class="separator:ga93e4d3464b3def2864e59849788aaf11"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga42428b94afc3df0714036baf96dbc1f3" id="r_ga42428b94afc3df0714036baf96dbc1f3"><td class="memItemLeft" align="right" valign="top">Socket_T *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga42428b94afc3df0714036baf96dbc1f3">SocketPool_cleanup_allocate_buffer</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t maxconns)</td></tr>
-<tr class="memdesc:ga42428b94afc3df0714036baf96dbc1f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate buffer for cleanup operations.  <br /></td></tr>
-<tr class="separator:ga42428b94afc3df0714036baf96dbc1f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3eec83919427223173cdaae6f1b36b8a" id="r_ga3eec83919427223173cdaae6f1b36b8a"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga3eec83919427223173cdaae6f1b36b8a">socketpool_hash</a> (const Socket_T socket)</td></tr>
-<tr class="memdesc:ga3eec83919427223173cdaae6f1b36b8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute hash for socket (internal).  <br /></td></tr>
+<tr class="memdesc:ga3eec83919427223173cdaae6f1b36b8a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate temporary buffer for bulk cleanup operations from arena.  <br /></td></tr>
 <tr class="separator:ga3eec83919427223173cdaae6f1b36b8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaab8dfea746f7edd426d43574e437ffc7" id="r_gaab8dfea746f7edd426d43574e437ffc7"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaab8dfea746f7edd426d43574e437ffc7">safe_time</a> (void)</td></tr>
 <tr class="memdesc:gaab8dfea746f7edd426d43574e437ffc7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current time with error handling.  <br /></td></tr>
@@ -270,7 +258,7 @@ Variables</h2></td></tr>
 <li>struct <a class="el" href="group__connection__mgmt.html#structAsyncConnectContext" title="Internal context structure for tracking asynchronous connect operations.">AsyncConnectContext</a>: Tracks pending DNS+connect operations</li>
 <li>struct <a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>: Full pool state (connections array, hash table, mutex, stats, etc.)</li>
 <li>Exception macros: RAISE_POOL_ERROR, RAISE_POOL_MSG, RAISE_POOL_FMT for consistent error handling</li>
-<li>Hashing: <a class="el" href="group__connection__mgmt.html#ga3eec83919427223173cdaae6f1b36b8a" title="Compute hash for socket (internal).">socketpool_hash()</a> using library-wide SOCKET_HASH_SIZE</li>
+<li>Hashing: <a class="el" href="group__connection__mgmt.html#ga3eec83919427223173cdaae6f1b36b8a" title="Allocate temporary buffer for bulk cleanup operations from arena.">socketpool_hash()</a> using library-wide SOCKET_HASH_SIZE</li>
 <li>Utilities: Slot allocation/reset, buffer management, free list/hash table ops</li>
 </ul>
 <p>USAGE GUIDELINES:</p><ul>
@@ -283,7 +271,7 @@ Variables</h2></td></tr>
 <p>DEPENDENCIES:</p><ul>
 <li>Foundation (<a class="el" href="group__foundation.html">Core Foundation Modules</a>): Arena, Except, SocketConfig, SocketUtil</li>
 <li>Core I/O (<a class="el" href="group__core__io.html">Core I/O Modules</a>): Socket, SocketBuf, SocketDNS</li>
-<li>Utilities (<a class="el" href="group__utilities.html">Utility Modules</a>): SocketRateLimit, SocketIPTracker</li>
+<li>Utilities (<a class="el" href="group__utilities.html">Utilities</a>): SocketRateLimit, SocketIPTracker</li>
 <li>Security (<a class="el" href="group__security.html">Security Modules</a>): SocketSYNProtect (optional)</li>
 <li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> Mgmt (<a class="el" href="group__connection__mgmt.html">Connection Management Modules</a>): SocketReconnect (optional)</li>
 <li>TLS (<a class="el" href="group__security.html">Security Modules</a>): SocketTLSContext (conditional on SOCKET_HAS_TLS)</li>
@@ -301,7 +289,7 @@ Variables</h2></td></tr>
 <dd>
 src/pool/ for split implementation files (core.c, connections.c, drain.c, etc.). </dd>
 <dd>
-docs/POOL.md (if exists) or README.md for architectural overview. </dd>
+docs/POOL.md (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> exists) or README.md for architectural overview. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html">Connection Management Group</a> for module relationships. </dd>
 <dd>
@@ -374,7 +362,7 @@ cleanup_interval_ms</td>
 <p>Interval between cleanup runs </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="ae44fbc805e4bbf62016630e93d62dbbf" name="ae44fbc805e4bbf62016630e93d62dbbf"></a><a class="el" href="SocketRateLimit-private_8h.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
+<a id="ae44fbc805e4bbf62016630e93d62dbbf" name="ae44fbc805e4bbf62016630e93d62dbbf"></a><a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></td>
 <td class="fieldname">
 conn_limiter</td>
 <td class="fielddoc">
@@ -444,7 +432,7 @@ idle_timeout_sec</td>
 <p>Idle timeout in seconds (0 = disabled) </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="a70b567f98102e00a15e49f691737e259" name="a70b567f98102e00a15e49f691737e259"></a><a class="el" href="SocketIPTracker_8h.html#a763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td>
+<a id="a70b567f98102e00a15e49f691737e259" name="a70b567f98102e00a15e49f691737e259"></a><a class="el" href="group__ip__tracker.html#ga763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a></td>
 <td class="fieldname">
 ip_tracker</td>
 <td class="fielddoc">

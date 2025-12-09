@@ -119,7 +119,7 @@ $(document).ready(function(){initNavTree('SocketTLS-private_8h.html',''); initRe
 </div><!--header-->
 <div class="contents">
 
-<p>TLS internal shared definitions and helper functions.  
+<p>Internal TLS module shared definitions, macros, and helper functions.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &lt;ctype.h&gt;</code><br />
 <code>#include &lt;pthread.h&gt;</code><br />
@@ -168,8 +168,18 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:ad5ce3a15306a84e563c3eb3d814a17b1" id="r_ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a></td></tr>
+<tr class="separator:ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ce3a15306a84e563c3eb3d814a17b1" id="r_ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a></td></tr>
+<tr class="separator:ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ce3a15306a84e563c3eb3d814a17b1" id="r_ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a></td></tr>
+<tr class="separator:ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ce3a15306a84e563c3eb3d814a17b1" id="r_ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a></td></tr>
+<tr class="separator:ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad5ce3a15306a84e563c3eb3d814a17b1" id="r_ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a></td></tr>
+<tr class="separator:ad5ce3a15306a84e563c3eb3d814a17b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaaa5d5a165d617e880e0761f54333d859" id="r_gaaa5d5a165d617e880e0761f54333d859"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaaa5d5a165d617e880e0761f54333d859">RAISE_TLS_ERROR</a>(exception)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (SocketTLS, exception)</td></tr>
-<tr class="memdesc:gaaa5d5a165d617e880e0761f54333d859"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAISE_TLS_ERROR - Raise TLS exception with detailed error message.  <br /></td></tr>
+<tr class="memdesc:gaaa5d5a165d617e880e0761f54333d859"><td class="mdescLeft">&#160;</td><td class="mdescRight">tls_error_buf - Thread-local TLS error message buffer (see <a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">SocketTLS.h</a> for details).  <br /></td></tr>
 <tr class="separator:gaaa5d5a165d617e880e0761f54333d859"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa846eebc97332827b77e55db99ba9895" id="r_gaa846eebc97332827b77e55db99ba9895"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaa846eebc97332827b77e55db99ba9895">RAISE_TLS_ERROR_MSG</a>(exception,  fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#aa7d4ca3a984cb2df9849f6b501d65cc3">SOCKET_RAISE_MSG</a> (SocketTLS, exception, fmt, ##__VA_ARGS__)</td></tr>
 <tr class="memdesc:gaa846eebc97332827b77e55db99ba9895"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAISE_TLS_ERROR_MSG - Raise TLS exception with formatted message.  <br /></td></tr>
@@ -270,15 +280,133 @@ Variables</h2></td></tr>
 <tr class="separator:gaf6dd40cb19f09e9fffb7f30594372db2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>TLS internal shared definitions and helper functions. </p>
-<p>Internal header for all TLS module implementation files. Contains shared helper function declarations, error handling macros, internal types, and the <a class="el" href="group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...">SocketTLSContext_T</a> structure definition. NOT part of public API - do not include from application code.</p>
-<p>Thread safety: Internal functions are not thread-safe unless noted.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support.">SocketTLS.h</a> for public TLS API. </dd>
+<div class="textblock"><p>Internal TLS module shared definitions, macros, and helper functions. </p>
+<p>Private header included by TLS .c files. Provides:</p><ul>
+<li>Thread-local error handling and exception macros</li>
+<li>Security validation for files, hostnames, keys</li>
+<li>Internal structures for pinning, SNI, ALPN, CRL auto-refresh</li>
+<li>OpenSSL error formatting and SSL access utilities</li>
+<li>Ex_data index management for context association</li>
+</ul>
+<p>NOT part of public API - applications must not include this header.</p>
+<h2><a class="anchor" id="autotoc_md745"></a>
+Features</h2>
+<ul>
+<li>RAISE_TLS_ERROR* macros with thread-local detailed exceptions</li>
+<li><a class="el" href="SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59">tls_validate_file_path()</a> for secure credential loading</li>
+<li><a class="el" href="group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0" title="Securely free EVP_PKEY with key material zeroization.">tls_secure_free_pkey()</a> for zeroized key cleanup</li>
+<li><a class="el" href="group__security.html#gaebeabc646fbd6961894512930a822ca9" title="Validate SNI hostname against RFC-compliant format rules.">tls_validate_hostname()</a> for RFC-compliant SNI</li>
+<li>Certificate pinning with SPKI SHA256 and constant-time lookup</li>
+<li>ALPN temp buffer management to prevent UAF in callbacks</li>
+<li>CRL mutex-protected auto-refresh scheduling</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md746"></a>
+Platform Requirements</h2>
+<ul>
+<li>OpenSSL/LibreSSL with TLS 1.2+ (1.3 recommended)</li>
+<li>POSIX pthreads for mutexes and thread-local storage (__thread)</li>
+<li>Unix stat/lstat for symlink detection in validation</li>
+<li>CLOCK_MONOTONIC for timing (CRL refresh, timeouts)</li>
+<li>_GNU_SOURCE enabled for extensions</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md747"></a>
+Thread Safety</h2>
+<ul>
+<li>Macros: Thread-safe via thread-local storage</li>
+<li>Inline functions: Yes where noted (read-only or pure)</li>
+<li>Structs: Conditional; use mutexes for shared access</li>
+</ul>
+<dl class="section warning"><dt>Warning</dt><dd>Misuse can lead to security vulnerabilities (e.g., symlink attacks, timing leaks)</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">SocketTLS.h</a> for public Socket TLS operations </dd>
 <dd>
-<a class="el" href="SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling.">SocketTLSContext.h</a> for public TLS context API. </dd></dl>
+<a class="el" href="SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling.">SocketTLSContext.h</a> for public context API </dd>
+<dd>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for TLS hardening guide #ifndef <a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a> #define <a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a> </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception usage #define <a class="el" href="SocketTLS-private_8h.html#ad5ce3a15306a84e563c3eb3d814a17b1">SOCKETTLS_PRIVATE_INCLUDED</a> </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ad5ce3a15306a84e563c3eb3d814a17b1" name="ad5ce3a15306a84e563c3eb3d814a17b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ce3a15306a84e563c3eb3d814a17b1">&#9670;&#160;</a></span>SOCKETTLS_PRIVATE_INCLUDED <span class="overload">[1/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETTLS_PRIVATE_INCLUDED</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00051">51</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5ce3a15306a84e563c3eb3d814a17b1" name="ad5ce3a15306a84e563c3eb3d814a17b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ce3a15306a84e563c3eb3d814a17b1">&#9670;&#160;</a></span>SOCKETTLS_PRIVATE_INCLUDED <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETTLS_PRIVATE_INCLUDED</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00051">51</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5ce3a15306a84e563c3eb3d814a17b1" name="ad5ce3a15306a84e563c3eb3d814a17b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ce3a15306a84e563c3eb3d814a17b1">&#9670;&#160;</a></span>SOCKETTLS_PRIVATE_INCLUDED <span class="overload">[3/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETTLS_PRIVATE_INCLUDED</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00051">51</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5ce3a15306a84e563c3eb3d814a17b1" name="ad5ce3a15306a84e563c3eb3d814a17b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ce3a15306a84e563c3eb3d814a17b1">&#9670;&#160;</a></span>SOCKETTLS_PRIVATE_INCLUDED <span class="overload">[4/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETTLS_PRIVATE_INCLUDED</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00051">51</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ad5ce3a15306a84e563c3eb3d814a17b1" name="ad5ce3a15306a84e563c3eb3d814a17b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad5ce3a15306a84e563c3eb3d814a17b1">&#9670;&#160;</a></span>SOCKETTLS_PRIVATE_INCLUDED <span class="overload">[5/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKETTLS_PRIVATE_INCLUDED</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00051">51</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+
+</div>
+</div>
 <a id="a0acb682b8260ab1c60b918599864e2e5" name="a0acb682b8260ab1c60b918599864e2e5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0acb682b8260ab1c60b918599864e2e5">&#9670;&#160;</a></span>T</h2>
 
@@ -286,12 +414,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
+          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00542">542</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00584">584</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
 
 </div>
 </div>
@@ -320,9 +448,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00383">383</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00425">425</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketTLSConfig_8h_source.html#l00373">SOCKET_TLS_MAX_PATH_LEN</a>.</p>
+<p class="reference">References <a class="el" href="SocketTLSConfig_8h_source.html#l00563">SOCKET_TLS_MAX_PATH_LEN</a>.</p>
 
 </div>
 </div>

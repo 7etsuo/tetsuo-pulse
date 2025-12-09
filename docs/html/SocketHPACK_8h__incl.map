@@ -1,5 +1,5 @@
 <map id="SocketHPACK.h" name="SocketHPACK.h">
-<area shape="rect" id="Node000001" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="100,5,218,31"/>
+<area shape="rect" id="Node000001" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541)." alt="" coords="100,5,218,31"/>
 <area shape="rect" id="Node000002" title=" " alt="" coords="84,152,154,177"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,30,52,47,30,61,13,80,9,90,9,99,21,117,44,133,72,146,70,151,42,138,17,121,4,101,3,89,9,77,27,57,49,42,99,25"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="24,79,89,104"/>

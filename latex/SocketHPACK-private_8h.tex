@@ -1,0 +1,191 @@
+\doxysection{include/http/\+Socket\+HPACK-\/private.h File Reference}
+\hypertarget{SocketHPACK-private_8h}{}\label{SocketHPACK-private_8h}\index{include/http/SocketHPACK-\/private.h@{include/http/SocketHPACK-\/private.h}}
+
+
+Internal HPACK header compression structures and constants.  
+
+
+{\ttfamily \#include "{}http/\+Socket\+HPACK.\+h"{}}\newline
+{\ttfamily \#include $<$stdint.\+h$>$}\newline
+{\ttfamily \#include "{}core/\+Socket\+Security.\+h"{}}\newline
+Include dependency graph for Socket\+HPACK-\/private.h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHPACK-private_8h__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structHPACK__DynamicEntry}{HPACK\+\_\+\+Dynamic\+Entry}}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__Table}{Socket\+HPACK\+\_\+\+Table}}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__Encoder}{Socket\+HPACK\+\_\+\+Encoder}}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__Decoder}{Socket\+HPACK\+\_\+\+Decoder}}
+\item 
+struct \mbox{\hyperlink{structHPACK__StaticEntry}{HPACK\+\_\+\+Static\+Entry}}
+\item 
+struct \mbox{\hyperlink{structHPACK__HuffmanSymbol}{HPACK\+\_\+\+Huffman\+Symbol}}
+\item 
+struct \mbox{\hyperlink{structHPACK__HuffmanTransition}{HPACK\+\_\+\+Huffman\+Transition}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_ae0304bbcc6c90643a7e3a2d274533d10}{HPACK\+\_\+\+AVERAGE\+\_\+\+DYNAMIC\+\_\+\+ENTRY\+\_\+\+SIZE}}~50
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a8fc60b01be138b4e378fd9cc7ad14652}{HPACK\+\_\+\+MIN\+\_\+\+DYNAMIC\+\_\+\+TABLE\+\_\+\+CAPACITY}}~16
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a83188dc49cbbf3579289e6e4fb7aae0e}{HPACK\+\_\+\+HUFFMAN\+\_\+\+SYMBOLS}}~257
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a879c884f8d47c7fa563e0ef3d94b0c9e}{HPACK\+\_\+\+HUFFMAN\+\_\+\+EOS}}~256
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_ac142229a8069073871247a112e183378}{HPACK\+\_\+\+HUFFMAN\+\_\+\+MAX\+\_\+\+BITS}}~30
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a9bec6ff24fdb0960bbd7b095b0f52fff}{HPACK\+\_\+\+HUFFMAN\+\_\+\+NUM\+\_\+\+STATES}}~256
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_ae9150b89a92e9eaa22af1b417785ccb6}{HPACK\+\_\+\+HUFFMAN\+\_\+\+STATE\+\_\+\+ERROR}}~0x\+FF
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a0040745e9b620e7161fa96270ae2284a}{HPACK\+\_\+\+HUFFMAN\+\_\+\+STATE\+\_\+\+ACCEPT}}~0x\+FE
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_afd975c9395b773cfe1f998aa0e0168b2}{HPACK\+\_\+\+DFA\+\_\+\+ACCEPT}}~0x01
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a881cd71b1434a2a5a11bd50cb61d312d}{HPACK\+\_\+\+DFA\+\_\+\+EOS}}~0x02
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a2065e9129b247f7f4ab0b363095f1839}{HPACK\+\_\+\+DFA\+\_\+\+ERROR}}~0x04
+\item 
+\#define \mbox{\hyperlink{SocketHPACK-private_8h_a76662d61395b8b2c9f2034c074083b4f}{HPACK\+\_\+\+DFA\+\_\+\+SYM2}}~0x08
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{SocketHPACK-private_8h_ac25f68940182c09fbe7f99e847b9f34f}{hpack\+\_\+table\+\_\+evict}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table, size\+\_\+t required\+\_\+space)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHPACK-private_8h_ab1c17cdda764a9f6e11f952b4aba9de8}\label{SocketHPACK-private_8h_ab1c17cdda764a9f6e11f952b4aba9de8} 
+const \mbox{\hyperlink{structHPACK__HuffmanSymbol}{HPACK\+\_\+\+Huffman\+Symbol}} {\bfseries hpack\+\_\+huffman\+\_\+encode} \mbox{[}\mbox{\hyperlink{SocketHPACK-private_8h_a83188dc49cbbf3579289e6e4fb7aae0e}{HPACK\+\_\+\+HUFFMAN\+\_\+\+SYMBOLS}}\mbox{]}
+\item 
+\Hypertarget{SocketHPACK-private_8h_a71908af8430f747e4d9c960ab0f09bb7}\label{SocketHPACK-private_8h_a71908af8430f747e4d9c960ab0f09bb7} 
+const \mbox{\hyperlink{structHPACK__HuffmanTransition}{HPACK\+\_\+\+Huffman\+Transition}} {\bfseries hpack\+\_\+huffman\+\_\+decode} \mbox{[}\mbox{\hyperlink{SocketHPACK-private_8h_a9bec6ff24fdb0960bbd7b095b0f52fff}{HPACK\+\_\+\+HUFFMAN\+\_\+\+NUM\+\_\+\+STATES}}\mbox{]}\mbox{[}16\mbox{]}
+\item 
+\Hypertarget{SocketHPACK-private_8h_a894bedbb6cc760feb1c3545876c700f7}\label{SocketHPACK-private_8h_a894bedbb6cc760feb1c3545876c700f7} 
+const \mbox{\hyperlink{structHPACK__StaticEntry}{HPACK\+\_\+\+Static\+Entry}} {\bfseries hpack\+\_\+static\+\_\+table} \mbox{[}\mbox{\hyperlink{SocketHPACK_8h_a09450c50e4284b2cdc1613f7f8062752}{SOCKETHPACK\+\_\+\+STATIC\+\_\+\+TABLE\+\_\+\+SIZE}}\mbox{]}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internal HPACK header compression structures and constants. 
+
+This header contains internal structures for the HPACK header compression implementation. NOT for public consumption -\/ use \doxylink{SocketHPACK_8h}{Socket\+HPACK.\+h} instead.
+
+Contains\+:
+\begin{DoxyItemize}
+\item Dynamic table circular buffer implementation
+\item Huffman encoding/decoding DFA tables and state machines
+\item Encoder/decoder internal structures
+\item HPACK integer encoding/decoding primitives
+\item Static table access functions
+\item Compression bomb prevention limits
+\end{DoxyItemize}
+
+The implementation uses DFA-\/based Huffman decoding for O(n) single-\/pass decompression with security hardening against compression bombs.
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHPACK_8h}{Socket\+HPACK.\+h} for public HPACK API. 
+
+\doxylink{SocketHTTP2_8h}{Socket\+HTTP2.\+h} for HTTP/2 integration. 
+
+\doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} for core HTTP internal structures. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHPACK-private_8h_ae0304bbcc6c90643a7e3a2d274533d10}\label{SocketHPACK-private_8h_ae0304bbcc6c90643a7e3a2d274533d10} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE@{HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE}}
+\index{HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE@{HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE}{HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+AVERAGE\+\_\+\+DYNAMIC\+\_\+\+ENTRY\+\_\+\+SIZE~50}
+
+Estimated average dynamic entry size for initial capacity calculation (bytes) \Hypertarget{SocketHPACK-private_8h_afd975c9395b773cfe1f998aa0e0168b2}\label{SocketHPACK-private_8h_afd975c9395b773cfe1f998aa0e0168b2} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_DFA\_ACCEPT@{HPACK\_DFA\_ACCEPT}}
+\index{HPACK\_DFA\_ACCEPT@{HPACK\_DFA\_ACCEPT}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_DFA\_ACCEPT}{HPACK\_DFA\_ACCEPT}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+DFA\+\_\+\+ACCEPT~0x01}
+
+DFA flags State produces output \Hypertarget{SocketHPACK-private_8h_a881cd71b1434a2a5a11bd50cb61d312d}\label{SocketHPACK-private_8h_a881cd71b1434a2a5a11bd50cb61d312d} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_DFA\_EOS@{HPACK\_DFA\_EOS}}
+\index{HPACK\_DFA\_EOS@{HPACK\_DFA\_EOS}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_DFA\_EOS}{HPACK\_DFA\_EOS}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+DFA\+\_\+\+EOS~0x02}
+
+EOS symbol encountered \Hypertarget{SocketHPACK-private_8h_a2065e9129b247f7f4ab0b363095f1839}\label{SocketHPACK-private_8h_a2065e9129b247f7f4ab0b363095f1839} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_DFA\_ERROR@{HPACK\_DFA\_ERROR}}
+\index{HPACK\_DFA\_ERROR@{HPACK\_DFA\_ERROR}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_DFA\_ERROR}{HPACK\_DFA\_ERROR}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+DFA\+\_\+\+ERROR~0x04}
+
+Invalid sequence \Hypertarget{SocketHPACK-private_8h_a76662d61395b8b2c9f2034c074083b4f}\label{SocketHPACK-private_8h_a76662d61395b8b2c9f2034c074083b4f} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_DFA\_SYM2@{HPACK\_DFA\_SYM2}}
+\index{HPACK\_DFA\_SYM2@{HPACK\_DFA\_SYM2}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_DFA\_SYM2}{HPACK\_DFA\_SYM2}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+DFA\+\_\+\+SYM2~0x08}
+
+Second symbol available \Hypertarget{SocketHPACK-private_8h_a879c884f8d47c7fa563e0ef3d94b0c9e}\label{SocketHPACK-private_8h_a879c884f8d47c7fa563e0ef3d94b0c9e} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_EOS@{HPACK\_HUFFMAN\_EOS}}
+\index{HPACK\_HUFFMAN\_EOS@{HPACK\_HUFFMAN\_EOS}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_EOS}{HPACK\_HUFFMAN\_EOS}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+EOS~256}
+
+EOS symbol code \Hypertarget{SocketHPACK-private_8h_ac142229a8069073871247a112e183378}\label{SocketHPACK-private_8h_ac142229a8069073871247a112e183378} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_MAX\_BITS@{HPACK\_HUFFMAN\_MAX\_BITS}}
+\index{HPACK\_HUFFMAN\_MAX\_BITS@{HPACK\_HUFFMAN\_MAX\_BITS}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_MAX\_BITS}{HPACK\_HUFFMAN\_MAX\_BITS}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+MAX\+\_\+\+BITS~30}
+
+Maximum Huffman code length in bits \Hypertarget{SocketHPACK-private_8h_a9bec6ff24fdb0960bbd7b095b0f52fff}\label{SocketHPACK-private_8h_a9bec6ff24fdb0960bbd7b095b0f52fff} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_NUM\_STATES@{HPACK\_HUFFMAN\_NUM\_STATES}}
+\index{HPACK\_HUFFMAN\_NUM\_STATES@{HPACK\_HUFFMAN\_NUM\_STATES}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_NUM\_STATES}{HPACK\_HUFFMAN\_NUM\_STATES}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+NUM\+\_\+\+STATES~256}
+
+Number of states in Huffman DFA decode table \Hypertarget{SocketHPACK-private_8h_a0040745e9b620e7161fa96270ae2284a}\label{SocketHPACK-private_8h_a0040745e9b620e7161fa96270ae2284a} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_STATE\_ACCEPT@{HPACK\_HUFFMAN\_STATE\_ACCEPT}}
+\index{HPACK\_HUFFMAN\_STATE\_ACCEPT@{HPACK\_HUFFMAN\_STATE\_ACCEPT}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_STATE\_ACCEPT}{HPACK\_HUFFMAN\_STATE\_ACCEPT}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+STATE\+\_\+\+ACCEPT~0x\+FE}
+
+Accept state marker \Hypertarget{SocketHPACK-private_8h_ae9150b89a92e9eaa22af1b417785ccb6}\label{SocketHPACK-private_8h_ae9150b89a92e9eaa22af1b417785ccb6} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_STATE\_ERROR@{HPACK\_HUFFMAN\_STATE\_ERROR}}
+\index{HPACK\_HUFFMAN\_STATE\_ERROR@{HPACK\_HUFFMAN\_STATE\_ERROR}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_STATE\_ERROR}{HPACK\_HUFFMAN\_STATE\_ERROR}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+STATE\+\_\+\+ERROR~0x\+FF}
+
+Invalid DFA state (error) \Hypertarget{SocketHPACK-private_8h_a83188dc49cbbf3579289e6e4fb7aae0e}\label{SocketHPACK-private_8h_a83188dc49cbbf3579289e6e4fb7aae0e} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_HUFFMAN\_SYMBOLS@{HPACK\_HUFFMAN\_SYMBOLS}}
+\index{HPACK\_HUFFMAN\_SYMBOLS@{HPACK\_HUFFMAN\_SYMBOLS}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_HUFFMAN\_SYMBOLS}{HPACK\_HUFFMAN\_SYMBOLS}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+HUFFMAN\+\_\+\+SYMBOLS~257}
+
+Number of symbols in Huffman table (0-\/255 + EOS) \Hypertarget{SocketHPACK-private_8h_a8fc60b01be138b4e378fd9cc7ad14652}\label{SocketHPACK-private_8h_a8fc60b01be138b4e378fd9cc7ad14652} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY@{HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY}}
+\index{HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY@{HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY}{HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY}}
+{\footnotesize\ttfamily \#define HPACK\+\_\+\+MIN\+\_\+\+DYNAMIC\+\_\+\+TABLE\+\_\+\+CAPACITY~16}
+
+Minimum dynamic table capacity (power-\/of-\/2 for efficient modulo) 
+
+\doxysubsection{Function Documentation}
+\Hypertarget{SocketHPACK-private_8h_ac25f68940182c09fbe7f99e847b9f34f}\label{SocketHPACK-private_8h_ac25f68940182c09fbe7f99e847b9f34f} 
+\index{SocketHPACK-\/private.h@{SocketHPACK-\/private.h}!hpack\_table\_evict@{hpack\_table\_evict}}
+\index{hpack\_table\_evict@{hpack\_table\_evict}!SocketHPACK-\/private.h@{SocketHPACK-\/private.h}}
+\doxysubsubsection{\texorpdfstring{hpack\_table\_evict()}{hpack\_table\_evict()}}
+{\footnotesize\ttfamily size\+\_\+t hpack\+\_\+table\+\_\+evict (\begin{DoxyParamCaption}\item[{\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}}}]{table,  }\item[{size\+\_\+t}]{required\+\_\+space }\end{DoxyParamCaption})\hspace{0.3cm}{\ttfamily [extern]}}
+
+hpack\+\_\+table\+\_\+evict -\/ Evict oldest entries until size fits @table\+: Dynamic table @required\+\_\+space\+: Space needed for new entry
+
+Returns\+: Number of entries evicted 

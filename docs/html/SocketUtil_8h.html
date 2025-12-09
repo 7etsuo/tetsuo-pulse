@@ -403,10 +403,10 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga1e1c2036c1e8e227409d3cb2dfab8fc2" id="r_ga1e1c2036c1e8e227409d3cb2dfab8fc2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga1e1c2036c1e8e227409d3cb2dfab8fc2">SocketLog_setcallback</a> (<a class="el" href="group__foundation.html#gadd820ca01810b616cfe1d6fef0cbf899">SocketLogCallback</a> callback, void *userdata)</td></tr>
-<tr class="memdesc:ga1e1c2036c1e8e227409d3cb2dfab8fc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom logging callback.  <br /></td></tr>
+<tr class="memdesc:ga1e1c2036c1e8e227409d3cb2dfab8fc2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register a custom callback for all library log emissions.  <br /></td></tr>
 <tr class="separator:ga1e1c2036c1e8e227409d3cb2dfab8fc2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gafb6f1052e2778e1b46a084ef457881dc" id="r_gafb6f1052e2778e1b46a084ef457881dc"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#gadd820ca01810b616cfe1d6fef0cbf899">SocketLogCallback</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gafb6f1052e2778e1b46a084ef457881dc">SocketLog_getcallback</a> (void **userdata)</td></tr>
-<tr class="memdesc:gafb6f1052e2778e1b46a084ef457881dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current logging callback.  <br /></td></tr>
+<tr class="memdesc:gafb6f1052e2778e1b46a084ef457881dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the currently registered custom logging callback and its userdata.  <br /></td></tr>
 <tr class="separator:gafb6f1052e2778e1b46a084ef457881dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6bf61f863971355d13751fa2d76bc1d4" id="r_ga6bf61f863971355d13751fa2d76bc1d4"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6bf61f863971355d13751fa2d76bc1d4">SocketLog_levelname</a> (<a class="el" href="group__foundation.html#gadf209a9f107e88a5df277fcc3e2641d1">SocketLogLevel</a> level)</td></tr>
 <tr class="memdesc:ga6bf61f863971355d13751fa2d76bc1d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketLog_levelname - Human-readable string for SocketLogLevel enum.  <br /></td></tr>
@@ -487,7 +487,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga46f8d730d28e8c5cbd55e3cbe4c83945"><td class="mdescLeft">&#160;</td><td class="mdescRight">Socket_geterrorcode - Convert last errno to normalized SocketErrorCode.  <br /></td></tr>
 <tr class="separator:ga46f8d730d28e8c5cbd55e3cbe4c83945"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga481ecfe6b9e5c83515c92d1808e4b2f9" id="r_ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a> (int errnum)</td></tr>
-<tr class="memdesc:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-safe and bounds-checked strerror implementation.  <br /></td></tr>
+<tr class="memdesc:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides a thread-safe and bounds-checked implementation of strerror().  <br /></td></tr>
 <tr class="separator:ga481ecfe6b9e5c83515c92d1808e4b2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4b19847d604cdc5896376e694ee2a9c1" id="r_ga4b19847d604cdc5896376e694ee2a9c1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__foundation.html#ga03afe0122d51352f66339825b1eb23b9">SocketErrorCategory</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga4b19847d604cdc5896376e694ee2a9c1">SocketError_categorize_errno</a> (int err)</td></tr>
 <tr class="memdesc:ga4b19847d604cdc5896376e694ee2a9c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">SocketError_categorize_errno - Classify errno into SocketErrorCategory.  <br /></td></tr>
@@ -510,7 +510,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga81d733432a2030afb97cd12be61e7054" id="r_ga81d733432a2030afb97cd12be61e7054"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga81d733432a2030afb97cd12be61e7054">socket_util_hash_uint</a> (unsigned value, unsigned table_size)</td></tr>
 <tr class="memdesc:ga81d733432a2030afb97cd12be61e7054"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash unsigned integer using golden ratio.  <br /></td></tr>
 <tr class="separator:ga81d733432a2030afb97cd12be61e7054"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gac2f441288fd2e497dd99474ef017f31f" id="r_gac2f441288fd2e497dd99474ef017f31f"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac2f441288fd2e497dd99474ef017f31f">socket_util_hash_uint_seeded</a> (unsigned value, unsigned table_size, uint32_t seed)</td></tr>
+<tr class="memitem:gac2f441288fd2e497dd99474ef017f31f" id="r_gac2f441288fd2e497dd99474ef017f31f"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac2f441288fd2e497dd99474ef017f31f">socket_util_hash_uint_seeded</a> (unsigned value, unsigned table_size, uint32_t <a class="el" href="group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee">seed</a>)</td></tr>
 <tr class="memdesc:gac2f441288fd2e497dd99474ef017f31f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Seeded hash for collision resistance in security contexts.  <br /></td></tr>
 <tr class="separator:gac2f441288fd2e497dd99474ef017f31f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9fdc2111b7d6f5bce04dce7a5af67dea" id="r_ga9fdc2111b7d6f5bce04dce7a5af67dea"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga9fdc2111b7d6f5bce04dce7a5af67dea">socket_util_hash_djb2</a> (const char *str, unsigned table_size)</td></tr>
@@ -575,11 +575,11 @@ Variables</h2></td></tr>
 <dd>
 SocketMetrics for metrics collection. </dd>
 <dd>
-SocketError for error handling <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+SocketError for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> handling <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a>. </dd>
 <dd>
-<a class="el" href="group__foundation.html">Core Foundation Modules</a> for other core <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+<a class="el" href="group__foundation.html">Core Foundation Modules</a> for other core <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a>. </dd>
 <dd>
-<a class="el" href="group__core__io.html">Core I/O Modules</a> for socket modules that use these <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd></dl>
+<a class="el" href="group__core__io.html">Core I/O Modules</a> for socket modules that use these <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a>. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -596,7 +596,7 @@ SocketError for error handling <a class="el" href="group__utilities.html" title=
 </div><div class="memdoc">
 <div class="textblock"><p><a class="el" href="SocketUtil_8h.html#structSocketEventRecord" title="SocketEventRecord - Event data structure.">SocketEventRecord</a> - Event data structure. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00819">819</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00975">975</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -633,7 +633,7 @@ type</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00823">823</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00979">979</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -670,7 +670,7 @@ poll</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00825">825</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00981">981</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -719,7 +719,7 @@ peer_port</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00833">833</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00989">989</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -750,7 +750,7 @@ port</td>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00838">838</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00994">994</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -789,7 +789,7 @@ timeout_ms</td>
 <p>SOCKET_DECLARE_MODULE_EXCEPTION - Declare thread-local exception. </p>
 <p>@module_name: Module name (e.g., Socket, SocketBuf, SocketPoll) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01426">1426</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01582">1582</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -805,7 +805,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01258">1258</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01414">1414</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -821,7 +821,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01256">1256</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01412">1412</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -837,7 +837,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01262">1262</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01418">1418</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -853,7 +853,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01260">1260</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01416">1416</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -869,7 +869,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01255">1255</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01411">1411</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -885,7 +885,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01259">1259</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01415">1415</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -901,7 +901,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01254">1254</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01410">1410</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -917,7 +917,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01261">1261</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01417">1417</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -953,15 +953,15 @@ timeout_ms</td>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
 <div class="ttc" id="aSocketUtil_8h_html_aad11dd8cef83792df92437f8d7ae3991"><div class="ttname"><a href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a></div><div class="ttdeci">char socket_error_buf[1024]</div></div>
-<div class="ttc" id="agroup__foundation_html_ga22d6df423f7c13e8d4f1b4192037f537"><div class="ttname"><a href="group__foundation.html#ga22d6df423f7c13e8d4f1b4192037f537">SOCKET_ERROR_TRUNCATION_MARKER</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_MARKER</div><div class="ttdoc">Truncation marker for error messages.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01048">SocketConfig.h:1048</a></div></div>
-<div class="ttc" id="agroup__foundation_html_ga6969c4f53c182cf7112aa6dd0421571f"><div class="ttname"><a href="group__foundation.html#ga6969c4f53c182cf7112aa6dd0421571f">SOCKET_ERROR_TRUNCATION_SIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_SIZE</div><div class="ttdoc">Size of truncation marker.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01058">SocketConfig.h:1058</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gab28724709065957c1e13fd4c9b8e873a"><div class="ttname"><a href="group__foundation.html#gab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_BUFSIZE</div><div class="ttdoc">Error buffer size.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01011">SocketConfig.h:1011</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga22d6df423f7c13e8d4f1b4192037f537"><div class="ttname"><a href="group__foundation.html#ga22d6df423f7c13e8d4f1b4192037f537">SOCKET_ERROR_TRUNCATION_MARKER</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_MARKER</div><div class="ttdoc">Truncation marker for error messages.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01171">SocketConfig.h:1171</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga6969c4f53c182cf7112aa6dd0421571f"><div class="ttname"><a href="group__foundation.html#ga6969c4f53c182cf7112aa6dd0421571f">SOCKET_ERROR_TRUNCATION_SIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_TRUNCATION_SIZE</div><div class="ttdoc">Size of truncation marker.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01181">SocketConfig.h:1181</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab28724709065957c1e13fd4c9b8e873a"><div class="ttname"><a href="group__foundation.html#gab28724709065957c1e13fd4c9b8e873a">SOCKET_ERROR_BUFSIZE</a></div><div class="ttdeci">#define SOCKET_ERROR_BUFSIZE</div><div class="ttdoc">Error buffer size.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01134">SocketConfig.h:1134</a></div></div>
 </div><!-- fragment -->
 <p>SOCKET_ERROR_APPLY_TRUNCATION - Apply truncation marker if message was cut. </p>
 <p>@ret: Return value from snprintf</p>
 <p>Internal helper macro to eliminate duplication in error formatting. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01043">1043</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01199">1199</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1005,15 +1005,15 @@ timeout_ms</td>
 <div class="line">                      <a class="code hl_variable" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a>);                                      \</div>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
-<div class="ttc" id="aSocketUtil_8h_html_ae461bf5ddae6eda683926a6303af87f6"><div class="ttname"><a href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a></div><div class="ttdeci">#define SOCKET_LOG_COMPONENT</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00310">SocketUtil.h:310</a></div></div>
+<div class="ttc" id="aSocketUtil_8h_html_ae461bf5ddae6eda683926a6303af87f6"><div class="ttname"><a href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a></div><div class="ttdeci">#define SOCKET_LOG_COMPONENT</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00466">SocketUtil.h:466</a></div></div>
 <div class="ttc" id="aSocketUtil_8h_html_af5b8b680923b7f67d1ec0aa8c0b0434e"><div class="ttname"><a href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">socket_last_errno</a></div><div class="ttdeci">int socket_last_errno</div></div>
-<div class="ttc" id="agroup__foundation_html_ga481ecfe6b9e5c83515c92d1808e4b2f9"><div class="ttname"><a href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a></div><div class="ttdeci">const char * Socket_safe_strerror(int errnum)</div><div class="ttdoc">Thread-safe and bounds-checked strerror implementation.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga481ecfe6b9e5c83515c92d1808e4b2f9"><div class="ttname"><a href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a></div><div class="ttdeci">const char * Socket_safe_strerror(int errnum)</div><div class="ttdoc">Provides a thread-safe and bounds-checked implementation of strerror().</div></div>
 <div class="ttc" id="agroup__foundation_html_ggadf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3"><div class="ttname"><a href="group__foundation.html#ggadf209a9f107e88a5df277fcc3e2641d1a541aa883db8e38a0c52a2d7ccfb795b3">SOCKET_LOG_ERROR</a></div><div class="ttdeci">@ SOCKET_LOG_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00055">SocketUtil.h:55</a></div></div>
 </div><!-- fragment -->
 <p>SOCKET_ERROR_FMT - Format error message with errno information. </p>
 <p>Includes truncation protection for long messages. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01066">1066</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01222">1222</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1060,7 +1060,7 @@ timeout_ms</td>
 <p>SOCKET_ERROR_MSG - Format error message without errno. </p>
 <p>Includes truncation protection for long messages. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01088">1088</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01244">1244</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1076,7 +1076,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01257">1257</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01413">1413</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1092,7 +1092,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00310">310</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00466">466</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1122,7 +1122,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00334">334</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00490">490</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1152,7 +1152,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00346">346</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00502">502</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1182,7 +1182,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00350">350</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00506">506</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1203,12 +1203,12 @@ timeout_ms</td>
 </div><div class="memdoc">
 <b>Value:</b><div class="fragment"><div class="line">  (<a class="code hl_struct" href="group__foundation.html#structSocketLogField">SocketLogField</a>[]){ __VA_ARGS__ },                                          \</div>
 <div class="line">      (<span class="keyword">sizeof</span> ((<a class="code hl_struct" href="group__foundation.html#structSocketLogField">SocketLogField</a>[]){ __VA_ARGS__ }) / <span class="keyword">sizeof</span> (<a class="code hl_struct" href="group__foundation.html#structSocketLogField">SocketLogField</a>))</div>
-<div class="ttc" id="agroup__foundation_html_structSocketLogField"><div class="ttname"><a href="group__foundation.html#structSocketLogField">SocketLogField</a></div><div class="ttdoc">SocketLogField - Key-value pair for structured logging.</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00547">SocketUtil.h:548</a></div></div>
+<div class="ttc" id="agroup__foundation_html_structSocketLogField"><div class="ttname"><a href="group__foundation.html#structSocketLogField">SocketLogField</a></div><div class="ttdoc">SocketLogField - Key-value pair for structured logging.</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00703">SocketUtil.h:704</a></div></div>
 </div><!-- fragment -->
 <p>SOCKET_LOG_FIELDS - Convenience macro for creating field arrays. </p>
 <p>Usage: SocketLog_emit_structured(level, component, message, SOCKET_LOG_FIELDS({"key1", "val1"}, {"key2", "val2"})); </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00640">640</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00796">796</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1224,7 +1224,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00373">373</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00529">529</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1254,7 +1254,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00338">338</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00494">494</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1284,7 +1284,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00330">330</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00486">486</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1314,7 +1314,7 @@ timeout_ms</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00342">342</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00498">498</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1373,7 +1373,7 @@ timeout_ms</td>
 <p>Combines SOCKET_ERROR_FMT + RAISE_MODULE_ERROR into single macro.</p>
 <p>Thread-safe: Yes (uses thread-local buffers) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01463">1463</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01619">1619</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1420,7 +1420,7 @@ timeout_ms</td>
 <p>Exception to raise</p>
 <p>Thread-safe: Creates thread-local copy with detailed reason </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01437">1437</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01593">1593</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1479,7 +1479,7 @@ timeout_ms</td>
 <p>Combines SOCKET_ERROR_MSG + RAISE_MODULE_ERROR into single macro.</p>
 <p>Thread-safe: Yes (uses thread-local buffers) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01483">1483</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01639">1639</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1496,7 +1496,7 @@ timeout_ms</td>
 </div><div class="memdoc">
 <p>DJB2 hash algorithm seed value (Daniel J. Bernstein) </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01601">1601</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01757">1757</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1516,7 +1516,7 @@ timeout_ms</td>
 <p>SocketEventCallback - Event handler callback type. </p>
 <p>@userdata: User-provided context @event: Event record </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00852">852</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l01008">1008</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>
@@ -1541,7 +1541,7 @@ timeout_ms</td>
 <tr><td class="fieldname"><a id="a3d88a760170998089d33794edca8d1bfa4b3179bc062ecb5767e4fd69509f654e" name="a3d88a760170998089d33794edca8d1bfa4b3179bc062ecb5767e4fd69509f654e"></a>SOCKET_EVENT_POLL_WAKEUP&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00807">807</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketUtil_8h_source.html#l00963">963</a> of file <a class="el" href="SocketUtil_8h_source.html">SocketUtil.h</a>.</p>
 
 </div>
 </div>

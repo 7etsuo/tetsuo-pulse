@@ -30,7 +30,7 @@
 <area shape="poly" id="edge12_Node000004_Node000012" title=" " alt="" coords="748,173,1056,224,1055,229,747,179"/>
 <area shape="rect" id="Node000013" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="1123,299,1225,324"/>
 <area shape="poly" id="edge16_Node000004_Node000013" title=" " alt="" coords="707,175,791,223,813,237,835,248,886,262,959,276,1109,299,1108,304,958,281,885,267,833,253,810,242,789,228,705,180"/>
-<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="347,225,489,251"/>
+<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="347,225,489,251"/>
 <area shape="poly" id="edge17_Node000004_Node000015" title=" " alt="" coords="644,180,475,224,474,219,642,175"/>
 <area shape="poly" id="edge13_Node000012_Node000008" title=" " alt="" coords="1106,253,1059,292,1055,288,1103,249"/>
 <area shape="poly" id="edge14_Node000012_Node000013" title=" " alt="" coords="1129,249,1159,286,1154,289,1125,253"/>

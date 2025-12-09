@@ -3,29 +3,79 @@
 
 /**
  * @file SocketCommon-private.h
- * @brief Private declarations for the SocketCommon module.
  * @ingroup core_io
+ * @brief Private declarations for SocketCommon module providing shared socket
+ * infrastructure.
  * @internal
  *
- * Contains internal structure definitions (e.g., SocketBase_T implementation),
- * static helper functions, and module exception forward declarations.
+ * This private header defines internal structures, helper functions, and
+ * exception forward declarations shared between Socket and SocketDgram
+ * implementations. It enables code reuse for common operations like base
+ * initialization, option setting, and endpoint caching while maintaining
+ * opaque public API.
  *
- * This header is included only from SocketCommon.c and related implementation
- * files (e.g., Socket.c, SocketDgram.c). It is NOT part of the public API.
+ *  Architecture Overview
  *
- * @warning Do NOT include this header in public headers or user code.
- * @see SocketCommon.h for the public interface.
- * @see @ref core_io "Core I/O Module Group" for overview.
+ * ```
+ * ┌─────────────────────────────┐
+ * │   Public API (Socket.h)     │
+ * │   ├── Socket_T (opaque)     │
+ * │   └── SocketDgram_T (opaque)│
+ * └─────────┬───────────────────┘
+ *           │ embeds/uses
+ * ┌─────────▼───────────────────┐
+ * │ SocketCommon-private.h      │
+ * │ ├── struct SocketBase_T     │
+ * │ ├── Accessors (get/set)     │
+ * │ ├── Option setters          │
+ * │ ├── Utilities (resolve,...) │
+ * │ └── Exceptions              │
+ * └─────────────────────────────┘
+ *           │ implements in
+ * ┌─────────▼───────────────────┐
+ * │   SocketCommon.c            │
+ * └─────────────────────────────┘
+ * ```
  *
- * ### Coding Standards Compliance
- * - Opaque types declared in public headers (.h), full structs defined here.
- * - GNU C11 style with comprehensive Doxygen documentation for maintainers.
- * - Module-specific exceptions declared here for convenience across implementations.
- * - Thread-safety documented per function; generally requires external synchronization.
+ *  Features
  *
- * @see docs/ERROR_HANDLING.md for exception handling patterns.
- * @see CONTRIBUTING.md for contribution guidelines and coding standards.
- * @see .cursorrules for build system and detailed implementation rules.
+ * - **Shared Base Structure**: SocketBase_T provides common fields (fd, arena,
+ * endpoints, timeouts, metrics) embedded in subtypes.
+ * - **Thread-Safe Accessors**: Controlled getters/setters with mutex
+ * protection documentation.
+ * - **Unified Option Setting**: Common implementations for SO_REUSEADDR,
+ * SO_REUSEPORT, timeouts, CLOEXEC, SIGPIPE handling.
+ * - **Address Resolution Helpers**: Internal validation, normalization,
+ * caching for endpoints.
+ * - **Exception Forwarding**: Module exceptions declared for consistent error
+ * handling across files.
+ * - **Platform Abstraction**: Handles differences (e.g., SO_DOMAIN on Linux,
+ * getsockname fallback).
+ *
+ *  Platform Requirements
+ *
+ * - POSIX-compliant system with socket(), setsockopt(), fcntl(),
+ * getaddrinfo().
+ * - pthreads for mutex-based thread safety in base access.
+ * - CLOCK_MONOTONIC for timing (via SocketUtil).
+ * - No TLS dependencies (pure socket layer).
+ *
+ *  Usage Guidelines
+ *
+ * - Include only from .c implementation files, never public headers or user
+ * code.
+ * - Use accessors instead of direct field access for encapsulation.
+ * - Always acquire base->mutex for multi-threaded modifications.
+ * - Follow resource order: Arena -> FD -> Mutex init -> Endpoint cache.
+ *
+ * @warning Direct inclusion exposes internal ABI; changes may break subtypes.
+ * @warning Not thread-safe by default; docs specify per-function guarantees.
+ *
+ * @see SocketCommon.h for public utilities and base API.
+ * @see Socket.h and SocketDgram.h for subtype-specific operations.
+ * @see @ref core_io "Core I/O Module Group" for complete socket primitives.
+ * @see docs/ERROR_HANDLING.md for exception patterns.
+ * @see .cursorrules for coding and build standards.
  */
 
 #include "core/Arena.h"
@@ -36,16 +86,57 @@
 #include <stdbool.h>
 
 /**
- * @brief Internal implementation structure for SocketBase_T opaque type.
+ * @brief Internal implementation of SocketBase_T opaque type.
  * @ingroup core_io
  * @internal
  *
- * Defines the full structure for the shared socket base, embedded in subtypes
- * like Socket_T and SocketDgram_T. Manages common resources and state including
- * fd, arena, endpoints, timeouts, and metrics.
+ * Complete structure definition for the shared socket base, which is embedded
+ * directly within subtype implementations (e.g., struct Socket_T, struct
+ * SocketDgram_T). Centralizes management of common socket state: file
+ * descriptor, memory arena, endpoint addresses/ports, timeouts, metrics, and
+ * synchronization primitives.
  *
- * @see SocketBase_T (opaque) in SocketCommon.h
- * @see SocketCommon_new_base(), SocketCommon_free_base()
+ *  Embedding Pattern
+ *
+ * Subtypes declare:
+ *
+ * @code{.c}
+ * struct Subtype_T {
+ *   SocketBase_T base;  // Embedded, not pointer
+ *   // Subtype-specific fields
+ * };
+ * @endcode
+ *
+ * Access via getters/setters in this private header to maintain encapsulation.
+ *
+ *  Thread Safety
+ *
+ * - **Read Access**: Conditional - safe for immutable fields (domain, type)
+ * without lock.
+ * - **Write Access**: Requires pthread_mutex_lock(&base.mutex) / unlock.
+ * - **Concurrent Use**: External synchronization needed for shared sockets
+ * across threads.
+ *
+ *  Resource Lifecycle
+ *
+ * - **Creation**: SocketCommon_new_base() or SocketCommon_init_base()
+ * allocates arena, initializes mutex, sets CLOEXEC.
+ * - **Cleanup**: SocketCommon_free_base() closes fd, destroys mutex, disposes
+ * arena.
+ * - **Order**: FD close before mutex destroy before arena dispose.
+ *
+ * @note Endpoint strings (localaddr, remoteaddr) allocated in base.arena;
+ * lifetime tied to base.
+ * @note Metrics snapshot updated by I/O operations; use for per-socket
+ * statistics.
+ * @note Timeouts applied to connect, send/recv, etc. via base.timeouts.
+ *
+ * @see SocketBase_T opaque typedef in SocketCommon.h
+ * @see SocketCommon_new_base() for allocation
+ * @see SocketCommon_free_base() for deallocation
+ * @see SocketCommon_init_base() for initialization from existing FD
+ * @see docs/METRICS.md for metrics usage
+ * @see core/SocketConfig.h for SocketTimeouts_T details
  */
 struct SocketBase_T
 {
@@ -92,12 +183,34 @@ struct SocketBase_T
  * @brief Retrieve the socket file descriptor from the base structure.
  * @internal
  * @ingroup core_io
- * @param base Socket base instance (non-NULL).
- * @return File descriptor (int fd, -1 if closed/invalid).
- * @note Direct access discouraged; use for low-level operations like poll/epoll.
- * @threadsafe Conditional - safe if no concurrent modification to the base structure (fd is typically read-only after initialization).
+ *
+ * Provides access to the underlying file descriptor for low-level system calls
+ * like poll(2), epoll_ctl(2), or direct read/write operations.
+ *
+ * @param[in] base Socket base instance (non-NULL)
+ * @return File descriptor (int fd, -1 if closed/invalid)
+ *
+ * @throws None
+ * @threadsafe Conditional - safe if no concurrent modification to base (fd
+ * typically read-only after init)
+ * @complexity O(1) - direct field access
+ *
+ *  Usage
+ *
+ * @code{.c}
+ * int fd = SocketBase_fd(base);
+ * if (fd >= 0) {
+ *     // Use fd for poll or epoll
+ *     struct pollfd pfd = { .fd = fd, .events = POLLIN };
+ *     poll(&pfd, 1, timeout);
+ * }
+ * @endcode
+ *
+ * @note Direct fd access bypasses library wrappers; prefer high-level Socket_*
+ * functions.
+ * @warning fd is owned by base; do NOT close(2) directly - use Socket_free()
  * @see socket(2), close(2)
- * @see SocketCommon.h for public socket API.
+ * @see SocketCommon.h for public API equivalents like Socket_fd()
  */
 extern int SocketBase_fd (SocketBase_T base);
 
@@ -105,12 +218,34 @@ extern int SocketBase_fd (SocketBase_T base);
  * @brief Get the memory arena associated with the socket base.
  * @internal
  * @ingroup core_io
- * @param base Socket base instance.
- * @return Arena_T used for this socket's allocations.
- * @note Used for allocating per-socket resources (buffers, strings).
- * @threadsafe Conditional - safe if no concurrent modification to base.
- * @see Arena.h, ALLOC() macro
- * @see @ref foundation "Foundation module" for memory management.
+ *
+ * Returns the per-socket Arena_T used for all allocations related to this
+ * socket instance, ensuring consistent lifecycle management and avoiding
+ * leaks.
+ *
+ * @param[in] base Socket base instance
+ * @return Arena_T used for this socket's allocations
+ *
+ * @throws None
+ * @threadsafe Conditional - safe if no concurrent arena modification
+ * (typically read-only)
+ * @complexity O(1) - direct field return
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * Arena_T arena = SocketBase_arena(base);
+ * char *endpoint = ALLOC(arena, strlen(host) + 1);
+ * strcpy(endpoint, host);  // Arena-managed allocation
+ * @endcode
+ *
+ * @note All socket-related allocations (buffers, endpoint strings) should use
+ * this arena.
+ * @note Arena lifetime tied to socket base; dispose via
+ * SocketCommon_free_base().
+ * @see core/Arena.h for arena API and ALLOC()/CALLOC() macros
+ * @see @ref foundation "Foundation Module Group" for memory management details
+ * @see SocketBase_T for arena role in resource management
  */
 extern Arena_T SocketBase_arena (SocketBase_T base);
 
@@ -118,12 +253,36 @@ extern Arena_T SocketBase_arena (SocketBase_T base);
  * @brief Get the address domain (family) of the socket.
  * @internal
  * @ingroup core_io
- * @param base Socket base instance.
- * @return Domain (AF_INET, AF_INET6, AF_UNIX, etc.).
- * @note Set at creation; used for address resolution and options.
- * @threadsafe Conditional - safe if no concurrent modification to base.
- * @see getaddrinfo(3), AF_*
- * @see SocketCommon_resolve_address() in SocketCommon.h for resolution using domain.
+ *
+ * Returns the address family used when creating the socket, determining
+ * supported address types (IPv4, IPv6, Unix domain).
+ *
+ * @param[in] base Socket base instance
+ * @return Domain constant (AF_INET, AF_INET6, AF_UNIX, etc.)
+ *
+ * @throws None
+ * @threadsafe Yes - immutable after creation, no lock needed
+ * @complexity O(1) - direct field access
+ *
+ * @note Set during socket creation; immutable throughout lifetime.
+ * @note Used internally for address validation, option setting, resolution
+ * hints.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * int domain = SocketBase_domain(base);
+ * if (domain == AF_INET) {
+ *     // IPv4-specific handling
+ * } else if (domain == AF_INET6) {
+ *     // IPv6-specific handling
+ * }
+ * @endcode
+ *
+ * @see getaddrinfo(3) for address resolution using domain
+ * @see AF_* constants in <sys/socket.h>
+ * @see SocketCommon_resolve_address() in SocketCommon.h for domain-aware
+ * resolution
  */
 extern int SocketBase_domain (SocketBase_T base);
 
@@ -131,12 +290,39 @@ extern int SocketBase_domain (SocketBase_T base);
  * @brief Get cached remote address string representation.
  * @internal
  * @ingroup core_io
- * @param base Socket base instance.
- * @return Pointer to arena-allocated remote address string, or NULL if unset/unavailable.
- * @note String format: numeric IP or Unix path; NULL-checked. String lifetime tied to base arena.
- * @threadsafe Conditional - acquire base->mutex if concurrent access/modification possible.
- * @see SocketBase_remoteport()
- * @see SocketCommon_cache_endpoint() for caching mechanism.
+ *
+ * Returns the pre-cached string representation of the remote peer's address,
+ * formatted as numeric IP (IPv4/IPv6) or Unix domain path.
+ *
+ * @param[in] base Socket base instance
+ * @return Pointer to arena-allocated string, or NULL if unset, unconnected, or
+ * invalid
+ *
+ * @throws None
+ * @threadsafe Conditional - acquire base->mutex if concurrent modification to
+ * endpoints possible
+ * @complexity O(1) - direct pointer return
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * const char *remote_ip = SocketBase_remoteaddr(base);
+ * if (remote_ip) {
+ *     SOCKET_LOG_INFO_MSG("Connected to %s", remote_ip);
+ * } else {
+ *     SOCKET_LOG_WARN_MSG("No remote address available");
+ * }
+ * @endcode
+ *
+ * @note String allocated in base.arena; valid until base disposal or
+ * recaching.
+ * @note Cached via SocketCommon_cache_endpoint() after connect/accept.
+ * @note Format: "192.168.1.1" (IPv4), "[::1]" (IPv6), "/tmp/socket" (Unix)
+ * @warning Do not free() the returned string - managed by arena.
+ *
+ * @see SocketBase_remoteport() for companion port getter
+ * @see SocketCommon_cache_endpoint() for caching mechanism details
+ * @see Socket_getpeeraddr() public wrapper in Socket.h
  */
 static inline char *
 SocketBase_remoteaddr (SocketBase_T base)
@@ -204,17 +390,57 @@ SocketBase_timeouts (SocketBase_T base)
 /* Additional endpoint field accessors can be added as needed */
 
 /**
- * @brief Set the timeouts configuration for the socket base.
+ * @brief Set timeouts configuration in the socket base structure.
  * @internal
  * @ingroup core_io
- * @param base Socket base instance.
- * @param timeouts Source timeouts to copy (may be NULL for defaults).
- * @note Copies values; does not take ownership. Applies to connect, DNS, operations.
- * @threadsafe No - caller must acquire base->mutex.
- * @throws None - safe even if timeouts is NULL.
- * @see SocketBase_timeouts() getter.
- * @see SocketCommon_timeouts_getdefaults() for global defaults.
- * @see SocketCommon_settimeout() for socket-level timeout setting.
+ *
+ * Copies timeout values from source to base.timeouts, applying to subsequent
+ * operations like connect(), send/recv, DNS resolution. NULL source uses
+ * global defaults. Safe no-op if base or source NULL.
+ *
+ *  Timeout Structure (SocketTimeouts_T)
+ *
+ * | Field | Purpose | Default |
+ * |-------|---------|---------|
+ * | connect_ms | Connection establishment | 30000 ms |
+ * | send_ms | Send operations | 0 (no timeout) |
+ * | recv_ms | Receive operations | 0 (no timeout) |
+ * | dns_ms | DNS resolution | Global default |
+ *
+ * @param[in] base Socket base instance to update
+ * @param[in] timeouts Source configuration to copy (NULL = global defaults)
+ *
+ * @throws None - defensive against NULL inputs
+ * @threadsafe No - caller must lock base->mutex to prevent concurrent access
+ * @complexity O(1) - structure copy
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * pthread_mutex_lock(&base->mutex);
+ * SocketTimeouts_T custom = { .connect_ms = 5000, .send_ms = 10000 };
+ * SocketBase_set_timeouts(base, &custom);
+ * pthread_mutex_unlock(&base->mutex);
+ *
+ * // Or use defaults
+ * SocketBase_set_timeouts(base, NULL);
+ * @endcode
+ *
+ * @note Copies values; source ownership unchanged. Updates apply immediately
+ * to new operations.
+ * @note Global defaults via SocketCommon_timeouts_getdefaults(); modifiable
+ * via SocketCommon_timeouts_setdefaults().
+ * @note For socket-level SO_SNDTIMEO/SO_RCVTIMEO, use
+ * SocketCommon_settimeout().
+ * @warning Without mutex, race conditions may corrupt timeouts during
+ * concurrent sets.
+ *
+ * @see SocketBase_timeouts() for direct pointer access (lock required)
+ * @see SocketCommon_timeouts_getdefaults() for copying global defaults
+ * @see SocketCommon_timeouts_setdefaults() for setting globals
+ * @see SocketCommon_settimeout() for low-level socket option timeouts
+ * @see core/SocketConfig.h for SocketTimeouts_T definition
+ * @see docs/TIMEOUTS.md for timeout best practices
  */
 extern void SocketBase_set_timeouts (SocketBase_T base,
                                      const SocketTimeouts_T *timeouts);
@@ -222,36 +448,122 @@ extern void SocketBase_set_timeouts (SocketBase_T base,
 /* ... add more extern decls for getters/setters as needed */
 
 /**
- * @brief Create a new socket file descriptor.
+ * @brief Create a new socket file descriptor with error handling and CLOEXEC
+ * setup.
  * @internal
  * @ingroup core_io
- * @param domain Address family (AF_INET, etc.).
- * @param type Socket type (SOCK_STREAM, etc.).
- * @param protocol Protocol (usually 0).
- * @param exc_type Exception to raise on failure.
- * @return New fd on success, -1 on error (raises exception).
- * @throws exc_type on socket() failure (e.g., EMFILE, ENFILE, EAFNOSUPPORT).
- * @note Wrapper around socket() syscall with error handling and CLOEXEC setup.
- * @threadsafe Yes - no shared state.
- * @see socket(2)
- * @see SocketCommon_init_base() for subsequent base initialization.
- * @see SocketCommon_setcloexec_with_error() for FD flags.
+ *
+ * Low-level wrapper around socket(2) system call that creates a new file
+ * descriptor, sets FD_CLOEXEC flag, disables SIGPIPE generation
+ * (platform-specific), and raises specified exception on failure. Used during
+ * socket instance creation before base init.
+ *
+ *  Error Conditions
+ *
+ * | errno | Meaning | Retryable |
+ * |-------|---------|-----------|
+ * | EACCES | Permission denied | No |
+ * | EMFILE | Per-process fd limit | Yes (after close) |
+ * | ENFILE | System-wide fd limit | Yes (system resource) |
+ * | EAFNOSUPPORT | Address family unsupported | No |
+ * | ENOBUFS | No buffer space | Yes (transient) |
+ *
+ * @param[in] domain Address family (AF_INET, AF_INET6, AF_UNIX)
+ * @param[in] type Socket type (SOCK_STREAM, SOCK_DGRAM)
+ * @param[in] protocol Protocol (usually 0 for default)
+ * @param[in] exc_type Exception type to raise on failure (e.g., Socket_Failed)
+ * @return New non-negative file descriptor on success, -1 on error (raises
+ * exc_type)
+ *
+ * @throws exc_type on socket(2) failure with formatted message including errno
+ *
+ * @threadsafe Yes - no shared state or globals modified
+ * @complexity O(1) - single system call + flag setup
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * TRY {
+ *     int fd = SocketCommon_create_fd(AF_INET, SOCK_STREAM, 0, Socket_Failed);
+ *     SocketBase_T base = CALLOC(NULL, 1, sizeof(struct SocketBase_T));
+ *     SocketCommon_init_base(base, fd, AF_INET, SOCK_STREAM, 0,
+ * Socket_Failed);
+ *     // Now embed base in subtype struct
+ * } EXCEPT(Socket_Failed) {
+ *     SOCKET_LOG_ERROR_MSG("Failed to create socket: %s",
+ * Socket_GetLastError()); return -1; } END_TRY;
+ * @endcode
+ *
+ * @note Automatically sets FD_CLOEXEC to prevent fd inheritance on execve(2).
+ * @note Handles platform-specific SIGPIPE suppression (SO_NOSIGPIPE or
+ * MSG_NOSIGNAL policy).
+ * @note Caller responsible for closing fd on error paths before raising.
+ * @warning Do not use directly in application code; internal library use only.
+ *
+ * @see socket(2) for underlying system call
+ * @see SocketCommon_init_base() for initializing SocketBase_T with returned fd
+ * @see SocketCommon_setcloexec_with_error() for explicit CLOEXEC handling
+ * @see SocketCommon_disable_sigpipe() for SIGPIPE details
+ * @see docs/SECURITY.md#file-descriptor-leaks for CLOEXEC importance
  */
 extern int SocketCommon_create_fd (int domain, int type, int protocol,
                                    Except_T exc_type);
 
 /**
- * @brief Initialize a pre-allocated SocketBase_T instance.
+ * @brief Initialize pre-allocated SocketBase_T with FD and parameters.
  * @internal
- * @param base Pre-allocated base structure.
- * @param fd File descriptor to associate.
- * @param domain Address family.
- * @param type Socket type.
- * @param protocol Protocol.
- * @param exc_type Exception for errors.
- * @note Initializes fields, creates arena, sets CLOEXEC, etc.
- * @note Called after socket() or from_fd().
- * @see SocketCommon_new_base() which allocates + inits.
+ * @ingroup core_io
+ *
+ * Performs full initialization of a pre-allocated base structure: sets fields,
+ * creates per-socket arena, initializes mutex, sets CLOEXEC flag, disables
+ * SIGPIPE, caches initial endpoints if possible, initializes timeouts and
+ * metrics to defaults. Used when creating sockets from existing FDs (e.g.,
+ * accept(2), dup(2), or raw socket()).
+ *
+ * @param[in,out] base Pre-allocated base structure (must be zeroed or from
+ * CALLOC)
+ * @param[in] fd File descriptor to associate (must be valid socket FD)
+ * @param[in] domain Address family matching FD (AF_INET, etc.)
+ * @param[in] type Socket type matching FD (SOCK_STREAM, etc.)
+ * @param[in] protocol Protocol matching FD (usually 0)
+ * @param[in] exc_type Exception type for any initialization failures
+ *
+ * @throws exc_type on failures: arena alloc, mutex init, fcntl CLOEXEC,
+ * getsockname cache
+ *
+ * @threadsafe No - assumes exclusive access to base and FD
+ * @complexity O(1) - fixed operations + potential getsockname(2)
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * TRY {
+ *     int fd = accept(server_fd, NULL, 0);  // Or socket(), etc.
+ *     if (fd >= 0) {
+ *         SocketBase_T base = CALLOC(arena, 1, sizeof(*base));
+ *         SocketCommon_init_base(base, fd, AF_INET, SOCK_STREAM, 0,
+ * Socket_Failed);
+ *         // Embed base in Socket_T or SocketDgram_T
+ *         // Update endpoints post-accept via getsockname/getpeername
+ *     }
+ * } EXCEPT(Socket_Failed) {
+ *     close(fd);  // Cleanup on error
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Takes ownership of fd; closes on error paths via exception handling.
+ * @note Arena created internally; all subsequent allocations use it.
+ * @note Mutex initialized to PTHREAD_MUTEX_DEFAULT; recursive locks possible
+ * but discouraged.
+ * @note Endpoints cached if possible (getsockname success); otherwise lazy.
+ * @warning base must not be used before init; post-init, follow lock protocol.
+ * @note Alternative to SocketCommon_new_base() when FD pre-exists.
+ *
+ * @see SocketCommon_new_base() for allocation + init in one step
+ * @see SocketCommon_create_fd() for creating FD prior to init
+ * @see SocketCommon_setcloexec_with_error() internal CLOEXEC call
+ * @see SocketCommon_update_local_endpoint() for post-bind endpoint refresh
+ * @see docs/ERROR_HANDLING.md for TRY/EXCEPT patterns with FD cleanup
  */
 extern void SocketCommon_init_base (SocketBase_T base, int fd, int domain,
                                     int type, int protocol, Except_T exc_type);
@@ -266,9 +578,8 @@ extern void SocketCommon_init_base (SocketBase_T base, int fd, int domain,
  * @note Uses SO_DOMAIN (Linux) or getsockname() fallback.
  * @note Unifies family detection across modules.
  */
-extern int
-SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
-                         Except_T exc_type);
+extern int SocketCommon_get_family (SocketBase_T base, bool raise_on_fail,
+                                    Except_T exc_type);
 
 /* ============================================================================
  * Shared Socket Option Functions
@@ -331,8 +642,10 @@ extern void SocketCommon_setcloexec_with_error (SocketBase_T base, int enable,
  * @brief Disable SIGPIPE generation on send (platform-specific).
  * @internal
  * @param fd File descriptor.
- * @note On BSD/macOS: sets SO_NOSIGPIPE=1; on Linux: uses MSG_NOSIGNAL in send.
- * @note Library policy: No global signal handlers; handle per-operation or opt.
+ * @note On BSD/macOS: sets SO_NOSIGPIPE=1; on Linux: uses MSG_NOSIGNAL in
+ * send.
+ * @note Library policy: No global signal handlers; handle per-operation or
+ * opt.
  * @see send(2), MSG_NOSIGNAL
  */
 extern void SocketCommon_disable_sigpipe (int fd);
@@ -341,21 +654,22 @@ extern void SocketCommon_disable_sigpipe (int fd);
  * @brief Deep copy of addrinfo linked list (internal implementation).
  * @internal
  * @param src Source addrinfo chain (may be NULL).
- * @return Deep copy allocated with malloc (free with SocketCommon_free_addrinfo).
+ * @return Deep copy allocated with malloc (free with
+ * SocketCommon_free_addrinfo).
  * @note Copies entire chain, including ai_addr and ai_canonname.
  * @note Used internally for resolve_address caching; public in SocketCommon.h.
  * @see SocketCommon_free_addrinfo()
  * @see getaddrinfo(3)
  */
-extern struct addrinfo *SocketCommon_copy_addrinfo (
-    const struct addrinfo *src);
+extern struct addrinfo *
+SocketCommon_copy_addrinfo (const struct addrinfo *src);
 
 /* ============================================================================
  * Internal Low-Level Utility Functions
  * ============================================================================
- * Helper functions for hostname validation, IP detection, and string conversion.
- * Shared across SocketCommon-resolve.c and SocketCommon-utils.c implementations.
- * Prefixed 'socketcommon_' for internal namespace.
+ * Helper functions for hostname validation, IP detection, and string
+ * conversion. Shared across SocketCommon-resolve.c and SocketCommon-utils.c
+ * implementations. Prefixed 'socketcommon_' for internal namespace.
  *
  * @internal
  * @ingroup core_io
@@ -365,7 +679,8 @@ extern struct addrinfo *SocketCommon_copy_addrinfo (
  * @brief Normalize and validate host string for safe resolution use.
  * @internal
  * @param host Input host (may be NULL, wildcard, or invalid).
- * @return Safe host string: NULL for wildcards/invalids, validated copy otherwise.
+ * @return Safe host string: NULL for wildcards/invalids, validated copy
+ * otherwise.
  * @note Handles normalization (e.g., "0.0.0.0" -> NULL for bind).
  * @see SocketCommon_normalize_wildcard_host()
  */
@@ -406,49 +721,170 @@ extern bool socketcommon_is_ip_address (const char *host);
 extern void socketcommon_convert_port_to_string (int port, char *port_str,
                                                  size_t bufsize);
 
-/* ============================================================================
- * Module Exception Forward Declarations
- * ============================================================================
- * Convenience forward declarations for module-specific exceptions.
- * Allows .c files to RAISE without per-file externs.
- * Definitions in respective .c files (Socket.c, etc.).
- * Also declared publicly in SocketCommon.h for user TRY/EXCEPT blocks.
- *
- * @internal for implementation convenience.
+/**
+ * @brief Module Exception Forward Declarations
+ * @internal
  * @ingroup core_io
- * @see Except_T in core/Except.h
- * @see SOCKET_DECLARE_MODULE_EXCEPTION() macro pattern.
+ *
+ * Forward declarations of module-specific exception types (Except_T) for use
+ * in internal implementations. Enables consistent error raising across Socket,
+ * SocketDgram, and common utilities without per-file definitions.
+ *
+ * These exceptions are also exposed publicly in SocketCommon.h for
+ * application-level TRY/EXCEPT handling. Definitions provided in respective .c
+ * source files.
+ *
+ *  Exception Usage Pattern
+ *
+ * @code{.c}
+ * SOCKET_DECLARE_MODULE_EXCEPTION(SocketCommon);  // In .c file
+ *
+ * // Raising
+ * SOCKET_RAISE_FMT(SocketCommon, SocketCommon_Failed, "resolve failed: %s",
+ * gai_strerror(err));
+ * @endcode
+ *
+ *  Category and Retryability
+ *
+ * All socket exceptions:
+ * - **Category**: NETWORK (system calls) or APPLICATION (validation)
+ * - **Retryable**: Use SocketError_is_retryable_errno(Socket_geterrno()) to
+ * check
+ * - **Details**: Available via Socket_GetLastError(), Socket_geterrno()
+ *
+ * @note Thread-safe: Yes (Except_T is value type, stack-based)
+ * @see core/Except.h for TRY/EXCEPT/FINALLY/END_TRY macros and Except_T
+ * details
+ * @see SOCKET_DECLARE_MODULE_EXCEPTION() and SOCKET_RAISE_* macros in internal
+ * headers
+ * @see docs/ERROR_HANDLING.md for comprehensive exception patterns and best
+ * practices
+ * @see SocketError_categorize_errno() for automatic categorization
  */
 
 /**
- * @brief Generic socket failure exception (creation, bind, connect, etc.).
+ * @brief Generic socket operation failure exception.
+ * @internal
  * @ingroup core_io
- * @see Socket module errors.
+ *
+ * Raised for core socket operations failures: socket(2), bind(2), connect(2),
+ * listen(2), accept(2), send/recv family, Unix domain ops, option setting.
+ *
+ *  Common Triggers
+ * - System resource exhaustion (EMFILE, ENFILE, ENOBUFS)
+ * - Permission issues (EACCES, EPERM)
+ * - Address errors (EADDRINUSE, EADDRNOTAVAIL, EINVAL)
+ * - Connection issues (ECONNREFUSED, ETIMEDOUT, ECONNRESET)
+ *
+ * Category: NETWORK
+ * Retryable: Yes for transient errors (use SocketError_is_retryable_errno())
+ *
+ * @see Socket.h for TCP-specific details
+ * @see SocketDgram.h for UDP details
+ * @see Socket_geterrno() for underlying errno
  */
 extern const Except_T Socket_Failed;
 
 /**
- * @brief UDP/Datagram-specific failure exception.
+ * @brief Datagram/UDP-specific operation failure exception.
+ * @internal
  * @ingroup core_io
- * @see SocketDgram module.
+ *
+ * Specific to UDP/SocketDgram operations: sendto(2)/recvfrom(2), multicast
+ * join/leave, broadcast enable, TTL setting, connected UDP mode.
+ *
+ *  Common Triggers
+ * - Multicast errors (invalid group, permission denied)
+ * - Broadcast without SO_BROADCAST
+ * - TTL/hop limit out of range
+ * - Datagram too large (EMSGSIZE)
+ *
+ * Category: NETWORK
+ * Retryable: Depends on errno - check SocketError_is_retryable_errno()
+ *
+ * @see SocketDgram.h for full UDP API documentation
+ * @see SocketCommon_join_multicast() for multicast-specific errors
  */
 extern const Except_T SocketDgram_Failed;
 
 /**
- * @brief Common utility failure (resolve, options, validation).
+ * @brief Shared utility function failure exception.
+ * @internal
  * @ingroup core_io
- * @see SocketCommon utilities.
+ *
+ * For errors in common utilities: address resolution (getaddrinfo),
+ * hostname/port validation, iovec calculations/advances, option setting
+ * helpers, endpoint caching.
+ *
+ *  Common Triggers
+ * - DNS resolution timeouts/failures (gai errors)
+ * - Invalid input (bad port, too-long hostname, iov overflow)
+ * - Option setting failures (setsockopt EINVAL, ENOPROTOOPT)
+ * - Memory allocation in helpers (via Arena_Failed chaining)
+ *
+ * Category: NETWORK or APPLICATION
+ * Retryable: Yes for network transients, no for validation errors
+ *
+ * @see SocketCommon_resolve_address() for resolution errors
+ * @see SocketCommon_validate_port() and validate_hostname() for input
+ * validation
+ * @see SocketCommon_calculate_total_iov_len() for iovec ops
  */
 extern const Except_T SocketCommon_Failed;
 
 /**
- * @brief Sanitize and clamp timeout value to valid range.
+ * @brief Sanitize raw timeout value, applying library policy for valid range.
  * @internal
- * @param timeout_ms Raw timeout milliseconds (may be negative or excessive).
- * @return Validated timeout: >=0 clamped to INT_MAX, or -1 if invalid input.
- * @note Applies library policy: negative -> 0 (no timeout), huge -> max int.
- * @note Used in timeout setters to prevent overflow/underflow.
- * @see SocketTimeouts_T, SocketCommon_settimeout()
+ * @ingroup core_io
+ *
+ * Clamps and normalizes timeout milliseconds to prevent invalid or overflow
+ * values in socket operations. Library policy:
+ * - Negative: Treated as 0 (no timeout/infinite)
+ * - Zero: No timeout
+ * - Positive huge (>INT_MAX): Clamped to INT_MAX
+ * - Invalid input (e.g., NaN if float cast): -1 error
+ *
+ * Used defensively in all timeout setters (connect_ms, send_ms, etc.) to
+ * ensure safe values before applying to base.timeouts or SO_*TIMEO options.
+ *
+ *  Input/Output Mapping
+ *
+ * | Input (ms) | Output (ms) | Behavior |
+ * |------------|-------------|----------|
+ * | < 0 | 0 | Infinite/no timeout |
+ * | 0 | 0 | No timeout |
+ * | 1..INT_MAX | unchanged | Valid timeout |
+ * | > INT_MAX | INT_MAX | Clamped max |
+ * | Invalid | -1 | Error (caller handles) |
+ *
+ * @param[in] timeout_ms Raw timeout value from config or user input
+ * @return Sanitized timeout (>=0 valid, -1 error)
+ *
+ * @throws None - returns error code instead
+ * @threadsafe Yes - pure function, no state
+ * @complexity O(1) - simple comparisons and clamps
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * int safe_timeout = socketcommon_sanitize_timeout(user_config->connect_ms);
+ * if (safe_timeout < 0) {
+ *     SOCKET_LOG_WARN_MSG("Invalid timeout; using default");
+ *     safe_timeout = SOCKET_DEFAULT_CONNECT_TIMEOUT_MS;
+ * }
+ * base->timeouts.connect_ms = safe_timeout;
+ * @endcode
+ *
+ * @note Prevents signed overflow in time calculations (e.g.,
+ * SocketTimeout_deadline_ms).
+ * @note Consistent policy across all timeout fields in SocketTimeouts_T.
+ * @warning Callers must check return <0 and fallback to defaults.
+ * @note Used internally by SocketBase_set_timeouts() and option setters.
+ *
+ * @see SocketTimeouts_T fields (connect_ms, send_ms, recv_ms, dns_ms)
+ * @see SocketCommon_settimeout() for applying to SO_SNDTIMEO/SO_RCVTIMEO
+ * @see core/SocketConfig.h for default timeout constants
+ * @see docs/TIMEOUTS.md for timeout configuration guide
  */
 extern int socketcommon_sanitize_timeout (int timeout_ms);
 

@@ -1,5 +1,5 @@
 <map id="SocketTimer&#45;private.h" name="SocketTimer&#45;private.h">
-<area shape="rect" id="Node000001" title="Internal timer implementation details and heap management." alt="" coords="170,5,321,31"/>
+<area shape="rect" id="Node000001" title="Internal implementation details for the high&#45;performance SocketTimer module." alt="" coords="170,5,321,31"/>
 <area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="5,79,101,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="215,33,99,76,97,71,214,28"/>
 <area shape="rect" id="Node000006" href="$SocketTimer_8h.html" title="High&#45;performance timer subsystem integrated with the event loop." alt="" coords="126,79,261,104"/>

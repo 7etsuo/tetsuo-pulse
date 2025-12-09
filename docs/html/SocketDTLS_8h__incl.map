@@ -1,5 +1,5 @@
 <map id="SocketDTLS.h" name="SocketDTLS.h">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,113,31"/>
+<area shape="rect" id="Node000001" title="Core DTLS API for secure UDP sockets." alt="" coords="5,5,113,31"/>
 <area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="8,299,111,324"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="58,32,47,79,44,136,46,194,57,285,52,285,41,194,39,136,42,78,53,30"/>
 <area shape="rect" id="Node000004" href="$SocketDgram_8h.html" title="High&#45;level UDP/datagram socket interface with multicast and broadcast support." alt="" coords="57,79,213,104"/>
@@ -33,7 +33,7 @@
 <area shape="poly" id="edge14_Node000005_Node000014" title=" " alt="" coords="710,175,846,195,1008,223,1007,228,845,200,710,180"/>
 <area shape="rect" id="Node000015" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="173,225,269,251"/>
 <area shape="poly" id="edge15_Node000005_Node000015" title=" " alt="" coords="558,180,282,228,282,228,281,223,282,223,557,175"/>
-<area shape="rect" id="Node000017" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="690,225,831,251"/>
+<area shape="rect" id="Node000017" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="690,225,831,251"/>
 <area shape="poly" id="edge19_Node000005_Node000017" title=" " alt="" coords="648,175,728,217,725,221,645,180"/>
 <area shape="poly" id="edge17_Node000015_Node000002" title=" " alt="" coords="196,253,99,295,97,291,194,248"/>
 <area shape="poly" id="edge16_Node000015_Node000016" title=" " alt="" coords="223,251,223,285,218,285,218,251"/>

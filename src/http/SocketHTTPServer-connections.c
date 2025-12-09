@@ -14,14 +14,16 @@
 #include "core/SocketMetrics.h" /* for any metrics if added */
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP1.h"
+
 #include "http/SocketHTTPServer-private.h"
 #include "socket/Socket.h"
 
-SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
 
 /* Forward declarations */
 static void record_request_latency (SocketHTTPServer_T server,
                                     int64_t request_start_ms);
+void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
+                                   int status, const char *body);
 
 int
 connection_read (SocketHTTPServer_T server, ServerConnection *conn)
@@ -300,8 +302,7 @@ connection_send_response (SocketHTTPServer_T server, ServerConnection *conn)
   connection_finish_request (server, conn);
 }
 
-void
-connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
+void connection_send_error (SocketHTTPServer_T server, ServerConnection *conn,
                        int status, const char *body)
 {
   conn->response_status = status;

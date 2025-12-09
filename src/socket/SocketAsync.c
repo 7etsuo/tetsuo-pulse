@@ -192,6 +192,15 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
                                 &user_data))
     return;
 
+  /* Accumulate progress for partial transfers */
+  if (err == 0 && result > 0) {
+    size_t transferred = (size_t)result;
+    req->completed += transferred;
+    if (req->completed > req->len) {
+      req->completed = req->len;  /* Cap at requested length */
+    }
+  }
+
   if (cb)
     cb (socket, result, err, user_data);
 
@@ -373,6 +382,10 @@ submit_and_track_request (T async, struct AsyncRequest *req)
   hash = request_hash (req->request_id);
   req->next = async->requests[hash];
   async->requests[hash] = req;
+
+  /* Initialize progress tracking fields */
+  req->completed = 0;
+  req->submitted_at = Socket_get_monotonic_ms();
 
   pthread_mutex_unlock (&async->mutex);
 
@@ -583,6 +596,15 @@ kqueue_complete_request (T async, struct AsyncRequest *req)
   int err;
 
   kqueue_perform_io (req, &result, &err);
+
+  /* Accumulate progress for partial transfers */
+  if (err == 0 && result > 0) {
+    size_t transferred = (size_t)result;
+    req->completed += transferred;
+    if (req->completed > req->len) {
+      req->completed = req->len;  /* Cap at requested length */
+    }
+  }
 
   if (req->cb)
     req->cb (req->socket, result, err, req->user_data);

@@ -1,5 +1,5 @@
 <map id="SocketIPTracker.h" name="SocketIPTracker.h">
-<area shape="rect" id="Node000001" title="Per&#45;IP connection tracking for rate limiting and DoS protection." alt="" coords="31,5,161,31"/>
+<area shape="rect" id="Node000001" title="Header for IP connection tracker module." alt="" coords="31,5,161,31"/>
 <area shape="rect" id="Node000002" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="48,79,144,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,31,99,65,93,65,93,31"/>
 <area shape="rect" id="Node000003" title=" " alt="" coords="5,152,75,177"/>

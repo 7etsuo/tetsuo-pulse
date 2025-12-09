@@ -1,0 +1,8 @@
+<map id="SocketHTTPClient_CookieJar" name="SocketHTTPClient_CookieJar">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,181,204,207"/>
+<area shape="rect" id="Node000002" href="$structCookieEntry.html" title=" " alt="" coords="57,93,152,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,133,107,181,102,181,102,133"/>
+<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="167,97,179,106,170,114,153,117,152,111,168,109,173,106,164,102"/>
+<area shape="rect" id="Node000003" href="$structSocketHTTPClient__Cookie.html" title=" " alt="" coords="15,5,195,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,45,107,93,102,93,102,45"/>
+</map>

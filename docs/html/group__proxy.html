@@ -204,7 +204,7 @@ Macros</h2></td></tr>
 <dd>
 <a class="el" href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490" title="Parse proxy URL string into configuration structure.">SocketProxy_parse_url()</a> URL parsing. </dd>
 <dd>
-<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for error codes. </dd>
+<a class="el" href="group__core__io.html#gae980e6a437316380a792464ce32a595e" title="Result codes for proxy operations.">SocketProxy_Result</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes. </dd>
 <dd>
 <a class="el" href="group__async__io.html">Async I/O Modules</a> for event integration. </dd>
 <dd>
@@ -258,7 +258,7 @@ SocketPool for management. </dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html">Connection Management</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">details</a>. </dd>
 <dd>
-<a class="el" href="SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols.">include/socket/SocketProxy.h</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">full</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">API</a>. </dd></dl>
+<a class="el" href="SocketProxy_8h.html" title="Proxy tunneling module for HTTP CONNECT and SOCKS protocols.">include/socket/SocketProxy.h</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">for</a> <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">full</a> <a class="el" href="group__proxy.html" title="Transparent TCP proxy support with sync/async APIs.">Proxy Tunneling Module</a> API. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketProxy_8h_source.html#l00360">360</a> of file <a class="el" href="SocketProxy_8h_source.html">SocketProxy.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -317,7 +317,7 @@ port</td>
 <td class="fieldname">
 tls_ctx</td>
 <td class="fielddoc">
-TLS configuration for HTTPS proxies (TLS to proxy server). <p>TLS context. NULL uses secure system defaults if available. Requires <a class="el" href="group__proxy.html#aff28145ee5466be9d0e12fba3e07dc97">if</a> SOCKET_HAS_TLS. </p>
+TLS configuration for HTTPS proxies (TLS to proxy server). <p>TLS context. NULL uses secure system defaults if available. Requires <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> SOCKET_HAS_TLS. </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="aa04cfa88d52d6c1f889f9f936a141141" name="aa04cfa88d52d6c1f889f9f936a141141"></a><a class="el" href="group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132">SocketProxyType</a></td>

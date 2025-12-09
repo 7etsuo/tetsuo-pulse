@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Asynchronous I/O operations using platform&#45;optimized mechanisms.">
+<g id="a_Node000001"><a xlink:title="Platform&#45;optimized asynchronous I/O for high&#45;performance networking.">
 <polygon fill="#999999" stroke="#666666" points="163.5,-74 80.5,-74 80.5,-55 163.5,-55 163.5,-74"/>
 <text text-anchor="middle" x="122" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketAsync.h</text>
 </a>
@@ -38,7 +38,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title="Internal implementation details for SocketPoll module.">
+<g id="a_Node000003"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="238,-19 134,-19 134,0 238,0 238,-19"/>
 <text text-anchor="middle" x="186" y="-7" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll&#45;private.h</text>
 </a>

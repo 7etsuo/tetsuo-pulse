@@ -114,9 +114,12 @@ $(document).ready(function(){initNavTree('SocketDTLS_8h.html',''); initResizable
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketDTLS.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketDTLS.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a> &raquo; <a class="el" href="group__dtls.html">Datagram TLS (DTLS) Module</a></div></div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Core DTLS API for secure UDP sockets.  
+<a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketDgram_8h_source.html">socket/SocketDgram.h</a>&quot;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -169,22 +172,22 @@ Functions</h2></td></tr>
 <tr class="memdesc:gabf3857e3cea92190f4c6eca7a8418be3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set SNI hostname for client DTLS connections.  <br /></td></tr>
 <tr class="separator:gabf3857e3cea92190f4c6eca7a8418be3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga804d5dd4b27255e3c9c28c58a2914a18" id="r_ga804d5dd4b27255e3c9c28c58a2914a18"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga804d5dd4b27255e3c9c28c58a2914a18">SocketDTLS_set_mtu</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, size_t mtu)</td></tr>
-<tr class="memdesc:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set link MTU for this connection.  <br /></td></tr>
+<tr class="memdesc:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set per-connection MTU for DTLS record sizing.  <br /></td></tr>
 <tr class="separator:ga804d5dd4b27255e3c9c28c58a2914a18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga17e8bd79af2c5a20b5dbb9e8dff6f84c" id="r_ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga17e8bd79af2c5a20b5dbb9e8dff6f84c">SocketDTLS_handshake</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform non-blocking DTLS handshake step.  <br /></td></tr>
+<tr class="memdesc:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform one step of the non-blocking DTLS handshake.  <br /></td></tr>
 <tr class="separator:ga17e8bd79af2c5a20b5dbb9e8dff6f84c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga095bfc830b421398fbecacb1ac3d6755" id="r_ga095bfc830b421398fbecacb1ac3d6755"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga095bfc830b421398fbecacb1ac3d6755">SocketDTLS_handshake_loop</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, int timeout_ms)</td></tr>
-<tr class="memdesc:ga095bfc830b421398fbecacb1ac3d6755"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete handshake with timeout (blocking helper)  <br /></td></tr>
+<tr class="memdesc:ga095bfc830b421398fbecacb1ac3d6755"><td class="mdescLeft">&#160;</td><td class="mdescRight">Blocking DTLS handshake with configurable timeout.  <br /></td></tr>
 <tr class="separator:ga095bfc830b421398fbecacb1ac3d6755"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0e2af3b3ad31869d659162ea06cf667b" id="r_ga0e2af3b3ad31869d659162ea06cf667b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0e2af3b3ad31869d659162ea06cf667b">SocketDTLS_listen</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga0e2af3b3ad31869d659162ea06cf667b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Server Wait for incoming DTLS connection.  <br /></td></tr>
+<tr class="memdesc:ga0e2af3b3ad31869d659162ea06cf667b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Server-side initial DTLS handshake receive.  <br /></td></tr>
 <tr class="separator:ga0e2af3b3ad31869d659162ea06cf667b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9fe6acb926cc7fbc8c4f0239834b5460" id="r_ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga9fe6acb926cc7fbc8c4f0239834b5460">SocketDTLS_send</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const void *buf, size_t len)</td></tr>
-<tr class="memdesc:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send data over DTLS-encrypted connection.  <br /></td></tr>
+<tr class="memdesc:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send application data over established DTLS connection.  <br /></td></tr>
 <tr class="separator:ga9fe6acb926cc7fbc8c4f0239834b5460"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac4fc033d5799456ce6d1b1417228c7e1" id="r_gac4fc033d5799456ce6d1b1417228c7e1"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gac4fc033d5799456ce6d1b1417228c7e1">SocketDTLS_recv</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, void *buf, size_t len)</td></tr>
-<tr class="memdesc:gac4fc033d5799456ce6d1b1417228c7e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive data from DTLS-encrypted connection.  <br /></td></tr>
+<tr class="memdesc:gac4fc033d5799456ce6d1b1417228c7e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive application data from established DTLS connection.  <br /></td></tr>
 <tr class="separator:gac4fc033d5799456ce6d1b1417228c7e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4e060f6143e7c9896452a6e0654041e5" id="r_ga4e060f6143e7c9896452a6e0654041e5"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4e060f6143e7c9896452a6e0654041e5">SocketDTLS_sendto</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, const void *buf, size_t len, const char *host, int port)</td></tr>
 <tr class="memdesc:ga4e060f6143e7c9896452a6e0654041e5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send DTLS datagram to specific address.  <br /></td></tr>
@@ -193,7 +196,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:gac974bd84fcd68c06870530c11908170f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive DTLS datagram with sender address.  <br /></td></tr>
 <tr class="separator:gac974bd84fcd68c06870530c11908170f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga12039ba9c9513fbf9df6e02f997d09ab" id="r_ga12039ba9c9513fbf9df6e02f997d09ab"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga12039ba9c9513fbf9df6e02f997d09ab">SocketDTLS_get_cipher</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get negotiated cipher suite name.  <br /></td></tr>
+<tr class="memdesc:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get name of negotiated cipher suite.  <br /></td></tr>
 <tr class="separator:ga12039ba9c9513fbf9df6e02f997d09ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4651d3701fdc086051bc90cecb79b11e" id="r_ga4651d3701fdc086051bc90cecb79b11e"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4651d3701fdc086051bc90cecb79b11e">SocketDTLS_get_version</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
 <tr class="memdesc:ga4651d3701fdc086051bc90cecb79b11e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get negotiated DTLS protocol version.  <br /></td></tr>
@@ -211,7 +214,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga7752aae6c38da47f187f8d766b4ae12e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current effective MTU.  <br /></td></tr>
 <tr class="separator:ga7752aae6c38da47f187f8d766b4ae12e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab42fd91bb31edaf15149d75920446a0a" id="r_gab42fd91bb31edaf15149d75920446a0a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab42fd91bb31edaf15149d75920446a0a">SocketDTLS_shutdown</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:gab42fd91bb31edaf15149d75920446a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform graceful DTLS connection shutdown.  <br /></td></tr>
+<tr class="memdesc:gab42fd91bb31edaf15149d75920446a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate graceful DTLS connection shutdown.  <br /></td></tr>
 <tr class="separator:gab42fd91bb31edaf15149d75920446a0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaad0b27539517934a510df081364e08ab" id="r_gaad0b27539517934a510df081364e08ab"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaad0b27539517934a510df081364e08ab">SocketDTLS_is_shutdown</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
 <tr class="memdesc:gaad0b27539517934a510df081364e08ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if DTLS shutdown completed.  <br /></td></tr>
@@ -247,7 +250,13 @@ Variables</h2></td></tr>
 <tr class="memdesc:ga28d15a7e6fc136b5d542236ef27f0be6"><td class="mdescLeft">&#160;</td><td class="mdescRight">DTLS shutdown failure.  <br /></td></tr>
 <tr class="separator:ga28d15a7e6fc136b5d542236ef27f0be6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-</div><!-- contents -->
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Core DTLS API for secure UDP sockets. </p>
+<p>Header defining opaque types, states, and functions for DTLS operations. See module docs for architecture and usage.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dtls.html">Datagram TLS (DTLS) Module</a> for full module guide </dd></dl>
+
+<p class="definition">Definition in file <a class="el" href="SocketDTLS_8h_source.html">SocketDTLS.h</a>.</p>
+</div></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>
 <footer class="footer">

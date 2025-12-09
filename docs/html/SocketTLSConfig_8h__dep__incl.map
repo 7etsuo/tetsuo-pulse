@@ -1,6 +1,6 @@
 <map id="SocketTLSConfig.h" name="SocketTLSConfig.h">
 <area shape="rect" id="Node000001" title="TLS configuration constants, structure, and secure defaults." alt="" coords="499,5,635,31"/>
-<area shape="rect" id="Node000002" href="$SocketTLS-private_8h.html" title="TLS internal shared definitions and helper functions." alt="" coords="251,152,392,177"/>
+<area shape="rect" id="Node000002" href="$SocketTLS-private_8h.html" title="Internal TLS module shared definitions, macros, and helper functions." alt="" coords="251,152,392,177"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="536,40,342,154,339,150,534,36"/>
 <area shape="rect" id="Node000003" href="$SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling." alt="" coords="663,79,807,104"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="607,34,708,76,706,81,605,38"/>

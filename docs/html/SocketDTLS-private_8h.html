@@ -162,22 +162,22 @@ Data Structures</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga1cfa464ec20b460ebee063b82b6100bf" id="r_ga1cfa464ec20b460ebee063b82b6100bf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga1cfa464ec20b460ebee063b82b6100bf">RAISE_DTLS_ERROR</a>(exception)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (SocketDTLS, exception)</td></tr>
-<tr class="memdesc:ga1cfa464ec20b460ebee063b82b6100bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAISE_DTLS_ERROR - Raise DTLS exception with detailed error message.  <br /></td></tr>
+<tr class="memdesc:ga1cfa464ec20b460ebee063b82b6100bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Raise a SocketDTLS module exception with automatically populated error details.  <br /></td></tr>
 <tr class="separator:ga1cfa464ec20b460ebee063b82b6100bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaafbc899f00128359bdc6d2f9d02e8944" id="r_gaafbc899f00128359bdc6d2f9d02e8944"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaafbc899f00128359bdc6d2f9d02e8944">RAISE_DTLS_ERROR_MSG</a>(exception,  msg)</td></tr>
-<tr class="memdesc:gaafbc899f00128359bdc6d2f9d02e8944"><td class="mdescLeft">&#160;</td><td class="mdescRight">RAISE_DTLS_ERROR_MSG - Raise DTLS exception with formatted message.  <br /></td></tr>
+<tr class="memdesc:gaafbc899f00128359bdc6d2f9d02e8944"><td class="mdescLeft">&#160;</td><td class="mdescRight">Raise a SocketDTLS exception with formatted error message and arguments.  <br /></td></tr>
 <tr class="separator:gaafbc899f00128359bdc6d2f9d02e8944"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga04c1b681fb568ffc8c89a37bcdcbcf80" id="r_ga04c1b681fb568ffc8c89a37bcdcbcf80"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga04c1b681fb568ffc8c89a37bcdcbcf80">REQUIRE_DTLS_ENABLED</a>(socket,  exception)</td></tr>
-<tr class="memdesc:ga04c1b681fb568ffc8c89a37bcdcbcf80"><td class="mdescLeft">&#160;</td><td class="mdescRight">REQUIRE_DTLS_ENABLED - Validate DTLS is enabled on socket.  <br /></td></tr>
+<tr class="memdesc:ga04c1b681fb568ffc8c89a37bcdcbcf80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate that DTLS is enabled on a socket, raising exception if not.  <br /></td></tr>
 <tr class="separator:ga04c1b681fb568ffc8c89a37bcdcbcf80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gacca68f6e3be556e42dcd9ab54da96ded" id="r_gacca68f6e3be556e42dcd9ab54da96ded"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gacca68f6e3be556e42dcd9ab54da96ded">DTLS_ERROR_MSG</a>(msg)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#a1feea47474a6b6e939c442cdd7c42fdb">SOCKET_ERROR_MSG</a> (msg)</td></tr>
-<tr class="memdesc:gacca68f6e3be556e42dcd9ab54da96ded"><td class="mdescLeft">&#160;</td><td class="mdescRight">DTLS_ERROR_MSG - Format simple error message.  <br /></td></tr>
+<tr class="memdesc:gacca68f6e3be556e42dcd9ab54da96ded"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format a simple static error message into the thread-local error buffer.  <br /></td></tr>
 <tr class="separator:gacca68f6e3be556e42dcd9ab54da96ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4e97bd0cd12ea34b564755e1a377d02f" id="r_ga4e97bd0cd12ea34b564755e1a377d02f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4e97bd0cd12ea34b564755e1a377d02f">DTLS_ERROR_FMT</a>(fmt, ...)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#adf114e63024eabf6e40f1ed7f89c79b8">SOCKET_ERROR_FMT</a> (fmt, ##__VA_ARGS__)</td></tr>
-<tr class="memdesc:ga4e97bd0cd12ea34b564755e1a377d02f"><td class="mdescLeft">&#160;</td><td class="mdescRight">DTLS_ERROR_FMT - Format error message with arguments.  <br /></td></tr>
+<tr class="memdesc:ga4e97bd0cd12ea34b564755e1a377d02f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format error message with printf-style arguments into thread-local buffer.  <br /></td></tr>
 <tr class="separator:ga4e97bd0cd12ea34b564755e1a377d02f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga223a7b4bdc35b2cd8c8828e3fd709414" id="r_ga223a7b4bdc35b2cd8c8828e3fd709414"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga223a7b4bdc35b2cd8c8828e3fd709414">VALIDATE_DTLS_IO_READY</a>(socket,  exception)</td></tr>
-<tr class="memdesc:ga223a7b4bdc35b2cd8c8828e3fd709414"><td class="mdescLeft">&#160;</td><td class="mdescRight">VALIDATE_DTLS_IO_READY - Validate socket is ready for DTLS I/O.  <br /></td></tr>
+<tr class="memdesc:ga223a7b4bdc35b2cd8c8828e3fd709414"><td class="mdescLeft">&#160;</td><td class="mdescRight">Comprehensive validation macro for DTLS socket readiness before I/O operations.  <br /></td></tr>
 <tr class="separator:ga223a7b4bdc35b2cd8c8828e3fd709414"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0acb682b8260ab1c60b918599864e2e5" id="r_a0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLS-private_8h.html#a0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a></td></tr>
 <tr class="separator:a0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -196,19 +196,19 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga8d5647f2b71d9cd5c60e6a1c385854dd" id="r_ga8d5647f2b71d9cd5c60e6a1c385854dd"><td class="memItemLeft" align="right" valign="top">static SSL *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga8d5647f2b71d9cd5c60e6a1c385854dd">dtls_socket_get_ssl</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket)</td></tr>
-<tr class="memdesc:ga8d5647f2b71d9cd5c60e6a1c385854dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">dtls_socket_get_ssl - Get SSL* from socket  <br /></td></tr>
+<tr class="memdesc:ga8d5647f2b71d9cd5c60e6a1c385854dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the SSL object pointer associated with a DTLS-enabled socket.  <br /></td></tr>
 <tr class="separator:ga8d5647f2b71d9cd5c60e6a1c385854dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaff7268760d38bc90af34fdbf313ecbb5" id="r_gaff7268760d38bc90af34fdbf313ecbb5"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__security.html#ga8e83c28a6ad188b97243c4b237ee075a">DTLSHandshakeState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaff7268760d38bc90af34fdbf313ecbb5">dtls_handle_ssl_error</a> (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> socket, SSL *ssl, int ssl_result)</td></tr>
-<tr class="memdesc:gaff7268760d38bc90af34fdbf313ecbb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">dtls_handle_ssl_error - Map OpenSSL errors to DTLSHandshakeState  <br /></td></tr>
+<tr class="memdesc:gaff7268760d38bc90af34fdbf313ecbb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map OpenSSL error codes to DTLS handshake states for non-blocking I/O.  <br /></td></tr>
 <tr class="separator:gaff7268760d38bc90af34fdbf313ecbb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga52868028efe42ac286ffdcad2e5f8a51" id="r_ga52868028efe42ac286ffdcad2e5f8a51"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga52868028efe42ac286ffdcad2e5f8a51">dtls_format_openssl_error</a> (const char *context)</td></tr>
-<tr class="memdesc:ga52868028efe42ac286ffdcad2e5f8a51"><td class="mdescLeft">&#160;</td><td class="mdescRight">dtls_format_openssl_error - Format OpenSSL error into buffer  <br /></td></tr>
+<tr class="memdesc:ga52868028efe42ac286ffdcad2e5f8a51"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format and log the current OpenSSL error queue into thread-local error buffer.  <br /></td></tr>
 <tr class="separator:ga52868028efe42ac286ffdcad2e5f8a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga43a9d75df4015935d50b33c528342d80" id="r_ga43a9d75df4015935d50b33c528342d80"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga43a9d75df4015935d50b33c528342d80">dtls_validate_file_path</a> (const char *path)</td></tr>
-<tr class="memdesc:ga43a9d75df4015935d50b33c528342d80"><td class="mdescLeft">&#160;</td><td class="mdescRight">dtls_validate_file_path - Validate certificate/key/CA file path  <br /></td></tr>
+<tr class="memdesc:ga43a9d75df4015935d50b33c528342d80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform security validation on file path strings for cert/key/CA loading.  <br /></td></tr>
 <tr class="separator:ga43a9d75df4015935d50b33c528342d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae37473787004b0ea65d2ee0b51702f44" id="r_gae37473787004b0ea65d2ee0b51702f44"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae37473787004b0ea65d2ee0b51702f44">dtls_cookie_generate_cb</a> (SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)</td></tr>
-<tr class="memdesc:gae37473787004b0ea65d2ee0b51702f44"><td class="mdescLeft">&#160;</td><td class="mdescRight">OpenSSL DTLS cookie generation callback.  <br /></td></tr>
+<tr class="memdesc:gae37473787004b0ea65d2ee0b51702f44"><td class="mdescLeft">&#160;</td><td class="mdescRight">OpenSSL callback for generating DTLS anti-DoS cookies during server handshake.  <br /></td></tr>
 <tr class="separator:gae37473787004b0ea65d2ee0b51702f44"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa177905ba40634829622c877b4f79976" id="r_aa177905ba40634829622c877b4f79976"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLS-private_8h.html#aa177905ba40634829622c877b4f79976">dtls_cookie_verify_cb</a> (SSL *ssl, const unsigned char *cookie, unsigned int cookie_len)</td></tr>
 <tr class="separator:aa177905ba40634829622c877b4f79976"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -229,7 +229,7 @@ Variables</h2></td></tr>
 <div class="textblock"><p>DTLS internal shared definitions and helper functions. </p>
 <p>Internal header for all DTLS module implementation files. Contains shared helper function declarations, error handling macros, internal types, and the <a class="el" href="group__security.html#structSocketDTLSContext__T" title="SocketDTLSContext_T - DTLS Context Structure.">SocketDTLSContext_T</a> structure definition. NOT part of public API - do not include from application code.</p>
 <p>Thread safety: Internal functions are not thread-safe unless noted.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDTLS_8h.html">SocketDTLS.h</a> for public DTLS API. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketDTLS_8h.html" title="Core DTLS API for secure UDP sockets.">SocketDTLS.h</a> for public DTLS API. </dd>
 <dd>
 <a class="el" href="SocketDTLSContext_8h.html" title="DTLS context management with cookie protection and secure defaults.">SocketDTLSContext.h</a> for public DTLS context API. </dd></dl>
 
@@ -272,7 +272,7 @@ Variables</h2></td></tr>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00486">486</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l01005">1005</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
 
 </div>
 </div>
@@ -283,12 +283,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a></td>
+          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00330">330</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00849">849</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
 
 </div>
 </div>

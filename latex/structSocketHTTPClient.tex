@@ -1,0 +1,75 @@
+\doxysection{Socket\+HTTPClient Struct Reference}
+\hypertarget{structSocketHTTPClient}{}\label{structSocketHTTPClient}\index{SocketHTTPClient@{SocketHTTPClient}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient-\/private.\+h$>$}
+
+
+
+Collaboration diagram for Socket\+HTTPClient\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{structSocketHTTPClient__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}} \mbox{\hyperlink{structSocketHTTPClient_a79eb1225f7138ae50860a257bbfca078}{config}}
+\item 
+\mbox{\hyperlink{structHTTPPool}{HTTPPool}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTPClient_a40be2a9dba1121cca3b469eb786511e6}{pool}}
+\item 
+\mbox{\hyperlink{structSocketHTTPClient__Auth}{Socket\+HTTPClient\+\_\+\+Auth}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHTTPClient_a534a744750deb1420d832522ff853732}{default\+\_\+auth}}
+\item 
+\mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} \mbox{\hyperlink{structSocketHTTPClient_ac57df4a31ddb7c5afeaecec82d66610b}{cookie\+\_\+jar}}
+\item 
+\Hypertarget{structSocketHTTPClient_aa2fa9b5a399b0dfe359eba0bd93bf007}\label{structSocketHTTPClient_aa2fa9b5a399b0dfe359eba0bd93bf007} 
+\mbox{\hyperlink{SocketHTTPClient_8h_a6b0f544308db17e698b4c05ac3358b75}{Socket\+HTTPClient\+\_\+\+Error}} {\bfseries last\+\_\+error}
+\item 
+pthread\+\_\+mutex\+\_\+t \mbox{\hyperlink{structSocketHTTPClient_afd54946fcdd3fabca40799f0175715a6}{mutex}}
+\item 
+\Hypertarget{structSocketHTTPClient_ab769f471e0fce11aa5640e880a782a33}\label{structSocketHTTPClient_ab769f471e0fce11aa5640e880a782a33} 
+Arena\+\_\+T {\bfseries arena}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP client main structure 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPClient_a79eb1225f7138ae50860a257bbfca078}\label{structSocketHTTPClient_a79eb1225f7138ae50860a257bbfca078} 
+\index{SocketHTTPClient@{SocketHTTPClient}!config@{config}}
+\index{config@{config}!SocketHTTPClient@{SocketHTTPClient}}
+\doxysubsubsection{\texorpdfstring{config}{config}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structSocketHTTPClient__Config}{Socket\+HTTPClient\+\_\+\+Config}} Socket\+HTTPClient\+::config}
+
+Configuration copy \Hypertarget{structSocketHTTPClient_ac57df4a31ddb7c5afeaecec82d66610b}\label{structSocketHTTPClient_ac57df4a31ddb7c5afeaecec82d66610b} 
+\index{SocketHTTPClient@{SocketHTTPClient}!cookie\_jar@{cookie\_jar}}
+\index{cookie\_jar@{cookie\_jar}!SocketHTTPClient@{SocketHTTPClient}}
+\doxysubsubsection{\texorpdfstring{cookie\_jar}{cookie\_jar}}
+{\footnotesize\ttfamily \mbox{\hyperlink{group__http_ga118e7e43ad387b22241607355dbdec9f}{Socket\+HTTPClient\+\_\+\+Cookie\+Jar\+\_\+T}} Socket\+HTTPClient\+::cookie\+\_\+jar}
+
+Associated cookie jar \Hypertarget{structSocketHTTPClient_a534a744750deb1420d832522ff853732}\label{structSocketHTTPClient_a534a744750deb1420d832522ff853732} 
+\index{SocketHTTPClient@{SocketHTTPClient}!default\_auth@{default\_auth}}
+\index{default\_auth@{default\_auth}!SocketHTTPClient@{SocketHTTPClient}}
+\doxysubsubsection{\texorpdfstring{default\_auth}{default\_auth}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structSocketHTTPClient__Auth}{Socket\+HTTPClient\+\_\+\+Auth}}\texorpdfstring{$\ast$}{*} Socket\+HTTPClient\+::default\+\_\+auth}
+
+Default auth (owned) \Hypertarget{structSocketHTTPClient_afd54946fcdd3fabca40799f0175715a6}\label{structSocketHTTPClient_afd54946fcdd3fabca40799f0175715a6} 
+\index{SocketHTTPClient@{SocketHTTPClient}!mutex@{mutex}}
+\index{mutex@{mutex}!SocketHTTPClient@{SocketHTTPClient}}
+\doxysubsubsection{\texorpdfstring{mutex}{mutex}}
+{\footnotesize\ttfamily pthread\+\_\+mutex\+\_\+t Socket\+HTTPClient\+::mutex}
+
+Protects shared client state (auth, cookies, pool access) \Hypertarget{structSocketHTTPClient_a40be2a9dba1121cca3b469eb786511e6}\label{structSocketHTTPClient_a40be2a9dba1121cca3b469eb786511e6} 
+\index{SocketHTTPClient@{SocketHTTPClient}!pool@{pool}}
+\index{pool@{pool}!SocketHTTPClient@{SocketHTTPClient}}
+\doxysubsubsection{\texorpdfstring{pool}{pool}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structHTTPPool}{HTTPPool}}\texorpdfstring{$\ast$}{*} Socket\+HTTPClient\+::pool}
+
+Connection pool 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient-private_8h}{Socket\+HTTPClient-\/private.\+h}}\end{DoxyCompactItemize}

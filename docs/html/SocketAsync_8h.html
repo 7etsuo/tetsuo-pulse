@@ -120,7 +120,7 @@ $(document).ready(function(){initNavTree('SocketAsync_8h.html',''); initResizabl
 </div><!--header-->
 <div class="contents">
 
-<p>Asynchronous I/O operations using platform-optimized mechanisms.  
+<p>Platform-optimized asynchronous I/O for high-performance networking.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket_8h_source.html">socket/Socket.h</a>&quot;</code><br />
@@ -150,7 +150,7 @@ Macros</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="typedef-members" name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr class="memitem:gad6644a0c3153b65fa217ecbc45b5b8f9" id="r_gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a>) (Socket_T socket, ssize_t bytes, int err, void *user_data)</td></tr>
-<tr class="memdesc:gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion callback type for asynchronous I/O operations.  <br /></td></tr>
+<tr class="memdesc:gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion callback invoked when an async I/O operation finishes.  <br /></td></tr>
 <tr class="separator:gad6644a0c3153b65fa217ecbc45b5b8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
@@ -163,7 +163,7 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8">ASYNC_FLAG_URGENT</a> = 1 &lt;&lt; 1
 <br />
  }</td></tr>
-<tr class="memdesc:gae66259c675b6f9658c95d34e1fbfefdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enumeration of flags controlling asynchronous I/O operation options.  <a href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">More...</a><br /></td></tr>
+<tr class="memdesc:gae66259c675b6f9658c95d34e1fbfefdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags to control behavior of asynchronous I/O operations.  <a href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">More...</a><br /></td></tr>
 <tr class="separator:gae66259c675b6f9658c95d34e1fbfefdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -172,56 +172,71 @@ Functions</h2></td></tr>
 <tr class="memdesc:ga1c4916e173cffa9153c983a4fd0d0d56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new standalone asynchronous I/O context.  <br /></td></tr>
 <tr class="separator:ga1c4916e173cffa9153c983a4fd0d0d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0d3a7b456b962c6abf4dfd91859492e0" id="r_ga0d3a7b456b962c6abf4dfd91859492e0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> *async)</td></tr>
-<tr class="memdesc:ga0d3a7b456b962c6abf4dfd91859492e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release resources associated with an async I/O context.  <br /></td></tr>
+<tr class="memdesc:ga0d3a7b456b962c6abf4dfd91859492e0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy an asynchronous I/O context and release associated resources.  <br /></td></tr>
 <tr class="separator:ga0d3a7b456b962c6abf4dfd91859492e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae0ecf4f023555d16b855d39841521f2b" id="r_gae0ecf4f023555d16b855d39841521f2b"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync_send</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, Socket_T socket, const void *buf, size_t len, <a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
-<tr class="memdesc:gae0ecf4f023555d16b855d39841521f2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit asynchronous send operation.  <br /></td></tr>
+<tr class="memdesc:gae0ecf4f023555d16b855d39841521f2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit an asynchronous send operation on a socket.  <br /></td></tr>
 <tr class="separator:gae0ecf4f023555d16b855d39841521f2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga46adb5a1db31901afa5d1d6514e41b64" id="r_ga46adb5a1db31901afa5d1d6514e41b64"><td class="memItemLeft" align="right" valign="top">unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, Socket_T socket, void *buf, size_t len, <a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a> cb, void *user_data, <a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a> flags)</td></tr>
-<tr class="memdesc:ga46adb5a1db31901afa5d1d6514e41b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit asynchronous receive operation.  <br /></td></tr>
+<tr class="memdesc:ga46adb5a1db31901afa5d1d6514e41b64"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit an asynchronous receive operation on a socket.  <br /></td></tr>
 <tr class="separator:ga46adb5a1db31901afa5d1d6514e41b64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga275aefb76cdeb48b9b9330a777a2bb8c" id="r_ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync_cancel</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, unsigned request_id)</td></tr>
-<tr class="memdesc:ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel pending async operation.  <br /></td></tr>
+<tr class="memdesc:ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel a pending asynchronous I/O operation by request ID.  <br /></td></tr>
 <tr class="separator:ga275aefb76cdeb48b9b9330a777a2bb8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga1cc05d5d1dd032943b57a03da3061da7" id="r_ga1cc05d5d1dd032943b57a03da3061da7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, int timeout_ms)</td></tr>
-<tr class="memdesc:ga1cc05d5d1dd032943b57a03da3061da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process pending async completions.  <br /></td></tr>
+<tr class="memdesc:ga1cc05d5d1dd032943b57a03da3061da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Poll and process completed asynchronous I/O operations.  <br /></td></tr>
 <tr class="separator:ga1cc05d5d1dd032943b57a03da3061da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0f304bcb93351c8555f9afa74fa9e665" id="r_ga0f304bcb93351c8555f9afa74fa9e665"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a> (const <a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
-<tr class="memdesc:ga0f304bcb93351c8555f9afa74fa9e665"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if async I/O is available on this platform.  <br /></td></tr>
+<tr class="memdesc:ga0f304bcb93351c8555f9afa74fa9e665"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query if native asynchronous I/O backend is operational.  <br /></td></tr>
 <tr class="separator:ga0f304bcb93351c8555f9afa74fa9e665"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gafae22c23e82d55f6fa3eaf74c0c37f5d" id="r_gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a> (const <a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
-<tr class="memdesc:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get name of async backend in use.  <br /></td></tr>
+<tr class="memdesc:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the name of the active asynchronous backend.  <br /></td></tr>
 <tr class="separator:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ga55b9b96eff9c17f45ff5bfb37f431075" id="r_ga55b9b96eff9c17f45ff5bfb37f431075"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga55b9b96eff9c17f45ff5bfb37f431075">SocketAsync_Failed</a></td></tr>
-<tr class="memdesc:ga55b9b96eff9c17f45ff5bfb37f431075"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on asynchronous I/O operation failures.  <br /></td></tr>
+<tr class="memdesc:ga55b9b96eff9c17f45ff5bfb37f431075"><td class="mdescLeft">&#160;</td><td class="mdescRight">Module-specific exception for fatal async I/O errors.  <br /></td></tr>
 <tr class="separator:ga55b9b96eff9c17f45ff5bfb37f431075"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Asynchronous I/O operations using platform-optimized mechanisms. </p>
-<p>Provides non-blocking I/O operations using platform-optimized async mechanisms:</p><ul>
-<li>Linux: io_uring (kernel 5.1+)</li>
-<li>macOS/BSD: kqueue AIO</li>
-<li>Fallback: Edge-triggered polling (if async unavailable)</li>
+<div class="textblock"><p>Platform-optimized asynchronous I/O for high-performance networking. </p>
+<p>This header defines the SocketAsync API for submitting non-blocking send/recv operations to kernel or user-space async mechanisms, with callback completion. Enables scalable I/O without busy-waiting or thread-per-connection models.</p>
+<h2><a class="anchor" id="autotoc_md508"></a>
+Features</h2>
+<ul>
+<li><b>Native Backends</b>: io_uring (Linux), kqueue AIO (BSD/macOS), poll fallback</li>
+<li><b>Zero-Copy Support</b>: Minimize copies for large transfers where possible</li>
+<li><b>Flags for Optimization</b>: Urgent ops, linking for low-latency</li>
+<li><b>Seamless Integration</b>: With SocketPoll for event-driven apps</li>
+<li><b>Thread-Safe</b>: Concurrent submissions and processing</li>
+<li><b>Fallback Graceful</b>: Transparent degradation on unsupported platforms</li>
 </ul>
-<p>Features:</p><ul>
-<li>Zero-copy operations where supported</li>
-<li>Callback-based completion handling</li>
-<li>Integration with SocketPoll for event-driven completion</li>
-<li>Thread-safe operation</li>
-</ul>
-<p>Platform Requirements:</p><ul>
-<li>Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if unavailable)</li>
-<li>macOS/BSD: kqueue with AIO support</li>
-<li>All platforms: Non-blocking sockets (automatically handled)</li>
-</ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0" title="Get async I/O context associated with poll instance.">SocketPoll_get_async()</a> for obtaining async interface. </dd>
+<h2><a class="anchor" id="autotoc_md509"></a>
+Platform Support</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Platform   </th><th class="markdownTableHeadNone">Backend   </th><th class="markdownTableHeadNone">Full Async   </th><th class="markdownTableHeadNone">Zero-Copy   </th><th class="markdownTableHeadNone">Notes    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Linux 5.1+   </td><td class="markdownTableBodyNone">io_uring   </td><td class="markdownTableBodyNone">Yes   </td><td class="markdownTableBodyNone">Yes   </td><td class="markdownTableBodyNone">Requires liburing-dev    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">macOS/FreeBSD   </td><td class="markdownTableBodyNone">kqueue   </td><td class="markdownTableBodyNone">Partial (edge)   </td><td class="markdownTableBodyNone">No   </td><td class="markdownTableBodyNone">AIO limited    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Other POSIX   </td><td class="markdownTableBodyNone">poll/epoll   </td><td class="markdownTableBodyNone">No (fallback)   </td><td class="markdownTableBodyNone">No   </td><td class="markdownTableBodyNone">Manual I/O in events   </td></tr>
+</table>
+<p>All backends require non-blocking sockets (auto-set). SIGPIPE handled internally.</p>
+<p>Typical usage: Obtain via <a class="el" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0" title="Get async I/O context associated with poll instance.">SocketPoll_get_async()</a> for event loops, or standalone <a class="el" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56" title="Create a new standalone asynchronous I/O context.">SocketAsync_new()</a> for custom loops. Submit ops, process completions via poll or manual.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html">Async I/O Modules</a> - Group overview including Happy Eyeballs integration. </dd>
 <dd>
-<a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b" title="Submit asynchronous send operation.">SocketAsync_send()</a> for asynchronous send operations. </dd>
+<a class="el" href="group__async__io.html#structSocketAsync__T" title="Core structure for asynchronous I/O context management.">SocketAsync_T</a> - Opaque context type. </dd>
 <dd>
-<a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64" title="Submit asynchronous receive operation.">SocketAsync_recv()</a> for asynchronous receive operations. </dd></dl>
+<a class="el" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56" title="Create a new standalone asynchronous I/O context.">SocketAsync_new()</a> - Standalone creation. </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0" title="Get async I/O context associated with poll instance.">SocketPoll_get_async()</a> - Recommended poll integration. </dd>
+<dd>
+<a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf" title="Bit flags to control behavior of asynchronous I/O operations.">SocketAsync_Flags</a> - Operation modifiers. </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> - Complete guide, examples, benchmarks. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
 </div></div><!-- contents -->

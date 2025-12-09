@@ -1,0 +1,31 @@
+<map id="include/http/SocketHTTP2.h" name="include/http/SocketHTTP2.h">
+<area shape="rect" id="Node000001" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control." alt="" coords="204,5,391,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,152,75,177"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,31,105,50,65,63,41,80,34,93,31,108,35,138,29,139,26,108,29,91,37,77,63,59,104,45,204,26"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="99,152,165,177"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="204,32,111,51,74,64,51,80,47,89,46,97,55,114,73,129,95,143,92,148,70,134,51,117,41,98,42,87,47,77,72,60,110,46,203,27"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="189,152,280,177"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="295,32,273,80,247,140,242,138,268,78,290,30"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="304,152,400,177"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="357,28,397,46,416,60,430,77,435,98,426,117,409,134,389,148,386,143,406,130,422,114,430,97,426,80,412,64,395,51,355,33"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="425,152,527,177"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="360,28,407,46,430,60,450,77,468,107,476,138,471,139,463,109,446,80,427,64,405,51,358,33"/>
+<area shape="rect" id="Node000007" href="$SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="62,79,207,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="272,33,175,75,173,71,270,28"/>
+<area shape="rect" id="Node000008" href="$SocketHTTP_8h.html" title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities." alt="" coords="283,79,416,104"/>
+<area shape="poly" id="edge12_Node000001_Node000008" title=" " alt="" coords="308,29,335,66,331,69,304,33"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="541,79,659,104"/>
+<area shape="poly" id="edge19_Node000001_Node000010" title=" " alt="" coords="347,28,538,73,537,78,345,33"/>
+<area shape="poly" id="edge7_Node000007_Node000002" title=" " alt="" coords="121,106,68,146,65,141,118,102"/>
+<area shape="poly" id="edge8_Node000007_Node000003" title=" " alt="" coords="137,104,136,139,130,138,132,104"/>
+<area shape="poly" id="edge9_Node000007_Node000004" title=" " alt="" coords="152,102,209,142,206,146,149,106"/>
+<area shape="poly" id="edge10_Node000007_Node000005" title=" " alt="" coords="170,101,305,145,303,150,169,107"/>
+<area shape="poly" id="edge11_Node000007_Node000006" title=" " alt="" coords="190,101,412,147,411,153,189,107"/>
+<area shape="poly" id="edge13_Node000008_Node000002" title=" " alt="" coords="299,107,89,154,88,149,297,101"/>
+<area shape="poly" id="edge14_Node000008_Node000003" title=" " alt="" coords="315,107,179,151,177,146,314,101"/>
+<area shape="poly" id="edge15_Node000008_Node000004" title=" " alt="" coords="332,106,266,147,264,142,330,102"/>
+<area shape="poly" id="edge17_Node000008_Node000005" title=" " alt="" coords="352,104,354,138,348,139,347,104"/>
+<area shape="poly" id="edge18_Node000008_Node000006" title=" " alt="" coords="371,102,445,143,442,147,368,106"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="552,152,611,177"/>
+<area shape="poly" id="edge16_Node000008_Node000009" title=" " alt="" coords="387,101,539,148,538,153,386,107"/>
+</map>

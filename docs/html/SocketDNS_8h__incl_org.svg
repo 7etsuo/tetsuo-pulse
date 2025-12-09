@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000001"><a xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="#999999" stroke="#666666" points="192,-129 115,-129 115,-110 192,-110 192,-129"/>
 <text text-anchor="middle" x="153.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDNS.h</text>
 </a>

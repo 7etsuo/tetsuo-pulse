@@ -1,30 +1,32 @@
 <map id="SocketUtil.h" name="SocketUtil.h">
-<area shape="rect" id="Node000001" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="903,5,998,31"/>
-<area shape="rect" id="Node000002" href="$SocketCommon-private_8h.html" title="Private declarations for the SocketCommon module." alt="" coords="172,79,343,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="890,28,362,81,343,83,343,78,361,76,889,23"/>
-<area shape="rect" id="Node000004" href="$SocketTLS-private_8h.html" title="TLS internal shared definitions and helper functions." alt="" coords="5,240,147,265"/>
-<area shape="poly" id="edge17_Node000001_Node000004" title=" " alt="" coords="890,23,727,28,516,38,309,55,224,67,161,81,119,93,86,104,59,121,34,153,30,164,30,176,37,199,51,221,66,238,62,242,47,224,32,201,24,176,25,163,30,151,55,117,84,99,117,88,159,76,223,62,309,50,515,33,727,22,890,18"/>
+<area shape="rect" id="Node000001" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="997,5,1091,31"/>
+<area shape="rect" id="Node000002" href="$SocketCommon-private_8h.html" title="Private declarations for SocketCommon module providing shared socket infrastructure." alt="" coords="172,79,343,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="983,27,362,81,343,83,343,78,361,76,983,22"/>
+<area shape="rect" id="Node000004" href="$SocketTLS-private_8h.html" title="Internal TLS module shared definitions, macros, and helper functions." alt="" coords="5,240,147,265"/>
+<area shape="poly" id="edge18_Node000001_Node000004" title=" " alt="" coords="983,23,803,26,565,35,330,53,233,65,161,81,119,93,86,104,59,121,34,153,30,164,30,176,37,199,51,221,66,238,62,242,47,224,32,201,24,176,25,163,30,151,55,117,84,99,117,88,159,76,232,60,329,47,564,30,803,21,983,17"/>
 <area shape="rect" id="Node000006" href="$SocketDTLS-private_8h.html" title="DTLS internal shared definitions and helper functions." alt="" coords="214,240,365,265"/>
-<area shape="poly" id="edge8_Node000001_Node000006" title=" " alt="" coords="889,21,772,23,629,31,559,38,496,49,444,63,407,81,394,93,385,105,377,131,371,161,356,193,331,221,307,242,303,238,328,217,351,191,366,159,372,130,380,103,390,89,404,76,442,58,495,43,558,33,629,25,771,17,889,16"/>
+<area shape="poly" id="edge8_Node000001_Node000006" title=" " alt="" coords="983,24,836,31,655,43,494,59,438,70,407,81,393,93,385,105,377,131,371,161,356,193,331,221,307,242,303,238,328,217,351,191,366,159,372,130,380,102,389,89,404,76,437,64,494,54,655,37,835,26,983,19"/>
 <area shape="rect" id="Node000007" href="$SocketDNS-private_8h.html" title="Internal structures, enums, and prototypes for asynchronous DNS resolver implementation." alt="" coords="417,79,564,104"/>
-<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="890,31,565,81,564,76,889,26"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="983,30,576,81,565,83,564,78,576,76,983,24"/>
 <area shape="rect" id="Node000009" href="$SocketHTTP-private_8h.html" title="Internal HTTP core structures and helper functions." alt="" coords="588,79,740,104"/>
-<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="892,37,711,81,710,76,891,31"/>
+<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="984,33,726,81,725,76,983,28"/>
 <area shape="rect" id="Node000011" href="$SocketHTTPClient-private_8h.html" title="Internal HTTP client structures and connection pooling." alt="" coords="764,79,951,104"/>
-<area shape="poly" id="edge11_Node000001_Node000011" title=" " alt="" coords="927,41,874,81,871,76,923,37"/>
-<area shape="rect" id="Node000012" href="$SocketPoll-private_8h.html" title="Internal implementation details for SocketPoll module." alt="" coords="975,79,1113,104"/>
-<area shape="poly" id="edge12_Node000001_Node000012" title=" " alt="" coords="978,37,1030,76,1027,81,975,41"/>
+<area shape="poly" id="edge11_Node000001_Node000011" title=" " alt="" coords="1002,38,889,81,887,76,1001,33"/>
+<area shape="rect" id="Node000012" href="$SocketPoll-private_8h.html" title=" " alt="" coords="975,79,1113,104"/>
+<area shape="poly" id="edge12_Node000001_Node000012" title=" " alt="" coords="1047,44,1047,79,1041,79,1041,44"/>
 <area shape="rect" id="Node000013" href="$SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module." alt="" coords="1138,79,1281,104"/>
-<area shape="poly" id="edge13_Node000001_Node000013" title=" " alt="" coords="1006,32,1168,76,1167,81,1005,37"/>
+<area shape="poly" id="edge13_Node000001_Node000013" title=" " alt="" coords="1084,34,1183,76,1181,81,1082,38"/>
 <area shape="rect" id="Node000014" href="$SocketProxy-private_8h.html" title="Internal structures and functions for SocketProxy module." alt="" coords="1305,79,1455,104"/>
-<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="1012,27,1311,76,1311,81,1011,32"/>
+<area shape="poly" id="edge14_Node000001_Node000014" title=" " alt="" coords="1105,29,1326,76,1325,81,1104,35"/>
 <area shape="rect" id="Node000015" href="$SocketRateLimit-private_8h.html" title="Private implementation details for the token bucket rate limiter module." alt="" coords="1480,79,1653,104"/>
-<area shape="poly" id="edge15_Node000001_Node000015" title=" " alt="" coords="1012,24,1468,76,1480,77,1479,83,1468,81,1011,29"/>
-<area shape="rect" id="Node000016" href="$SocketReconnect-private_8h.html" title="Internal implementation details for automatic reconnection framework." alt="" coords="1678,79,1858,104"/>
-<area shape="poly" id="edge16_Node000001_Node000016" title=" " alt="" coords="1012,21,1295,43,1666,76,1678,77,1678,83,1665,81,1294,49,1012,27"/>
-<area shape="rect" id="Node000017" href="$SocketWS-private_8h.html" title="Internal implementation details for WebSocket module." alt="" coords="1883,79,2021,104"/>
-<area shape="poly" id="edge18_Node000001_Node000017" title=" " alt="" coords="1012,19,1376,37,1621,54,1871,76,1883,77,1882,83,1870,81,1621,59,1375,43,1012,24"/>
-<area shape="rect" id="Node000003" href="$Socket-private_8h.html" title="Private implementation details for the Socket module, including internal structure definition...." alt="" coords="44,159,161,185"/>
+<area shape="poly" id="edge15_Node000001_Node000015" title=" " alt="" coords="1106,25,1483,76,1482,81,1105,30"/>
+<area shape="rect" id="Node000016" href="$SocketReconnect-private_8h.html" title="Private header for SocketReconnect module internals." alt="" coords="1678,79,1858,104"/>
+<area shape="poly" id="edge16_Node000001_Node000016" title=" " alt="" coords="1105,22,1666,76,1678,77,1678,83,1665,81,1105,28"/>
+<area shape="rect" id="Node000017" href="$SocketSYNProtect-private_8h.html" title="Internal SYN flood protection implementation details for the Security Modules group." alt="" coords="1883,79,2069,104"/>
+<area shape="poly" id="edge17_Node000001_Node000017" title=" " alt="" coords="1105,20,1432,42,1871,76,1883,77,1882,82,1870,81,1432,47,1105,26"/>
+<area shape="rect" id="Node000018" href="$SocketWS-private_8h.html" title="Internal implementation details for WebSocket module." alt="" coords="2093,79,2232,104"/>
+<area shape="poly" id="edge19_Node000001_Node000018" title=" " alt="" coords="1106,18,1515,36,1796,52,2082,76,2093,77,2093,83,2081,81,1795,58,1515,41,1105,24"/>
+<area shape="rect" id="Node000003" href="$Socket-private_8h.html" title="Private implementation details for Socket module: internal structure and shared utilities...." alt="" coords="44,159,161,185"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="223,113,127,161,124,157,221,108"/>
 <area shape="rect" id="Node000005" href="$SocketDgram-private_8h.html" title="Internal implementation details for datagram (UDP) socket structure." alt="" coords="186,159,342,185"/>
 <area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="262,118,266,159,260,159,257,118"/>

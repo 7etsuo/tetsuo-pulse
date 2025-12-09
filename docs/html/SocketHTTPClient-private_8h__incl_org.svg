@@ -372,7 +372,7 @@
 <!-- Node14 -->
 <g id="Node000014" class="node">
 <title>Node14</title>
-<g id="a_Node000014"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000014"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="2011,-129 1905,-129 1905,-110 2011,-110 2011,-129"/>
 <text text-anchor="middle" x="1958" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -732,7 +732,7 @@
 <!-- Node25 -->
 <g id="Node000025" class="node">
 <title>Node25</title>
-<g id="a_Node000025"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression (RFC 7541) for HTTP/2.">
+<g id="a_Node000025"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">
 <polygon fill="white" stroke="#666666" points="1416.5,-184 1307.5,-184 1307.5,-165 1416.5,-165 1416.5,-184"/>
 <text text-anchor="middle" x="1362" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHPACK.h</text>
 </a>
@@ -822,7 +822,7 @@
 <!-- Node27 -->
 <g id="Node000027" class="node">
 <title>Node27</title>
-<g id="a_Node000027"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000027"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="1887,-129 1791,-129 1791,-110 1887,-110 1887,-129"/>
 <text text-anchor="middle" x="1839" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>
@@ -1146,7 +1146,7 @@
 <!-- Node37 -->
 <g id="Node000037" class="node">
 <title>Node37</title>
-<g id="a_Node000037"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
+<g id="a_Node000037"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">
 <polygon fill="white" stroke="#666666" points="901.5,-294 814.5,-294 814.5,-275 901.5,-275 901.5,-294"/>
 <text text-anchor="middle" x="858" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">tls/SocketTLS.h</text>
 </a>

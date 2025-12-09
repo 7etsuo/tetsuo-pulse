@@ -1,0 +1,15 @@
+<map id="include/http/SocketHTTP.h" name="include/http/SocketHTTP.h">
+<area shape="rect" id="Node000001" title="Protocol&#45;agnostic HTTP types, header handling, URI parsing, and utilities." alt="" coords="195,5,373,31"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,79,75,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="246,33,88,79,87,74,244,28"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="99,79,165,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="261,33,170,75,168,70,258,28"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="189,79,280,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="278,33,253,69,248,66,274,29"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="304,79,363,104"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="294,29,320,66,315,69,290,33"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="387,79,483,104"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="309,28,399,70,396,75,307,33"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="507,79,610,104"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="329,28,502,73,500,78,327,33"/>
+</map>

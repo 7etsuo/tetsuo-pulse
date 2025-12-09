@@ -1,0 +1,90 @@
+\doxysection{Socket\+HTTP2\+\_\+\+Config Struct Reference}
+\hypertarget{structSocketHTTP2__Config}{}\label{structSocketHTTP2__Config}\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+
+
+{\ttfamily \#include $<$Socket\+HTTP2.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structSocketHTTP2__Config_a8baa42ce5d63ef1d1269bfc2e3ae83ee}\label{structSocketHTTP2__Config_a8baa42ce5d63ef1d1269bfc2e3ae83ee} 
+\mbox{\hyperlink{SocketHTTP2_8h_abdba00019b45cc844046f038c7c7d590}{Socket\+HTTP2\+\_\+\+Role}} {\bfseries role}
+\item 
+\Hypertarget{structSocketHTTP2__Config_a0a3a1ca12e972c4cc3eb021be7edfb3a}\label{structSocketHTTP2__Config_a0a3a1ca12e972c4cc3eb021be7edfb3a} 
+uint32\+\_\+t {\bfseries header\+\_\+table\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTP2__Config_ade8731b7297accc9c4ab533cb8a91dcf}\label{structSocketHTTP2__Config_ade8731b7297accc9c4ab533cb8a91dcf} 
+uint32\+\_\+t {\bfseries enable\+\_\+push}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Config_a4f948d55c4fc6947b5da693aad073731}{max\+\_\+concurrent\+\_\+streams}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Config_a47341b7c9c96d8de9fbbd75debe89d0e}{max\+\_\+stream\+\_\+open\+\_\+rate}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Config_aa7d444c755f09f5ebca1a996c71b5120}{max\+\_\+stream\+\_\+open\+\_\+burst}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Config_a938e74eab04a08111335da2fcec3f2d0}{max\+\_\+stream\+\_\+close\+\_\+rate}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__Config_a4572833d76ee10a1bddd1470cc789d4f}{max\+\_\+stream\+\_\+close\+\_\+burst}}
+\item 
+\Hypertarget{structSocketHTTP2__Config_a27e2a7a74af88f8ce2403fe7405acf6e}\label{structSocketHTTP2__Config_a27e2a7a74af88f8ce2403fe7405acf6e} 
+uint32\+\_\+t {\bfseries initial\+\_\+window\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTP2__Config_ae782ebee629c89a54830be6dbe1b9dc0}\label{structSocketHTTP2__Config_ae782ebee629c89a54830be6dbe1b9dc0} 
+uint32\+\_\+t {\bfseries max\+\_\+frame\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTP2__Config_ae41f20c6701d09c2282323da601db1dc}\label{structSocketHTTP2__Config_ae41f20c6701d09c2282323da601db1dc} 
+uint32\+\_\+t {\bfseries max\+\_\+header\+\_\+list\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTP2__Config_ab1162906710ac2724ea9d0abf0384851}\label{structSocketHTTP2__Config_ab1162906710ac2724ea9d0abf0384851} 
+uint32\+\_\+t {\bfseries connection\+\_\+window\+\_\+size}
+\item 
+\Hypertarget{structSocketHTTP2__Config_affa0492a72097f3972ca3aa8ba5ea651}\label{structSocketHTTP2__Config_affa0492a72097f3972ca3aa8ba5ea651} 
+int {\bfseries settings\+\_\+timeout\+\_\+ms}
+\item 
+\Hypertarget{structSocketHTTP2__Config_a50c501438f1e35ef6260bb4de12719fa}\label{structSocketHTTP2__Config_a50c501438f1e35ef6260bb4de12719fa} 
+int {\bfseries ping\+\_\+timeout\+\_\+ms}
+\item 
+\Hypertarget{structSocketHTTP2__Config_a4675986a4a1964712533e8596627b0b1}\label{structSocketHTTP2__Config_a4675986a4a1964712533e8596627b0b1} 
+int {\bfseries idle\+\_\+timeout\+\_\+ms}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP/2 connection configuration 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTP2__Config_a4f948d55c4fc6947b5da693aad073731}\label{structSocketHTTP2__Config_a4f948d55c4fc6947b5da693aad073731} 
+\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}!max\_concurrent\_streams@{max\_concurrent\_streams}}
+\index{max\_concurrent\_streams@{max\_concurrent\_streams}!SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_concurrent\_streams}{max\_concurrent\_streams}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Config\+::max\+\_\+concurrent\+\_\+streams}
+
+Max concurrent streams (SETTINGS\+\_\+\+MAX\+\_\+\+CONCURRENT\+\_\+\+STREAMS) \Hypertarget{structSocketHTTP2__Config_a4572833d76ee10a1bddd1470cc789d4f}\label{structSocketHTTP2__Config_a4572833d76ee10a1bddd1470cc789d4f} 
+\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}!max\_stream\_close\_burst@{max\_stream\_close\_burst}}
+\index{max\_stream\_close\_burst@{max\_stream\_close\_burst}!SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_stream\_close\_burst}{max\_stream\_close\_burst}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Config\+::max\+\_\+stream\+\_\+close\+\_\+burst}
+
+Burst for closes/\+RST \Hypertarget{structSocketHTTP2__Config_a938e74eab04a08111335da2fcec3f2d0}\label{structSocketHTTP2__Config_a938e74eab04a08111335da2fcec3f2d0} 
+\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}!max\_stream\_close\_rate@{max\_stream\_close\_rate}}
+\index{max\_stream\_close\_rate@{max\_stream\_close\_rate}!SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_stream\_close\_rate}{max\_stream\_close\_rate}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Config\+::max\+\_\+stream\+\_\+close\+\_\+rate}
+
+Max stream closes/\+RST per second \Hypertarget{structSocketHTTP2__Config_aa7d444c755f09f5ebca1a996c71b5120}\label{structSocketHTTP2__Config_aa7d444c755f09f5ebca1a996c71b5120} 
+\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}!max\_stream\_open\_burst@{max\_stream\_open\_burst}}
+\index{max\_stream\_open\_burst@{max\_stream\_open\_burst}!SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_stream\_open\_burst}{max\_stream\_open\_burst}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Config\+::max\+\_\+stream\+\_\+open\+\_\+burst}
+
+Burst allowance for stream opens \Hypertarget{structSocketHTTP2__Config_a47341b7c9c96d8de9fbbd75debe89d0e}\label{structSocketHTTP2__Config_a47341b7c9c96d8de9fbbd75debe89d0e} 
+\index{SocketHTTP2\_Config@{SocketHTTP2\_Config}!max\_stream\_open\_rate@{max\_stream\_open\_rate}}
+\index{max\_stream\_open\_rate@{max\_stream\_open\_rate}!SocketHTTP2\_Config@{SocketHTTP2\_Config}}
+\doxysubsubsection{\texorpdfstring{max\_stream\_open\_rate}{max\_stream\_open\_rate}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Config\+::max\+\_\+stream\+\_\+open\+\_\+rate}
+
+Max stream opens per second for rate limiting 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTP2_8h}{Socket\+HTTP2.\+h}}\end{DoxyCompactItemize}

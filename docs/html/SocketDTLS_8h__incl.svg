@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title=" ">
+<g id="a_Node000001"><a xlink:title="Core DTLS API for secure UDP sockets.">
 <polygon fill="#999999" stroke="#666666" points="81,-294 0,-294 0,-275 81,-275 81,-294"/>
 <text text-anchor="middle" x="40.5" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">SocketDTLS.h</text>
 </a>
@@ -363,7 +363,7 @@ var sectionId = 'dynsection-0';
 <!-- Node17 -->
 <g id="Node000017" class="node">
 <title>Node17</title>
-<g id="a_Node000017"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000017"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="619.5,-129 513.5,-129 513.5,-110 619.5,-110 619.5,-129"/>
 <text text-anchor="middle" x="566.5" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>

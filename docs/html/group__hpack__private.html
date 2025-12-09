@@ -111,50 +111,46 @@ $(document).ready(function(){initNavTree('group__hpack__private.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#files">Files</a> &#124;
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">HPACK Private Implementation Details<div class="ingroups"><a class="el" href="group__http.html">HTTP Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">HPACK Private Implementation Details</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Internal HPACK header compression structures and constants (RFC 7541).  
+<a href="#details">More...</a></p>
 <div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Collaboration diagram for HPACK Private Implementation Details:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="group__hpack__private.svg" width="535" height="166"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="group__hpack__private.svg" width="535" height="134"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="files" name="files"></a>
-Files</h2></td></tr>
-<tr class="memitem:SocketHPACK-private_8h" id="r_SocketHPACK-private_8h"><td class="memItemLeft" align="right" valign="top">file &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketHPACK-private_8h.html">SocketHPACK-private.h</a></td></tr>
-<tr class="memdesc:SocketHPACK-private_8h"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal HPACK header compression structures and constants. <br /></td></tr>
-<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
-<tr class="memitem:structHPACK__DynamicEntry" id="r_structHPACK__DynamicEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a></td></tr>
-<tr class="memdesc:structHPACK__DynamicEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK dynamic table storing a header field name-value pair.  <a href="group__http.html#structHPACK__DynamicEntry">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__DynamicEntry" id="r_structHPACK__DynamicEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a></td></tr>
+<tr class="memdesc:structHPACK__DynamicEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK dynamic table storing a header field name-value pair.  <a href="group__hpack__private.html#structHPACK__DynamicEntry">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__DynamicEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Table" id="r_structSocketHPACK__Table"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Table">SocketHPACK_Table_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Table"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamic table for storing header fields in HPACK compression (RFC 7541).  <a href="group__http.html#structSocketHPACK__Table">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Table" id="r_structSocketHPACK__Table"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Table">SocketHPACK_Table_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Table"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dynamic table for storing header fields in HPACK compression (RFC 7541).  <a href="group__hpack__private.html#structSocketHPACK__Table">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Table"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Encoder" id="r_structSocketHPACK__Encoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Encoder">SocketHPACK_Encoder_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Encoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header encoder.  <a href="group__http.html#structSocketHPACK__Encoder">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Encoder" id="r_structSocketHPACK__Encoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Encoder">SocketHPACK_Encoder_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Encoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header encoder.  <a href="group__hpack__private.html#structSocketHPACK__Encoder">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Encoder"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structSocketHPACK__Decoder" id="r_structSocketHPACK__Decoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structSocketHPACK__Decoder">SocketHPACK_Decoder_T</a></td></tr>
-<tr class="memdesc:structSocketHPACK__Decoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header decoder.  <a href="group__http.html#structSocketHPACK__Decoder">More...</a><br /></td></tr>
+<tr class="memitem:structSocketHPACK__Decoder" id="r_structSocketHPACK__Decoder"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structSocketHPACK__Decoder">SocketHPACK_Decoder_T</a></td></tr>
+<tr class="memdesc:structSocketHPACK__Decoder"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal structure for HPACK header decoder.  <a href="group__hpack__private.html#structSocketHPACK__Decoder">More...</a><br /></td></tr>
 <tr class="separator:structSocketHPACK__Decoder"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__StaticEntry" id="r_structHPACK__StaticEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__StaticEntry">HPACK_StaticEntry</a></td></tr>
-<tr class="memdesc:structHPACK__StaticEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure for entries in the HPACK static table (RFC 7541 Table 2).  <a href="group__http.html#structHPACK__StaticEntry">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__StaticEntry" id="r_structHPACK__StaticEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__StaticEntry">HPACK_StaticEntry</a></td></tr>
+<tr class="memdesc:structHPACK__StaticEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure for entries in the HPACK static table (RFC 7541 Table 2).  <a href="group__hpack__private.html#structHPACK__StaticEntry">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__StaticEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__HuffmanSymbol" id="r_structHPACK__HuffmanSymbol"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a></td></tr>
-<tr class="memdesc:structHPACK__HuffmanSymbol"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK Huffman encoding table for a specific symbol.  <a href="group__http.html#structHPACK__HuffmanSymbol">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__HuffmanSymbol" id="r_structHPACK__HuffmanSymbol"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a></td></tr>
+<tr class="memdesc:structHPACK__HuffmanSymbol"><td class="mdescLeft">&#160;</td><td class="mdescRight">Entry in the HPACK Huffman encoding table for a specific symbol.  <a href="group__hpack__private.html#structHPACK__HuffmanSymbol">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__HuffmanSymbol"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:structHPACK__HuffmanTransition" id="r_structHPACK__HuffmanTransition"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a></td></tr>
-<tr class="memdesc:structHPACK__HuffmanTransition"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition entry in the Huffman decoding DFA table.  <a href="group__http.html#structHPACK__HuffmanTransition">More...</a><br /></td></tr>
+<tr class="memitem:structHPACK__HuffmanTransition" id="r_structHPACK__HuffmanTransition"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a></td></tr>
+<tr class="memdesc:structHPACK__HuffmanTransition"><td class="mdescLeft">&#160;</td><td class="mdescRight">Transition entry in the Huffman decoding DFA table.  <a href="group__hpack__private.html#structHPACK__HuffmanTransition">More...</a><br /></td></tr>
 <tr class="separator:structHPACK__HuffmanTransition"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -186,48 +182,80 @@ Macros</h2></td></tr>
 <tr class="memitem:gafd975c9395b773cfe1f998aa0e0168b2" id="r_gafd975c9395b773cfe1f998aa0e0168b2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafd975c9395b773cfe1f998aa0e0168b2">HPACK_DFA_ACCEPT</a>&#160;&#160;&#160;0x01</td></tr>
 <tr class="memdesc:gafd975c9395b773cfe1f998aa0e0168b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags for Huffman DFA transition behavior.  <br /></td></tr>
 <tr class="separator:gafd975c9395b773cfe1f998aa0e0168b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga881cd71b1434a2a5a11bd50cb61d312d" id="r_ga881cd71b1434a2a5a11bd50cb61d312d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga881cd71b1434a2a5a11bd50cb61d312d">HPACK_DFA_EOS</a>&#160;&#160;&#160;0x02</td></tr>
+<tr class="separator:ga881cd71b1434a2a5a11bd50cb61d312d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2065e9129b247f7f4ab0b363095f1839" id="r_ga2065e9129b247f7f4ab0b363095f1839"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga2065e9129b247f7f4ab0b363095f1839">HPACK_DFA_ERROR</a>&#160;&#160;&#160;0x04</td></tr>
+<tr class="separator:ga2065e9129b247f7f4ab0b363095f1839"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga76662d61395b8b2c9f2034c074083b4f" id="r_ga76662d61395b8b2c9f2034c074083b4f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga76662d61395b8b2c9f2034c074083b4f">HPACK_DFA_SYM2</a>&#160;&#160;&#160;0x08</td></tr>
+<tr class="separator:ga76662d61395b8b2c9f2034c074083b4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gac25f68940182c09fbe7f99e847b9f34f" id="r_gac25f68940182c09fbe7f99e847b9f34f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f">hpack_table_evict</a> (SocketHPACK_Table_T table, size_t required_space)</td></tr>
-<tr class="memdesc:gac25f68940182c09fbe7f99e847b9f34f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evict oldest entries from dynamic table to free up required space.  <br /></td></tr>
+<tr class="memdesc:gac25f68940182c09fbe7f99e847b9f34f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evict oldest entries from the dynamic table to free space for new insertions.  <br /></td></tr>
 <tr class="separator:gac25f68940182c09fbe7f99e847b9f34f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8" id="r_ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8">hpack_entry_size</a> (size_t name_len, size_t value_len)</td></tr>
-<tr class="memdesc:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute the size of a dynamic table entry per RFC 7541 Section 4.1.  <br /></td></tr>
+<tr class="memdesc:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1.  <br /></td></tr>
 <tr class="separator:ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:gafedbf3fdd77193dc9d1419e9eaa8abd0" id="r_gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafedbf3fdd77193dc9d1419e9eaa8abd0">hpack_huffman_encode</a> [257]</td></tr>
+<tr class="memitem:gafedbf3fdd77193dc9d1419e9eaa8abd0" id="r_gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#gafedbf3fdd77193dc9d1419e9eaa8abd0">hpack_huffman_encode</a> [257]</td></tr>
 <tr class="memdesc:gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Precomputed Huffman encoding table for all 257 symbols.  <br /></td></tr>
 <tr class="separator:gafedbf3fdd77193dc9d1419e9eaa8abd0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga6ac50cbaa6f5bfc19372fa7b656342ef" id="r_ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga6ac50cbaa6f5bfc19372fa7b656342ef">hpack_huffman_decode</a> [256][16]</td></tr>
+<tr class="memitem:ga6ac50cbaa6f5bfc19372fa7b656342ef" id="r_ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga6ac50cbaa6f5bfc19372fa7b656342ef">hpack_huffman_decode</a> [256][16]</td></tr>
 <tr class="memdesc:ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">DFA table for Huffman decoding (state-machine transitions).  <br /></td></tr>
 <tr class="separator:ga6ac50cbaa6f5bfc19372fa7b656342ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga68ff3c1525cfd78881c6140936758c78" id="r_ga68ff3c1525cfd78881c6140936758c78"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__http.html#structHPACK__StaticEntry">HPACK_StaticEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78">hpack_static_table</a> [61]</td></tr>
+<tr class="memitem:ga68ff3c1525cfd78881c6140936758c78" id="r_ga68ff3c1525cfd78881c6140936758c78"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__hpack__private.html#structHPACK__StaticEntry">HPACK_StaticEntry</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78">hpack_static_table</a> [61]</td></tr>
 <tr class="memdesc:ga68ff3c1525cfd78881c6140936758c78"><td class="mdescLeft">&#160;</td><td class="mdescRight">Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A).  <br /></td></tr>
 <tr class="separator:ga68ff3c1525cfd78881c6140936758c78"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>This header contains internal structures for the HPACK header compression implementation. NOT for public consumption - use <a class="el" href="SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2.">SocketHPACK.h</a> instead.</p>
-<p>Key internals:</p><ul>
-<li>Dynamic table circular buffer implementation</li>
-<li>Huffman encoding/decoding DFA tables and state machines</li>
-<li>Encoder/decoder internal structures</li>
-<li>HPACK integer encoding/decoding primitives</li>
-<li>Static table access functions</li>
-<li>Compression bomb prevention limits</li>
+<p>Internal HPACK header compression structures and constants (RFC 7541). </p>
+<p>This header contains private implementation details for HPACK header compression. <b>NOT</b> for public or external use - use <a class="el" href="SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">SocketHPACK.h</a> for the public API.</p>
+<ul>
+<li><b>Dynamic Table</b>: Circular buffer for header field storage with eviction (Section 4.1)</li>
+<li><b>Huffman Coding</b>: DFA-based encoder/decoder tables for efficient compression (Appendix B)</li>
+<li><b>Encoder State</b>: Manages indexing strategy, table updates, and output buffering</li>
+<li><b>Decoder State</b>: Handles decompression with security limits against HPACK bombs</li>
+<li><b>Static Table</b>: 61 predefined entries for common HTTP headers (Appendix A)</li>
+<li><b>Primitives</b>: Integer and string encoding/decoding utilities</li>
 </ul>
-<p>The implementation uses DFA-based Huffman decoding for O(n) single-pass decompression with security hardening against compression bombs.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2.">SocketHPACK.h</a> for public HPACK API. </dd>
+<h2><a class="anchor" id="autotoc_md278"></a>
+Security Features</h2>
+<ul>
+<li>Overflow protection via <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Validate addition of two sizes for potential overflow.">SocketSecurity_check_add()</a> for all size calculations</li>
+<li>Configurable limits on header sizes and expansion ratios</li>
+<li>Validation of Huffman padding and table size updates</li>
+<li>Never-indexing for sensitive headers (e.g., authorization, cookies)</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md279"></a>
+Performance Characteristics</h2>
+<ul>
+<li><b>O(1)</b> average-case table operations (hash lookups, circular buffer)</li>
+<li><b>O(n)</b> Huffman decoding (single-pass DFA traversal)</li>
+<li><b>O(m)</b> static table lookup where m=61 (linear or binary search)</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md280"></a>
+Thread Safety</h2>
+<p>Internal structures are <b>not thread-safe</b>. Encoder/decoder instances require external synchronization if shared across threads. Use thread-local arenas.</p>
+<h2><a class="anchor" id="autotoc_md281"></a>
+Implementation Files</h2>
+<ul>
+<li>SocketHPACK.c: Core encoder/decoder logic</li>
+<li>SocketHPACK-table.c: Static/dynamic table management</li>
+<li>SocketHPACK-huffman.c: Huffman tables and algorithms</li>
+</ul>
+<dl class="section warning"><dt>Warning</dt><dd>Modifying private structures may break binary compatibility or security. </dd>
 <dd>
-<a class="el" href="SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">SocketHTTP2.h</a> for HTTP/2 integration. </dd>
+Internal functions may change without notice between releases.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">SocketHPACK.h</a> for stable public API </dd>
 <dd>
-<a class="el" href="SocketHTTP-private_8h.html" title="Internal HTTP core structures and helper functions.">SocketHTTP-private.h</a> for core HTTP internal structures. </dd>
+<a class="el" href="SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">SocketHTTP2.h</a> for HTTP/2 frame integration </dd>
 <dd>
-<a class="el" href="group__http.html#ga5f3f8543f2a9e0c48ca33d30019f8b87" title="Create HPACK encoder instance.">SocketHPACK_Encoder_new()</a> for public encoder creation. </dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for related async patterns </dd>
 <dd>
-<a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0" title="Create HPACK decoder instance.">SocketHPACK_Decoder_new()</a> for public decoder creation. </dd></dl>
+RFC 7541 for HPACK specification details </dd></dl>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
 <a name="structHPACK__DynamicEntry" id="structHPACK__DynamicEntry"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structHPACK__DynamicEntry">&#9670;&#160;</a></span>HPACK_DynamicEntry</h2>
@@ -246,7 +274,7 @@ Variables</h2></td></tr>
 <dd>
 RFC 7541 Section 4.1 </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00127">127</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00149">149</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -295,13 +323,13 @@ value_len</td>
 <div class="textblock"><p>Dynamic table for storing header fields in HPACK compression (RFC 7541). </p>
 <p>HPACK dynamic table (opaque type)</p>
 <p>Implements a circular buffer (ring buffer) for efficient eviction of oldest entries. Indices follow HPACK convention: index 1 is most recent, increasing indices are older. Supports dynamic resizing based on SETTINGS_HEADER_TABLE_SIZE.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structHPACK__DynamicEntry" title="Entry in the HPACK dynamic table storing a header field name-value pair.">HPACK_DynamicEntry</a> for individual <a class="el" href="group__http.html#acdfefc6df12fb449f04b83dfe53600b2">entries</a>. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#structHPACK__DynamicEntry" title="Entry in the HPACK dynamic table storing a header field name-value pair.">HPACK_DynamicEntry</a> for individual <a class="el" href="group__hpack__private.html#acdfefc6df12fb449f04b83dfe53600b2">entries</a>. </dd>
 <dd>
-<a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f" title="Evict oldest entries from dynamic table to free up required space.">hpack_table_evict()</a> for eviction mechanism. </dd>
+<a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f" title="Evict oldest entries from the dynamic table to free space for new insertions.">hpack_table_evict()</a> for eviction mechanism. </dd>
 <dd>
-<a class="el" href="group__http.html#a9c27fe02791883c173fe35ec57063755">SocketHPACK_Encoder::table</a> and <a class="el" href="group__http.html#a263eaf0e8a043fb3312aa04c66b27916">SocketHPACK_Decoder::table</a> for usage. </dd></dl>
+<a class="el" href="group__hpack__private.html#a9c27fe02791883c173fe35ec57063755">SocketHPACK_Encoder::table</a> and <a class="el" href="group__hpack__private.html#a263eaf0e8a043fb3312aa04c66b27916">SocketHPACK_Decoder::table</a> for usage. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00154">154</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00176">176</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHPACK_Table_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -333,7 +361,7 @@ count</td>
 <p>Current number of entries </p>
 </td></tr>
 <tr><td class="fieldtype">
-<a id="acdfefc6df12fb449f04b83dfe53600b2" name="acdfefc6df12fb449f04b83dfe53600b2"></a><a class="el" href="group__http.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a> *</td>
+<a id="acdfefc6df12fb449f04b83dfe53600b2" name="acdfefc6df12fb449f04b83dfe53600b2"></a><a class="el" href="group__hpack__private.html#structHPACK__DynamicEntry">HPACK_DynamicEntry</a> *</td>
 <td class="fieldname">
 entries</td>
 <td class="fielddoc">
@@ -387,9 +415,9 @@ tail</td>
 <p>Manages dynamic table updates, Huffman encoding decisions, and indexing strategy. Used by SocketHTTP2 for compressing outgoing headers.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack.html#structSocketHPACK__EncoderConfig" title="Configuration for HPACK encoder instance.">SocketHPACK_EncoderConfig</a> for configuration options. </dd>
 <dd>
-SocketHPACK_Table_T for dynamic <a class="el" href="group__http.html#a9c27fe02791883c173fe35ec57063755">table</a> details. </dd></dl>
+SocketHPACK_Table_T for dynamic <a class="el" href="group__hpack__private.html#a9c27fe02791883c173fe35ec57063755">table</a> details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00183">183</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00205">205</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -454,10 +482,10 @@ use_indexing</td>
 <p>Handles decompression of HPACK-encoded headers with security checks against decompression bombs (excessive expansion). Used by SocketHTTP2 for processing incoming headers.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack.html#structSocketHPACK__DecoderConfig" title="Configuration for HPACK decoder instance.">SocketHPACK_DecoderConfig</a> for configuration. </dd>
 <dd>
-SocketHPACK_Table_T for dynamic <a class="el" href="group__http.html#a263eaf0e8a043fb3312aa04c66b27916">table</a>. </dd></dl>
+SocketHPACK_Table_T for dynamic <a class="el" href="group__hpack__private.html#a263eaf0e8a043fb3312aa04c66b27916">table</a>. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Decompression bomb protection limits ratio of output to input bytes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00212">212</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00234">234</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -535,9 +563,9 @@ table</td>
 <p>Contains 61 predefined HTTP header fields. Field order minimizes padding. Strings are compile-time constants, no allocation needed.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#ga68ff3c1525cfd78881c6140936758c78" title="Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A).">hpack_static_table</a> for the full array of entries. </dd>
 <dd>
-SocketHPACK_StaticEntry for public typedef (if exposed). </dd></dl>
+SocketHPACK_StaticEntry for public typedef (<a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> exposed). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00243">243</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00265">265</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -587,9 +615,9 @@ value_len</td>
 <p>Maps a symbol (0-256) to its variable-length Huffman code. Code is left-aligned in 32-bit field for easy bit manipulation.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#gafedbf3fdd77193dc9d1419e9eaa8abd0" title="Precomputed Huffman encoding table for all 257 symbols.">hpack_huffman_encode</a> for the full table. </dd>
 <dd>
-RFC 7541 Appendix B for Huffman <a class="el" href="group__http.html#ab8f97d8476a1a8b8a464ff039bf7d4f8">code</a> assignment. </dd></dl>
+RFC 7541 Appendix B for Huffman <a class="el" href="group__hpack__private.html#ab8f97d8476a1a8b8a464ff039bf7d4f8">code</a> assignment. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00268">268</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00290">290</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -625,9 +653,9 @@ code</td>
 <p>Defines state transition and output for a given input byte (nibble-indexed). Supports efficient single-pass decoding with minimal branching.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#ga6ac50cbaa6f5bfc19372fa7b656342ef" title="DFA table for Huffman decoding (state-machine transitions).">hpack_huffman_decode</a> for the DFA table. </dd>
 <dd>
-HPACK_DFA_* <a class="el" href="group__http.html#a4d1e72ef25a0ef39679a5931d7665b70">flags</a> for behavior indicators. </dd></dl>
+HPACK_DFA_* <a class="el" href="group__hpack__private.html#a4d1e72ef25a0ef39679a5931d7665b70">flags</a> for behavior indicators. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00286">286</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00308">308</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -671,7 +699,7 @@ sym</td>
 <p>Estimated average size of a dynamic HPACK table entry in bytes. </p>
 <p>Used for initial capacity calculation to minimize resizes. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00053">53</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00075">75</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -688,9 +716,60 @@ sym</td>
 </div><div class="memdoc">
 
 <p>Bit flags for Huffman DFA transition behavior. </p>
-<p>Used in <a class="el" href="group__http.html#a4d1e72ef25a0ef39679a5931d7665b70">HPACK_HuffmanTransition::flags</a> to indicate state outcomes. Accepting state: one or more symbols emitted </p>
+<p>Used in <a class="el" href="group__hpack__private.html#a4d1e72ef25a0ef39679a5931d7665b70">HPACK_HuffmanTransition::flags</a> to indicate state outcomes. Accepting state: one or more symbols emitted </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00301">301</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00323">323</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ga881cd71b1434a2a5a11bd50cb61d312d" name="ga881cd71b1434a2a5a11bd50cb61d312d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga881cd71b1434a2a5a11bd50cb61d312d">&#9670;&#160;</a></span>HPACK_DFA_EOS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HPACK_DFA_EOS&#160;&#160;&#160;0x02</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>End-of-string symbol (256) emitted </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00324">324</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ga2065e9129b247f7f4ab0b363095f1839" name="ga2065e9129b247f7f4ab0b363095f1839"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2065e9129b247f7f4ab0b363095f1839">&#9670;&#160;</a></span>HPACK_DFA_ERROR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HPACK_DFA_ERROR&#160;&#160;&#160;0x04</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Invalid transition: decoding error </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00325">325</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+
+</div>
+</div>
+<a id="ga76662d61395b8b2c9f2034c074083b4f" name="ga76662d61395b8b2c9f2034c074083b4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga76662d61395b8b2c9f2034c074083b4f">&#9670;&#160;</a></span>HPACK_DFA_SYM2</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define HPACK_DFA_SYM2&#160;&#160;&#160;0x08</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Additional secondary symbol available in this transition </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00326">326</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -708,7 +787,7 @@ sym</td>
 
 <p>End-of-String (EOS) symbol code in Huffman table. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00077">77</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00099">99</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -726,7 +805,7 @@ sym</td>
 
 <p>Maximum length of a Huffman code in bits (per RFC 7541). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00085">85</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00107">107</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -744,7 +823,7 @@ sym</td>
 
 <p>Number of states in the Huffman DFA decoder table. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00093">93</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00115">115</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -762,7 +841,7 @@ sym</td>
 
 <p>Special value marking an accept state in Huffman DFA transitions. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00109">109</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00131">131</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -780,7 +859,7 @@ sym</td>
 
 <p>Special value indicating an invalid or error state in Huffman DFA. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00101">101</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00123">123</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -798,7 +877,7 @@ sym</td>
 
 <p>Total number of symbols in the HPACK Huffman table (ASCII 0-255 + End-of-String). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00069">69</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00091">91</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -816,7 +895,7 @@ sym</td>
 
 <p>Minimum capacity for dynamic table (power-of-2 for efficient modulo operations). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00061">61</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00083">83</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
 </div>
 </div>
@@ -855,33 +934,57 @@ sym</td>
 </table>
 </div><div class="memdoc">
 
-<p>Compute the size of a dynamic table entry per RFC 7541 Section 4.1. </p>
-<dl class="section user"><dt>Thread Safety\n Yes - pure function with no side effects or shared state.</dt><dd></dd></dl>
+<p>Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1. </p>
+<p>Computes the total size of a header field entry as: name length + value length + SOCKETHPACK_ENTRY_OVERHEAD (32 bytes). Uses safe arithmetic to detect overflows.</p>
+<p>This size is used for dynamic table capacity management and eviction decisions.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">name_len</td><td>Length of the header name in bytes. </td></tr>
-    <tr><td class="paramname">value_len</td><td>Length of the header value in bytes. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">name_len</td><td>Length of header name in bytes </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">value_len</td><td>Length of header value in bytes</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Total entry size = name_len + value_len + SOCKETHPACK_ENTRY_OVERHEAD (32 bytes), or SIZE_MAX if arithmetic overflow detected. </dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Uses <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Check for safe addition of two sizes without overflow.">SocketSecurity_check_add()</a> to safely compute sum and prevent integer overflow. </dd>
+<dl class="section return"><dt>Returns</dt><dd>Total entry size in bytes, or SIZE_MAX on arithmetic overflow or invalid inputs</dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - pure function, no side effects or shared state access</dt><dd></dd></dl>
+<div class="fragment"><div class="line"><span class="keywordtype">size_t</span> entry_size = <a class="code hl_function" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8">hpack_entry_size</a>(strlen(name), strlen(value));</div>
+<div class="line"><span class="keywordflow">if</span> (entry_size == SIZE_MAX) {</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a>(<a class="code hl_variable" href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a>, <span class="stringliteral">&quot;Header entry size overflow&quot;</span>);</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f">hpack_table_evict</a>(table, entry_size);</div>
+<div class="line"><span class="comment">// Add entry to table</span></div>
+<div class="ttc" id="agroup__foundation_html_ga45e87c4d7dee50346b15c7761b0b340a"><div class="ttname"><a href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a></div><div class="ttdeci">#define RAISE(e)</div><div class="ttdoc">Raise an exception with current file and line information.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00594">Except.h:594</a></div></div>
+<div class="ttc" id="agroup__hpack__private_html_ga58a0802cdc3a99af5f7f1cb5b7ca9fe8"><div class="ttname"><a href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8">hpack_entry_size</a></div><div class="ttdeci">static size_t hpack_entry_size(size_t name_len, size_t value_len)</div><div class="ttdoc">Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1.</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK-private_8h_source.html#l00478">SocketHPACK-private.h:478</a></div></div>
+<div class="ttc" id="agroup__hpack__private_html_gac25f68940182c09fbe7f99e847b9f34f"><div class="ttname"><a href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f">hpack_table_evict</a></div><div class="ttdeci">size_t hpack_table_evict(SocketHPACK_Table_T table, size_t required_space)</div><div class="ttdoc">Evict oldest entries from the dynamic table to free space for new insertions.</div></div>
+<div class="ttc" id="agroup__http_html_gaaf99a02bd5f3dd4baedcbde590cc5d09"><div class="ttname"><a href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a></div><div class="ttdeci">const Except_T SocketHPACK_Error</div><div class="ttdoc">SocketHPACK_Error - General HPACK operation failure.</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md285"></a>
+Return Value Details</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Condition   </th><th class="markdownTableHeadNone">Return Value    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Valid computation   </td><td class="markdownTableBodyNone">name_len + value_len + 32    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">name_len + value_len overflow   </td><td class="markdownTableBodyNone">SIZE_MAX    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Total + overhead overflow   </td><td class="markdownTableBodyNone">SIZE_MAX   </td></tr>
+</table>
+<dl class="section user"><dt>Complexity\n O(1) - simple arithmetic with overflow checks</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>SOCKETHPACK_ENTRY_OVERHEAD = 32 bytes accounts for pointers, lengths, and metadata </dd>
 <dd>
-Overhead accounts for indexing and management structures.</dd></dl>
-<p>Essential for table eviction and capacity checks.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Check for safe addition of two sizes without overflow.">SocketSecurity_check_add()</a> </dd>
+Relies on <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Validate addition of two sizes for potential overflow.">SocketSecurity_check_add()</a> for 64-bit safe addition</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Validate addition of two sizes for potential overflow.">SocketSecurity_check_add()</a> for overflow detection mechanism </dd>
 <dd>
-<a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f" title="Evict oldest entries from dynamic table to free up required space.">hpack_table_evict()</a> </dd>
+<a class="el" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f" title="Evict oldest entries from the dynamic table to free space for new insertions.">hpack_table_evict()</a> for using computed size </dd>
 <dd>
-<a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb" title="Add entry to dynamic table.">SocketHPACK_Table_add()</a> for usage in public table management. </dd>
+<a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb" title="Add entry to dynamic table.">SocketHPACK_Table_add()</a> public API that uses this internally </dd>
 <dd>
-<a class="el" href="group__http.html#ga08c1b9076dbeb65dd345874ce9b51824" title="Overhead bytes per dynamic table entry (RFC 7541 Section 4.1).">SOCKETHPACK_ENTRY_OVERHEAD</a> constant. </dd>
+<a class="el" href="group__http.html#ga08c1b9076dbeb65dd345874ce9b51824" title="Overhead bytes per dynamic table entry (RFC 7541 Section 4.1).">SOCKETHPACK_ENTRY_OVERHEAD</a> constant definition </dd>
 <dd>
-<a class="el" href="group__foundation.html">Core Foundation Modules</a> for <a class="el" href="group__security.html" title="TLS encryption and security protection mechanisms.">Security Modules</a> <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a> like <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Check for safe addition of two sizes without overflow.">SocketSecurity_check_add()</a>. </dd></dl>
+<a class="el" href="group__security.html">Security modules</a> for related protections </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00399">399</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK-private_8h_source.html#l00478">478</a> of file <a class="el" href="SocketHPACK-private_8h_source.html">SocketHPACK-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketHPACK_8h_source.html#l00114">SOCKETHPACK_ENTRY_OVERHEAD</a>, and <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0">SocketSecurity_check_add()</a>.</p>
+<p class="reference">References <a class="el" href="SocketHPACK_8h_source.html#l00180">SOCKETHPACK_ENTRY_OVERHEAD</a>, and <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0">SocketSecurity_check_add()</a>.</p>
 
 </div>
 </div>
@@ -919,35 +1022,52 @@ Overhead accounts for indexing and management structures.</dd></dl>
 </table>
 </div><div class="memdoc">
 
-<p>Evict oldest entries from dynamic table to free up required space. </p>
-<dl class="section user"><dt>Thread Safety\n No - modifies table state; requires external synchronization if shared.</dt><dd></dd></dl>
+<p>Evict oldest entries from the dynamic table to free space for new insertions. </p>
+<p>Evicts entries from the head (oldest) of the circular buffer until enough space is available for a new entry of the specified size. Each eviction updates the table size and shifts the head index.</p>
+<p>This function is called internally during table additions when capacity is exceeded. It ensures compliance with max_size limits and prevents overflow.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">table</td><td>The dynamic table instance. </td></tr>
-    <tr><td class="paramname">required_space</td><td>Minimum bytes needed for new entry insertion. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">table</td><td>Dynamic table instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">required_space</td><td>Bytes of space needed (typically from <a class="el" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8" title="Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1.">hpack_entry_size()</a>)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Number of entries evicted (may be 0). </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of entries evicted (&gt;=0). Returns 0 if no eviction needed.</dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">SocketHPACK_Error</td><td>if security checks fail during eviction (e.g., overflow). </td></tr>
+    <tr><td class="paramname">SocketHPACK_Error</td><td>If security checks fail (e.g., size overflow or invalid state)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section note"><dt>Note</dt><dd>Continues evicting until table-&gt;size + required_space &lt;= table-&gt;max_size. </dd>
+<dl class="section user"><dt>Thread Safety\n No - modifies shared table state; must be called with exclusive access</dt><dd></dd></dl>
+<div class="fragment"><div class="line"><span class="comment">// Before adding new header to table</span></div>
+<div class="line"><span class="keywordtype">size_t</span> entry_size = <a class="code hl_function" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8">hpack_entry_size</a>(name_len, value_len);</div>
+<div class="line"><span class="keywordflow">if</span> (entry_size != SIZE_MAX) {</div>
+<div class="line">    <span class="keywordtype">size_t</span> evicted = <a class="code hl_function" href="group__hpack__private.html#gac25f68940182c09fbe7f99e847b9f34f">hpack_table_evict</a>(table, entry_size);</div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a>(<span class="stringliteral">&quot;Evicted %zu entries for new header&quot;</span>, evicted);</div>
+<div class="line">    <span class="comment">// Proceed to add entry</span></div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    <span class="comment">// Handle overflow error</span></div>
+<div class="line">}</div>
+<div class="ttc" id="aSocketUtil_8h_html_a7853a630bcaead9d41536ccbfd598f6d"><div class="ttname"><a href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_DEBUG_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00490">SocketUtil.h:490</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md283"></a>
+Edge Cases</h2>
+<ul>
+<li>If required_space == 0, no eviction occurs (useful for cleanup)</li>
+<li>Evicts until table-&gt;size &lt;= max_size - required_space</li>
+<li>If table is empty, returns 0 immediately</li>
+<li>Continues even if required_space &gt; max_size (evicts all, but addition will fail later)</li>
+</ul>
+<dl class="section user"><dt>Complexity\n O(k) where k is number of evicted entries (amortized O(1) per addition)</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Integrates with <a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0" title="Validate addition of two sizes for potential overflow.">SocketSecurity_check_add()</a> for safe arithmetic </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Do not call directly from public API; use <a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb" title="Add entry to dynamic table.">SocketHPACK_Table_add()</a></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8" title="Calculate the size of a dynamic table entry according to RFC 7541 Section 4.1.">hpack_entry_size()</a> to compute required_space </dd>
 <dd>
-Calls SocketSecurity_check_add internally to prevent overflow.</dd></dl>
-<p>Used during encoder insertion when table exceeds capacity (called by SocketHPACK_Table_add).</p>
-<dl class="section see"><dt>See also</dt><dd>SocketHPACK_Table_T::size </dd>
+<a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb" title="Add entry to dynamic table.">SocketHPACK_Table_add()</a> for public wrapper </dd>
 <dd>
-SocketHPACK_Table_T::max_size </dd>
+SocketHPACK_Table_T for table structure details </dd>
 <dd>
-<a class="el" href="group__hpack__private.html#ga58a0802cdc3a99af5f7f1cb5b7ca9fe8" title="Compute the size of a dynamic table entry per RFC 7541 Section 4.1.">hpack_entry_size()</a> for entry sizing. </dd>
-<dd>
-<a class="el" href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb" title="Add entry to dynamic table.">SocketHPACK_Table_add()</a> public function that triggers eviction. </dd>
-<dd>
-<a class="el" href="group__utilities.html">Utility Modules</a> for rate limiting and <a class="el" href="group__security.html" title="TLS encryption and security protection mechanisms.">Security Modules</a> modules. </dd></dl>
+<a class="el" href="group__foundation.html">Foundation modules</a> for Arena and Except handling </dd></dl>
 
 </div>
 </div>
@@ -962,7 +1082,7 @@ SocketHPACK_Table_T::max_size </dd>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="group__http.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a> hpack_huffman_decode[256][16]</td>
+          <td class="memname">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition">HPACK_HuffmanTransition</a> hpack_huffman_decode[256][16]</td>
         </tr>
       </table>
   </td>
@@ -974,7 +1094,7 @@ SocketHPACK_Table_T::max_size </dd>
 
 <p>DFA table for Huffman decoding (state-machine transitions). </p>
 <p>256 states x 16 nibbles = 4096 entries for byte-wise decoding. Enables deterministic, branch-free decoding. Defined in SocketHPACK-huffman.c.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structHPACK__HuffmanTransition" title="Transition entry in the Huffman decoding DFA table.">HPACK_HuffmanTransition</a> for entry format. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#structHPACK__HuffmanTransition" title="Transition entry in the Huffman decoding DFA table.">HPACK_HuffmanTransition</a> for entry format. </dd></dl>
 
 </div>
 </div>
@@ -988,7 +1108,7 @@ SocketHPACK_Table_T::max_size </dd>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="group__http.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a> hpack_huffman_encode[257]</td>
+          <td class="memname">const <a class="el" href="group__hpack__private.html#structHPACK__HuffmanSymbol">HPACK_HuffmanSymbol</a> hpack_huffman_encode[257]</td>
         </tr>
       </table>
   </td>
@@ -1013,7 +1133,7 @@ SocketHPACK_Table_T::max_size </dd>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">const <a class="el" href="group__http.html#structHPACK__StaticEntry">HPACK_StaticEntry</a> hpack_static_table[61]</td>
+          <td class="memname">const <a class="el" href="group__hpack__private.html#structHPACK__StaticEntry">HPACK_StaticEntry</a> hpack_static_table[61]</td>
         </tr>
       </table>
   </td>
@@ -1025,9 +1145,9 @@ SocketHPACK_Table_T::max_size </dd>
 
 <p>Static table containing 61 predefined HTTP/2 header fields (RFC 7541, Appendix A). </p>
 <p>Used for literal header representation without dynamic table indexing. Entries indexed from 1 to 61; index 0 reserved. Defined in SocketHPACK-table.c.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structHPACK__StaticEntry" title="Structure for entries in the HPACK static table (RFC 7541 Table 2).">HPACK_StaticEntry</a> for structure. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__hpack__private.html#structHPACK__StaticEntry" title="Structure for entries in the HPACK static table (RFC 7541 Table 2).">HPACK_StaticEntry</a> for structure. </dd>
 <dd>
-SocketHPACK_get_static_entry() if public accessor exists. </dd></dl>
+SocketHPACK_get_static_entry() <a class="el" href="group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d" title="Generate uniform random double in [0.0, 1.0) for jitter in backoff calculations.">if</a> public accessor exists. </dd></dl>
 
 </div>
 </div>

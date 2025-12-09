@@ -145,7 +145,7 @@ $(document).ready(function(){initNavTree('SocketSecurity_8h.html',''); initResiz
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketSecurityLimits" id="r_structSocketSecurityLimits"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#structSocketSecurityLimits">SocketSecurityLimits</a></td></tr>
-<tr class="memdesc:structSocketSecurityLimits"><td class="mdescLeft">&#160;</td><td class="mdescRight">Structure containing runtime-queryable security limits.  <a href="group__foundation.html#structSocketSecurityLimits">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketSecurityLimits"><td class="mdescLeft">&#160;</td><td class="mdescRight">Aggregated security limits for runtime configuration inspection.  <a href="group__foundation.html#structSocketSecurityLimits">More...</a><br /></td></tr>
 <tr class="separator:structSocketSecurityLimits"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
@@ -160,64 +160,64 @@ Macros</h2></td></tr>
 <tr class="memdesc:gaecf2f2b54a209d002ce224d7de9c5e4b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum allowed request timeout value in milliseconds.  <br /></td></tr>
 <tr class="separator:gaecf2f2b54a209d002ce224d7de9c5e4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab118e25b6e3d4b7ba3abb6fb465a4908" id="r_gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab118e25b6e3d4b7ba3abb6fb465a4908">SOCKET_SECURITY_VALID_SIZE</a>(s)&#160;&#160;&#160;  ((size_t)(s) &gt; 0 &amp;&amp; (size_t)(s) &lt;= <a class="el" href="group__foundation.html#ga96a4c4c07078b24744bf2accf84ccaf0">SOCKET_SECURITY_MAX_ALLOCATION</a>)</td></tr>
-<tr class="memdesc:gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Macro to check if a size is within security allocation limits.  <br /></td></tr>
+<tr class="memdesc:gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inline macro for validating a size against allocation security limits.  <br /></td></tr>
 <tr class="separator:gab118e25b6e3d4b7ba3abb6fb465a4908"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac0f2047bd8559eff753e7eeeac8c10d2" id="r_gac0f2047bd8559eff753e7eeeac8c10d2"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac0f2047bd8559eff753e7eeeac8c10d2">SOCKET_SECURITY_CHECK_OVERFLOW_MUL</a>(a,  b)&#160;&#160;&#160;  ((b) == 0 || (a) &lt;= SIZE_MAX / (b))</td></tr>
-<tr class="memdesc:gac0f2047bd8559eff753e7eeeac8c10d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Macro to check if multiplication of two sizes would overflow.  <br /></td></tr>
+<tr class="memdesc:gac0f2047bd8559eff753e7eeeac8c10d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inline macro to check size multiplication for overflow risk.  <br /></td></tr>
 <tr class="separator:gac0f2047bd8559eff753e7eeeac8c10d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gac5270b656510253faca9dca69f21a0fb" id="r_gac5270b656510253faca9dca69f21a0fb"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gac5270b656510253faca9dca69f21a0fb">SOCKET_SECURITY_CHECK_OVERFLOW_ADD</a>(a,  b)&#160;&#160;&#160;((a) &lt;= SIZE_MAX - (b))</td></tr>
-<tr class="memdesc:gac5270b656510253faca9dca69f21a0fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Macro to check if addition of two sizes would overflow.  <br /></td></tr>
+<tr class="memdesc:gac5270b656510253faca9dca69f21a0fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Inline macro to check size addition for overflow risk.  <br /></td></tr>
 <tr class="separator:gac5270b656510253faca9dca69f21a0fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:ga8285c075f5ae76fe9d20f4caaf1cee05" id="r_ga8285c075f5ae76fe9d20f4caaf1cee05"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga8285c075f5ae76fe9d20f4caaf1cee05">SocketSecurity_get_limits</a> (<a class="el" href="group__foundation.html#structSocketSecurityLimits">SocketSecurityLimits</a> *limits)</td></tr>
-<tr class="memdesc:ga8285c075f5ae76fe9d20f4caaf1cee05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the currently configured security limits.  <br /></td></tr>
+<tr class="memdesc:ga8285c075f5ae76fe9d20f4caaf1cee05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve all configured security limits into a structure for inspection.  <br /></td></tr>
 <tr class="separator:ga8285c075f5ae76fe9d20f4caaf1cee05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga79be1e38c94c11981392c4ef9b272a20" id="r_ga79be1e38c94c11981392c4ef9b272a20"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga79be1e38c94c11981392c4ef9b272a20">SocketSecurity_get_max_allocation</a> (void)</td></tr>
-<tr class="memdesc:ga79be1e38c94c11981392c4ef9b272a20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the maximum permitted single allocation size.  <br /></td></tr>
+<tr class="memdesc:ga79be1e38c94c11981392c4ef9b272a20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the maximum allowed size for single memory allocations.  <br /></td></tr>
 <tr class="separator:ga79be1e38c94c11981392c4ef9b272a20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga06285f75bf78cdd2066e8cf6dd17906f" id="r_ga06285f75bf78cdd2066e8cf6dd17906f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga06285f75bf78cdd2066e8cf6dd17906f">SocketSecurity_get_http_limits</a> (size_t *max_uri, size_t *max_header_size, size_t *max_headers, size_t *max_body)</td></tr>
-<tr class="memdesc:ga06285f75bf78cdd2066e8cf6dd17906f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get HTTP protocol-specific security limits.  <br /></td></tr>
+<tr class="memdesc:ga06285f75bf78cdd2066e8cf6dd17906f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query specific HTTP protocol security limits.  <br /></td></tr>
 <tr class="separator:ga06285f75bf78cdd2066e8cf6dd17906f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa779b8e16d99a119516a883b12efa558" id="r_gaa779b8e16d99a119516a883b12efa558"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa779b8e16d99a119516a883b12efa558">SocketSecurity_get_ws_limits</a> (size_t *max_frame, size_t *max_message)</td></tr>
-<tr class="memdesc:gaa779b8e16d99a119516a883b12efa558"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get WebSocket protocol-specific security limits.  <br /></td></tr>
+<tr class="memdesc:gaa779b8e16d99a119516a883b12efa558"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query WebSocket-specific security limits for frame and message sizes.  <br /></td></tr>
 <tr class="separator:gaa779b8e16d99a119516a883b12efa558"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6ad722cc32d48bcf38c13c56fb6716bd" id="r_ga6ad722cc32d48bcf38c13c56fb6716bd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6ad722cc32d48bcf38c13c56fb6716bd">SocketSecurity_get_arena_limits</a> (size_t *max_alloc)</td></tr>
-<tr class="memdesc:ga6ad722cc32d48bcf38c13c56fb6716bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get arena-specific memory allocation limits.  <br /></td></tr>
+<tr class="memdesc:ga6ad722cc32d48bcf38c13c56fb6716bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query the maximum allocation size limit for arenas.  <br /></td></tr>
 <tr class="separator:ga6ad722cc32d48bcf38c13c56fb6716bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabdf9fc30963bf73b15d168407144a3a1" id="r_gabdf9fc30963bf73b15d168407144a3a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gabdf9fc30963bf73b15d168407144a3a1">SocketSecurity_get_hpack_limits</a> (size_t *max_table)</td></tr>
-<tr class="memdesc:gabdf9fc30963bf73b15d168407144a3a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get HPACK header compression limits.  <br /></td></tr>
+<tr class="memdesc:gabdf9fc30963bf73b15d168407144a3a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query HPACK dynamic table size limit for HTTP/2 header compression.  <br /></td></tr>
 <tr class="separator:gabdf9fc30963bf73b15d168407144a3a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa01e772f756ea6885182b7800f50c5f7" id="r_gaa01e772f756ea6885182b7800f50c5f7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa01e772f756ea6885182b7800f50c5f7">SocketSecurity_check_size</a> (size_t size)</td></tr>
-<tr class="memdesc:gaa01e772f756ea6885182b7800f50c5f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate a requested allocation size against security limits.  <br /></td></tr>
+<tr class="memdesc:gaa01e772f756ea6885182b7800f50c5f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate a size value for safe memory allocation or buffer operations.  <br /></td></tr>
 <tr class="separator:gaa01e772f756ea6885182b7800f50c5f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaa5e5f01fe52f1e55de0e686cf32003aa" id="r_gaa5e5f01fe52f1e55de0e686cf32003aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gaa5e5f01fe52f1e55de0e686cf32003aa">SocketSecurity_check_multiply</a> (size_t a, size_t b, size_t *result)</td></tr>
-<tr class="memdesc:gaa5e5f01fe52f1e55de0e686cf32003aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for safe multiplication of two sizes without overflow.  <br /></td></tr>
+<tr class="memdesc:gaa5e5f01fe52f1e55de0e686cf32003aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate multiplication of two sizes for potential overflow.  <br /></td></tr>
 <tr class="separator:gaa5e5f01fe52f1e55de0e686cf32003aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga808c8911cd0b5d129ad1a3ea2e25e2b0" id="r_ga808c8911cd0b5d129ad1a3ea2e25e2b0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0">SocketSecurity_check_add</a> (size_t a, size_t b, size_t *result)</td></tr>
-<tr class="memdesc:ga808c8911cd0b5d129ad1a3ea2e25e2b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for safe addition of two sizes without overflow.  <br /></td></tr>
+<tr class="memdesc:ga808c8911cd0b5d129ad1a3ea2e25e2b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate addition of two sizes for potential overflow.  <br /></td></tr>
 <tr class="separator:ga808c8911cd0b5d129ad1a3ea2e25e2b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6270d5672e9d74232fdc5dfca266aa8e" id="r_ga6270d5672e9d74232fdc5dfca266aa8e"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga6270d5672e9d74232fdc5dfca266aa8e">SocketSecurity_safe_multiply</a> (size_t a, size_t b)</td></tr>
-<tr class="memdesc:ga6270d5672e9d74232fdc5dfca266aa8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform safe multiplication with overflow protection.  <br /></td></tr>
+<tr class="memdesc:ga6270d5672e9d74232fdc5dfca266aa8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute product of two sizes with overflow protection (inline).  <br /></td></tr>
 <tr class="separator:ga6270d5672e9d74232fdc5dfca266aa8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab7fb48da631c0adf8ba5892d1edb2959" id="r_gab7fb48da631c0adf8ba5892d1edb2959"><td class="memItemLeft" align="right" valign="top">static size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab7fb48da631c0adf8ba5892d1edb2959">SocketSecurity_safe_add</a> (size_t a, size_t b)</td></tr>
-<tr class="memdesc:gab7fb48da631c0adf8ba5892d1edb2959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform safe addition with overflow protection.  <br /></td></tr>
+<tr class="memdesc:gab7fb48da631c0adf8ba5892d1edb2959"><td class="mdescLeft">&#160;</td><td class="mdescRight">Compute sum of two sizes with overflow protection (inline).  <br /></td></tr>
 <tr class="separator:gab7fb48da631c0adf8ba5892d1edb2959"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga85d842e423cb2cf351f0e49b4302f138" id="r_ga85d842e423cb2cf351f0e49b4302f138"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga85d842e423cb2cf351f0e49b4302f138">SocketSecurity_has_tls</a> (void)</td></tr>
-<tr class="memdesc:ga85d842e423cb2cf351f0e49b4302f138"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if TLS support is enabled in the build.  <br /></td></tr>
+<tr class="memdesc:ga85d842e423cb2cf351f0e49b4302f138"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if the library was compiled with TLS support.  <br /></td></tr>
 <tr class="separator:ga85d842e423cb2cf351f0e49b4302f138"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab104c1727674778ad21a4648148f3ce1" id="r_gab104c1727674778ad21a4648148f3ce1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gab104c1727674778ad21a4648148f3ce1">SocketSecurity_has_compression</a> (void)</td></tr>
-<tr class="memdesc:gab104c1727674778ad21a4648148f3ce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if HTTP/1.1 compression support (gzip/deflate/brotli) is enabled in the build.  <br /></td></tr>
+<tr class="memdesc:gab104c1727674778ad21a4648148f3ce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine if HTTP/1.1 content compression/decompression is supported.  <br /></td></tr>
 <tr class="separator:gab104c1727674778ad21a4648148f3ce1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ga5340f6016fe6c58b24400b7cfd34a4c0" id="r_ga5340f6016fe6c58b24400b7cfd34a4c0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga5340f6016fe6c58b24400b7cfd34a4c0">SocketSecurity_SizeExceeded</a></td></tr>
-<tr class="memdesc:ga5340f6016fe6c58b24400b7cfd34a4c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised when allocation or buffer size exceeds security limits.  <br /></td></tr>
+<tr class="memdesc:ga5340f6016fe6c58b24400b7cfd34a4c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception indicating security limit violation on size/ allocation.  <br /></td></tr>
 <tr class="separator:ga5340f6016fe6c58b24400b7cfd34a4c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4b734ce605590d01801f84c53db3abb0" id="r_ga4b734ce605590d01801f84c53db3abb0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#ga4b734ce605590d01801f84c53db3abb0">SocketSecurity_ValidationFailed</a></td></tr>
-<tr class="memdesc:ga4b734ce605590d01801f84c53db3abb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised on input validation failure in security checks.  <br /></td></tr>
+<tr class="memdesc:ga4b734ce605590d01801f84c53db3abb0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception for general input validation failures in security contexts.  <br /></td></tr>
 <tr class="separator:ga4b734ce605590d01801f84c53db3abb0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
@@ -238,13 +238,13 @@ Variables</h2></td></tr>
 <li>Secure memory clearing (resistant to compiler optimization)</li>
 </ul>
 <p>Thread safety: All functions are thread-safe (no global mutable state).</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga8285c075f5ae76fe9d20f4caaf1cee05" title="Get the currently configured security limits.">SocketSecurity_get_limits()</a> for querying <a class="el" href="group__security.html" title="TLS encryption and security protection mechanisms.">Security Modules</a> limits. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga8285c075f5ae76fe9d20f4caaf1cee05" title="Retrieve all configured security limits into a structure for inspection.">SocketSecurity_get_limits()</a> for querying <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> limits. </dd>
 <dd>
-<a class="el" href="group__foundation.html#gaa01e772f756ea6885182b7800f50c5f7" title="Validate a requested allocation size against security limits.">SocketSecurity_check_size()</a> for size validation. </dd>
+<a class="el" href="group__foundation.html#gaa01e772f756ea6885182b7800f50c5f7" title="Validate a size value for safe memory allocation or buffer operations.">SocketSecurity_check_size()</a> for size validation. </dd>
 <dd>
 <a class="el" href="group__security.html">Security Modules</a> for other security-related modules. </dd>
 <dd>
-<a class="el" href="SocketConfig_8h.html" title="Compile-time configuration and platform detection for the socket library.">SocketConfig.h</a> for <a class="el" href="group__security.html" title="TLS encryption and security protection mechanisms.">Security Modules</a> configuration constants. </dd>
+<a class="el" href="SocketConfig_8h.html" title="Compile-time and runtime configuration constants, limits, and platform adaptations.">SocketConfig.h</a> for <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> configuration constants. </dd>
 <dd>
 <a class="el" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc" title="Create server TLS context with cert/key.">SocketTLSContext_new_server()</a> for TLS 1.3 enforcement. </dd></dl>
 

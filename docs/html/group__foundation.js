@@ -1,5 +1,6 @@
 var group__foundation =
 [
+    [ "Live Socket Counting Utilities", "group__socket__live__utils.html", "group__socket__live__utils" ],
     [ "Arena.h", "Arena_8h.html", null ],
     [ "Except.h", "Except_8h.html", null ],
     [ "SocketConfig.h", "SocketConfig_8h.html", null ],

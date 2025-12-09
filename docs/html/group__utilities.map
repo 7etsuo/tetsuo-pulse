@@ -1,4 +1,4 @@
-<map id="Utility Modules" name="Utility Modules">
-<area shape="rect" id="Node000002" href="$group__foundation.html" title="Base infrastructure for memory management, exception handling, and core utilities...." alt="" coords="5,5,176,31"/>
-<area shape="rect" id="Node000001" title="Helper modules for rate limiting, retry logic, and metrics." alt="" coords="224,5,333,31"/>
+<map id="Utilities" name="Utilities">
+<area shape="rect" id="Node000002" href="$group__socket__live__utils.html" title="Thread&#45;safe global counter for tracking active Socket_T instances." alt="" coords="120,5,267,45"/>
+<area shape="rect" id="Node000001" title="Helper modules for rate limiting, retry logic, and metrics." alt="" coords="5,13,72,38"/>
 </map>

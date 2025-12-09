@@ -3,8 +3,8 @@
  * @brief Internal HTTP core structures and helper functions.
  * @ingroup http
  *
- * This header contains internal structures and helper functions for the HTTP module.
- * NOT for public consumption - use SocketHTTP.h instead.
+ * This header contains internal structures and helper functions for the HTTP
+ * module. NOT for public consumption - use SocketHTTP.h instead.
  *
  * Contains:
  * - Header collection internal structures (hash table + linked list)
@@ -12,7 +12,8 @@
  * - Internal helper functions for case-insensitive operations
  * - Private utility functions for HTTP processing
  *
- * Thread safety: Functions in this header are not thread-safe unless documented.
+ * Thread safety: Functions in this header are not thread-safe unless
+ * documented.
  *
  * @see SocketHTTP.h for public API.
  * @see SocketHTTP1-private.h for HTTP/1.1 internal structures.
@@ -36,8 +37,8 @@
  * @internal
  * @ingroup http
  *
- * Fixed prime number (31) providing good distribution for typical HTTP header counts (10-30).
- * Balances low collision rate with minimal memory overhead.
+ * Fixed prime number (31) providing good distribution for typical HTTP header
+ * counts (10-30). Balances low collision rate with minimal memory overhead.
  *
  * @see sockethttp_hash_name() for the hashing function used.
  * @threadsafe Yes - compile-time constant.
@@ -45,34 +46,39 @@
  */
 #define SOCKETHTTP_HEADER_BUCKETS 31
 
-
 /**
  * @brief Individual HTTP header entry (name-value pair).
  * @internal
  * @ingroup http
  *
  * Internal node structure used by SocketHTTP_Headers_T for storing individual
- * headers in both hash table collision chains and insertion-order doubly-linked list.
+ * headers in both hash table collision chains and insertion-order
+ * doubly-linked list.
  *
  * Header names are stored case-preserved but looked up case-insensitively.
- * Both name and value are null-terminated C strings allocated from the containing
- * headers' arena.
+ * Both name and value are null-terminated C strings allocated from the
+ * containing headers' arena.
  *
- * @note All fields are private; access via SocketHTTP_Headers_* public functions only.
+ * @note All fields are private; access via SocketHTTP_Headers_* public
+ * functions only.
  * @see SocketHTTP_Headers_T for the containing collection.
  * @see sockethttp_name_equal() for case-insensitive name matching.
  * @see sockethttp_hash_name() for hash computation.
  */
 typedef struct HeaderEntry
 {
-  char *name; /**< Header name (case-preserved, null-terminated, arena-allocated) */
-  size_t name_len; /**< Length of name excluding null terminator */
-  char *value; /**< Header value (null-terminated, arena-allocated) */
+  char *name;       /**< Header name (case-preserved, null-terminated,
+                       arena-allocated) */
+  size_t name_len;  /**< Length of name excluding null terminator */
+  char *value;      /**< Header value (null-terminated, arena-allocated) */
   size_t value_len; /**< Length of value excluding null terminator */
 
-  struct HeaderEntry *hash_next; /**< Next entry in same hash bucket (collision resolution) */
-  struct HeaderEntry *list_next; /**< Next entry in insertion-order doubly-linked list */
-  struct HeaderEntry *list_prev; /**< Previous entry in insertion-order doubly-linked list */
+  struct HeaderEntry
+      *hash_next; /**< Next entry in same hash bucket (collision resolution) */
+  struct HeaderEntry
+      *list_next; /**< Next entry in insertion-order doubly-linked list */
+  struct HeaderEntry
+      *list_prev; /**< Previous entry in insertion-order doubly-linked list */
 } HeaderEntry;
 
 /**
@@ -86,19 +92,25 @@ typedef struct HeaderEntry
  * All memory allocations (entries, strings) from provided arena.
  * Not thread-safe; external locking required for concurrent access.
  *
- * @note Direct field access prohibited; use public SocketHTTP_Headers_* functions.
+ * @note Direct field access prohibited; use public SocketHTTP_Headers_*
+ * functions.
  * @see SocketHTTP_Headers_T public opaque type.
  * @see HeaderEntry for individual header nodes.
- * @see sockethttp_hash_name() and sockethttp_name_equal() for internal lookup logic.
+ * @see sockethttp_hash_name() and sockethttp_name_equal() for internal lookup
+ * logic.
  */
 struct SocketHTTP_Headers
 {
-  Arena_T arena;                                   /**< Arena for all allocations in this collection */
-  HeaderEntry *buckets[SOCKETHTTP_HEADER_BUCKETS]; /**< Hash table buckets (fixed-size array) */
-  HeaderEntry *first; /**< Head of insertion-order doubly-linked list (or NULL if empty) */
-  HeaderEntry *last;  /**< Tail of insertion-order doubly-linked list (or NULL if empty) */
+  Arena_T arena; /**< Arena for all allocations in this collection */
+  HeaderEntry *buckets[SOCKETHTTP_HEADER_BUCKETS]; /**< Hash table buckets
+                                                      (fixed-size array) */
+  HeaderEntry *first; /**< Head of insertion-order doubly-linked list (or NULL
+                         if empty) */
+  HeaderEntry *last;  /**< Tail of insertion-order doubly-linked list (or NULL
+                         if empty) */
   size_t count;       /**< Number of headers currently stored */
-  size_t total_size;  /**< Cumulative size of all header names + values (bytes) */
+  size_t
+      total_size; /**< Cumulative size of all header names + values (bytes) */
 };
 
 /* ============================================================================
@@ -123,8 +135,7 @@ struct SocketHTTP_Headers
  * @see sockethttp_name_equal() companion for equality checks.
  * @see SocketHTTP_Headers_get() for usage in public API.
  */
-static inline unsigned
-sockethttp_hash_name (const char *name, size_t len);
+static inline unsigned sockethttp_hash_name (const char *name, size_t len);
 
 /**
  * @brief Perform case-insensitive comparison of HTTP header names.
@@ -137,8 +148,8 @@ sockethttp_hash_name (const char *name, size_t len);
  * @return 1 if names match case-insensitively and lengths equal, 0 otherwise.
  * @threadsafe Yes - pure function using standard library strncasecmp().
  *
- * Compares HTTP header field names per RFC 9110 §5.2 rule: field names case-insensitive.
- * Early length check avoids unnecessary strncasecmp call.
+ * Compares HTTP header field names per RFC 9110 §5.2 rule: field names
+ * case-insensitive. Early length check avoids unnecessary strncasecmp call.
  * Used in hash table lookup collision resolution.
  *
  * @note Does not validate input as tokens; assumes pre-validated names.
@@ -165,11 +176,11 @@ sockethttp_name_equal (const char *a, size_t a_len, const char *b,
  * @internal
  * @ingroup http
  *
- * State machine states used by SocketHTTP_URI_parse() for parsing URI components:
- * scheme://[userinfo@]host[:port]/path?query#fragment
+ * State machine states used by SocketHTTP_URI_parse() for parsing URI
+ * components: scheme://[userinfo@]host[:port]/path?query#fragment
  *
- * Handles generic syntax including IPv6 literals, percent-encoding, and reserved chars.
- * Invalid transitions lead to SocketHTTP_InvalidURI exception.
+ * Handles generic syntax including IPv6 literals, percent-encoding, and
+ * reserved chars. Invalid transitions lead to SocketHTTP_InvalidURI exception.
  *
  * @see SocketHTTP_URI_parse() public API.
  * @see SocketHTTP_URI for parsed result structure.
@@ -196,12 +207,14 @@ typedef enum
  */
 
 /**
- * @brief Lookup table for valid HTTP token characters (tchar) per RFC 9110 §5.6.
+ * @brief Lookup table for valid HTTP token characters (tchar) per RFC 9110
+ * §5.6.
  * @internal
  * @ingroup http
  *
- * Static array[256] where non-zero value indicates the character is a valid token char
- * for HTTP header field names and values (excluding separators like :, ;, etc.).
+ * Static array[256] where non-zero value indicates the character is a valid
+ * token char for HTTP header field names and values (excluding separators like
+ * :, ;, etc.).
  *
  * tchar ::= "!" / "#" / "$" / "%" / "&" / "'" / "*" / "+" / "-" / "." /
  *           "^" / "_" / "`" / "|" / "~" / DIGIT / ALPHA
@@ -218,7 +231,8 @@ extern const unsigned char sockethttp_tchar_table[256];
  * @brief Check if a character is a valid HTTP token character (tchar).
  * @internal
  * @ingroup http
- * @param c Character to validate (automatically promoted to unsigned char via cast)
+ * @param c Character to validate (automatically promoted to unsigned char via
+ * cast)
  * @return Non-zero if valid tchar per RFC 9110, zero otherwise.
  *
  * Fast O(1) table lookup used throughout HTTP parsing for validating
@@ -235,8 +249,9 @@ extern const unsigned char sockethttp_tchar_table[256];
  * @internal
  * @ingroup http
  *
- * Static array[256] where non-zero value indicates characters that do not require
- * percent-encoding in URI components: ALPHA / DIGIT / "-" / "." / "_" / "~"
+ * Static array[256] where non-zero value indicates characters that do not
+ * require percent-encoding in URI components: ALPHA / DIGIT / "-" / "." / "_"
+ * / "~"
  *
  * Used in URI encoding to identify safe characters and in decoding validation.
  *
@@ -269,10 +284,12 @@ extern const unsigned char sockethttp_uri_unreserved[256];
  * @internal
  * @ingroup http
  *
- * Static array[256] mapping ASCII characters to their hex value (0-15) for valid digits,
- * or 255 for invalid characters. Supports '0'-'9', 'a'-'f', 'A'-'F'.
+ * Static array[256] mapping ASCII characters to their hex value (0-15) for
+ * valid digits, or 255 for invalid characters. Supports '0'-'9', 'a'-'f',
+ * 'A'-'F'.
  *
- * Essential for percent-decoding (%XX sequences) in URIs and chunked encoding sizes.
+ * Essential for percent-decoding (%XX sequences) in URIs and chunked encoding
+ * sizes.
  *
  * @see SOCKETHTTP_HEX_VALUE() macro.
  * @see SocketHTTP_URI_decode() for URI percent-decoding usage.

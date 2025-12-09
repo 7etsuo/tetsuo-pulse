@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Internal implementation details for SocketPoll module.">
+<g id="a_Node000001"><a xlink:title=" ">
 <polygon fill="#999999" stroke="#666666" points="595.15,-404 491.15,-404 491.15,-385 595.15,-385 595.15,-404"/>
 <text text-anchor="middle" x="543.15" y="-392" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll&#45;private.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node7 -->
 <g id="Node000007" class="node">
 <title>Node7</title>
-<g id="a_Node000007"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000007"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="1119.15,-129 1013.15,-129 1013.15,-110 1119.15,-110 1119.15,-129"/>
 <text text-anchor="middle" x="1066.15" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketTimer-private_8h.html" target="_top" xlink:title="Internal timer implementation details and heap management.">
+<g id="a_Node000016"><a xlink:href="SocketTimer-private_8h.html" target="_top" xlink:title="Internal implementation details for the high&#45;performance SocketTimer module.">
 <polygon fill="white" stroke="#666666" points="194.15,-239 60.15,-239 60.15,-220 194.15,-220 194.15,-239"/>
 <text text-anchor="middle" x="127.15" y="-227" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketTimer&#45;private.h</text>
 </a>
@@ -146,7 +146,7 @@
 <!-- Node33 -->
 <g id="Node000033" class="node">
 <title>Node33</title>
-<g id="a_Node000033"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Abstract interface for platform&#45;specific polling implementations.">
+<g id="a_Node000033"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Defines internal backend abstraction for cross&#45;platform polling.">
 <polygon fill="white" stroke="#666666" points="703.15,-349 571.15,-349 571.15,-330 703.15,-330 703.15,-349"/>
 <text text-anchor="middle" x="637.15" y="-337" font-family="Helvetica,sans-Serif" font-size="10.00">poll/SocketPoll_backend.h</text>
 </a>
@@ -164,7 +164,7 @@
 <!-- Node34 -->
 <g id="Node000034" class="node">
 <title>Node34</title>
-<g id="a_Node000034"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Asynchronous I/O operations using platform&#45;optimized mechanisms.">
+<g id="a_Node000034"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Platform&#45;optimized asynchronous I/O for high&#45;performance networking.">
 <polygon fill="white" stroke="#666666" points="407.15,-294 291.15,-294 291.15,-275 407.15,-275 407.15,-294"/>
 <text text-anchor="middle" x="349.15" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketAsync.h</text>
 </a>
@@ -641,7 +641,7 @@
 <!-- Node26 -->
 <g id="Node000026" class="node">
 <title>Node26</title>
-<g id="a_Node000026"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000026"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="791.15,-129 695.15,-129 695.15,-110 791.15,-110 791.15,-129"/>
 <text text-anchor="middle" x="743.15" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

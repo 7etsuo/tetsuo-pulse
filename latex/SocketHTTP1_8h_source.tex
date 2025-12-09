@@ -1,0 +1,359 @@
+\doxysection{Socket\+HTTP1.\+h}
+\hypertarget{SocketHTTP1_8h_source}{}\label{SocketHTTP1_8h_source}\index{include/http/SocketHTTP1.h@{include/http/SocketHTTP1.h}}
+\mbox{\hyperlink{SocketHTTP1_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_INCLUDED}}
+\DoxyCodeLine{00036\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_INCLUDED}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00038\ \textcolor{preprocessor}{\#include\ <stddef.h>}}
+\DoxyCodeLine{00039\ \textcolor{preprocessor}{\#include\ <stdint.h>}}
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\#include\ <sys/types.h>}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00042\ \textcolor{preprocessor}{\#include\ "{}core/Arena.h"{}}}
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#include\ "{}core/Except.h"{}}}
+\DoxyCodeLine{00044\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP_8h}{http/SocketHTTP.h}}"{}}}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00047\ \textcolor{comment}{\ *\ Configuration\ Limits}}
+\DoxyCodeLine{00048\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00049\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00050\ \textcolor{comment}{\ *\ CONFIGURABLE\ LIMITS\ SUMMARY}}
+\DoxyCodeLine{00051\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00052\ \textcolor{comment}{\ *\ All\ limits\ can\ be\ overridden\ at\ compile\ time\ with\ -\/D\ flags\ or\ at\ runtime}}
+\DoxyCodeLine{00053\ \textcolor{comment}{\ *\ via\ SocketHTTP1\_Config.}}
+\DoxyCodeLine{00054\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00055\ \textcolor{comment}{\ *\ MESSAGE\ STRUCTURE\ LIMITS:}}
+\DoxyCodeLine{00056\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_REQUEST\_LINE\ -\/\ 8KB\ -\/\ Max\ request/status\ line}}
+\DoxyCodeLine{00057\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_URI\_LEN\ -\/\ 8KB\ -\/\ Max\ URI\ length}}
+\DoxyCodeLine{00058\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_HEADER\_NAME\ -\/\ 256B\ -\/\ Max\ header\ name\ length}}
+\DoxyCodeLine{00059\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_HEADER\_VALUE\ -\/\ 8KB\ -\/\ Max\ header\ value\ length}}
+\DoxyCodeLine{00060\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_HEADERS\ -\/\ 100\ -\/\ Max\ number\ of\ headers}}
+\DoxyCodeLine{00061\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_HEADER\_SIZE\ -\/\ 64KB\ -\/\ Max\ total\ header\ size}}
+\DoxyCodeLine{00062\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00063\ \textcolor{comment}{\ *\ CHUNKED\ ENCODING\ LIMITS:}}
+\DoxyCodeLine{00064\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_CHUNK\_SIZE\ -\/\ 16MB\ -\/\ Max\ single\ chunk\ size}}
+\DoxyCodeLine{00065\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_CHUNK\_EXT\ -\/\ 1KB\ -\/\ Max\ chunk\ extension\ length}}
+\DoxyCodeLine{00066\ \textcolor{comment}{\ *\ \ \ SOCKETHTTP1\_MAX\_TRAILER\_SIZE\ -\/\ 4KB\ -\/\ Max\ trailer\ headers\ size}}
+\DoxyCodeLine{00067\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00068\ \textcolor{comment}{\ *\ ENFORCEMENT:}}
+\DoxyCodeLine{00069\ \textcolor{comment}{\ *\ \ \ -\/\ All\ limits\ enforced\ during\ parsing}}
+\DoxyCodeLine{00070\ \textcolor{comment}{\ *\ \ \ -\/\ Returns\ HTTP1\_ERROR\_LINE\_TOO\_LONG,\ HTTP1\_ERROR\_HEADER\_TOO\_LARGE,\ etc.}}
+\DoxyCodeLine{00071\ \textcolor{comment}{\ *\ \ \ -\/\ Request\ smuggling\ prevention\ per\ RFC\ 9112\ Section\ 6.3}}
+\DoxyCodeLine{00072\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00073\ \textcolor{comment}{\ *\ SECURITY:}}
+\DoxyCodeLine{00074\ \textcolor{comment}{\ *\ \ \ -\/\ Rejects\ both\ Content-\/Length\ AND\ Transfer-\/Encoding\ (smuggling\ prevention)}}
+\DoxyCodeLine{00075\ \textcolor{comment}{\ *\ \ \ -\/\ Rejects\ multiple\ differing\ Content-\/Length\ values}}
+\DoxyCodeLine{00076\ \textcolor{comment}{\ *\ \ \ -\/\ Validates\ all\ header\ names/values\ for\ injection\ attacks}}
+\DoxyCodeLine{00077\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00080\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_REQUEST\_LINE}}
+\DoxyCodeLine{00081\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_REQUEST\_LINE\ (8\ *\ 1024)}}
+\DoxyCodeLine{00082\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00083\ }
+\DoxyCodeLine{00085\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_METHOD\_LEN}}
+\DoxyCodeLine{00086\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_METHOD\_LEN\ 16}}
+\DoxyCodeLine{00087\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00088\ }
+\DoxyCodeLine{00090\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_URI\_LEN}}
+\DoxyCodeLine{00091\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_URI\_LEN\ (8\ *\ 1024)}}
+\DoxyCodeLine{00092\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00093\ }
+\DoxyCodeLine{00095\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_HEADER\_NAME}}
+\DoxyCodeLine{00096\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_HEADER\_NAME\ 256}}
+\DoxyCodeLine{00097\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00098\ }
+\DoxyCodeLine{00100\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_HEADER\_VALUE}}
+\DoxyCodeLine{00101\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_HEADER\_VALUE\ (8\ *\ 1024)}}
+\DoxyCodeLine{00102\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00103\ }
+\DoxyCodeLine{00105\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_HEADERS}}
+\DoxyCodeLine{00106\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_HEADERS\ 100}}
+\DoxyCodeLine{00107\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00108\ }
+\DoxyCodeLine{00110\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_HEADER\_SIZE}}
+\DoxyCodeLine{00111\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_HEADER\_SIZE\ (64\ *\ 1024)}}
+\DoxyCodeLine{00112\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00113\ }
+\DoxyCodeLine{00115\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_CHUNK\_SIZE}}
+\DoxyCodeLine{00116\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_CHUNK\_SIZE\ (16\ *\ 1024\ *\ 1024)}}
+\DoxyCodeLine{00117\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00118\ }
+\DoxyCodeLine{00120\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_CHUNK\_EXT}}
+\DoxyCodeLine{00121\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_CHUNK\_EXT\ 1024}}
+\DoxyCodeLine{00122\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00123\ }
+\DoxyCodeLine{00125\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_TRAILER\_SIZE}}
+\DoxyCodeLine{00126\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_TRAILER\_SIZE\ (4\ *\ 1024)}}
+\DoxyCodeLine{00127\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00128\ }
+\DoxyCodeLine{00130\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_MAX\_HEADER\_LINE}}
+\DoxyCodeLine{00131\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_MAX\_HEADER\_LINE\ (16\ *\ 1024)}}
+\DoxyCodeLine{00132\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00133\ }
+\DoxyCodeLine{00134\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00135\ \textcolor{comment}{\ *\ Serialization\ Buffer\ Sizes}}
+\DoxyCodeLine{00136\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00137\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00138\ }
+\DoxyCodeLine{00140\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_INT\_STRING\_BUFSIZE}}
+\DoxyCodeLine{00141\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_INT\_STRING\_BUFSIZE\ 24}}
+\DoxyCodeLine{00142\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00145\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE}}
+\DoxyCodeLine{00146\ \textcolor{preprocessor}{\#define\ SOCKETHTTP1\_CONTENT\_LENGTH\_BUFSIZE\ 48}}
+\DoxyCodeLine{00147\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00149\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00150\ \textcolor{comment}{\ *\ Exception\ Types}}
+\DoxyCodeLine{00151\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00152\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00153\ }
+\DoxyCodeLine{00164\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ Except\_T\ \mbox{\hyperlink{group__http_gab0e624687447c4ade518d16bf70ac8a4}{SocketHTTP1\_ParseError}};}
+\DoxyCodeLine{00165\ }
+\DoxyCodeLine{00174\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ Except\_T\ \mbox{\hyperlink{group__http_ga7fe3d14ed6f02dfecfc98f4872d95372}{SocketHTTP1\_SerializeError}};}
+\DoxyCodeLine{00175\ }
+\DoxyCodeLine{00176\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00177\ \textcolor{comment}{\ *\ Parser\ Types}}
+\DoxyCodeLine{00178\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00179\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00180\ }
+\DoxyCodeLine{00184\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00185\ \{}
+\DoxyCodeLine{00186\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1}{HTTP1\_PARSE\_REQUEST}},\ }
+\DoxyCodeLine{00187\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96aab0293475cda774be4e2e2fd417eef87}{HTTP1\_PARSE\_RESPONSE}}\ }
+\DoxyCodeLine{00188\ \}\ \mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}{SocketHTTP1\_ParseMode}};}
+\DoxyCodeLine{00189\ }
+\DoxyCodeLine{00193\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00194\ \{}
+\DoxyCodeLine{00195\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1}{HTTP1\_STATE\_START}},\ \ \ \ \ \ }
+\DoxyCodeLine{00196\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eade98f14dc018677523eb4dd5eade8892}{HTTP1\_STATE\_HEADERS}},\ \ \ \ }
+\DoxyCodeLine{00197\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaed34954e4bc5ada417b736ea8762a381}{HTTP1\_STATE\_BODY}},\ \ \ \ \ \ \ }
+\DoxyCodeLine{00198\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea03634fa688c3a4b61d2e33770d10aae5}{HTTP1\_STATE\_CHUNK\_SIZE}},\ }
+\DoxyCodeLine{00199\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea0d1c2b238a0bafb0d8863b1cfab9d5d8}{HTTP1\_STATE\_CHUNK\_DATA}},\ }
+\DoxyCodeLine{00200\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1bc28b2d1b80f9aa51e112e6bffff72e}{HTTP1\_STATE\_CHUNK\_END}},\ \ }
+\DoxyCodeLine{00201\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea270022e51ea38ce543b1648c327da9d4}{HTTP1\_STATE\_TRAILERS}},\ \ \ }
+\DoxyCodeLine{00202\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074ea1a17feeec742feb1412f1ac3185a830e}{HTTP1\_STATE\_COMPLETE}},\ \ \ }
+\DoxyCodeLine{00203\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9}{HTTP1\_STATE\_ERROR}}\ \ \ \ \ \ \ }
+\DoxyCodeLine{00204\ \}\ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}{SocketHTTP1\_State}};}
+\DoxyCodeLine{00205\ }
+\DoxyCodeLine{00209\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00210\ \{}
+\DoxyCodeLine{00211\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d}{HTTP1\_OK}}\ =\ 0,\ \ \ \ \ }
+\DoxyCodeLine{00212\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f}{HTTP1\_INCOMPLETE}},\ }
+\DoxyCodeLine{00213\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea690680a1e66e6b072695744e820e55e0}{HTTP1\_ERROR}},\ \ \ \ \ \ }
+\DoxyCodeLine{00215\ \ \ \textcolor{comment}{/*\ Specific\ errors\ for\ diagnostics\ */}}
+\DoxyCodeLine{00216\ \ \ HTTP1\_ERROR\_LINE\_TOO\_LONG,}
+\DoxyCodeLine{00217\ \ \ HTTP1\_ERROR\_INVALID\_METHOD,}
+\DoxyCodeLine{00218\ \ \ HTTP1\_ERROR\_INVALID\_URI,}
+\DoxyCodeLine{00219\ \ \ HTTP1\_ERROR\_INVALID\_VERSION,}
+\DoxyCodeLine{00220\ \ \ HTTP1\_ERROR\_INVALID\_STATUS,}
+\DoxyCodeLine{00221\ \ \ HTTP1\_ERROR\_INVALID\_HEADER\_NAME,}
+\DoxyCodeLine{00222\ \ \ HTTP1\_ERROR\_INVALID\_HEADER\_VALUE,}
+\DoxyCodeLine{00223\ \ \ HTTP1\_ERROR\_HEADER\_TOO\_LARGE,}
+\DoxyCodeLine{00224\ \ \ HTTP1\_ERROR\_TOO\_MANY\_HEADERS,}
+\DoxyCodeLine{00225\ \ \ HTTP1\_ERROR\_INVALID\_CONTENT\_LENGTH,}
+\DoxyCodeLine{00226\ \ \ HTTP1\_ERROR\_INVALID\_CHUNK\_SIZE,}
+\DoxyCodeLine{00227\ \ \ HTTP1\_ERROR\_CHUNK\_TOO\_LARGE,}
+\DoxyCodeLine{00228\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78eaeb698ed6d2d4a79eb41d9b69346e6743}{HTTP1\_ERROR\_BODY\_TOO\_LARGE}},\ }
+\DoxyCodeLine{00229\ \ \ HTTP1\_ERROR\_INVALID\_TRAILER,}
+\DoxyCodeLine{00230\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea4c72953d4ab4b2e2c33eab3bd945bd56}{HTTP1\_ERROR\_UNSUPPORTED\_TRANSFER\_CODING}},\ }
+\DoxyCodeLine{00232\ \ \ HTTP1\_ERROR\_UNEXPECTED\_EOF,}
+\DoxyCodeLine{00233\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78ea459fb16283ed5b28f9cb7b1dd988e229}{HTTP1\_ERROR\_SMUGGLING\_DETECTED}}\ }
+\DoxyCodeLine{00234\ \}\ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}};}
+\DoxyCodeLine{00235\ }
+\DoxyCodeLine{00239\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00240\ \{}
+\DoxyCodeLine{00241\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a}{HTTP1\_BODY\_NONE}},\ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00242\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eaf53be77b9110eb429f3f76f152a918e8}{HTTP1\_BODY\_CONTENT\_LENGTH}},\ }
+\DoxyCodeLine{00243\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0ea8fc42a2eca05bc22c21e39819cf2ce68}{HTTP1\_BODY\_CHUNKED}},\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00244\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0eae35df2245221a5bebe7ba5bfc6c51e86}{HTTP1\_BODY\_UNTIL\_CLOSE}}\ \ \ \ \ }
+\DoxyCodeLine{00245\ \}\ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{SocketHTTP1\_BodyMode}};}
+\DoxyCodeLine{00246\ }
+\DoxyCodeLine{00250\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00251\ \{}
+\DoxyCodeLine{00252\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a8f681f902def11b16a7eea20eb7f8e08}{max\_request\_line}};\ }
+\DoxyCodeLine{00253\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a8672fe4cd385d1f07f2a28af17f2bb33}{max\_header\_name}};\ \ }
+\DoxyCodeLine{00254\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a88447b7bd33d2baa80abe9ee97c64b21}{max\_header\_value}};\ }
+\DoxyCodeLine{00255\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_abfbe5b0b91d60339154b3b6c6ed7549e}{max\_headers}};\ \ \ \ \ \ }
+\DoxyCodeLine{00256\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a108f87a5b1d893862a9a53da200141b2}{max\_header\_size}};\ \ }
+\DoxyCodeLine{00257\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a210e4001f9c4495e5e59ec63992fafcf}{max\_chunk\_size}};\ \ \ }
+\DoxyCodeLine{00258\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_ad923d4eab20cacfa9e43a265dc456c7b}{max\_chunk\_ext}};\ }
+\DoxyCodeLine{00259\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_a92d57170c7f01130d0b2f55e869bc273}{max\_trailer\_size}};\ }
+\DoxyCodeLine{00260\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHTTP1__Config_ad52814be2bcde961f89fd28531af8471}{max\_header\_line}};\ \ }
+\DoxyCodeLine{00262\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHTTP1__Config_acf3abe5c5f8346ef4dc94771023f0c65}{allow\_obs\_fold}};\ \ \ \ \ \ }
+\DoxyCodeLine{00263\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHTTP1__Config_af0674dfcd3ff95d357c22a68ac7fcf36}{strict\_mode}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00264\ \ \ \textcolor{keywordtype}{size\_t}}
+\DoxyCodeLine{00265\ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP1__Config_aeda690045f7731461b2a5f29d9c3cc03}{max\_decompressed\_size}};\ }
+\DoxyCodeLine{00267\ \}\ \mbox{\hyperlink{structSocketHTTP1__Config}{SocketHTTP1\_Config}};}
+\DoxyCodeLine{00268\ }
+\DoxyCodeLine{00273\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser}}\ *\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{SocketHTTP1\_Parser\_T}};}
+\DoxyCodeLine{00274\ }
+\DoxyCodeLine{00275\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00276\ \textcolor{comment}{\ *\ Parser\ Configuration}}
+\DoxyCodeLine{00277\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00278\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00279\ }
+\DoxyCodeLine{00288\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_gaed53869d1481794448fd6e3d9d6d5e84}{SocketHTTP1\_config\_defaults}}\ (\mbox{\hyperlink{structSocketHTTP1__Config}{SocketHTTP1\_Config}}\ *config);}
+\DoxyCodeLine{00289\ }
+\DoxyCodeLine{00290\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00291\ \textcolor{comment}{\ *\ Parser\ Lifecycle}}
+\DoxyCodeLine{00292\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00293\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00294\ }
+\DoxyCodeLine{00305\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}}
+\DoxyCodeLine{00306\ \mbox{\hyperlink{group__http_ga7fb2e95c0a39df0a5c075faa55d6a6f3}{SocketHTTP1\_Parser\_new}}\ (\mbox{\hyperlink{SocketHTTP1_8h_ae0c5248b52a9b32c1def93401bbabe96}{SocketHTTP1\_ParseMode}}\ mode,}
+\DoxyCodeLine{00307\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP1__Config}{SocketHTTP1\_Config}}\ *config,\ Arena\_T\ arena);}
+\DoxyCodeLine{00308\ }
+\DoxyCodeLine{00318\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_gaf0a2a42b97cd8ab5340958a4aa30124f}{SocketHTTP1\_Parser\_free}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ *parser);}
+\DoxyCodeLine{00319\ }
+\DoxyCodeLine{00328\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ \mbox{\hyperlink{group__http_ga49a9ded0a495db9d15e7b6ec5abce5cb}{SocketHTTP1\_Parser\_reset}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00329\ }
+\DoxyCodeLine{00330\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00331\ \textcolor{comment}{\ *\ Parsing\ API}}
+\DoxyCodeLine{00332\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00333\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00334\ }
+\DoxyCodeLine{00351\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}}}
+\DoxyCodeLine{00352\ \mbox{\hyperlink{group__http_ga83fa0ae51796710bc10e16154b448a3f}{SocketHTTP1\_Parser\_execute}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *data,}
+\DoxyCodeLine{00353\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ len,\ \textcolor{keywordtype}{size\_t}\ *consumed);}
+\DoxyCodeLine{00354\ }
+\DoxyCodeLine{00362\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_ad8ddb65bb2ebb0dfb013c19bceb3074e}{SocketHTTP1\_State}}}
+\DoxyCodeLine{00363\ \mbox{\hyperlink{group__http_gae628eea962092f79332744f005bfe81f}{SocketHTTP1\_Parser\_state}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00364\ }
+\DoxyCodeLine{00374\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Request}{SocketHTTP\_Request}}\ *}
+\DoxyCodeLine{00375\ \mbox{\hyperlink{group__http_ga2ea1bef9e80e9ed39b960bc375c7d83b}{SocketHTTP1\_Parser\_get\_request}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00376\ }
+\DoxyCodeLine{00386\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Response}{SocketHTTP\_Response}}\ *}
+\DoxyCodeLine{00387\ \mbox{\hyperlink{group__http_gace300f1b370727b195654a02e3fd7ec0}{SocketHTTP1\_Parser\_get\_response}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00388\ }
+\DoxyCodeLine{00389\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00390\ \textcolor{comment}{\ *\ Body\ Handling}}
+\DoxyCodeLine{00391\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00392\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00393\ }
+\DoxyCodeLine{00404\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{SocketHTTP1\_BodyMode}}}
+\DoxyCodeLine{00405\ \mbox{\hyperlink{group__http_gac425dba4f2dfcd61c19cd8933482db99}{SocketHTTP1\_Parser\_body\_mode}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00406\ }
+\DoxyCodeLine{00414\ \textcolor{keyword}{extern}\ int64\_t\ \mbox{\hyperlink{group__http_ga7f8d17864cc2a6d6a00055b8b6a8152d}{SocketHTTP1\_Parser\_content\_length}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00415\ }
+\DoxyCodeLine{00423\ \textcolor{keyword}{extern}\ int64\_t\ \mbox{\hyperlink{group__http_ga66d78b9f96cb10365f7aa7c0fb142f3f}{SocketHTTP1\_Parser\_body\_remaining}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00424\ }
+\DoxyCodeLine{00441\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}}}
+\DoxyCodeLine{00442\ \mbox{\hyperlink{group__http_ga4d5411b548fb2d9139c5a98c96888c10}{SocketHTTP1\_Parser\_read\_body}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *input,}
+\DoxyCodeLine{00443\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ input\_len,\ \textcolor{keywordtype}{size\_t}\ *consumed,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00444\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_len,\ \textcolor{keywordtype}{size\_t}\ *written);}
+\DoxyCodeLine{00445\ }
+\DoxyCodeLine{00453\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga43509d51fdb403d3e0917d0edace81dc}{SocketHTTP1\_Parser\_body\_complete}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00454\ }
+\DoxyCodeLine{00464\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{structSocketHTTP__Headers}{SocketHTTP\_Headers\_T}}}
+\DoxyCodeLine{00465\ \mbox{\hyperlink{group__http_gaaaab6bad3178f0109b69f5f0c83e6805}{SocketHTTP1\_Parser\_get\_trailers}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00466\ }
+\DoxyCodeLine{00467\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00468\ \textcolor{comment}{\ *\ Connection\ Management}}
+\DoxyCodeLine{00469\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00470\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00471\ }
+\DoxyCodeLine{00483\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga6207068650f6737b8f98ed419e51d56c}{SocketHTTP1\_Parser\_should\_keepalive}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00484\ }
+\DoxyCodeLine{00492\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_ga92d722afa530f7e28512dae210a5be17}{SocketHTTP1\_Parser\_is\_upgrade}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00493\ }
+\DoxyCodeLine{00501\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *}
+\DoxyCodeLine{00502\ \mbox{\hyperlink{group__http_ga5cfd27ea3f2fd476c4f3e45aa88968d6}{SocketHTTP1\_Parser\_upgrade\_protocol}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00503\ }
+\DoxyCodeLine{00511\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{group__http_gae0a96206e67a279005be9686d159faf3}{SocketHTTP1\_Parser\_expects\_continue}}\ (\mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser);}
+\DoxyCodeLine{00512\ }
+\DoxyCodeLine{00513\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00514\ \textcolor{comment}{\ *\ Serialization\ API}}
+\DoxyCodeLine{00515\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00516\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00517\ }
+\DoxyCodeLine{00532\ \textcolor{keyword}{extern}\ ssize\_t}
+\DoxyCodeLine{00533\ \mbox{\hyperlink{group__http_ga66bdb40cb195c23e4e02dfa41ad1e4b7}{SocketHTTP1\_serialize\_request}}\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Request}{SocketHTTP\_Request}}\ *request,\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00534\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00535\ }
+\DoxyCodeLine{00548\ \textcolor{keyword}{extern}\ ssize\_t}
+\DoxyCodeLine{00549\ \mbox{\hyperlink{group__http_gab8921dc474a57cdb9e68ac329f70a100}{SocketHTTP1\_serialize\_response}}\ (\textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Response}{SocketHTTP\_Response}}\ *response,}
+\DoxyCodeLine{00550\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{char}\ *output,\ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00551\ }
+\DoxyCodeLine{00565\ \textcolor{keyword}{extern}\ ssize\_t\ \mbox{\hyperlink{group__http_gaf49c3054b9785e30c0377c57b4df4bf4}{SocketHTTP1\_serialize\_headers}}\ (\mbox{\hyperlink{structSocketHTTP__Headers}{SocketHTTP\_Headers\_T}}\ headers,}
+\DoxyCodeLine{00566\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00567\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00568\ }
+\DoxyCodeLine{00569\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00570\ \textcolor{comment}{\ *\ Chunked\ Encoding}}
+\DoxyCodeLine{00571\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00572\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00573\ }
+\DoxyCodeLine{00587\ \textcolor{keyword}{extern}\ ssize\_t\ \mbox{\hyperlink{group__http_ga1ee4d308dc266c293146b181d75c0fd9}{SocketHTTP1\_chunk\_encode}}\ (\textcolor{keyword}{const}\ \textcolor{keywordtype}{void}\ *data,\ \textcolor{keywordtype}{size\_t}\ len,}
+\DoxyCodeLine{00588\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{char}\ *output,\ \textcolor{keywordtype}{size\_t}\ output\_size);}
+\DoxyCodeLine{00589\ }
+\DoxyCodeLine{00601\ \textcolor{keyword}{extern}\ ssize\_t\ \mbox{\hyperlink{group__http_ga6c018b4a237cb0c87a529e1332ddad5c}{SocketHTTP1\_chunk\_final}}\ (\textcolor{keywordtype}{char}\ *output,\ \textcolor{keywordtype}{size\_t}\ output\_size,}
+\DoxyCodeLine{00602\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structSocketHTTP__Headers}{SocketHTTP\_Headers\_T}}\ trailers);}
+\DoxyCodeLine{00603\ }
+\DoxyCodeLine{00611\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{group__http_gad77e06b6dd656dede4191a51d1c27661}{SocketHTTP1\_chunk\_encode\_size}}\ (\textcolor{keywordtype}{size\_t}\ data\_len);}
+\DoxyCodeLine{00612\ }
+\DoxyCodeLine{00613\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00614\ \textcolor{comment}{\ *\ Content\ Encoding\ (Optional\ -\/\ requires\ zlib/brotli)}}
+\DoxyCodeLine{00615\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00616\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00617\ }
+\DoxyCodeLine{00618\ \textcolor{preprocessor}{\#ifdef\ SOCKETHTTP1\_HAS\_COMPRESSION}}
+\DoxyCodeLine{00619\ }
+\DoxyCodeLine{00624\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }SocketHTTP1\_Decoder\ *SocketHTTP1\_Decoder\_T;}
+\DoxyCodeLine{00625\ }
+\DoxyCodeLine{00630\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }SocketHTTP1\_Encoder\ *SocketHTTP1\_Encoder\_T;}
+\DoxyCodeLine{00631\ }
+\DoxyCodeLine{00635\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00636\ \{}
+\DoxyCodeLine{00637\ \ \ HTTP1\_COMPRESS\_FAST\ =\ 1,}
+\DoxyCodeLine{00638\ \ \ HTTP1\_COMPRESS\_DEFAULT\ =\ 6,}
+\DoxyCodeLine{00639\ \ \ HTTP1\_COMPRESS\_BEST\ =\ 9}
+\DoxyCodeLine{00640\ \}\ SocketHTTP1\_CompressLevel;}
+\DoxyCodeLine{00641\ }
+\DoxyCodeLine{00651\ \textcolor{keyword}{extern}\ SocketHTTP1\_Decoder\_T}
+\DoxyCodeLine{00652\ SocketHTTP1\_Decoder\_new\ (\mbox{\hyperlink{group__http_ga5b16a96fcd7f45cd6d9e1929c9d9ab80}{SocketHTTP\_Coding}}\ coding,}
+\DoxyCodeLine{00653\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP1__Config}{SocketHTTP1\_Config}}\ *cfg,\ Arena\_T\ arena);}
+\DoxyCodeLine{00654\ }
+\DoxyCodeLine{00660\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ SocketHTTP1\_Decoder\_free\ (SocketHTTP1\_Decoder\_T\ *decoder);}
+\DoxyCodeLine{00661\ }
+\DoxyCodeLine{00674\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}}}
+\DoxyCodeLine{00675\ SocketHTTP1\_Decoder\_decode\ (SocketHTTP1\_Decoder\_T\ decoder,}
+\DoxyCodeLine{00676\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *input,\ \textcolor{keywordtype}{size\_t}\ input\_len,}
+\DoxyCodeLine{00677\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ *consumed,\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00678\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_len,\ \textcolor{keywordtype}{size\_t}\ *written);}
+\DoxyCodeLine{00679\ }
+\DoxyCodeLine{00688\ \textcolor{keyword}{extern}\ \mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}}}
+\DoxyCodeLine{00689\ SocketHTTP1\_Decoder\_finish\ (SocketHTTP1\_Decoder\_T\ decoder,}
+\DoxyCodeLine{00690\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *output,\ \textcolor{keywordtype}{size\_t}\ output\_len,}
+\DoxyCodeLine{00691\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ *written);}
+\DoxyCodeLine{00692\ }
+\DoxyCodeLine{00701\ \textcolor{keyword}{extern}\ SocketHTTP1\_Encoder\_T}
+\DoxyCodeLine{00702\ SocketHTTP1\_Encoder\_new\ (\mbox{\hyperlink{group__http_ga5b16a96fcd7f45cd6d9e1929c9d9ab80}{SocketHTTP\_Coding}}\ coding,}
+\DoxyCodeLine{00703\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ SocketHTTP1\_CompressLevel\ level,}
+\DoxyCodeLine{00704\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP1__Config}{SocketHTTP1\_Config}}\ *cfg,\ Arena\_T\ arena);}
+\DoxyCodeLine{00705\ }
+\DoxyCodeLine{00711\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{void}\ SocketHTTP1\_Encoder\_free\ (SocketHTTP1\_Encoder\_T\ *encoder);}
+\DoxyCodeLine{00712\ }
+\DoxyCodeLine{00724\ \textcolor{keyword}{extern}\ ssize\_t\ SocketHTTP1\_Encoder\_encode\ (SocketHTTP1\_Encoder\_T\ encoder,}
+\DoxyCodeLine{00725\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *input,}
+\DoxyCodeLine{00726\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ input\_len,}
+\DoxyCodeLine{00727\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00728\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_len,\ \textcolor{keywordtype}{int}\ flush);}
+\DoxyCodeLine{00729\ }
+\DoxyCodeLine{00738\ \textcolor{keyword}{extern}\ ssize\_t\ SocketHTTP1\_Encoder\_finish\ (SocketHTTP1\_Encoder\_T\ encoder,}
+\DoxyCodeLine{00739\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{unsigned}\ \textcolor{keywordtype}{char}\ *output,}
+\DoxyCodeLine{00740\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ output\_len);}
+\DoxyCodeLine{00741\ }
+\DoxyCodeLine{00742\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTP1\_HAS\_COMPRESSION\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00743\ }
+\DoxyCodeLine{00744\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00745\ \textcolor{comment}{\ *\ Error\ Handling}}
+\DoxyCodeLine{00746\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00747\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00748\ }
+\DoxyCodeLine{00756\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{group__http_ga2978becba9896924c0543135477ec4ff}{SocketHTTP1\_result\_string}}\ (\mbox{\hyperlink{SocketHTTP1_8h_a2ece68fcfe3c3e99a855f93f6a46f78e}{SocketHTTP1\_Result}}\ result);}
+\DoxyCodeLine{00757\ }
+\DoxyCodeLine{00758\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTP1\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

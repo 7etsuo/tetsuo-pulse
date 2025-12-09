@@ -58,25 +58,27 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
   if (strcmp (path, "/") == 0)
     {
       /* Home page */
-      const char *html = "<!DOCTYPE html>\n"
-                         "<html>\n"
-                         "<head><title>Socket Library HTTP Server</title></head>\n"
-                         "<body>\n"
-                         "<h1>Welcome to Socket Library HTTP Server</h1>\n"
-                         "<p>This is a demonstration HTTP server.</p>\n"
-                         "<h2>Available Endpoints:</h2>\n"
-                         "<ul>\n"
-                         "  <li><a href=\"/\">/</a> - This page</li>\n"
-                         "  <li><a href=\"/hello\">/hello</a> - Hello World</li>\n"
-                         "  <li><a href=\"/json\">/json</a> - JSON response</li>\n"
-                         "  <li><code>POST /echo</code> - Echo request body</li>\n"
-                         "  <li><a href=\"/stats\">/stats</a> - Server statistics</li>\n"
-                         "</ul>\n"
-                         "</body>\n"
-                         "</html>\n";
+      const char *html
+          = "<!DOCTYPE html>\n"
+            "<html>\n"
+            "<head><title>Socket Library HTTP Server</title></head>\n"
+            "<body>\n"
+            "<h1>Welcome to Socket Library HTTP Server</h1>\n"
+            "<p>This is a demonstration HTTP server.</p>\n"
+            "<h2>Available Endpoints:</h2>\n"
+            "<ul>\n"
+            "  <li><a href=\"/\">/</a> - This page</li>\n"
+            "  <li><a href=\"/hello\">/hello</a> - Hello World</li>\n"
+            "  <li><a href=\"/json\">/json</a> - JSON response</li>\n"
+            "  <li><code>POST /echo</code> - Echo request body</li>\n"
+            "  <li><a href=\"/stats\">/stats</a> - Server statistics</li>\n"
+            "</ul>\n"
+            "</body>\n"
+            "</html>\n";
 
       SocketHTTPServer_Request_status (req, 200);
-      SocketHTTPServer_Request_header (req, "Content-Type", "text/html; charset=utf-8");
+      SocketHTTPServer_Request_header (req, "Content-Type",
+                                       "text/html; charset=utf-8");
       SocketHTTPServer_Request_body_string (req, html);
     }
   else if (strcmp (path, "/hello") == 0)
@@ -101,7 +103,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
                          "}\n";
 
       SocketHTTPServer_Request_status (req, 200);
-      SocketHTTPServer_Request_header (req, "Content-Type", "application/json");
+      SocketHTTPServer_Request_header (req, "Content-Type",
+                                       "application/json");
       SocketHTTPServer_Request_body_string (req, json);
     }
   else if (strcmp (path, "/echo") == 0 && method == HTTP_METHOD_POST)
@@ -131,7 +134,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
                           "}\n";
 
       SocketHTTPServer_Request_status (req, 200);
-      SocketHTTPServer_Request_header (req, "Content-Type", "application/json");
+      SocketHTTPServer_Request_header (req, "Content-Type",
+                                       "application/json");
       SocketHTTPServer_Request_body_string (req, stats);
     }
   else
@@ -150,7 +154,8 @@ request_handler (SocketHTTPServer_Request_T req, void *userdata)
                 path);
 
       SocketHTTPServer_Request_status (req, 404);
-      SocketHTTPServer_Request_header (req, "Content-Type", "text/html; charset=utf-8");
+      SocketHTTPServer_Request_header (req, "Content-Type",
+                                       "text/html; charset=utf-8");
       SocketHTTPServer_Request_body_string (req, body);
     }
 
@@ -247,4 +252,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

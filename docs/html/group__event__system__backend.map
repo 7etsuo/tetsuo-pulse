@@ -1,0 +1,5 @@
+<map id="Polling Backend Interface" name="Polling Backend Interface">
+<area shape="rect" id="Node000003" href="$group__backend__functions.html" title="Essential functions for polling backend operations and lifecycle." alt="" coords="431,5,583,31"/>
+<area shape="rect" id="Node000002" href="$group__event__system.html" title="High&#45;performance I/O multiplexing with cross&#45;platform backends." alt="" coords="5,5,164,31"/>
+<area shape="rect" id="Node000001" title="Internal platform abstraction for efficient I/O event multiplexing." alt="" coords="212,5,383,31"/>
+</map>

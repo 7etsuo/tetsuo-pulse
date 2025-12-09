@@ -1,8 +1,12 @@
 <map id="AsyncRequest" name="AsyncRequest">
-<area shape="rect" id="Node000001" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="17,196,125,221"/>
-<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="140,199,148,202,152,209,144,218,126,221,125,215,141,213,147,208,145,206,138,204"/>
-<area shape="rect" id="Node000002" title=" " alt="" coords="32,93,111,119"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,133,74,196,69,196,69,133"/>
-<area shape="rect" id="Node000003" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,45,74,93,69,93,69,45"/>
+<area shape="rect" id="Node000001" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="103,284,211,309"/>
+<area shape="poly" id="edge5_Node000001_Node000001" title=" " alt="" coords="225,287,234,290,237,297,229,306,211,309,211,303,227,301,232,296,230,294,223,292"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="117,181,196,207"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,221,159,284,154,284,154,221"/>
+<area shape="rect" id="Node000003" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="103,93,211,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,133,159,181,154,181,154,133"/>
+<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="5,5,137,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,39,147,91,143,95,91,43"/>
+<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="161,5,323,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="223,43,170,95,167,91,219,39"/>
 </map>

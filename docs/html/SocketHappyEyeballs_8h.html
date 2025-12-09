@@ -201,7 +201,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3" id="r_ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga5ef2e9ba01aa72f8a3ae864a1ba58bc3">SocketHappyEyeballs_connect</a> (const char *host, int port, const <a class="el" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> *config)</td></tr>
 <tr class="memdesc:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous Happy Eyeballs connection to host (RFC 8305 compliant).  <br /></td></tr>
 <tr class="separator:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gaac613520b1e674db06e60155150fef63" id="r_gaac613520b1e674db06e60155150fef63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__async__io.html#structSocketHE__T">SocketHE_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gaac613520b1e674db06e60155150fef63">SocketHappyEyeballs_start</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, <a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> poll, const char *host, int port, const <a class="el" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> *config)</td></tr>
+<tr class="memitem:gaac613520b1e674db06e60155150fef63" id="r_gaac613520b1e674db06e60155150fef63"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__async__io.html#structSocketHE__T">SocketHE_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gaac613520b1e674db06e60155150fef63">SocketHappyEyeballs_start</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, SocketPoll_T poll, const char *host, int port, const <a class="el" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> *config)</td></tr>
 <tr class="memdesc:gaac613520b1e674db06e60155150fef63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start asynchronous Happy Eyeballs connection.  <br /></td></tr>
 <tr class="separator:gaac613520b1e674db06e60155150fef63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0a9452621088791eecef4112e36e4176" id="r_ga0a9452621088791eecef4112e36e4176"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0a9452621088791eecef4112e36e4176">SocketHappyEyeballs_poll</a> (<a class="el" href="group__async__io.html#structSocketHE__T">SocketHE_T</a> he)</td></tr>
@@ -265,7 +265,7 @@ Variables</h2></td></tr>
 <li>Per-attempt and total timeout support</li>
 </ul>
 <p>Thread Safety:</p><ul>
-<li><a class="el" href="group__async__io.html#structSocketHE__T" title="Main context structure for Happy Eyeballs (RFC 8305) connection racing.">SocketHE_T</a> instances are NOT thread-safe</li>
+<li><a class="el" href="group__async__io.html#structSocketHE__T" title="Main opaque context for Happy Eyeballs (RFC 8305) dual-stack connection racing.">SocketHE_T</a> instances are NOT thread-safe</li>
 <li>Multiple instances can be used from different threads</li>
 <li>Synchronous API is thread-safe (uses internal resources)</li>
 </ul>
@@ -274,14 +274,14 @@ Variables</h2></td></tr>
 <li>Caller must call <a class="el" href="group__async__io.html#ga5426942471b0a00d69094f1c8787523f" title="Free the Happy Eyeballs context and release resources.">SocketHappyEyeballs_free()</a> to release</li>
 <li>Result socket ownership transfers to caller</li>
 </ul>
-<p>Usage (Asynchronous - Event-Driven): <a class="el" href="group__async__io.html#structSocketHE__T" title="Main context structure for Happy Eyeballs (RFC 8305) connection racing.">SocketHE_T</a> he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, NULL); while (!SocketHappyEyeballs_poll(he)) { int timeout = SocketHappyEyeballs_next_timeout_ms(he); SocketPoll_wait(poll, &amp;events, timeout); SocketHappyEyeballs_process(he); } Socket_T sock = SocketHappyEyeballs_result(he); SocketHappyEyeballs_free(&amp;he);</p>
+<p>Usage (Asynchronous - Event-Driven): <a class="el" href="group__async__io.html#structSocketHE__T" title="Main opaque context for Happy Eyeballs (RFC 8305) dual-stack connection racing.">SocketHE_T</a> he = SocketHappyEyeballs_start(dns, poll, "example.com", 443, NULL); while (!SocketHappyEyeballs_poll(he)) { int timeout = SocketHappyEyeballs_next_timeout_ms(he); SocketPoll_wait(poll, &amp;events, timeout); SocketHappyEyeballs_process(he); } Socket_T sock = SocketHappyEyeballs_result(he); SocketHappyEyeballs_free(&amp;he);</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#ga5ef2e9ba01aa72f8a3ae864a1ba58bc3" title="Perform synchronous Happy Eyeballs connection to host (RFC 8305 compliant).">SocketHappyEyeballs_connect()</a> for synchronous connection. </dd>
 <dd>
 <a class="el" href="group__async__io.html#gaac613520b1e674db06e60155150fef63" title="Start asynchronous Happy Eyeballs connection.">SocketHappyEyeballs_start()</a> for asynchronous connection setup. </dd>
 <dd>
 <a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> for DNS resolver integration. </dd>
 <dd>
-<a class="el" href="group__event__system.html#structSocketPoll__T">SocketPoll_T</a> for event loop integration. </dd>
+SocketPoll_T for event loop integration. </dd>
 <dd>
 SocketHTTPClient_T for HTTP client integration. </dd>
 <dd>

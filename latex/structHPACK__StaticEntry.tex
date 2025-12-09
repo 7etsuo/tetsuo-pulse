@@ -1,0 +1,52 @@
+\doxysection{HPACK\+\_\+\+Static\+Entry Struct Reference}
+\hypertarget{structHPACK__StaticEntry}{}\label{structHPACK__StaticEntry}\index{HPACK\_StaticEntry@{HPACK\_StaticEntry}}
+
+
+{\ttfamily \#include $<$Socket\+HPACK-\/private.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHPACK__StaticEntry_a49643b573332398ec78e425dc5e3e980}{name}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHPACK__StaticEntry_ad0e5ee57a7c3de1e823b3d43b5b647a0}{value}}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{structHPACK__StaticEntry_af6a73615ec19eadf253cb4fa8cc034f9}{name\+\_\+len}}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{structHPACK__StaticEntry_a73f42f0a717d6d4e4f8c38845a001ea7}{value\+\_\+len}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Static table entry structure Field order optimized to minimize padding (pointers first, then integers) 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structHPACK__StaticEntry_a49643b573332398ec78e425dc5e3e980}\label{structHPACK__StaticEntry_a49643b573332398ec78e425dc5e3e980} 
+\index{HPACK\_StaticEntry@{HPACK\_StaticEntry}!name@{name}}
+\index{name@{name}!HPACK\_StaticEntry@{HPACK\_StaticEntry}}
+\doxysubsubsection{\texorpdfstring{name}{name}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} HPACK\+\_\+\+Static\+Entry\+::name}
+
+Header name (compile-\/time string) \Hypertarget{structHPACK__StaticEntry_af6a73615ec19eadf253cb4fa8cc034f9}\label{structHPACK__StaticEntry_af6a73615ec19eadf253cb4fa8cc034f9} 
+\index{HPACK\_StaticEntry@{HPACK\_StaticEntry}!name\_len@{name\_len}}
+\index{name\_len@{name\_len}!HPACK\_StaticEntry@{HPACK\_StaticEntry}}
+\doxysubsubsection{\texorpdfstring{name\_len}{name\_len}}
+{\footnotesize\ttfamily uint8\+\_\+t HPACK\+\_\+\+Static\+Entry\+::name\+\_\+len}
+
+Name length \Hypertarget{structHPACK__StaticEntry_ad0e5ee57a7c3de1e823b3d43b5b647a0}\label{structHPACK__StaticEntry_ad0e5ee57a7c3de1e823b3d43b5b647a0} 
+\index{HPACK\_StaticEntry@{HPACK\_StaticEntry}!value@{value}}
+\index{value@{value}!HPACK\_StaticEntry@{HPACK\_StaticEntry}}
+\doxysubsubsection{\texorpdfstring{value}{value}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} HPACK\+\_\+\+Static\+Entry\+::value}
+
+Header value (compile-\/time string) \Hypertarget{structHPACK__StaticEntry_a73f42f0a717d6d4e4f8c38845a001ea7}\label{structHPACK__StaticEntry_a73f42f0a717d6d4e4f8c38845a001ea7} 
+\index{HPACK\_StaticEntry@{HPACK\_StaticEntry}!value\_len@{value\_len}}
+\index{value\_len@{value\_len}!HPACK\_StaticEntry@{HPACK\_StaticEntry}}
+\doxysubsubsection{\texorpdfstring{value\_len}{value\_len}}
+{\footnotesize\ttfamily uint8\+\_\+t HPACK\+\_\+\+Static\+Entry\+::value\+\_\+len}
+
+Value length 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHPACK-private_8h}{Socket\+HPACK-\/private.\+h}}\end{DoxyCompactItemize}

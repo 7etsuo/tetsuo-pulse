@@ -4,7 +4,7 @@
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="373,31,262,49,142,76,89,94,46,115,18,138,11,150,8,164,8,239,10,259,17,274,28,285,42,294,121,321,191,346,264,362,333,373,392,378,392,383,332,378,263,368,190,351,119,327,40,298,25,289,13,277,5,261,3,239,3,163,6,148,14,135,43,110,87,89,140,71,261,43,372,26"/>
 <area shape="rect" id="Node000004" href="$SocketRateLimit_8h.html" title="Token bucket rate limiter for controlling operation rates." alt="" coords="145,225,303,251"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="442,33,248,217,245,213,438,29"/>
-<area shape="rect" id="Node000008" href="$SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="379,225,525,251"/>
+<area shape="rect" id="Node000008" href="$SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541)." alt="" coords="379,225,525,251"/>
 <area shape="poly" id="edge10_Node000001_Node000008" title=" " alt="" coords="455,31,455,211,449,211,449,31"/>
 <area shape="rect" id="Node000010" href="$SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control." alt="" coords="491,79,634,104"/>
 <area shape="poly" id="edge16_Node000001_Node000010" title=" " alt="" coords="471,28,534,69,531,73,468,33"/>
@@ -45,9 +45,9 @@
 <area shape="rect" id="Node000012" title=" " alt="" coords="603,299,661,324"/>
 <area shape="poly" id="edge27_Node000011_Node000012" title=" " alt="" coords="663,252,646,287,641,285,659,250"/>
 <area shape="poly" id="edge31_Node000013_Node000002" title=" " alt="" coords="1163,170,913,175,578,186,277,204,178,215,148,221,134,227,126,239,123,251,125,263,131,275,152,300,180,322,231,349,287,367,343,376,393,381,392,386,342,382,286,372,229,354,177,326,148,304,127,278,120,265,118,251,121,237,130,223,146,216,177,210,277,198,578,181,913,170,1163,164"/>
-<area shape="rect" id="Node000014" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1816,299,1957,324"/>
+<area shape="rect" id="Node000014" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1816,299,1957,324"/>
 <area shape="poly" id="edge32_Node000013_Node000014" title=" " alt="" coords="1281,173,1405,194,1550,223,1704,259,1832,292,1831,298,1703,264,1549,228,1404,199,1280,178"/>
-<area shape="rect" id="Node000023" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1157,299,1285,324"/>
+<area shape="rect" id="Node000023" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1157,299,1285,324"/>
 <area shape="poly" id="edge42_Node000013_Node000023" title=" " alt="" coords="1224,178,1224,285,1219,285,1219,178"/>
 <area shape="rect" id="Node000025" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="1367,225,1537,251"/>
 <area shape="poly" id="edge47_Node000013_Node000025" title=" " alt="" coords="1259,175,1403,219,1401,224,1258,180"/>

@@ -57,7 +57,7 @@ var sectionId = 'dynsection-0';
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Internal implementation details for automatic reconnection framework.">
+<g id="a_Node000001"><a xlink:title="Private header for SocketReconnect module internals.">
 <polygon fill="#999999" stroke="#666666" points="594.11,-349 459.11,-349 459.11,-330 594.11,-330 594.11,-349"/>
 <text text-anchor="middle" x="526.61" y="-337" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect&#45;private.h</text>
 </a>
@@ -156,7 +156,7 @@ var sectionId = 'dynsection-0';
 <!-- Node31 -->
 <g id="Node000031" class="node">
 <title>Node31</title>
-<g id="a_Node000031"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
+<g id="a_Node000031"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">
 <polygon fill="white" stroke="#666666" points="732.11,-294 597.11,-294 597.11,-275 732.11,-275 732.11,-294"/>
 <text text-anchor="middle" x="664.61" y="-282" font-family="Helvetica,sans-Serif" font-size="10.00">socket/SocketReconnect.h</text>
 </a>
@@ -417,7 +417,7 @@ var sectionId = 'dynsection-0';
 <!-- Node16 -->
 <g id="Node000016" class="node">
 <title>Node16</title>
-<g id="a_Node000016"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000016"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="936.61,-129 830.61,-129 830.61,-110 936.61,-110 936.61,-129"/>
 <text text-anchor="middle" x="883.61" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -588,7 +588,7 @@ var sectionId = 'dynsection-0';
 <!-- Node24 -->
 <g id="Node000024" class="node">
 <title>Node24</title>
-<g id="a_Node000024"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000024"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="1050.61,-129 954.61,-129 954.61,-110 1050.61,-110 1050.61,-129"/>
 <text text-anchor="middle" x="1002.61" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

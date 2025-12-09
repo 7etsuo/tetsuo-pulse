@@ -88,7 +88,8 @@
  */
 
 /**
- * @brief HTTP connection pool entry for reusing connections to the same host:port.
+ * @brief HTTP connection pool entry for reusing connections to the same
+ * host:port.
  * @ingroup http
  *
  * Manages a single connection supporting both HTTP/1.1 (sequential requests)
@@ -179,7 +180,8 @@ typedef struct HTTPPool
  */
 
 /**
- * @brief Main HTTP client instance managing configuration, pool, auth, and state.
+ * @brief Main HTTP client instance managing configuration, pool, auth, and
+ * state.
  * @ingroup http
  *
  * Internal structure holding connection pool, default auth, cookie jar,
@@ -366,17 +368,62 @@ struct SocketHTTPClient_CookieJar
  * @ingroup http
  *
  * Allocates the pool structure and hash table from the provided arena.
- * Hash size computed from config max connections with security bounds.
+ * Hash size computed from config max connections with security bounds to
+ * ensure efficient lookups while preventing excessive memory allocation or DoS
+ * via large configs. Security checks via SocketSecurity_check_multiply prevent
+ * overflow. Initializes mutex for thread safety and sets limits from config.
  *
- * @param arena Memory arena for allocating pool structures and hash table.
- * @param config HTTP client configuration for sizing (max_total_connections, etc.).
+ * @param[in] arena Memory arena for allocating pool structures, hash table,
+ * and entries.
+ * @param[in] config HTTP client configuration for sizing
+ * (max_total_connections, max_connections_per_host, idle_timeout_ms).
  *
- * @return Pointer to new HTTPPool, or raises exception on failure.
- * @throws SocketHTTPClient_Failed if arena allocation fails or config invalid.
- * @threadsafe No - single-threaded initialization expected.
+ * @return Pointer to new HTTPPool instance, ready for use.
  *
- * @see httpclient_pool_free() to dispose the pool.
- * @see SocketSecurity_check_multiply() for size validation.
+ * @throws SocketHTTPClient_Failed if arena allocation fails, config invalid
+ * (e.g. zero max), or mutex init fails.
+ *
+ * @threadsafe No - intended for single-threaded initialization; concurrent
+ * calls may race on arena.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * SocketHTTPClient_Config cfg;
+ * SocketHTTPClient_config_defaults(&cfg);
+ * // Internally, SocketHTTPClient_new calls this:
+ * HTTPPool *pool = httpclient_pool_new(arena, &cfg);
+ * if (pool) {
+ *     // Use pool for connections
+ *     HTTPPoolEntry *entry = httpclient_pool_get(pool, "example.com", 443, 1);
+ *     // ...
+ *     httpclient_pool_release(pool, entry);
+ * }
+ * httpclient_pool_free(pool);
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ *  Configuration Impact
+ *
+ * | Config Field | Effect on Pool |
+ * |--------------|----------------|
+ * | max_total_connections | Upper bound on hash size and total entries |
+ * | max_connections_per_host | Per-host limit during get() |
+ * | idle_timeout_ms | Used in cleanup_idle() |
+ *
+ * @complexity O(1) time - constant allocations; O(hash_size) space where
+ * hash_size ~ max_total / 8
+ *
+ * @note Pool does not own arena; caller manages lifetime. All entries freed on
+ * pool_free but not arena_clear.
+ * @warning Ensure config values reasonable to avoid large memory use or DoS;
+ * security checks mitigate but validate inputs.
+ *
+ * @see httpclient_pool_free() for disposal and cleanup.
+ * @see httpclient_pool_get() for acquiring connections.
+ * @see SocketSecurity_check_multiply() for size validation used internally.
+ * @see docs/HTTP-POOL.md for pool design details (if exists).
  */
 extern HTTPPool *httpclient_pool_new (Arena_T arena,
                                       const SocketHTTPClient_Config *config);
@@ -384,15 +431,47 @@ extern HTTPPool *httpclient_pool_new (Arena_T arena,
  * @brief Dispose of HTTP connection pool and all associated resources.
  * @ingroup http
  *
- * Closes all connections, frees entries, hash table, and clears statistics.
- * Does not free the arena; caller responsible for Arena_clear/dispose if needed.
+ * Closes all open connections by calling Socket_free on each entry's socket,
+ * frees individual HTTPPoolEntry structures back to free list or arena,
+ * destroys hash table entries, clears statistics counters, and destroys mutex.
+ * Does not dispose or clear the underlying arena; caller must manage arena
+ * lifetime to avoid leaks of any remaining arena-allocated data. Handles
+ * partial failures gracefully (e.g. one connection close fail doesn't stop
+ * others).
  *
- * @param pool Pointer to pool (set to NULL on success).
- * @throws None - failures logged but not raised.
- * @threadsafe Conditional - hold pool mutex if concurrent access.
+ * @param[in,out] pool Pointer to HTTPPool (set to NULL after successful
+ * disposal).
  *
- * @see httpclient_pool_new() for creation.
- * @see Arena_dispose() if pool owns the arena.
+ * @return void
+ *
+ * @throws None - socket close or mutex destroy failures are logged via
+ * SocketLog but not raised as exceptions.
+ *
+ * @threadsafe Conditional - safe if no concurrent access to pool; acquire
+ * pool->mutex externally if shared.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * // Typical paired with creation
+ * HTTPPool *pool = httpclient_pool_new(arena, &config);
+ * // ... use pool ...
+ * httpclient_pool_free(pool);  // Closes all conns, frees entries
+ * pool = NULL;  // Set to NULL per convention
+ * Arena_dispose(&arena);  // Finally dispose arena
+ * @endcode
+ *
+ * @complexity O(n) time where n = current connection count (closes each); O(1)
+ * space
+ *
+ * @note Caller must ensure no threads are using pool entries during free.
+ * @warning Concurrent modifications during free may cause use-after-free or
+ * mutex poisoning.
+ *
+ * @see httpclient_pool_new() for creation and initialization.
+ * @see Arena_dispose() for arena cleanup after pool_free.
+ * @see Socket_free() underlying connection closes.
+ * @see docs/HTTP-POOL.md for lifecycle management.
  */
 extern void httpclient_pool_free (HTTPPool *pool);
 /**
@@ -400,15 +479,17 @@ extern void httpclient_pool_free (HTTPPool *pool);
  * @ingroup http
  *
  * Searches the pool's hash table for an existing idle entry matching the key.
- * If found, returns it marked as in_use. If not, and under limits, creates a new entry.
- * Does not establish the connection; that's done by httpclient_connect().
+ * If found, returns it marked as in_use. If not, and under limits, creates a
+ * new entry. Does not establish the connection; that's done by
+ * httpclient_connect().
  *
  * @param pool The HTTP connection pool.
  * @param host The target hostname (copied).
  * @param port The target port.
  * @param is_secure 1 if TLS connection required, 0 for plain HTTP.
  * @return HTTPPoolEntry* for the connection slot, or raises exception.
- * @throws SocketHTTPClient_Failed if max per host/total reached or allocation fails.
+ * @throws SocketHTTPClient_Failed if max per host/total reached or allocation
+ * fails.
  * @threadsafe Yes - acquires pool mutex.
  * @see httpclient_pool_release() to return after use.
  * @see httpclient_connect() to connect the entry.
@@ -437,9 +518,9 @@ extern void httpclient_pool_release (HTTPPool *pool, HTTPPoolEntry *entry);
  * @brief Close and remove a pool entry from the pool.
  * @ingroup http
  *
- * Closes the underlying socket connection, marks entry as closed, removes from hash table and lists.
- * Updates pool stats for failed connections.
- * Used when connection error or explicit shutdown needed.
+ * Closes the underlying socket connection, marks entry as closed, removes from
+ * hash table and lists. Updates pool stats for failed connections. Used when
+ * connection error or explicit shutdown needed.
  *
  * @param pool The HTTP pool.
  * @param entry The entry to close.
@@ -453,9 +534,9 @@ extern void httpclient_pool_close (HTTPPool *pool, HTTPPoolEntry *entry);
  * @brief Clean up idle connections that have exceeded timeout.
  * @ingroup http
  *
- * Scans all connections in the pool, closes those idle longer than configured timeout.
- * Removes closed entries from hash and lists, updates stats.
- * Called periodically or on pool access.
+ * Scans all connections in the pool, closes those idle longer than configured
+ * timeout. Removes closed entries from hash and lists, updates stats. Called
+ * periodically or on pool access.
  *
  * @param pool The HTTP pool to clean.
  * @throws None - close failures logged.
@@ -522,7 +603,8 @@ extern int httpclient_send_request (HTTPPoolEntry *conn,
  * @param response Output response to fill.
  * @param arena Arena for response allocations (headers, body).
  * @return 0 on success, -1 on parse or read error.
- * @throws SocketHTTPClient_Failed on parse error, SocketHTTP_ParseError propagated.
+ * @throws SocketHTTPClient_Failed on parse error, SocketHTTP_ParseError
+ * propagated.
  * @threadsafe No - conn exclusive.
  * @see SocketHTTP1_Parser_execute() for HTTP/1.1 parse.
  * @see SocketHTTP2_Conn_process() for HTTP/2.
@@ -597,7 +679,7 @@ extern int httpclient_auth_basic_header (const char *username,
  *
  * Implements RFC 2617 Digest auth response calculation.
  * Supports qop="auth", MD5 or SHA-256 algorithm.
- * Computes HA1 = H({username:realm:password}), HA2 = H({method:uri}), 
+ * Computes HA1 = H({username:realm:password}), HA2 = H({method:uri}),
  * response = H(HA1:nonce:nc:cnonce:qop:HA2).
  * Outputs hex digest to buffer.
  *
@@ -619,7 +701,8 @@ extern int httpclient_auth_basic_header (const char *username,
  * @see SocketCrypto_md5(), SocketCrypto_sha256().
  * @see httpclient_auth_digest_challenge() for full handling.
  * @see docs/SECURITY.md for auth details.
- * @note Password zeroed after use? No, but sensitive; use secure memory if possible.
+ * @note Password zeroed after use? No, but sensitive; use secure memory if
+ * possible.
  */
 extern int httpclient_auth_digest_response (
     const char *username, const char *password, const char *realm,
@@ -628,14 +711,15 @@ extern int httpclient_auth_digest_response (
     size_t output_size);
 
 /**
- * @brief Handle Digest authentication challenge from WWW-Authenticate header and generate Authorization response.
+ * @brief Handle Digest authentication challenge from WWW-Authenticate header
+ * and generate Authorization response.
  * @ingroup http
  *
- * Parses the WWW-Authenticate header for Digest params (realm, nonce, qop, etc.).
- * Generates client nonce, computes response using httpclient_auth_digest_response().
- * Formats Authorization: Digest ... header value.
- * Handles MD5 or SHA256 based on algorithm param.
- * NOTE: Supports only qop=auth; not auth-int.
+ * Parses the WWW-Authenticate header for Digest params (realm, nonce, qop,
+ * etc.). Generates client nonce, computes response using
+ * httpclient_auth_digest_response(). Formats Authorization: Digest ... header
+ * value. Handles MD5 or SHA256 based on algorithm param. NOTE: Supports only
+ * qop=auth; not auth-int.
  *
  * @param www_authenticate The WWW-Authenticate header value string.
  * @param username User's username.
@@ -658,7 +742,8 @@ extern int httpclient_auth_digest_challenge (
     size_t output_size);
 
 /**
- * @brief Generate Authorization header for Bearer token authentication (RFC 6750).
+ * @brief Generate Authorization header for Bearer token authentication (RFC
+ * 6750).
  * @param token The Bearer token string (copied as-is, no validation).
  * @param output Buffer to receive the formatted "Bearer <token>" header value.
  * @param output_size Size of the output buffer (must be >= strlen(token) + 7).
@@ -683,7 +768,8 @@ extern int httpclient_auth_bearer_header (const char *token, char *output,
  * @ingroup http
  *
  * Parses WWW-Authenticate for "stale=true" param.
- * Allows automatic retry on stale nonce (server-side expiration) vs bad credentials.
+ * Allows automatic retry on stale nonce (server-side expiration) vs bad
+ * credentials.
  *
  * @param www_authenticate The WWW-Authenticate header string.
  * @return 1 if stale=true found, 0 otherwise (or parse fail).
@@ -698,16 +784,17 @@ extern int httpclient_auth_is_stale_nonce (const char *www_authenticate);
  * @brief Generate Cookie header value from jar cookies applicable to URI.
  * @ingroup http
  *
- * Queries jar for cookies matching URI domain/path, sorts by path length, selects per domain.
- * Formats as "name1=value1; name2=value2; ..." string.
- * Applies SameSite policy if enforce_samesite=1 (skip Lax/Strict for cross-site).
- * Handles secure/httponly flags implicitly by selection.
+ * Queries jar for cookies matching URI domain/path, sorts by path length,
+ * selects per domain. Formats as "name1=value1; name2=value2; ..." string.
+ * Applies SameSite policy if enforce_samesite=1 (skip Lax/Strict for
+ * cross-site). Handles secure/httponly flags implicitly by selection.
  *
  * @param jar The cookie jar to query.
  * @param uri The request URI for domain/path/secure match.
  * @param output Buffer for the Cookie header value string.
  * @param output_size Size of output buffer (grow as needed? No, fixed).
- * @param enforce_samesite 1 to enforce SameSite=Lax/Strict policy, 0 to include all.
+ * @param enforce_samesite 1 to enforce SameSite=Lax/Strict policy, 0 to
+ * include all.
  * @return 0 on success (header written or empty), -1 if buffer too small.
  * @threadsafe Yes - jar mutex held during query.
  * @see SocketHTTPClient_CookieJar for jar details.
@@ -723,10 +810,10 @@ extern int httpclient_cookies_for_request (
  * @brief Parse Set-Cookie header and populate cookie structure.
  * @ingroup http
  *
- * Parses RFC 6265 Set-Cookie string, extracts name=value, attributes (expires, path, domain, secure, httpOnly, SameSite).
- * Sets defaults from request_uri if not specified (domain/path).
- * Allocates strings from arena.
- * Validates dates, domains.
+ * Parses RFC 6265 Set-Cookie string, extracts name=value, attributes (expires,
+ * path, domain, secure, httpOnly, SameSite). Sets defaults from request_uri if
+ * not specified (domain/path). Allocates strings from arena. Validates dates,
+ * domains.
  *
  * @param value The Set-Cookie header value string.
  * @param len Length of value (for non-null term).

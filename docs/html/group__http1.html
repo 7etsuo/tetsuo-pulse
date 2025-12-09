@@ -111,6 +111,7 @@ $(document).ready(function(){initNavTree('group__http1.html',''); initResizable(
 
 <div class="header">
   <div class="summary">
+<a href="#groups">Modules</a> &#124;
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
@@ -127,9 +128,14 @@ $(document).ready(function(){initNavTree('group__http1.html',''); initResizable(
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="group__http1.svg" width="316" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="group__http1.svg" width="532" height="51"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="groups" name="groups"></a>
+Modules</h2></td></tr>
+<tr class="memitem:group__http1__private" id="r_group__http1__private"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1__private.html">HTTP/1.1 Parser Internal Implementation</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketHTTP1__Config" id="r_structSocketHTTP1__Config"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a></td></tr>
@@ -271,19 +277,19 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gaed53869d1481794448fd6e3d9d6d5e84" id="r_gaed53869d1481794448fd6e3d9d6d5e84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a> (<a class="el" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> *config)</td></tr>
-<tr class="memdesc:gaed53869d1481794448fd6e3d9d6d5e84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> with safe default values.  <br /></td></tr>
+<tr class="memdesc:gaed53869d1481794448fd6e3d9d6d5e84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> structure with secure default values.  <br /></td></tr>
 <tr class="separator:gaed53869d1481794448fd6e3d9d6d5e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7fb2e95c0a39df0a5c075faa55d6a6f3" id="r_ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="memItemLeft" align="right" valign="top">SocketHTTP1_Parser_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a> (<a class="el" href="group__http1.html#gae0c5248b52a9b32c1def93401bbabe96">SocketHTTP1_ParseMode</a> mode, const <a class="el" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create new parser.  <br /></td></tr>
+<tr class="memdesc:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new HTTP/1.1 parser instance for request or response messages.  <br /></td></tr>
 <tr class="separator:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf0a2a42b97cd8ab5340958a4aa30124f" id="r_gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f">SocketHTTP1_Parser_free</a> (SocketHTTP1_Parser_T *parser)</td></tr>
-<tr class="memdesc:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free parser.  <br /></td></tr>
+<tr class="memdesc:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of HTTP/1.1 parser instance and release resources.  <br /></td></tr>
 <tr class="separator:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga49a9ded0a495db9d15e7b6ec5abce5cb" id="r_ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb">SocketHTTP1_Parser_reset</a> (SocketHTTP1_Parser_T parser)</td></tr>
 <tr class="memdesc:ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset parser for next message.  <br /></td></tr>
 <tr class="separator:ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga83fa0ae51796710bc10e16154b448a3f" id="r_ga83fa0ae51796710bc10e16154b448a3f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e">SocketHTTP1_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f">SocketHTTP1_Parser_execute</a> (SocketHTTP1_Parser_T parser, const char *data, size_t len, size_t *consumed)</td></tr>
-<tr class="memdesc:ga83fa0ae51796710bc10e16154b448a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse data incrementally.  <br /></td></tr>
+<tr class="memdesc:ga83fa0ae51796710bc10e16154b448a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Incrementally parse HTTP/1.1 message data using DFA state machine.  <br /></td></tr>
 <tr class="separator:ga83fa0ae51796710bc10e16154b448a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae628eea962092f79332744f005bfe81f" id="r_gae628eea962092f79332744f005bfe81f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http1.html#gad8ddb65bb2ebb0dfb013c19bceb3074e">SocketHTTP1_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gae628eea962092f79332744f005bfe81f">SocketHTTP1_Parser_state</a> (SocketHTTP1_Parser_T parser)</td></tr>
 <tr class="memdesc:gae628eea962092f79332744f005bfe81f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current parser state.  <br /></td></tr>
@@ -325,7 +331,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:gae0a96206e67a279005be9686d159faf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for Expect: 100-continue.  <br /></td></tr>
 <tr class="separator:gae0a96206e67a279005be9686d159faf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga66bdb40cb195c23e4e02dfa41ad1e4b7" id="r_ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7">SocketHTTP1_serialize_request</a> (const <a class="el" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> *request, char *output, size_t output_size)</td></tr>
-<tr class="memdesc:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize request to buffer.  <br /></td></tr>
+<tr class="memdesc:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize HTTP request message (headers only) to wire format.  <br /></td></tr>
 <tr class="separator:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab8921dc474a57cdb9e68ac329f70a100" id="r_gab8921dc474a57cdb9e68ac329f70a100"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gab8921dc474a57cdb9e68ac329f70a100">SocketHTTP1_serialize_response</a> (const <a class="el" href="group__http.html#structSocketHTTP__Response">SocketHTTP_Response</a> *response, char *output, size_t output_size)</td></tr>
 <tr class="memdesc:gab8921dc474a57cdb9e68ac329f70a100"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize response to buffer.  <br /></td></tr>
@@ -365,8 +371,8 @@ Variables</h2></td></tr>
 <li>Support for decompression limits to avoid "zip bombs"</li>
 </ul>
 <p>Usage Pattern:</p><ul>
-<li>Create parser with <a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create new parser.">SocketHTTP1_Parser_new()</a></li>
-<li>Feed data incrementally via <a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Parse data incrementally.">SocketHTTP1_Parser_execute()</a></li>
+<li>Create parser with <a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a></li>
+<li>Feed data incrementally via <a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a></li>
 <li>Access parsed structures with get_request()/get_response()</li>
 <li>Handle body with read_body() or dedicated modes</li>
 <li>Serialize outgoing messages with serialize_request/response()</li>
@@ -381,21 +387,7 @@ Variables</h2></td></tr>
 <li><a class="el" href="group__hpack.html">HPACK Header Compression Module</a> for HTTP/2 header compression</li>
 <li><a class="el" href="group__websocket.html">WebSocket Modules</a> for WebSocket over HTTP</li>
 </ul>
-<p>Example: </p><div class="fragment"></div><!-- fragment --><p> (server-side parsing) </p><div class="fragment"></div><!-- fragment --><p> (client-side serialization)</p>
-<p>This header contains internal structures for the HTTP/1.1 parser implementation. NOT for public consumption - use <a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> instead.</p>
-<p>Contains:</p><ul>
-<li>Table-driven DFA character classification (following SocketUTF8 pattern)</li>
-<li>HTTP/1.1 state machine definitions and transition tables</li>
-<li>Parser internal structures and buffers</li>
-<li>Chunked encoding state machine</li>
-<li>Compression/decompression state (if enabled)</li>
-</ul>
-<p>The parser uses a deterministic finite automaton (DFA) for O(n) parsing with single-pass validation and error detection.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHTTP1_8h.html" title="HTTP/1.1 message syntax parsing and serialization (RFC 9112).">SocketHTTP1.h</a> for public HTTP/1.1 API. </dd>
-<dd>
-SocketUTF8.c for similar table-driven DFA pattern. </dd>
-<dd>
-<a class="el" href="SocketHTTP-private_8h.html" title="Internal HTTP core structures and helper functions.">SocketHTTP-private.h</a> for core HTTP internal structures. </dd></dl>
+<p>Example: </p><div class="fragment"></div><!-- fragment --><p> (server-side parsing) </p><div class="fragment"></div><!-- fragment --><p> (client-side serialization) </p>
 
 
 <h3><a id="http1_page" name="http1_page"></a>HTTP/1.1 Module Overview</h3><div class="textblock">Additional module-specific page if needed. This can include diagrams, examples, or advanced topics. </div><hr/><h2 class="groupheader">Data Structure Documentation</h2>
@@ -413,9 +405,9 @@ SocketUTF8.c for similar table-driven DFA pattern. </dd>
 <div class="textblock"><p>Runtime configuration structure for the HTTP/1.1 parser. </p>
 <p>Customizes security limits, syntax tolerance, and decompression behavior. Fields correspond to compile-time macros (e.g., SOCKETHTTP1_MAX_REQUEST_LINE) and can be overridden for specific use cases like embedded systems or high-security.</p>
 <dl class="section note"><dt>Note</dt><dd>Defaults provide reasonable security; lowering limits improves DoS resistance. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84" title="Initialize SocketHTTP1_Config with safe default values.">SocketHTTP1_config_defaults()</a> for initialization. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84" title="Initialize SocketHTTP1_Config structure with secure default values.">SocketHTTP1_config_defaults()</a> for initialization. </dd>
 <dd>
-<a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create new parser.">SocketHTTP1_Parser_new()</a> passes config to parser. </dd></dl>
+<a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a> passes config to parser. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHTTP1_8h_source.html#l00346">346</a> of file <a class="el" href="SocketHTTP1_8h_source.html">SocketHTTP1.h</a>.</p>
 </div><table class="fieldtable">
@@ -794,7 +786,7 @@ strict_mode</td>
 
 <p>Parser mode: request or response parsing. </p>
 <p>Parser mode </p>
-<p>Selects whether the parser expects an HTTP request or response message. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create new parser.">SocketHTTP1_Parser_new()</a> </dd></dl>
+<p>Selects whether the parser expects an HTTP request or response message. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a> </dd></dl>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1" name="ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1"></a>HTTP1_PARSE_REQUEST&#160;</td><td class="fielddoc"><p>Parse HTTP requests </p>
 </td></tr>
@@ -820,7 +812,7 @@ strict_mode</td>
 
 <p>Result codes from HTTP/1.1 parsing operations. </p>
 <p>Values indicate parsing success, continuation, or specific failure modes. Error codes provide diagnostics for debugging and security logging. Use <a class="el" href="group__http1.html#ga2978becba9896924c0543135477ec4ff" title="Get human-readable error description.">SocketHTTP1_result_string()</a> for human-readable descriptions.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Parse data incrementally.">SocketHTTP1_Parser_execute()</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> </dd>
 <dd>
 <a class="el" href="group__http1.html#ga2978becba9896924c0543135477ec4ff" title="Get human-readable error description.">SocketHTTP1_result_string()</a> </dd>
 <dd>
@@ -872,9 +864,9 @@ strict_mode</td>
 
 <p>High-level states of the HTTP/1.1 parser state machine. </p>
 <p>Indicates the current parsing phase: from start line to complete message or error. Used for monitoring progress and handling partial parses.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gae628eea962092f79332744f005bfe81f" title="Get current parser state.">SocketHTTP1_Parser_state()</a> to query current state. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gae628eea962092f79332744f005bfe81f" title="Get current parser state.">SocketHTTP1_Parser_state()</a> to query current <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>. </dd>
 <dd>
-<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Parse data incrementally.">SocketHTTP1_Parser_execute()</a> for state transitions. </dd></dl>
+<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> transitions. </dd></dl>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ggad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1" name="ggad8ddb65bb2ebb0dfb013c19bceb3074ea9ef28d3428d6bf4269b6188ccce295e1"></a>HTTP1_STATE_START&#160;</td><td class="fielddoc"><p>Waiting for first line (request or status) </p>
 </td></tr>
@@ -1081,20 +1073,75 @@ Required output size: len + 20 (for size line and CRLF) </p>
 </table>
 </div><div class="memdoc">
 
-<p>Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> with safe default values. </p>
+<p>Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> structure with secure default values. </p>
+<p>Sets all configuration fields to compile-time constants (e.g., SOCKETHTTP1_MAX_REQUEST_LINE=8KB) and enables strict parsing mode to prevent request smuggling and other attacks. This function performs no allocations and has no side effects. Defaults are chosen for production use: balanced security vs. compatibility. For embedded systems, tune down limits post-initialization.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">config</td><td>[out] Configuration structure to populate </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">config</td><td>Pointer to configuration structure to initialize</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes - pure function, no side effects</dt><dd></dd></dl>
-<p>Populates all fields with compile-time defaults (e.g., SOCKETHTTP1_MAX_HEADERS=100) and enables strict mode for RFC compliance and security. Recommended starting point before custom tuning.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for field details and overrides </dd>
+<dl class="section user"><dt>Thread Safety\n Yes - pure function, can be called concurrently</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md310"></a>
+Default Values Table</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Default Value   </th><th class="markdownTableHeadNone">Purpose    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_request_line   </td><td class="markdownTableBodyNone">8KB   </td><td class="markdownTableBodyNone">Prevent buffer overflow in request line    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">max_uri_len   </td><td class="markdownTableBodyNone">8KB   </td><td class="markdownTableBodyNone">Limit maliciously long URIs    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_header_name   </td><td class="markdownTableBodyNone">256B   </td><td class="markdownTableBodyNone">Standard header names are short    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">max_header_value   </td><td class="markdownTableBodyNone">8KB   </td><td class="markdownTableBodyNone">Handle cookies, etc.    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_headers   </td><td class="markdownTableBodyNone">100   </td><td class="markdownTableBodyNone">Typical requests have &lt;20    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">max_header_size   </td><td class="markdownTableBodyNone">64KB   </td><td class="markdownTableBodyNone">Total headers limit    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_chunk_size   </td><td class="markdownTableBodyNone">16MB   </td><td class="markdownTableBodyNone">Prevent huge chunks    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">strict_mode   </td><td class="markdownTableBodyNone">1   </td><td class="markdownTableBodyNone">Reject ambiguous syntax    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">allow_obs_fold   </td><td class="markdownTableBodyNone">0   </td><td class="markdownTableBodyNone">Reject obsolete line folding   </td></tr>
+</table>
+<h2><a class="anchor" id="autotoc_md311"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> cfg;</div>
+<div class="line"><a class="code hl_function" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a>(&amp;cfg);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Customize for stricter security</span></div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#abfbe5b0b91d60339154b3b6c6ed7549e">max_headers</a> = 50;  <span class="comment">// Reduce DoS risk</span></div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#aeda690045f7731461b2a5f29d9c3cc03">max_decompressed_size</a> = 1 * 1024 * 1024;  <span class="comment">// 1MB limit</span></div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Create parser with tuned config</span></div>
+<div class="line">SocketHTTP1_Parser_T parser = <a class="code hl_function" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a>(<a class="code hl_enumvalue" href="group__http1.html#ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1">HTTP1_PARSE_REQUEST</a>, &amp;cfg, arena);</div>
+<div class="ttc" id="agroup__http1_html_abfbe5b0b91d60339154b3b6c6ed7549e"><div class="ttname"><a href="group__http1.html#abfbe5b0b91d60339154b3b6c6ed7549e">SocketHTTP1_Config::max_headers</a></div><div class="ttdeci">size_t max_headers</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00351">SocketHTTP1.h:351</a></div></div>
+<div class="ttc" id="agroup__http1_html_aeda690045f7731461b2a5f29d9c3cc03"><div class="ttname"><a href="group__http1.html#aeda690045f7731461b2a5f29d9c3cc03">SocketHTTP1_Config::max_decompressed_size</a></div><div class="ttdeci">size_t max_decompressed_size</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00361">SocketHTTP1.h:361</a></div></div>
+<div class="ttc" id="agroup__http1_html_ga7fb2e95c0a39df0a5c075faa55d6a6f3"><div class="ttname"><a href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a></div><div class="ttdeci">SocketHTTP1_Parser_T SocketHTTP1_Parser_new(SocketHTTP1_ParseMode mode, const SocketHTTP1_Config *config, Arena_T arena)</div><div class="ttdoc">Create a new HTTP/1.1 parser instance for request or response messages.</div></div>
+<div class="ttc" id="agroup__http1_html_gaed53869d1481794448fd6e3d9d6d5e84"><div class="ttname"><a href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a></div><div class="ttdeci">void SocketHTTP1_config_defaults(SocketHTTP1_Config *config)</div><div class="ttdoc">Initialize SocketHTTP1_Config structure with secure default values.</div></div>
+<div class="ttc" id="agroup__http1_html_ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1"><div class="ttname"><a href="group__http1.html#ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1">HTTP1_PARSE_REQUEST</a></div><div class="ttdeci">@ HTTP1_PARSE_REQUEST</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00249">SocketHTTP1.h:249</a></div></div>
+<div class="ttc" id="agroup__http1_html_structSocketHTTP1__Config"><div class="ttname"><a href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a></div><div class="ttdoc">Runtime configuration structure for the HTTP/1.1 parser.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00346">SocketHTTP1.h:347</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md312"></a>
+High-Security Configuration</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> cfg;</div>
+<div class="line"><a class="code hl_function" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a>(&amp;cfg);</div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#af0674dfcd3ff95d357c22a68ac7fcf36">strict_mode</a> = 1;</div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#acf3abe5c5f8346ef4dc94771023f0c65">allow_obs_fold</a> = 0;</div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#a8f681f902def11b16a7eea20eb7f8e08">max_request_line</a> = 4 * 1024;  <span class="comment">// Smaller for embedded</span></div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#aeda690045f7731461b2a5f29d9c3cc03">max_decompressed_size</a> = 64 * 1024;  <span class="comment">// Limit zip bombs</span></div>
+<div class="ttc" id="agroup__http1_html_a8f681f902def11b16a7eea20eb7f8e08"><div class="ttname"><a href="group__http1.html#a8f681f902def11b16a7eea20eb7f8e08">SocketHTTP1_Config::max_request_line</a></div><div class="ttdeci">size_t max_request_line</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00348">SocketHTTP1.h:348</a></div></div>
+<div class="ttc" id="agroup__http1_html_acf3abe5c5f8346ef4dc94771023f0c65"><div class="ttname"><a href="group__http1.html#acf3abe5c5f8346ef4dc94771023f0c65">SocketHTTP1_Config::allow_obs_fold</a></div><div class="ttdeci">int allow_obs_fold</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00358">SocketHTTP1.h:358</a></div></div>
+<div class="ttc" id="agroup__http1_html_af0674dfcd3ff95d357c22a68ac7fcf36"><div class="ttname"><a href="group__http1.html#af0674dfcd3ff95d357c22a68ac7fcf36">SocketHTTP1_Config::strict_mode</a></div><div class="ttdeci">int strict_mode</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00359">SocketHTTP1.h:359</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>After initialization, only modify fields you understand; some interactions may affect security. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Setting limits too low may reject legitimate traffic (e.g., large cookies).</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - Simple assignment loop</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> structure definition for all fields </dd>
 <dd>
-<a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create new parser.">SocketHTTP1_Parser_new()</a> which accepts this config </dd>
+<a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a> to use configured parser </dd>
 <dd>
-<a class="el" href="group__http1.html" title="Comprehensive HTTP/1.1 parsing, serialization, and transfer encoding support.">HTTP/1.1 Parser and Serializer Module</a> for module overview </dd></dl>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for DoS protection guidelines </dd></dl>
 
 </div>
 </div>
@@ -1289,23 +1336,93 @@ Required output size: len + 20 (for size line and CRLF) </p>
 </table>
 </div><div class="memdoc">
 
-<p>Parse data incrementally. </p>
+<p>Incrementally parse HTTP/1.1 message data using DFA state machine. </p>
+<p>Processes input buffer through a table-driven deterministic finite automaton (DFA) for O(n) parsing efficiency. Supports partial reads from non-blocking sockets. Advances state from start line -&gt; headers -&gt; body (or stops at headers for requests). Handles all RFC 9112 syntax including obs-fold (configurable), chunked encoding setup.</p>
+<p>Error conditions: Returns specific SocketHTTP1_Result codes for diagnostics. On error, parser enters ERROR state; reset with <a class="el" href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb" title="Reset parser for next message.">SocketHTTP1_Parser_reset()</a>. Consumed bytes indicate valid prefix parsed before error. Security: Enforces config limits; rejects smuggling attempts (conflicting lengths).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">parser</td><td>Parser instance </td></tr>
-    <tr><td class="paramname">data</td><td>Input data buffer </td></tr>
-    <tr><td class="paramname">len</td><td>Data length </td></tr>
-    <tr><td class="paramname">consumed</td><td>Output - bytes consumed from input </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">parser</td><td>Initialized parser instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>Raw input bytes from socket/network </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">len</td><td>Length of data buffer (may be partial message) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">consumed</td><td>Number of bytes processed (always set, even on error)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>HTTP1_OK when headers complete, HTTP1_INCOMPLETE if need more, or error code </dd></dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
-<p>Feed data to the parser incrementally. Can be called multiple times with partial data. Parsing stops at message boundary:</p><ul>
-<li>After headers for HEAD responses, 1xx, 204, 304</li>
-<li>After body for other responses</li>
-<li>After headers for requests (body read separately) </li>
+<dl class="section return"><dt>Returns</dt><dd>SocketHTTP1_Result:<ul>
+<li>HTTP1_OK: Message headers complete (body ready or none)</li>
+<li>HTTP1_INCOMPLETE: Need more data (partial message)</li>
+<li>HTTP1_ERROR or specific codes: Parse failure (e.g., invalid syntax, limits exceeded)</li>
 </ul>
+</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies parser internal state; exclusive access required</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md316"></a>
+Basic Parsing Loop</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">size_t</span> consumed;</div>
+<div class="line"><a class="code hl_enumeration" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e">SocketHTTP1_Result</a> res;</div>
+<div class="line"><span class="keywordflow">while</span> ((res = <a class="code hl_function" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f">SocketHTTP1_Parser_execute</a>(parser, buf, buflen, &amp;consumed)) == <a class="code hl_enumvalue" href="group__http1.html#gga2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f">HTTP1_INCOMPLETE</a>) {</div>
+<div class="line">    <span class="comment">// Read more data into buf (shift if partial)</span></div>
+<div class="line">    buf += consumed;</div>
+<div class="line">    buflen -= consumed;</div>
+<div class="line">    ssize_t nread = <a class="code hl_function" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a>(socket, buf, <span class="keyword">sizeof</span>(buf));</div>
+<div class="line">    <span class="keywordflow">if</span> (nread &lt;= 0) <span class="keywordflow">break</span>;  <span class="comment">// EOF or error</span></div>
+<div class="line">    buflen += nread;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__http1.html#gga2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d">HTTP1_OK</a>) {</div>
+<div class="line">    <span class="keyword">const</span> <a class="code hl_struct" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> *req = <a class="code hl_function" href="group__http1.html#ga2ea1bef9e80e9ed39b960bc375c7d83b">SocketHTTP1_Parser_get_request</a>(parser);</div>
+<div class="line">    <span class="comment">// Headers parsed, handle body if needed</span></div>
+<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__http1.html#gac425dba4f2dfcd61c19cd8933482db99">SocketHTTP1_Parser_body_mode</a>(parser) != <a class="code hl_enumvalue" href="group__http1.html#gga5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a">HTTP1_BODY_NONE</a>) {</div>
+<div class="line">        <span class="comment">// Use SocketHTTP1_Parser_read_body() or recvall</span></div>
+<div class="line">    }</div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    <span class="comment">// Error: res indicates reason, e.g., HTTP1_ERROR_SMUGGLING_DETECTED</span></div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;Parse failed: %s&quot;</span>, <a class="code hl_function" href="group__http1.html#ga2978becba9896924c0543135477ec4ff">SocketHTTP1_result_string</a>(res));</div>
+<div class="line">    <span class="comment">// Close connection</span></div>
+<div class="line">}</div>
+<div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00502">SocketUtil.h:502</a></div></div>
+<div class="ttc" id="agroup__core__io_html_ga95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Receive data.</div></div>
+<div class="ttc" id="agroup__http1_html_ga2978becba9896924c0543135477ec4ff"><div class="ttname"><a href="group__http1.html#ga2978becba9896924c0543135477ec4ff">SocketHTTP1_result_string</a></div><div class="ttdeci">const char * SocketHTTP1_result_string(SocketHTTP1_Result result)</div><div class="ttdoc">Get human-readable error description.</div></div>
+<div class="ttc" id="agroup__http1_html_ga2ea1bef9e80e9ed39b960bc375c7d83b"><div class="ttname"><a href="group__http1.html#ga2ea1bef9e80e9ed39b960bc375c7d83b">SocketHTTP1_Parser_get_request</a></div><div class="ttdeci">const SocketHTTP_Request * SocketHTTP1_Parser_get_request(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Get parsed request.</div></div>
+<div class="ttc" id="agroup__http1_html_ga2ece68fcfe3c3e99a855f93f6a46f78e"><div class="ttname"><a href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e">SocketHTTP1_Result</a></div><div class="ttdeci">SocketHTTP1_Result</div><div class="ttdoc">Result codes from HTTP/1.1 parsing operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00288">SocketHTTP1.h:289</a></div></div>
+<div class="ttc" id="agroup__http1_html_ga83fa0ae51796710bc10e16154b448a3f"><div class="ttname"><a href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f">SocketHTTP1_Parser_execute</a></div><div class="ttdeci">SocketHTTP1_Result SocketHTTP1_Parser_execute(SocketHTTP1_Parser_T parser, const char *data, size_t len, size_t *consumed)</div><div class="ttdoc">Incrementally parse HTTP/1.1 message data using DFA state machine.</div></div>
+<div class="ttc" id="agroup__http1_html_gac425dba4f2dfcd61c19cd8933482db99"><div class="ttname"><a href="group__http1.html#gac425dba4f2dfcd61c19cd8933482db99">SocketHTTP1_Parser_body_mode</a></div><div class="ttdeci">SocketHTTP1_BodyMode SocketHTTP1_Parser_body_mode(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Get body transfer mode.</div></div>
+<div class="ttc" id="agroup__http1_html_gga2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f"><div class="ttname"><a href="group__http1.html#gga2ece68fcfe3c3e99a855f93f6a46f78ea8f11d915cd16f4b89b5b3d97059ed82f">HTTP1_INCOMPLETE</a></div><div class="ttdeci">@ HTTP1_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00291">SocketHTTP1.h:291</a></div></div>
+<div class="ttc" id="agroup__http1_html_gga2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d"><div class="ttname"><a href="group__http1.html#gga2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d">HTTP1_OK</a></div><div class="ttdeci">@ HTTP1_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00290">SocketHTTP1.h:290</a></div></div>
+<div class="ttc" id="agroup__http1_html_gga5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a"><div class="ttname"><a href="group__http1.html#gga5b086c700986994685f83dd033821f0ead046cbedac23049ecf363b915c3d103a">HTTP1_BODY_NONE</a></div><div class="ttdeci">@ HTTP1_BODY_NONE</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00328">SocketHTTP1.h:328</a></div></div>
+<div class="ttc" id="agroup__http_html_structSocketHTTP__Request"><div class="ttname"><a href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a></div><div class="ttdoc">Protocol-agnostic representation of an HTTP request message.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l01230">SocketHTTP.h:1231</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md317"></a>
+Error Recovery Pattern</h2>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <span class="comment">// Parsing loop as above</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__http1.html#gab0e624687447c4ade518d16bf70ac8a4">SocketHTTP1_ParseError</a>) {</div>
+<div class="line">    <span class="comment">// Internal error (rare)</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    <span class="comment">// Always check SocketHTTP1_Parser_state(parser) != HTTP1_STATE_ERROR</span></div>
+<div class="line">    <span class="keywordflow">if</span> (<a class="code hl_function" href="group__http1.html#gae628eea962092f79332744f005bfe81f">SocketHTTP1_Parser_state</a>(parser) == <a class="code hl_enumvalue" href="group__http1.html#ggad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9">HTTP1_STATE_ERROR</a>) {</div>
+<div class="line">        <a class="code hl_function" href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb">SocketHTTP1_Parser_reset</a>(parser);  <span class="comment">// Prepare for next message or discard</span></div>
+<div class="line">    }</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01251">Except.h:1251</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+<div class="ttc" id="agroup__http1_html_ga49a9ded0a495db9d15e7b6ec5abce5cb"><div class="ttname"><a href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb">SocketHTTP1_Parser_reset</a></div><div class="ttdeci">void SocketHTTP1_Parser_reset(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Reset parser for next message.</div></div>
+<div class="ttc" id="agroup__http1_html_gab0e624687447c4ade518d16bf70ac8a4"><div class="ttname"><a href="group__http1.html#gab0e624687447c4ade518d16bf70ac8a4">SocketHTTP1_ParseError</a></div><div class="ttdeci">const Except_T SocketHTTP1_ParseError</div><div class="ttdoc">Exception for HTTP/1.1 parsing failures.</div></div>
+<div class="ttc" id="agroup__http1_html_gae628eea962092f79332744f005bfe81f"><div class="ttname"><a href="group__http1.html#gae628eea962092f79332744f005bfe81f">SocketHTTP1_Parser_state</a></div><div class="ttdeci">SocketHTTP1_State SocketHTTP1_Parser_state(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Get current parser state.</div></div>
+<div class="ttc" id="agroup__http1_html_ggad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9"><div class="ttname"><a href="group__http1.html#ggad8ddb65bb2ebb0dfb013c19bceb3074eaf90803082504ceffc09b45ea78b0cee9">HTTP1_STATE_ERROR</a></div><div class="ttdeci">@ HTTP1_STATE_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00274">SocketHTTP1.h:273</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>On HTTP1_INCOMPLETE, retain unconsumed data for next call. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Never pass consumed=NULL; leads to undefined behavior. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>For chunked bodies, body parsing via separate <a class="el" href="group__http1.html#ga4d5411b548fb2d9139c5a98c96888c10" title="Read body data.">SocketHTTP1_Parser_read_body()</a>.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) - Linear in input length; DFA lookup per byte</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gad8ddb65bb2ebb0dfb013c19bceb3074e" title="High-level states of the HTTP/1.1 parser state machine.">SocketHTTP1_State</a> for <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a> monitoring </dd>
+<dd>
+<a class="el" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e" title="Result codes from HTTP/1.1 parsing operations.">SocketHTTP1_Result</a> and <a class="el" href="group__http1.html#ga2978becba9896924c0543135477ec4ff" title="Get human-readable error description.">SocketHTTP1_result_string()</a> for errors </dd>
+<dd>
+SocketHTTP1_Parser_get_request/response() for parsed results </dd>
+<dd>
+<a class="el" href="group__http1.html#gac425dba4f2dfcd61c19cd8933482db99" title="Get body transfer mode.">SocketHTTP1_Parser_body_mode()</a> for body handling </dd>
+<dd>
+docs/http1 for DFA architecture details </dd></dl>
 
 </div>
 </div>
@@ -1369,15 +1486,28 @@ Required output size: len + 20 (for size line and CRLF) </p>
 </table>
 </div><div class="memdoc">
 
-<p>Free parser. </p>
+<p>Dispose of HTTP/1.1 parser instance and release resources. </p>
+<p>Frees internal state allocated from arena. Sets *parser to NULL. Parsed strings (from get_request/response) remain valid until arena dispose. Safe to call on NULL (no-op).</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">parser</td><td>Pointer to parser (set to NULL after free) </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">parser</td><td>Pointer to parser handle (set to NULL on success)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
-<p>Note: Strings returned by get_request/get_response remain valid until the arena is disposed. </p>
+<dl class="section user"><dt>Thread Safety\n No - assumes exclusive access to parser and arena</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md315"></a>
+Lifecycle Management</h2>
+<div class="fragment"><div class="line">SocketHTTP1_Parser_T parser = <a class="code hl_function" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a>(...);</div>
+<div class="line"><span class="comment">// Use...</span></div>
+<div class="line"><a class="code hl_function" href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f">SocketHTTP1_Parser_free</a>(&amp;parser);  <span class="comment">// Always pair with new()</span></div>
+<div class="ttc" id="agroup__http1_html_gaf0a2a42b97cd8ab5340958a4aa30124f"><div class="ttname"><a href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f">SocketHTTP1_Parser_free</a></div><div class="ttdeci">void SocketHTTP1_Parser_free(SocketHTTP1_Parser_T *parser)</div><div class="ttdoc">Dispose of HTTP/1.1 parser instance and release resources.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>No exceptions thrown; errors logged internally if arena issues. </dd>
+<dd>
+In SocketPool, may use arena dispose instead for batch cleanup.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1)</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a> </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d" title="Dispose of an arena and all its allocations, freeing underlying memory chunks.">Arena_dispose()</a> for full cleanup </dd></dl>
 
 </div>
 </div>
@@ -1568,23 +1698,74 @@ Required output size: len + 20 (for size line and CRLF) </p>
 </table>
 </div><div class="memdoc">
 
-<p>Create new parser. </p>
+<p>Create a new HTTP/1.1 parser instance for request or response messages. </p>
+<p>Initializes a DFA-based incremental parser with configurable limits for security and performance. The parser is designed for high-throughput server environments, supporting partial data feeds from non-blocking sockets. All allocations use the provided arena for lifecycle management. Edge cases: Invalid mode parameter leads to undefined behavior; validate before call. Allocation failure (e.g., out of memory in arena) raises ParseError.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">mode</td><td>Request or response parsing mode </td></tr>
-    <tr><td class="paramname">config</td><td>Configuration (NULL for defaults) </td></tr>
-    <tr><td class="paramname">arena</td><td>Memory arena for allocations </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">mode</td><td>Parse mode: HTTP1_PARSE_REQUEST or HTTP1_PARSE_RESPONSE </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">config</td><td>Parser configuration, or NULL for defaults (compile-time limits) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">arena</td><td>Arena for internal allocations (parser state ~1KB)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>New parser instance </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Opaque parser handle, or NULL on immediate failure (rare, check throws)</dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">SocketHTTP1_ParseError</td><td>on allocation failure </td></tr>
+    <tr><td class="paramname">SocketHTTP1_ParseError</td><td>If arena allocation fails or invalid config detected</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes (arena must be thread-safe or thread-local)</dt><dd></dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - each call creates independent instance; arena must be safe or local</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md313"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Basic server parser setup</span></div>
+<div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
+<div class="line"><a class="code hl_struct" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> cfg;</div>
+<div class="line"><a class="code hl_function" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a>(&amp;cfg);</div>
+<div class="line"><span class="comment">// Optional tuning for embedded or high-security</span></div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#abfbe5b0b91d60339154b3b6c6ed7549e">max_headers</a> = 64;</div>
+<div class="line">cfg.<a class="code hl_variable" href="group__http1.html#a108f87a5b1d893862a9a53da200141b2">max_header_size</a> = 32 * 1024;</div>
+<div class="line">SocketHTTP1_Parser_T parser = <a class="code hl_function" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a>(<a class="code hl_enumvalue" href="group__http1.html#ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1">HTTP1_PARSE_REQUEST</a>, &amp;cfg, arena);</div>
+<div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <span class="comment">// Parse loop...</span></div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *buf = socket_read(); <span class="comment">// pseudocode for data from socket</span></div>
+<div class="line">    <span class="keywordtype">size_t</span> consumed;</div>
+<div class="line">    <a class="code hl_enumeration" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e">SocketHTTP1_Result</a> res = <a class="code hl_function" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f">SocketHTTP1_Parser_execute</a>(parser, buf, len, &amp;consumed);</div>
+<div class="line">    <span class="keywordflow">if</span> (res == <a class="code hl_enumvalue" href="group__http1.html#gga2ece68fcfe3c3e99a855f93f6a46f78eac4f4eafbbea56118c44708aa5591107d">HTTP1_OK</a>) {</div>
+<div class="line">        <span class="keyword">const</span> <a class="code hl_struct" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> *req = <a class="code hl_function" href="group__http1.html#ga2ea1bef9e80e9ed39b960bc375c7d83b">SocketHTTP1_Parser_get_request</a>(parser);</div>
+<div class="line">        <span class="comment">// Process request</span></div>
+<div class="line">    }</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__http1.html#gab0e624687447c4ade518d16bf70ac8a4">SocketHTTP1_ParseError</a>) {</div>
+<div class="line">    <span class="comment">// Handle parse error, log, close connection</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    <a class="code hl_function" href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f">SocketHTTP1_Parser_free</a>(&amp;parser);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
+<div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
+<div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
+<div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00078">Arena.h:78</a></div></div>
+<div class="ttc" id="agroup__http1_html_a108f87a5b1d893862a9a53da200141b2"><div class="ttname"><a href="group__http1.html#a108f87a5b1d893862a9a53da200141b2">SocketHTTP1_Config::max_header_size</a></div><div class="ttdeci">size_t max_header_size</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP1_8h_source.html#l00352">SocketHTTP1.h:352</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md314"></a>
+Advanced Usage with Connection Pool</h2>
+<div class="fragment"><div class="line"><span class="comment">// In SocketPool integration</span></div>
+<div class="line">Connection_T conn = <a class="code hl_function" href="group__connection__mgmt.html#gac7720c7b7d679624fa95bdefe9a38494">SocketPool_add</a>(pool, accepted_socket);</div>
+<div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> conn_arena = Connection_arena(conn); <span class="comment">// Per-connection arena</span></div>
+<div class="line">SocketHTTP1_Parser_T parser = <a class="code hl_function" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a>(<a class="code hl_enumvalue" href="group__http1.html#ggae0c5248b52a9b32c1def93401bbabe96a1f628e563408ccbc0f6f93973845e0f1">HTTP1_PARSE_REQUEST</a>, NULL, conn_arena);</div>
+<div class="line"><span class="comment">// Parser lifetime tied to connection arena</span></div>
+<div class="line"><span class="comment">// No explicit free needed on pool cleanup</span></div>
+<div class="ttc" id="agroup__connection__mgmt_html_gac7720c7b7d679624fa95bdefe9a38494"><div class="ttname"><a href="group__connection__mgmt.html#gac7720c7b7d679624fa95bdefe9a38494">SocketPool_add</a></div><div class="ttdeci">Connection_T SocketPool_add(SocketPool_T pool, Socket_T socket)</div><div class="ttdoc">Add a connected socket to the pool, creating a Connection_T wrapper.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Parser is NOT thread-safe; use one instance per connection/thread. Internal DFA state cannot be shared across concurrent parses. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Ensure arena has sufficient capacity; low-memory arenas may trigger exceptions frequently.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - Constant time initialization with fixed allocations</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84" title="Initialize SocketHTTP1_Config structure with secure default values.">SocketHTTP1_config_defaults()</a> for configuration </dd>
+<dd>
+<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> for incremental parsing </dd>
+<dd>
+<a class="el" href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f" title="Dispose of HTTP/1.1 parser instance and release resources.">SocketHTTP1_Parser_free()</a> for cleanup </dd>
+<dd>
+<a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for limit tuning to prevent DoS </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for integration with event loops </dd></dl>
 
 </div>
 </div>
@@ -1956,24 +2137,67 @@ Required output size: len + 20 (for size line and CRLF) </p>
 </table>
 </div><div class="memdoc">
 
-<p>Serialize request to buffer. </p>
+<p>Serialize HTTP request message (headers only) to wire format. </p>
+<p>Generates RFC 9112 compliant request line + headers, ending with double CRLF. Validates input: method, URI, version, headers. Adds missing Host from URI authority. No body serialization; caller appends body based on Content-Length or chunking. Buffer sizing: Use SocketHTTP1_request_size_estimate() if available, or conservative 8KB+. Edge cases: Invalid URI raises SerializeError; too small buffer returns -1 without throw.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">request</td><td>Request to serialize </td></tr>
-    <tr><td class="paramname">output</td><td>Output buffer </td></tr>
-    <tr><td class="paramname">output_size</td><td>Buffer size </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">request</td><td>Valid <a class="el" href="group__http.html#structSocketHTTP__Request" title="Protocol-agnostic representation of an HTTP request message.">SocketHTTP_Request</a> structure (method, URI, headers populated) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">output</td><td>Pre-allocated buffer for serialized bytes </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">output_size</td><td>Size of output buffer</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>Bytes written (excluding null), or -1 on error (buffer too small) </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of bytes written (success), or -1 if buffer too small (errno=ERANGE may be set)</dd></dl>
 <dl class="exception"><dt>Exceptions</dt><dd>
   <table class="exception">
-    <tr><td class="paramname">SocketHTTP1_SerializeError</td><td>on invalid input (unknown method/version) </td></tr>
+    <tr><td class="paramname">SocketHTTP1_SerializeError</td><td>For invalid request fields (e.g., unknown method, malformed URI)</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section user"><dt>Thread Safety\n Yes</dt><dd></dd></dl>
-<p>Serializes request line and headers. Does NOT serialize body. Automatically adds Host header if missing (from authority). Terminates with CRLF CRLF. </p>
+<dl class="section user"><dt>Thread Safety\n Yes - stateless, pure function</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md318"></a>
+Basic Client Request</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> req;</div>
+<div class="line">SocketHTTP_request_init(&amp;req);  <span class="comment">// Or populate manually</span></div>
+<div class="line">req.<a class="code hl_variable" href="group__http.html#a7220f6d14675c5f0f23841deb4a802ee">method</a> = <a class="code hl_enumvalue" href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a>;</div>
+<div class="line">req.uri = <a class="code hl_function" href="group__http.html#gacadf7ec10cae4332222ee074c58bbd9b">SocketHTTP_URI_parse</a>(<span class="stringliteral">&quot;https://example.com/api&quot;</span>, strlen(...), arena);</div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a>(req.<a class="code hl_variable" href="group__http.html#a927f21cde166c88a63a78b172dee5031">headers</a>, <span class="stringliteral">&quot;User-Agent&quot;</span>, <span class="stringliteral">&quot;SocketLib/1.0&quot;</span>);</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">char</span> buf[8192];</div>
+<div class="line">ssize_t n = <a class="code hl_function" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7">SocketHTTP1_serialize_request</a>(&amp;req, buf, <span class="keyword">sizeof</span>(buf));</div>
+<div class="line"><span class="keywordflow">if</span> (n &gt; 0) {</div>
+<div class="line">    <a class="code hl_function" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(socket, buf, n);</div>
+<div class="line">    <span class="comment">// Send body if POST/PUT</span></div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    <span class="comment">// Handle error or resize buffer</span></div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__core__io_html_ga23ace6e065fe4b9a01db8caa6513515b"><div class="ttname"><a href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a></div><div class="ttdeci">ssize_t Socket_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send data.</div></div>
+<div class="ttc" id="agroup__http1_html_ga66bdb40cb195c23e4e02dfa41ad1e4b7"><div class="ttname"><a href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7">SocketHTTP1_serialize_request</a></div><div class="ttdeci">ssize_t SocketHTTP1_serialize_request(const SocketHTTP_Request *request, char *output, size_t output_size)</div><div class="ttdoc">Serialize HTTP request message (headers only) to wire format.</div></div>
+<div class="ttc" id="agroup__http_html_a7220f6d14675c5f0f23841deb4a802ee"><div class="ttname"><a href="group__http.html#a7220f6d14675c5f0f23841deb4a802ee">SocketHTTP_Request::method</a></div><div class="ttdeci">SocketHTTP_Method method</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l01232">SocketHTTP.h:1232</a></div></div>
+<div class="ttc" id="agroup__http_html_a927f21cde166c88a63a78b172dee5031"><div class="ttname"><a href="group__http.html#a927f21cde166c88a63a78b172dee5031">SocketHTTP_Request::headers</a></div><div class="ttdeci">SocketHTTP_Headers_T headers</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l01240">SocketHTTP.h:1240</a></div></div>
+<div class="ttc" id="agroup__http_html_ga564aa2d79c404e093b07c56e7d7910eb"><div class="ttname"><a href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a></div><div class="ttdeci">int SocketHTTP_Headers_add(SocketHTTP_Headers_T headers, const char *name, const char *value)</div><div class="ttdoc">Add header (null-terminated strings).</div></div>
+<div class="ttc" id="agroup__http_html_gacadf7ec10cae4332222ee074c58bbd9b"><div class="ttname"><a href="group__http.html#gacadf7ec10cae4332222ee074c58bbd9b">SocketHTTP_URI_parse</a></div><div class="ttdeci">SocketHTTP_URIResult SocketHTTP_URI_parse(const char *uri, size_t len, SocketHTTP_URI *result, Arena_T arena)</div><div class="ttdoc">Parse and validate a URI string into components.</div></div>
+<div class="ttc" id="agroup__http_html_ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659"><div class="ttname"><a href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a></div><div class="ttdeci">@ HTTP_METHOD_GET</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00292">SocketHTTP.h:292</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md319"></a>
+With Automatic Host Header</h2>
+<div class="fragment"><div class="line"><span class="comment">// URI with authority auto-adds Host header</span></div>
+<div class="line"><a class="code hl_struct" href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a> uri = { .<a class="code hl_variable" href="group__http.html#af499416d2578ce288340f83318614034">scheme</a> = <span class="stringliteral">&quot;http&quot;</span>, .host = <span class="stringliteral">&quot;example.com&quot;</span>, .port = 80, ... };</div>
+<div class="line">req.uri = uri;</div>
+<div class="line"><span class="comment">// No need to manually add Host: example.com:80</span></div>
+<div class="line">ssize_t n = <a class="code hl_function" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7">SocketHTTP1_serialize_request</a>(&amp;req, buf, <span class="keyword">sizeof</span>(buf));</div>
+<div class="ttc" id="agroup__http_html_af499416d2578ce288340f83318614034"><div class="ttname"><a href="group__http.html#af499416d2578ce288340f83318614034">SocketHTTP_URI::scheme</a></div><div class="ttdeci">const char * scheme</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00891">SocketHTTP.h:891</a></div></div>
+<div class="ttc" id="agroup__http_html_structSocketHTTP__URI"><div class="ttname"><a href="group__http.html#structSocketHTTP__URI">SocketHTTP_URI</a></div><div class="ttdoc">Parsed URI components according to RFC 3986.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00889">SocketHTTP.h:890</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Output is null-terminated for convenience, but send exact 'n' bytes. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Ensure request.headers do not contain illegal chars; validated but logged. </dd></dl>
+<dl class="section note"><dt>Note</dt><dd>For chunked requests, set Transfer-Encoding header manually.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(h) where h=number of headers - linear scan for validation/serialization</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structSocketHTTP__Request" title="Protocol-agnostic representation of an HTTP request message.">SocketHTTP_Request</a> for structure details </dd>
+<dd>
+<a class="el" href="group__http1.html#gab8921dc474a57cdb9e68ac329f70a100" title="Serialize response to buffer.">SocketHTTP1_serialize_response()</a> for responses </dd>
+<dd>
+<a class="el" href="group__http1.html#ga1ee4d308dc266c293146b181d75c0fd9" title="Encode data as single chunk.">SocketHTTP1_chunk_encode()</a> for chunked body </dd>
+<dd>
+<a class="el" href="group__http.html#gacadf7ec10cae4332222ee074c58bbd9b" title="Parse and validate a URI string into components.">SocketHTTP_URI_parse()</a> for URI handling </dd></dl>
 
 </div>
 </div>
@@ -2066,9 +2290,9 @@ Required output size: len + 20 (for size line and CRLF) </p>
 <li>Exceeding configurable limits (line lengths, header counts/sizes, body size)</li>
 <li>Unexpected EOF or invalid transfer codings</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Parse data incrementally.">SocketHTTP1_Parser_execute()</a> - primary throwing function </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> - primary throwing function </dd>
 <dd>
-<a class="el" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e" title="Result codes from HTTP/1.1 parsing operations.">SocketHTTP1_Result</a> for detailed error codes (non-exception path) </dd>
+<a class="el" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e" title="Result codes from HTTP/1.1 parsing operations.">SocketHTTP1_Result</a> for detailed <a class="el" href="SocketHappyEyeballs-private_8h.html#a11614f44ef4d939bdd984953346a7572">error</a> codes (non-exception path) </dd>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for limit configuration to prevent exceptions </dd>
 <dd>
@@ -2103,7 +2327,7 @@ docs/ERROR_HANDLING.md for exception handling best practices </dd></dl>
 <li>Headers violating HTTP syntax rules</li>
 <li>Buffer overflow during output generation</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7" title="Serialize request to buffer.">SocketHTTP1_serialize_request()</a> </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7" title="Serialize HTTP request message (headers only) to wire format.">SocketHTTP1_serialize_request()</a> </dd>
 <dd>
 <a class="el" href="group__http1.html#gab8921dc474a57cdb9e68ac329f70a100" title="Serialize response to buffer.">SocketHTTP1_serialize_response()</a> </dd>
 <dd>

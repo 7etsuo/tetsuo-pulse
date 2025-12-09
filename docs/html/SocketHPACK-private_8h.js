@@ -2,9 +2,9 @@ var SocketHPACK_private_8h =
 [
     [ "HPACK_AVERAGE_DYNAMIC_ENTRY_SIZE", "group__hpack__private.html#gae0304bbcc6c90643a7e3a2d274533d10", null ],
     [ "HPACK_DFA_ACCEPT", "group__hpack__private.html#gafd975c9395b773cfe1f998aa0e0168b2", null ],
-    [ "HPACK_DFA_EOS", "SocketHPACK-private_8h.html#a881cd71b1434a2a5a11bd50cb61d312d", null ],
-    [ "HPACK_DFA_ERROR", "SocketHPACK-private_8h.html#a2065e9129b247f7f4ab0b363095f1839", null ],
-    [ "HPACK_DFA_SYM2", "SocketHPACK-private_8h.html#a76662d61395b8b2c9f2034c074083b4f", null ],
+    [ "HPACK_DFA_EOS", "group__hpack__private.html#ga881cd71b1434a2a5a11bd50cb61d312d", null ],
+    [ "HPACK_DFA_ERROR", "group__hpack__private.html#ga2065e9129b247f7f4ab0b363095f1839", null ],
+    [ "HPACK_DFA_SYM2", "group__hpack__private.html#ga76662d61395b8b2c9f2034c074083b4f", null ],
     [ "HPACK_HUFFMAN_EOS", "group__hpack__private.html#ga879c884f8d47c7fa563e0ef3d94b0c9e", null ],
     [ "HPACK_HUFFMAN_MAX_BITS", "group__hpack__private.html#gac142229a8069073871247a112e183378", null ],
     [ "HPACK_HUFFMAN_NUM_STATES", "group__hpack__private.html#ga9bec6ff24fdb0960bbd7b095b0f52fff", null ],

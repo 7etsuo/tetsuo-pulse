@@ -22,7 +22,7 @@
 <area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="440,33,343,75,341,71,438,28"/>
 <area shape="rect" id="Node000013" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="135,152,237,177"/>
 <area shape="poly" id="edge14_Node000001_Node000013" title=" " alt="" coords="402,27,323,44,282,60,245,81,218,109,199,140,194,138,213,106,242,77,280,55,321,39,400,22"/>
-<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="527,79,669,104"/>
+<area shape="rect" id="Node000015" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="527,79,669,104"/>
 <area shape="poly" id="edge15_Node000001_Node000015" title=" " alt="" coords="487,28,565,70,563,74,485,33"/>
 <area shape="rect" id="Node000012" title=" " alt="" coords="262,152,331,177"/>
 <area shape="poly" id="edge11_Node000011_Node000012" title=" " alt="" coords="305,105,302,139,296,138,300,104"/>

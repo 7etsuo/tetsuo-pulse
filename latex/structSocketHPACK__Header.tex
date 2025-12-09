@@ -1,0 +1,62 @@
+\doxysection{Socket\+HPACK\+\_\+\+Header Struct Reference}
+\hypertarget{structSocketHPACK__Header}{}\label{structSocketHPACK__Header}\index{SocketHPACK\_Header@{SocketHPACK\_Header}}
+
+
+{\ttfamily \#include $<$Socket\+HPACK.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHPACK__Header_a46d227219a888ba2170521fbce3467c1}{name}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Header_a97bac7e84874c5e753a10a8ecb44e3a5}{name\+\_\+len}}
+\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structSocketHPACK__Header_acce8321d450efabcb974f62beb953b27}{value}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHPACK__Header_a7903ffe078d8355010272c36a0ee5413}{value\+\_\+len}}
+\item 
+int \mbox{\hyperlink{structSocketHPACK__Header_aa6aaa27657ef2d2ea3f24e629b1af16b}{never\+\_\+index}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HPACK header field
+
+Represents a single header with optional never\+\_\+index flag. The never\+\_\+index flag indicates sensitive data that should never be added to the dynamic table. 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHPACK__Header_a46d227219a888ba2170521fbce3467c1}\label{structSocketHPACK__Header_a46d227219a888ba2170521fbce3467c1} 
+\index{SocketHPACK\_Header@{SocketHPACK\_Header}!name@{name}}
+\index{name@{name}!SocketHPACK\_Header@{SocketHPACK\_Header}}
+\doxysubsubsection{\texorpdfstring{name}{name}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HPACK\+\_\+\+Header\+::name}
+
+Header name \Hypertarget{structSocketHPACK__Header_a97bac7e84874c5e753a10a8ecb44e3a5}\label{structSocketHPACK__Header_a97bac7e84874c5e753a10a8ecb44e3a5} 
+\index{SocketHPACK\_Header@{SocketHPACK\_Header}!name\_len@{name\_len}}
+\index{name\_len@{name\_len}!SocketHPACK\_Header@{SocketHPACK\_Header}}
+\doxysubsubsection{\texorpdfstring{name\_len}{name\_len}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Header\+::name\+\_\+len}
+
+Name length in bytes \Hypertarget{structSocketHPACK__Header_aa6aaa27657ef2d2ea3f24e629b1af16b}\label{structSocketHPACK__Header_aa6aaa27657ef2d2ea3f24e629b1af16b} 
+\index{SocketHPACK\_Header@{SocketHPACK\_Header}!never\_index@{never\_index}}
+\index{never\_index@{never\_index}!SocketHPACK\_Header@{SocketHPACK\_Header}}
+\doxysubsubsection{\texorpdfstring{never\_index}{never\_index}}
+{\footnotesize\ttfamily int Socket\+HPACK\+\_\+\+Header\+::never\+\_\+index}
+
+Sensitive -\/ never add to dynamic table \Hypertarget{structSocketHPACK__Header_acce8321d450efabcb974f62beb953b27}\label{structSocketHPACK__Header_acce8321d450efabcb974f62beb953b27} 
+\index{SocketHPACK\_Header@{SocketHPACK\_Header}!value@{value}}
+\index{value@{value}!SocketHPACK\_Header@{SocketHPACK\_Header}}
+\doxysubsubsection{\texorpdfstring{value}{value}}
+{\footnotesize\ttfamily const char\texorpdfstring{$\ast$}{*} Socket\+HPACK\+\_\+\+Header\+::value}
+
+Header value \Hypertarget{structSocketHPACK__Header_a7903ffe078d8355010272c36a0ee5413}\label{structSocketHPACK__Header_a7903ffe078d8355010272c36a0ee5413} 
+\index{SocketHPACK\_Header@{SocketHPACK\_Header}!value\_len@{value\_len}}
+\index{value\_len@{value\_len}!SocketHPACK\_Header@{SocketHPACK\_Header}}
+\doxysubsubsection{\texorpdfstring{value\_len}{value\_len}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HPACK\+\_\+\+Header\+::value\+\_\+len}
+
+Value length in bytes 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHPACK_8h}{Socket\+HPACK.\+h}}\end{DoxyCompactItemize}

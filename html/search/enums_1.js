@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['sockethpack_5fresult_0',['SocketHPACK_Result',['../SocketHPACK_8h.html#a623ed321b4ede47b3ac642a001c57ef4',1,'SocketHPACK.h']]],
+  ['sockethttp1_5fbodymode_1',['SocketHTTP1_BodyMode',['../SocketHTTP1_8h.html#a5b086c700986994685f83dd033821f0e',1,'SocketHTTP1.h']]],
+  ['sockethttp1_5fparsemode_2',['SocketHTTP1_ParseMode',['../SocketHTTP1_8h.html#ae0c5248b52a9b32c1def93401bbabe96',1,'SocketHTTP1.h']]],
+  ['sockethttp1_5fresult_3',['SocketHTTP1_Result',['../SocketHTTP1_8h.html#a2ece68fcfe3c3e99a855f93f6a46f78e',1,'SocketHTTP1.h']]],
+  ['sockethttp1_5fstate_4',['SocketHTTP1_State',['../SocketHTTP1_8h.html#ad8ddb65bb2ebb0dfb013c19bceb3074e',1,'SocketHTTP1.h']]],
+  ['sockethttp2_5fconnstate_5',['SocketHTTP2_ConnState',['../SocketHTTP2-private_8h.html#a04a564c3d98f445678201ed187523246',1,'SocketHTTP2-private.h']]],
+  ['sockethttp2_5ferrorcode_6',['SocketHTTP2_ErrorCode',['../SocketHTTP2_8h.html#a0dae3fde0d9081ed887d2476442f6ee9',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fframetype_7',['SocketHTTP2_FrameType',['../SocketHTTP2_8h.html#aeb74330a70e149eb7b10547a6b83fa0a',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5frole_8',['SocketHTTP2_Role',['../SocketHTTP2_8h.html#abdba00019b45cc844046f038c7c7d590',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fsettingsid_9',['SocketHTTP2_SettingsId',['../SocketHTTP2_8h.html#a4040b0e6d05a8901e50c497254a8176d',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fstreamstate_10',['SocketHTTP2_StreamState',['../SocketHTTP2_8h.html#a6a90f4be9250fb7b967b5deefc0df5dc',1,'SocketHTTP2.h']]],
+  ['sockethttp_5fcoding_11',['SocketHTTP_Coding',['../group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80',1,'SocketHTTP.h']]],
+  ['sockethttp_5fmethod_12',['SocketHTTP_Method',['../group__http.html#gaf6f90bb536a5cd085f4327bda4d3ee8f',1,'SocketHTTP.h']]],
+  ['sockethttp_5fstatuscategory_13',['SocketHTTP_StatusCategory',['../group__http.html#ga905b7faf61f39aaa3cfcfed80d1675d5',1,'SocketHTTP.h']]],
+  ['sockethttp_5fstatuscode_14',['SocketHTTP_StatusCode',['../group__http.html#gaceb714c26b828fe187a7fa72749ee75c',1,'SocketHTTP.h']]],
+  ['sockethttp_5furiresult_15',['SocketHTTP_URIResult',['../group__http.html#gada5478cfca166a354a76529faf4f7a40',1,'SocketHTTP.h']]],
+  ['sockethttp_5fversion_16',['SocketHTTP_Version',['../group__http.html#gac46610efb2f138f9f5c58f9134f11a78',1,'SocketHTTP.h']]],
+  ['sockethttpclient_5fauthtype_17',['SocketHTTPClient_AuthType',['../SocketHTTPClient_8h.html#a720036180c834b3f4b41f437d0ce1f30',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5ferror_18',['SocketHTTPClient_Error',['../SocketHTTPClient_8h.html#a6b0f544308db17e698b4c05ac3358b75',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5fsamesite_19',['SocketHTTPClient_SameSite',['../SocketHTTPClient_8h.html#a5a9d40d261a12f620aba6b26e8fb714b',1,'SocketHTTPClient.h']]],
+  ['sockethttpserver_5fstate_20',['SocketHTTPServer_State',['../SocketHTTPServer_8h.html#a0ac9162aaf92d18d40cf0443909e3e97',1,'SocketHTTPServer.h']]]
+];

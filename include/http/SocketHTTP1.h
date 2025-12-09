@@ -35,12 +35,13 @@
 /**
  * @defgroup http1 HTTP/1.1 Parser and Serializer Module
  * @ingroup http
- * @brief Comprehensive HTTP/1.1 parsing, serialization, and transfer encoding support.
+ * @brief Comprehensive HTTP/1.1 parsing, serialization, and transfer encoding
+ * support.
  *
- * This module implements the HTTP/1.1 protocol (RFC 9112) with focus on security,
- * performance, and incremental processing. It handles message syntax validation,
- * header parsing, body transfer (content-length, chunked, until-close), and optional
- * content encoding/decoding.
+ * This module implements the HTTP/1.1 protocol (RFC 9112) with focus on
+ * security, performance, and incremental processing. It handles message syntax
+ * validation, header parsing, body transfer (content-length, chunked,
+ * until-close), and optional content encoding/decoding.
  *
  * Security Features:
  * - Strict validation against request smuggling (ambiguous lengths)
@@ -55,8 +56,8 @@
  * - Handle body with read_body() or dedicated modes
  * - Serialize outgoing messages with serialize_request/response()
  *
- * Thread Safety: Functions are thread-safe unless noted; parser instances require
- * per-thread allocation due to internal state.
+ * Thread Safety: Functions are thread-safe unless noted; parser instances
+ * require per-thread allocation due to internal state.
  *
  * Dependencies:
  * - @ref foundation (Arena for memory, Except for errors)
@@ -123,7 +124,8 @@
 #define SOCKETHTTP1_MAX_REQUEST_LINE (8 * 1024)
 #endif
 
-/** @brief Maximum HTTP method length (longest standard: OPTIONS = 7). @ingroup http1 */
+/** @brief Maximum HTTP method length (longest standard: OPTIONS = 7). @ingroup
+ * http1 */
 #ifndef SOCKETHTTP1_MAX_METHOD_LEN
 #define SOCKETHTTP1_MAX_METHOD_LEN 16
 #endif
@@ -168,7 +170,8 @@
 #define SOCKETHTTP1_MAX_TRAILER_SIZE (4 * 1024)
 #endif
 
-/** @brief Maximum individual header line length (name + : + value + OWS + \r\n). @ingroup http1 */
+/** @brief Maximum individual header line length (name + : + value + OWS +
+ * \r\n). @ingroup http1 */
 #ifndef SOCKETHTTP1_MAX_HEADER_LINE
 #define SOCKETHTTP1_MAX_HEADER_LINE (16 * 1024)
 #endif
@@ -178,12 +181,14 @@
  * ============================================================================
  */
 
-/** @brief Buffer size for integer-to-string conversion (covers int64_t). @ingroup http1 */
+/** @brief Buffer size for integer-to-string conversion (covers int64_t).
+ * @ingroup http1 */
 #ifndef SOCKETHTTP1_INT_STRING_BUFSIZE
 #define SOCKETHTTP1_INT_STRING_BUFSIZE 24
 #endif
 
-/** @brief Buffer size for Content-Length header line ("Content-Length: " + value). @ingroup http1 */
+/** @brief Buffer size for Content-Length header line ("Content-Length: " +
+ * value). @ingroup http1 */
 #ifndef SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE
 #define SOCKETHTTP1_CONTENT_LENGTH_BUFSIZE 48
 #endif
@@ -197,11 +202,13 @@
  * @brief Exception for HTTP/1.1 parsing failures.
  * @ingroup http1
  *
- * Thrown by parser functions on syntax errors, security violations, or limit breaches.
- * Specific conditions:
+ * Thrown by parser functions on syntax errors, security violations, or limit
+ * breaches. Specific conditions:
  * - Malformed request line, status line, headers, or chunk directives
- * - Request smuggling detection (e.g., conflicting Content-Length/Transfer-Encoding)
- * - Exceeding configurable limits (line lengths, header counts/sizes, body size)
+ * - Request smuggling detection (e.g., conflicting
+ * Content-Length/Transfer-Encoding)
+ * - Exceeding configurable limits (line lengths, header counts/sizes, body
+ * size)
  * - Unexpected EOF or invalid transfer codings
  *
  * @see SocketHTTP1_Parser_execute() - primary throwing function
@@ -254,17 +261,18 @@ typedef enum
  * @brief High-level states of the HTTP/1.1 parser state machine.
  * @ingroup http1
  *
- * Indicates the current parsing phase: from start line to complete message or error.
- * Used for monitoring progress and handling partial parses.
+ * Indicates the current parsing phase: from start line to complete message or
+ * error. Used for monitoring progress and handling partial parses.
  *
  * @see SocketHTTP1_Parser_state() to query current state.
  * @see SocketHTTP1_Parser_execute() for state transitions.
  */
 typedef enum
 {
-  HTTP1_STATE_START,      /**< Waiting for first line (request or status) */
-  HTTP1_STATE_HEADERS,    /**< Parsing HTTP headers */
-  HTTP1_STATE_BODY,       /**< Reading message body (content-length or until close) */
+  HTTP1_STATE_START,   /**< Waiting for first line (request or status) */
+  HTTP1_STATE_HEADERS, /**< Parsing HTTP headers */
+  HTTP1_STATE_BODY, /**< Reading message body (content-length or until close)
+                     */
   HTTP1_STATE_CHUNK_SIZE, /**< Reading chunk size line in chunked transfer */
   HTTP1_STATE_CHUNK_DATA, /**< Reading chunk data */
   HTTP1_STATE_CHUNK_END,  /**< Reading CRLF after chunk data */
@@ -316,8 +324,9 @@ typedef enum
  * @brief Body transfer modes for HTTP messages.
  * @ingroup http1
  *
- * Determined from HTTP headers (Content-Length, Transfer-Encoding, method/status).
- * Guides how the parser consumes the message body after headers.
+ * Determined from HTTP headers (Content-Length, Transfer-Encoding,
+ * method/status). Guides how the parser consumes the message body after
+ * headers.
  *
  * @see SocketHTTP1_Parser_body_mode()
  * @see SocketHTTP1_Parser_content_length()
@@ -325,10 +334,14 @@ typedef enum
  */
 typedef enum
 {
-  HTTP1_BODY_NONE,              /**< No body expected (e.g., GET/HEAD requests, 1xx/204/304 responses) */
-  HTTP1_BODY_CONTENT_LENGTH,    /**< Body length specified by Content-Length header */
-  HTTP1_BODY_CHUNKED,           /**< Chunked transfer encoding (Transfer-Encoding: chunked) */
-  HTTP1_BODY_UNTIL_CLOSE        /**< Body delimited by connection close (HTTP/1.0 default, rare in 1.1) */
+  HTTP1_BODY_NONE, /**< No body expected (e.g., GET/HEAD requests, 1xx/204/304
+                      responses) */
+  HTTP1_BODY_CONTENT_LENGTH, /**< Body length specified by Content-Length
+                                header */
+  HTTP1_BODY_CHUNKED,        /**< Chunked transfer encoding (Transfer-Encoding:
+                                chunked) */
+  HTTP1_BODY_UNTIL_CLOSE     /**< Body delimited by connection close (HTTP/1.0
+                                default, rare in 1.1) */
 } SocketHTTP1_BodyMode;
 
 /**
@@ -336,10 +349,12 @@ typedef enum
  * @ingroup http1
  *
  * Customizes security limits, syntax tolerance, and decompression behavior.
- * Fields correspond to compile-time macros (e.g., SOCKETHTTP1_MAX_REQUEST_LINE)
- * and can be overridden for specific use cases like embedded systems or high-security.
+ * Fields correspond to compile-time macros (e.g.,
+ * SOCKETHTTP1_MAX_REQUEST_LINE) and can be overridden for specific use cases
+ * like embedded systems or high-security.
  *
- * @note Defaults provide reasonable security; lowering limits improves DoS resistance.
+ * @note Defaults provide reasonable security; lowering limits improves DoS
+ * resistance.
  * @see SocketHTTP1_config_defaults() for initialization.
  * @see SocketHTTP1_Parser_new() passes config to parser.
  */
@@ -374,18 +389,70 @@ typedef struct SocketHTTP1_Parser *SocketHTTP1_Parser_T;
  */
 
 /**
- * @brief Initialize SocketHTTP1_Config with safe default values.
+ * @brief Initialize SocketHTTP1_Config structure with secure default values.
  * @ingroup http1
- * @param config [out] Configuration structure to populate
- * @threadsafe Yes - pure function, no side effects
  *
- * Populates all fields with compile-time defaults (e.g., SOCKETHTTP1_MAX_HEADERS=100)
- * and enables strict mode for RFC compliance and security.
- * Recommended starting point before custom tuning.
+ * Sets all configuration fields to compile-time constants (e.g.,
+ * SOCKETHTTP1_MAX_REQUEST_LINE=8KB) and enables strict parsing mode to prevent
+ * request smuggling and other attacks. This function performs no allocations
+ * and has no side effects. Defaults are chosen for production use: balanced
+ * security vs. compatibility. For embedded systems, tune down limits
+ * post-initialization.
  *
- * @see SocketHTTP1_Config for field details and overrides
- * @see SocketHTTP1_Parser_new() which accepts this config
- * @see http1 for module overview
+ * @param[out] config Pointer to configuration structure to initialize
+ *
+ * @threadsafe Yes - pure function, can be called concurrently
+ *
+ * ## Default Values Table
+ *
+ * | Field | Default Value | Purpose |
+ * |---------------------|---------------|---------|
+ * | max_request_line | 8KB | Prevent buffer overflow in request line |
+ * | max_uri_len | 8KB | Limit maliciously long URIs |
+ * | max_header_name | 256B | Standard header names are short |
+ * | max_header_value | 8KB | Handle cookies, etc. |
+ * | max_headers | 100 | Typical requests have <20 |
+ * | max_header_size | 64KB | Total headers limit |
+ * | max_chunk_size | 16MB | Prevent huge chunks |
+ * | strict_mode | 1 | Reject ambiguous syntax |
+ * | allow_obs_fold | 0 | Reject obsolete line folding |
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketHTTP1_Config cfg;
+ * SocketHTTP1_config_defaults(&cfg);
+ *
+ * // Customize for stricter security
+ * cfg.max_headers = 50;  // Reduce DoS risk
+ * cfg.max_decompressed_size = 1 * 1024 * 1024;  // 1MB limit
+ *
+ * // Create parser with tuned config
+ * SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new(HTTP1_PARSE_REQUEST,
+ * &cfg, arena);
+ * @endcode
+ *
+ * ## High-Security Configuration
+ *
+ * @code{.c}
+ * SocketHTTP1_Config cfg;
+ * SocketHTTP1_config_defaults(&cfg);
+ * cfg.strict_mode = 1;
+ * cfg.allow_obs_fold = 0;
+ * cfg.max_request_line = 4 * 1024;  // Smaller for embedded
+ * cfg.max_decompressed_size = 64 * 1024;  // Limit zip bombs
+ * @endcode
+ *
+ * @note After initialization, only modify fields you understand; some
+ * interactions may affect security.
+ * @warning Setting limits too low may reject legitimate traffic (e.g., large
+ * cookies).
+ *
+ * @complexity O(1) - Simple assignment loop
+ *
+ * @see SocketHTTP1_Config structure definition for all fields
+ * @see SocketHTTP1_Parser_new() to use configured parser
+ * @see docs/SECURITY.md for DoS protection guidelines
  */
 extern void SocketHTTP1_config_defaults (SocketHTTP1_Config *config);
 
@@ -395,27 +462,115 @@ extern void SocketHTTP1_config_defaults (SocketHTTP1_Config *config);
  */
 
 /**
- * @brief Create new parser
+ * @brief Create a new HTTP/1.1 parser instance for request or response
+ * messages.
  * @ingroup http1
- * @param mode Request or response parsing mode
- * @param config Configuration (NULL for defaults)
- * @param arena Memory arena for allocations
- * @return New parser instance
- * @throws SocketHTTP1_ParseError on allocation failure
- * @threadsafe Yes (arena must be thread-safe or thread-local)
+ *
+ * Initializes a DFA-based incremental parser with configurable limits for
+ * security and performance. The parser is designed for high-throughput server
+ * environments, supporting partial data feeds from non-blocking sockets. All
+ * allocations use the provided arena for lifecycle management. Edge cases:
+ * Invalid mode parameter leads to undefined behavior; validate before call.
+ * Allocation failure (e.g., out of memory in arena) raises ParseError.
+ *
+ * @param[in] mode Parse mode: HTTP1_PARSE_REQUEST or HTTP1_PARSE_RESPONSE
+ * @param[in] config Parser configuration, or NULL for defaults (compile-time
+ * limits)
+ * @param[in] arena Arena for internal allocations (parser state ~1KB)
+ *
+ * @return Opaque parser handle, or NULL on immediate failure (rare, check
+ * throws)
+ *
+ * @throws SocketHTTP1_ParseError If arena allocation fails or invalid config
+ * detected
+ *
+ * @threadsafe Yes - each call creates independent instance; arena must be safe
+ * or local
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Basic server parser setup
+ * Arena_T arena = Arena_new();
+ * SocketHTTP1_Config cfg;
+ * SocketHTTP1_config_defaults(&cfg);
+ * // Optional tuning for embedded or high-security
+ * cfg.max_headers = 64;
+ * cfg.max_header_size = 32 * 1024;
+ * SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new(HTTP1_PARSE_REQUEST,
+ * &cfg, arena); TRY {
+ *     // Parse loop...
+ *     const char *buf = socket_read(); // pseudocode for data from socket
+ *     size_t consumed;
+ *     SocketHTTP1_Result res = SocketHTTP1_Parser_execute(parser, buf, len,
+ * &consumed); if (res == HTTP1_OK) { const SocketHTTP_Request *req =
+ * SocketHTTP1_Parser_get_request(parser);
+ *         // Process request
+ *     }
+ * } EXCEPT(SocketHTTP1_ParseError) {
+ *     // Handle parse error, log, close connection
+ * } FINALLY {
+ *     SocketHTTP1_Parser_free(&parser);
+ * } END_TRY;
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ * ## Advanced Usage with Connection Pool
+ *
+ * @code{.c}
+ * // In SocketPool integration
+ * Connection_T conn = SocketPool_add(pool, accepted_socket);
+ * Arena_T conn_arena = Connection_arena(conn); // Per-connection arena
+ * SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new(HTTP1_PARSE_REQUEST,
+ * NULL, conn_arena);
+ * // Parser lifetime tied to connection arena
+ * // No explicit free needed on pool cleanup
+ * @endcode
+ *
+ * @note Parser is NOT thread-safe; use one instance per connection/thread.
+ * Internal DFA state cannot be shared across concurrent parses.
+ * @warning Ensure arena has sufficient capacity; low-memory arenas may trigger
+ * exceptions frequently.
+ *
+ * @complexity O(1) - Constant time initialization with fixed allocations
+ *
+ * @see SocketHTTP1_config_defaults() for configuration
+ * @see SocketHTTP1_Parser_execute() for incremental parsing
+ * @see SocketHTTP1_Parser_free() for cleanup
+ * @see SocketHTTP1_Config for limit tuning to prevent DoS
+ * @see docs/ASYNC_IO.md for integration with event loops
  */
 extern SocketHTTP1_Parser_T
 SocketHTTP1_Parser_new (SocketHTTP1_ParseMode mode,
                         const SocketHTTP1_Config *config, Arena_T arena);
 
 /**
- * @brief Free parser
+ * @brief Dispose of HTTP/1.1 parser instance and release resources.
  * @ingroup http1
- * @param parser Pointer to parser (set to NULL after free)
- * @threadsafe No
  *
- * Note: Strings returned by get_request/get_response remain valid
- * until the arena is disposed.
+ * Frees internal state allocated from arena. Sets *parser to NULL.
+ * Parsed strings (from get_request/response) remain valid until arena dispose.
+ * Safe to call on NULL (no-op).
+ *
+ * @param[in,out] parser Pointer to parser handle (set to NULL on success)
+ *
+ * @threadsafe No - assumes exclusive access to parser and arena
+ *
+ * ## Lifecycle Management
+ *
+ * @code{.c}
+ * SocketHTTP1_Parser_T parser = SocketHTTP1_Parser_new(...);
+ * // Use...
+ * SocketHTTP1_Parser_free(&parser);  // Always pair with new()
+ * @endcode
+ *
+ * @note No exceptions thrown; errors logged internally if arena issues.
+ * @note In SocketPool, may use arena dispose instead for batch cleanup.
+ *
+ * @complexity O(1)
+ *
+ * @see SocketHTTP1_Parser_new()
+ * @see Arena_dispose() for full cleanup
  */
 extern void SocketHTTP1_Parser_free (SocketHTTP1_Parser_T *parser);
 
@@ -435,20 +590,91 @@ extern void SocketHTTP1_Parser_reset (SocketHTTP1_Parser_T parser);
  */
 
 /**
- * @brief Parse data incrementally
+ * @brief Incrementally parse HTTP/1.1 message data using DFA state machine.
  * @ingroup http1
- * @param parser Parser instance
- * @param data Input data buffer
- * @param len Data length
- * @param consumed Output - bytes consumed from input
- * @return HTTP1_OK when headers complete, HTTP1_INCOMPLETE if need more, or error code
- * @threadsafe No
  *
- * Feed data to the parser incrementally. Can be called multiple times
- * with partial data. Parsing stops at message boundary:
- * - After headers for HEAD responses, 1xx, 204, 304
- * - After body for other responses
- * - After headers for requests (body read separately)
+ * Processes input buffer through a table-driven deterministic finite automaton
+ * (DFA) for O(n) parsing efficiency. Supports partial reads from non-blocking
+ * sockets. Advances state from start line -> headers -> body (or stops at
+ * headers for requests). Handles all RFC 9112 syntax including obs-fold
+ * (configurable), chunked encoding setup.
+ *
+ * Error conditions: Returns specific SocketHTTP1_Result codes for diagnostics.
+ * On error, parser enters ERROR state; reset with SocketHTTP1_Parser_reset().
+ * Consumed bytes indicate valid prefix parsed before error.
+ * Security: Enforces config limits; rejects smuggling attempts (conflicting
+ * lengths).
+ *
+ * @param[in] parser Initialized parser instance
+ * @param[in] data Raw input bytes from socket/network
+ * @param[in] len Length of data buffer (may be partial message)
+ * @param[out] consumed Number of bytes processed (always set, even on error)
+ *
+ * @return SocketHTTP1_Result:
+ *   - HTTP1_OK: Message headers complete (body ready or none)
+ *   - HTTP1_INCOMPLETE: Need more data (partial message)
+ *   - HTTP1_ERROR or specific codes: Parse failure (e.g., invalid syntax,
+ * limits exceeded)
+ *
+ * @threadsafe No - modifies parser internal state; exclusive access required
+ *
+ * ## Basic Parsing Loop
+ *
+ * @code{.c}
+ * size_t consumed;
+ * SocketHTTP1_Result res;
+ * while ((res = SocketHTTP1_Parser_execute(parser, buf, buflen, &consumed)) ==
+ * HTTP1_INCOMPLETE) {
+ *     // Read more data into buf (shift if partial)
+ *     buf += consumed;
+ *     buflen -= consumed;
+ *     ssize_t nread = Socket_recv(socket, buf, sizeof(buf));
+ *     if (nread <= 0) break;  // EOF or error
+ *     buflen += nread;
+ * }
+ *
+ * if (res == HTTP1_OK) {
+ *     const SocketHTTP_Request *req = SocketHTTP1_Parser_get_request(parser);
+ *     // Headers parsed, handle body if needed
+ *     if (SocketHTTP1_Parser_body_mode(parser) != HTTP1_BODY_NONE) {
+ *         // Use SocketHTTP1_Parser_read_body() or recvall
+ *     }
+ * } else {
+ *     // Error: res indicates reason, e.g., HTTP1_ERROR_SMUGGLING_DETECTED
+ *     SOCKET_LOG_ERROR_MSG("Parse failed: %s",
+ * SocketHTTP1_result_string(res));
+ *     // Close connection
+ * }
+ * @endcode
+ *
+ * ## Error Recovery Pattern
+ *
+ * @code{.c}
+ * TRY {
+ *     // Parsing loop as above
+ * } EXCEPT(SocketHTTP1_ParseError) {
+ *     // Internal error (rare)
+ * } FINALLY {
+ *     // Always check SocketHTTP1_Parser_state(parser) != HTTP1_STATE_ERROR
+ *     if (SocketHTTP1_Parser_state(parser) == HTTP1_STATE_ERROR) {
+ *         SocketHTTP1_Parser_reset(parser);  // Prepare for next message or
+ * discard
+ *     }
+ * } END_TRY;
+ * @endcode
+ *
+ * @note On HTTP1_INCOMPLETE, retain unconsumed data for next call.
+ * @warning Never pass consumed=NULL; leads to undefined behavior.
+ * @note For chunked bodies, body parsing via separate
+ * SocketHTTP1_Parser_read_body().
+ *
+ * @complexity O(n) - Linear in input length; DFA lookup per byte
+ *
+ * @see SocketHTTP1_State for state monitoring
+ * @see SocketHTTP1_Result and SocketHTTP1_result_string() for errors
+ * @see SocketHTTP1_Parser_get_request/response() for parsed results
+ * @see SocketHTTP1_Parser_body_mode() for body handling
+ * @see docs/http1 for DFA architecture details
  */
 extern SocketHTTP1_Result
 SocketHTTP1_Parser_execute (SocketHTTP1_Parser_T parser, const char *data,
@@ -534,7 +760,8 @@ extern int64_t SocketHTTP1_Parser_body_remaining (SocketHTTP1_Parser_T parser);
  * @param output Output buffer for decoded body
  * @param output_len Output buffer size
  * @param written Output - bytes written to output
- * @return HTTP1_OK if complete, HTTP1_INCOMPLETE if more data needed, or error code
+ * @return HTTP1_OK if complete, HTTP1_INCOMPLETE if more data needed, or error
+ * code
  * @threadsafe No
  *
  * Handles chunked decoding transparently. For Content-Length bodies,
@@ -618,18 +845,71 @@ extern int SocketHTTP1_Parser_expects_continue (SocketHTTP1_Parser_T parser);
  */
 
 /**
- * @brief Serialize request to buffer
+ * @brief Serialize HTTP request message (headers only) to wire format.
  * @ingroup http1
- * @param request Request to serialize
- * @param output Output buffer
- * @param output_size Buffer size
- * @return Bytes written (excluding null), or -1 on error (buffer too small)
- * @throws SocketHTTP1_SerializeError on invalid input (unknown method/version)
- * @threadsafe Yes
  *
- * Serializes request line and headers. Does NOT serialize body.
- * Automatically adds Host header if missing (from authority).
- * Terminates with CRLF CRLF.
+ * Generates RFC 9112 compliant request line + headers, ending with double
+ * CRLF. Validates input: method, URI, version, headers. Adds missing Host from
+ * URI authority. No body serialization; caller appends body based on
+ * Content-Length or chunking. Buffer sizing: Use
+ * SocketHTTP1_request_size_estimate() if available, or conservative 8KB+. Edge
+ * cases: Invalid URI raises SerializeError; too small buffer returns -1
+ * without throw.
+ *
+ * @param[in] request Valid SocketHTTP_Request structure (method, URI, headers
+ * populated)
+ * @param[out] output Pre-allocated buffer for serialized bytes
+ * @param[in] output_size Size of output buffer
+ *
+ * @return Number of bytes written (success), or -1 if buffer too small
+ * (errno=ERANGE may be set)
+ *
+ * @throws SocketHTTP1_SerializeError For invalid request fields (e.g., unknown
+ * method, malformed URI)
+ *
+ * @threadsafe Yes - stateless, pure function
+ *
+ * ## Basic Client Request
+ *
+ * @code{.c}
+ * SocketHTTP_Request req;
+ * SocketHTTP_request_init(&req);  // Or populate manually
+ * req.method = HTTP_METHOD_GET;
+ * req.uri = SocketHTTP_URI_parse("https://example.com/api", strlen(...),
+ * arena); SocketHTTP_Headers_add(req.headers, "User-Agent", "SocketLib/1.0");
+ *
+ * char buf[8192];
+ * ssize_t n = SocketHTTP1_serialize_request(&req, buf, sizeof(buf));
+ * if (n > 0) {
+ *     Socket_send(socket, buf, n);
+ *     // Send body if POST/PUT
+ * } else {
+ *     // Handle error or resize buffer
+ * }
+ * @endcode
+ *
+ * ## With Automatic Host Header
+ *
+ * @code{.c}
+ * // URI with authority auto-adds Host header
+ * SocketHTTP_URI uri = { .scheme = "http", .host = "example.com", .port = 80,
+ * ... }; req.uri = uri;
+ * // No need to manually add Host: example.com:80
+ * ssize_t n = SocketHTTP1_serialize_request(&req, buf, sizeof(buf));
+ * @endcode
+ *
+ * @note Output is null-terminated for convenience, but send exact 'n' bytes.
+ * @warning Ensure request.headers do not contain illegal chars; validated but
+ * logged.
+ * @note For chunked requests, set Transfer-Encoding header manually.
+ *
+ * @complexity O(h) where h=number of headers - linear scan for
+ * validation/serialization
+ *
+ * @see SocketHTTP_Request for structure details
+ * @see SocketHTTP1_serialize_response() for responses
+ * @see SocketHTTP1_chunk_encode() for chunked body
+ * @see SocketHTTP_URI_parse() for URI handling
  */
 extern ssize_t
 SocketHTTP1_serialize_request (const SocketHTTP_Request *request, char *output,
@@ -742,9 +1022,11 @@ typedef struct SocketHTTP1_Encoder *SocketHTTP1_Encoder_T;
  */
 typedef enum
 {
-  HTTP1_COMPRESS_FAST = 1,     /**< Fastest compression (lowest ratio, least CPU) */
-  HTTP1_COMPRESS_DEFAULT = 6,  /**< Balanced default (standard zlib/gzip level) */
-  HTTP1_COMPRESS_BEST = 9      /**< Maximum compression (best ratio, most CPU) */
+  HTTP1_COMPRESS_FAST
+  = 1, /**< Fastest compression (lowest ratio, least CPU) */
+  HTTP1_COMPRESS_DEFAULT
+  = 6,                    /**< Balanced default (standard zlib/gzip level) */
+  HTTP1_COMPRESS_BEST = 9 /**< Maximum compression (best ratio, most CPU) */
 } SocketHTTP1_CompressLevel;
 
 /**

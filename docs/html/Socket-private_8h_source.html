@@ -121,52 +121,54 @@ $(document).ready(function(){initNavTree('Socket-private_8h_source.html',''); in
 <a href="Socket-private_8h.html">Go to the documentation of this file.</a><div class="fragment"><div class="line"><a id="l00001" name="l00001"></a><span class="lineno">    1</span><span class="preprocessor">#ifndef SOCKET_PRIVATE_H_INCLUDED</span></div>
 <div class="line"><a id="l00002" name="l00002"></a><span class="lineno">    2</span><span class="preprocessor">#define SOCKET_PRIVATE_H_INCLUDED</span></div>
 <div class="line"><a id="l00003" name="l00003"></a><span class="lineno">    3</span> </div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &quot;<a class="code" href="Arena_8h.html">core/Arena.h</a>&quot;</span>           </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;<a class="code" href="SocketConfig_8h.html">core/SocketConfig.h</a>&quot;</span>       </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &quot;<a class="code" href="SocketRateLimit_8h.html">core/SocketRateLimit.h</a>&quot;</span>     </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span>          </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;<a class="code" href="SocketCommon-private_8h.html">socket/SocketCommon-private.h</a>&quot;</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;stdatomic.h&gt;</span>               </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_live_increment(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_live_decrement(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span><span class="keyword">extern</span> <span class="keywordtype">int</span> Socket_debug_live_count(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_init_tls_fields(Socket_T sock);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="keyword">struct </span>Socket_T</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>{</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>  <a class="code hl_struct" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base; </div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>  <a class="code hl_struct" href="SocketRateLimit-private_8h.html#structSocketRateLimit__T">SocketRateLimit_T</a> bandwidth_limiter; </div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>  _Atomic <span class="keywordtype">int</span> freed; </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>  <span class="keywordtype">void</span> *tls_ctx;                  </div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="keywordtype">void</span> *tls_ssl;                  </div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  <span class="keywordtype">int</span> tls_enabled;                </div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="keywordtype">int</span> tls_handshake_done;         </div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordtype">int</span> tls_shutdown_done;          </div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="keywordtype">int</span> tls_last_handshake_state;   </div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="keywordtype">char</span> *tls_sni_hostname;         </div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <span class="keywordtype">void</span> *tls_read_buf;             </div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keywordtype">void</span> *tls_write_buf;            </div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keywordtype">size_t</span> tls_read_buf_len;        </div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  <span class="keywordtype">size_t</span> tls_write_buf_len;       </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <a class="code hl_struct" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> tls_timeouts;  </div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>};</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKET_PRIVATE_H_INCLUDED */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span><span class="preprocessor">#include &quot;<a class="code" href="Arena_8h.html">core/Arena.h</a>&quot;</span>           </div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><span class="preprocessor">#include &quot;<a class="code" href="SocketConfig_8h.html">core/SocketConfig.h</a>&quot;</span>       </div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="preprocessor">#include &quot;<a class="code" href="SocketRateLimit_8h.html">core/SocketRateLimit.h</a>&quot;</span>     </div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span>          </div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#include &quot;<a class="code" href="SocketCommon-private_8h.html">socket/SocketCommon-private.h</a>&quot;</span> </div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span><span class="preprocessor">#include &lt;stdatomic.h&gt;</span>               </div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_live_increment(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_live_decrement(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno"><a class="line" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">  258</a></span><span class="keyword">extern</span> <span class="keywordtype">int</span> <a class="code hl_function" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a>(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
+<span class="comment">/* socket_live_utils */</span><div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span> </div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
+<span class="comment">/* socket_tls_utils */</span><span class="preprocessor"></span><div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="keyword">extern</span> <span class="keywordtype">void</span> socket_init_tls_fields(Socket_T sock);</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
+<div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span><span class="keyword">struct </span>Socket_T</div>
+<div class="line"><a id="l00411" name="l00411"></a><span class="lineno">  411</span>{</div>
+<div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>  <a class="code hl_struct" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base; </div>
+<div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span>  <a class="code hl_struct" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a> bandwidth_limiter; </div>
+<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>  _Atomic <span class="keywordtype">int</span> freed; </div>
+<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span><span class="preprocessor">#if SOCKET_HAS_TLS</span></div>
+<div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>  <span class="keywordtype">void</span> *tls_ctx;                  </div>
+<div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>  <span class="keywordtype">void</span> *tls_ssl;                  </div>
+<div class="line"><a id="l00513" name="l00513"></a><span class="lineno">  513</span>  <span class="keywordtype">int</span> tls_enabled;                </div>
+<div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span>  <span class="keywordtype">int</span> tls_handshake_done;         </div>
+<div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>  <span class="keywordtype">int</span> tls_shutdown_done;          </div>
+<div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>  <span class="keywordtype">int</span> tls_last_handshake_state;   </div>
+<div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>  <span class="keywordtype">char</span> *tls_sni_hostname;         </div>
+<div class="line"><a id="l00529" name="l00529"></a><span class="lineno">  529</span>  <span class="keywordtype">void</span> *tls_read_buf;             </div>
+<div class="line"><a id="l00532" name="l00532"></a><span class="lineno">  532</span>  <span class="keywordtype">void</span> *tls_write_buf;            </div>
+<div class="line"><a id="l00535" name="l00535"></a><span class="lineno">  535</span>  <span class="keywordtype">size_t</span> tls_read_buf_len;        </div>
+<div class="line"><a id="l00538" name="l00538"></a><span class="lineno">  538</span>  <span class="keywordtype">size_t</span> tls_write_buf_len;       </div>
+<div class="line"><a id="l00541" name="l00541"></a><span class="lineno">  541</span>  <a class="code hl_struct" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> tls_timeouts;  </div>
+<div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>};</div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span> </div>
+<div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKET_PRIVATE_H_INCLUDED */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="aArena_8h_html"><div class="ttname"><a href="Arena_8h.html">Arena.h</a></div><div class="ttdoc">Arena-based memory allocator for efficient bulk memory management.</div></div>
-<div class="ttc" id="aSocketCommon-private_8h_html"><div class="ttname"><a href="SocketCommon-private_8h.html">SocketCommon-private.h</a></div><div class="ttdoc">Private declarations for the SocketCommon module.</div></div>
-<div class="ttc" id="aSocketConfig_8h_html"><div class="ttname"><a href="SocketConfig_8h.html">SocketConfig.h</a></div><div class="ttdoc">Compile-time configuration and platform detection for the socket library.</div></div>
-<div class="ttc" id="aSocketRateLimit-private_8h_html_structSocketRateLimit__T"><div class="ttname"><a href="SocketRateLimit-private_8h.html#structSocketRateLimit__T">SocketRateLimit_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketRateLimit-private_8h_source.html#l00131">SocketRateLimit-private.h:132</a></div></div>
+<div class="ttc" id="aSocketCommon-private_8h_html"><div class="ttname"><a href="SocketCommon-private_8h.html">SocketCommon-private.h</a></div><div class="ttdoc">Private declarations for SocketCommon module providing shared socket infrastructure.</div></div>
+<div class="ttc" id="aSocketConfig_8h_html"><div class="ttname"><a href="SocketConfig_8h.html">SocketConfig.h</a></div><div class="ttdoc">Compile-time and runtime configuration constants, limits, and platform adaptations.</div></div>
 <div class="ttc" id="aSocketRateLimit_8h_html"><div class="ttname"><a href="SocketRateLimit_8h.html">SocketRateLimit.h</a></div><div class="ttdoc">Token bucket rate limiter for controlling operation rates.</div></div>
 <div class="ttc" id="aSocket_8h_html"><div class="ttname"><a href="Socket_8h.html">Socket.h</a></div><div class="ttdoc">High-level TCP/IP and Unix domain socket interface.</div></div>
-<div class="ttc" id="agroup__core__io_html_structSocketBase__T"><div class="ttname"><a href="group__core__io.html#structSocketBase__T">SocketBase_T</a></div><div class="ttdoc">Internal implementation structure for SocketBase_T opaque type.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon-private_8h_source.html#l00050">SocketCommon-private.h:51</a></div></div>
-<div class="ttc" id="agroup__foundation_html_structSocketTimeouts__T"><div class="ttname"><a href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a></div><div class="ttdoc">Timeout configuration structure for socket operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01285">SocketConfig.h:1286</a></div></div>
+<div class="ttc" id="agroup__core__io_html_structSocketBase__T"><div class="ttname"><a href="group__core__io.html#structSocketBase__T">SocketBase_T</a></div><div class="ttdoc">Internal implementation of SocketBase_T opaque type.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon-private_8h_source.html#l00124">SocketCommon-private.h:125</a></div></div>
+<div class="ttc" id="agroup__foundation_html_structSocketTimeouts__T"><div class="ttname"><a href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a></div><div class="ttdoc">Basic timeout configuration structure for socket operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01448">SocketConfig.h:1449</a></div></div>
+<div class="ttc" id="agroup__socket__live__utils_html_gaa8cacd863c275e6e12f7c63b65708e1b"><div class="ttname"><a href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a></div><div class="ttdeci">int Socket_debug_live_count(void)</div><div class="ttdoc">Query current number of active Socket_T instances (public for tests).</div></div>
+<div class="ttc" id="agroup__utilities_html_structSocketRateLimit__T"><div class="ttname"><a href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a></div><div class="ttdoc">Internal structure implementing the token bucket rate limiter.</div><div class="ttdef"><b>Definition</b> <a href="SocketRateLimit-private_8h_source.html#l00126">SocketRateLimit-private.h:127</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>

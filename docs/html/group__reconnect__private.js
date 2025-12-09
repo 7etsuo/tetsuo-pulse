@@ -1,0 +1,36 @@
+var group__reconnect__private =
+[
+    [ "SocketReconnect-private.h", "SocketReconnect-private_8h.html", null ],
+    [ "SocketReconnect_T", "group__reconnect__private.html#structSocketReconnect__T", [
+      [ "arena", "group__reconnect__private.html#a6c7913840f62959b714f4a0b952f7df3", null ],
+      [ "attempt_count", "group__reconnect__private.html#ae7667416df66d9ff7f22a686e91173fa", null ],
+      [ "backoff_until_ms", "group__reconnect__private.html#ac2cfa6c7de296d34b8cc110d7d0a6c5b", null ],
+      [ "callback", "group__reconnect__private.html#ac327afc59d110b4feded1c24acc20bd0", null ],
+      [ "circuit_open_time_ms", "group__reconnect__private.html#a72f1c5f160e7e5caa258655949081197", null ],
+      [ "circuit_state", "group__reconnect__private.html#aa5865aa0b188f50f624785067341cb9d", null ],
+      [ "connect_in_progress", "group__reconnect__private.html#a687b3c6cdc5b1250373bf27cd278b5f8", null ],
+      [ "consecutive_failures", "group__reconnect__private.html#a42da393060d75d41640ab7069af73dbe", null ],
+      [ "current_backoff_delay_ms", "group__reconnect__private.html#acfa676687672966b58f578529cc8d90b", null ],
+      [ "error_buf", "group__reconnect__private.html#a5b09dfa6f3fb92343adc72e8ed34ecdb", null ],
+      [ "health_check", "group__reconnect__private.html#a9cca95f98967cbc2c1884604c38fe53a", null ],
+      [ "host", "group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604", null ],
+      [ "last_attempt_time_ms", "group__reconnect__private.html#a54ee3868401a010bbeeca9679a842537", null ],
+      [ "last_error", "group__reconnect__private.html#a52dfbb00e9f5b907cb163d55418fa039", null ],
+      [ "last_health_check_ms", "group__reconnect__private.html#a38bbb8f63052882c9251d6fb641c7b3f", null ],
+      [ "last_success_time_ms", "group__reconnect__private.html#ae2d7b54aa971f1bc9a282176425f895c", null ],
+      [ "policy", "group__reconnect__private.html#ad5fa2306cda2167c0288bf4fc2885f55", null ],
+      [ "port", "group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275", null ],
+      [ "socket", "group__reconnect__private.html#a8a5a023250774eb20e665286b9f1126c", null ],
+      [ "state", "group__reconnect__private.html#a2ce9284086f2282054019a446b65f720", null ],
+      [ "state_start_time_ms", "group__reconnect__private.html#a0f4e3c63a4b32a25fa04cd59ff2cb119", null ],
+      [ "total_attempts", "group__reconnect__private.html#a93f6f4ab97532b4b9db422a1f19b882d", null ],
+      [ "total_successes", "group__reconnect__private.html#acde4740d8c3de915c4185a0dcd967f35", null ],
+      [ "userdata", "group__reconnect__private.html#a31140778b660ef58bf93500821501979", null ]
+    ] ],
+    [ "if", "group__reconnect__private.html#gaab33e6c19aa5cf524e12e3c40b50574a", null ],
+    [ "if", "group__reconnect__private.html#ga0450dbfcd56214ed2989e6ff4d97b25d", null ],
+    [ "return", "group__reconnect__private.html#ga230fd1711fa730b54c9262bf533767f6", null ],
+    [ "delta", "group__reconnect__private.html#ga7a21408446fbd8c658853d5f53e2c76f", null ],
+    [ "else", "group__reconnect__private.html#ga0544c3fe466e421738dae463968b70ba", null ],
+    [ "seed", "group__reconnect__private.html#gab31f6ed1e7e88c7cca70910409c6bbee", null ]
+];

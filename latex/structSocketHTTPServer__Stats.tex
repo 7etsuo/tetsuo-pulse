@@ -1,0 +1,148 @@
+\doxysection{Socket\+HTTPServer\+\_\+\+Stats Struct Reference}
+\hypertarget{structSocketHTTPServer__Stats}{}\label{structSocketHTTPServer__Stats}\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPServer.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a0ee2c4f575071ebc2d64b70fca183ce4}{active\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_ad5c0e6d6890af797ff1ff096f1e03f61}{total\+\_\+connections}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a50103f8d84c5e9fd5cfc48c4bdadc4f2}{connections\+\_\+rejected}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_accdb3d0a82f2e7d2e78f174e0dccc4b4}{total\+\_\+requests}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a311686f5e9dfdd93834bd160c3e04b8b}{requests\+\_\+per\+\_\+second}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a697ff4be6f2ea29f24ffd68aeb8ec531}{total\+\_\+bytes\+\_\+sent}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a97ef0b16d227ef1d42c1d507e333f5d6}{total\+\_\+bytes\+\_\+received}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a6657c81bdeca35c6831ad8fec96db1b9}{errors\+\_\+4xx}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a48b3d62e701b7e53a064ffc5a9b7c8ed}{errors\+\_\+5xx}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a44c2c79b921e4e66754bc9aca9f5d8ec}{timeouts}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a867a300e62b5a1f57e5c0a93b4da436b}{rate\+\_\+limited}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_ab8a5c9b59dcc52d1a443fcad59e2614f}{avg\+\_\+request\+\_\+time\+\_\+us}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a1e82d10310fcccfb79bf27db35dd8c3d}{max\+\_\+request\+\_\+time\+\_\+us}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a189d8b8389264118e1887d87d9760fbe}{p50\+\_\+request\+\_\+time\+\_\+us}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a301aa1753953c86be6c64b97c9c56f88}{p95\+\_\+request\+\_\+time\+\_\+us}}
+\item 
+int64\+\_\+t \mbox{\hyperlink{structSocketHTTPServer__Stats_a3c175ac1c4f86022610c1c3e74eac6fe}{p99\+\_\+request\+\_\+time\+\_\+us}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Server statistics (enhanced for production monitoring) 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTPServer__Stats_a0ee2c4f575071ebc2d64b70fca183ce4}\label{structSocketHTTPServer__Stats_a0ee2c4f575071ebc2d64b70fca183ce4} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!active\_connections@{active\_connections}}
+\index{active\_connections@{active\_connections}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{active\_connections}{active\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::active\+\_\+connections}
+
+Current active connections \Hypertarget{structSocketHTTPServer__Stats_ab8a5c9b59dcc52d1a443fcad59e2614f}\label{structSocketHTTPServer__Stats_ab8a5c9b59dcc52d1a443fcad59e2614f} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!avg\_request\_time\_us@{avg\_request\_time\_us}}
+\index{avg\_request\_time\_us@{avg\_request\_time\_us}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{avg\_request\_time\_us}{avg\_request\_time\_us}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::avg\+\_\+request\+\_\+time\+\_\+us}
+
+Average request latency \Hypertarget{structSocketHTTPServer__Stats_a50103f8d84c5e9fd5cfc48c4bdadc4f2}\label{structSocketHTTPServer__Stats_a50103f8d84c5e9fd5cfc48c4bdadc4f2} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!connections\_rejected@{connections\_rejected}}
+\index{connections\_rejected@{connections\_rejected}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{connections\_rejected}{connections\_rejected}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::connections\+\_\+rejected}
+
+Connections rejected (limits) \Hypertarget{structSocketHTTPServer__Stats_a6657c81bdeca35c6831ad8fec96db1b9}\label{structSocketHTTPServer__Stats_a6657c81bdeca35c6831ad8fec96db1b9} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!errors\_4xx@{errors\_4xx}}
+\index{errors\_4xx@{errors\_4xx}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{errors\_4xx}{errors\_4xx}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::errors\+\_\+4xx}
+
+4xx client errors \Hypertarget{structSocketHTTPServer__Stats_a48b3d62e701b7e53a064ffc5a9b7c8ed}\label{structSocketHTTPServer__Stats_a48b3d62e701b7e53a064ffc5a9b7c8ed} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!errors\_5xx@{errors\_5xx}}
+\index{errors\_5xx@{errors\_5xx}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{errors\_5xx}{errors\_5xx}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::errors\+\_\+5xx}
+
+5xx server errors \Hypertarget{structSocketHTTPServer__Stats_a1e82d10310fcccfb79bf27db35dd8c3d}\label{structSocketHTTPServer__Stats_a1e82d10310fcccfb79bf27db35dd8c3d} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!max\_request\_time\_us@{max\_request\_time\_us}}
+\index{max\_request\_time\_us@{max\_request\_time\_us}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{max\_request\_time\_us}{max\_request\_time\_us}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::max\+\_\+request\+\_\+time\+\_\+us}
+
+Maximum request latency \Hypertarget{structSocketHTTPServer__Stats_a189d8b8389264118e1887d87d9760fbe}\label{structSocketHTTPServer__Stats_a189d8b8389264118e1887d87d9760fbe} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!p50\_request\_time\_us@{p50\_request\_time\_us}}
+\index{p50\_request\_time\_us@{p50\_request\_time\_us}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{p50\_request\_time\_us}{p50\_request\_time\_us}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::p50\+\_\+request\+\_\+time\+\_\+us}
+
+50th percentile latency \Hypertarget{structSocketHTTPServer__Stats_a301aa1753953c86be6c64b97c9c56f88}\label{structSocketHTTPServer__Stats_a301aa1753953c86be6c64b97c9c56f88} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!p95\_request\_time\_us@{p95\_request\_time\_us}}
+\index{p95\_request\_time\_us@{p95\_request\_time\_us}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{p95\_request\_time\_us}{p95\_request\_time\_us}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::p95\+\_\+request\+\_\+time\+\_\+us}
+
+95th percentile latency \Hypertarget{structSocketHTTPServer__Stats_a3c175ac1c4f86022610c1c3e74eac6fe}\label{structSocketHTTPServer__Stats_a3c175ac1c4f86022610c1c3e74eac6fe} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!p99\_request\_time\_us@{p99\_request\_time\_us}}
+\index{p99\_request\_time\_us@{p99\_request\_time\_us}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{p99\_request\_time\_us}{p99\_request\_time\_us}}
+{\footnotesize\ttfamily int64\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::p99\+\_\+request\+\_\+time\+\_\+us}
+
+99th percentile latency \Hypertarget{structSocketHTTPServer__Stats_a867a300e62b5a1f57e5c0a93b4da436b}\label{structSocketHTTPServer__Stats_a867a300e62b5a1f57e5c0a93b4da436b} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!rate\_limited@{rate\_limited}}
+\index{rate\_limited@{rate\_limited}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{rate\_limited}{rate\_limited}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::rate\+\_\+limited}
+
+Requests rate limited (429) \Hypertarget{structSocketHTTPServer__Stats_a311686f5e9dfdd93834bd160c3e04b8b}\label{structSocketHTTPServer__Stats_a311686f5e9dfdd93834bd160c3e04b8b} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!requests\_per\_second@{requests\_per\_second}}
+\index{requests\_per\_second@{requests\_per\_second}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{requests\_per\_second}{requests\_per\_second}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::requests\+\_\+per\+\_\+second}
+
+RPS over sliding window \Hypertarget{structSocketHTTPServer__Stats_a44c2c79b921e4e66754bc9aca9f5d8ec}\label{structSocketHTTPServer__Stats_a44c2c79b921e4e66754bc9aca9f5d8ec} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!timeouts@{timeouts}}
+\index{timeouts@{timeouts}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{timeouts}{timeouts}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::timeouts}
+
+Connections closed by timeout \Hypertarget{structSocketHTTPServer__Stats_a97ef0b16d227ef1d42c1d507e333f5d6}\label{structSocketHTTPServer__Stats_a97ef0b16d227ef1d42c1d507e333f5d6} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!total\_bytes\_received@{total\_bytes\_received}}
+\index{total\_bytes\_received@{total\_bytes\_received}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{total\_bytes\_received}{total\_bytes\_received}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::total\+\_\+bytes\+\_\+received}
+
+Total bytes received \Hypertarget{structSocketHTTPServer__Stats_a697ff4be6f2ea29f24ffd68aeb8ec531}\label{structSocketHTTPServer__Stats_a697ff4be6f2ea29f24ffd68aeb8ec531} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!total\_bytes\_sent@{total\_bytes\_sent}}
+\index{total\_bytes\_sent@{total\_bytes\_sent}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{total\_bytes\_sent}{total\_bytes\_sent}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::total\+\_\+bytes\+\_\+sent}
+
+Total bytes sent \Hypertarget{structSocketHTTPServer__Stats_ad5c0e6d6890af797ff1ff096f1e03f61}\label{structSocketHTTPServer__Stats_ad5c0e6d6890af797ff1ff096f1e03f61} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!total\_connections@{total\_connections}}
+\index{total\_connections@{total\_connections}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{total\_connections}{total\_connections}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::total\+\_\+connections}
+
+Total connections accepted \Hypertarget{structSocketHTTPServer__Stats_accdb3d0a82f2e7d2e78f174e0dccc4b4}\label{structSocketHTTPServer__Stats_accdb3d0a82f2e7d2e78f174e0dccc4b4} 
+\index{SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}!total\_requests@{total\_requests}}
+\index{total\_requests@{total\_requests}!SocketHTTPServer\_Stats@{SocketHTTPServer\_Stats}}
+\doxysubsubsection{\texorpdfstring{total\_requests}{total\_requests}}
+{\footnotesize\ttfamily size\+\_\+t Socket\+HTTPServer\+\_\+\+Stats\+::total\+\_\+requests}
+
+Total requests processed 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPServer_8h}{Socket\+HTTPServer.\+h}}\end{DoxyCompactItemize}

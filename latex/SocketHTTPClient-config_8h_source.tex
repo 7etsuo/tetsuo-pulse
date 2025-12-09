@@ -1,0 +1,281 @@
+\doxysection{Socket\+HTTPClient-\/config.h}
+\hypertarget{SocketHTTPClient-config_8h_source}{}\label{SocketHTTPClient-config_8h_source}\index{include/http/SocketHTTPClient-\/config.h@{include/http/SocketHTTPClient-\/config.h}}
+\mbox{\hyperlink{SocketHTTPClient-config_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00058\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTPCLIENT\_CONFIG\_INCLUDED}}
+\DoxyCodeLine{00059\ \textcolor{preprocessor}{\#define\ SOCKETHTTPCLIENT\_CONFIG\_INCLUDED}}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00062\ \textcolor{comment}{\ *\ Error\ Buffer\ Configuration}}
+\DoxyCodeLine{00063\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00064\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00067\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_ERROR\_BUFSIZE}}
+\DoxyCodeLine{00068\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ERROR\_BUFSIZE\ 256}}
+\DoxyCodeLine{00069\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00070\ }
+\DoxyCodeLine{00071\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00072\ \textcolor{comment}{\ *\ Connection\ Pool\ Configuration}}
+\DoxyCodeLine{00073\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00074\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00075\ }
+\DoxyCodeLine{00078\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_POOL\_HASH\_SIZE}}
+\DoxyCodeLine{00079\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_POOL\_HASH\_SIZE\ 127}}
+\DoxyCodeLine{00080\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00081\ }
+\DoxyCodeLine{00083\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_POOL\_LARGE\_HASH\_SIZE}}
+\DoxyCodeLine{00084\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_POOL\_LARGE\_HASH\_SIZE\ 251}}
+\DoxyCodeLine{00085\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00086\ }
+\DoxyCodeLine{00088\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_POOL\_LARGE\_THRESHOLD}}
+\DoxyCodeLine{00089\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_POOL\_LARGE\_THRESHOLD\ 100}}
+\DoxyCodeLine{00090\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00091\ }
+\DoxyCodeLine{00093\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_IO\_BUFFER\_SIZE}}
+\DoxyCodeLine{00094\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_IO\_BUFFER\_SIZE\ 8192}}
+\DoxyCodeLine{00095\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00096\ }
+\DoxyCodeLine{00097\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00098\ \textcolor{comment}{\ *\ Default\ Timeouts\ (milliseconds)}}
+\DoxyCodeLine{00099\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00100\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00101\ }
+\DoxyCodeLine{00103\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_CONNECT\_TIMEOUT\_MS}}
+\DoxyCodeLine{00104\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_CONNECT\_TIMEOUT\_MS\ 30000}}
+\DoxyCodeLine{00105\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00108\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_REQUEST\_TIMEOUT\_MS}}
+\DoxyCodeLine{00109\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_REQUEST\_TIMEOUT\_MS\ 60000}}
+\DoxyCodeLine{00110\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00111\ }
+\DoxyCodeLine{00113\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_DNS\_TIMEOUT\_MS}}
+\DoxyCodeLine{00114\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_DNS\_TIMEOUT\_MS\ 10000}}
+\DoxyCodeLine{00115\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00116\ }
+\DoxyCodeLine{00118\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_IDLE\_TIMEOUT\_MS}}
+\DoxyCodeLine{00119\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_IDLE\_TIMEOUT\_MS\ 60000}}
+\DoxyCodeLine{00120\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00123\ \textcolor{comment}{\ *\ Connection\ Limits}}
+\DoxyCodeLine{00124\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00125\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00126\ }
+\DoxyCodeLine{00128\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_MAX\_REDIRECTS}}
+\DoxyCodeLine{00129\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_MAX\_REDIRECTS\ 10}}
+\DoxyCodeLine{00130\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00131\ }
+\DoxyCodeLine{00133\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_MAX\_CONNS\_PER\_HOST}}
+\DoxyCodeLine{00134\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_MAX\_CONNS\_PER\_HOST\ 6}}
+\DoxyCodeLine{00135\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00138\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_MAX\_TOTAL\_CONNS}}
+\DoxyCodeLine{00139\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_MAX\_TOTAL\_CONNS\ 100}}
+\DoxyCodeLine{00140\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00141\ }
+\DoxyCodeLine{00143\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_MAX\_AUTH\_RETRIES}}
+\DoxyCodeLine{00144\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_MAX\_AUTH\_RETRIES\ 2}}
+\DoxyCodeLine{00145\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00146\ }
+\DoxyCodeLine{00147\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00148\ \textcolor{comment}{\ *\ Retry\ Configuration}}
+\DoxyCodeLine{00149\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00150\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00151\ \textcolor{comment}{\ *\ Automatic\ retry\ for\ transient\ failures\ (DNS,\ connect,\ timeout).}}
+\DoxyCodeLine{00152\ \textcolor{comment}{\ *\ Uses\ exponential\ backoff\ with\ jitter\ to\ prevent\ thundering\ herd.}}
+\DoxyCodeLine{00153\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00154\ \textcolor{comment}{\ *\ SAFETY:\ Only\ idempotent\ requests\ should\ enable\ retry\_on\_5xx.}}
+\DoxyCodeLine{00155\ \textcolor{comment}{\ *\ Non-\/idempotent\ requests\ (POST/PUT/DELETE)\ may\ cause\ duplicate\ actions.}}
+\DoxyCodeLine{00156\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00159\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_ENABLE\_RETRY}}
+\DoxyCodeLine{00160\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_ENABLE\_RETRY\ 0}}
+\DoxyCodeLine{00161\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00162\ }
+\DoxyCodeLine{00164\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_MAX\_RETRIES}}
+\DoxyCodeLine{00165\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_MAX\_RETRIES\ 3}}
+\DoxyCodeLine{00166\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00167\ }
+\DoxyCodeLine{00169\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_RETRY\_INITIAL\_DELAY\_MS}}
+\DoxyCodeLine{00170\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_RETRY\_INITIAL\_DELAY\_MS\ 100}}
+\DoxyCodeLine{00171\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00172\ }
+\DoxyCodeLine{00174\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_RETRY\_MAX\_DELAY\_MS}}
+\DoxyCodeLine{00175\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_RETRY\_MAX\_DELAY\_MS\ 10000}}
+\DoxyCodeLine{00176\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00177\ }
+\DoxyCodeLine{00179\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_CONNECT}}
+\DoxyCodeLine{00180\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_CONNECT\ 1}}
+\DoxyCodeLine{00181\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00182\ }
+\DoxyCodeLine{00184\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_TIMEOUT}}
+\DoxyCodeLine{00185\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_TIMEOUT\ 1}}
+\DoxyCodeLine{00186\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00189\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_5XX}}
+\DoxyCodeLine{00190\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_RETRY\_ON\_5XX\ 0}}
+\DoxyCodeLine{00191\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00192\ }
+\DoxyCodeLine{00194\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_ENFORCE\_SAMESITE}}
+\DoxyCodeLine{00195\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_ENFORCE\_SAMESITE\ 1}}
+\DoxyCodeLine{00196\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00197\ }
+\DoxyCodeLine{00199\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_MAX\_COOKIES}}
+\DoxyCodeLine{00200\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_MAX\_COOKIES\ 10000}}
+\DoxyCodeLine{00201\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00202\ }
+\DoxyCodeLine{00213\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_MAX\_RESPONSE\_SIZE}}
+\DoxyCodeLine{00214\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_MAX\_RESPONSE\_SIZE\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \(\backslash\)}}
+\DoxyCodeLine{00215\ \textcolor{preprocessor}{\ \ (10ULL\ *\ 1024\ *\ 1024)\ }\textcolor{comment}{/*\ 10MB\ default\ to\ prevent\ DoS\ */}\textcolor{preprocessor}{}}
+\DoxyCodeLine{00216\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00217\ }
+\DoxyCodeLine{00218\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00219\ \textcolor{comment}{\ *\ Cookie\ Configuration}}
+\DoxyCodeLine{00220\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00221\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00222\ }
+\DoxyCodeLine{00224\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_HASH\_SIZE}}
+\DoxyCodeLine{00225\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_HASH\_SIZE\ 127}}
+\DoxyCodeLine{00226\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00227\ }
+\DoxyCodeLine{00229\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_NAME\_LEN}}
+\DoxyCodeLine{00230\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_NAME\_LEN\ 256}}
+\DoxyCodeLine{00231\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00232\ }
+\DoxyCodeLine{00234\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_VALUE\_LEN}}
+\DoxyCodeLine{00235\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_VALUE\_LEN\ 4096}}
+\DoxyCodeLine{00236\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00237\ }
+\DoxyCodeLine{00239\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_DOMAIN\_LEN}}
+\DoxyCodeLine{00240\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_DOMAIN\_LEN\ 256}}
+\DoxyCodeLine{00241\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00242\ }
+\DoxyCodeLine{00244\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_PATH\_LEN}}
+\DoxyCodeLine{00245\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_PATH\_LEN\ 1024}}
+\DoxyCodeLine{00246\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00247\ }
+\DoxyCodeLine{00249\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_FILE\_LINE\_SIZE}}
+\DoxyCodeLine{00250\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_FILE\_LINE\_SIZE\ 4096}}
+\DoxyCodeLine{00251\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00252\ }
+\DoxyCodeLine{00254\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_AGE\_SIZE}}
+\DoxyCodeLine{00255\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_AGE\_SIZE\ 32}}
+\DoxyCodeLine{00256\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00257\ }
+\DoxyCodeLine{00259\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_SAMESITE\_SIZE}}
+\DoxyCodeLine{00260\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_SAMESITE\_SIZE\ 16}}
+\DoxyCodeLine{00261\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00262\ }
+\DoxyCodeLine{00264\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_MAX\_COOKIE\_AGE\_SEC}}
+\DoxyCodeLine{00265\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_MAX\_COOKIE\_AGE\_SEC\ (365LL\ *\ 24\ *\ 3600\ *\ 10)}}
+\DoxyCodeLine{00266\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00267\ }
+\DoxyCodeLine{00269\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_MAX\_CHAIN\_LEN}}
+\DoxyCodeLine{00270\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_MAX\_CHAIN\_LEN\ 100}}
+\DoxyCodeLine{00271\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00272\ }
+\DoxyCodeLine{00273\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00274\ \textcolor{comment}{\ *\ Authentication\ Buffer\ Sizes}}
+\DoxyCodeLine{00275\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00276\ \textcolor{comment}{\ *\ These\ are\ internal\ buffer\ sizes\ for\ authentication\ header\ generation.}}
+\DoxyCodeLine{00277\ \textcolor{comment}{\ *\ They\ are\ sized\ to\ handle\ typical\ use\ cases\ with\ some\ margin.}}
+\DoxyCodeLine{00278\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00279\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00280\ }
+\DoxyCodeLine{00282\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_AUTH\_CREDENTIALS\_SIZE}}
+\DoxyCodeLine{00283\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_AUTH\_CREDENTIALS\_SIZE\ 512}}
+\DoxyCodeLine{00284\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00285\ }
+\DoxyCodeLine{00287\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DIGEST\_A\_BUFFER\_SIZE}}
+\DoxyCodeLine{00288\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_A\_BUFFER\_SIZE\ 512}}
+\DoxyCodeLine{00289\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00290\ }
+\DoxyCodeLine{00292\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DIGEST\_RESPONSE\_SIZE}}
+\DoxyCodeLine{00293\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_RESPONSE\_SIZE\ 256}}
+\DoxyCodeLine{00294\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00295\ }
+\DoxyCodeLine{00297\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DIGEST\_CNONCE\_SIZE}}
+\DoxyCodeLine{00298\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_CNONCE\_SIZE\ 16}}
+\DoxyCodeLine{00299\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00300\ }
+\DoxyCodeLine{00302\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DIGEST\_CNONCE\_HEX\_SIZE}}
+\DoxyCodeLine{00303\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_CNONCE\_HEX\_SIZE\ 33}}
+\DoxyCodeLine{00304\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00305\ }
+\DoxyCodeLine{00307\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DIGEST\_NC\_SIZE}}
+\DoxyCodeLine{00308\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DIGEST\_NC\_SIZE\ 16}}
+\DoxyCodeLine{00309\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00310\ }
+\DoxyCodeLine{00311\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00312\ \textcolor{comment}{\ *\ Request/Response\ Buffer\ Limits}}
+\DoxyCodeLine{00313\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00314\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00315\ }
+\DoxyCodeLine{00317\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_REQUEST\_BUFFER\_SIZE}}
+\DoxyCodeLine{00318\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_REQUEST\_BUFFER\_SIZE\ 8192}}
+\DoxyCodeLine{00319\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00320\ }
+\DoxyCodeLine{00322\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_BODY\_CHUNK\_SIZE}}
+\DoxyCodeLine{00323\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_BODY\_CHUNK\_SIZE\ 4096}}
+\DoxyCodeLine{00324\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00325\ }
+\DoxyCodeLine{00327\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_HOST\_HEADER\_SIZE}}
+\DoxyCodeLine{00328\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_HOST\_HEADER\_SIZE\ 256}}
+\DoxyCodeLine{00329\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00330\ }
+\DoxyCodeLine{00332\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_COOKIE\_HEADER\_SIZE}}
+\DoxyCodeLine{00333\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_COOKIE\_HEADER\_SIZE\ 4096}}
+\DoxyCodeLine{00334\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00335\ }
+\DoxyCodeLine{00337\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_AUTH\_HEADER\_SIZE}}
+\DoxyCodeLine{00338\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_AUTH\_HEADER\_SIZE\ 512}}
+\DoxyCodeLine{00339\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00340\ }
+\DoxyCodeLine{00342\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_AUTH\_HEADER\_LARGE\_SIZE}}
+\DoxyCodeLine{00343\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_AUTH\_HEADER\_LARGE\_SIZE\ 1024}}
+\DoxyCodeLine{00344\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00345\ }
+\DoxyCodeLine{00347\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_URI\_BUFFER\_SIZE}}
+\DoxyCodeLine{00348\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_URI\_BUFFER\_SIZE\ 512}}
+\DoxyCodeLine{00349\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00350\ }
+\DoxyCodeLine{00352\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_MAX\_SET\_COOKIES}}
+\DoxyCodeLine{00353\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_MAX\_SET\_COOKIES\ 16}}
+\DoxyCodeLine{00354\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00355\ }
+\DoxyCodeLine{00357\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_ACCEPT\_ENCODING\_SIZE}}
+\DoxyCodeLine{00358\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ACCEPT\_ENCODING\_SIZE\ 64}}
+\DoxyCodeLine{00359\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00360\ }
+\DoxyCodeLine{00362\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_CONTENT\_LENGTH\_SIZE}}
+\DoxyCodeLine{00363\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_CONTENT\_LENGTH\_SIZE\ 32}}
+\DoxyCodeLine{00364\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00365\ }
+\DoxyCodeLine{00367\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_RETRY\_JITTER\_FACTOR}}
+\DoxyCodeLine{00368\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_RETRY\_JITTER\_FACTOR\ 0.25}}
+\DoxyCodeLine{00369\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_RETRY\_MULTIPLIER\ 2.0}}
+\DoxyCodeLine{00370\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00371\ }
+\DoxyCodeLine{00372\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00373\ \textcolor{comment}{\ *\ Default\ User-\/Agent}}
+\DoxyCodeLine{00374\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00375\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00376\ }
+\DoxyCodeLine{00378\ \textcolor{preprocessor}{\#ifndef\ HTTPCLIENT\_DEFAULT\_USER\_AGENT}}
+\DoxyCodeLine{00379\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_DEFAULT\_USER\_AGENT\ "{}SocketHTTPClient/1.0"{}}}
+\DoxyCodeLine{00380\ \textcolor{preprocessor}{\#endif}}
+\DoxyCodeLine{00381\ }
+\DoxyCodeLine{00382\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00383\ \textcolor{comment}{\ *\ Encoding\ Constants\ (Content-\/Encoding\ support\ flags)}}
+\DoxyCodeLine{00384\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00385\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00386\ }
+\DoxyCodeLine{00387\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ENCODING\_IDENTITY\ 0x00}}
+\DoxyCodeLine{00388\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ENCODING\_GZIP\ 0x01}}
+\DoxyCodeLine{00389\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ENCODING\_DEFLATE\ 0x02}}
+\DoxyCodeLine{00390\ \textcolor{preprocessor}{\#define\ HTTPCLIENT\_ENCODING\_BR\ 0x04}}
+\DoxyCodeLine{00391\ }
+\DoxyCodeLine{00392\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTPCLIENT\_CONFIG\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

@@ -1,5 +1,5 @@
 <map id="SocketReconnect.h" name="SocketReconnect.h">
-<area shape="rect" id="Node000001" title="Automatic reconnection framework with exponential backoff and circuit breaker." alt="" coords="1487,5,1625,31"/>
+<area shape="rect" id="Node000001" title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte..." alt="" coords="1487,5,1625,31"/>
 <area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="1355,299,1458,324"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1586,29,1618,48,1632,61,1644,77,1665,125,1675,167,1674,188,1669,209,1643,252,1616,271,1573,286,1472,305,1471,300,1571,281,1614,266,1639,249,1664,207,1669,187,1670,168,1660,126,1639,80,1628,65,1615,52,1584,33"/>
 <area shape="rect" id="Node000004" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="1025,79,1143,104"/>
@@ -11,9 +11,9 @@
 <area shape="rect" id="Node000003" title=" " alt="" coords="1371,372,1443,397"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1409,324,1409,358,1404,358,1404,324"/>
 <area shape="poly" id="edge4_Node000004_Node000002" title=" " alt="" coords="1143,98,1247,116,1370,142,1428,159,1480,178,1521,200,1549,224,1555,237,1555,250,1549,261,1538,271,1508,287,1472,299,1471,294,1506,282,1535,266,1545,258,1550,248,1550,238,1545,227,1518,204,1478,183,1426,164,1368,148,1246,121,1142,103"/>
-<area shape="rect" id="Node000005" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="351,225,492,251"/>
+<area shape="rect" id="Node000005" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="351,225,492,251"/>
 <area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="1032,107,488,225,487,220,1031,101"/>
-<area shape="rect" id="Node000015" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="1020,225,1148,251"/>
+<area shape="rect" id="Node000015" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="1020,225,1148,251"/>
 <area shape="poly" id="edge15_Node000004_Node000015" title=" " alt="" coords="1087,104,1087,212,1081,212,1081,104"/>
 <area shape="rect" id="Node000017" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="824,152,995,177"/>
 <area shape="poly" id="edge20_Node000004_Node000017" title=" " alt="" coords="1057,106,952,149,950,144,1055,102"/>

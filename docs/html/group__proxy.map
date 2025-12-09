@@ -1,4 +1,4 @@
 <map id="Proxy Tunneling Module" name="Proxy Tunneling Module">
-<area shape="rect" id="Node000002" href="$group__core__io.html" title="Fundamental socket operations for TCP, UDP, and Unix domain sockets.The Core I/O group provides the b..." alt="" coords="5,5,131,31"/>
+<area shape="rect" id="Node000002" href="$group__core__io.html" title="Fundamental socket primitives for TCP, UDP, Unix domain, and DNS operations." alt="" coords="5,5,131,31"/>
 <area shape="rect" id="Node000001" title="Transparent TCP proxy support with sync/async APIs." alt="" coords="300,5,463,31"/>
 </map>

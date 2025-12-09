@@ -1,0 +1,24 @@
+var searchData=
+[
+  ['sockethpack_5fdecoder_5ft_0',['SocketHPACK_Decoder_T',['../group__http.html#ga47e194052251cf94ee0a17ab490ed56d',1,'SocketHPACK.h']]],
+  ['sockethpack_5fencoder_5ft_1',['SocketHPACK_Encoder_T',['../group__http.html#gab3d2fec45b36d20aff38b5b5f8ccc317',1,'SocketHPACK.h']]],
+  ['sockethpack_5ftable_5ft_2',['SocketHPACK_Table_T',['../group__http.html#ga689301e4de369172c0566705afe33156',1,'SocketHPACK.h']]],
+  ['sockethttp1_5fparser_5ft_3',['SocketHTTP1_Parser_T',['../group__http.html#ga06fc705e348330ddf1d6644fc80c3b59',1,'SocketHTTP1.h']]],
+  ['sockethttp2_5fconn_5ft_4',['SocketHTTP2_Conn_T',['../group__http.html#ga71710b60048bb252c74115f947f14e6a',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fconncallback_5',['SocketHTTP2_ConnCallback',['../SocketHTTP2_8h.html#a82daab7aba48e58f206a541e11b63bb2',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fstream_5ft_6',['SocketHTTP2_Stream_T',['../group__http.html#gaae451408b4b91d69d78281b872773000',1,'SocketHTTP2.h']]],
+  ['sockethttp2_5fstreamcallback_7',['SocketHTTP2_StreamCallback',['../SocketHTTP2_8h.html#a990cec8dae4a5eb79e28e30039038a98',1,'SocketHTTP2.h']]],
+  ['sockethttp_5fheadercallback_8',['SocketHTTP_HeaderCallback',['../group__http.html#ga991d5a6b9f11673b53a19b7505224668',1,'SocketHTTP.h']]],
+  ['sockethttp_5fheaders_5ft_9',['SocketHTTP_Headers_T',['../group__http.html#gaf1f6772bf122ad6e2e90639b2877754f',1,'SocketHTTP.h']]],
+  ['sockethttpclient_5fasyncrequest_5ft_10',['SocketHTTPClient_AsyncRequest_T',['../group__http.html#ga1f0f539e54a607bea5559f6577f987df',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5fcallback_11',['SocketHTTPClient_Callback',['../SocketHTTPClient_8h.html#a3cb9ba239e5a623795bae1ddfd084201',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5fcookiejar_5ft_12',['SocketHTTPClient_CookieJar_T',['../group__http.html#ga118e7e43ad387b22241607355dbdec9f',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5frequest_5ft_13',['SocketHTTPClient_Request_T',['../group__http.html#ga265c0209bd77c39f219d72c3956a8818',1,'SocketHTTPClient.h']]],
+  ['sockethttpclient_5ft_14',['SocketHTTPClient_T',['../group__http.html#gaba14ae9994f5645e5aa8488f905aad54',1,'SocketHTTPClient.h']]],
+  ['sockethttpserver_5fbodycallback_15',['SocketHTTPServer_BodyCallback',['../SocketHTTPServer_8h.html#ab347055b7285aedad5fa0f504c3a655e',1,'SocketHTTPServer.h']]],
+  ['sockethttpserver_5fdraincallback_16',['SocketHTTPServer_DrainCallback',['../SocketHTTPServer_8h.html#a6eeba038caf0b48d3ae3527155ab8162',1,'SocketHTTPServer.h']]],
+  ['sockethttpserver_5fhandler_17',['SocketHTTPServer_Handler',['../SocketHTTPServer_8h.html#a8805b706921b37e2e91e68a861ddc97c',1,'SocketHTTPServer.h']]],
+  ['sockethttpserver_5frequest_5ft_18',['SocketHTTPServer_Request_T',['../group__http.html#ga071a3760545fbd5fca4c2df224af0fad',1,'SocketHTTPServer.h']]],
+  ['sockethttpserver_5ft_19',['SocketHTTPServer_T',['../group__http.html#gad59859e8ae07bfb95f5807590dd034f4',1,'SocketHTTPServer.h']]],
+  ['sockethttpserver_5fvalidator_20',['SocketHTTPServer_Validator',['../SocketHTTPServer_8h.html#ab095eb6d03d06f9c1d8041dc3aa56094',1,'SocketHTTPServer.h']]]
+];

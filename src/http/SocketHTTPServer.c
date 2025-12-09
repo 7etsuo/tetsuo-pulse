@@ -32,6 +32,8 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
+
 #include "http/SocketHTTPServer-private.h"
 #include "http/SocketHTTPServer.h"
 #include "poll/SocketPoll.h"
@@ -45,6 +47,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Forward declarations */
+ServerConnection *connection_new (SocketHTTPServer_T server, Socket_T socket);
 
 /* ============================================================================
  * Server Configuration
@@ -106,7 +111,7 @@ const Except_T SocketHTTPServer_ProtocolError
  * Creates a thread-local copy of the exception with reason from
  * socket_error_buf. Thread-safe: prevents race conditions.
  */
-#define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPServer, e)
+#define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketHTTPServer, e)
 
 /* STATS macros moved to SocketHTTPServer-private.h for shared use in split
  * files */

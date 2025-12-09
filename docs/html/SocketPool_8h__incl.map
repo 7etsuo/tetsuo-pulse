@@ -8,13 +8,13 @@
 <area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="622,31,627,123,634,186,647,250,665,309,686,359,681,361,660,311,641,251,629,187,622,123,616,31"/>
 <area shape="rect" id="Node000006" href="$SocketSYNProtect_8h.html" title="SYN flood protection using IP reputation and adaptive rate limiting." alt="" coords="131,225,304,251"/>
 <area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="568,22,516,25,456,35,393,53,335,81,299,111,270,147,246,183,230,214,225,212,242,181,265,144,295,107,332,76,391,48,455,30,516,20,568,17"/>
-<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="656,225,784,251"/>
+<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="656,225,784,251"/>
 <area shape="poly" id="edge21_Node000001_Node000017" title=" " alt="" coords="627,30,711,211,706,213,622,32"/>
 <area shape="rect" id="Node000019" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="776,152,893,177"/>
 <area shape="poly" id="edge26_Node000001_Node000019" title=" " alt="" coords="637,29,808,142,805,147,634,33"/>
 <area shape="rect" id="Node000026" href="$SocketBuf_8h.html" title="Circular buffer for efficient socket I/O operations." alt="" coords="401,225,538,251"/>
 <area shape="poly" id="edge43_Node000001_Node000026" title=" " alt="" coords="613,33,487,215,483,212,608,30"/>
-<area shape="rect" id="Node000027" href="$SocketReconnect_8h.html" title="Automatic reconnection framework with exponential backoff and circuit breaker." alt="" coords="758,79,938,104"/>
+<area shape="rect" id="Node000027" href="$SocketReconnect_8h.html" title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte..." alt="" coords="758,79,938,104"/>
 <area shape="poly" id="edge48_Node000001_Node000027" title=" " alt="" coords="656,28,798,72,797,77,655,33"/>
 <area shape="rect" id="Node000028" title=" " alt="" coords="963,79,1021,104"/>
 <area shape="poly" id="edge54_Node000001_Node000028" title=" " alt="" coords="669,24,793,45,949,76,948,81,792,50,669,30"/>
@@ -25,7 +25,7 @@
 <area shape="poly" id="edge7_Node000006_Node000002" title=" " alt="" coords="237,248,304,289,301,294,235,253"/>
 <area shape="poly" id="edge19_Node000006_Node000003" title=" " alt="" coords="219,251,219,285,223,305,232,322,256,347,287,365,284,370,253,352,227,326,218,306,214,286,213,251"/>
 <area shape="poly" id="edge8_Node000006_Node000004" title=" " alt="" coords="224,250,242,287,256,306,275,322,302,334,339,345,435,361,538,372,629,378,629,383,538,377,434,367,338,350,300,339,272,326,253,310,237,289,219,252"/>
-<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1405,299,1547,324"/>
+<area shape="rect" id="Node000007" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1405,299,1547,324"/>
 <area shape="poly" id="edge9_Node000006_Node000007" title=" " alt="" coords="305,243,389,248,866,270,1075,280,1343,296,1392,300,1391,305,1342,301,1075,285,866,276,389,253,304,248"/>
 <area shape="rect" id="Node000016" title=" " alt="" coords="94,299,159,324"/>
 <area shape="poly" id="edge20_Node000006_Node000016" title=" " alt="" coords="204,253,154,292,151,288,201,249"/>

@@ -23,7 +23,7 @@
 int
 main (int argc, char **argv)
 {
-  const char * volatile url = "https://example.com";
+  const char *volatile url = "https://example.com";
   SocketHTTPClient_T client = NULL;
   SocketHTTPClient_Response response = { 0 };
   volatile int result = 0;
@@ -115,4 +115,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

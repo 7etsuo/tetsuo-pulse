@@ -1,60 +1,59 @@
 <map id="SocketProxy_Conn_T" name="SocketProxy_Conn_T">
-<area shape="rect" id="Node000001" title="Opaque proxy connection context for managing tunneling negotiation." alt="" coords="1595,437,1745,463"/>
-<area shape="rect" id="Node000002" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="1355,79,1503,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1463,109,1518,152,1547,179,1573,210,1610,272,1638,338,1668,436,1663,438,1633,340,1605,275,1568,213,1543,183,1515,156,1460,114"/>
-<area shape="poly" id="edge4_Node000002_Node000002" title=" " alt="" coords="1405,64,1412,55,1429,52,1443,54,1452,61,1454,70,1450,80,1445,77,1448,70,1447,64,1441,59,1429,57,1415,60,1409,67"/>
-<area shape="rect" id="Node000003" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="1066,5,1213,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1226,31,1331,55,1394,76,1393,81,1330,61,1224,36"/>
-<area shape="rect" id="Node000004" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="1076,55,1203,80"/>
-<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="1217,71,1355,83,1354,88,1216,76"/>
-<area shape="rect" id="Node000005" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="1072,104,1207,129"/>
-<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="1220,109,1330,101,1354,98,1355,103,1331,106,1221,115"/>
-<area shape="rect" id="Node000006" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="731,104,821,129"/>
-<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="835,114,1072,114,1072,119,835,119"/>
-<area shape="rect" id="Node000007" title=" " alt="" coords="261,639,340,664"/>
-<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="313,676,334,730,370,793,394,821,421,845,452,860,486,866,1430,866,1464,862,1494,852,1521,835,1545,813,1567,787,1585,758,1616,691,1638,622,1652,556,1665,463,1670,463,1657,557,1643,623,1621,693,1590,760,1571,790,1549,817,1524,839,1496,857,1465,867,1430,871,486,871,450,865,418,849,390,825,366,796,330,733,308,678"/>
-<area shape="rect" id="Node000012" href="$group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations." alt="" coords="567,732,679,757"/>
-<area shape="poly" id="edge15_Node000012_Node000007" title=" " alt="" coords="331,670,377,699,433,723,502,738,567,743,566,748,501,743,431,729,375,703,328,674"/>
-<area shape="rect" id="Node000013" href="$group__event__system.html#structSocketData" title="Hash table entry for socket&#45;to&#45;userdata mapping." alt="" coords="577,803,668,828"/>
-<area shape="poly" id="edge17_Node000013_Node000007" title=" " alt="" coords="317,674,337,705,366,733,418,763,475,785,531,799,578,808,577,813,529,804,474,790,416,768,362,737,333,709,312,677"/>
-<area shape="rect" id="Node000014" href="$group__event__system.html#structFdSocketEntry" title="Hash table entry for file descriptor to socket reverse mapping." alt="" coords="568,571,677,596"/>
-<area shape="poly" id="edge20_Node000014_Node000007" title=" " alt="" coords="334,629,363,614,396,597,431,586,502,577,568,577,568,582,503,583,433,591,398,602,365,619,337,634"/>
-<area shape="rect" id="Node000016" href="$structAsyncRequest.html" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="433,639,541,664"/>
-<area shape="poly" id="edge24_Node000016_Node000007" title=" " alt="" coords="354,649,433,649,433,654,354,654"/>
-<area shape="rect" id="Node000019" href="$group__async__io.html#structSocketHE__T" title="Main context structure for Happy Eyeballs (RFC 8305) connection racing." alt="" coords="1380,437,1477,463"/>
-<area shape="poly" id="edge36_Node000019_Node000007" title=" " alt="" coords="316,626,344,590,383,552,406,535,431,521,458,512,486,509,1141,509,1211,504,1280,491,1391,460,1392,465,1281,496,1212,509,1141,514,486,514,459,517,433,526,408,540,386,556,347,594,320,629"/>
-<area shape="rect" id="Node000022" href="$group__async__io.html#structSocketHE__Attempt__T" title="Single connection attempt structure in Happy Eyeballs racing." alt="" coords="873,169,1024,195"/>
-<area shape="poly" id="edge35_Node000022_Node000007" title=" " alt="" coords="304,624,323,560,339,524,362,491,424,429,495,375,570,328,646,288,721,255,790,228,899,192,900,197,792,233,723,260,649,293,573,333,498,379,428,433,366,494,344,526,328,562,309,626"/>
-<area shape="rect" id="Node000008" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,639,137,664"/>
-<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="151,649,261,649,261,654,151,654"/>
-<area shape="rect" id="Node000009" href="$group__dns.html#structSocketDNS__T" title="Async DNS resolver structure." alt="" coords="723,352,829,377"/>
-<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="812,343,915,294,980,270,1047,253,1099,244,1139,242,1231,253,1297,267,1362,287,1425,312,1485,339,1585,394,1651,435,1648,439,1583,398,1482,344,1423,317,1361,292,1296,272,1230,258,1139,247,1099,250,1049,258,982,275,917,299,814,348"/>
-<area shape="rect" id="Node000010" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="1058,385,1221,411"/>
-<area shape="poly" id="edge12_Node000010_Node000009" title=" " alt="" coords="843,353,930,347,977,349,1025,354,1071,367,1112,383,1110,388,1070,372,1023,359,977,354,930,353,843,358"/>
-<area shape="poly" id="edge30_Node000019_Node000009" title=" " alt="" coords="809,382,840,399,874,413,943,431,1015,444,1157,456,1285,457,1379,452,1380,457,1285,462,1157,462,1014,449,942,436,872,418,838,404,807,387"/>
-<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="1044,410,961,412,873,403,835,393,803,380,804,375,837,388,874,398,961,406,1044,405"/>
-<area shape="poly" id="edge11_Node000010_Node000010" title=" " alt="" coords="1109,371,1118,362,1139,359,1157,361,1168,367,1170,377,1165,387,1160,384,1165,376,1163,371,1155,366,1139,364,1121,367,1113,375"/>
-<area shape="poly" id="edge32_Node000019_Node000010" title=" " alt="" coords="1229,410,1331,429,1380,438,1379,443,1330,434,1228,416"/>
-<area shape="rect" id="Node000011" href="$group__event__system.html#structSocketPoll__T" title="Complete internal state for SocketPoll instance." alt="" coords="1089,635,1189,660"/>
-<area shape="poly" id="edge13_Node000001_Node000011" title=" " alt="" coords="1203,643,1265,636,1330,622,1427,585,1519,539,1596,494,1648,461,1651,465,1599,499,1522,544,1430,590,1331,627,1266,642,1203,648"/>
-<area shape="poly" id="edge31_Node000019_Node000011" title=" " alt="" coords="1202,634,1266,614,1299,600,1329,581,1360,552,1386,519,1419,462,1424,464,1390,522,1364,556,1332,585,1302,604,1268,619,1204,639"/>
-<area shape="poly" id="edge14_Node000011_Node000012" title=" " alt="" coords="692,742,768,739,849,730,937,712,1023,685,1103,658,1105,663,1025,690,938,717,850,735,768,744,692,747"/>
-<area shape="poly" id="edge16_Node000011_Node000013" title=" " alt="" coords="682,809,753,801,840,786,933,763,1023,730,1053,714,1080,695,1123,659,1126,663,1084,699,1055,719,1025,735,934,768,841,791,754,806,683,814"/>
-<area shape="poly" id="edge18_Node000013_Node000013" title=" " alt="" coords="596,788,604,779,623,776,638,778,648,785,650,794,646,804,641,801,645,794,643,788,636,783,623,781,607,784,600,791"/>
-<area shape="poly" id="edge19_Node000011_Node000014" title=" " alt="" coords="692,585,844,598,1024,621,1089,633,1088,638,1024,626,844,604,691,591"/>
-<area shape="poly" id="edge21_Node000014_Node000014" title=" " alt="" coords="596,556,604,547,623,544,638,546,648,553,650,562,646,572,641,569,645,562,643,556,636,551,623,549,607,552,600,559"/>
-<area shape="rect" id="Node000015" href="$group__async__io.html#structSocketAsync__T" title="Opaque structure representing the asynchronous I/O context." alt="" coords="719,631,833,656"/>
-<area shape="poly" id="edge22_Node000011_Node000015" title=" " alt="" coords="847,641,1089,644,1089,649,847,647"/>
-<area shape="poly" id="edge23_Node000015_Node000016" title=" " alt="" coords="555,647,718,642,718,648,555,652"/>
-<area shape="poly" id="edge25_Node000016_Node000016" title=" " alt="" coords="467,624,473,616,487,612,500,614,507,621,509,630,505,640,500,638,504,630,502,624,497,619,487,617,476,620,471,627"/>
-<area shape="rect" id="Node000017" href="$SocketTimer-private_8h.html#structSocketTimer__heap__T" title="Typedef for the internal timer heap structure." alt="" coords="703,680,849,705"/>
-<area shape="poly" id="edge26_Node000011_Node000017" title=" " alt="" coords="863,682,1024,663,1089,653,1090,659,1024,669,864,687"/>
-<area shape="rect" id="Node000018" href="$SocketTimer-private_8h.html#structSocketTimer__T" title=" " alt="" coords="432,688,543,713"/>
-<area shape="poly" id="edge27_Node000017_Node000018" title=" " alt="" coords="556,696,702,692,702,697,557,701"/>
-<area shape="poly" id="edge28_Node000001_Node000019" title=" " alt="" coords="1491,447,1594,447,1594,453,1491,453"/>
-<area shape="rect" id="Node000020" href="$group__async__io.html#structSocketHE__Config__T" title="Happy Eyeballs configuration structure." alt="" coords="1068,549,1211,575"/>
-<area shape="poly" id="edge29_Node000019_Node000020" title=" " alt="" coords="1224,564,1277,558,1330,542,1358,525,1382,503,1417,461,1421,465,1386,507,1361,529,1332,547,1279,563,1224,569"/>
-<area shape="rect" id="Node000021" href="$group__async__io.html#structSocketHE__AddressEntry__T" title="Wrapper for resolved addresses in Happy Eyeballs address ordering." alt="" coords="1048,268,1231,293"/>
-<area shape="poly" id="edge33_Node000019_Node000021" title=" " alt="" coords="1222,297,1232,303,1245,318,1257,335,1294,366,1334,394,1403,435,1401,439,1331,398,1291,370,1253,338,1241,321,1229,307,1220,301"/>
-<area shape="poly" id="edge34_Node000019_Node000022" title=" " alt="" coords="1030,195,1200,236,1279,262,1310,276,1332,291,1367,327,1394,368,1425,436,1420,438,1389,370,1362,330,1329,295,1307,281,1277,267,1199,241,1029,200"/>
+<area shape="rect" id="Node000001" title="Opaque proxy connection context for managing tunneling negotiation." alt="" coords="1700,341,1851,367"/>
+<area shape="rect" id="Node000002" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="1460,80,1608,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1608,107,1645,123,1678,147,1699,170,1717,196,1746,251,1764,303,1774,340,1769,342,1759,305,1741,254,1713,199,1695,173,1674,151,1642,128,1606,112"/>
+<area shape="poly" id="edge4_Node000002_Node000002" title=" " alt="" coords="1510,65,1517,57,1534,53,1548,56,1557,62,1559,72,1555,81,1550,79,1554,71,1552,65,1546,61,1534,59,1520,61,1514,69"/>
+<area shape="rect" id="Node000003" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="1181,104,1328,129"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1341,115,1436,110,1479,103,1480,108,1436,115,1342,121"/>
+<area shape="rect" id="Node000004" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="1191,5,1318,31"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="1332,30,1437,55,1501,77,1499,82,1435,61,1331,35"/>
+<area shape="rect" id="Node000005" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="1187,55,1322,80"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="1336,72,1460,83,1459,89,1335,77"/>
+<area shape="rect" id="Node000006" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="928,55,1019,80"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="1032,65,1187,65,1187,70,1032,70"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="459,369,537,395"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="505,355,527,302,564,239,588,210,616,187,647,171,683,165,1536,165,1577,170,1617,186,1653,209,1685,237,1737,295,1768,340,1764,343,1733,298,1681,240,1650,213,1614,191,1576,176,1535,170,684,170,649,176,619,191,592,214,568,242,532,304,510,358"/>
+<area shape="rect" id="Node000014" href="$group__event__system.html#structSocketEvent__T" title="Event notification structure returned by polling operations." alt="" coords="764,324,876,349"/>
+<area shape="poly" id="edge17_Node000014_Node000007" title=" " alt="" coords="551,372,764,342,764,347,552,377"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="775,395,865,420"/>
+<area shape="poly" id="edge19_Node000015_Node000007" title=" " alt="" coords="549,396,562,398,619,405,677,408,775,407,775,412,676,413,618,410,561,403,548,401"/>
+<area shape="rect" id="Node000016" title=" " alt="" coords="765,465,875,491"/>
+<area shape="poly" id="edge22_Node000016_Node000007" title=" " alt="" coords="526,401,562,422,615,441,669,455,765,471,765,476,668,460,613,446,560,427,523,405"/>
+<area shape="rect" id="Node000018" href="$structAsyncRequest.html" title="Internal structure for tracking asynchronous I/O requests." alt="" coords="631,244,739,269"/>
+<area shape="poly" id="edge26_Node000018_Node000007" title=" " alt="" coords="522,358,569,319,628,278,650,267,652,272,631,283,573,323,525,362"/>
+<area shape="rect" id="Node000021" href="$group__async__io.html#structSocketHE__T" title="Main opaque context for Happy Eyeballs (RFC 8305) dual&#45;stack connection racing." alt="" coords="1485,489,1583,515"/>
+<area shape="poly" id="edge35_Node000021_Node000007" title=" " alt="" coords="517,405,544,441,582,480,605,498,629,512,656,521,683,525,1256,525,1380,518,1485,506,1486,512,1381,524,1256,530,683,530,654,526,627,517,602,502,579,484,540,444,512,408"/>
+<area shape="rect" id="Node000008" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="269,369,377,395"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="391,379,458,379,458,385,391,385"/>
+<area shape="rect" id="Node000009" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="20,344,152,369"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="166,362,270,374,269,379,165,368"/>
+<area shape="rect" id="Node000010" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="5,393,167,419"/>
+<area shape="poly" id="edge10_Node000008_Node000010" title=" " alt="" coords="180,403,245,398,276,392,277,397,246,403,181,409"/>
+<area shape="rect" id="Node000011" href="$group__dns.html#structSocketDNS__T" title="Async DNS resolver structure." alt="" coords="920,663,1027,688"/>
+<area shape="poly" id="edge11_Node000001_Node000011" title=" " alt="" coords="1014,691,1071,709,1175,729,1259,739,1299,738,1340,730,1384,715,1435,692,1494,656,1550,613,1601,565,1647,516,1721,426,1764,365,1768,368,1725,430,1651,520,1605,569,1553,617,1497,660,1437,696,1386,720,1341,735,1299,743,1259,745,1174,734,1070,714,1013,696"/>
+<area shape="rect" id="Node000012" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="1173,633,1336,659"/>
+<area shape="poly" id="edge14_Node000012_Node000011" title=" " alt="" coords="996,651,1029,626,1070,606,1114,600,1158,606,1198,617,1230,631,1228,636,1196,622,1157,611,1114,606,1071,611,1032,631,999,655"/>
+<area shape="poly" id="edge32_Node000021_Node000011" title=" " alt="" coords="1038,688,1102,699,1177,705,1258,702,1297,695,1335,684,1368,668,1399,648,1454,600,1496,551,1522,513,1527,516,1500,554,1458,603,1402,652,1371,673,1337,688,1298,700,1258,707,1177,710,1101,704,1037,694"/>
+<area shape="poly" id="edge12_Node000011_Node000012" title=" " alt="" coords="1160,659,1027,672,1027,667,1159,653"/>
+<area shape="poly" id="edge13_Node000012_Node000012" title=" " alt="" coords="1227,619,1235,610,1255,607,1271,609,1281,615,1284,625,1279,634,1274,632,1278,624,1277,619,1269,614,1255,612,1238,615,1230,622"/>
+<area shape="poly" id="edge34_Node000021_Node000012" title=" " alt="" coords="1296,625,1435,558,1512,512,1514,517,1437,563,1299,630"/>
+<area shape="rect" id="Node000013" title=" " alt="" coords="1205,341,1305,367"/>
+<area shape="poly" id="edge15_Node000001_Node000013" title=" " alt="" coords="1318,351,1700,351,1700,357,1318,357"/>
+<area shape="poly" id="edge33_Node000021_Node000013" title=" " alt="" coords="1293,371,1510,487,1508,492,1291,376"/>
+<area shape="poly" id="edge16_Node000013_Node000014" title=" " alt="" coords="890,337,1204,349,1204,355,889,342"/>
+<area shape="poly" id="edge18_Node000013_Node000015" title=" " alt="" coords="879,398,1204,357,1205,363,879,403"/>
+<area shape="poly" id="edge20_Node000015_Node000015" title=" " alt="" coords="794,380,802,371,820,368,836,370,845,377,848,386,843,396,838,393,842,386,841,380,834,375,820,373,804,376,797,383"/>
+<area shape="poly" id="edge21_Node000013_Node000016" title=" " alt="" coords="882,459,1046,414,1212,364,1213,369,1047,419,883,464"/>
+<area shape="poly" id="edge23_Node000016_Node000016" title=" " alt="" coords="794,450,802,442,820,439,836,441,845,447,848,457,843,466,838,464,842,456,841,450,834,446,820,444,804,447,797,454"/>
+<area shape="rect" id="Node000017" href="$group__async__io.html#structSocketAsync__T" title="Core structure for asynchronous I/O context management." alt="" coords="916,225,1031,251"/>
+<area shape="poly" id="edge24_Node000013_Node000017" title=" " alt="" coords="1045,248,1097,263,1150,282,1200,311,1239,339,1236,343,1197,315,1148,287,1096,268,1043,254"/>
+<area shape="poly" id="edge25_Node000017_Node000018" title=" " alt="" coords="752,250,915,239,916,244,752,255"/>
+<area shape="poly" id="edge27_Node000018_Node000018" title=" " alt="" coords="664,229,670,221,685,217,697,220,704,226,706,236,703,245,698,243,701,235,700,229,695,225,685,223,673,225,668,232"/>
+<area shape="rect" id="Node000019" href="$group__event__system.html#structSocketTimer__heap__T" title="Binary min&#45;heap container for managing multiple SocketTimer_T instances." alt="" coords="900,275,1047,300"/>
+<area shape="poly" id="edge28_Node000013_Node000019" title=" " alt="" coords="1061,299,1150,318,1218,339,1216,344,1149,323,1060,304"/>
+<area shape="rect" id="Node000020" href="$group__event__system.html#structSocketTimer__T" title="Internal representation of a single scheduled timer event." alt="" coords="629,293,740,319"/>
+<area shape="poly" id="edge29_Node000019_Node000020" title=" " alt="" coords="754,299,900,289,900,295,754,304"/>
+<area shape="poly" id="edge30_Node000001_Node000021" title=" " alt="" coords="1566,480,1752,364,1755,369,1569,484"/>
+<area shape="rect" id="Node000022" href="$group__async__io.html#structSocketHE__Config__T" title="Happy Eyeballs configuration structure." alt="" coords="1183,464,1326,489"/>
+<area shape="poly" id="edge31_Node000021_Node000022" title=" " alt="" coords="1340,482,1485,495,1485,500,1340,487"/>
 </map>

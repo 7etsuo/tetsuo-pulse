@@ -11,7 +11,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Internal timer implementation details and heap management.">
+<g id="a_Node000001"><a xlink:title="Internal implementation details for the high&#45;performance SocketTimer module.">
 <polygon fill="#999999" stroke="#666666" points="236.5,-184 123.5,-184 123.5,-165 236.5,-165 236.5,-184"/>
 <text text-anchor="middle" x="180" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTimer&#45;private.h</text>
 </a>

@@ -1,6 +1,6 @@
 <map id="SocketHPACK&#45;private.h" name="SocketHPACK&#45;private.h">
-<area shape="rect" id="Node000001" title="Internal HPACK header compression structures and constants." alt="" coords="241,5,403,31"/>
-<area shape="rect" id="Node000002" href="$SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2." alt="" coords="137,79,283,104"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="241,5,403,31"/>
+<area shape="rect" id="Node000002" href="$SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541)." alt="" coords="137,79,283,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="305,33,241,73,239,69,303,28"/>
 <area shape="rect" id="Node000004" title=" " alt="" coords="311,152,376,177"/>
 <area shape="poly" id="edge10_Node000001_Node000004" title=" " alt="" coords="326,31,342,138,337,139,321,32"/>
@@ -22,7 +22,7 @@
 <area shape="poly" id="edge12_Node000009_Node000003" title=" " alt="" coords="440,104,445,139,443,160,435,179,420,189,392,200,322,224,320,219,390,195,417,184,431,176,438,159,440,139,435,105"/>
 <area shape="poly" id="edge13_Node000009_Node000004" title=" " alt="" coords="421,106,371,145,367,141,418,102"/>
 <area shape="poly" id="edge14_Node000009_Node000007" title=" " alt="" coords="433,105,418,142,406,162,389,180,366,189,326,201,227,225,226,220,325,196,365,184,386,175,401,159,414,139,428,103"/>
-<area shape="rect" id="Node000010" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="535,152,677,177"/>
+<area shape="rect" id="Node000010" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="535,152,677,177"/>
 <area shape="poly" id="edge15_Node000009_Node000010" title=" " alt="" coords="463,102,566,144,564,149,461,106"/>
 <area shape="poly" id="edge20_Node000010_Node000003" title=" " alt="" coords="549,180,322,228,320,222,548,175"/>
 <area shape="rect" id="Node000011" title=" " alt="" coords="523,225,585,251"/>

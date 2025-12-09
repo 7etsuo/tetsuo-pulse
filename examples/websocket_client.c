@@ -1,7 +1,8 @@
 /**
  * websocket_client.c - WebSocket Client Example
  *
- * Demonstrates connecting to a WebSocket server, sending and receiving messages.
+ * Demonstrates connecting to a WebSocket server, sending and receiving
+ * messages.
  *
  * Build:
  *   cmake -DBUILD_EXAMPLES=ON ..
@@ -39,9 +40,9 @@ int
 main (int argc, char **argv)
 {
   /* Variables that might be clobbered by longjmp must be volatile */
-  const char * volatile host = "echo.websocket.events";
+  const char *volatile host = "echo.websocket.events";
   volatile int port = 80;
-  const char * volatile path = "/";
+  const char *volatile path = "/";
   Socket_T sock = NULL;
   SocketWS_T ws = NULL;
   SocketWS_Config config;
@@ -233,4 +234,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

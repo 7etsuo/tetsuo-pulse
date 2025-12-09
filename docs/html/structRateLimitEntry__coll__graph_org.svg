@@ -30,7 +30,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="SocketRateLimit-private_8h.html#structSocketRateLimit__T" target="_top" xlink:title=" ">
+<g id="a_Node000002"><a xlink:href="group__utilities.html#structSocketRateLimit__T" target="_top" xlink:title="Internal structure implementing the token bucket rate limiter.">
 <polygon fill="white" stroke="#666666" points="101,-85 0,-85 0,-66 101,-66 101,-85"/>
 <text text-anchor="middle" x="50.5" y="-73" font-family="Helvetica,sans-Serif" font-size="10.00">SocketRateLimit_T</text>
 </a>

@@ -116,7 +116,7 @@ $(document).ready(function(){initNavTree('SocketTLSContext_8h.html',''); initRes
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
-  <div class="headertitle"><div class="title">SocketTLSContext.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a></div></div></div>
+  <div class="headertitle"><div class="title">SocketTLSContext.h File Reference<div class="ingroups"><a class="el" href="group__security.html">Security Modules</a> &raquo; <a class="el" href="group__tls__context.html">TLS Context Management</a></div></div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -164,8 +164,8 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga5c2914ee879d575869932c3a3aed4863" id="r_ga5c2914ee879d575869932c3a3aed4863"><td class="memItemLeft" align="right" valign="top">typedef X509 *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga5c2914ee879d575869932c3a3aed4863">SocketTLSCertLookupCallback</a>) (X509_STORE_CTX *store_ctx, X509_NAME *name, void *user_data)</td></tr>
 <tr class="memdesc:ga5c2914ee879d575869932c3a3aed4863"><td class="mdescLeft">&#160;</td><td class="mdescRight">Custom certificate lookup function.  <br /></td></tr>
 <tr class="separator:ga5c2914ee879d575869932c3a3aed4863"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa53566f8d54960bb2d44516a50f67c70" id="r_aa53566f8d54960bb2d44516a50f67c70"><td class="memItemLeft" align="right" valign="top">typedef const char *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a>) (const char **client_protos, size_t client_count, void *user_data)</td></tr>
-<tr class="separator:aa53566f8d54960bb2d44516a50f67c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa53566f8d54960bb2d44516a50f67c70" id="r_gaa53566f8d54960bb2d44516a50f67c70"><td class="memItemLeft" align="right" valign="top">typedef const char *(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__tls__context.html#gaa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a>) (const char **client_protos, size_t client_count, void *user_data)</td></tr>
+<tr class="separator:gaa53566f8d54960bb2d44516a50f67c70"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -258,7 +258,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga4fcc29a81cf5c643ee9a56deb46b9ec8" id="r_ga4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga4fcc29a81cf5c643ee9a56deb46b9ec8">SocketTLSContext_set_alpn_protos</a> (<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx, const char **protos, size_t count)</td></tr>
 <tr class="memdesc:ga4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Advertise ALPN protocols.  <br /></td></tr>
 <tr class="separator:ga4fcc29a81cf5c643ee9a56deb46b9ec8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gab7c088402bdf132a710551ebe2268ed0" id="r_gab7c088402bdf132a710551ebe2268ed0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab7c088402bdf132a710551ebe2268ed0">SocketTLSContext_set_alpn_callback</a> (<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx, <a class="el" href="SocketTLSContext_8h.html#aa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a> callback, void *user_data)</td></tr>
+<tr class="memitem:gab7c088402bdf132a710551ebe2268ed0" id="r_gab7c088402bdf132a710551ebe2268ed0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab7c088402bdf132a710551ebe2268ed0">SocketTLSContext_set_alpn_callback</a> (<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx, <a class="el" href="group__tls__context.html#gaa53566f8d54960bb2d44516a50f67c70">SocketTLSAlpnCallback</a> callback, void *user_data)</td></tr>
 <tr class="memdesc:gab7c088402bdf132a710551ebe2268ed0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom ALPN protocol selection callback.  <br /></td></tr>
 <tr class="separator:gab7c088402bdf132a710551ebe2268ed0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga6f0a68e802e789df40eaa28cb641a422" id="r_ga6f0a68e802e789df40eaa28cb641a422"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga6f0a68e802e789df40eaa28cb641a422">SocketTLSContext_enable_session_cache</a> (<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx, size_t max_sessions, long timeout_seconds)</td></tr>
@@ -342,17 +342,79 @@ Variables</h2></td></tr>
 <li>Session resumption via cache for performance</li>
 <li>Non-blocking compatible configuration</li>
 <li>Exception-based error handling with detailed OpenSSL error messages</li>
+<li>Advanced: OCSP stapling, certificate pinning (SPKI), Certificate Transparency (CT), CRL auto-refresh</li>
 </ul>
 <p>Thread safety: Contexts are not thread-safe for modification after creation. Share read-only after full setup, or use per-thread contexts. SSL objects created from context are per-connection and thread-safe.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc" title="Create server TLS context with cert/key.">SocketTLSContext_new_server()</a> for server context creation. </dd>
+<h2><a class="anchor" id="autotoc_md789"></a>
+Platform Requirements</h2>
+<ul>
+<li>OpenSSL 1.1.1+ or LibreSSL (TLS1.3, OCSP, CT)</li>
+<li>POSIX system with threads (pthreads)</li>
+<li>File system access for cert/CA/CRL loading</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md790"></a>
+Usage Patterns</h2>
+<h3><a class="anchor" id="autotoc_md791"></a>
+Server Context</h3>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx = <a class="code hl_function" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a>(<span class="stringliteral">&quot;server.crt&quot;</span>, <span class="stringliteral">&quot;server.key&quot;</span>, <span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
+<div class="line">    <span class="comment">// Optional: SocketTLSContext_load_crl(ctx, &quot;crl-dir/&quot;);</span></div>
+<div class="line">    <span class="comment">// Optional: SocketTLSContext_add_pin_from_cert(ctx, &quot;backup-server.crt&quot;);</span></div>
+<div class="line">    <a class="code hl_function" href="group__security.html#ga414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a>(ctx);</div>
+<div class="line">    <span class="comment">// Apply to listening socket</span></div>
+<div class="line">    <a class="code hl_function" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a>(server_sock, ctx);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__security.html#gabc011202dd4f2e080b6ea8eb0f24287e">SocketTLS_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Handle error: invalid cert, OpenSSL init fail</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01035">Except.h:1035</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00927">Except.h:927</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01358">Except.h:1358</a></div></div>
+<div class="ttc" id="agroup__security_html_ga414fb627189037256afd8c4e015b74d1"><div class="ttname"><a href="group__security.html#ga414fb627189037256afd8c4e015b74d1">SocketTLSContext_enable_ocsp_stapling</a></div><div class="ttdeci">void SocketTLSContext_enable_ocsp_stapling(SocketTLSContext_T ctx)</div><div class="ttdoc">Enable OCSP stapling request (client).</div></div>
+<div class="ttc" id="agroup__security_html_ga79a403f2f54f21c90a92e9cb73e24cbc"><div class="ttname"><a href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div><div class="ttdoc">Create server TLS context with cert/key.</div></div>
+<div class="ttc" id="agroup__security_html_gab9a8fb788aa1f0d21b5773bc43a48d6f"><div class="ttname"><a href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a></div><div class="ttdeci">void SocketTLS_enable(Socket_T socket, SocketTLSContext_T ctx)</div><div class="ttdoc">Enable TLS on a socket using the provided context.</div></div>
+<div class="ttc" id="agroup__security_html_gabc011202dd4f2e080b6ea8eb0f24287e"><div class="ttname"><a href="group__security.html#gabc011202dd4f2e080b6ea8eb0f24287e">SocketTLS_Failed</a></div><div class="ttdeci">const Except_T SocketTLS_Failed</div><div class="ttdoc">General TLS operation failure.</div></div>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00678">SocketTLS-private.h:679</a></div></div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md792"></a>
+Client Context with Pinning</h3>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> ctx = <a class="code hl_function" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a>(<span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
+<div class="line">    <a class="code hl_function" href="group__security.html#gaf27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a>(ctx, <a class="code hl_enumvalue" href="group__security.html#gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a>);</div>
+<div class="line">    <a class="code hl_function" href="group__security.html#gafd50881da0db97098204ff6fa920bb26">SocketTLSContext_add_pin_hex</a>(ctx, <span class="stringliteral">&quot;sha256//your-pin-hash-here&quot;</span>);</div>
+<div class="line">    <a class="code hl_function" href="group__security.html#ga8a972b0da962c5515936444b6921182d">SocketTLSContext_set_pin_enforcement</a>(ctx, 1); <span class="comment">// Strict</span></div>
+<div class="line">    <span class="comment">// Connect and enable</span></div>
+<div class="line">    Socket_T sock = <a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(<span class="stringliteral">&quot;example.com&quot;</span>, 443);</div>
+<div class="line">    <a class="code hl_function" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f">SocketTLS_enable</a>(sock, ctx);</div>
+<div class="line">    <a class="code hl_function" href="group__security.html#ga15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a>(sock, <span class="stringliteral">&quot;example.com&quot;</span>); <span class="comment">// For SNI/verify</span></div>
+<div class="line">    <a class="code hl_function" href="group__security.html#ga54a01327e253586278c0f740c2764010">SocketTLS_handshake_auto</a>(sock);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__security.html#ga445003fff70029dd096df971801be0e4">SocketTLS_PinVerifyFailed</a>) {</div>
+<div class="line">    <span class="comment">// MITM detected or bad pin</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
+<div class="ttc" id="agroup__security_html_ga15d2c8f4eaea80114bbd2123da025e56"><div class="ttname"><a href="group__security.html#ga15d2c8f4eaea80114bbd2123da025e56">SocketTLS_set_hostname</a></div><div class="ttdeci">void SocketTLS_set_hostname(Socket_T socket, const char *hostname)</div><div class="ttdoc">Set SNI hostname for client TLS connections.</div></div>
+<div class="ttc" id="agroup__security_html_ga445003fff70029dd096df971801be0e4"><div class="ttname"><a href="group__security.html#ga445003fff70029dd096df971801be0e4">SocketTLS_PinVerifyFailed</a></div><div class="ttdeci">const Except_T SocketTLS_PinVerifyFailed</div><div class="ttdoc">Exception raised when certificate pin verification fails during TLS handshake or manual check.</div></div>
+<div class="ttc" id="agroup__security_html_ga54a01327e253586278c0f740c2764010"><div class="ttname"><a href="group__security.html#ga54a01327e253586278c0f740c2764010">SocketTLS_handshake_auto</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake_auto(Socket_T socket)</div><div class="ttdoc">Complete handshake using socket's timeout config.</div></div>
+<div class="ttc" id="agroup__security_html_ga7fe51da14439d768bdf72f4ed8fbb022"><div class="ttname"><a href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022">SocketTLSContext_new_client</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_client(const char *ca_file)</div><div class="ttdoc">Create client TLS context.</div></div>
+<div class="ttc" id="agroup__security_html_ga8a972b0da962c5515936444b6921182d"><div class="ttname"><a href="group__security.html#ga8a972b0da962c5515936444b6921182d">SocketTLSContext_set_pin_enforcement</a></div><div class="ttdeci">void SocketTLSContext_set_pin_enforcement(SocketTLSContext_T ctx, int enforce)</div><div class="ttdoc">Set pin enforcement mode.</div></div>
+<div class="ttc" id="agroup__security_html_gaf27bede9402c6c8c7541143e019c635f"><div class="ttname"><a href="group__security.html#gaf27bede9402c6c8c7541143e019c635f">SocketTLSContext_enable_ct</a></div><div class="ttdeci">void SocketTLSContext_enable_ct(SocketTLSContext_T ctx, CTValidationMode mode)</div><div class="ttdoc">Enable Certificate Transparency verification.</div></div>
+<div class="ttc" id="agroup__security_html_gafd50881da0db97098204ff6fa920bb26"><div class="ttname"><a href="group__security.html#gafd50881da0db97098204ff6fa920bb26">SocketTLSContext_add_pin_hex</a></div><div class="ttdeci">void SocketTLSContext_add_pin_hex(SocketTLSContext_T ctx, const char *hex_hash)</div><div class="ttdoc">Add SPKI SHA256 pin (hex string).</div></div>
+<div class="ttc" id="agroup__security_html_gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab"><div class="ttname"><a href="group__security.html#gga4d930163393a67950a5378e540c0e939a102a7857300a9c88684ed50efe69d3ab">CT_VALIDATION_STRICT</a></div><div class="ttdeci">@ CT_VALIDATION_STRICT</div><div class="ttdef"><b>Definition</b> <a href="SocketTLSContext_8h_source.html#l01163">SocketTLSContext.h:1162</a></div></div>
+</div><!-- fragment --><dl class="section warning"><dt>Warning</dt><dd>Always load trusted CAs; disabling verification (TLS_VERIFY_NONE) exposes to MITM </dd>
 <dd>
-<a class="el" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022" title="Create client TLS context.">SocketTLSContext_new_client()</a> for client context creation. </dd>
+Configure pins before production; test with <a class="el" href="group__security.html#gac051204c676250b114e00af223055686" title="Check if hash matches any pin.">SocketTLSContext_verify_pin()</a> </dd></dl>
+<dl class="section user"><dt>Complexity\n Context creation O(1) + cert parse time; verification O(chain length)</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc" title="Create server TLS context with cert/key.">SocketTLSContext_new_server()</a> for server setup </dd>
 <dd>
-<a class="el" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f" title="Enable TLS on a socket using the provided context.">SocketTLS_enable()</a> for applying TLS to sockets. </dd>
+<a class="el" href="group__security.html#ga7fe51da14439d768bdf72f4ed8fbb022" title="Create client TLS context.">SocketTLSContext_new_client()</a> for client setup </dd>
 <dd>
-<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> for DTLS context management on UDP sockets. </dd>
+<a class="el" href="group__security.html#gaea7ca3e656e9b58706fafc3232147203" title="Dispose of TLS context and resources.">SocketTLSContext_free()</a> for cleanup </dd>
 <dd>
-<a class="el" href="SocketTLSConfig_8h.html">SocketTLSConfig.h</a> for TLS configuration constants. </dd></dl>
+<a class="el" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f" title="Enable TLS on a socket using the provided context.">SocketTLS_enable()</a> for socket integration </dd>
+<dd>
+<a class="el" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> for UDP/DTLS variant </dd>
+<dd>
+<a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for non-blocking TLS patterns </dd>
+<dd>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a>#tls-configuration for best practices </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -363,29 +425,12 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">#define T&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
+          <td class="memname">#define <a class="el" href="group__utilities.html#ga24514489b0962fafe8414bfae95aa268">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00014">14</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Typedef Documentation</h2>
-<a id="aa53566f8d54960bb2d44516a50f67c70" name="aa53566f8d54960bb2d44516a50f67c70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa53566f8d54960bb2d44516a50f67c70">&#9670;&#160;</a></span>SocketTLSAlpnCallback</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">typedef const char *(* SocketTLSAlpnCallback) (const char **client_protos, size_t client_count, void *user_data)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLSContext_8h_source.html#l00619">619</a> of file <a class="el" href="SocketTLSContext_8h_source.html">SocketTLSContext.h</a>.</p>
 
 </div>
 </div>

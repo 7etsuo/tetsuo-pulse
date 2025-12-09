@@ -30,7 +30,7 @@
 <area shape="poly" id="edge12_Node000004_Node000013" title=" " alt="" coords="615,104,615,138,610,138,610,104"/>
 <area shape="rect" id="Node000014" href="$Arena_8h.html" title="Arena&#45;based memory allocator for efficient bulk memory management." alt="" coords="94,152,190,177"/>
 <area shape="poly" id="edge13_Node000004_Node000014" title=" " alt="" coords="532,107,209,155,204,155,203,150,208,149,531,101"/>
-<area shape="rect" id="Node000016" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="825,152,966,177"/>
+<area shape="rect" id="Node000016" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="825,152,966,177"/>
 <area shape="poly" id="edge17_Node000004_Node000016" title=" " alt="" coords="659,101,837,146,836,151,657,107"/>
 <area shape="poly" id="edge15_Node000014_Node000002" title=" " alt="" coords="130,179,83,219,79,214,127,175"/>
 <area shape="poly" id="edge14_Node000014_Node000015" title=" " alt="" coords="187,175,371,222,369,227,186,180"/>

@@ -43,7 +43,7 @@ http_version_string (SocketHTTP_Version version)
 int
 main (int argc, char **argv)
 {
-  const char * volatile url = "https://www.google.com";
+  const char *volatile url = "https://www.google.com";
   SocketHTTPClient_T client = NULL;
   SocketHTTPClient_Response response = { 0 };
   SocketHTTPClient_Config config;
@@ -161,4 +161,3 @@ main (int argc, char **argv)
 
   return result;
 }
-

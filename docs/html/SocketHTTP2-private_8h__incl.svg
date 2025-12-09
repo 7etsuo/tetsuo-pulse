@@ -102,7 +102,7 @@ var sectionId = 'dynsection-0';
 <!-- Node8 -->
 <g id="Node000008" class="node">
 <title>Node8</title>
-<g id="a_Node000008"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression (RFC 7541) for HTTP/2.">
+<g id="a_Node000008"><a xlink:href="SocketHPACK_8h.html" target="_top" xlink:title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">
 <polygon fill="white" stroke="#666666" points="389.5,-184 280.5,-184 280.5,-165 389.5,-165 389.5,-184"/>
 <text text-anchor="middle" x="335" y="-172" font-family="Helvetica,sans-Serif" font-size="10.00">http/SocketHPACK.h</text>
 </a>
@@ -471,7 +471,7 @@ var sectionId = 'dynsection-0';
 <!-- Node14 -->
 <g id="Node000014" class="node">
 <title>Node14</title>
-<g id="a_Node000014"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time configuration and platform detection for the socket library.">
+<g id="a_Node000014"><a xlink:href="SocketConfig_8h.html" target="_top" xlink:title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations.">
 <polygon fill="white" stroke="#666666" points="1464,-129 1358,-129 1358,-110 1464,-110 1464,-129"/>
 <text text-anchor="middle" x="1411" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">core/SocketConfig.h</text>
 </a>
@@ -489,7 +489,7 @@ var sectionId = 'dynsection-0';
 <!-- Node23 -->
 <g id="Node000023" class="node">
 <title>Node23</title>
-<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API.">
+<g id="a_Node000023"><a xlink:href="SocketDNS_8h.html" target="_top" xlink:title="Asynchronous DNS resolution API for non&#45;blocking network applications.">
 <polygon fill="white" stroke="#666666" points="960,-129 864,-129 864,-110 960,-110 960,-129"/>
 <text text-anchor="middle" x="912" y="-117" font-family="Helvetica,sans-Serif" font-size="10.00">dns/SocketDNS.h</text>
 </a>

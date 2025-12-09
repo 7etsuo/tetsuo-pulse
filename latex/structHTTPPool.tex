@@ -1,0 +1,120 @@
+\doxysection{HTTPPool Struct Reference}
+\hypertarget{structHTTPPool}{}\label{structHTTPPool}\index{HTTPPool@{HTTPPool}}
+
+
+{\ttfamily \#include $<$Socket\+HTTPClient-\/private.\+h$>$}
+
+
+
+Collaboration diagram for HTTPPool\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{structHTTPPool__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPool_af5485c7d525070a52e2630208b950faf}{hash\+\_\+table}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structHTTPPool_ac031f80933fd13b8fc7c84bd0c2d2095}{hash\+\_\+size}}
+\item 
+\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPool_a220379a4224a90ff03c3a610dcae3b0d}{all\+\_\+conns}}
+\item 
+\mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}} \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{structHTTPPool_ae74d413d2a97949dd1fa200f429ef722}{free\+\_\+entries}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structHTTPPool_a20e96d87701e7e491894c7a0b249d813}{max\+\_\+per\+\_\+host}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structHTTPPool_a6455522fd4c139ebc162477b182d0de0}{max\+\_\+total}}
+\item 
+size\+\_\+t \mbox{\hyperlink{structHTTPPool_aa929d981c71d22b8bfacf23e8263161a}{current\+\_\+count}}
+\item 
+int \mbox{\hyperlink{structHTTPPool_aee832e5d3b6b1d574d2c3b556e8da755}{idle\+\_\+timeout\+\_\+ms}}
+\item 
+Arena\+\_\+T \mbox{\hyperlink{structHTTPPool_ab1ecf967ace1b3f1d7534d9b344c3ede}{arena}}
+\item 
+pthread\+\_\+mutex\+\_\+t \mbox{\hyperlink{structHTTPPool_ab56e88b1ac16fd1981b2607bd7e85bd7}{mutex}}
+\item 
+\Hypertarget{structHTTPPool_acad4ffd2cc4ced4e2aa0722c9f9445ec}\label{structHTTPPool_acad4ffd2cc4ced4e2aa0722c9f9445ec} 
+size\+\_\+t {\bfseries total\+\_\+requests}
+\item 
+\Hypertarget{structHTTPPool_acf0b11c7e9213c1f4be74d2d9e7a9156}\label{structHTTPPool_acf0b11c7e9213c1f4be74d2d9e7a9156} 
+size\+\_\+t {\bfseries reused\+\_\+connections}
+\item 
+\Hypertarget{structHTTPPool_a703a0bc3ba2fe13f3c810a686fa71fbc}\label{structHTTPPool_a703a0bc3ba2fe13f3c810a686fa71fbc} 
+size\+\_\+t {\bfseries connections\+\_\+failed}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP connection pool
+
+Manages connections keyed by host\+:port with per-\/host limits and HTTP/2 multiplexing support. 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structHTTPPool_a220379a4224a90ff03c3a610dcae3b0d}\label{structHTTPPool_a220379a4224a90ff03c3a610dcae3b0d} 
+\index{HTTPPool@{HTTPPool}!all\_conns@{all\_conns}}
+\index{all\_conns@{all\_conns}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{all\_conns}{all\_conns}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*} HTTPPool\+::all\+\_\+conns}
+
+All connections (for cleanup) \Hypertarget{structHTTPPool_ab1ecf967ace1b3f1d7534d9b344c3ede}\label{structHTTPPool_ab1ecf967ace1b3f1d7534d9b344c3ede} 
+\index{HTTPPool@{HTTPPool}!arena@{arena}}
+\index{arena@{arena}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{arena}{arena}}
+{\footnotesize\ttfamily Arena\+\_\+T HTTPPool\+::arena}
+
+Memory arena \Hypertarget{structHTTPPool_aa929d981c71d22b8bfacf23e8263161a}\label{structHTTPPool_aa929d981c71d22b8bfacf23e8263161a} 
+\index{HTTPPool@{HTTPPool}!current\_count@{current\_count}}
+\index{current\_count@{current\_count}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{current\_count}{current\_count}}
+{\footnotesize\ttfamily size\+\_\+t HTTPPool\+::current\+\_\+count}
+
+Current connection count \Hypertarget{structHTTPPool_ae74d413d2a97949dd1fa200f429ef722}\label{structHTTPPool_ae74d413d2a97949dd1fa200f429ef722} 
+\index{HTTPPool@{HTTPPool}!free\_entries@{free\_entries}}
+\index{free\_entries@{free\_entries}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{free\_entries}{free\_entries}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*} HTTPPool\+::free\+\_\+entries}
+
+Free entry pool \Hypertarget{structHTTPPool_ac031f80933fd13b8fc7c84bd0c2d2095}\label{structHTTPPool_ac031f80933fd13b8fc7c84bd0c2d2095} 
+\index{HTTPPool@{HTTPPool}!hash\_size@{hash\_size}}
+\index{hash\_size@{hash\_size}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{hash\_size}{hash\_size}}
+{\footnotesize\ttfamily size\+\_\+t HTTPPool\+::hash\+\_\+size}
+
+Hash table size \Hypertarget{structHTTPPool_af5485c7d525070a52e2630208b950faf}\label{structHTTPPool_af5485c7d525070a52e2630208b950faf} 
+\index{HTTPPool@{HTTPPool}!hash\_table@{hash\_table}}
+\index{hash\_table@{hash\_table}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{hash\_table}{hash\_table}}
+{\footnotesize\ttfamily \mbox{\hyperlink{structHTTPPoolEntry}{HTTPPool\+Entry}}\texorpdfstring{$\ast$}{*}\texorpdfstring{$\ast$}{*} HTTPPool\+::hash\+\_\+table}
+
+Hash table for host\+:port lookup \Hypertarget{structHTTPPool_aee832e5d3b6b1d574d2c3b556e8da755}\label{structHTTPPool_aee832e5d3b6b1d574d2c3b556e8da755} 
+\index{HTTPPool@{HTTPPool}!idle\_timeout\_ms@{idle\_timeout\_ms}}
+\index{idle\_timeout\_ms@{idle\_timeout\_ms}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{idle\_timeout\_ms}{idle\_timeout\_ms}}
+{\footnotesize\ttfamily int HTTPPool\+::idle\+\_\+timeout\+\_\+ms}
+
+Idle connection timeout \Hypertarget{structHTTPPool_a20e96d87701e7e491894c7a0b249d813}\label{structHTTPPool_a20e96d87701e7e491894c7a0b249d813} 
+\index{HTTPPool@{HTTPPool}!max\_per\_host@{max\_per\_host}}
+\index{max\_per\_host@{max\_per\_host}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{max\_per\_host}{max\_per\_host}}
+{\footnotesize\ttfamily size\+\_\+t HTTPPool\+::max\+\_\+per\+\_\+host}
+
+Max connections per host \Hypertarget{structHTTPPool_a6455522fd4c139ebc162477b182d0de0}\label{structHTTPPool_a6455522fd4c139ebc162477b182d0de0} 
+\index{HTTPPool@{HTTPPool}!max\_total@{max\_total}}
+\index{max\_total@{max\_total}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{max\_total}{max\_total}}
+{\footnotesize\ttfamily size\+\_\+t HTTPPool\+::max\+\_\+total}
+
+Max total connections \Hypertarget{structHTTPPool_ab56e88b1ac16fd1981b2607bd7e85bd7}\label{structHTTPPool_ab56e88b1ac16fd1981b2607bd7e85bd7} 
+\index{HTTPPool@{HTTPPool}!mutex@{mutex}}
+\index{mutex@{mutex}!HTTPPool@{HTTPPool}}
+\doxysubsubsection{\texorpdfstring{mutex}{mutex}}
+{\footnotesize\ttfamily pthread\+\_\+mutex\+\_\+t HTTPPool\+::mutex}
+
+Thread safety 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPClient-private_8h}{Socket\+HTTPClient-\/private.\+h}}\end{DoxyCompactItemize}

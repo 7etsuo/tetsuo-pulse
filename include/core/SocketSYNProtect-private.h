@@ -5,10 +5,12 @@
  * @file SocketSYNProtect-private.h
  * @ingroup security
  * @internal
- * @brief Internal SYN flood protection implementation details for the @ref security "Security Modules" group.
+ * @brief Internal SYN flood protection implementation details for the @ref
+ * security "Security Modules" group.
  *
- * Private header containing internal structures and functions for the SocketSYNProtect
- * module. Not part of the public API - do not include directly from user code.
+ * Private header containing internal structures and functions for the
+ * SocketSYNProtect module. Not part of the public API - do not include
+ * directly from user code.
  *
  * Contains:
  * - IP reputation tracking hash tables
@@ -37,12 +39,13 @@
 /**
  * @brief Default hash table size for IP state tracking entries.
  *
- * Prime number (4093) chosen for optimal hash distribution, low collision rate,
- * and efficient memory usage.
+ * Prime number (4093) chosen for optimal hash distribution, low collision
+ * rate, and efficient memory usage.
  *
  * @ingroup security
  * @internal
- * @note Can be overridden via preprocessor definition before including this header.
+ * @note Can be overridden via preprocessor definition before including this
+ * header.
  * @see SocketSYNProtect_T::ip_table - The hash table using this size.
  * @see synprotect_hash_ip() - The hashing function that uses this table size.
  */
@@ -53,8 +56,8 @@
 /**
  * @brief Default hash table size for whitelist and blacklist entries.
  *
- * Smaller prime number (509) suitable for lower-volume lists with fewer entries
- * compared to main IP tracking table.
+ * Smaller prime number (509) suitable for lower-volume lists with fewer
+ * entries compared to main IP tracking table.
  *
  * @ingroup security
  * @internal
@@ -85,7 +88,8 @@
 /**
  * @brief Reputation score assigned to whitelisted or fully trusted IPs.
  *
- * Maximum trust level (1.0f) which typically bypasses rate limits and challenges.
+ * Maximum trust level (1.0f) which typically bypasses rate limits and
+ * challenges.
  *
  * @ingroup security
  * @internal
@@ -104,7 +108,8 @@
  *
  * @ingroup security
  * @internal
- * @note Each CIDR entry stores network prefix and length; no expansion to individuals.
+ * @note Each CIDR entry stores network prefix and length; no expansion to
+ * individuals.
  * @see SocketSYN_WhitelistEntry for entry structure with prefix_len.
  * @see SocketSYNProtect_whitelist_add_cidr() for adding CIDR notations.
  * @see ip_matches_cidr() internal matching function.
@@ -149,12 +154,14 @@ typedef struct SocketSYN_IPEntry
  */
 
 /**
- * @brief Structure for whitelist entries supporting single IPs and CIDR ranges.
+ * @brief Structure for whitelist entries supporting single IPs and CIDR
+ * ranges.
  * @ingroup security
  * @internal Chained list in hash table for fast lookups.
  *
- * Stores parsed address for efficient prefix matching on IPv4/IPv6 CIDR ranges.
- * CIDR entries are not expanded to individual IPs; uses prefix length for matching.
+ * Stores parsed address for efficient prefix matching on IPv4/IPv6 CIDR
+ * ranges. CIDR entries are not expanded to individual IPs; uses prefix length
+ * for matching.
  *
  * @see SocketSYNProtect_whitelist_add_cidr() for adding CIDR notations.
  * @see SocketSYNProtect_whitelist_add() for single IPs.
@@ -203,14 +210,16 @@ typedef struct SocketSYN_BlacklistEntry
  * @ingroup security
  * @internal Opaque type exposed as SocketSYNProtect_T in public header.
  *
- * Aggregates configuration, tracking tables, lists, rate limiters, and atomic stats.
- * Thread-safe via pthread mutex for modifications; atomics for concurrent stat reads.
+ * Aggregates configuration, tracking tables, lists, rate limiters, and atomic
+ * stats. Thread-safe via pthread mutex for modifications; atomics for
+ * concurrent stat reads.
  *
  * @see SocketSYNProtect_new() for creation and initialization.
  * @see SocketSYNProtect_Config for tunable parameters.
  * @see SocketSYNProtect_Stats for observable metrics.
  * @see SocketRateLimit_T for global rate limiting integration.
- * @threadsafe Conditional - mutex guards most fields; stats readable lock-free.
+ * @threadsafe Conditional - mutex guards most fields; stats readable
+ * lock-free.
  */
 struct SocketSYNProtect_T
 {
@@ -267,16 +276,19 @@ struct SocketSYNProtect_T
  * @ingroup security
  * @internal Internal hashing utility for distributing IP entries.
  *
- * Combines DJB2-style hash with per-instance seed and modulo for table indexing.
- * Designed to resist hash flooding attacks by randomizing per deployment.
+ * Combines DJB2-style hash with per-instance seed and modulo for table
+ * indexing. Designed to resist hash flooding attacks by randomizing per
+ * deployment.
  *
  * @param protect The SYN protection instance providing hash_seed.
  * @param ip Null-terminated C string containing IPv4 or IPv6 address.
- * @param table_size Number of buckets in the target hash table (typically prime).
+ * @param table_size Number of buckets in the target hash table (typically
+ * prime).
  * @return Unsigned integer hash index in range [0, table_size).
  *
  * @threadsafe Yes - pure function with no observable side effects.
- * @note Relies on socket_util_hash_djb2_ci_len() internally for case-insensitive hashing.
+ * @note Relies on socket_util_hash_djb2_ci_len() internally for
+ * case-insensitive hashing.
  * @see socket_util_hash_djb2_ci_len() base algorithm.
  * @see SocketSYNProtect_Config::hash_seed for seed configuration.
  */

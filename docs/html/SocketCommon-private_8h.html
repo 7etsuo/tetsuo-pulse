@@ -118,7 +118,7 @@ $(document).ready(function(){initNavTree('SocketCommon-private_8h.html',''); ini
 </div><!--header-->
 <div class="contents">
 
-<p>Private declarations for the SocketCommon module.  
+<p>Private declarations for SocketCommon module providing shared socket infrastructure.  
 <a href="#details">More...</a></p>
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketConfig_8h_source.html">core/SocketConfig.h</a>&quot;</code><br />
@@ -146,7 +146,7 @@ $(document).ready(function(){initNavTree('SocketCommon-private_8h.html',''); ini
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
 Data Structures</h2></td></tr>
 <tr class="memitem:structSocketBase__T" id="r_structSocketBase__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a></td></tr>
-<tr class="memdesc:structSocketBase__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal implementation structure for <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> opaque type.  <a href="group__core__io.html#structSocketBase__T">More...</a><br /></td></tr>
+<tr class="memdesc:structSocketBase__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal implementation of <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> opaque type.  <a href="group__core__io.html#structSocketBase__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketBase__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -176,14 +176,14 @@ Functions</h2></td></tr>
 <tr class="memdesc:a75b80d3b0bff70285f02d3abec60cdcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get pointer to timeouts configuration structure.  <br /></td></tr>
 <tr class="separator:a75b80d3b0bff70285f02d3abec60cdcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga65d501b6ffc63a265a180b903abb26ef" id="r_ga65d501b6ffc63a265a180b903abb26ef"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga65d501b6ffc63a265a180b903abb26ef">SocketBase_set_timeouts</a> (<a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base, const <a class="el" href="group__foundation.html#structSocketTimeouts__T">SocketTimeouts_T</a> *timeouts)</td></tr>
-<tr class="memdesc:ga65d501b6ffc63a265a180b903abb26ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the timeouts configuration for the socket base.  <br /></td></tr>
+<tr class="memdesc:ga65d501b6ffc63a265a180b903abb26ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set timeouts configuration in the socket base structure.  <br /></td></tr>
 <tr class="separator:ga65d501b6ffc63a265a180b903abb26ef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga64fef3c801aa2661b32ec73f368458f0" id="r_ga64fef3c801aa2661b32ec73f368458f0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga64fef3c801aa2661b32ec73f368458f0">SocketCommon_create_fd</a> (int domain, int type, int protocol, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="memdesc:ga64fef3c801aa2661b32ec73f368458f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket file descriptor.  <br /></td></tr>
+<tr class="memdesc:ga64fef3c801aa2661b32ec73f368458f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new socket file descriptor with error handling and CLOEXEC setup.  <br /></td></tr>
 <tr class="separator:ga64fef3c801aa2661b32ec73f368458f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1aa5d2cb4d591e902973e55dc9f1282d" id="r_a1aa5d2cb4d591e902973e55dc9f1282d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon-private_8h.html#a1aa5d2cb4d591e902973e55dc9f1282d">SocketCommon_init_base</a> (<a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base, int fd, int domain, int type, int protocol, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
-<tr class="memdesc:a1aa5d2cb4d591e902973e55dc9f1282d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize a pre-allocated <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> instance.  <br /></td></tr>
-<tr class="separator:a1aa5d2cb4d591e902973e55dc9f1282d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1aa5d2cb4d591e902973e55dc9f1282d" id="r_ga1aa5d2cb4d591e902973e55dc9f1282d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1aa5d2cb4d591e902973e55dc9f1282d">SocketCommon_init_base</a> (<a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base, int fd, int domain, int type, int protocol, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
+<tr class="memdesc:ga1aa5d2cb4d591e902973e55dc9f1282d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize pre-allocated <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> with FD and parameters.  <br /></td></tr>
+<tr class="separator:ga1aa5d2cb4d591e902973e55dc9f1282d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e68487cc04862745542fac6ddf9abd8" id="r_a4e68487cc04862745542fac6ddf9abd8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon-private_8h.html#a4e68487cc04862745542fac6ddf9abd8">SocketCommon_get_family</a> (<a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a> base, bool raise_on_fail, <a class="el" href="group__foundation.html#structExcept__T">Except_T</a> exc_type)</td></tr>
 <tr class="memdesc:a4e68487cc04862745542fac6ddf9abd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine socket address family from base or fd.  <br /></td></tr>
 <tr class="separator:a4e68487cc04862745542fac6ddf9abd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -217,41 +217,83 @@ Functions</h2></td></tr>
 <tr class="memitem:ac482a511827509195ff13ae7dac371ae" id="r_ac482a511827509195ff13ae7dac371ae"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon-private_8h.html#ac482a511827509195ff13ae7dac371ae">socketcommon_convert_port_to_string</a> (int port, char *port_str, size_t bufsize)</td></tr>
 <tr class="memdesc:ac482a511827509195ff13ae7dac371ae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format port number as string with bounds checking.  <br /></td></tr>
 <tr class="separator:ac482a511827509195ff13ae7dac371ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac37fe3d789eae0e522f29fca1ec49956" id="r_ac37fe3d789eae0e522f29fca1ec49956"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketCommon-private_8h.html#ac37fe3d789eae0e522f29fca1ec49956">socketcommon_sanitize_timeout</a> (int timeout_ms)</td></tr>
-<tr class="memdesc:ac37fe3d789eae0e522f29fca1ec49956"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sanitize and clamp timeout value to valid range.  <br /></td></tr>
-<tr class="separator:ac37fe3d789eae0e522f29fca1ec49956"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac37fe3d789eae0e522f29fca1ec49956" id="r_gac37fe3d789eae0e522f29fca1ec49956"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gac37fe3d789eae0e522f29fca1ec49956">socketcommon_sanitize_timeout</a> (int timeout_ms)</td></tr>
+<tr class="memdesc:gac37fe3d789eae0e522f29fca1ec49956"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sanitize raw timeout value, applying library policy for valid range.  <br /></td></tr>
+<tr class="separator:gac37fe3d789eae0e522f29fca1ec49956"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
 <tr class="memitem:ga225f4a8fd657fd52a05146c6fc4f58b0" id="r_ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a></td></tr>
-<tr class="memdesc:ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Generic socket failure exception (creation, bind, connect, etc.).  <br /></td></tr>
+<tr class="memdesc:ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Module Exception Forward Declarations.  <br /></td></tr>
 <tr class="separator:ga225f4a8fd657fd52a05146c6fc4f58b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga28354c49d1726c674932f420a57bb21d" id="r_ga28354c49d1726c674932f420a57bb21d"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga28354c49d1726c674932f420a57bb21d">SocketDgram_Failed</a></td></tr>
-<tr class="memdesc:ga28354c49d1726c674932f420a57bb21d"><td class="mdescLeft">&#160;</td><td class="mdescRight">UDP/Datagram-specific failure exception.  <br /></td></tr>
+<tr class="memdesc:ga28354c49d1726c674932f420a57bb21d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Datagram/UDP-specific operation failure exception.  <br /></td></tr>
 <tr class="separator:ga28354c49d1726c674932f420a57bb21d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4218ae116e8def59908f76fd1e9dbe3e" id="r_ga4218ae116e8def59908f76fd1e9dbe3e"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4218ae116e8def59908f76fd1e9dbe3e">SocketCommon_Failed</a></td></tr>
-<tr class="memdesc:ga4218ae116e8def59908f76fd1e9dbe3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Common utility failure (resolve, options, validation).  <br /></td></tr>
+<tr class="memdesc:ga4218ae116e8def59908f76fd1e9dbe3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Shared utility function failure exception.  <br /></td></tr>
 <tr class="separator:ga4218ae116e8def59908f76fd1e9dbe3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><p>Private declarations for the SocketCommon module. </p>
-<p>Contains internal structure definitions (e.g., <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> implementation), static helper functions, and module exception forward declarations.</p>
-<p>This header is included only from SocketCommon.c and related implementation files (e.g., Socket.c, SocketDgram.c). It is NOT part of the public API.</p>
-<dl class="section warning"><dt>Warning</dt><dd>Do NOT include this header in public headers or user code. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules.">SocketCommon.h</a> for the public interface. </dd>
-<dd>
-<a class="el" href="group__core__io.html">Core I/O Module Group</a> for overview.</dd></dl>
+<div class="textblock"><p>Private declarations for SocketCommon module providing shared socket infrastructure. </p>
+<p>This private header defines internal structures, helper functions, and exception forward declarations shared between Socket and SocketDgram implementations. It enables code reuse for common operations like base initialization, option setting, and endpoint caching while maintaining opaque public API.</p>
+<div class="fragment"><div class="line">┌─────────────────────────────┐</div>
+<div class="line">│   Public API (Socket.h)     │</div>
+<div class="line">│   ├── Socket_T (opaque)     │</div>
+<div class="line">│   └── <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> (opaque)│</div>
+<div class="line">└─────────┬───────────────────┘</div>
+<div class="line">          │ embeds/uses</div>
+<div class="line">┌─────────▼───────────────────┐</div>
+<div class="line">│ SocketCommon-private.h      │</div>
+<div class="line">│ ├── struct <a class="code hl_struct" href="group__core__io.html#structSocketBase__T">SocketBase_T</a>     │</div>
+<div class="line">│ ├── Accessors (get/set)     │</div>
+<div class="line">│ ├── Option setters          │</div>
+<div class="line">│ ├── Utilities (resolve,...) │</div>
+<div class="line">│ └── Exceptions              │</div>
+<div class="line">└─────────────────────────────┘</div>
+<div class="line">          │ implements in</div>
+<div class="line">┌─────────▼───────────────────┐</div>
+<div class="line">│   SocketCommon.c            │</div>
+<div class="line">└─────────────────────────────┘</div>
+<div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00041">SocketDgram-private.h:42</a></div></div>
+<div class="ttc" id="agroup__core__io_html_structSocketBase__T"><div class="ttname"><a href="group__core__io.html#structSocketBase__T">SocketBase_T</a></div><div class="ttdoc">Internal implementation of SocketBase_T opaque type.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon-private_8h_source.html#l00124">SocketCommon-private.h:125</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md536"></a>
+Features</h2>
 <ul>
-<li>Opaque types declared in public headers (.h), full structs defined here.</li>
-<li>GNU C11 style with comprehensive Doxygen documentation for maintainers.</li>
-<li>Module-specific exceptions declared here for convenience across implementations.</li>
-<li>Thread-safety documented per function; generally requires external synchronization.</li>
+<li><b>Shared Base Structure</b>: <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type.">SocketBase_T</a> provides common fields (fd, arena, endpoints, timeouts, metrics) embedded in subtypes.</li>
+<li><b>Thread-Safe Accessors</b>: Controlled getters/setters with mutex protection documentation.</li>
+<li><b>Unified Option Setting</b>: Common implementations for SO_REUSEADDR, SO_REUSEPORT, timeouts, CLOEXEC, SIGPIPE handling.</li>
+<li><b>Address Resolution Helpers</b>: Internal validation, normalization, caching for endpoints.</li>
+<li><b>Exception Forwarding</b>: Module exceptions declared for consistent error handling across files.</li>
+<li><b>Platform Abstraction</b>: Handles differences (e.g., SO_DOMAIN on Linux, getsockname fallback).</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd>docs/ERROR_HANDLING.md for exception handling patterns. </dd>
+<h2><a class="anchor" id="autotoc_md537"></a>
+Platform Requirements</h2>
+<ul>
+<li>POSIX-compliant system with socket(), setsockopt(), fcntl(), getaddrinfo().</li>
+<li>pthreads for mutex-based thread safety in base access.</li>
+<li>CLOCK_MONOTONIC for timing (via SocketUtil).</li>
+<li>No TLS dependencies (pure socket layer).</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md538"></a>
+Usage Guidelines</h2>
+<ul>
+<li>Include only from .c implementation files, never public headers or user code.</li>
+<li>Use accessors instead of direct field access for encapsulation.</li>
+<li>Always acquire base-&gt;mutex for multi-threaded modifications.</li>
+<li>Follow resource order: Arena -&gt; FD -&gt; Mutex init -&gt; Endpoint cache.</li>
+</ul>
+<dl class="section warning"><dt>Warning</dt><dd>Direct inclusion exposes internal ABI; changes may break subtypes. </dd>
 <dd>
-CONTRIBUTING.md for contribution guidelines and coding standards. </dd>
+Not thread-safe by default; docs specify per-function guarantees.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules.">SocketCommon.h</a> for public <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a> and base API. </dd>
 <dd>
-.cursorrules for build system and detailed implementation rules. </dd></dl>
+<a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">Socket.h</a> and <a class="el" href="SocketDgram_8h.html" title="High-level UDP/datagram socket interface with multicast and broadcast support.">SocketDgram.h</a> for subtype-specific operations. </dd>
+<dd>
+<a class="el" href="group__core__io.html">Core I/O Module Group</a> for complete socket primitives. </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception patterns. </dd>
+<dd>
+.cursorrules for coding and build standards. </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 </div><h2 class="groupheader">Function Documentation</h2>
@@ -290,9 +332,9 @@ CONTRIBUTING.md for contribution guidelines and coding standards. </dd>
 <dl class="section note"><dt>Note</dt><dd>Updated after bind(); format depends on domain. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon-private_8h.html#ac5739d7239856359495b02e1f79f9835" title="Get local port number.">SocketBase_localport()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00172">172</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00330">330</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00063">SocketBase_T::localaddr</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00137">SocketBase_T::localaddr</a>.</p>
 
 </div>
 </div>
@@ -330,9 +372,9 @@ CONTRIBUTING.md for contribution guidelines and coding standards. </dd>
 <dl class="section return"><dt>Returns</dt><dd>Local port (0 if unbound). </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketCommon-private_8h.html#ac7b31f6b6d7969c6f037154c54e9872e" title="Get cached local address string representation.">SocketBase_localaddr()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00185">185</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00343">343</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00065">SocketBase_T::localport</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00139">SocketBase_T::localport</a>.</p>
 
 </div>
 </div>
@@ -371,9 +413,9 @@ CONTRIBUTING.md for contribution guidelines and coding standards. </dd>
 <dl class="section note"><dt>Note</dt><dd>Allows modification; caller should lock mutex if threaded. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd>SocketCommon_set_timeouts() for global defaults. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00199">199</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketCommon-private_8h_source.html#l00357">357</a> of file <a class="el" href="SocketCommon-private_8h_source.html">SocketCommon-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00073">SocketBase_T::timeouts</a>.</p>
+<p class="reference">References <a class="el" href="SocketCommon-private_8h_source.html#l00147">SocketBase_T::timeouts</a>.</p>
 
 </div>
 </div>
@@ -600,84 +642,7 @@ Unifies family detection across modules. </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Safe host string: NULL for wildcards/invalids, validated copy otherwise. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Handles normalization (e.g., "0.0.0.0" -&gt; NULL for bind). </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga68b10ea8fcfd5f154b54d81a8000c827" title="Normalize wildcard host addresses to NULL.">SocketCommon_normalize_wildcard_host()</a> </dd></dl>
-
-</div>
-</div>
-<a id="a1aa5d2cb4d591e902973e55dc9f1282d" name="a1aa5d2cb4d591e902973e55dc9f1282d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1aa5d2cb4d591e902973e55dc9f1282d">&#9670;&#160;</a></span>SocketCommon_init_base()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void SocketCommon_init_base </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="group__core__io.html#structSocketBase__T">SocketBase_T</a>&#160;</td>
-          <td class="paramname"><em>base</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>domain</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>type</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>protocol</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td>
-          <td class="paramname"><em>exc_type</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Initialize a pre-allocated <a class="el" href="group__core__io.html#structSocketBase__T" title="Internal implementation structure for SocketBase_T opaque type.">SocketBase_T</a> instance. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">base</td><td>Pre-allocated base structure. </td></tr>
-    <tr><td class="paramname">fd</td><td>File descriptor to associate. </td></tr>
-    <tr><td class="paramname">domain</td><td>Address family. </td></tr>
-    <tr><td class="paramname">type</td><td>Socket type. </td></tr>
-    <tr><td class="paramname">protocol</td><td>Protocol. </td></tr>
-    <tr><td class="paramname">exc_type</td><td>Exception for errors. </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section note"><dt>Note</dt><dd>Initializes fields, creates arena, sets CLOEXEC, etc. </dd>
-<dd>
-Called after socket() or from_fd(). </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gae9498d7bdb363435a4efce0f32011914" title="Create a new socket base structure.">SocketCommon_new_base()</a> which allocates + inits. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga68b10ea8fcfd5f154b54d81a8000c827" title="Normalize wildcard/any-address host strings to NULL for internal use.">SocketCommon_normalize_wildcard_host()</a> </dd></dl>
 
 </div>
 </div>
@@ -714,46 +679,7 @@ Called after socket() or from_fd(). </dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if parses as IP, false otherwise. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>No allocation; fast string check. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf8d4b6a3c291b6ebbb73c13743304b42" title="Validate and parse IP address string.">SocketCommon_parse_ip()</a> for family extraction. </dd></dl>
-
-</div>
-</div>
-<a id="ac37fe3d789eae0e522f29fca1ec49956" name="ac37fe3d789eae0e522f29fca1ec49956"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac37fe3d789eae0e522f29fca1ec49956">&#9670;&#160;</a></span>socketcommon_sanitize_timeout()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">int socketcommon_sanitize_timeout </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>timeout_ms</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Sanitize and clamp timeout value to valid range. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">timeout_ms</td><td>Raw timeout milliseconds (may be negative or excessive). </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Validated timeout: &gt;=0 clamped to INT_MAX, or -1 if invalid input. </dd></dl>
-<dl class="section note"><dt>Note</dt><dd>Applies library policy: negative -&gt; 0 (no timeout), huge -&gt; max int. </dd>
-<dd>
-Used in timeout setters to prevent overflow/underflow. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations.">SocketTimeouts_T</a>, <a class="el" href="SocketCommon-private_8h.html#a3ed109beae3f198d1714566573eb7366" title="Set socket-level timeout for I/O operations.">SocketCommon_settimeout()</a> </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gaf8d4b6a3c291b6ebbb73c13743304b42" title="Validate and parse IP address string.">SocketCommon_parse_ip()</a> for <a class="el" href="group__async__io.html#ga4417150d9f858949bd9ea8794995ebcc" title="Wrapper structure for resolved addresses in Happy Eyeballs address preference ordering.">family</a> extraction. </dd></dl>
 
 </div>
 </div>
@@ -807,7 +733,7 @@ Used in timeout setters to prevent overflow/underflow. </dd></dl>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Prevents fd inheritance across exec(); uses fcntl F_SETFD. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gad3eb3f6fe09b2b58693a7044631916d8" title="Set close-on-exec flag on file descriptor.">SocketCommon_setcloexec()</a> public variant. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#gad3eb3f6fe09b2b58693a7044631916d8" title="Set or clear the close-on-exec (CLOEXEC) flag on a file descriptor.">SocketCommon_setcloexec()</a> public variant. </dd></dl>
 
 </div>
 </div>

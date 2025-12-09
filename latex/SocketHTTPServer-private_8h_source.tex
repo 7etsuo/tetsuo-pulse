@@ -1,0 +1,190 @@
+\doxysection{Socket\+HTTPServer-\/private.h}
+\hypertarget{SocketHTTPServer-private_8h_source}{}\label{SocketHTTPServer-private_8h_source}\index{include/http/SocketHTTPServer-\/private.h@{include/http/SocketHTTPServer-\/private.h}}
+\mbox{\hyperlink{SocketHTTPServer-private_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00027\ \textcolor{preprocessor}{\#ifndef\ SOCKETHTTPSERVER\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#define\ SOCKETHTTPSERVER\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00029\ }
+\DoxyCodeLine{00030\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTPServer_8h}{SocketHTTPServer.h}}"{}}}
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}core/SocketIPTracker.h"{}}}
+\DoxyCodeLine{00032\ \textcolor{preprocessor}{\#include\ "{}core/SocketRateLimit.h"{}}}
+\DoxyCodeLine{00033\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHTTP1_8h}{http/SocketHTTP1.h}}"{}}}
+\DoxyCodeLine{00034\ \textcolor{preprocessor}{\#include\ "{}socket/SocketBuf.h"{}}}
+\DoxyCodeLine{00035\ \textcolor{preprocessor}{\#include\ <pthread.h>}}
+\DoxyCodeLine{00036\ }
+\DoxyCodeLine{00037\ \textcolor{comment}{/*\ Internal\ types\ */}}
+\DoxyCodeLine{00038\ }
+\DoxyCodeLine{00039\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structRateLimitEntry}{RateLimitEntry}}}
+\DoxyCodeLine{00040\ \{}
+\DoxyCodeLine{00041\ \ \ \textcolor{keywordtype}{char}\ *path\_prefix;}
+\DoxyCodeLine{00042\ \ \ SocketRateLimit\_T\ limiter;}
+\DoxyCodeLine{00043\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structRateLimitEntry}{RateLimitEntry}}\ *next;}
+\DoxyCodeLine{00044\ \}\ \mbox{\hyperlink{structRateLimitEntry}{RateLimitEntry}};}
+\DoxyCodeLine{00045\ }
+\DoxyCodeLine{00046\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{enum}}
+\DoxyCodeLine{00047\ \{}
+\DoxyCodeLine{00048\ \ \ CONN\_STATE\_READING\_REQUEST,}
+\DoxyCodeLine{00049\ \ \ CONN\_STATE\_READING\_BODY,}
+\DoxyCodeLine{00050\ \ \ CONN\_STATE\_HANDLING,}
+\DoxyCodeLine{00051\ \ \ CONN\_STATE\_STREAMING\_RESPONSE,}
+\DoxyCodeLine{00052\ \ \ CONN\_STATE\_SENDING\_RESPONSE,}
+\DoxyCodeLine{00053\ \ \ CONN\_STATE\_CLOSED}
+\DoxyCodeLine{00054\ \}\ ServerConnState;}
+\DoxyCodeLine{00055\ }
+\DoxyCodeLine{00056\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structServerConnection}{ServerConnection}}}
+\DoxyCodeLine{00057\ \{}
+\DoxyCodeLine{00058\ \ \ Socket\_T\ socket;}
+\DoxyCodeLine{00059\ \ \ \textcolor{keywordtype}{char}\ client\_addr[HTTPSERVER\_CLIENT\_ADDR\_MAX];}
+\DoxyCodeLine{00060\ }
+\DoxyCodeLine{00061\ \ \ ServerConnState\ state;}
+\DoxyCodeLine{00062\ \ \ \mbox{\hyperlink{structSocketHTTP1__Parser}{SocketHTTP1\_Parser\_T}}\ parser;}
+\DoxyCodeLine{00063\ \ \ SocketBuf\_T\ inbuf;}
+\DoxyCodeLine{00064\ \ \ SocketBuf\_T\ outbuf;}
+\DoxyCodeLine{00065\ }
+\DoxyCodeLine{00066\ \ \ \textcolor{comment}{/*\ Request\ data\ */}}
+\DoxyCodeLine{00067\ \ \ \textcolor{keyword}{const}\ \mbox{\hyperlink{structSocketHTTP__Request}{SocketHTTP\_Request}}\ *request;}
+\DoxyCodeLine{00068\ \ \ \textcolor{keywordtype}{void}\ *body;}
+\DoxyCodeLine{00069\ \ \ \textcolor{keywordtype}{size\_t}\ body\_len;}
+\DoxyCodeLine{00070\ \ \ \textcolor{keywordtype}{size\_t}\ body\_capacity;}
+\DoxyCodeLine{00071\ \ \ \mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{SocketHTTP1\_BodyMode}}\ body\_mode;\ \textcolor{comment}{/*\ Body\ transfer\ mode\ for\ processing\ */}}
+\DoxyCodeLine{00072\ \ \ \textcolor{keywordtype}{size\_t}\ body\_received;}
+\DoxyCodeLine{00073\ }
+\DoxyCodeLine{00074\ \ \ \textcolor{comment}{/*\ Request\ body\ streaming\ */}}
+\DoxyCodeLine{00075\ \ \ \mbox{\hyperlink{SocketHTTPServer_8h_ab347055b7285aedad5fa0f504c3a655e}{SocketHTTPServer\_BodyCallback}}\ body\_callback;}
+\DoxyCodeLine{00076\ \ \ \textcolor{keywordtype}{void}\ *body\_callback\_userdata;}
+\DoxyCodeLine{00077\ \ \ \textcolor{keywordtype}{int}\ body\_streaming;}
+\DoxyCodeLine{00078\ }
+\DoxyCodeLine{00079\ \ \ \textcolor{comment}{/*\ Response\ data\ */}}
+\DoxyCodeLine{00080\ \ \ \textcolor{keywordtype}{int}\ response\_status;}
+\DoxyCodeLine{00081\ \ \ \mbox{\hyperlink{structSocketHTTP__Headers}{SocketHTTP\_Headers\_T}}\ response\_headers;}
+\DoxyCodeLine{00082\ \ \ \textcolor{keywordtype}{void}\ *response\_body;}
+\DoxyCodeLine{00083\ \ \ \textcolor{keywordtype}{size\_t}\ response\_body\_len;}
+\DoxyCodeLine{00084\ \ \ \textcolor{keywordtype}{int}\ response\_finished;}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00086\ \ \ \textcolor{comment}{/*\ Response\ streaming\ */}}
+\DoxyCodeLine{00087\ \ \ \textcolor{keywordtype}{int}\ response\_streaming;}
+\DoxyCodeLine{00088\ \ \ \textcolor{keywordtype}{int}\ response\_headers\_sent;}
+\DoxyCodeLine{00089\ }
+\DoxyCodeLine{00090\ \ \ \textcolor{comment}{/*\ Connection\ metadata\ */}}
+\DoxyCodeLine{00091\ \ \ int64\_t\ created\_at\_ms;}
+\DoxyCodeLine{00092\ \ \ int64\_t\ last\_activity\_ms;}
+\DoxyCodeLine{00093\ \ \ int64\_t\ request\_start\_ms;}
+\DoxyCodeLine{00094\ \ \ int64\_t\ response\_start\_ms;}
+\DoxyCodeLine{00095\ \ \ \textcolor{keywordtype}{size\_t}\ request\_count;}
+\DoxyCodeLine{00096\ \ \ \textcolor{keywordtype}{size\_t}\ active\_requests;\ \textcolor{comment}{/*\ For\ HTTP/2\ multiplexing\ */}}
+\DoxyCodeLine{00097\ }
+\DoxyCodeLine{00098\ \ \ \textcolor{comment}{/*\ Memory\ tracking\ */}}
+\DoxyCodeLine{00099\ \ \ \textcolor{keywordtype}{size\_t}\ memory\_used;\ \textcolor{comment}{/*\ Total\ bytes\ allocated\ for\ this\ connection\ */}}
+\DoxyCodeLine{00100\ }
+\DoxyCodeLine{00101\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00102\ }
+\DoxyCodeLine{00103\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *next;}
+\DoxyCodeLine{00104\ \ \ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *prev;}
+\DoxyCodeLine{00105\ \}\ \mbox{\hyperlink{structServerConnection}{ServerConnection}};}
+\DoxyCodeLine{00106\ }
+\DoxyCodeLine{00107\ \textcolor{comment}{/*\ Internal\ request\ struct\ -\/\ opaque\ to\ users\ */}}
+\DoxyCodeLine{00108\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPServer__Request}{SocketHTTPServer\_Request}}}
+\DoxyCodeLine{00109\ \{}
+\DoxyCodeLine{00110\ \ \ \mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server;}
+\DoxyCodeLine{00111\ \ \ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn;}
+\DoxyCodeLine{00112\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00113\ \ \ int64\_t\ start\_time\_ms;}
+\DoxyCodeLine{00114\ \};}
+\DoxyCodeLine{00115\ }
+\DoxyCodeLine{00116\ \textcolor{comment}{/*\ LatencyTracker\ removed\ -\/\ use\ SocketMetrics\ histograms\ */}}
+\DoxyCodeLine{00117\ }
+\DoxyCodeLine{00118\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer}}}
+\DoxyCodeLine{00119\ \{}
+\DoxyCodeLine{00120\ \ \ \mbox{\hyperlink{structSocketHTTPServer__Config}{SocketHTTPServer\_Config}}\ config;}
+\DoxyCodeLine{00121\ }
+\DoxyCodeLine{00122\ \ \ Socket\_T\ listen\_socket;}
+\DoxyCodeLine{00123\ \ \ SocketPoll\_T\ poll;}
+\DoxyCodeLine{00124\ }
+\DoxyCodeLine{00125\ \ \ \textcolor{comment}{/*\ Callbacks\ */}}
+\DoxyCodeLine{00126\ \ \ \mbox{\hyperlink{SocketHTTPServer_8h_a8805b706921b37e2e91e68a861ddc97c}{SocketHTTPServer\_Handler}}\ handler;}
+\DoxyCodeLine{00127\ \ \ \textcolor{keywordtype}{void}\ *handler\_userdata;}
+\DoxyCodeLine{00128\ \ \ \mbox{\hyperlink{SocketHTTPServer_8h_ab095eb6d03d06f9c1d8041dc3aa56094}{SocketHTTPServer\_Validator}}\ validator;}
+\DoxyCodeLine{00129\ \ \ \textcolor{keywordtype}{void}\ *validator\_userdata;}
+\DoxyCodeLine{00130\ \ \ \mbox{\hyperlink{SocketHTTPServer_8h_a6eeba038caf0b48d3ae3527155ab8162}{SocketHTTPServer\_DrainCallback}}\ drain\_callback;}
+\DoxyCodeLine{00131\ \ \ \textcolor{keywordtype}{void}\ *drain\_callback\_userdata;}
+\DoxyCodeLine{00132\ }
+\DoxyCodeLine{00133\ \ \ \textcolor{comment}{/*\ Connections\ */}}
+\DoxyCodeLine{00134\ \ \ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *connections;}
+\DoxyCodeLine{00135\ \ \ \textcolor{keywordtype}{size\_t}\ connection\_count;}
+\DoxyCodeLine{00136\ }
+\DoxyCodeLine{00137\ \ \ \textcolor{comment}{/*\ Rate\ limiting\ */}}
+\DoxyCodeLine{00138\ \ \ \mbox{\hyperlink{structRateLimitEntry}{RateLimitEntry}}\ *rate\_limiters;}
+\DoxyCodeLine{00139\ \ \ SocketRateLimit\_T\ global\_rate\_limiter;}
+\DoxyCodeLine{00140\ }
+\DoxyCodeLine{00141\ \ \ \textcolor{comment}{/*\ Per-\/client\ limiting\ */}}
+\DoxyCodeLine{00142\ \ \ SocketIPTracker\_T\ ip\_tracker;}
+\DoxyCodeLine{00143\ }
+\DoxyCodeLine{00144\ \ \ \textcolor{comment}{/*\ Graceful\ shutdown\ */}}
+\DoxyCodeLine{00145\ \ \ \textcolor{keyword}{volatile}\ \textcolor{keywordtype}{int}\ state;\ \textcolor{comment}{/*\ SocketHTTPServer\_State\ */}}
+\DoxyCodeLine{00146\ \ \ int64\_t\ drain\_start\_ms;}
+\DoxyCodeLine{00147\ \ \ \textcolor{keywordtype}{int}\ drain\_timeout\_ms;}
+\DoxyCodeLine{00148\ }
+\DoxyCodeLine{00149\ \ \ \textcolor{comment}{/*\ Per-\/server\ stats\ tracking\ for\ RPS\ calculation\ (thread-\/safe\ via}}
+\DoxyCodeLine{00150\ \textcolor{comment}{\ \ \ *\ single-\/thread\ poll\ assumption)\ */}}
+\DoxyCodeLine{00151\ \ \ uint64\_t\ stats\_prev\_requests;}
+\DoxyCodeLine{00152\ \ \ int64\_t\ stats\_prev\_time\_ms;}
+\DoxyCodeLine{00153\ \ \ pthread\_mutex\_t\ stats\_mutex;\ \textcolor{comment}{/*\ Protect\ RPS\ calc\ if\ multi-\/threaded\ */}}
+\DoxyCodeLine{00154\ }
+\DoxyCodeLine{00155\ \ \ \textcolor{comment}{/*\ Statistics\ moved\ to\ SocketMetrics\_*\ (counters,\ gauges,\ histograms)}}
+\DoxyCodeLine{00156\ \textcolor{comment}{\ \ \ *\ Query\ via\ SocketMetrics\_get()\ or\ specific\ functions\ in\ stats\ API\ */}}
+\DoxyCodeLine{00157\ }
+\DoxyCodeLine{00158\ \ \ \textcolor{comment}{/*\ Latency\ tracking\ moved\ to\ SocketMetrics}}
+\DoxyCodeLine{00159\ \textcolor{comment}{\ \ \ *\ (SOCKET\_HIST\_HTTP\_SERVER\_REQUEST\_LATENCY\_MS)\ */}}
+\DoxyCodeLine{00160\ }
+\DoxyCodeLine{00161\ \ \ \textcolor{comment}{/*\ No\ custom\ mutex\ -\/\ SocketMetrics\ handles\ thread\ safety\ internally\ */}}
+\DoxyCodeLine{00162\ }
+\DoxyCodeLine{00163\ \ \ \textcolor{keywordtype}{int}\ running;}
+\DoxyCodeLine{00164\ \ \ Arena\_T\ arena;}
+\DoxyCodeLine{00165\ \};}
+\DoxyCodeLine{00166\ }
+\DoxyCodeLine{00167\ \textcolor{comment}{/*\ STATS\ macros\ removed\ -\/\ replace\ with\ SocketMetrics\_counter\_inc/gauge\_inc\ etc.}}
+\DoxyCodeLine{00168\ \textcolor{comment}{\ *\ calls\ Examples:}}
+\DoxyCodeLine{00169\ \textcolor{comment}{\ *\ \ \ SocketMetrics\_counter\_inc(SOCKET\_CTR\_HTTP\_SERVER\_REQUESTS\_TOTAL);}}
+\DoxyCodeLine{00170\ \textcolor{comment}{\ *\ \ \ SocketMetrics\_gauge\_inc(SOCKET\_GAU\_HTTP\_SERVER\_ACTIVE\_CONNECTIONS);}}
+\DoxyCodeLine{00171\ \textcolor{comment}{\ *\ \ \ SocketMetrics\_counter\_add(SOCKET\_CTR\_HTTP\_SERVER\_BYTES\_SENT,\ bytes);}}
+\DoxyCodeLine{00172\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00173\ }
+\DoxyCodeLine{00174\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00175\ \textcolor{comment}{\ *\ Error\ Handling\ Macros}}
+\DoxyCodeLine{00176\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00177\ \textcolor{comment}{\ *}}
+\DoxyCodeLine{00178\ \textcolor{comment}{\ *\ Centralized\ for\ consistency\ across\ split\ files.}}
+\DoxyCodeLine{00179\ \textcolor{comment}{\ *\ Uses\ socket\_error\_buf\ (thread-\/local)\ for\ messages.}}
+\DoxyCodeLine{00180\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00181\ \textcolor{preprocessor}{\#define\ HTTPSERVER\_ERROR\_FMT(fmt,\ ...)\ SOCKET\_ERROR\_FMT\ (fmt,\ \#\#\_\_VA\_ARGS\_\_)}}
+\DoxyCodeLine{00182\ \textcolor{preprocessor}{\#define\ HTTPSERVER\_ERROR\_MSG(fmt,\ ...)\ SOCKET\_ERROR\_MSG\ (fmt,\ \#\#\_\_VA\_ARGS\_\_)}}
+\DoxyCodeLine{00183\ }
+\DoxyCodeLine{00184\ \textcolor{preprocessor}{\#define\ RAISE\_HTTPSERVER\_ERROR(e)\ SOCKET\_RAISE\_MODULE\_ERROR\ (HTTPServer,\ e)}}
+\DoxyCodeLine{00185\ }
+\DoxyCodeLine{00186\ \textcolor{comment}{/*\ Internal\ helper\ functions\ -\/\ declared\ here\ for\ split\ files\ */}}
+\DoxyCodeLine{00187\ }
+\DoxyCodeLine{00188\ \textcolor{comment}{/*\ Connection\ management\ */}}
+\DoxyCodeLine{00189\ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *connection\_new\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,\ Socket\_T\ socket);}
+\DoxyCodeLine{00190\ \textcolor{keywordtype}{void}\ connection\_close\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,\ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00191\ \textcolor{keywordtype}{int}\ connection\_read\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,\ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00192\ \textcolor{keywordtype}{int}\ connection\_send\_data\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,\ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn,}
+\DoxyCodeLine{00193\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{void}\ *data,\ \textcolor{keywordtype}{size\_t}\ len);}
+\DoxyCodeLine{00194\ \textcolor{keywordtype}{void}\ connection\_reset\_for\_keepalive\ (\mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00195\ \textcolor{keywordtype}{void}\ connection\_finish\_request\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,}
+\DoxyCodeLine{00196\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00197\ \textcolor{keywordtype}{int}\ connection\_parse\_request\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,}
+\DoxyCodeLine{00198\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00199\ \textcolor{keywordtype}{void}\ connection\_send\_response\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,}
+\DoxyCodeLine{00200\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn);}
+\DoxyCodeLine{00201\ \textcolor{keywordtype}{void}\ connection\_send\_error\ (\mbox{\hyperlink{structSocketHTTPServer}{SocketHTTPServer\_T}}\ server,\ \mbox{\hyperlink{structServerConnection}{ServerConnection}}\ *conn,}
+\DoxyCodeLine{00202\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{int}\ status,\ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *body);}
+\DoxyCodeLine{00203\ }
+\DoxyCodeLine{00204\ \textcolor{comment}{/*\ Latency\ tracking\ removed\ -\/\ use\ SocketMetrics\ histograms\ instead:}}
+\DoxyCodeLine{00205\ \textcolor{comment}{\ *\ \ \ SocketMetrics\_histogram\_observe(SOCKET\_HIST\_HTTP\_SERVER\_REQUEST\_LATENCY\_MS,}}
+\DoxyCodeLine{00206\ \textcolor{comment}{\ *\ latency);}}
+\DoxyCodeLine{00207\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00208\ }
+\DoxyCodeLine{00209\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHTTPSERVER\_PRIVATE\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

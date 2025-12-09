@@ -1,0 +1,52 @@
+\doxysection{Socket\+HTTP2\+\_\+\+Frame\+Header Struct Reference}
+\hypertarget{structSocketHTTP2__FrameHeader}{}\label{structSocketHTTP2__FrameHeader}\index{SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}}
+
+
+{\ttfamily \#include $<$Socket\+HTTP2.\+h$>$}
+
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__FrameHeader_a2bed570c22bd36b3e61a4b6e1e0b8033}{length}}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{structSocketHTTP2__FrameHeader_a55fab70be967b0da3d407a27ba926711}{type}}
+\item 
+uint8\+\_\+t \mbox{\hyperlink{structSocketHTTP2__FrameHeader_a4008ece540896b7489aff8776f970b79}{flags}}
+\item 
+uint32\+\_\+t \mbox{\hyperlink{structSocketHTTP2__FrameHeader_a65726cc5062e6479d5e204997395cf31}{stream\+\_\+id}}
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HTTP/2 frame header (9 bytes on wire) 
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{structSocketHTTP2__FrameHeader_a4008ece540896b7489aff8776f970b79}\label{structSocketHTTP2__FrameHeader_a4008ece540896b7489aff8776f970b79} 
+\index{SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}!flags@{flags}}
+\index{flags@{flags}!SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}}
+\doxysubsubsection{\texorpdfstring{flags}{flags}}
+{\footnotesize\ttfamily uint8\+\_\+t Socket\+HTTP2\+\_\+\+Frame\+Header\+::flags}
+
+Frame flags \Hypertarget{structSocketHTTP2__FrameHeader_a2bed570c22bd36b3e61a4b6e1e0b8033}\label{structSocketHTTP2__FrameHeader_a2bed570c22bd36b3e61a4b6e1e0b8033} 
+\index{SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}!length@{length}}
+\index{length@{length}!SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}}
+\doxysubsubsection{\texorpdfstring{length}{length}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Frame\+Header\+::length}
+
+24-\/bit payload length \Hypertarget{structSocketHTTP2__FrameHeader_a65726cc5062e6479d5e204997395cf31}\label{structSocketHTTP2__FrameHeader_a65726cc5062e6479d5e204997395cf31} 
+\index{SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}!stream\_id@{stream\_id}}
+\index{stream\_id@{stream\_id}!SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}}
+\doxysubsubsection{\texorpdfstring{stream\_id}{stream\_id}}
+{\footnotesize\ttfamily uint32\+\_\+t Socket\+HTTP2\+\_\+\+Frame\+Header\+::stream\+\_\+id}
+
+31-\/bit stream ID (R bit reserved) \Hypertarget{structSocketHTTP2__FrameHeader_a55fab70be967b0da3d407a27ba926711}\label{structSocketHTTP2__FrameHeader_a55fab70be967b0da3d407a27ba926711} 
+\index{SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}!type@{type}}
+\index{type@{type}!SocketHTTP2\_FrameHeader@{SocketHTTP2\_FrameHeader}}
+\doxysubsubsection{\texorpdfstring{type}{type}}
+{\footnotesize\ttfamily uint8\+\_\+t Socket\+HTTP2\+\_\+\+Frame\+Header\+::type}
+
+Frame type 
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTP2_8h}{Socket\+HTTP2.\+h}}\end{DoxyCompactItemize}

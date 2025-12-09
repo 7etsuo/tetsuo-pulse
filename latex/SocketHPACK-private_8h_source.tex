@@ -1,0 +1,164 @@
+\doxysection{Socket\+HPACK-\/private.h}
+\hypertarget{SocketHPACK-private_8h_source}{}\label{SocketHPACK-private_8h_source}\index{include/http/SocketHPACK-\/private.h@{include/http/SocketHPACK-\/private.h}}
+\mbox{\hyperlink{SocketHPACK-private_8h}{Go to the documentation of this file.}}
+\begin{DoxyCode}{0}
+\DoxyCodeLine{00001\ }
+\DoxyCodeLine{00025\ \textcolor{preprocessor}{\#ifndef\ SOCKETHPACK\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00026\ \textcolor{preprocessor}{\#define\ SOCKETHPACK\_PRIVATE\_INCLUDED}}
+\DoxyCodeLine{00027\ }
+\DoxyCodeLine{00028\ \textcolor{preprocessor}{\#include\ "{}\mbox{\hyperlink{SocketHPACK_8h}{http/SocketHPACK.h}}"{}}}
+\DoxyCodeLine{00029\ \textcolor{preprocessor}{\#include\ <stdint.h>}}
+\DoxyCodeLine{00030\ }
+\DoxyCodeLine{00031\ \textcolor{preprocessor}{\#include\ "{}core/SocketSecurity.h"{}}}
+\DoxyCodeLine{00032\ }
+\DoxyCodeLine{00033\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00034\ \textcolor{comment}{\ *\ Internal\ Constants}}
+\DoxyCodeLine{00035\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00036\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00037\ }
+\DoxyCodeLine{00040\ \textcolor{preprocessor}{\#define\ HPACK\_AVERAGE\_DYNAMIC\_ENTRY\_SIZE\ 50}}
+\DoxyCodeLine{00041\ }
+\DoxyCodeLine{00043\ \textcolor{preprocessor}{\#define\ HPACK\_MIN\_DYNAMIC\_TABLE\_CAPACITY\ 16}}
+\DoxyCodeLine{00044\ }
+\DoxyCodeLine{00046\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_SYMBOLS\ 257}}
+\DoxyCodeLine{00047\ }
+\DoxyCodeLine{00049\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_EOS\ 256}}
+\DoxyCodeLine{00050\ }
+\DoxyCodeLine{00052\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_MAX\_BITS\ 30}}
+\DoxyCodeLine{00053\ }
+\DoxyCodeLine{00055\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_NUM\_STATES\ 256}}
+\DoxyCodeLine{00056\ }
+\DoxyCodeLine{00058\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_STATE\_ERROR\ 0xFF}}
+\DoxyCodeLine{00059\ }
+\DoxyCodeLine{00061\ \textcolor{preprocessor}{\#define\ HPACK\_HUFFMAN\_STATE\_ACCEPT\ 0xFE}}
+\DoxyCodeLine{00062\ }
+\DoxyCodeLine{00063\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00064\ \textcolor{comment}{\ *\ Dynamic\ Table\ Entry}}
+\DoxyCodeLine{00065\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00066\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00067\ }
+\DoxyCodeLine{00073\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00074\ \{}
+\DoxyCodeLine{00075\ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structHPACK__DynamicEntry_aaf38824aa9d15e2897bc4175df8cf174}{name}};\ \ \ \ \ \ \ }
+\DoxyCodeLine{00076\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHPACK__DynamicEntry_ae5cff4f699f7bc99322b1b05cc0a941c}{name\_len}};\ \ }
+\DoxyCodeLine{00077\ \ \ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structHPACK__DynamicEntry_a0c2ef0e32af91b0095cb1d4e2b68640a}{value}};\ \ \ \ \ \ }
+\DoxyCodeLine{00078\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structHPACK__DynamicEntry_ae5a6402faf5340e8f53e13371ccb8b34}{value\_len}};\ }
+\DoxyCodeLine{00079\ \}\ \mbox{\hyperlink{structHPACK__DynamicEntry}{HPACK\_DynamicEntry}};}
+\DoxyCodeLine{00080\ }
+\DoxyCodeLine{00081\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00082\ \textcolor{comment}{\ *\ Dynamic\ Table\ Structure}}
+\DoxyCodeLine{00083\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00084\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00085\ }
+\DoxyCodeLine{00093\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHPACK__Table}{SocketHPACK\_Table}}}
+\DoxyCodeLine{00094\ \{}
+\DoxyCodeLine{00095\ \ \ \mbox{\hyperlink{structHPACK__DynamicEntry}{HPACK\_DynamicEntry}}\ *\mbox{\hyperlink{structSocketHPACK__Table_a42be0865f9c8be94ed027dd613bd4f02}{entries}};\ }
+\DoxyCodeLine{00096\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_a952e2c6d39cda8a680917237a911a676}{capacity}};\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00097\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_a35d5080a3a9243cb7f7a1e29bddd3f63}{head}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00098\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_a9791f6178c063ad2a3fc5aa53b57b743}{tail}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00099\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_a840d2c5efda1206bb3fd1dd99d558517}{count}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00100\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_adbeb52c58a4789a850f2bab11ebe601e}{size}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00101\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Table_a3eb19d08471e69513198dfe037f87cc1}{max\_size}};\ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00102\ \ \ Arena\_T\ \mbox{\hyperlink{structSocketHPACK__Table_a35bc52db4aa6f3a14f20ea4c4f654ff6}{arena}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00103\ \};}
+\DoxyCodeLine{00104\ }
+\DoxyCodeLine{00105\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00106\ \textcolor{comment}{\ *\ Encoder\ Structure}}
+\DoxyCodeLine{00107\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00108\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00109\ }
+\DoxyCodeLine{00113\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHPACK__Encoder}{SocketHPACK\_Encoder}}}
+\DoxyCodeLine{00114\ \{}
+\DoxyCodeLine{00115\ \ \ \mbox{\hyperlink{structSocketHPACK__Table}{SocketHPACK\_Table\_T}}\ \mbox{\hyperlink{structSocketHPACK__Encoder_a0dcf583c9ed3343340fe5a35ac55b43d}{table}};\ \ \ \ \ }
+\DoxyCodeLine{00116\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Encoder_a8a7d4d8a46968add02f2db1f1409eed5}{pending\_table\_size}};\ \ \ \ \ }
+\DoxyCodeLine{00117\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHPACK__Encoder_aee663c87a5240baa38199ff4607e867b}{pending\_table\_size\_update}};\ }
+\DoxyCodeLine{00118\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHPACK__Encoder_a18863733e542a1dff583d9ed666d9e74}{huffman\_encode}};\ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00119\ \ \ \textcolor{keywordtype}{int}\ \mbox{\hyperlink{structSocketHPACK__Encoder_aa3ba523fe1635a7d05c2255a2c759732}{use\_indexing}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00120\ \ \ Arena\_T\ \mbox{\hyperlink{structSocketHPACK__Encoder_aaf00c1e87eb6261ca23d06a18d07213b}{arena}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00121\ \};}
+\DoxyCodeLine{00122\ }
+\DoxyCodeLine{00123\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00124\ \textcolor{comment}{\ *\ Decoder\ Structure}}
+\DoxyCodeLine{00125\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00126\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00127\ }
+\DoxyCodeLine{00131\ \textcolor{keyword}{struct\ }\mbox{\hyperlink{structSocketHPACK__Decoder}{SocketHPACK\_Decoder}}}
+\DoxyCodeLine{00132\ \{}
+\DoxyCodeLine{00133\ \ \ \mbox{\hyperlink{structSocketHPACK__Table}{SocketHPACK\_Table\_T}}\ \mbox{\hyperlink{structSocketHPACK__Decoder_a8dd2c1243711c74bb5f3957b6c1d4291}{table}};\ \ \ \ \ \ }
+\DoxyCodeLine{00134\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Decoder_a194dd06dc6446308c490e95eb4d867b6}{max\_header\_size}};\ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00135\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Decoder_abb3d83767bc2130e81199e0ffe201fd8}{max\_header\_list\_size}};\ \ \ \ }
+\DoxyCodeLine{00136\ \ \ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{structSocketHPACK__Decoder_ab42953feca789bb66e7bd21364abfc23}{settings\_max\_table\_size}};\ }
+\DoxyCodeLine{00137\ \ \ Arena\_T\ \mbox{\hyperlink{structSocketHPACK__Decoder_a965791d356e251537bbdde4c68b1141f}{arena}};\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00139\ \ \ \textcolor{comment}{/*\ Decompression\ bomb\ protection\ */}}
+\DoxyCodeLine{00140\ \ \ uint64\_t\ \mbox{\hyperlink{structSocketHPACK__Decoder_a3119e7b6178e0e4ca028bca8795ec4d7}{decode\_input\_bytes}};\ \ }
+\DoxyCodeLine{00142\ \ \ uint64\_t\ \mbox{\hyperlink{structSocketHPACK__Decoder_a6c331a59385db826d299e6f63c763e89}{decode\_output\_bytes}};\ }
+\DoxyCodeLine{00144\ \ \ \textcolor{keywordtype}{double}\ \mbox{\hyperlink{structSocketHPACK__Decoder_ac422792522b6ca5c498ceadad095df54}{max\_expansion\_ratio}};\ \ \ }
+\DoxyCodeLine{00146\ \};}
+\DoxyCodeLine{00147\ }
+\DoxyCodeLine{00148\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00149\ \textcolor{comment}{\ *\ Static\ Table\ Entry}}
+\DoxyCodeLine{00150\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00151\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00152\ }
+\DoxyCodeLine{00157\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00158\ \{}
+\DoxyCodeLine{00159\ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structHPACK__StaticEntry_a49643b573332398ec78e425dc5e3e980}{name}};\ \ }
+\DoxyCodeLine{00160\ \ \ \textcolor{keyword}{const}\ \textcolor{keywordtype}{char}\ *\mbox{\hyperlink{structHPACK__StaticEntry_ad0e5ee57a7c3de1e823b3d43b5b647a0}{value}};\ }
+\DoxyCodeLine{00161\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__StaticEntry_af6a73615ec19eadf253cb4fa8cc034f9}{name\_len}};\ \ }
+\DoxyCodeLine{00162\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__StaticEntry_a73f42f0a717d6d4e4f8c38845a001ea7}{value\_len}};\ }
+\DoxyCodeLine{00163\ \}\ \mbox{\hyperlink{structHPACK__StaticEntry}{HPACK\_StaticEntry}};}
+\DoxyCodeLine{00164\ }
+\DoxyCodeLine{00165\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00166\ \textcolor{comment}{\ *\ Huffman\ Tables\ (defined\ in\ SocketHPACK-\/huffman.c)}}
+\DoxyCodeLine{00167\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00168\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00169\ }
+\DoxyCodeLine{00173\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00174\ \{}
+\DoxyCodeLine{00175\ \ \ uint32\_t\ \mbox{\hyperlink{structHPACK__HuffmanSymbol_ab8f97d8476a1a8b8a464ff039bf7d4f8}{code}};\ }
+\DoxyCodeLine{00176\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__HuffmanSymbol_af601652287a777c885cfed6c61046257}{bits}};\ \ }
+\DoxyCodeLine{00177\ \}\ \mbox{\hyperlink{structHPACK__HuffmanSymbol}{HPACK\_HuffmanSymbol}};}
+\DoxyCodeLine{00178\ }
+\DoxyCodeLine{00184\ \textcolor{keyword}{typedef}\ \textcolor{keyword}{struct}}
+\DoxyCodeLine{00185\ \{}
+\DoxyCodeLine{00186\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__HuffmanTransition_a26f953198c6ca62e58fafbfbdb65ed9d}{next\_state}};\ }
+\DoxyCodeLine{00187\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__HuffmanTransition_a4d1e72ef25a0ef39679a5931d7665b70}{flags}};\ \ \ \ \ \ }
+\DoxyCodeLine{00188\ \ \ uint8\_t\ \mbox{\hyperlink{structHPACK__HuffmanTransition_ac2555f64670eb57686cd77bb36676b1f}{sym}};\ \ \ \ \ \ \ \ }
+\DoxyCodeLine{00189\ \}\ \mbox{\hyperlink{structHPACK__HuffmanTransition}{HPACK\_HuffmanTransition}};}
+\DoxyCodeLine{00190\ }
+\DoxyCodeLine{00192\ \textcolor{preprocessor}{\#define\ HPACK\_DFA\_ACCEPT\ 0x01\ }}
+\DoxyCodeLine{00193\ \textcolor{preprocessor}{\#define\ HPACK\_DFA\_EOS\ 0x02\ \ \ \ }}
+\DoxyCodeLine{00194\ \textcolor{preprocessor}{\#define\ HPACK\_DFA\_ERROR\ 0x04\ \ }}
+\DoxyCodeLine{00195\ \textcolor{preprocessor}{\#define\ HPACK\_DFA\_SYM2\ 0x08\ \ \ }}
+\DoxyCodeLine{00197\ \textcolor{comment}{/*\ External\ declarations\ for\ Huffman\ tables\ */}}
+\DoxyCodeLine{00198\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structHPACK__HuffmanSymbol}{HPACK\_HuffmanSymbol}}\ hpack\_huffman\_encode[\mbox{\hyperlink{SocketHPACK-private_8h_a83188dc49cbbf3579289e6e4fb7aae0e}{HPACK\_HUFFMAN\_SYMBOLS}}];}
+\DoxyCodeLine{00199\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structHPACK__HuffmanTransition}{HPACK\_HuffmanTransition}}}
+\DoxyCodeLine{00200\ \ \ \ \ hpack\_huffman\_decode[\mbox{\hyperlink{SocketHPACK-private_8h_a9bec6ff24fdb0960bbd7b095b0f52fff}{HPACK\_HUFFMAN\_NUM\_STATES}}][16];}
+\DoxyCodeLine{00201\ }
+\DoxyCodeLine{00202\ \textcolor{comment}{/*\ External\ declaration\ for\ static\ table\ */}}
+\DoxyCodeLine{00203\ \textcolor{keyword}{extern}\ \textcolor{keyword}{const}\ \mbox{\hyperlink{structHPACK__StaticEntry}{HPACK\_StaticEntry}}}
+\DoxyCodeLine{00204\ \ \ \ \ hpack\_static\_table[\mbox{\hyperlink{SocketHPACK_8h_a09450c50e4284b2cdc1613f7f8062752}{SOCKETHPACK\_STATIC\_TABLE\_SIZE}}];}
+\DoxyCodeLine{00205\ }
+\DoxyCodeLine{00206\ \textcolor{comment}{/*\ ============================================================================}}
+\DoxyCodeLine{00207\ \textcolor{comment}{\ *\ Internal\ Functions}}
+\DoxyCodeLine{00208\ \textcolor{comment}{\ *\ ============================================================================}}
+\DoxyCodeLine{00209\ \textcolor{comment}{\ */}}
+\DoxyCodeLine{00210\ }
+\DoxyCodeLine{00218\ \textcolor{keyword}{extern}\ \textcolor{keywordtype}{size\_t}\ \mbox{\hyperlink{SocketHPACK-private_8h_ac25f68940182c09fbe7f99e847b9f34f}{hpack\_table\_evict}}\ (\mbox{\hyperlink{structSocketHPACK__Table}{SocketHPACK\_Table\_T}}\ table,}
+\DoxyCodeLine{00219\ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \textcolor{keywordtype}{size\_t}\ required\_space);}
+\DoxyCodeLine{00220\ }
+\DoxyCodeLine{00228\ \textcolor{keyword}{static}\ \textcolor{keyword}{inline}\ \textcolor{keywordtype}{size\_t}}
+\DoxyCodeLine{00229\ hpack\_entry\_size\ (\textcolor{keywordtype}{size\_t}\ name\_len,\ \textcolor{keywordtype}{size\_t}\ value\_len)}
+\DoxyCodeLine{00230\ \{}
+\DoxyCodeLine{00231\ \ \ \textcolor{keywordtype}{size\_t}\ temp;}
+\DoxyCodeLine{00232\ \ \ \textcolor{keywordflow}{if}\ (SocketSecurity\_check\_add\ (name\_len,\ value\_len,\ \&temp)}
+\DoxyCodeLine{00233\ \ \ \ \ \ \ \&\&\ SocketSecurity\_check\_add\ (temp,\ \mbox{\hyperlink{SocketHPACK_8h_a08c1b9076dbeb65dd345874ce9b51824}{SOCKETHPACK\_ENTRY\_OVERHEAD}},\ \&temp))}
+\DoxyCodeLine{00234\ \ \ \ \ \{}
+\DoxyCodeLine{00235\ \ \ \ \ \ \ \textcolor{keywordflow}{return}\ temp;}
+\DoxyCodeLine{00236\ \ \ \ \ \}}
+\DoxyCodeLine{00237\ \ \ \textcolor{keywordflow}{return}\ SIZE\_MAX;\ \textcolor{comment}{/*\ Overflow\ or\ invalid\ -\/\ caller\ should\ check\ */}}
+\DoxyCodeLine{00238\ \}}
+\DoxyCodeLine{00239\ }
+\DoxyCodeLine{00240\ \textcolor{preprocessor}{\#endif\ }\textcolor{comment}{/*\ SOCKETHPACK\_PRIVATE\_INCLUDED\ */}\textcolor{preprocessor}{}}
+
+\end{DoxyCode}

@@ -371,22 +371,22 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gaf25e213512222a83030da6049be7c659" id="r_gaf25e213512222a83030da6049be7c659"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaf25e213512222a83030da6049be7c659">SocketHTTP2_config_defaults</a> (<a class="el" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> *config, <a class="el" href="group__http2.html#gabdba00019b45cc844046f038c7c7d590">SocketHTTP2_Role</a> role)</td></tr>
-<tr class="memdesc:gaf25e213512222a83030da6049be7c659"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize config with RFC defaults.  <br /></td></tr>
+<tr class="memdesc:gaf25e213512222a83030da6049be7c659"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize HTTP/2 configuration with safe RFC-compliant defaults.  <br /></td></tr>
 <tr class="separator:gaf25e213512222a83030da6049be7c659"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaac497f685932335cce6c3868243edf3c" id="r_gaac497f685932335cce6c3868243edf3c"><td class="memItemLeft" align="right" valign="top">SocketHTTP2_Conn_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2_Conn_new</a> (Socket_T socket, const <a class="el" href="group__http2.html#structSocketHTTP2__Config">SocketHTTP2_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:gaac497f685932335cce6c3868243edf3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create HTTP/2 connection.  <br /></td></tr>
+<tr class="memdesc:gaac497f685932335cce6c3868243edf3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new HTTP/2 connection instance.  <br /></td></tr>
 <tr class="separator:gaac497f685932335cce6c3868243edf3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga13128ca7c1208a2a4694ea9926e2ff20" id="r_ga13128ca7c1208a2a4694ea9926e2ff20"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2_Conn_free</a> (SocketHTTP2_Conn_T *conn)</td></tr>
-<tr class="memdesc:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free connection and all streams.  <br /></td></tr>
+<tr class="memdesc:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of HTTP/2 connection and release all resources.  <br /></td></tr>
 <tr class="separator:ga13128ca7c1208a2a4694ea9926e2ff20"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga3d2680dfe3afbbf9c6e9f09dad9f91d0" id="r_ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga3d2680dfe3afbbf9c6e9f09dad9f91d0">SocketHTTP2_Conn_handshake</a> (SocketHTTP2_Conn_T conn)</td></tr>
-<tr class="memdesc:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform HTTP/2 connection preface.  <br /></td></tr>
+<tr class="memdesc:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete HTTP/2 connection preface and initial settings exchange.  <br /></td></tr>
 <tr class="separator:ga3d2680dfe3afbbf9c6e9f09dad9f91d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaecd0eb2455f15e9c9cea360331dcff5b" id="r_gaecd0eb2455f15e9c9cea360331dcff5b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2_Conn_process</a> (SocketHTTP2_Conn_T conn, unsigned events)</td></tr>
-<tr class="memdesc:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process incoming data.  <br /></td></tr>
+<tr class="memdesc:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process socket events and HTTP/2 frames.  <br /></td></tr>
 <tr class="separator:gaecd0eb2455f15e9c9cea360331dcff5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga667e2c409b1c71f702559904a823c6af" id="r_ga667e2c409b1c71f702559904a823c6af"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2_Conn_flush</a> (SocketHTTP2_Conn_T conn)</td></tr>
-<tr class="memdesc:ga667e2c409b1c71f702559904a823c6af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flush pending output.  <br /></td></tr>
+<tr class="memdesc:ga667e2c409b1c71f702559904a823c6af"><td class="mdescLeft">&#160;</td><td class="mdescRight">Flush pending HTTP/2 frames to socket.  <br /></td></tr>
 <tr class="separator:ga667e2c409b1c71f702559904a823c6af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab805b04d372fb6fdc75a5495d2cde2b2" id="r_gab805b04d372fb6fdc75a5495d2cde2b2"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2_Conn_socket</a> (SocketHTTP2_Conn_T conn)</td></tr>
 <tr class="memdesc:gab805b04d372fb6fdc75a5495d2cde2b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get underlying socket.  <br /></td></tr>
@@ -496,7 +496,7 @@ Functions</h2></td></tr>
 <tr class="memitem:ga57e81dab63e8dd6a94d9c2366b2cad61" id="r_ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga57e81dab63e8dd6a94d9c2366b2cad61">SocketHTTP2_frame_type_string</a> (<a class="el" href="group__http2.html#gaeb74330a70e149eb7b10547a6b83fa0a">SocketHTTP2_FrameType</a> type)</td></tr>
 <tr class="memdesc:ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get frame type name@type Frame type.  <br /></td></tr>
 <tr class="separator:ga57e81dab63e8dd6a94d9c2366b2cad61"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga1972e0a26eb71569d6d561bae3a85da8" id="r_ga1972e0a26eb71569d6d561bae3a85da8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8">SocketHTTP2_stream_state_string</a> (<a class="el" href="group__http2.html#ga6a90f4be9250fb7b967b5deefc0df5dc">SocketHTTP2_StreamState</a> state)</td></tr>
+<tr class="memitem:ga1972e0a26eb71569d6d561bae3a85da8" id="r_ga1972e0a26eb71569d6d561bae3a85da8"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8">SocketHTTP2_stream_state_string</a> (<a class="el" href="group__http2.html#ga6a90f4be9250fb7b967b5deefc0df5dc">SocketHTTP2_StreamState</a> <a class="el" href="SocketHappyEyeballs-private_8h.html#a701136b6320d53560cfe228535884502">state</a>)</td></tr>
 <tr class="memdesc:ga1972e0a26eb71569d6d561bae3a85da8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get stream state name@state Stream state.  <br /></td></tr>
 <tr class="separator:ga1972e0a26eb71569d6d561bae3a85da8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga439a2fd76b902c7218ea92c9cfd2a9c3" id="r_ga439a2fd76b902c7218ea92c9cfd2a9c3"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http2.html#ga439a2fd76b902c7218ea92c9cfd2a9c3">SocketHTTP2_frame_header_parse</a> (const unsigned char *data, size_t input_len, <a class="el" href="group__http2.html#structSocketHTTP2__FrameHeader">SocketHTTP2_FrameHeader</a> *header)</td></tr>
@@ -542,13 +542,13 @@ Variables</h2></td></tr>
 <li>Flow control window overflow prevention</li>
 <li>SETTINGS_TIMEOUT enforcement</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create HTTP/2 connection.">SocketHTTP2_Conn_new()</a> for creating HTTP/2 connections. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for creating HTTP/2 connections. </dd>
 <dd>
 <a class="el" href="group__http2.html#gab70f7e768dd89aca7fd859aae33c74a1" title="Send HEADERS frame.">SocketHTTP2_Stream_send_headers()</a> for stream operations. </dd>
 <dd>
-<a class="el" href="SocketHPACK_8h.html" title="HPACK header compression (RFC 7541) for HTTP/2.">SocketHPACK.h</a> for header compression integration. </dd>
+<a class="el" href="SocketHPACK_8h.html" title="HPACK header compression/decompression module for HTTP/2 (RFC 7541).">SocketHPACK.h</a> for header compression integration. </dd>
 <dd>
-SocketHTTP_Headers_T for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+SocketHTTP_Headers_T for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a>. </dd>
 <dd>
 SocketHTTPClient_T for HTTP client functionality. </dd>
 <dd>

@@ -45,12 +45,14 @@ var searchData=
   ['socketproxytype_42',['SocketProxyType',['../group__core__io.html#gaaa33f7bdae951cc7b53a2fb049e89132',1,'SocketProxy.h']]],
   ['socketreconnect_5fcircuitstate_43',['SocketReconnect_CircuitState',['../group__connection__mgmt.html#gad94358cbf0bb7d00f70705a6c5245433',1,'SocketReconnect-private.h']]],
   ['socketreconnect_5fstate_44',['SocketReconnect_State',['../group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548',1,'SocketReconnect.h']]],
-  ['socketutf8_5fresult_45',['SocketUTF8_Result',['../group__utilities.html#gae8b6c527962e3019992746f49aac247b',1,'SocketUTF8.h']]],
-  ['socketws_5fclosecode_46',['SocketWS_CloseCode',['../group__websocket.html#ga386c437e966aeaeb091d1d81c0e77b13',1,'SocketWS.h']]],
-  ['socketws_5ferror_47',['SocketWS_Error',['../group__websocket.html#gabd79199a60ad91cf785166f24f41101f',1,'SocketWS.h']]],
-  ['socketws_5fframestate_48',['SocketWS_FrameState',['../group__websocket.html#gacba3d485716ab762c1ecd90312174721',1,'SocketWS-private.h']]],
-  ['socketws_5fhandshakestate_49',['SocketWS_HandshakeState',['../group__websocket.html#gafb2bca991ca02e642b76a7ecc166943c',1,'SocketWS-private.h']]],
-  ['socketws_5fopcode_50',['SocketWS_Opcode',['../group__websocket.html#ga174740343c7f920060f8640f23600c7b',1,'SocketWS.h']]],
-  ['socketws_5frole_51',['SocketWS_Role',['../group__websocket.html#ga9d14d3d0f1b05e44fcd74782107cbd94',1,'SocketWS.h']]],
-  ['socketws_5fstate_52',['SocketWS_State',['../group__websocket.html#gab8b49607a661224d66bb264b1e597e2d',1,'SocketWS.h']]]
+  ['socketsyn_5faction_45',['SocketSYN_Action',['../group__security.html#gaca8f2a71ab649ccd408fd3fdb3b693b9',1,'SocketSYNProtect.h']]],
+  ['socketsyn_5freputation_46',['SocketSYN_Reputation',['../group__security.html#gad7b655dd229bc52cb32ec3cc1674d423',1,'SocketSYNProtect.h']]],
+  ['socketutf8_5fresult_47',['SocketUTF8_Result',['../group__utilities.html#gae8b6c527962e3019992746f49aac247b',1,'SocketUTF8.h']]],
+  ['socketws_5fclosecode_48',['SocketWS_CloseCode',['../group__websocket.html#ga386c437e966aeaeb091d1d81c0e77b13',1,'SocketWS.h']]],
+  ['socketws_5ferror_49',['SocketWS_Error',['../group__websocket.html#gabd79199a60ad91cf785166f24f41101f',1,'SocketWS.h']]],
+  ['socketws_5fframestate_50',['SocketWS_FrameState',['../group__websocket.html#gacba3d485716ab762c1ecd90312174721',1,'SocketWS-private.h']]],
+  ['socketws_5fhandshakestate_51',['SocketWS_HandshakeState',['../group__websocket.html#gafb2bca991ca02e642b76a7ecc166943c',1,'SocketWS-private.h']]],
+  ['socketws_5fopcode_52',['SocketWS_Opcode',['../group__websocket.html#ga174740343c7f920060f8640f23600c7b',1,'SocketWS.h']]],
+  ['socketws_5frole_53',['SocketWS_Role',['../group__websocket.html#ga9d14d3d0f1b05e44fcd74782107cbd94',1,'SocketWS.h']]],
+  ['socketws_5fstate_54',['SocketWS_State',['../group__websocket.html#gab8b49607a661224d66bb264b1e597e2d',1,'SocketWS.h']]]
 ];

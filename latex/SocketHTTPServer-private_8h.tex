@@ -1,0 +1,125 @@
+\doxysection{include/http/\+Socket\+HTTPServer-\/private.h File Reference}
+\hypertarget{SocketHTTPServer-private_8h}{}\label{SocketHTTPServer-private_8h}\index{include/http/SocketHTTPServer-\/private.h@{include/http/SocketHTTPServer-\/private.h}}
+
+
+Internal HTTP server structures and connection management.  
+
+
+{\ttfamily \#include "{}Socket\+HTTPServer.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Socket\+IPTracker.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Socket\+Rate\+Limit.\+h"{}}\newline
+{\ttfamily \#include "{}http/\+Socket\+HTTP1.\+h"{}}\newline
+{\ttfamily \#include "{}socket/\+Socket\+Buf.\+h"{}}\newline
+{\ttfamily \#include $<$pthread.\+h$>$}\newline
+Include dependency graph for Socket\+HTTPServer-\/private.h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHTTPServer-private_8h__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structRateLimitEntry}{Rate\+Limit\+Entry}}
+\item 
+struct \mbox{\hyperlink{structServerConnection}{Server\+Connection}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPServer__Request}{Socket\+HTTPServer\+\_\+\+Request}}
+\item 
+struct \mbox{\hyperlink{structSocketHTTPServer}{Socket\+HTTPServer}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a547cb9a464e075a8ab000b774d8e5ea7}\label{SocketHTTPServer-private_8h_a547cb9a464e075a8ab000b774d8e5ea7} 
+\#define {\bfseries HTTPSERVER\+\_\+\+ERROR\+\_\+\+FMT}(fmt, ...)~SOCKET\+\_\+\+ERROR\+\_\+\+FMT (fmt, \#\#\+\_\+\+\_\+\+VA\+\_\+\+ARGS\+\_\+\+\_\+)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a338d36d654219bcef4bee535511e70cb}\label{SocketHTTPServer-private_8h_a338d36d654219bcef4bee535511e70cb} 
+\#define {\bfseries HTTPSERVER\+\_\+\+ERROR\+\_\+\+MSG}(fmt, ...)~SOCKET\+\_\+\+ERROR\+\_\+\+MSG (fmt, \#\#\+\_\+\+\_\+\+VA\+\_\+\+ARGS\+\_\+\+\_\+)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a50e17ee85c1ae1373fd84c980dc5e399}\label{SocketHTTPServer-private_8h_a50e17ee85c1ae1373fd84c980dc5e399} 
+\#define {\bfseries RAISE\+\_\+\+HTTPSERVER\+\_\+\+ERROR}(e)~SOCKET\+\_\+\+RAISE\+\_\+\+MODULE\+\_\+\+ERROR (HTTPServer, e)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a59a2c8b7b42144b71232a020df0ef6d9}\label{SocketHTTPServer-private_8h_a59a2c8b7b42144b71232a020df0ef6d9} 
+typedef struct \mbox{\hyperlink{structRateLimitEntry}{Rate\+Limit\+Entry}} {\bfseries Rate\+Limit\+Entry}
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a7e367dbc09e7e4d4fbc9c01176383812}\label{SocketHTTPServer-private_8h_a7e367dbc09e7e4d4fbc9c01176383812} 
+typedef struct \mbox{\hyperlink{structServerConnection}{Server\+Connection}} {\bfseries Server\+Connection}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a2f08f039d21b354ac9e74c026ffa84a6}\label{SocketHTTPServer-private_8h_a2f08f039d21b354ac9e74c026ffa84a6} 
+enum {\bfseries Server\+Conn\+State} \{ \newline
+{\bfseries CONN\+\_\+\+STATE\+\_\+\+READING\+\_\+\+REQUEST}
+, {\bfseries CONN\+\_\+\+STATE\+\_\+\+READING\+\_\+\+BODY}
+, {\bfseries CONN\+\_\+\+STATE\+\_\+\+HANDLING}
+, {\bfseries CONN\+\_\+\+STATE\+\_\+\+STREAMING\+\_\+\+RESPONSE}
+, \newline
+{\bfseries CONN\+\_\+\+STATE\+\_\+\+SENDING\+\_\+\+RESPONSE}
+, {\bfseries CONN\+\_\+\+STATE\+\_\+\+CLOSED}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a661e9beac05d8c8b41df73120537c6af}\label{SocketHTTPServer-private_8h_a661e9beac05d8c8b41df73120537c6af} 
+\mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*} {\bfseries connection\+\_\+new} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, Socket\+\_\+T socket)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_abe51462e112b59f52cbb1febfaeba7c9}\label{SocketHTTPServer-private_8h_abe51462e112b59f52cbb1febfaeba7c9} 
+void {\bfseries connection\+\_\+close} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_acd94ab9df9f26bb81487c46553875ae7}\label{SocketHTTPServer-private_8h_acd94ab9df9f26bb81487c46553875ae7} 
+int {\bfseries connection\+\_\+read} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a2e72171bf90e61315849daf7c5d37468}\label{SocketHTTPServer-private_8h_a2e72171bf90e61315849daf7c5d37468} 
+int {\bfseries connection\+\_\+send\+\_\+data} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn, const void \texorpdfstring{$\ast$}{*}data, size\+\_\+t len)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_ab3d869a4f2a51f1ec8e05a3772337efc}\label{SocketHTTPServer-private_8h_ab3d869a4f2a51f1ec8e05a3772337efc} 
+void {\bfseries connection\+\_\+reset\+\_\+for\+\_\+keepalive} (\mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a653a3ae6a5a9aeef25204f77a644c3bf}\label{SocketHTTPServer-private_8h_a653a3ae6a5a9aeef25204f77a644c3bf} 
+void {\bfseries connection\+\_\+finish\+\_\+request} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a1e34ed26286555466cb14bdd7bcdba86}\label{SocketHTTPServer-private_8h_a1e34ed26286555466cb14bdd7bcdba86} 
+int {\bfseries connection\+\_\+parse\+\_\+request} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_a31ded50da5af2355d60b5f78c18866ab}\label{SocketHTTPServer-private_8h_a31ded50da5af2355d60b5f78c18866ab} 
+void {\bfseries connection\+\_\+send\+\_\+response} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn)
+\item 
+\Hypertarget{SocketHTTPServer-private_8h_ad8b6fd9be8c2566fe7f029efc270e6a3}\label{SocketHTTPServer-private_8h_ad8b6fd9be8c2566fe7f029efc270e6a3} 
+void {\bfseries connection\+\_\+send\+\_\+error} (\mbox{\hyperlink{group__http_gad59859e8ae07bfb95f5807590dd034f4}{Socket\+HTTPServer\+\_\+T}} server, \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*}conn, int status, const char \texorpdfstring{$\ast$}{*}body)
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+Internal HTTP server structures and connection management. 
+
+This header contains internal structures for the HTTP server implementation. NOT for public consumption -\/ use \doxylink{SocketHTTPServer_8h}{Socket\+HTTPServer.\+h} instead.
+
+Contains\+:
+\begin{DoxyItemize}
+\item Server connection lifecycle and state management
+\item Request/response processing state machines
+\item Rate limiting per endpoint and per-\/client limits
+\item Connection pooling and resource tracking
+\item Request body streaming and response streaming
+\item Web\+Socket upgrade support internals
+\item HTTP/2 server push capability
+\end{DoxyItemize}
+
+The server supports both HTTP/1.\+1 and HTTP/2 with graceful shutdown and comprehensive resource limits for DoS protection.
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHTTPServer_8h}{Socket\+HTTPServer.\+h} for public HTTP server API. 
+
+\doxylink{SocketHTTP-private_8h}{Socket\+HTTP-\/private.\+h} for core HTTP internal structures. 
+
+Socket\+IPTracker.\+h for per-\/client connection limiting. 
+
+Socket\+Rate\+Limit.\+h for rate limiting integration. 
+\end{DoxySeeAlso}

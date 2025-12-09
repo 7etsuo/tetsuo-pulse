@@ -1,5 +1,5 @@
 <map id="SocketDNS.h" name="SocketDNS.h">
-<area shape="rect" id="Node000001" title="Asynchronous DNS resolution API." alt="" coords="159,5,261,31"/>
+<area shape="rect" id="Node000001" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="159,5,261,31"/>
 <area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="5,79,108,104"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="186,33,95,75,93,70,184,28"/>
 <area shape="rect" id="Node000004" title=" " alt="" coords="132,79,197,104"/>

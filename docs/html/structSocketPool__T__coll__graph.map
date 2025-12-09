@@ -1,50 +1,58 @@
 <map id="SocketPool_T" name="SocketPool_T">
-<area shape="rect" id="Node000001" title=" " alt="" coords="1185,382,1289,407"/>
-<area shape="poly" id="edge30_Node000001_Node000001" title=" " alt="" coords="1209,367,1217,359,1237,355,1254,358,1264,364,1267,374,1262,383,1257,381,1262,373,1260,367,1252,363,1237,361,1220,364,1213,371"/>
-<area shape="rect" id="Node000002" href="$group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot." alt="" coords="904,517,1007,542"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1005,509,1066,486,1131,456,1216,405,1219,410,1133,461,1068,491,1007,514"/>
-<area shape="poly" id="edge4_Node000002_Node000002" title=" " alt="" coords="928,502,937,493,955,490,971,492,981,499,983,508,979,518,974,515,978,508,977,502,969,497,955,495,939,498,932,505"/>
-<area shape="rect" id="Node000003" title=" " alt="" coords="314,517,393,542"/>
-<area shape="poly" id="edge15_Node000001_Node000003" title=" " alt="" coords="404,512,444,494,455,483,468,472,508,457,550,449,732,423,913,406,1071,397,1185,393,1185,398,1071,402,913,412,733,428,551,455,509,462,471,477,459,487,447,498,406,517"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="407,540,475,555,551,567,641,572,730,567,822,554,903,538,904,544,823,559,731,572,641,578,550,572,474,560,406,545"/>
-<area shape="rect" id="Node000005" href="$group__connection__mgmt.html#structSocketReconnect__T" title="Opaque context for managing reconnecting socket connections." alt="" coords="570,517,711,542"/>
-<area shape="poly" id="edge7_Node000005_Node000003" title=" " alt="" coords="407,527,570,527,570,532,407,532"/>
-<area shape="rect" id="Node000004" href="$group__foundation.html#structSocketTimeouts__T" title="Timeout configuration structure for socket operations." alt="" coords="5,517,137,542"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="151,527,314,527,314,532,151,532"/>
-<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="725,527,904,527,904,532,725,532"/>
-<area shape="poly" id="edge8_Node000005_Node000005" title=" " alt="" coords="613,502,621,494,641,490,657,492,667,499,670,508,665,518,660,515,664,508,663,502,655,497,641,495,624,498,616,506"/>
-<area shape="rect" id="Node000006" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure for reconnection backoff and circuit breaker policy." alt="" coords="261,458,445,483"/>
-<area shape="poly" id="edge20_Node000001_Node000006" title=" " alt="" coords="355,444,369,362,382,309,401,251,426,192,459,136,500,86,549,46,600,21,652,9,705,7,758,16,811,33,863,57,914,86,964,120,1055,195,1132,270,1191,336,1228,380,1224,383,1187,339,1128,274,1051,199,961,124,912,91,861,62,809,38,757,21,704,13,652,14,601,26,552,50,503,90,463,139,431,195,406,253,387,310,374,363,360,445"/>
-<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="430,484,578,514,577,519,429,489"/>
-<area shape="rect" id="Node000007" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="567,669,715,694"/>
-<area shape="poly" id="edge9_Node000002_Node000007" title=" " alt="" coords="727,670,795,650,827,634,855,613,865,599,867,584,869,569,879,553,902,538,905,543,883,557,874,571,872,585,870,601,859,616,830,638,797,655,729,675"/>
-<area shape="poly" id="edge12_Node000007_Node000007" title=" " alt="" coords="613,654,621,646,641,642,657,644,667,651,670,660,665,670,660,667,664,660,663,654,655,649,641,647,624,650,616,658"/>
-<area shape="rect" id="Node000008" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="280,718,427,743"/>
-<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="440,714,526,699,567,691,568,697,527,704,441,719"/>
-<area shape="rect" id="Node000009" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="290,619,417,645"/>
-<area shape="poly" id="edge11_Node000007_Node000009" title=" " alt="" coords="431,642,527,659,568,666,567,671,526,664,430,647"/>
-<area shape="rect" id="Node000010" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="286,669,421,694"/>
-<area shape="poly" id="edge13_Node000007_Node000010" title=" " alt="" coords="434,679,566,679,566,684,434,684"/>
-<area shape="rect" id="Node000011" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="26,669,117,694"/>
-<area shape="poly" id="edge14_Node000010_Node000011" title=" " alt="" coords="130,679,286,679,286,684,130,684"/>
-<area shape="rect" id="Node000012" href="$group__dns.html#structSocketDNS__T" title="Async DNS resolver structure." alt="" coords="902,566,1009,591"/>
-<area shape="poly" id="edge16_Node000001_Node000012" title=" " alt="" coords="1021,560,1076,540,1130,510,1161,484,1188,456,1225,406,1230,409,1192,459,1164,488,1134,514,1079,545,1023,565"/>
-<area shape="rect" id="Node000013" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="1156,599,1319,625"/>
-<area shape="poly" id="edge19_Node000013_Node000012" title=" " alt="" coords="1023,584,1156,600,1155,605,1022,589"/>
-<area shape="poly" id="edge17_Node000012_Node000013" title=" " alt="" coords="1199,633,1168,644,1131,654,1091,657,1053,651,1027,639,1003,624,967,594,971,589,1006,620,1029,634,1054,645,1092,651,1130,648,1166,639,1198,628"/>
-<area shape="poly" id="edge18_Node000013_Node000013" title=" " alt="" coords="1209,585,1217,576,1237,573,1254,575,1264,581,1267,591,1262,600,1257,598,1262,590,1260,585,1252,580,1237,578,1220,581,1213,588"/>
-<area shape="rect" id="Node000014" href="$SocketRateLimit-private_8h.html#structSocketRateLimit__T" title=" " alt="" coords="573,354,708,379"/>
-<area shape="poly" id="edge21_Node000001_Node000014" title=" " alt="" coords="722,368,1185,390,1185,395,722,373"/>
-<area shape="rect" id="Node000015" href="$group__security.html#structSocketSYNProtect__T" title="Core internal structure for the SYN protection module." alt="" coords="881,262,1029,287"/>
-<area shape="poly" id="edge29_Node000015_Node000014" title=" " alt="" coords="721,351,788,337,856,317,930,285,932,290,858,323,789,342,722,356"/>
-<area shape="poly" id="edge22_Node000001_Node000015" title=" " alt="" coords="1004,290,1133,343,1211,379,1209,384,1131,348,1002,295"/>
-<area shape="rect" id="Node000016" href="$group__security.html#structSocketSYN__IPEntry" title="Internal IP tracking entry for hash table and LRU management." alt="" coords="569,305,712,330"/>
-<area shape="poly" id="edge23_Node000015_Node000016" title=" " alt="" coords="725,303,881,282,881,287,726,309"/>
-<area shape="poly" id="edge24_Node000016_Node000016" title=" " alt="" coords="613,290,621,282,641,278,657,280,667,287,670,296,665,306,660,303,664,296,663,290,655,285,641,283,624,286,616,294"/>
-<area shape="rect" id="Node000017" href="$group__security.html#structSocketSYN__WhitelistEntry" title="Structure for whitelist entries supporting single IPs and CIDR ranges." alt="" coords="551,99,731,125"/>
-<area shape="poly" id="edge25_Node000015_Node000017" title=" " alt="" coords="710,126,732,133,797,160,859,195,905,229,941,259,938,264,902,233,856,200,795,165,730,139,708,131"/>
-<area shape="poly" id="edge26_Node000017_Node000017" title=" " alt="" coords="613,85,621,76,641,73,657,75,667,81,670,91,665,100,660,98,664,90,663,85,655,80,641,78,624,81,616,88"/>
-<area shape="rect" id="Node000018" href="$group__security.html#structSocketSYN__BlacklistEntry" title="Internal structure for blacklisted IP addresses with expiry support." alt="" coords="551,187,730,213"/>
-<area shape="poly" id="edge27_Node000015_Node000018" title=" " alt="" coords="744,212,858,236,925,259,923,264,857,241,743,217"/>
-<area shape="poly" id="edge28_Node000018_Node000018" title=" " alt="" coords="613,173,621,164,641,161,657,163,667,169,670,179,665,188,660,186,664,178,663,173,655,168,641,166,624,169,616,176"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1383,463,1487,488"/>
+<area shape="poly" id="edge34_Node000001_Node000001" title=" " alt="" coords="1406,448,1415,440,1435,436,1451,438,1462,445,1464,454,1459,464,1455,461,1459,454,1457,448,1450,443,1435,441,1417,444,1410,452"/>
+<area shape="rect" id="Node000002" href="$group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot." alt="" coords="1101,631,1204,656"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1202,623,1274,596,1328,570,1382,527,1420,486,1424,490,1385,531,1331,575,1276,601,1204,628"/>
+<area shape="poly" id="edge6_Node000002_Node000002" title=" " alt="" coords="1126,616,1134,607,1153,604,1169,606,1178,613,1181,622,1176,632,1171,629,1175,622,1174,616,1167,611,1153,609,1137,612,1130,619"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="511,553,590,579"/>
+<area shape="poly" id="edge17_Node000001_Node000003" title=" " alt="" coords="604,567,802,575,928,573,1054,563,1151,548,1245,527,1393,486,1394,491,1246,532,1152,553,1055,569,928,578,802,580,604,573"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="604,573,748,597,944,620,1101,636,1101,641,943,626,748,602,603,578"/>
+<area shape="rect" id="Node000007" href="$group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management." alt="" coords="767,503,909,528"/>
+<area shape="poly" id="edge9_Node000007_Node000003" title=" " alt="" coords="603,554,767,525,768,530,604,559"/>
+<area shape="rect" id="Node000004" href="$group__core__io.html#structSocketBase__T" title="Internal implementation of SocketBase_T opaque type." alt="" coords="269,553,377,579"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="391,563,511,563,511,569,391,569"/>
+<area shape="rect" id="Node000005" href="$group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations." alt="" coords="20,529,152,555"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="166,547,270,558,269,563,165,553"/>
+<area shape="rect" id="Node000006" href="$group__foundation.html#structSocketMetricsSnapshot" title="SocketMetricsSnapshot &#45; Thread&#45;safe snapshot of all library metrics." alt="" coords="5,579,167,604"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="180,581,245,574,269,571,270,576,246,579,181,586"/>
+<area shape="poly" id="edge7_Node000002_Node000007" title=" " alt="" coords="923,513,990,522,1024,532,1056,545,1085,564,1110,587,1145,629,1141,632,1106,590,1081,568,1053,550,1022,537,989,528,922,518"/>
+<area shape="poly" id="edge10_Node000007_Node000007" title=" " alt="" coords="810,488,818,480,838,476,854,478,864,485,867,494,862,504,857,501,862,494,860,488,853,483,838,481,821,484,814,492"/>
+<area shape="rect" id="Node000008" href="$group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet..." alt="" coords="459,423,643,448"/>
+<area shape="poly" id="edge22_Node000001_Node000008" title=" " alt="" coords="657,432,928,435,1184,451,1383,468,1382,473,1183,456,928,441,657,437"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="611,449,792,500,791,505,609,454"/>
+<area shape="rect" id="Node000009" href="$group__security.html#structSocketTLSContext__T" title="TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,..." alt="" coords="764,705,912,731"/>
+<area shape="poly" id="edge11_Node000002_Node000009" title=" " alt="" coords="905,700,1100,653,1101,658,906,705"/>
+<area shape="poly" id="edge14_Node000009_Node000009" title=" " alt="" coords="810,691,818,682,838,679,854,681,864,687,867,697,862,706,857,704,862,696,860,691,853,686,838,684,821,687,814,694"/>
+<area shape="rect" id="Node000010" href="$structTLSContextSNICerts.html" title="Structure for managing SNI certificate mappings in TLS context." alt="" coords="477,755,624,780"/>
+<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="637,750,724,735,765,728,766,733,724,741,638,755"/>
+<area shape="rect" id="Node000011" href="$group__security.html#structTLSContextALPN" title="Configuration for ALPN protocol negotiation." alt="" coords="487,656,614,681"/>
+<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="628,679,724,695,766,703,765,708,724,701,627,684"/>
+<area shape="rect" id="Node000012" href="$group__security.html#structTLSContextPinning" title="TLSContextPinning &#45; Certificate pinning configuration." alt="" coords="483,705,618,731"/>
+<area shape="poly" id="edge15_Node000009_Node000012" title=" " alt="" coords="632,715,763,715,763,721,632,721"/>
+<area shape="rect" id="Node000013" href="$group__security.html#structTLSCertPin" title="TLSCertPin &#45; Single certificate pin entry (SPKI SHA256 hash)" alt="" coords="278,705,369,731"/>
+<area shape="poly" id="edge16_Node000012_Node000013" title=" " alt="" coords="383,715,483,715,483,721,383,721"/>
+<area shape="rect" id="Node000014" href="$group__dns.html#structSocketDNS__T" title="Async DNS resolver structure." alt="" coords="1099,680,1206,705"/>
+<area shape="poly" id="edge18_Node000001_Node000014" title=" " alt="" coords="1219,676,1275,656,1302,641,1328,624,1362,590,1390,551,1425,487,1430,489,1394,554,1366,593,1331,628,1305,646,1277,660,1220,681"/>
+<area shape="rect" id="Node000015" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="1353,713,1516,739"/>
+<area shape="poly" id="edge21_Node000015_Node000014" title=" " alt="" coords="1220,698,1353,714,1353,719,1220,703"/>
+<area shape="poly" id="edge19_Node000014_Node000015" title=" " alt="" coords="1397,747,1365,758,1328,768,1289,771,1250,765,1224,753,1200,738,1165,708,1168,703,1203,734,1227,748,1251,759,1289,765,1327,762,1363,753,1395,742"/>
+<area shape="poly" id="edge20_Node000015_Node000015" title=" " alt="" coords="1406,699,1415,690,1435,687,1451,689,1462,695,1464,705,1459,714,1455,712,1459,704,1457,699,1450,694,1435,692,1417,695,1410,702"/>
+<area shape="rect" id="Node000016" href="$group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter." alt="" coords="771,5,905,31"/>
+<area shape="poly" id="edge23_Node000001_Node000016" title=" " alt="" coords="919,13,987,19,1022,26,1056,37,1149,79,1184,102,1215,126,1270,187,1332,270,1366,323,1394,378,1431,462,1426,464,1390,381,1361,326,1327,273,1266,190,1211,130,1181,106,1146,84,1054,42,1021,31,986,25,919,18"/>
+<area shape="rect" id="Node000017" href="$group__security.html#structSocketSYNProtect__T" title="Core internal structure for the SYN protection module." alt="" coords="1079,180,1227,205"/>
+<area shape="poly" id="edge33_Node000017_Node000016" title=" " alt="" coords="907,32,929,40,1056,104,1105,143,1141,178,1137,182,1101,147,1053,108,927,44,906,37"/>
+<area shape="poly" id="edge24_Node000001_Node000017" title=" " alt="" coords="1178,213,1422,461,1419,464,1174,217"/>
+<area shape="rect" id="Node000018" href="$group__security.html#structSocketSYNProtect__Config" title="Configuration parameters for SYN flood protection." alt="" coords="749,143,927,168"/>
+<area shape="poly" id="edge25_Node000017_Node000018" title=" " alt="" coords="941,165,1079,181,1078,187,941,170"/>
+<area shape="rect" id="Node000019" href="$group__security.html#structSocketSYN__IPEntry" title="Internal IP tracking entry for hash table and LRU management." alt="" coords="767,260,909,285"/>
+<area shape="poly" id="edge26_Node000017_Node000019" title=" " alt="" coords="922,257,987,244,1054,227,1121,203,1123,208,1055,233,988,249,923,262"/>
+<area shape="poly" id="edge28_Node000019_Node000019" title=" " alt="" coords="810,245,818,237,838,233,854,236,864,242,867,252,862,261,857,259,862,251,860,245,853,241,838,239,821,242,814,249"/>
+<area shape="rect" id="Node000020" href="$group__security.html#structSocketSYN__IPState" title="Per&#45;IP address tracking and reputation state." alt="" coords="479,260,622,285"/>
+<area shape="poly" id="edge27_Node000019_Node000020" title=" " alt="" coords="636,270,766,270,766,275,636,275"/>
+<area shape="rect" id="Node000021" href="$group__security.html#structSocketSYN__WhitelistEntry" title="Structure for whitelist entries supporting single IPs and CIDR ranges." alt="" coords="748,348,928,373"/>
+<area shape="poly" id="edge29_Node000017_Node000021" title=" " alt="" coords="893,341,970,312,1053,270,1101,236,1137,203,1140,207,1104,240,1056,275,973,317,894,346"/>
+<area shape="poly" id="edge30_Node000021_Node000021" title=" " alt="" coords="810,333,818,325,838,321,854,324,864,330,867,340,862,349,857,347,862,339,860,333,853,329,838,327,821,330,814,337"/>
+<area shape="rect" id="Node000022" href="$group__security.html#structSocketSYN__BlacklistEntry" title="Internal structure for blacklisted IP addresses with expiry support." alt="" coords="749,93,927,119"/>
+<area shape="poly" id="edge31_Node000017_Node000022" title=" " alt="" coords="937,119,996,131,1056,147,1127,177,1125,182,1054,153,995,136,936,124"/>
+<area shape="poly" id="edge32_Node000022_Node000022" title=" " alt="" coords="810,79,818,70,838,67,854,69,864,75,867,85,862,94,857,92,862,84,860,79,853,74,838,72,821,75,814,82"/>
 </map>

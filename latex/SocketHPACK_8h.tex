@@ -1,0 +1,281 @@
+\doxysection{include/http/\+Socket\+HPACK.h File Reference}
+\hypertarget{SocketHPACK_8h}{}\label{SocketHPACK_8h}\index{include/http/SocketHPACK.h@{include/http/SocketHPACK.h}}
+
+
+HPACK header compression (RFC 7541) for HTTP/2.  
+
+
+{\ttfamily \#include $<$stddef.\+h$>$}\newline
+{\ttfamily \#include $<$stdint.\+h$>$}\newline
+{\ttfamily \#include $<$sys/types.\+h$>$}\newline
+{\ttfamily \#include "{}core/\+Arena.\+h"{}}\newline
+{\ttfamily \#include "{}core/\+Except.\+h"{}}\newline
+Include dependency graph for Socket\+HPACK.\+h\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHPACK_8h__incl}
+\end{center}
+\end{figure}
+This graph shows which files directly or indirectly include this file\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{SocketHPACK_8h__dep__incl}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__Header}{Socket\+HPACK\+\_\+\+Header}}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__EncoderConfig}{Socket\+HPACK\+\_\+\+Encoder\+Config}}
+\item 
+struct \mbox{\hyperlink{structSocketHPACK__DecoderConfig}{Socket\+HPACK\+\_\+\+Decoder\+Config}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Macros}
+\begin{DoxyCompactItemize}
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_af6f02b4c16e51b058621e83fbfb1293a}{SOCKETHPACK\+\_\+\+DEFAULT\+\_\+\+TABLE\+\_\+\+SIZE}}~4096
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_a0e75d44640cb3681b7fdbc8c49cb10b9}{SOCKETHPACK\+\_\+\+MAX\+\_\+\+TABLE\+\_\+\+SIZE}}~(64 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_a36d782a874a13b4da38f86fea6e40244}{SOCKETHPACK\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+SIZE}}~(8 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_ab598ca8ec96369a45b756a956d248dd0}{SOCKETHPACK\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+LIST\+\_\+\+SIZE}}~(64 \texorpdfstring{$\ast$}{*} 1024)
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_ac25417892f0002db253f31bb5bab7be2}{SOCKETHPACK\+\_\+\+MAX\+\_\+\+TABLE\+\_\+\+UPDATES}}~2
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_a09450c50e4284b2cdc1613f7f8062752}{SOCKETHPACK\+\_\+\+STATIC\+\_\+\+TABLE\+\_\+\+SIZE}}~61
+\item 
+\#define \mbox{\hyperlink{SocketHPACK_8h_a08c1b9076dbeb65dd345874ce9b51824}{SOCKETHPACK\+\_\+\+ENTRY\+\_\+\+OVERHEAD}}~32
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Typedefs}
+\begin{DoxyCompactItemize}
+\item 
+typedef struct \mbox{\hyperlink{structSocketHPACK__Table}{Socket\+HPACK\+\_\+\+Table}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HPACK\+\_\+\+Table\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HPACK dynamic table (opaque type) \end{DoxyCompactList}\item 
+typedef struct \mbox{\hyperlink{structSocketHPACK__Encoder}{Socket\+HPACK\+\_\+\+Encoder}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HPACK\+\_\+\+Encoder\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HPACK encoder (opaque type) \end{DoxyCompactList}\item 
+typedef struct \mbox{\hyperlink{structSocketHPACK__Decoder}{Socket\+HPACK\+\_\+\+Decoder}} \texorpdfstring{$\ast$}{*} {\bfseries Socket\+HPACK\+\_\+\+Decoder\+\_\+T}
+\begin{DoxyCompactList}\small\item\em HPACK decoder (opaque type) \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Enumerations}
+\begin{DoxyCompactItemize}
+\item 
+enum \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \{ \newline
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a}{HPACK\+\_\+\+OK}} = 0
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35}{HPACK\+\_\+\+INCOMPLETE}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff}{HPACK\+\_\+\+ERROR}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c}{HPACK\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+INDEX}}
+, \newline
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded}{HPACK\+\_\+\+ERROR\+\_\+\+HUFFMAN}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88}{HPACK\+\_\+\+ERROR\+\_\+\+INTEGER}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97}{HPACK\+\_\+\+ERROR\+\_\+\+TABLE\+\_\+\+SIZE}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080}{HPACK\+\_\+\+ERROR\+\_\+\+HEADER\+\_\+\+SIZE}}
+, \newline
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532}{HPACK\+\_\+\+ERROR\+\_\+\+LIST\+\_\+\+SIZE}}
+, \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6}{HPACK\+\_\+\+ERROR\+\_\+\+BOMB}}
+ \}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \mbox{\hyperlink{group__http_gad2e8414c30906d4f093a213b088edf03}{Socket\+HPACK\+\_\+\+Table\+\_\+new}} (size\+\_\+t max\+\_\+size, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Create dynamic table. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga821f51d4c73a41cfb01e75068c83e29e}{Socket\+HPACK\+\_\+\+Table\+\_\+free}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \texorpdfstring{$\ast$}{*}table)
+\begin{DoxyCompactList}\small\item\em Free dynamic table. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_gaa6f9521e46c52adbe47ecb48c2abc307}{Socket\+HPACK\+\_\+\+Table\+\_\+set\+\_\+max\+\_\+size}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table, size\+\_\+t max\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Update maximum table size. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_ga43f69e69234e33e6fba377e1eeb53d89}{Socket\+HPACK\+\_\+\+Table\+\_\+size}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table)
+\begin{DoxyCompactList}\small\item\em Get current table size in bytes. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gadd54bf8828aec9d319682da54106537b}{Socket\+HPACK\+\_\+\+Table\+\_\+count}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table)
+\begin{DoxyCompactList}\small\item\em Get number of entries. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gaa2e92ca751d06de523bc2667fd958010}{Socket\+HPACK\+\_\+\+Table\+\_\+max\+\_\+size}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table)
+\begin{DoxyCompactList}\small\item\em Get maximum table size. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \mbox{\hyperlink{group__http_gac85e6b622a9cb7a19ce3bd0fdb2be551}{Socket\+HPACK\+\_\+\+Table\+\_\+get}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table, size\+\_\+t index, \mbox{\hyperlink{structSocketHPACK__Header}{Socket\+HPACK\+\_\+\+Header}} \texorpdfstring{$\ast$}{*}header)
+\begin{DoxyCompactList}\small\item\em Get entry by index. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \mbox{\hyperlink{group__http_gad46ef6fbf9994cc55c982d507ce473eb}{Socket\+HPACK\+\_\+\+Table\+\_\+add}} (\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} table, const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t name\+\_\+len, const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t value\+\_\+len)
+\begin{DoxyCompactList}\small\item\em Add entry to dynamic table. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga2c85a114ea3e6b15fed7ca4714b6f367}{Socket\+HPACK\+\_\+encoder\+\_\+config\+\_\+defaults}} (\mbox{\hyperlink{structSocketHPACK__EncoderConfig}{Socket\+HPACK\+\_\+\+Encoder\+Config}} \texorpdfstring{$\ast$}{*}config)
+\begin{DoxyCompactList}\small\item\em Initialize encoder config with defaults. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} \mbox{\hyperlink{group__http_ga5f3f8543f2a9e0c48ca33d30019f8b87}{Socket\+HPACK\+\_\+\+Encoder\+\_\+new}} (const \mbox{\hyperlink{structSocketHPACK__EncoderConfig}{Socket\+HPACK\+\_\+\+Encoder\+Config}} \texorpdfstring{$\ast$}{*}config, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Create encoder. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga944a4c3304e03e56cbf30ad689cc9074}{Socket\+HPACK\+\_\+\+Encoder\+\_\+free}} (\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} \texorpdfstring{$\ast$}{*}encoder)
+\begin{DoxyCompactList}\small\item\em Free encoder. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_gaa40bb459b0df6cf69d3fd41c03deb872}{Socket\+HPACK\+\_\+\+Encoder\+\_\+encode}} (\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} encoder, const \mbox{\hyperlink{structSocketHPACK__Header}{Socket\+HPACK\+\_\+\+Header}} \texorpdfstring{$\ast$}{*}headers, size\+\_\+t count, unsigned char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Encode header block. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga702c12cdda50ff1c09ef2d2f086eda45}{Socket\+HPACK\+\_\+\+Encoder\+\_\+set\+\_\+table\+\_\+size}} (\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} encoder, size\+\_\+t max\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Signal table size change. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \mbox{\hyperlink{group__http_gab2be704f8ac8301d890421bbc2a8140c}{Socket\+HPACK\+\_\+\+Encoder\+\_\+get\+\_\+table}} (\mbox{\hyperlink{group__http_gab3d2fec45b36d20aff38b5b5f8ccc317}{Socket\+HPACK\+\_\+\+Encoder\+\_\+T}} encoder)
+\begin{DoxyCompactList}\small\item\em Get encoder\textquotesingle{}s dynamic table. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga945f44e73f0a313402745875d9102d1f}{Socket\+HPACK\+\_\+decoder\+\_\+config\+\_\+defaults}} (\mbox{\hyperlink{structSocketHPACK__DecoderConfig}{Socket\+HPACK\+\_\+\+Decoder\+Config}} \texorpdfstring{$\ast$}{*}config)
+\begin{DoxyCompactList}\small\item\em Initialize decoder config with defaults. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} \mbox{\hyperlink{group__http_ga4208e13edf5343f21c566a146ff8d5e0}{Socket\+HPACK\+\_\+\+Decoder\+\_\+new}} (const \mbox{\hyperlink{structSocketHPACK__DecoderConfig}{Socket\+HPACK\+\_\+\+Decoder\+Config}} \texorpdfstring{$\ast$}{*}config, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Create decoder. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga780b420084cdeebd327cf2f2cdcdc94b}{Socket\+HPACK\+\_\+\+Decoder\+\_\+free}} (\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} \texorpdfstring{$\ast$}{*}decoder)
+\begin{DoxyCompactList}\small\item\em Free decoder. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \mbox{\hyperlink{group__http_ga80929db456c087b62dd8f59935bbd359}{Socket\+HPACK\+\_\+\+Decoder\+\_\+decode}} (\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} decoder, const unsigned char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len, \mbox{\hyperlink{structSocketHPACK__Header}{Socket\+HPACK\+\_\+\+Header}} \texorpdfstring{$\ast$}{*}headers, size\+\_\+t max\+\_\+headers, size\+\_\+t \texorpdfstring{$\ast$}{*}header\+\_\+count, Arena\+\_\+T arena)
+\begin{DoxyCompactList}\small\item\em Decode header block. \end{DoxyCompactList}\item 
+void \mbox{\hyperlink{group__http_ga71187fb60d8bbf1a6494b0b7f4566d4d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+set\+\_\+table\+\_\+size}} (\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} decoder, size\+\_\+t max\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Handle SETTINGS table size update. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{group__http_ga689301e4de369172c0566705afe33156}{Socket\+HPACK\+\_\+\+Table\+\_\+T}} \mbox{\hyperlink{group__http_ga0afe40cbbca1731a702e44ec87052f6a}{Socket\+HPACK\+\_\+\+Decoder\+\_\+get\+\_\+table}} (\mbox{\hyperlink{group__http_ga47e194052251cf94ee0a17ab490ed56d}{Socket\+HPACK\+\_\+\+Decoder\+\_\+T}} decoder)
+\begin{DoxyCompactList}\small\item\em Get decoder\textquotesingle{}s dynamic table. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_ga87187d3bcd990229f2366e09f4d0c0a0}{Socket\+HPACK\+\_\+huffman\+\_\+encode}} (const unsigned char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len, unsigned char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Huffman encode string. \end{DoxyCompactList}\item 
+ssize\+\_\+t \mbox{\hyperlink{group__http_gad444bc6faa547e95f0b7ed31dc886e11}{Socket\+HPACK\+\_\+huffman\+\_\+decode}} (const unsigned char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len, unsigned char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Huffman decode string. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_gaa8e54f3347574c82323260b229279756}{Socket\+HPACK\+\_\+huffman\+\_\+encoded\+\_\+size}} (const unsigned char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len)
+\begin{DoxyCompactList}\small\item\em Calculate encoded size. \end{DoxyCompactList}\item 
+size\+\_\+t \mbox{\hyperlink{group__http_ga62d88dd2fa0079b167701d14a6e584db}{Socket\+HPACK\+\_\+int\+\_\+encode}} (uint64\+\_\+t value, int prefix\+\_\+bits, unsigned char \texorpdfstring{$\ast$}{*}output, size\+\_\+t output\+\_\+size)
+\begin{DoxyCompactList}\small\item\em Encode integer with prefix. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \mbox{\hyperlink{group__http_gad77418b9eae24b504a03e6d1021e46fe}{Socket\+HPACK\+\_\+int\+\_\+decode}} (const unsigned char \texorpdfstring{$\ast$}{*}input, size\+\_\+t input\+\_\+len, int prefix\+\_\+bits, uint64\+\_\+t \texorpdfstring{$\ast$}{*}value, size\+\_\+t \texorpdfstring{$\ast$}{*}consumed)
+\begin{DoxyCompactList}\small\item\em Decode integer with prefix. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} \mbox{\hyperlink{group__http_ga2134dc86dd6393df244bfeeaf1ab5c69}{Socket\+HPACK\+\_\+static\+\_\+get}} (size\+\_\+t index, \mbox{\hyperlink{structSocketHPACK__Header}{Socket\+HPACK\+\_\+\+Header}} \texorpdfstring{$\ast$}{*}header)
+\begin{DoxyCompactList}\small\item\em Get entry from static table. \end{DoxyCompactList}\item 
+int \mbox{\hyperlink{group__http_ga201240b0d9259e2a9da91530a86d8ed1}{Socket\+HPACK\+\_\+static\+\_\+find}} (const char \texorpdfstring{$\ast$}{*}name, size\+\_\+t name\+\_\+len, const char \texorpdfstring{$\ast$}{*}value, size\+\_\+t value\+\_\+len)
+\begin{DoxyCompactList}\small\item\em Find entry in static table. \end{DoxyCompactList}\item 
+const char \texorpdfstring{$\ast$}{*} \mbox{\hyperlink{group__http_ga09650dc7a68806989192e4cd31b4393b}{Socket\+HPACK\+\_\+result\+\_\+string}} (\mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}} result)
+\begin{DoxyCompactList}\small\item\em Get error description. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\doxysubsubsection*{Variables}
+\begin{DoxyCompactItemize}
+\item 
+const Except\+\_\+T \mbox{\hyperlink{group__http_gaaf99a02bd5f3dd4baedcbde590cc5d09}{Socket\+HPACK\+\_\+\+Error}}
+\begin{DoxyCompactList}\small\item\em Socket\+HPACK\+\_\+\+Error -\/ General HPACK operation failure. \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+HPACK header compression (RFC 7541) for HTTP/2. 
+
+Provides HPACK header compression for HTTP/2, including\+:
+\begin{DoxyItemize}
+\item Static table (61 common headers per RFC 7541 Appendix A)
+\item Dynamic table with FIFO eviction
+\item Huffman encoding/decoding (RFC 7541 Appendix B)
+\item Variable-\/length integer encoding (RFC 7541 Section 5.\+1)
+\end{DoxyItemize}
+
+Features\+:
+\begin{DoxyItemize}
+\item O(n) single-\/pass Huffman decoding via DFA
+\item O(1) dynamic table add/evict via circular buffer
+\item HPACK bomb prevention with configurable limits
+\item Thread-\/safe exception handling
+\end{DoxyItemize}
+
+Thread safety\+: Encoder/decoder instances are NOT thread-\/safe. Use one instance per thread or external synchronization.
+
+Security notes\+:
+\begin{DoxyItemize}
+\item Enforces maximum header size limits
+\item Validates Huffman padding (max 7 bits of 1s)
+\item Limits dynamic table size updates per header block
+\item Never indexes sensitive headers marked with never\+\_\+index
+\end{DoxyItemize}
+
+\begin{DoxySeeAlso}{See also}
+\doxylink{SocketHTTP2_8h}{Socket\+HTTP2.\+h} for HTTP/2 integration. 
+
+\doxylink{group__http_ga5f3f8543f2a9e0c48ca33d30019f8b87}{Socket\+HPACK\+\_\+\+Encoder\+\_\+new()} for creating encoders. 
+
+\doxylink{group__http_ga4208e13edf5343f21c566a146ff8d5e0}{Socket\+HPACK\+\_\+\+Decoder\+\_\+new()} for creating decoders. 
+
+Socket\+HTTP\+\_\+T for core HTTP types and utilities. 
+\end{DoxySeeAlso}
+
+
+\doxysubsection{Macro Definition Documentation}
+\Hypertarget{SocketHPACK_8h_af6f02b4c16e51b058621e83fbfb1293a}\label{SocketHPACK_8h_af6f02b4c16e51b058621e83fbfb1293a} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_DEFAULT\_TABLE\_SIZE@{SOCKETHPACK\_DEFAULT\_TABLE\_SIZE}}
+\index{SOCKETHPACK\_DEFAULT\_TABLE\_SIZE@{SOCKETHPACK\_DEFAULT\_TABLE\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_DEFAULT\_TABLE\_SIZE}{SOCKETHPACK\_DEFAULT\_TABLE\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+DEFAULT\+\_\+\+TABLE\+\_\+\+SIZE~4096}
+
+Default dynamic table size (RFC 7541 default) \Hypertarget{SocketHPACK_8h_a08c1b9076dbeb65dd345874ce9b51824}\label{SocketHPACK_8h_a08c1b9076dbeb65dd345874ce9b51824} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_ENTRY\_OVERHEAD@{SOCKETHPACK\_ENTRY\_OVERHEAD}}
+\index{SOCKETHPACK\_ENTRY\_OVERHEAD@{SOCKETHPACK\_ENTRY\_OVERHEAD}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_ENTRY\_OVERHEAD}{SOCKETHPACK\_ENTRY\_OVERHEAD}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+ENTRY\+\_\+\+OVERHEAD~32}
+
+HPACK entry overhead per RFC 7541 Section 4.\+1 \Hypertarget{SocketHPACK_8h_ab598ca8ec96369a45b756a956d248dd0}\label{SocketHPACK_8h_ab598ca8ec96369a45b756a956d248dd0} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE@{SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE}}
+\index{SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE@{SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE}{SOCKETHPACK\_MAX\_HEADER\_LIST\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+LIST\+\_\+\+SIZE~(64 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum total decoded header list size \Hypertarget{SocketHPACK_8h_a36d782a874a13b4da38f86fea6e40244}\label{SocketHPACK_8h_a36d782a874a13b4da38f86fea6e40244} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_MAX\_HEADER\_SIZE@{SOCKETHPACK\_MAX\_HEADER\_SIZE}}
+\index{SOCKETHPACK\_MAX\_HEADER\_SIZE@{SOCKETHPACK\_MAX\_HEADER\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_MAX\_HEADER\_SIZE}{SOCKETHPACK\_MAX\_HEADER\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+MAX\+\_\+\+HEADER\+\_\+\+SIZE~(8 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum individual header size (name + value) \Hypertarget{SocketHPACK_8h_a0e75d44640cb3681b7fdbc8c49cb10b9}\label{SocketHPACK_8h_a0e75d44640cb3681b7fdbc8c49cb10b9} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_MAX\_TABLE\_SIZE@{SOCKETHPACK\_MAX\_TABLE\_SIZE}}
+\index{SOCKETHPACK\_MAX\_TABLE\_SIZE@{SOCKETHPACK\_MAX\_TABLE\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_MAX\_TABLE\_SIZE}{SOCKETHPACK\_MAX\_TABLE\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+MAX\+\_\+\+TABLE\+\_\+\+SIZE~(64 \texorpdfstring{$\ast$}{*} 1024)}
+
+Maximum dynamic table size
+
+ENFORCEMENT\+: Table size updates are validated in \doxylink{group__http_ga80929db456c087b62dd8f59935bbd359}{Socket\+HPACK\+\_\+\+Decoder\+\_\+decode()}. Rejects updates exceeding settings\+\_\+max\+\_\+table\+\_\+size. \Hypertarget{SocketHPACK_8h_ac25417892f0002db253f31bb5bab7be2}\label{SocketHPACK_8h_ac25417892f0002db253f31bb5bab7be2} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_MAX\_TABLE\_UPDATES@{SOCKETHPACK\_MAX\_TABLE\_UPDATES}}
+\index{SOCKETHPACK\_MAX\_TABLE\_UPDATES@{SOCKETHPACK\_MAX\_TABLE\_UPDATES}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_MAX\_TABLE\_UPDATES}{SOCKETHPACK\_MAX\_TABLE\_UPDATES}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+MAX\+\_\+\+TABLE\+\_\+\+UPDATES~2}
+
+Maximum dynamic table size updates per header block \Hypertarget{SocketHPACK_8h_a09450c50e4284b2cdc1613f7f8062752}\label{SocketHPACK_8h_a09450c50e4284b2cdc1613f7f8062752} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SOCKETHPACK\_STATIC\_TABLE\_SIZE@{SOCKETHPACK\_STATIC\_TABLE\_SIZE}}
+\index{SOCKETHPACK\_STATIC\_TABLE\_SIZE@{SOCKETHPACK\_STATIC\_TABLE\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SOCKETHPACK\_STATIC\_TABLE\_SIZE}{SOCKETHPACK\_STATIC\_TABLE\_SIZE}}
+{\footnotesize\ttfamily \#define SOCKETHPACK\+\_\+\+STATIC\+\_\+\+TABLE\+\_\+\+SIZE~61}
+
+Static table size (RFC 7541 Appendix A) 
+
+\doxysubsection{Enumeration Type Documentation}
+\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4} 
+\index{SocketHPACK.h@{SocketHPACK.h}!SocketHPACK\_Result@{SocketHPACK\_Result}}
+\index{SocketHPACK\_Result@{SocketHPACK\_Result}!SocketHPACK.h@{SocketHPACK.h}}
+\doxysubsubsection{\texorpdfstring{SocketHPACK\_Result}{SocketHPACK\_Result}}
+{\footnotesize\ttfamily enum \mbox{\hyperlink{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4}{Socket\+HPACK\+\_\+\+Result}}}
+
+HPACK operation result codes \begin{DoxyEnumFields}{Enumerator}
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_OK@{HPACK\_OK}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_OK@{HPACK\_OK}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a} 
+HPACK\+\_\+\+OK&Success \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_INCOMPLETE@{HPACK\_INCOMPLETE}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_INCOMPLETE@{HPACK\_INCOMPLETE}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35} 
+HPACK\+\_\+\+INCOMPLETE&Need more data \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR@{HPACK\_ERROR}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR@{HPACK\_ERROR}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a47f5862e9cc9fae330636ff1edbf13ff} 
+HPACK\+\_\+\+ERROR&Generic error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_INVALID\_INDEX@{HPACK\_ERROR\_INVALID\_INDEX}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_INVALID\_INDEX@{HPACK\_ERROR\_INVALID\_INDEX}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af02adcb51c871f252f716049d9d9704c} 
+HPACK\+\_\+\+ERROR\+\_\+\+INVALID\+\_\+\+INDEX&Index out of range \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_HUFFMAN@{HPACK\_ERROR\_HUFFMAN}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_HUFFMAN@{HPACK\_ERROR\_HUFFMAN}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4af0bf15fa26ec1b20b193858a09e94ded} 
+HPACK\+\_\+\+ERROR\+\_\+\+HUFFMAN&Huffman decoding error \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_INTEGER@{HPACK\_ERROR\_INTEGER}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_INTEGER@{HPACK\_ERROR\_INTEGER}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a1073a331e5d3dafeecfdec8cc315cc88} 
+HPACK\+\_\+\+ERROR\+\_\+\+INTEGER&Integer overflow \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_TABLE\_SIZE@{HPACK\_ERROR\_TABLE\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_TABLE\_SIZE@{HPACK\_ERROR\_TABLE\_SIZE}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a7b1b9278ae10f718b6a364045254ef97} 
+HPACK\+\_\+\+ERROR\+\_\+\+TABLE\+\_\+\+SIZE&Dynamic table size update invalid \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_HEADER\_SIZE@{HPACK\_ERROR\_HEADER\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_HEADER\_SIZE@{HPACK\_ERROR\_HEADER\_SIZE}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a023382e5da09bb3fcdb39a868b309080} 
+HPACK\+\_\+\+ERROR\+\_\+\+HEADER\+\_\+\+SIZE&Individual header too large \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_LIST\_SIZE@{HPACK\_ERROR\_LIST\_SIZE}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_LIST\_SIZE@{HPACK\_ERROR\_LIST\_SIZE}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a75eafdd5ed49cc27a3d6f39fecc43532} 
+HPACK\+\_\+\+ERROR\+\_\+\+LIST\+\_\+\+SIZE&Total header list too large \\
+\hline
+
+\raisebox{\heightof{T}}[0pt][0pt]{\index{HPACK\_ERROR\_BOMB@{HPACK\_ERROR\_BOMB}!SocketHPACK.h@{SocketHPACK.h}}\index{SocketHPACK.h@{SocketHPACK.h}!HPACK\_ERROR\_BOMB@{HPACK\_ERROR\_BOMB}}}\Hypertarget{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6}\label{SocketHPACK_8h_a623ed321b4ede47b3ac642a001c57ef4a83f74a40301b95d6d3b2626a0f6f32e6} 
+HPACK\+\_\+\+ERROR\+\_\+\+BOMB&HPACK bomb detected \\
+\hline
+
+\end{DoxyEnumFields}

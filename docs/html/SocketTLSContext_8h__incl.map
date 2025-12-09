@@ -4,7 +4,7 @@
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="309,33,269,51,251,64,235,80,220,105,209,132,195,189,191,243,192,285,187,285,186,242,190,188,204,130,216,102,231,77,247,60,266,47,307,28"/>
 <area shape="rect" id="Node000004" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="98,372,201,397"/>
 <area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="280,21,194,29,149,38,105,51,67,69,36,93,15,125,10,143,8,163,8,239,11,260,18,280,44,315,79,343,113,364,110,368,75,347,41,319,14,283,6,262,3,240,3,163,5,142,11,122,32,90,64,64,103,46,148,32,194,24,280,16"/>
-<area shape="rect" id="Node000006" href="$SocketTLS_8h.html" title="TLS/SSL socket integration with TLS 1.3 support." alt="" coords="246,79,362,104"/>
+<area shape="rect" id="Node000006" href="$SocketTLS_8h.html" title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement." alt="" coords="246,79,362,104"/>
 <area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="346,33,322,69,317,66,342,30"/>
 <area shape="rect" id="Node000025" href="$SocketTLSConfig_8h.html" title="TLS configuration constants, structure, and secure defaults." alt="" coords="475,79,629,104"/>
 <area shape="poly" id="edge38_Node000001_Node000025" title=" " alt="" coords="385,28,507,71,505,76,383,33"/>
@@ -21,9 +21,9 @@
 <area shape="rect" id="Node000007" href="$Socket_8h.html" title="High&#45;level TCP/IP and Unix domain socket interface." alt="" coords="245,152,363,177"/>
 <area shape="poly" id="edge8_Node000006_Node000007" title=" " alt="" coords="307,104,307,138,301,138,301,104"/>
 <area shape="poly" id="edge9_Node000007_Node000004" title=" " alt="" coords="278,180,243,198,202,224,164,258,134,300,130,314,131,329,139,359,134,360,125,330,125,313,130,298,160,255,199,220,240,193,276,175"/>
-<area shape="rect" id="Node000008" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1187,299,1328,324"/>
+<area shape="rect" id="Node000008" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1187,299,1328,324"/>
 <area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="363,173,375,175,569,198,763,223,993,260,1183,294,1182,299,992,265,762,228,568,204,374,180,363,178"/>
-<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="883,299,1011,324"/>
+<area shape="rect" id="Node000017" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="883,299,1011,324"/>
 <area shape="poly" id="edge20_Node000007_Node000017" title=" " alt="" coords="363,173,375,175,468,187,541,194,613,204,705,223,816,256,908,291,906,296,814,262,703,228,612,209,540,199,467,192,374,180,363,178"/>
 <area shape="rect" id="Node000019" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="521,225,692,251"/>
 <area shape="poly" id="edge25_Node000007_Node000019" title=" " alt="" coords="353,175,545,220,544,225,352,180"/>

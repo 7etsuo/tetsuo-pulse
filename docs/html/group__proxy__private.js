@@ -98,5 +98,21 @@ var group__proxy__private =
       [ "PROTO_STATE_HTTP_REQUEST_SENT", "group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493cac2f57b720922a9a40199634cf679beb2", null ],
       [ "PROTO_STATE_HTTP_RESPONSE_RECEIVED", "group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca6ebbcb3c7028113f0d93a18a1fa96155", null ],
       [ "PROTO_STATE_DONE", "group__proxy__private.html#gga8d5525862e31c82df86ea8ec9ccd493ca385541d759585795ce1310609ec3d6bd", null ]
-    ] ]
+    ] ],
+    [ "proxy_http_recv_response", "group__proxy__private.html#ga56bdb1756a98a60198184587c4902265", null ],
+    [ "proxy_http_send_connect", "group__proxy__private.html#ga58484981c55e00df7a24b50671aefa87", null ],
+    [ "proxy_http_status_to_result", "group__proxy__private.html#ga9afd213292a65fd6db0e416fa37a433b", null ],
+    [ "proxy_socks4_recv_response", "group__proxy__private.html#ga82d72fd16b045c8660210f9ad861a879", null ],
+    [ "proxy_socks4_reply_to_result", "group__proxy__private.html#ga2f17a3a05ffed99bade9280577b4bb25", null ],
+    [ "proxy_socks4_send_connect", "group__proxy__private.html#ga93a6b1c4f6b287b308b18207368ad092", null ],
+    [ "proxy_socks4a_send_connect", "group__proxy__private.html#ga904ce0bf17f24e2e2783aaf8f1491c03", null ],
+    [ "proxy_socks5_recv_auth", "group__proxy__private.html#ga54e8297c18caa6bb448daa0d1dceafeb", null ],
+    [ "proxy_socks5_recv_connect", "group__proxy__private.html#gae140af2a9af5d32b1786df145d2ccc07", null ],
+    [ "proxy_socks5_recv_method", "group__proxy__private.html#ga3695eb1c73d0f31fe1ac6d51f677ab73", null ],
+    [ "proxy_socks5_reply_to_result", "group__proxy__private.html#ga4799fc5a08ded667f5518862c078c1bd", null ],
+    [ "proxy_socks5_send_auth", "group__proxy__private.html#gaf0c10ebe07ba3206fd7e5e6725960e9a", null ],
+    [ "proxy_socks5_send_connect", "group__proxy__private.html#gad730a252b44728ae21660f2d168b66e3", null ],
+    [ "proxy_socks5_send_greeting", "group__proxy__private.html#ga0fcced421154218776f5077fa437f58e", null ],
+    [ "socketproxy_advance_state", "group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68", null ],
+    [ "socketproxy_set_error", "group__proxy__private.html#ga590a8e0ece3a282a17f59778b6f9d757", null ]
 ];

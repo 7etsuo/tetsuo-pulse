@@ -136,32 +136,19 @@ Data Structures</h2></td></tr>
 <tr class="separator:structSocketHPACK__DecoderConfig"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<p>Provides HPACK header compression for HTTP/2, including:</p><ul>
-<li>Static table (61 common headers per RFC 7541 Appendix A)</li>
-<li>Dynamic table with FIFO eviction</li>
-<li>Huffman encoding/decoding (RFC 7541 Appendix B)</li>
-<li>Variable-length integer encoding (RFC 7541 Section 5.1)</li>
-</ul>
-<p>Features:</p><ul>
-<li>O(n) single-pass Huffman decoding via DFA</li>
-<li>O(1) dynamic table add/evict via circular buffer</li>
-<li>HPACK bomb prevention with configurable limits</li>
-<li>Thread-safe exception handling</li>
-</ul>
-<p>Thread safety: Encoder/decoder instances are NOT thread-safe. Use one instance per thread or external synchronization.</p>
-<p>Security notes:</p><ul>
-<li>Enforces maximum header size limits</li>
-<li>Validates Huffman padding (max 7 bits of 1s)</li>
-<li>Limits dynamic table size updates per header block</li>
-<li>Never indexes sensitive headers marked with never_index</li>
-</ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">SocketHTTP2.h</a> for HTTP/2 integration. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketHTTP2_8h.html" title="HTTP/2 protocol implementation (RFC 9113) with multiplexing and flow control.">SocketHTTP2.h</a> for HTTP/2 protocol layer integration. </dd>
 <dd>
-<a class="el" href="group__http.html#ga5f3f8543f2a9e0c48ca33d30019f8b87" title="Create HPACK encoder instance.">SocketHPACK_Encoder_new()</a> for creating encoders. </dd>
+<a class="el" href="group__http.html#ga5f3f8543f2a9e0c48ca33d30019f8b87" title="Create HPACK encoder instance.">SocketHPACK_Encoder_new()</a> primary entry for compression. </dd>
 <dd>
-<a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0" title="Create HPACK decoder instance.">SocketHPACK_Decoder_new()</a> for creating decoders. </dd>
+<a class="el" href="group__http.html#ga4208e13edf5343f21c566a146ff8d5e0" title="Create HPACK decoder instance.">SocketHPACK_Decoder_new()</a> primary entry for decompression. </dd>
 <dd>
-group__http for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd></dl>
+group__http for supporting HTTP types. </dd>
+<dd>
+docs/HTTP-REFACTOR.md for refactoring notes. </dd>
+<dd>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a><a class="el" href="group__hpack.html">HPACK Header Compression Module</a> for <a class="el" href="group__security.html" title="Comprehensive security protections for network applications.">Security Modules</a> deep dive. </dd>
+<dd>
+<a href="https://tools.ietf.org/html/rfc7541">https://tools.ietf.org/html/rfc7541</a> for full specification. </dd></dl>
 <hr/><h2 class="groupheader">Data Structure Documentation</h2>
 <a name="structSocketHPACK__Header" id="structSocketHPACK__Header"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structSocketHPACK__Header">&#9670;&#160;</a></span>SocketHPACK_Header</h2>
@@ -177,7 +164,7 @@ group__http for core HTTP types and <a class="el" href="group__utilities.html" t
 <div class="textblock"><p>HPACK header field representation. </p>
 <p>Represents a single header with optional never_index flag. The never_index flag indicates sensitive data that should never be added to the dynamic table. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00170">170</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00236">236</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -233,7 +220,7 @@ value_len</td>
 <div class="textblock"><p>Configuration for HPACK encoder instance. </p>
 <p>Allows customization of table size, Huffman usage, and indexing behavior. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00309">309</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00549">549</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -275,7 +262,7 @@ use_indexing</td>
 <div class="textblock"><p>Configuration for HPACK decoder instance. </p>
 <p>Controls security limits like max header sizes and decompression bomb prevention. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00410">410</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHPACK_8h_source.html#l00650">650</a> of file <a class="el" href="SocketHPACK_8h_source.html">SocketHPACK.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">

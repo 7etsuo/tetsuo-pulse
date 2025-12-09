@@ -1,0 +1,115 @@
+\doxysection{Server\+Connection Struct Reference}
+\hypertarget{structServerConnection}{}\label{structServerConnection}\index{ServerConnection@{ServerConnection}}
+
+
+Collaboration diagram for Server\+Connection\+:\nopagebreak
+\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[width=350pt]{structServerConnection__coll__graph}
+\end{center}
+\end{figure}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{structServerConnection_ad17ef845d8eec0ea60e869085d4bfc4e}\label{structServerConnection_ad17ef845d8eec0ea60e869085d4bfc4e} 
+Socket\+\_\+T {\bfseries socket}
+\item 
+\Hypertarget{structServerConnection_ab5674971a8d784a2248b0982e4dad15f}\label{structServerConnection_ab5674971a8d784a2248b0982e4dad15f} 
+char {\bfseries client\+\_\+addr} \mbox{[}HTTPSERVER\+\_\+\+CLIENT\+\_\+\+ADDR\+\_\+\+MAX\mbox{]}
+\item 
+\Hypertarget{structServerConnection_a6ec20b901dea8f5a4fc3caa83c830e63}\label{structServerConnection_a6ec20b901dea8f5a4fc3caa83c830e63} 
+Server\+Conn\+State {\bfseries state}
+\item 
+\Hypertarget{structServerConnection_a0a9015d402c97f1eccdc566463ac2be0}\label{structServerConnection_a0a9015d402c97f1eccdc566463ac2be0} 
+\mbox{\hyperlink{group__http_ga06fc705e348330ddf1d6644fc80c3b59}{Socket\+HTTP1\+\_\+\+Parser\+\_\+T}} {\bfseries parser}
+\item 
+\Hypertarget{structServerConnection_aa60bb150490f6b5778cc1b22b39a5a89}\label{structServerConnection_aa60bb150490f6b5778cc1b22b39a5a89} 
+Socket\+Buf\+\_\+T {\bfseries inbuf}
+\item 
+\Hypertarget{structServerConnection_a084420a5dab13cdc91eb0c78af297029}\label{structServerConnection_a084420a5dab13cdc91eb0c78af297029} 
+Socket\+Buf\+\_\+T {\bfseries outbuf}
+\item 
+\Hypertarget{structServerConnection_ab039db894f4cb81a9b1af7f63a9c76bb}\label{structServerConnection_ab039db894f4cb81a9b1af7f63a9c76bb} 
+const \mbox{\hyperlink{structSocketHTTP__Request}{Socket\+HTTP\+\_\+\+Request}} \texorpdfstring{$\ast$}{*} {\bfseries request}
+\item 
+\Hypertarget{structServerConnection_a262e39db994832af748ff6db10a8f947}\label{structServerConnection_a262e39db994832af748ff6db10a8f947} 
+void \texorpdfstring{$\ast$}{*} {\bfseries body}
+\item 
+\Hypertarget{structServerConnection_a71984092547320bbbd50b5f995c3e3ed}\label{structServerConnection_a71984092547320bbbd50b5f995c3e3ed} 
+size\+\_\+t {\bfseries body\+\_\+len}
+\item 
+\Hypertarget{structServerConnection_a8f8ad010c896c2eb6adfa67d165c4f48}\label{structServerConnection_a8f8ad010c896c2eb6adfa67d165c4f48} 
+size\+\_\+t {\bfseries body\+\_\+capacity}
+\item 
+\Hypertarget{structServerConnection_a26759ef7b75db11896a819d117c739a5}\label{structServerConnection_a26759ef7b75db11896a819d117c739a5} 
+\mbox{\hyperlink{SocketHTTP1_8h_a5b086c700986994685f83dd033821f0e}{Socket\+HTTP1\+\_\+\+Body\+Mode}} {\bfseries body\+\_\+mode}
+\item 
+\Hypertarget{structServerConnection_a27ba37be32be52a5a0136d2600c7e447}\label{structServerConnection_a27ba37be32be52a5a0136d2600c7e447} 
+size\+\_\+t {\bfseries body\+\_\+received}
+\item 
+\Hypertarget{structServerConnection_a7f6c522d63a8ddd6698f2b9a0317b3de}\label{structServerConnection_a7f6c522d63a8ddd6698f2b9a0317b3de} 
+\mbox{\hyperlink{SocketHTTPServer_8h_ab347055b7285aedad5fa0f504c3a655e}{Socket\+HTTPServer\+\_\+\+Body\+Callback}} {\bfseries body\+\_\+callback}
+\item 
+\Hypertarget{structServerConnection_a1a48da3a94a4b8b1c484151cb869516d}\label{structServerConnection_a1a48da3a94a4b8b1c484151cb869516d} 
+void \texorpdfstring{$\ast$}{*} {\bfseries body\+\_\+callback\+\_\+userdata}
+\item 
+\Hypertarget{structServerConnection_a19e47c21ed3f65990f8efe9329d6855d}\label{structServerConnection_a19e47c21ed3f65990f8efe9329d6855d} 
+int {\bfseries body\+\_\+streaming}
+\item 
+\Hypertarget{structServerConnection_a18a4b84df637a5c900f68d3adf4b50a4}\label{structServerConnection_a18a4b84df637a5c900f68d3adf4b50a4} 
+int {\bfseries response\+\_\+status}
+\item 
+\Hypertarget{structServerConnection_a0efb6f239cce61968170fb096c6ff1f8}\label{structServerConnection_a0efb6f239cce61968170fb096c6ff1f8} 
+\mbox{\hyperlink{group__http_gaf1f6772bf122ad6e2e90639b2877754f}{Socket\+HTTP\+\_\+\+Headers\+\_\+T}} {\bfseries response\+\_\+headers}
+\item 
+\Hypertarget{structServerConnection_afa93f78c8c290656e5a7ae5797d5488c}\label{structServerConnection_afa93f78c8c290656e5a7ae5797d5488c} 
+void \texorpdfstring{$\ast$}{*} {\bfseries response\+\_\+body}
+\item 
+\Hypertarget{structServerConnection_aa70d8f5cc078f0bf58b2f16f33ee284f}\label{structServerConnection_aa70d8f5cc078f0bf58b2f16f33ee284f} 
+size\+\_\+t {\bfseries response\+\_\+body\+\_\+len}
+\item 
+\Hypertarget{structServerConnection_aa6c7b22ff707357f8ebf8b9c54e3ce3a}\label{structServerConnection_aa6c7b22ff707357f8ebf8b9c54e3ce3a} 
+int {\bfseries response\+\_\+finished}
+\item 
+\Hypertarget{structServerConnection_a1c07abb9c086574a8deda5e022dbac54}\label{structServerConnection_a1c07abb9c086574a8deda5e022dbac54} 
+int {\bfseries response\+\_\+streaming}
+\item 
+\Hypertarget{structServerConnection_aeeeb07c5072cd428b8fa4aaedd5a7168}\label{structServerConnection_aeeeb07c5072cd428b8fa4aaedd5a7168} 
+int {\bfseries response\+\_\+headers\+\_\+sent}
+\item 
+\Hypertarget{structServerConnection_ae180aae3784c8788b76bdbf607e13282}\label{structServerConnection_ae180aae3784c8788b76bdbf607e13282} 
+int64\+\_\+t {\bfseries created\+\_\+at\+\_\+ms}
+\item 
+\Hypertarget{structServerConnection_a2d68413f411b807a1590cbf2b39fbbc9}\label{structServerConnection_a2d68413f411b807a1590cbf2b39fbbc9} 
+int64\+\_\+t {\bfseries last\+\_\+activity\+\_\+ms}
+\item 
+\Hypertarget{structServerConnection_a6d00d0e9adff3f66fefcf14b6881e8f1}\label{structServerConnection_a6d00d0e9adff3f66fefcf14b6881e8f1} 
+int64\+\_\+t {\bfseries request\+\_\+start\+\_\+ms}
+\item 
+\Hypertarget{structServerConnection_af9e0e199c60376385c0469568016329e}\label{structServerConnection_af9e0e199c60376385c0469568016329e} 
+int64\+\_\+t {\bfseries response\+\_\+start\+\_\+ms}
+\item 
+\Hypertarget{structServerConnection_ad6c56d1c7dab164c743b8f25c6f7af4a}\label{structServerConnection_ad6c56d1c7dab164c743b8f25c6f7af4a} 
+size\+\_\+t {\bfseries request\+\_\+count}
+\item 
+\Hypertarget{structServerConnection_afe467acfbbb4f6eb2d87e01ac364cf1d}\label{structServerConnection_afe467acfbbb4f6eb2d87e01ac364cf1d} 
+size\+\_\+t {\bfseries active\+\_\+requests}
+\item 
+\Hypertarget{structServerConnection_a915e3779fcf4c41d1970782ec908b78f}\label{structServerConnection_a915e3779fcf4c41d1970782ec908b78f} 
+size\+\_\+t {\bfseries memory\+\_\+used}
+\item 
+\Hypertarget{structServerConnection_a22c32e5088cc30af500747a97a0748eb}\label{structServerConnection_a22c32e5088cc30af500747a97a0748eb} 
+Arena\+\_\+T {\bfseries arena}
+\item 
+\Hypertarget{structServerConnection_aad61c4dbd0e4f9458729534514a30f24}\label{structServerConnection_aad61c4dbd0e4f9458729534514a30f24} 
+struct \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*} {\bfseries next}
+\item 
+\Hypertarget{structServerConnection_af0b47118fdb4802b30438aaf4c30157e}\label{structServerConnection_af0b47118fdb4802b30438aaf4c30157e} 
+struct \mbox{\hyperlink{structServerConnection}{Server\+Connection}} \texorpdfstring{$\ast$}{*} {\bfseries prev}
+\end{DoxyCompactItemize}
+
+
+The documentation for this struct was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+include/http/\mbox{\hyperlink{SocketHTTPServer-private_8h}{Socket\+HTTPServer-\/private.\+h}}\end{DoxyCompactItemize}

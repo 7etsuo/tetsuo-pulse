@@ -2,7 +2,7 @@
 <area shape="rect" id="Node000001" title="Happy Eyeballs (RFC 8305) implementation for fast dual&#45;stack connections." alt="" coords="172,5,335,31"/>
 <area shape="rect" id="Node000002" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="215,372,318,397"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="178,33,121,49,65,75,42,92,24,112,12,136,8,164,8,239,13,269,27,295,49,316,76,334,139,359,202,373,201,379,137,364,73,339,45,321,23,298,8,271,3,240,3,163,7,134,20,109,39,88,63,70,119,44,177,28"/>
-<area shape="rect" id="Node000004" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API." alt="" coords="315,225,443,251"/>
+<area shape="rect" id="Node000004" href="$SocketDNS_8h.html" title="Asynchronous DNS resolution API for non&#45;blocking network applications." alt="" coords="315,225,443,251"/>
 <area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="261,30,294,105,330,176,360,214,356,217,326,179,290,107,256,32"/>
 <area shape="rect" id="Node000008" href="$SocketPoll_8h.html" title="Cross&#45;platform high&#45;level interface for monitoring multiple sockets for I/O events." alt="" coords="145,79,265,104"/>
 <area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="248,33,223,69,218,66,243,30"/>
@@ -26,7 +26,7 @@
 <area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="119,176,136,212,131,214,114,179"/>
 <area shape="poly" id="edge14_Node000011_Node000002" title=" " alt="" coords="369,180,335,199,319,212,305,227,288,259,277,295,269,358,264,358,272,294,283,257,300,224,315,208,332,194,367,175"/>
 <area shape="poly" id="edge25_Node000011_Node000004" title=" " alt="" coords="398,178,388,213,383,211,393,177"/>
-<area shape="rect" id="Node000012" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="1387,299,1528,324"/>
+<area shape="rect" id="Node000012" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="1387,299,1528,324"/>
 <area shape="poly" id="edge15_Node000011_Node000012" title=" " alt="" coords="458,167,711,186,874,202,1039,223,1235,258,1396,293,1395,298,1234,263,1038,228,874,207,711,191,457,172"/>
 <area shape="rect" id="Node000020" href="$SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules." alt="" coords="856,225,1027,251"/>
 <area shape="poly" id="edge26_Node000011_Node000020" title=" " alt="" coords="458,171,843,221,842,226,457,176"/>

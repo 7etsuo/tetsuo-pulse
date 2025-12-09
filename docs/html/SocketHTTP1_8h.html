@@ -286,19 +286,19 @@ Enumerations</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
 <tr class="memitem:gaed53869d1481794448fd6e3d9d6d5e84" id="r_gaed53869d1481794448fd6e3d9d6d5e84"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gaed53869d1481794448fd6e3d9d6d5e84">SocketHTTP1_config_defaults</a> (<a class="el" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> *config)</td></tr>
-<tr class="memdesc:gaed53869d1481794448fd6e3d9d6d5e84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> with safe default values.  <br /></td></tr>
+<tr class="memdesc:gaed53869d1481794448fd6e3d9d6d5e84"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> structure with secure default values.  <br /></td></tr>
 <tr class="separator:gaed53869d1481794448fd6e3d9d6d5e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga7fb2e95c0a39df0a5c075faa55d6a6f3" id="r_ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="memItemLeft" align="right" valign="top">SocketHTTP1_Parser_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3">SocketHTTP1_Parser_new</a> (<a class="el" href="group__http1.html#gae0c5248b52a9b32c1def93401bbabe96">SocketHTTP1_ParseMode</a> mode, const <a class="el" href="group__http1.html#structSocketHTTP1__Config">SocketHTTP1_Config</a> *config, <a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena)</td></tr>
-<tr class="memdesc:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create new parser.  <br /></td></tr>
+<tr class="memdesc:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new HTTP/1.1 parser instance for request or response messages.  <br /></td></tr>
 <tr class="separator:ga7fb2e95c0a39df0a5c075faa55d6a6f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaf0a2a42b97cd8ab5340958a4aa30124f" id="r_gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gaf0a2a42b97cd8ab5340958a4aa30124f">SocketHTTP1_Parser_free</a> (SocketHTTP1_Parser_T *parser)</td></tr>
-<tr class="memdesc:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Free parser.  <br /></td></tr>
+<tr class="memdesc:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Dispose of HTTP/1.1 parser instance and release resources.  <br /></td></tr>
 <tr class="separator:gaf0a2a42b97cd8ab5340958a4aa30124f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga49a9ded0a495db9d15e7b6ec5abce5cb" id="r_ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb">SocketHTTP1_Parser_reset</a> (SocketHTTP1_Parser_T parser)</td></tr>
 <tr class="memdesc:ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset parser for next message.  <br /></td></tr>
 <tr class="separator:ga49a9ded0a495db9d15e7b6ec5abce5cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga83fa0ae51796710bc10e16154b448a3f" id="r_ga83fa0ae51796710bc10e16154b448a3f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http1.html#ga2ece68fcfe3c3e99a855f93f6a46f78e">SocketHTTP1_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f">SocketHTTP1_Parser_execute</a> (SocketHTTP1_Parser_T parser, const char *data, size_t len, size_t *consumed)</td></tr>
-<tr class="memdesc:ga83fa0ae51796710bc10e16154b448a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Parse data incrementally.  <br /></td></tr>
+<tr class="memdesc:ga83fa0ae51796710bc10e16154b448a3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Incrementally parse HTTP/1.1 message data using DFA state machine.  <br /></td></tr>
 <tr class="separator:ga83fa0ae51796710bc10e16154b448a3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae628eea962092f79332744f005bfe81f" id="r_gae628eea962092f79332744f005bfe81f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__http1.html#gad8ddb65bb2ebb0dfb013c19bceb3074e">SocketHTTP1_State</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gae628eea962092f79332744f005bfe81f">SocketHTTP1_Parser_state</a> (SocketHTTP1_Parser_T parser)</td></tr>
 <tr class="memdesc:gae628eea962092f79332744f005bfe81f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current parser state.  <br /></td></tr>
@@ -340,7 +340,7 @@ Functions</h2></td></tr>
 <tr class="memdesc:gae0a96206e67a279005be9686d159faf3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for Expect: 100-continue.  <br /></td></tr>
 <tr class="separator:gae0a96206e67a279005be9686d159faf3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga66bdb40cb195c23e4e02dfa41ad1e4b7" id="r_ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7">SocketHTTP1_serialize_request</a> (const <a class="el" href="group__http.html#structSocketHTTP__Request">SocketHTTP_Request</a> *request, char *output, size_t output_size)</td></tr>
-<tr class="memdesc:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize request to buffer.  <br /></td></tr>
+<tr class="memdesc:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize HTTP request message (headers only) to wire format.  <br /></td></tr>
 <tr class="separator:ga66bdb40cb195c23e4e02dfa41ad1e4b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab8921dc474a57cdb9e68ac329f70a100" id="r_gab8921dc474a57cdb9e68ac329f70a100"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http1.html#gab8921dc474a57cdb9e68ac329f70a100">SocketHTTP1_serialize_response</a> (const <a class="el" href="group__http.html#structSocketHTTP__Response">SocketHTTP_Response</a> *response, char *output, size_t output_size)</td></tr>
 <tr class="memdesc:gab8921dc474a57cdb9e68ac329f70a100"><td class="mdescLeft">&#160;</td><td class="mdescRight">Serialize response to buffer.  <br /></td></tr>
@@ -389,13 +389,13 @@ Variables</h2></td></tr>
 <li>Validates all header names/values for injection attacks</li>
 <li>Enforces configurable size limits</li>
 </ul>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create new parser.">SocketHTTP1_Parser_new()</a> for creating parsers. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga7fb2e95c0a39df0a5c075faa55d6a6f3" title="Create a new HTTP/1.1 parser instance for request or response messages.">SocketHTTP1_Parser_new()</a> for creating parsers. </dd>
 <dd>
-<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Parse data incrementally.">SocketHTTP1_Parser_execute()</a> for incremental parsing. </dd>
+<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> for incremental parsing. </dd>
 <dd>
-<a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7" title="Serialize request to buffer.">SocketHTTP1_serialize_request()</a> for message serialization. </dd>
+<a class="el" href="group__http1.html#ga66bdb40cb195c23e4e02dfa41ad1e4b7" title="Serialize HTTP request message (headers only) to wire format.">SocketHTTP1_serialize_request()</a> for message serialization. </dd>
 <dd>
-SocketHTTP_Headers_T for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utility Modules</a>. </dd>
+SocketHTTP_Headers_T for core HTTP types and <a class="el" href="group__utilities.html" title="Helper modules for rate limiting, retry logic, and metrics.">Utilities</a>. </dd>
 <dd>
 SocketHTTPClient_T for HTTP client functionality. </dd>
 <dd>

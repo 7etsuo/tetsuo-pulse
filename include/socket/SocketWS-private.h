@@ -173,7 +173,8 @@
  * First byte: FIN (7), RSV1-3 (6-4), Opcode (3-0)
  * Second byte: MASK (7), Payload len (6-0)
  *
- * Used in parsing (ws_frame_parse_header) and building (ws_frame_build_header).
+ * Used in parsing (ws_frame_parse_header) and building
+ * (ws_frame_build_header).
  *
  * @see RFC 6455 Section 5.2 Table 2-3 for bit positions.
  */
@@ -272,19 +273,21 @@
  * @ingroup websocket
  * @brief States for the frame parsing state machine.
  *
- * Tracks progress through frame header parsing, length extension, masking, and payload.
- * Used to handle incremental frame reception in non-blocking mode.
+ * Tracks progress through frame header parsing, length extension, masking, and
+ * payload. Used to handle incremental frame reception in non-blocking mode.
  *
  * @see ws_frame_parse_header() for state transitions.
  * @see SocketWS_FrameParse for full parse context.
  */
 typedef enum
 {
-  WS_FRAME_STATE_HEADER,       /**< Reading frame header (opcode, fin, rsv, mask, len) */
-  WS_FRAME_STATE_EXTENDED_LEN, /**< Reading extended payload length (16/64-bit) */
-  WS_FRAME_STATE_MASK_KEY,     /**< Reading 4-byte mask key (client frames only) */
-  WS_FRAME_STATE_PAYLOAD,      /**< Reading payload data */
-  WS_FRAME_STATE_COMPLETE      /**< Frame fully parsed */
+  WS_FRAME_STATE_HEADER, /**< Reading frame header (opcode, fin, rsv, mask,
+                            len) */
+  WS_FRAME_STATE_EXTENDED_LEN, /**< Reading extended payload length (16/64-bit)
+                                */
+  WS_FRAME_STATE_MASK_KEY, /**< Reading 4-byte mask key (client frames only) */
+  WS_FRAME_STATE_PAYLOAD,  /**< Reading payload data */
+  WS_FRAME_STATE_COMPLETE  /**< Frame fully parsed */
 } SocketWS_FrameState;
 
 /**
@@ -294,7 +297,8 @@ typedef enum
  *
  * Manages incremental parsing of frame headers and payloads.
  * Supports partial reads for non-blocking sockets.
- * Handles variable-length fields: opcode/fin/rsv, mask bit, 7/16/64-bit length, optional mask key.
+ * Handles variable-length fields: opcode/fin/rsv, mask bit, 7/16/64-bit
+ * length, optional mask key.
  *
  * Usage:
  * - Initialize: memset or ws_frame_reset()
@@ -312,12 +316,12 @@ typedef struct
   SocketWS_FrameState state; /**< Current parsing state */
 
   /* Parsed header fields */
-  int fin;                   /**< FIN bit: final fragment of message */
-  int rsv1;                  /**< RSV1: compression flag (permessage-deflate) */
-  int rsv2;                  /**< RSV2: reserved, must be 0 */
-  int rsv3;                  /**< RSV3: reserved, must be 0 */
-  SocketWS_Opcode opcode;    /**< Frame opcode (data/control) */
-  int masked;                /**< MASK bit: payload masked (client->server) */
+  int fin;                /**< FIN bit: final fragment of message */
+  int rsv1;               /**< RSV1: compression flag (permessage-deflate) */
+  int rsv2;               /**< RSV2: reserved, must be 0 */
+  int rsv3;               /**< RSV3: reserved, must be 0 */
+  SocketWS_Opcode opcode; /**< Frame opcode (data/control) */
+  int masked;             /**< MASK bit: payload masked (client->server) */
   unsigned char mask_key[4]; /**< 4-byte mask key if masked */
 
   /* Payload tracking */
@@ -325,9 +329,10 @@ typedef struct
   uint64_t payload_received; /**< Bytes of payload received so far */
 
   /* Header buffer for partial reads */
-  unsigned char header_buf[SOCKETWS_MAX_HEADER_SIZE]; /**< Temp buffer for header bytes */
-  size_t header_len;     /**< Bytes accumulated in header_buf */
-  size_t header_needed;  /**< Remaining bytes needed for current field */
+  unsigned char header_buf[SOCKETWS_MAX_HEADER_SIZE]; /**< Temp buffer for
+                                                         header bytes */
+  size_t header_len;    /**< Bytes accumulated in header_buf */
+  size_t header_needed; /**< Remaining bytes needed for current field */
 
 } SocketWS_FrameParse;
 
@@ -341,8 +346,8 @@ typedef struct
  * @ingroup websocket
  * @brief State for reassembling fragmented WebSocket messages.
  *
- * Accumulates data from multiple CONTINUATION frames into a single message buffer.
- * Supports UTF-8 validation for text messages across fragments.
+ * Accumulates data from multiple CONTINUATION frames into a single message
+ * buffer. Supports UTF-8 validation for text messages across fragments.
  * Handles compression flag from first frame (RSV1).
  *
  * Limits enforced via config: max_message_size, max_fragments.
@@ -350,7 +355,8 @@ typedef struct
  * Usage:
  * - Reset: ws_message_reset() before first fragment
  * - Append: ws_message_append() for each data frame fragment
- * - Finalize: ws_message_finalize() on last fragment (FIN=1), validates and delivers
+ * - Finalize: ws_message_finalize() on last fragment (FIN=1), validates and
+ * delivers
  *
  * @see ws_message_append() for adding fragments.
  * @see ws_message_finalize() for completion and validation.
@@ -359,16 +365,17 @@ typedef struct
  */
 typedef struct
 {
-  SocketWS_Opcode type;         /**< Message type: TEXT or BINARY (from first frame opcode) */
-  unsigned char *data;          /**< Reassembled message buffer (Arena-allocated) */
-  size_t len;                   /**< Current assembled length */
-  size_t capacity;              /**< Allocated buffer capacity */
-  size_t fragment_count;        /**< Number of fragments received so far */
-  int compressed;               /**< RSV1 set on first fragment (compression used) */
+  SocketWS_Opcode
+      type; /**< Message type: TEXT or BINARY (from first frame opcode) */
+  unsigned char *data;   /**< Reassembled message buffer (Arena-allocated) */
+  size_t len;            /**< Current assembled length */
+  size_t capacity;       /**< Allocated buffer capacity */
+  size_t fragment_count; /**< Number of fragments received so far */
+  int compressed;        /**< RSV1 set on first fragment (compression used) */
 
   /* UTF-8 validation state (for TEXT messages) */
-  SocketUTF8_State utf8_state;  /**< Incremental UTF-8 decoder state */
-  int utf8_initialized;         /**< Whether UTF-8 validation started */
+  SocketUTF8_State utf8_state; /**< Incremental UTF-8 decoder state */
+  int utf8_initialized;        /**< Whether UTF-8 validation started */
 
 } SocketWS_MessageAssembly;
 
@@ -392,11 +399,13 @@ typedef struct
  */
 typedef enum
 {
-  WS_HANDSHAKE_INIT,            /**< Initial state, prepare handshake data */
-  WS_HANDSHAKE_SENDING_REQUEST, /**< Client: Sending HTTP GET upgrade request */
-  WS_HANDSHAKE_READING_RESPONSE,/**< Client: Reading HTTP 101 response; Server: reading client request if needed */
-  WS_HANDSHAKE_COMPLETE,        /**< Handshake successful, transition to frame mode */
-  WS_HANDSHAKE_FAILED           /**< Handshake failed, error set */
+  WS_HANDSHAKE_INIT,             /**< Initial state, prepare handshake data */
+  WS_HANDSHAKE_SENDING_REQUEST,  /**< Client: Sending HTTP GET upgrade request
+                                  */
+  WS_HANDSHAKE_READING_RESPONSE, /**< Client: Reading HTTP 101 response;
+                                    Server: reading client request if needed */
+  WS_HANDSHAKE_COMPLETE, /**< Handshake successful, transition to frame mode */
+  WS_HANDSHAKE_FAILED    /**< Handshake failed, error set */
 } SocketWS_HandshakeState;
 
 /**
@@ -405,7 +414,8 @@ typedef enum
  * @brief Context for WebSocket HTTP upgrade handshake.
  *
  * Manages client or server handshake state, key generation/validation,
- * header negotiation (subprotocols, compression), and HTTP parsing/serialization.
+ * header negotiation (subprotocols, compression), and HTTP
+ * parsing/serialization.
  *
  * Client:
  * - Generates Sec-WebSocket-Key, builds GET request with Upgrade: websocket
@@ -418,7 +428,8 @@ typedef enum
  *
  * @see SocketWS_HandshakeState for state enum.
  * @see ws_handshake_client_init() / ws_handshake_server_init() for init.
- * @see ws_handshake_client_process() / ws_handshake_server_process() for I/O loop.
+ * @see ws_handshake_client_process() / ws_handshake_server_process() for I/O
+ * loop.
  * @see SocketCrypto_websocket_accept_compute() for key validation.
  * @see RFC 6455 Section 4.2 for client handshake, Section 4.1 for server.
  */
@@ -427,10 +438,14 @@ typedef struct
   SocketWS_HandshakeState state; /**< Current handshake state */
 
   /* Client key (generated, used to validate accept) */
-  char client_key[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]; /**< Base64 Sec-WebSocket-Key (24 chars) */
+  char client_key[SOCKET_CRYPTO_WEBSOCKET_KEY_SIZE]; /**< Base64
+                                                        Sec-WebSocket-Key (24
+                                                        chars) */
 
   /* Expected accept value */
-  char expected_accept[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]; /**< SHA1(key + magic) base64 */
+  char
+      expected_accept[SOCKET_CRYPTO_WEBSOCKET_ACCEPT_SIZE]; /**< SHA1(key +
+                                                               magic) base64 */
 
   /* HTTP parser for response */
   SocketHTTP1_Parser_T http_parser; /**< Parser for HTTP response/request */
@@ -444,9 +459,9 @@ typedef struct
   int client_max_window_bits;     /**< Client max window bits (8-15) */
 
   /* Request buffer (client: upgrade request; server: response) */
-  char *request_buf; /**< Buffer for HTTP request/response */
-  size_t request_len;/**< Total length of HTTP message */
-  size_t request_sent;/**< Bytes already sent */
+  char *request_buf;   /**< Buffer for HTTP request/response */
+  size_t request_len;  /**< Total length of HTTP message */
+  size_t request_sent; /**< Bytes already sent */
 
 } SocketWS_Handshake;
 
@@ -469,7 +484,8 @@ typedef struct
  * Per-message: Compress before framing (RSV1=1), decompress after unmasking.
  * Cleanup: ws_compression_free() on close.
  *
- * Buffers: deflate_buf/inflate_buf for zlib operations (zlib-managed? No, manual).
+ * Buffers: deflate_buf/inflate_buf for zlib operations (zlib-managed? No,
+ * manual).
  *
  * @note Requires zlib library (SOCKETWS_HAS_DEFLATE).
  * @note Separate streams for send (deflate) and recv (inflate).
@@ -478,10 +494,10 @@ typedef struct
  */
 typedef struct
 {
-  z_stream deflate_stream;  /**< zlib deflate stream for outgoing messages */
-  z_stream inflate_stream;  /**< zlib inflate stream for incoming messages */
-  int deflate_initialized;  /**< deflate stream initialized? */
-  int inflate_initialized;  /**< inflate stream initialized? */
+  z_stream deflate_stream; /**< zlib deflate stream for outgoing messages */
+  z_stream inflate_stream; /**< zlib inflate stream for incoming messages */
+  int deflate_initialized; /**< deflate stream initialized? */
+  int inflate_initialized; /**< inflate stream initialized? */
 
   /* Context takeover settings (negotiated) */
   int server_no_context_takeover; /**< Server disables context reuse */
@@ -506,46 +522,87 @@ typedef struct
 /**
  * @internal
  * @ingroup websocket
- * @brief Main WebSocket connection context (opaque in public header).
+ * @brief Opaque WebSocket connection context holding all protocol state.
  *
- * Central structure holding all state for a WebSocket connection.
- * Opaque to public users; access via public API functions only.
+ * Central opaque structure managing full WebSocket connection lifecycle,
+ * from HTTP upgrade handshake through framed data exchange to graceful
+ * closure. Publicly accessed only via SocketWS_T pointer and API functions;
+ * internal fields private and unstable.
  *
- * Lifecycle:
- * - Create: SocketWS_client_new() or SocketWS_server_accept() (allocates, initializes)
- * - Handshake: SocketWS_handshake() drives to OPEN or CLOSED
- * - I/O: SocketWS_process() on poll events, send/recv via public funcs
- * - Close: SocketWS_close() initiates graceful close
- * - Free: SocketWS_free() cleans up resources
+ *  Key Responsibilities
  *
- * Resources:
- * - arena: All dynamic allocations (buffers, strings, etc.)
- * - socket: Underlying TCP/TLS socket (not owned after transfer)
- * - recv_buf/send_buf: Circular buffers for I/O buffering
+ * - HTTP/1.1 upgrade handshake (client/server)
+ * - Frame parsing/serialization with masking/compression
+ * - Message fragmentation/reassembly with UTF-8 validation
+ * - Control frame handling (PING/PONG/CLOSE)
+ * - Auto-keepalive via periodic PINGs
+ * - Integration with SocketPoll for non-blocking I/O
+ * - Error tracking and diagnostics
  *
- * State Management:
- * - state: High-level connection state (publicly queryable)
- * - handshake: HTTP upgrade details
- * - frame: Current incoming frame parse state
- * - message: Fragment reassembly for multi-frame messages
- * - compression: Deflate context (if enabled)
- * - close_*: Close handshake tracking
- * - ping/pong: Keepalive timing and pending pings
+ *  Lifecycle Management
  *
- * Error: last_error and error_buf for detailed diagnostics.
+ * 1. **Creation**: SocketWS_client_new() or SocketWS_server_accept() allocates
+ * and inits
+ * 2. **Handshake**: SocketWS_handshake() or internal ws_handshake_*()
+ * completes upgrade
+ * 3. **Data Exchange**: SocketWS_send(), SocketWS_recv(), SocketWS_process()
+ * loop
+ * 4. **Closure**: SocketWS_close() sends CLOSE frame, awaits response
+ * 5. **Cleanup**: SocketWS_free() releases arena, buffers, timers
  *
- * Thread Safety: Not thread-safe; single-threaded use only.
- * Non-blocking: Designed for event loops with SocketPoll.
+ *  Resource Ownership
  *
- * @note All pointers (except fixed arrays) Arena-allocated.
- * @see SocketWS_T public opaque type.
- * @see SocketWS_new (internal, called by public constructors).
+ * | Field | Ownership | Notes |
+ * |-------|-----------|-------|
+ * | socket | Transferred | Caller retains? No, owned until free |
+ * | arena | Owned | All sub-allocs freed on dispose |
+ * | recv_buf/send_buf | Owned | Circular buffers for buffering |
+ * | poll | Referenced | Shared event loop instance |
+ *
+ *  State Subsystems
+ *
+ * - **Handshake**: HTTP parser, keys, negotiated extensions/subprotocols
+ * - **Frame Parser**: Incremental header/payload parse (SocketWS_FrameParse)
+ * - **Message Assembly**: Fragment collection with decompression/UTF-8
+ * (SocketWS_MessageAssembly)
+ * - **Compression**: zlib streams for permessage-deflate (if enabled)
+ * - **Timers**: Auto-ping via SocketTimer
+ * - **Error**: last_error code + formatted message
+ *
+ * Thread Safety: Not thread-safe; single-threaded use only. No internal
+ * mutexes; concurrent access may corrupt state. For multi-thread, use one ws
+ * per thread or external locking (not recommended).
+ *
+ * Non-blocking I/O: All functions handle EAGAIN/partial; integrate with
+ * SocketPoll via SocketWS_fd() and SocketWS_process().
+ *
+ * @threadsafe No - no internal synchronization; serialize all operations on ws
+ *
+ * @note Dynamic fields (strings, buffers) allocated from ws->arena
+ * @note socket field may be NULL post-transfer to higher layers
+ * @warning Direct field access undefined; use getters/setters where available
+ * @complexity Varies by operation; generally O(1) state access, O(payload) I/O
+ *
+ *  Example Internal Access (for library code)
+ *
+ * @code{.c}
+ * // Internal: accessing state (not for users)
+ * if (ws->state == WS_OPEN && ws->role == WS_CLIENT) {
+ *     ws->frame.state = WS_FRAME_STATE_HEADER;
+ * }
+ * @endcode
+ *
+ * @see SocketWS_T Public opaque typedef
+ * @see SocketWS_new() Internal constructor
+ * @see SocketWS_free() Destructor
+ * @see docs/WEBSOCKET.md Detailed WebSocket guide
  */
 struct SocketWS
 {
   /* Underlying resources */
-  Socket_T socket;      /**< TCP/TLS socket (may be NULL if ownership transferred) */
-  Arena_T arena;        /**< Memory arena for all dynamic allocations */
+  Socket_T
+      socket;    /**< TCP/TLS socket (may be NULL if ownership transferred) */
+  Arena_T arena; /**< Memory arena for all dynamic allocations */
   SocketBuf_T recv_buf; /**< Receive circular buffer for incoming data */
   SocketBuf_T send_buf; /**< Send circular buffer for outgoing data */
 
@@ -553,7 +610,8 @@ struct SocketWS
   SocketWS_Config config; /**< User-provided configuration */
 
   /* State machine */
-  SocketWS_State state; /**< High-level connection state (CONNECTING/OPEN/CLOSING/CLOSED) */
+  SocketWS_State state; /**< High-level connection state
+                           (CONNECTING/OPEN/CLOSING/CLOSED) */
   SocketWS_Role role;   /**< Client or server role (affects masking) */
 
   /* Handshake state */
@@ -567,38 +625,40 @@ struct SocketWS
 
   /* Compression state (conditional) */
 #ifdef SOCKETWS_HAS_DEFLATE
-  int compression_enabled;  /**< Compression negotiated and active? */
-  SocketWS_Compression compression; /**< Deflate/inflate streams and settings */
+  int compression_enabled; /**< Compression negotiated and active? */
+  SocketWS_Compression
+      compression; /**< Deflate/inflate streams and settings */
 #endif
 
   /* Close state */
-  int close_sent;           /**< Flag: sent CLOSE frame? */
-  int close_received;       /**< Flag: received CLOSE frame? */
+  int close_sent;                /**< Flag: sent CLOSE frame? */
+  int close_received;            /**< Flag: received CLOSE frame? */
   SocketWS_CloseCode close_code; /**< Received/sent close code */
   char close_reason[SOCKETWS_MAX_CLOSE_REASON + 1]; /**< Close reason string */
 
   /* Ping/pong tracking (monotonic time) */
-  int64_t last_ping_sent_time;    /**< Time last PING sent */
-  int64_t last_pong_received_time;/**< Time last PONG received */
-  int64_t last_pong_sent_time;    /**< Time last PONG sent (response) */
-  unsigned char pending_ping_payload[SOCKETWS_MAX_CONTROL_PAYLOAD]; /**< Pending PING payload */
-  size_t pending_ping_len;        /**< Length of pending PING payload */
-  int awaiting_pong;              /**< Expecting PONG response? */
+  int64_t last_ping_sent_time;     /**< Time last PING sent */
+  int64_t last_pong_received_time; /**< Time last PONG received */
+  int64_t last_pong_sent_time;     /**< Time last PONG sent (response) */
+  unsigned char
+      pending_ping_payload[SOCKETWS_MAX_CONTROL_PAYLOAD]; /**< Pending PING
+                                                             payload */
+  size_t pending_ping_len; /**< Length of pending PING payload */
+  int awaiting_pong;       /**< Expecting PONG response? */
 
   /* Auto-ping timer integration */
   SocketTimer_T ping_timer; /**< Internal timer for auto-pings */
   SocketPoll_T poll;        /**< Associated poll instance (for timers) */
 
   /* Error tracking */
-  SocketWS_Error last_error; /**< Last error code */
+  SocketWS_Error last_error;              /**< Last error code */
   char error_buf[SOCKETWS_ERROR_BUFSIZE]; /**< Human-readable error message */
 
   /* URL components (client connect info) */
-  char *host; /**< Target host (for client handshake) */
-  char *path; /**< Request path (for client handshake) */
-  int port;   /**< Target port */
-  int use_tls;/**< Using TLS? (wss://) */
-
+  char *host;  /**< Target host (for client handshake) */
+  char *path;  /**< Request path (for client handshake) */
+  int port;    /**< Target port */
+  int use_tls; /**< Using TLS? (wss://) */
 };
 
 /**
@@ -606,8 +666,8 @@ struct SocketWS
  * @ingroup websocket
  * @brief Opaque type for WebSocket connection (public interface).
  *
- * In public header (SocketWS.h), defined as #define T SocketWS_T \n typedef struct SocketWS *T;
- * Here, reveals the pointer to private struct SocketWS.
+ * In public header (SocketWS.h), defined as #define T SocketWS_T \n typedef
+ * struct SocketWS *T; Here, reveals the pointer to private struct SocketWS.
  * Users should use opaque T without knowledge of internal layout.
  *
  * @see SocketWS.h public header.
@@ -652,15 +712,62 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
  */
 
 /**
- * @brief Copies a string into the provided arena.
+ * @brief Arena-allocated duplicate of input string.
  * @internal
  * @ingroup websocket
- * @param arena The memory arena to allocate from.
- * @param str The input string to copy (may be NULL).
- * @return An arena-allocated copy of the string, or NULL if str is NULL or allocation fails.
- * @throws Arena_Failed if allocation fails.
- * @see socket_util_arena_strdup() for utility wrapper.
- * @see Arena.h for memory management.
+ *
+ * Provides safe string duplication using the library's arena allocator.
+ * Handles NULL input gracefully. Used internally for handshake headers,
+ * subprotocols, and other string handling. Preserves null-termination.
+ *
+ * Edge cases:
+ * - NULL str returns NULL without error.
+ * - Empty string "" allocates single null byte.
+ * - Allocation failure raises Arena_Failed exception.
+ *
+ * @param[in] arena Memory arena for allocation (must be valid).
+ * @param[in] str Input C string to duplicate (may be NULL).
+ *
+ * @return Pointer to arena-allocated copy of str, or NULL if str is NULL.
+ *         Caller should not free(); managed by arena lifecycle.
+ *
+ * @throws Arena_Failed If Arena_alloc() fails due to insufficient space.
+ *
+ * @threadsafe Yes - atomic if arena is thread-local or externally locked.
+ *             Concurrent calls safe if arena mutexed.
+ *
+ *  Basic Usage
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * char *dup = ws_copy_string(arena, "ws://example.com/path");
+ * assert(strcmp(dup, "ws://example.com/path") == 0);
+ * // dup valid until Arena_clear/dispose
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ *  With Exception Handling
+ *
+ * @code{.c}
+ * char *header_value;
+ * TRY {
+ *     header_value = ws_copy_string(arena, http_header);
+ * } EXCEPT(Arena_Failed) {
+ *     SOCKET_LOG_ERROR_MSG("Failed to duplicate header: %s", http_header);
+ *     return -1;
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Equivalent to socket_util_arena_strdup(arena, str) but internal.
+ * @note Does not perform UTF-8 validation; assumes valid C string.
+ * @warning Arena must outlive all allocated strings.
+ *
+ * @complexity O(n) time where n = strlen(str); single allocation.
+ * @complexity O(n) space for duplicated string.
+ *
+ * @see socket_util_arena_strdup() Public equivalent in utilities.
+ * @see Arena_alloc() Underlying allocation mechanism.
+ * @see Arena_dispose() For freeing allocated strings.
  */
 char *ws_copy_string (Arena_T arena, const char *str);
 
@@ -670,18 +777,91 @@ char *ws_copy_string (Arena_T arena, const char *str);
  */
 
 /**
- * @brief Sends a WebSocket control frame (PING, PONG, or CLOSE).
+ * @brief Sends WebSocket control frame: PING, PONG, or CLOSE.
  * @internal
  * @ingroup websocket
- * @param ws The WebSocket connection context.
- * @param opcode The control frame opcode (WS_OPCODE_PING, WS_OPCODE_PONG, or WS_OPCODE_CLOSE).
- * @param payload The optional payload data (NULL for no payload).
- * @param len The length of the payload (0-125 bytes; must be SOCKETWS_MAX_CONTROL_PAYLOAD or less).
- * @return 0 on success, -1 on error (sets last_error).
- * @throws SocketWS_Failed if send fails or invalid parameters.
- * @note Control frames must not be fragmented; processed immediately.
- * @see ws_send_data_frame() for data frames.
- * @see RFC 6455 Section 5.5 for control frame requirements.
+ *
+ * Constructs and transmits a control frame over the WebSocket connection.
+ * Control frames are processed immediately, cannot be fragmented, and have
+ * payload limit of 125 bytes. Used for keepalive (PING/PONG) and graceful
+ * closure (CLOSE). Automatically flushes to socket if possible; otherwise
+ * queues.
+ *
+ * Behavior:
+ * - Builds frame header with opcode, no RSV (unless extensions), masked if
+ * client.
+ * - Validates len <= 125, opcode control type.
+ * - Applies masking to payload if client role.
+ * - Appends to send_buf, calls ws_flush_send_buffer().
+ *
+ * Error conditions:
+ * - Invalid opcode (not 8/9/A): SocketWS_Failed
+ * - len > SOCKETWS_MAX_CONTROL_PAYLOAD: truncates or fails
+ * - Socket send error or closed: sets last_error, returns -1
+ *
+ * @param[in] ws Active WebSocket context (state must be OPEN)
+ * @param[in] opcode Control opcode: WS_OPCODE_CLOSE (8), WS_OPCODE_PING (9),
+ * WS_OPCODE_PONG (10)
+ * @param[in] payload Payload bytes; NULL=empty. For CLOSE:
+ * code(2B)+reason(UTF8); PING/PONG: app data
+ * @param[in] len Exact payload length (0-125 bytes)
+ *
+ * @return 0 Success: frame built and queued/flushed
+ * @return -1 Failure: error code in ws->last_error, msg in error_buf
+ *
+ * @throws SocketWS_Failed Invalid params, build error, or I/O failure
+ * @throws SocketWS_Closed Connection not in OPEN state
+ * @throws SocketWS_ProtocolError Invalid control opcode
+ *
+ * @threadsafe No - modifies ws->send_buf and socket state; serialize calls
+ *
+ *  Sending PING for Keepalive
+ *
+ * @code{.c}
+ * // Simple ping to check peer responsiveness
+ * unsigned char ping_data[] = {'H', 'e', 'l', 'l', 'o'};
+ * if (ws_send_control_frame(ws, WS_OPCODE_PING, ping_data, sizeof(ping_data))
+ * != 0) { SOCKET_LOG_ERROR("PING failed: %s", SocketWS_get_error_msg(ws));
+ *     // Consider closing connection
+ * }
+ * @endcode
+ *
+ *  Initiating Graceful Close
+ *
+ * @code{.c}
+ * // Send CLOSE with normal code 1000
+ * uint16_t code = htons(1000); // Big-endian
+ * TRY {
+ *     ws_send_control_frame(ws, WS_OPCODE_CLOSE, (unsigned char*)&code, 2);
+ *     ws->state = WS_CLOSING;  // Update state
+ * } EXCEPT(SocketWS_Failed) {
+ *     // Fallback to hard close
+ *     Socket_shutdown(ws->socket, SHUT_RDWR);
+ * } END_TRY;
+ * @endcode
+ *
+ *  Responding to PING
+ *
+ * @code{.c}
+ * // In frame handler: echo payload back as PONG
+ * if (opcode == WS_OPCODE_PING) {
+ *     ws_send_control_frame(ws, WS_OPCODE_PONG, received_payload,
+ * received_len);
+ * }
+ * @endcode
+ *
+ * @note Payload for CLOSE: first 2 bytes uint16 BE status code, rest UTF-8
+ * reason (total <=125)
+ * @warning Use only valid close codes; see ws_is_valid_close_code()
+ * @note If ws->config.close_auto_respond enabled, CLOSE triggers peer response
+ * @complexity O(1 + len) - constant time header + linear payload mask/copy
+ *
+ * @see ws_send_data_frame() For fragmented data messages
+ * @see ws_handle_control_frame() Incoming control processing
+ * @see ws_send_close() Higher-level CLOSE sender
+ * @see ws_flush_send_buffer() Underlying flush mechanism
+ * @see RFC 6455 Sec. 5.5 (Control Frames), 7.1 (Close), 5.5.2 (Ping), 5.5.3
+ * (Pong)
  */
 int ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
                            const unsigned char *payload, size_t len);
@@ -711,13 +891,52 @@ int ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  */
 
 /**
- * @brief Resets the frame parsing state to initial for the next incoming frame.
+ * @brief Reset frame parser to initial state for new incoming frame.
  * @internal
  * @ingroup websocket
- * @param frame The frame parse context to reset.
- * @note Clears all fields except possibly persistent state if needed.
- * @see ws_frame_parse_header() to start parsing new frame.
- * @see SocketWS_FrameParse for structure details.
+ *
+ * Prepares SocketWS_FrameParse for parsing a new WebSocket frame header.
+ * Clears accumulated header bytes, resets state to HEADER, zeros parsed fields
+ * (fin, rsv, opcode, masked, mask_key, payload_len, payload_received), resets
+ * header_len and header_needed. Essential for incremental parsing in loops.
+ *
+ * Usage pattern: Call after successful frame parse or to recover from
+ * partial/error. Does not allocate/deallocate; safe to call frequently.
+ *
+ * @param[in,out] frame Pointer to frame parse structure (fields reset)
+ *
+ * @return void
+ *
+ * @throws None
+ *
+ * @threadsafe Yes - self-contained, no shared state if frame local
+ *
+ *  Initialization and Reset
+ *
+ * @code{.c}
+ * // Initial setup
+ * SocketWS_FrameParse frame;
+ * memset(&frame, 0, sizeof(frame));  // Or use ws_frame_reset(&frame);
+ *
+ * // In receive loop
+ * size_t consumed;
+ * SocketWS_Error err = ws_frame_parse_header(&frame, recv_data, recv_len,
+ * &consumed); if (err == WS_OK) {
+ *     // Header parsed, now read payload
+ *     // ... process payload ...
+ *     ws_frame_reset(&frame);  // Ready for next
+ * } else if (err == WS_PROTOCOL_ERROR) {
+ *     ws_frame_reset(&frame);  // Recover
+ * }
+ * @endcode
+ *
+ * @note Can be used interchangeably with memset(&frame, 0, sizeof(frame))
+ * @warning Ensure frame struct is properly aligned for header_buf
+ * @complexity O(1) - fixed field assignments and memset if used
+ *
+ * @see ws_frame_parse_header() Next step after reset
+ * @see SocketWS_FrameParse Full structure documentation
+ * @see ws_message_reset() Analogous for message reassembly
  */
 void ws_frame_reset (SocketWS_FrameParse *frame);
 
@@ -729,8 +948,8 @@ void ws_frame_reset (SocketWS_FrameParse *frame);
  * @param data Buffer containing incoming frame bytes.
  * @param len Length of data buffer.
  * @param[out] consumed Number of bytes consumed from data (updated on call).
- * @return SocketWS_Error: WS_OK if header fully parsed, WS_NEED_MORE_DATA if incomplete,
- *         or error code (e.g., WS_PROTOCOL_ERROR for invalid header).
+ * @return SocketWS_Error: WS_OK if header fully parsed, WS_NEED_MORE_DATA if
+ * incomplete, or error code (e.g., WS_PROTOCOL_ERROR for invalid header).
  * @note Advances frame->state based on bytes parsed.
  * @note Handles variable header length (2-14 bytes).
  * @see ws_frame_reset() before first call.
@@ -744,14 +963,17 @@ SocketWS_Error ws_frame_parse_header (SocketWS_FrameParse *frame,
  * @brief Builds the binary WebSocket frame header into output buffer.
  * @internal
  * @ingroup websocket
- * @param header Output buffer for header bytes (must hold at least SOCKETWS_MAX_HEADER_SIZE).
+ * @param header Output buffer for header bytes (must hold at least
+ * SOCKETWS_MAX_HEADER_SIZE).
  * @param fin Non-zero if final fragment (sets FIN bit).
  * @param opcode The frame opcode.
  * @param masked Non-zero if payload is masked (client frames).
  * @param mask_key 4-byte mask key if masked, ignored otherwise.
  * @param payload_len The payload length (encodes as 7/16/64-bit).
- * @return Number of bytes written to header (2-14), or 0 on error (invalid params).
- * @note Validates opcode and length; does not include payload or mask application.
+ * @return Number of bytes written to header (2-14), or 0 on error (invalid
+ * params).
+ * @note Validates opcode and length; does not include payload or mask
+ * application.
  * @see ws_mask_payload() to mask payload after header.
  * @see RFC 6455 Section 5.2 for header encoding details.
  */
@@ -804,7 +1026,8 @@ size_t ws_mask_payload_offset (unsigned char *data, size_t len,
  * @ingroup websocket
  * @param ws The WebSocket context.
  * @return 0 on success, -1 on error (sets last_error).
- * @note Generates random Sec-WebSocket-Key and constructs HTTP GET upgrade request.
+ * @note Generates random Sec-WebSocket-Key and constructs HTTP GET upgrade
+ * request.
  * @note Sets handshake.state to WS_HANDSHAKE_SENDING_REQUEST.
  * @see ws_handshake_client_process() to send request and read response.
  * @see SocketCrypto for key generation.
@@ -817,8 +1040,8 @@ int ws_handshake_client_init (SocketWS_T ws);
  * @internal
  * @ingroup websocket
  * @param ws The WebSocket context.
- * @return 0 if handshake complete (state=COMPLETE), 1 if in progress (need more I/O),
- *         -1 on error (sets last_error, state=FAILED).
+ * @return 0 if handshake complete (state=COMPLETE), 1 if in progress (need
+ * more I/O), -1 on error (sets last_error, state=FAILED).
  * @note Handles sending request and receiving response incrementally.
  * @note Validates Sec-WebSocket-Accept header.
  * @see ws_handshake_client_init() to start.
@@ -883,7 +1106,8 @@ int ws_handshake_validate_accept (SocketWS_T ws, const char *accept);
  * @param ws The WebSocket context with negotiated compression params.
  * @return 0 on success, -1 on error (zlib init fail, sets last_error).
  * @note Called after handshake if compression negotiated.
- * @note Sets up deflate and inflate streams with window bits, no-takeover flags.
+ * @note Sets up deflate and inflate streams with window bits, no-takeover
+ * flags.
  * @see ws_compression_free() for cleanup.
  * @see RFC 7692 for permessage-deflate parameters.
  */
@@ -908,7 +1132,8 @@ void ws_compression_free (SocketWS_T ws);
  * @param ws The WebSocket context with compression config.
  * @param input Uncompressed input data.
  * @param input_len Length of input.
- * @param[out] output Pointer to compressed data (allocated by function using arena).
+ * @param[out] output Pointer to compressed data (allocated by function using
+ * arena).
  * @param[out] output_len Length of compressed output.
  * @return 0 on success, -1 on zlib error.
  * @note Per-message compression; reset context if no-takeover.
@@ -1036,7 +1261,8 @@ void ws_message_reset (SocketWS_MessageAssembly *message);
  * @param data The fragment payload (unmasked).
  * @param len Length of fragment.
  * @param is_text Non-zero if text message (enables UTF-8 validation).
- * @return 0 on success, -1 on error (exceeds max size/fragments, UTF-8 invalid).
+ * @return 0 on success, -1 on error (exceeds max size/fragments, UTF-8
+ * invalid).
  * @note Updates message.len and fragment_count; checks limits.
  * @note Decompresses if RSV1 set on first fragment.
  * @see ws_message_finalize() called on FIN=1.

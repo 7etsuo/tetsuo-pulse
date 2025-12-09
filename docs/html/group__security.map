@@ -1,6 +1,9 @@
 <map id="Security Modules" name="Security Modules">
-<area shape="rect" id="Node000002" href="$group__dtls__config.html" title="Secure default constants for DTLS protocol parameters, MTU management, cookie protection,..." alt="" coords="321,5,459,45"/>
-<area shape="rect" id="Node000003" href="$group__dtls__context.html" title="Secure DTLS context configuration and lifecycle management." alt="" coords="297,70,483,95"/>
-<area shape="rect" id="Node000001" title="TLS encryption and security protection mechanisms." alt="" coords="5,87,128,113"/>
-<area shape="rect" id="Node000004" href="$group__tls__config.html" title="Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers,..." alt="" coords="295,129,485,154"/>
+<area shape="rect" id="Node000003" href="$group__dtls.html" title="Secure datagram communication using DTLS over UDP sockets." alt="" coords="313,5,467,45"/>
+<area shape="rect" id="Node000004" href="$group__dtls__config.html" title="Secure default constants for DTLS protocol parameters, MTU management, cookie protection,..." alt="" coords="321,69,459,109"/>
+<area shape="rect" id="Node000005" href="$group__dtls__context.html" title="Secure DTLS context configuration and lifecycle management." alt="" coords="297,134,483,159"/>
+<area shape="rect" id="Node000002" href="$group__ip__tracker.html" title="Per&#45;IP connection tracking for rate limiting and DoS protection." alt="" coords="311,183,469,209"/>
+<area shape="rect" id="Node000001" title="Comprehensive security protections for network applications." alt="" coords="5,169,128,194"/>
+<area shape="rect" id="Node000006" href="$group__tls__config.html" title="Secure default constants for TLS protocol versions, cipher suites, timeouts, buffers,..." alt="" coords="295,233,485,258"/>
+<area shape="rect" id="Node000007" href="$group__tls__context.html" title="Secure TLS context configuration, certificate handling, and advanced features like OCSP stapling,..." alt="" coords="303,282,477,307"/>
 </map>

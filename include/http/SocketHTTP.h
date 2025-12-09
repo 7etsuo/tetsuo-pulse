@@ -1,15 +1,20 @@
 /**
  * @defgroup http HTTP Modules
- * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support.
+ * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and
+ * server support.
  *
  * The HTTP group provides comprehensive HTTP protocol support including
  * parsing, serialization, client/server implementations, and advanced
  * features. Key components include:
- * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes (@ref http)
- * - SocketHTTP1: HTTP/1.1 parsing and serialization (@ref http1 "HTTP/1.1 Module")
+ * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes (@ref
+ * http)
+ * - SocketHTTP1: HTTP/1.1 parsing and serialization (@ref http1 "HTTP/1.1
+ * Module")
  * - SocketHTTP2: HTTP/2 protocol implementation (@ref http2 "HTTP/2 Module")
- * - SocketHTTPClient: High-level HTTP client with pooling (@ref http_client "HTTP Client Module")
- * - SocketHTTPServer: HTTP server implementation (@ref http_server "HTTP Server Module")
+ * - SocketHTTPClient: High-level HTTP client with pooling (@ref http_client
+ * "HTTP Client Module")
+ * - SocketHTTPServer: HTTP server implementation (@ref http_server "HTTP
+ * Server Module")
  * - SocketHPACK: HTTP/2 header compression (@ref hpack "HPACK Module")
  *
  * @see foundation for base infrastructure.
@@ -23,7 +28,8 @@
 /**
  * @file SocketHTTP.h
  * @ingroup http
- * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.
+ * @brief Protocol-agnostic HTTP types, header handling, URI parsing, and
+ * utilities.
  *
  * Provides protocol-agnostic HTTP types, header handling, URI parsing,
  * and date/media type utilities. Foundation for HTTP/1.1 and HTTP/2.
@@ -78,14 +84,17 @@
  * @brief Maximum allowed length for HTTP header names, in bytes.
  * @ingroup http
  *
- * This configurable limit protects against denial-of-service attacks via excessively long
- * header names. The default value of 256 bytes is sufficient for all standard HTTP headers
- * (e.g., "Authorization", "Content-Type") and most custom headers.
+ * This configurable limit protects against denial-of-service attacks via
+ * excessively long header names. The default value of 256 bytes is sufficient
+ * for all standard HTTP headers (e.g., "Authorization", "Content-Type") and
+ * most custom headers.
  *
- * Redefine before including SocketHTTP.h to adjust for specific needs, but keep conservative
- * for security. Exceeding this during parsing raises SocketHTTP_Failed.
+ * Redefine before including SocketHTTP.h to adjust for specific needs, but
+ * keep conservative for security. Exceeding this during parsing raises
+ * SocketHTTP_Failed.
  *
- * @note Header names must also be valid tokens per RFC 9110 (tchar characters only).
+ * @note Header names must also be valid tokens per RFC 9110 (tchar characters
+ * only).
  * @see SocketHTTP_header_name_valid() for validation function.
  * @see SocketHTTP_MAX_HEADER_VALUE for value length limits.
  * @see SocketHTTP_MAX_HEADER_SIZE for total headers limit.
@@ -98,13 +107,15 @@
  * @brief Maximum allowed length for individual HTTP header values, in bytes.
  * @ingroup http
  *
- * Limits single header values to prevent memory exhaustion or buffer overflows.
- * Default 8 KiB accommodates large values like base64-encoded data in Authorization or cookies.
- * Larger values may indicate attacks; adjust cautiously.
+ * Limits single header values to prevent memory exhaustion or buffer
+ * overflows. Default 8 KiB accommodates large values like base64-encoded data
+ * in Authorization or cookies. Larger values may indicate attacks; adjust
+ * cautiously.
  *
  * Exceeding this during addition or parsing triggers error or exception.
  *
- * @note Values are validated to exclude control characters (CR/LF/NUL) for security.
+ * @note Values are validated to exclude control characters (CR/LF/NUL) for
+ * security.
  * @see SocketHTTP_header_value_valid() for validation.
  * @see SocketHTTP_MAX_HEADER_NAME for name limits.
  * @see SocketHTTP_MAX_HEADERS for count limits.
@@ -117,11 +128,13 @@
  * @brief Maximum total size for all HTTP headers combined, in bytes.
  * @ingroup http
  *
- * Cumulative limit on header block size to mitigate DoS from many/small headers or few/large ones.
- * Default 64 KiB is generous for typical requests but protects servers from abuse.
- * Used in parsing to prevent excessive memory use.
+ * Cumulative limit on header block size to mitigate DoS from many/small
+ * headers or few/large ones. Default 64 KiB is generous for typical requests
+ * but protects servers from abuse. Used in parsing to prevent excessive memory
+ * use.
  *
- * @note Enforced in header collection; exceeding raises SocketHTTP_Failed in parsers.
+ * @note Enforced in header collection; exceeding raises SocketHTTP_Failed in
+ * parsers.
  * @see SocketHTTP_Headers_count() for number of headers.
  * @see SocketHTTP_MAX_HEADERS for maximum count.
  */
@@ -133,8 +146,8 @@
  * @brief Maximum number of HTTP headers allowed in a collection.
  * @ingroup http
  *
- * Limits header count to prevent resource exhaustion from header flooding attacks.
- * Default 100 is ample for standard HTTP/1.1 and HTTP/2 requests.
+ * Limits header count to prevent resource exhaustion from header flooding
+ * attacks. Default 100 is ample for standard HTTP/1.1 and HTTP/2 requests.
  * Duplicate headers (e.g., multiple Set-Cookie) count separately.
  *
  * @note HTTP/2 has separate frame limits; this applies to logical header sets.
@@ -149,12 +162,14 @@
  * @brief Maximum length for URI strings during parsing, in bytes.
  * @ingroup http
  *
- * Prevents DoS from oversized URIs. Default 8 KiB covers complex queries and paths.
- * Enforced in SocketHTTP_URI_parse(); longer URIs raise URI_PARSE_TOO_LONG.
+ * Prevents DoS from oversized URIs. Default 8 KiB covers complex queries and
+ * paths. Enforced in SocketHTTP_URI_parse(); longer URIs raise
+ * URI_PARSE_TOO_LONG.
  *
  * @note Does not limit encoded size; decoded may be smaller.
  * @see SocketHTTP_URI_parse() for URI parsing.
- * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for percent handling.
+ * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for percent
+ * handling.
  */
 #ifndef SOCKETHTTP_MAX_URI_LEN
 #define SOCKETHTTP_MAX_URI_LEN (8 * 1024)
@@ -183,24 +198,70 @@
  * @ingroup http
  *
  * Use for general errors in HTTP core utilities. Specific errors should use
- * module exceptions like SocketHTTP1_ParseError for parsers.
+ * module exceptions like SocketHTTP_ParseError, SocketHTTP1_ParseError.
  */
 extern const Except_T SocketHTTP_Failed;
+
+/**
+ * @brief SocketHTTP_ParseError - Error during core HTTP parsing operations.
+ * @ingroup http
+ *
+ * Raised for syntax errors in HTTP-date parsing, media type parsing, content
+ * negotiation, or other core string parsing functions in SocketHTTP module.
+ *
+ * @see SocketHTTP_date_parse() may raise this for invalid date formats.
+ * @see SocketHTTP_MediaType_parse() for media type syntax errors.
+ * @see SocketHTTP_parse_accept() for Accept header parsing failures.
+ */
+extern const Except_T SocketHTTP_ParseError;
+
+/**
+ * @brief SocketHTTP_InvalidURI - Invalid URI syntax or validation failure.
+ * @ingroup http
+ *
+ * Specific to URI parsing and validation failures, such as malformed scheme,
+ * invalid host (e.g., bad IPv6 literal), out-of-range port, or disallowed
+ * characters in path/query/fragment per RFC 3986.
+ *
+ * @see SocketHTTP_URI_parse() throws this on invalid URI components.
+ * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for
+ * percent-encoding errors.
+ */
+extern const Except_T SocketHTTP_InvalidURI;
+
+/**
+ * @brief SocketHTTP_InvalidHeader - Invalid HTTP header name or value.
+ * @ingroup http
+ *
+ * Raised when adding or validating headers that violate RFC 9110 rules:
+ * - Invalid token characters in header names
+ * - Control characters (CR/LF/NUL) in header values (prevents injection)
+ * - Exceeding max name/value size limits
+ * - Header count exceeding configured maximum
+ *
+ * @see SocketHTTP_Headers_add() returns error but may raise in future strict
+ * modes.
+ * @see SocketHTTP_header_name_valid() and SocketHTTP_header_value_valid()
+ * checks.
+ */
+extern const Except_T SocketHTTP_InvalidHeader;
 
 /* ============================================================================
  * HTTP Version
  * ============================================================================
  */
 
- /**
-  * @brief HTTP protocol versions supported by the library.
-  * @ingroup http
-  *
-  * Enum values are major version * 10 + minor version for easy comparison (e.g., 11 for HTTP/1.1).
-  * Supports HTTP/0.9 to HTTP/3 for compatibility and future-proofing.
-  * @see SocketHTTP_version_string() to get the string representation (e.g., "HTTP/1.1").
-  * @see SocketHTTP_version_parse() to parse version from string.
-  */
+/**
+ * @brief HTTP protocol versions supported by the library.
+ * @ingroup http
+ *
+ * Enum values are major version * 10 + minor version for easy comparison
+ * (e.g., 11 for HTTP/1.1). Supports HTTP/0.9 to HTTP/3 for compatibility and
+ * future-proofing.
+ * @see SocketHTTP_version_string() to get the string representation (e.g.,
+ * "HTTP/1.1").
+ * @see SocketHTTP_version_parse() to parse version from string.
+ */
 typedef enum
 {
   HTTP_VERSION_0_9 = 9,  /**< HTTP/0.9 (simple, no headers) */
@@ -235,46 +296,63 @@ extern SocketHTTP_Version SocketHTTP_version_parse (const char *str,
  * ============================================================================
  */
 
- /**
-  * @brief Standard HTTP request methods as defined in RFC 9110 and extensions.
-  * @ingroup http
-  *
-  * Includes all methods from RFC 9110 Section 9 plus PATCH (RFC 5789).
-  * HTTP_METHOD_UNKNOWN indicates an unrecognized or custom method.
-  * @see SocketHTTP_method_name() to get canonical string name.
-  * @see SocketHTTP_method_parse() to parse method from request line.
-  * @see SocketHTTP_method_properties() for semantic properties like safety and idempotency.
-  * @see SocketHTTP_method_valid() to validate custom method tokens per RFC 9110 token rules.
-  */
+/**
+ * @brief Standard HTTP request methods as defined in RFC 9110 and extensions.
+ * @ingroup http
+ *
+ * Includes all methods from RFC 9110 Section 9 plus PATCH (RFC 5789).
+ * HTTP_METHOD_UNKNOWN indicates an unrecognized or custom method.
+ * @see SocketHTTP_method_name() to get canonical string name.
+ * @see SocketHTTP_method_parse() to parse method from request line.
+ * @see SocketHTTP_method_properties() for semantic properties like safety and
+ * idempotency.
+ * @see SocketHTTP_method_valid() to validate custom method tokens per RFC 9110
+ * token rules.
+ */
 typedef enum
 {
-  HTTP_METHOD_GET = 0,     /**< RFC 9110 Section 9.3.1 - Safe, idempotent, cacheable; retrieves resource */
-  HTTP_METHOD_HEAD,        /**< RFC 9110 Section 9.3.2 - Like GET but response has no body; used for metadata */
-  HTTP_METHOD_POST,        /**< RFC 9110 Section 9.3.3 - Not safe or idempotent; creates/submits data */
-  HTTP_METHOD_PUT,         /**< RFC 9110 Section 9.3.4 - Idempotent; creates or replaces resource at URI */
-  HTTP_METHOD_DELETE,      /**< RFC 9110 Section 9.3.5 - Idempotent; requests deletion of resource */
-  HTTP_METHOD_CONNECT,     /**< RFC 9110 Section 9.3.6 - Establishes tunnel to target host; used by proxies */
-  HTTP_METHOD_OPTIONS,     /**< RFC 9110 Section 9.3.7 - Safe; describes communication options for target resource */
-  HTTP_METHOD_TRACE,       /**< RFC 9110 Section 9.3.8 - Safe, idempotent; performs test loop-back for diagnostics */
-  HTTP_METHOD_PATCH,       /**< RFC 5789 - Applies partial modifications to resource; not always idempotent */
+  HTTP_METHOD_GET = 0, /**< RFC 9110 Section 9.3.1 - Safe, idempotent,
+                          cacheable; retrieves resource */
+  HTTP_METHOD_HEAD, /**< RFC 9110 Section 9.3.2 - Like GET but response has no
+                       body; used for metadata */
+  HTTP_METHOD_POST, /**< RFC 9110 Section 9.3.3 - Not safe or idempotent;
+                       creates/submits data */
+  HTTP_METHOD_PUT,  /**< RFC 9110 Section 9.3.4 - Idempotent; creates or
+                       replaces resource at URI */
+  HTTP_METHOD_DELETE,  /**< RFC 9110 Section 9.3.5 - Idempotent; requests
+                          deletion of resource */
+  HTTP_METHOD_CONNECT, /**< RFC 9110 Section 9.3.6 - Establishes tunnel to
+                          target host; used by proxies */
+  HTTP_METHOD_OPTIONS, /**< RFC 9110 Section 9.3.7 - Safe; describes
+                          communication options for target resource */
+  HTTP_METHOD_TRACE,   /**< RFC 9110 Section 9.3.8 - Safe, idempotent; performs
+                          test loop-back for diagnostics */
+  HTTP_METHOD_PATCH, /**< RFC 5789 - Applies partial modifications to resource;
+                        not always idempotent */
   HTTP_METHOD_UNKNOWN = -1 /**< Unrecognized or extension method */
 } SocketHTTP_Method;
 
 /**
- * @brief Semantic properties of an HTTP method as defined in RFC 9110 Section 9.2.
+ * @brief Semantic properties of an HTTP method as defined in RFC 9110
+ * Section 9.2.
  * @ingroup http
  *
- * Bit fields indicating method safety, idempotency, cacheability, and body expectations.
- * Used for request validation, caching decisions, and protocol compliance.
+ * Bit fields indicating method safety, idempotency, cacheability, and body
+ * expectations. Used for request validation, caching decisions, and protocol
+ * compliance.
  * @see SocketHTTP_method_properties() to retrieve properties for a method.
  */
 typedef struct
 {
-  unsigned safe : 1;          /**< 1 if method is safe (does not modify server resources) */
-  unsigned idempotent : 1;    /**< 1 if multiple identical requests have same effect as one */
-  unsigned cacheable : 1;     /**< 1 if response to successful request is cacheable */
+  unsigned
+      safe : 1; /**< 1 if method is safe (does not modify server resources) */
+  unsigned idempotent : 1; /**< 1 if multiple identical requests have same
+                              effect as one */
+  unsigned
+      cacheable : 1; /**< 1 if response to successful request is cacheable */
   unsigned has_body : 1;      /**< 1 if request is allowed to have a body */
-  unsigned response_body : 1; /**< 1 if successful response includes a body (except for HEAD) */
+  unsigned response_body : 1; /**< 1 if successful response includes a body
+                                 (except for HEAD) */
 } SocketHTTP_MethodProperties;
 
 /**
@@ -324,12 +402,14 @@ extern int SocketHTTP_method_valid (const char *str, size_t len);
  */
 
 /**
- * @brief HTTP status codes as defined in RFC 9110 Section 15 and common extensions.
+ * @brief HTTP status codes as defined in RFC 9110 Section 15 and common
+ * extensions.
  * @ingroup http
  *
- * Includes standard 1xx-5xx codes plus WebDAV (RFC 4918), HTTP/2 extensions, and others.
- * Use SocketHTTP_status_valid() to check range, SocketHTTP_status_category() for class,
- * and SocketHTTP_status_reason() for reason phrase.
+ * Includes standard 1xx-5xx codes plus WebDAV (RFC 4918), HTTP/2 extensions,
+ * and others. Use SocketHTTP_status_valid() to check range,
+ * SocketHTTP_status_category() for class, and SocketHTTP_status_reason() for
+ * reason phrase.
  * @see SocketHTTP_status_reason() to get standardized reason phrase.
  * @see SocketHTTP_status_category() to get category (1-5).
  * @see SocketHTTP_status_valid() to validate code is in 100-599 range.
@@ -337,87 +417,105 @@ extern int SocketHTTP_method_valid (const char *str, size_t len);
 typedef enum
 {
   /* 1xx Informational - Request received, continuing process */
-  HTTP_STATUS_CONTINUE = 100,               /**< Continue with request */
-  HTTP_STATUS_SWITCHING_PROTOCOLS = 101,    /**< Server agrees to upgrade protocol */
-  HTTP_STATUS_PROCESSING = 102,             /**< RFC 2518 WebDAV - Processing request */
-  HTTP_STATUS_EARLY_HINTS = 103,            /**< RFC 8297 - Early hints for resource links */
+  HTTP_STATUS_CONTINUE = 100, /**< Continue with request */
+  HTTP_STATUS_SWITCHING_PROTOCOLS
+  = 101,                        /**< Server agrees to upgrade protocol */
+  HTTP_STATUS_PROCESSING = 102, /**< RFC 2518 WebDAV - Processing request */
+  HTTP_STATUS_EARLY_HINTS
+  = 103, /**< RFC 8297 - Early hints for resource links */
 
   /* 2xx Successful - Request successful */
-  HTTP_STATUS_OK = 200,                     /**< Standard success */
-  HTTP_STATUS_CREATED = 201,                /**< Resource created */
-  HTTP_STATUS_ACCEPTED = 202,               /**< Accepted for processing */
-  HTTP_STATUS_NON_AUTHORITATIVE = 203,      /**< Non-authoritative information */
-  HTTP_STATUS_NO_CONTENT = 204,             /**< Success, no content */
-  HTTP_STATUS_RESET_CONTENT = 205,          /**< Reset content (user agent refresh) */
-  HTTP_STATUS_PARTIAL_CONTENT = 206,        /**< Partial content (range request) */
-  HTTP_STATUS_MULTI_STATUS = 207,           /**< RFC 4918 WebDAV - Multiple statuses */
-  HTTP_STATUS_ALREADY_REPORTED = 208,       /**< RFC 5842 WebDAV - Avoid infinite loops */
-  HTTP_STATUS_IM_USED = 226,                /**< RFC 3229 Delta encoding - Instance manipulated */
+  HTTP_STATUS_OK = 200,                /**< Standard success */
+  HTTP_STATUS_CREATED = 201,           /**< Resource created */
+  HTTP_STATUS_ACCEPTED = 202,          /**< Accepted for processing */
+  HTTP_STATUS_NON_AUTHORITATIVE = 203, /**< Non-authoritative information */
+  HTTP_STATUS_NO_CONTENT = 204,        /**< Success, no content */
+  HTTP_STATUS_RESET_CONTENT = 205,   /**< Reset content (user agent refresh) */
+  HTTP_STATUS_PARTIAL_CONTENT = 206, /**< Partial content (range request) */
+  HTTP_STATUS_MULTI_STATUS = 207, /**< RFC 4918 WebDAV - Multiple statuses */
+  HTTP_STATUS_ALREADY_REPORTED
+  = 208, /**< RFC 5842 WebDAV - Avoid infinite loops */
+  HTTP_STATUS_IM_USED
+  = 226, /**< RFC 3229 Delta encoding - Instance manipulated */
 
   /* 3xx Redirection - Further action needed */
-  HTTP_STATUS_MULTIPLE_CHOICES = 300,       /**< Multiple resource representations */
-  HTTP_STATUS_MOVED_PERMANENTLY = 301,      /**< Permanent redirect */
-  HTTP_STATUS_FOUND = 302,                  /**< Temporary redirect */
-  HTTP_STATUS_SEE_OTHER = 303,              /**< See other location */
-  HTTP_STATUS_NOT_MODIFIED = 304,           /**< Not modified (conditional request) */
-  HTTP_STATUS_USE_PROXY = 305,              /**< Deprecated - Use proxy (absolute URI) */
-  HTTP_STATUS_TEMPORARY_REDIRECT = 307,     /**< Temporary redirect, preserve method */
-  HTTP_STATUS_PERMANENT_REDIRECT = 308,     /**< RFC 7238 - Permanent redirect, preserve method */
+  HTTP_STATUS_MULTIPLE_CHOICES = 300, /**< Multiple resource representations */
+  HTTP_STATUS_MOVED_PERMANENTLY = 301, /**< Permanent redirect */
+  HTTP_STATUS_FOUND = 302,             /**< Temporary redirect */
+  HTTP_STATUS_SEE_OTHER = 303,         /**< See other location */
+  HTTP_STATUS_NOT_MODIFIED = 304, /**< Not modified (conditional request) */
+  HTTP_STATUS_USE_PROXY = 305,    /**< Deprecated - Use proxy (absolute URI) */
+  HTTP_STATUS_TEMPORARY_REDIRECT
+  = 307, /**< Temporary redirect, preserve method */
+  HTTP_STATUS_PERMANENT_REDIRECT
+  = 308, /**< RFC 7238 - Permanent redirect, preserve method */
 
   /* 4xx Client Error - Client error */
-  HTTP_STATUS_BAD_REQUEST = 400,            /**< Invalid request syntax */
-  HTTP_STATUS_UNAUTHORIZED = 401,           /**< Authentication required */
-  HTTP_STATUS_PAYMENT_REQUIRED = 402,       /**< Payment required (reserved) */
-  HTTP_STATUS_FORBIDDEN = 403,              /**< Forbidden */
-  HTTP_STATUS_NOT_FOUND = 404,              /**< Resource not found */
-  HTTP_STATUS_METHOD_NOT_ALLOWED = 405,     /**< Method not allowed for resource */
-  HTTP_STATUS_NOT_ACCEPTABLE = 406,         /**< No acceptable representation */
-  HTTP_STATUS_PROXY_AUTH_REQUIRED = 407,    /**< Proxy authentication required */
-  HTTP_STATUS_REQUEST_TIMEOUT = 408,        /**< Request timeout */
-  HTTP_STATUS_CONFLICT = 409,               /**< Resource conflict */
-  HTTP_STATUS_GONE = 410,                   /**< Resource permanently gone */
-  HTTP_STATUS_LENGTH_REQUIRED = 411,        /**< Content-Length required */
-  HTTP_STATUS_PRECONDITION_FAILED = 412,    /**< Precondition failed */
-  HTTP_STATUS_CONTENT_TOO_LARGE = 413,      /**< Payload too large */
-  HTTP_STATUS_URI_TOO_LONG = 414,           /**< URI too long */
+  HTTP_STATUS_BAD_REQUEST = 400,        /**< Invalid request syntax */
+  HTTP_STATUS_UNAUTHORIZED = 401,       /**< Authentication required */
+  HTTP_STATUS_PAYMENT_REQUIRED = 402,   /**< Payment required (reserved) */
+  HTTP_STATUS_FORBIDDEN = 403,          /**< Forbidden */
+  HTTP_STATUS_NOT_FOUND = 404,          /**< Resource not found */
+  HTTP_STATUS_METHOD_NOT_ALLOWED = 405, /**< Method not allowed for resource */
+  HTTP_STATUS_NOT_ACCEPTABLE = 406,     /**< No acceptable representation */
+  HTTP_STATUS_PROXY_AUTH_REQUIRED = 407, /**< Proxy authentication required */
+  HTTP_STATUS_REQUEST_TIMEOUT = 408,     /**< Request timeout */
+  HTTP_STATUS_CONFLICT = 409,            /**< Resource conflict */
+  HTTP_STATUS_GONE = 410,                /**< Resource permanently gone */
+  HTTP_STATUS_LENGTH_REQUIRED = 411,     /**< Content-Length required */
+  HTTP_STATUS_PRECONDITION_FAILED = 412, /**< Precondition failed */
+  HTTP_STATUS_CONTENT_TOO_LARGE = 413,   /**< Payload too large */
+  HTTP_STATUS_URI_TOO_LONG = 414,        /**< URI too long */
   HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE = 415, /**< Unsupported media type */
   HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416,  /**< Range not satisfiable */
   HTTP_STATUS_EXPECTATION_FAILED = 417,     /**< Expectation failed */
-  HTTP_STATUS_IM_A_TEAPOT = 418,            /**< RFC 2324 - I'm a teapot (humorous) */
-  HTTP_STATUS_MISDIRECTED_REQUEST = 421,    /**< Mis-directed request (HTTP/2+) */
-  HTTP_STATUS_UNPROCESSABLE_CONTENT = 422,  /**< Unprocessable entity (WebDAV) */
-  HTTP_STATUS_LOCKED = 423,                 /**< RFC 4918 WebDAV - Resource locked */
-  HTTP_STATUS_FAILED_DEPENDENCY = 424,      /**< RFC 4918 WebDAV - Dependency failed */
-  HTTP_STATUS_TOO_EARLY = 425,              /**< RFC 8470 - Too early (anti-replay) */
-  HTTP_STATUS_UPGRADE_REQUIRED = 426,       /**< Upgrade required (e.g., TLS) */
-  HTTP_STATUS_PRECONDITION_REQUIRED = 428,  /**< RFC 6585 - Precondition required */
-  HTTP_STATUS_TOO_MANY_REQUESTS = 429,      /**< RFC 6585 - Rate limiting */
-  HTTP_STATUS_HEADER_TOO_LARGE = 431,       /**< RFC 6585 - Header fields too large */
-  HTTP_STATUS_UNAVAILABLE_LEGAL = 451,      /**< RFC 7725 - Unavailable for legal reasons */
+  HTTP_STATUS_IM_A_TEAPOT = 418, /**< RFC 2324 - I'm a teapot (humorous) */
+  HTTP_STATUS_MISDIRECTED_REQUEST = 421, /**< Mis-directed request (HTTP/2+) */
+  HTTP_STATUS_UNPROCESSABLE_CONTENT
+  = 422,                    /**< Unprocessable entity (WebDAV) */
+  HTTP_STATUS_LOCKED = 423, /**< RFC 4918 WebDAV - Resource locked */
+  HTTP_STATUS_FAILED_DEPENDENCY
+  = 424,                       /**< RFC 4918 WebDAV - Dependency failed */
+  HTTP_STATUS_TOO_EARLY = 425, /**< RFC 8470 - Too early (anti-replay) */
+  HTTP_STATUS_UPGRADE_REQUIRED = 426, /**< Upgrade required (e.g., TLS) */
+  HTTP_STATUS_PRECONDITION_REQUIRED
+  = 428,                               /**< RFC 6585 - Precondition required */
+  HTTP_STATUS_TOO_MANY_REQUESTS = 429, /**< RFC 6585 - Rate limiting */
+  HTTP_STATUS_HEADER_TOO_LARGE
+  = 431, /**< RFC 6585 - Header fields too large */
+  HTTP_STATUS_UNAVAILABLE_LEGAL
+  = 451, /**< RFC 7725 - Unavailable for legal reasons */
 
   /* 5xx Server Error - Server failure */
-  HTTP_STATUS_INTERNAL_ERROR = 500,         /**< Internal server error */
-  HTTP_STATUS_NOT_IMPLEMENTED = 501,        /**< Not implemented */
-  HTTP_STATUS_BAD_GATEWAY = 502,            /**< Bad gateway */
-  HTTP_STATUS_SERVICE_UNAVAILABLE = 503,    /**< Service unavailable (maintenance) */
-  HTTP_STATUS_GATEWAY_TIMEOUT = 504,        /**< Gateway timeout */
-  HTTP_STATUS_VERSION_NOT_SUPPORTED = 505,  /**< HTTP version not supported */
-  HTTP_STATUS_VARIANT_ALSO_NEGOTIATES = 506, /**< RFC 2295 - Variant also negotiates */
-  HTTP_STATUS_INSUFFICIENT_STORAGE = 507,   /**< RFC 4918 WebDAV - Insufficient storage */
-  HTTP_STATUS_LOOP_DETECTED = 508,          /**< RFC 5842 WebDAV - Loop detected */
-  HTTP_STATUS_NOT_EXTENDED = 510,           /**< RFC 2774 - Not extended */
-  HTTP_STATUS_NETWORK_AUTH_REQUIRED = 511   /**< RFC 6585 - Network authentication required */
+  HTTP_STATUS_INTERNAL_ERROR = 500,  /**< Internal server error */
+  HTTP_STATUS_NOT_IMPLEMENTED = 501, /**< Not implemented */
+  HTTP_STATUS_BAD_GATEWAY = 502,     /**< Bad gateway */
+  HTTP_STATUS_SERVICE_UNAVAILABLE
+  = 503,                             /**< Service unavailable (maintenance) */
+  HTTP_STATUS_GATEWAY_TIMEOUT = 504, /**< Gateway timeout */
+  HTTP_STATUS_VERSION_NOT_SUPPORTED = 505, /**< HTTP version not supported */
+  HTTP_STATUS_VARIANT_ALSO_NEGOTIATES
+  = 506, /**< RFC 2295 - Variant also negotiates */
+  HTTP_STATUS_INSUFFICIENT_STORAGE
+  = 507, /**< RFC 4918 WebDAV - Insufficient storage */
+  HTTP_STATUS_LOOP_DETECTED = 508, /**< RFC 5842 WebDAV - Loop detected */
+  HTTP_STATUS_NOT_EXTENDED = 510,  /**< RFC 2774 - Not extended */
+  HTTP_STATUS_NETWORK_AUTH_REQUIRED
+  = 511 /**< RFC 6585 - Network authentication required */
 } SocketHTTP_StatusCode;
 
 /**
- * @brief Boundary constants for HTTP status code validation and categorization.
+ * @brief Boundary constants for HTTP status code validation and
+ * categorization.
  * @ingroup http
  *
- * These defines provide ranges for status code classes (1xx-5xx) and overall valid range (100-599).
- * Used in SocketHTTP_status_valid(), SocketHTTP_status_category(), and internal checks.
- * The SocketHTTP_StatusCode enum defines specific codes; these are for range checks.
+ * These defines provide ranges for status code classes (1xx-5xx) and overall
+ * valid range (100-599). Used in SocketHTTP_status_valid(),
+ * SocketHTTP_status_category(), and internal checks. The SocketHTTP_StatusCode
+ * enum defines specific codes; these are for range checks.
  *
- * @note Not all codes in 100-599 are standardized; custom codes should use valid range.
+ * @note Not all codes in 100-599 are standardized; custom codes should use
+ * valid range.
  * @see SocketHTTP_status_valid() to check if a code is in valid range.
  * @see SocketHTTP_status_category() to get category (1-5).
  * @see SocketHTTP_StatusCode for enumerated status codes.
@@ -433,7 +531,8 @@ typedef enum
 /**
  * @brief Maximum valid HTTP status code.
  * @ingroup http
- * @note Codes above 599 are not standard; extensions may use higher but library limits to 599.
+ * @note Codes above 599 are not standard; extensions may use higher but
+ * library limits to 599.
  */
 #define HTTP_STATUS_CODE_MAX 599
 
@@ -554,44 +653,49 @@ extern int SocketHTTP_status_valid (int code);
  * @brief Single HTTP header field representation for iteration and access.
  * @ingroup http
  *
- * Used by functions like SocketHTTP_Headers_at() and SocketHTTP_Headers_iterate()
- * to provide access to individual headers without copying.
- * Name is case-preserved as received/sent; lookup is case-insensitive.
+ * Used by functions like SocketHTTP_Headers_at() and
+ * SocketHTTP_Headers_iterate() to provide access to individual headers without
+ * copying. Name is case-preserved as received/sent; lookup is
+ * case-insensitive.
  * @see SocketHTTP_Headers_at() to get header by index.
  * @see SocketHTTP_Headers_iterate() for callback-based iteration.
  */
 typedef struct
 {
-  const char *name;     /**< Header name (case-preserved, null-terminated) */
-  size_t name_len;      /**< Length of name (excluding null) */
-  const char *value;    /**< Header value (null-terminated; may be empty) */
-  size_t value_len;     /**< Length of value (excluding null) */
+  const char *name;  /**< Header name (case-preserved, null-terminated) */
+  size_t name_len;   /**< Length of name (excluding null) */
+  const char *value; /**< Header value (null-terminated; may be empty) */
+  size_t value_len;  /**< Length of value (excluding null) */
 } SocketHTTP_Header;
 
 /**
  * @brief Opaque type for HTTP header collection with efficient operations.
  * @ingroup http
  *
- * Manages a dynamic collection of HTTP headers with O(1) case-insensitive lookup using hash table.
- * Memory allocated from provided arena; lifetime tied to arena.
- * Supports duplicates, iteration, and validation against HTTP limits.
- * Thread-unsafe; synchronize externally if shared across threads.
+ * Manages a dynamic collection of HTTP headers with O(1) case-insensitive
+ * lookup using hash table. Memory allocated from provided arena; lifetime tied
+ * to arena. Supports duplicates, iteration, and validation against HTTP
+ * limits. Thread-unsafe; synchronize externally if shared across threads.
  * @see SocketHTTP_Headers_new() to create a new collection.
  * @see SocketHTTP_Headers_add() to add headers.
  * @see SocketHTTP_Headers_get() for lookup.
- * @see SocketHTTP_Headers_clear() to remove all headers without freeing collection.
+ * @see SocketHTTP_Headers_clear() to remove all headers without freeing
+ * collection.
  */
 typedef struct SocketHTTP_Headers *SocketHTTP_Headers_T;
 
 /**
  * @brief Create a new empty HTTP header collection.
  * @ingroup http
- * @param arena Arena used for all internal allocations; must outlive the collection.
+ * @param arena Arena used for all internal allocations; must outlive the
+ * collection.
  * @return New header collection instance.
- * @throws Arena_Failed if memory allocation fails (insufficient space in arena).
+ * @throws Arena_Failed if memory allocation fails (insufficient space in
+ * arena).
  * @throws SocketHTTP_Failed if arena is NULL or internal initialization fails.
  * @threadsafe Yes, provided the arena is thread-safe or thread-local.
- * @note All headers added to this collection will allocate from the provided arena.
+ * @note All headers added to this collection will allocate from the provided
+ * arena.
  * @see SocketHTTP_Headers_clear() to reuse the collection after clearing.
  * @see SocketHTTP_Headers_add() to populate with headers.
  */
@@ -756,11 +860,13 @@ extern const SocketHTTP_Header *
 SocketHTTP_Headers_at (SocketHTTP_Headers_T headers, size_t index);
 
 /**
- * @brief Callback function for iterating over HTTP headers in SocketHTTP_Headers_iterate().
+ * @brief Callback function for iterating over HTTP headers in
+ * SocketHTTP_Headers_iterate().
  * @ingroup http
  *
- * Invoked for each header in the collection. Parameters provide name/value with lengths for efficiency.
- * Case-insensitive name matching via hash table in collection.
+ * Invoked for each header in the collection. Parameters provide name/value
+ * with lengths for efficiency. Case-insensitive name matching via hash table
+ * in collection.
  *
  * @param name Header name (null-terminated string, case-preserved).
  * @param name_len Length of name (excluding null).
@@ -833,33 +939,40 @@ extern int SocketHTTP_header_value_valid (const char *value, size_t len);
  * @ingroup http
  *
  * Structure holding the generic syntax components of a URI or URI reference.
- * All string pointers reference substrings from the original input or arena-allocated copies;
- * they remain valid until the arena is cleared or disposed.
- * Strings are null-terminated for convenience but lengths are provided for efficiency.
- * Does not perform percent-decoding; use SocketHTTP_URI_decode() for that.
- * Supports absolute URIs, origin form, and relative references.
- * Host may include IPv6 literals in [brackets]; userinfo is parsed but deprecated per RFC 3986.
+ * All string pointers reference substrings from the original input or
+ * arena-allocated copies; they remain valid until the arena is cleared or
+ * disposed. Strings are null-terminated for convenience but lengths are
+ * provided for efficiency. Does not perform percent-decoding; use
+ * SocketHTTP_URI_decode() for that. Supports absolute URIs, origin form, and
+ * relative references. Host may include IPv6 literals in [brackets]; userinfo
+ * is parsed but deprecated per RFC 3986.
  * @see SocketHTTP_URI_parse() to populate this structure from URI string.
  * @see SocketHTTP_URI_get_port() to get effective port with defaults (80/443).
- * @see SocketHTTP_URI_is_secure() to check if scheme indicates TLS (https/wss).
+ * @see SocketHTTP_URI_is_secure() to check if scheme indicates TLS
+ * (https/wss).
  * @see SocketHTTP_URI_build() to serialize back to string.
- * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for percent handling.
+ * @see SocketHTTP_URI_encode() and SocketHTTP_URI_decode() for percent
+ * handling.
  */
 typedef struct
 {
-  const char *scheme;      /**< Scheme name (lowercase, e.g., "http", "https"; NULL for relative URI) */
-  size_t scheme_len;       /**< Length of scheme */
-  const char *userinfo;    /**< Userinfo "username:password" (deprecated by RFC 3986, may be NULL) */
-  size_t userinfo_len;     /**< Length of userinfo */
-  const char *host;        /**< Authority host (hostname, IPv4, or [IPv6]; required for absolute URI) */
-  size_t host_len;         /**< Length of host */
-  int port;                /**< Port number (0-65535) or -1 if not present */
-  const char *path;        /**< Path component (absolute or relative; never NULL, may be empty "/") */
-  size_t path_len;         /**< Length of path */
-  const char *query;       /**< Query string (everything after ?; NULL if absent) */
-  size_t query_len;        /**< Length of query */
-  const char *fragment;    /**< Fragment identifier (after #; NULL if absent) */
-  size_t fragment_len;     /**< Length of fragment */
+  const char *scheme; /**< Scheme name (lowercase, e.g., "http", "https"; NULL
+                         for relative URI) */
+  size_t scheme_len;  /**< Length of scheme */
+  const char *userinfo; /**< Userinfo "username:password" (deprecated by RFC
+                           3986, may be NULL) */
+  size_t userinfo_len;  /**< Length of userinfo */
+  const char *host;  /**< Authority host (hostname, IPv4, or [IPv6]; required
+                        for absolute URI) */
+  size_t host_len;   /**< Length of host */
+  int port;          /**< Port number (0-65535) or -1 if not present */
+  const char *path;  /**< Path component (absolute or relative; never NULL, may
+                        be empty "/") */
+  size_t path_len;   /**< Length of path */
+  const char *query; /**< Query string (everything after ?; NULL if absent) */
+  size_t query_len;  /**< Length of query */
+  const char *fragment; /**< Fragment identifier (after #; NULL if absent) */
+  size_t fragment_len;  /**< Length of fragment */
 } SocketHTTP_URI;
 
 /**
@@ -873,14 +986,16 @@ typedef struct
  */
 typedef enum
 {
-  URI_PARSE_OK = 0,               /**< Successful parse */
-  URI_PARSE_ERROR,                /**< Generic syntax or validation error */
-  URI_PARSE_INVALID_SCHEME,       /**< Scheme contains invalid characters or empty */
-  URI_PARSE_INVALID_HOST,         /**< Host invalid: empty, bad characters, or malformed IPv6 */
-  URI_PARSE_INVALID_PORT,         /**< Port not numeric or out of range (0-65535) */
-  URI_PARSE_INVALID_PATH,         /**< Path contains disallowed characters (per RFC 3986) */
-  URI_PARSE_INVALID_QUERY,        /**< Query contains disallowed characters */
-  URI_PARSE_TOO_LONG              /**< URI length exceeds SOCKETHTTP_MAX_URI_LEN limit */
+  URI_PARSE_OK = 0,         /**< Successful parse */
+  URI_PARSE_ERROR,          /**< Generic syntax or validation error */
+  URI_PARSE_INVALID_SCHEME, /**< Scheme contains invalid characters or empty */
+  URI_PARSE_INVALID_HOST,   /**< Host invalid: empty, bad characters, or
+                               malformed IPv6 */
+  URI_PARSE_INVALID_PORT,   /**< Port not numeric or out of range (0-65535) */
+  URI_PARSE_INVALID_PATH,   /**< Path contains disallowed characters (per RFC
+                               3986) */
+  URI_PARSE_INVALID_QUERY,  /**< Query contains disallowed characters */
+  URI_PARSE_TOO_LONG /**< URI length exceeds SOCKETHTTP_MAX_URI_LEN limit */
 } SocketHTTP_URIResult;
 
 /**
@@ -889,22 +1004,26 @@ typedef enum
  * @param uri Input URI string (absolute or relative reference).
  * @param len Length of URI (0 to use strlen(uri)).
  * @param[out] result Pointer to SocketHTTP_URI structure to populate.
- * @param arena Arena for allocating parsed string components (must outlive result).
+ * @param arena Arena for allocating parsed string components (must outlive
+ * result).
  * @return URI_PARSE_OK on success, or specific error code on failure.
  * @throws Arena_Failed if memory allocation for components fails.
- * @throws SocketHTTP_Failed on internal validation errors.
+ * @throws SocketHTTP_InvalidURI on invalid URI syntax, malformed components,
+ * or validation failures (e.g., invalid host, port out of range).
  * @threadsafe Yes, if arena is thread-safe or thread-local.
  *
- * Parses URI per RFC 3986 generic syntax, supporting absolute URIs, origin form, and relative refs.
- * Validates scheme, host (including [IPv6]), port, path, query, fragment.
- * Rejects overly long URIs (> SOCKETHTTP_MAX_URI_LEN) and invalid characters.
- * IPv6 hosts must be in RFC 3986 bracketed form.
- * Does not percent-decode; components retain original encoding (use SocketHTTP_URI_decode()).
- * Userinfo parsed but flagged as deprecated.
- * Path is always non-NULL (empty for no path).
- * @note Result strings point into arena-allocated memory or input buffer substrings.
+ * Parses URI per RFC 3986 generic syntax, supporting absolute URIs, origin
+ * form, and relative refs. Validates scheme, host (including [IPv6]), port,
+ * path, query, fragment. Rejects overly long URIs (> SOCKETHTTP_MAX_URI_LEN)
+ * and invalid characters. IPv6 hosts must be in RFC 3986 bracketed form. Does
+ * not percent-decode; components retain original encoding (use
+ * SocketHTTP_URI_decode()). Userinfo parsed but flagged as deprecated. Path is
+ * always non-NULL (empty for no path).
+ * @note Result strings point into arena-allocated memory or input buffer
+ * substrings.
  * @see SocketHTTP_URI struct for component details.
- * @see SocketHTTP_URI_build() to reconstruct URI string from parsed components.
+ * @see SocketHTTP_URI_build() to reconstruct URI string from parsed
+ * components.
  * @see SocketHTTP_URI_get_port() for port resolution with defaults.
  * @see SocketHTTP_URI_result_string() for error descriptions.
  */
@@ -1028,26 +1147,33 @@ extern int SocketHTTP_date_format (time_t t, char *output);
 #pragma GCC diagnostic ignored "-Wcomment"
 #endif
 /**
- * @brief Parsed representation of an HTTP media type (Content-Type, Accept, etc.).
+ * @brief Parsed representation of an HTTP media type (Content-Type, Accept,
+ * etc.).
  * @ingroup http
  *
  * Extracts type/subtype from Content-Type header per RFC 9110 Section 8.3.
- * Also parses common parameters: charset (for text types) and boundary (for multipart types).
- * Other parameters ignored; full parsing requires custom handling.
- * Strings point into arena or input buffer; null-terminated with lengths provided.
+ * Also parses common parameters: charset (for text types) and boundary (for
+ * multipart types). Other parameters ignored; full parsing requires custom
+ * handling. Strings point into arena or input buffer; null-terminated with
+ * lengths provided.
  * @see SocketHTTP_MediaType_parse() to populate from header value string.
- * @see SocketHTTP_MediaType_matches() to check against pattern (supports wildcard patterns like * / * for any media type).
+ * @see SocketHTTP_MediaType_matches() to check against pattern (supports
+ * wildcard patterns like * / * for any media type).
  */
 typedef struct
 {
-  const char *type;        /**< Top-level type (e.g., "text", "application", "multipart"; token per RFC 9110) */
-  size_t type_len;         /**< Length of type */
-  const char *subtype;     /**< Subtype (e.g., "html", "json", "form-data"; token) */
-  size_t subtype_len;      /**< Length of subtype */
-  const char *charset;     /**< Charset parameter value (e.g., "utf-8"; NULL if absent) */
-  size_t charset_len;      /**< Length of charset */
-  const char *boundary;    /**< Multipart boundary parameter (NULL if absent or not multipart) */
-  size_t boundary_len;     /**< Length of boundary */
+  const char *type; /**< Top-level type (e.g., "text", "application",
+                       "multipart"; token per RFC 9110) */
+  size_t type_len;  /**< Length of type */
+  const char
+      *subtype; /**< Subtype (e.g., "html", "json", "form-data"; token) */
+  size_t subtype_len; /**< Length of subtype */
+  const char
+      *charset; /**< Charset parameter value (e.g., "utf-8"; NULL if absent) */
+  size_t charset_len;   /**< Length of charset */
+  const char *boundary; /**< Multipart boundary parameter (NULL if absent or
+                           not multipart) */
+  size_t boundary_len;  /**< Length of boundary */
 } SocketHTTP_MediaType;
 
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1089,20 +1215,24 @@ extern int SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
  */
 
 /**
- * @brief Single entry from quality-sorted list in Accept-like headers for content negotiation.
+ * @brief Single entry from quality-sorted list in Accept-like headers for
+ * content negotiation.
  * @ingroup http
  *
- * Represents a media type or language tag with its quality factor (q-value) from headers like Accept, Accept-Language.
- * Parsed and sorted by descending quality (highest preference first).
- * Quality defaults to 1.0 if not specified; 0.0 indicates rejection.
- * Used in content negotiation to select best match.
+ * Represents a media type or language tag with its quality factor (q-value)
+ * from headers like Accept, Accept-Language. Parsed and sorted by descending
+ * quality (highest preference first). Quality defaults to 1.0 if not
+ * specified; 0.0 indicates rejection. Used in content negotiation to select
+ * best match.
  * @see SocketHTTP_parse_accept() which populates arrays of this type.
  */
 typedef struct
 {
-  const char *value;   /**< Value string (media type, language tag, etc.; null-terminated) */
-  size_t value_len;    /**< Length of value */
-  float quality;       /**< Preference level 0.0-1.0 (1.0 highest; default 1.0 if omitted) */
+  const char *value; /**< Value string (media type, language tag, etc.;
+                        null-terminated) */
+  size_t value_len;  /**< Length of value */
+  float quality;     /**< Preference level 0.0-1.0 (1.0 highest; default 1.0 if
+                        omitted) */
 } SocketHTTP_QualityValue;
 
 /**
@@ -1141,12 +1271,12 @@ extern size_t SocketHTTP_parse_accept (const char *value, size_t len,
 typedef enum
 {
   HTTP_CODING_IDENTITY = 0, /**< No encoding (identity/default) */
-  HTTP_CODING_CHUNKED,      /**< Chunked transfer encoding for unknown length */
-  HTTP_CODING_GZIP,         /**< Gzip compression (RFC 1952) */
-  HTTP_CODING_DEFLATE,      /**< Deflate compression (zlib, RFC 1950/1951) */
-  HTTP_CODING_COMPRESS,     /**< Unix compress (LZW, rarely used/obsolete) */
-  HTTP_CODING_BR,           /**< Brotli compression (RFC 7932) */
-  HTTP_CODING_UNKNOWN = -1  /**< Unrecognized or unsupported encoding */
+  HTTP_CODING_CHUNKED,     /**< Chunked transfer encoding for unknown length */
+  HTTP_CODING_GZIP,        /**< Gzip compression (RFC 1952) */
+  HTTP_CODING_DEFLATE,     /**< Deflate compression (zlib, RFC 1950/1951) */
+  HTTP_CODING_COMPRESS,    /**< Unix compress (LZW, rarely used/obsolete) */
+  HTTP_CODING_BR,          /**< Brotli compression (RFC 7932) */
+  HTTP_CODING_UNKNOWN = -1 /**< Unrecognized or unsupported encoding */
 } SocketHTTP_Coding;
 
 /**
@@ -1178,29 +1308,35 @@ extern const char *SocketHTTP_coding_name (SocketHTTP_Coding coding);
  * @brief Protocol-agnostic representation of an HTTP request message.
  * @ingroup http
  *
- * Captures the essential semantics of an HTTP request independent of transport (HTTP/1.x, HTTP/2, HTTP/3).
- * Request target can be in absolute form (scheme+authority+path), origin form (authority+path), or asterisk form.
+ * Captures the essential semantics of an HTTP request independent of transport
+ * (HTTP/1.x, HTTP/2, HTTP/3). Request target can be in absolute form
+ * (scheme+authority+path), origin form (authority+path), or asterisk form.
  * Used by parsers, serializers, and high-level clients/servers.
- * Body information provided for transfer decisions; actual body data handled separately.
- * @see SocketHTTP1_Parser_get_request() for HTTP/1.1 parsing into this structure.
+ * Body information provided for transfer decisions; actual body data handled
+ * separately.
+ * @see SocketHTTP1_Parser_get_request() for HTTP/1.1 parsing into this
+ * structure.
  * @see SocketHTTP2_Stream_send_request() for HTTP/2 usage.
  * @see SocketHTTP_Response for corresponding response structure.
  */
 typedef struct
 {
-  SocketHTTP_Method method;     /**< Request method (e.g., GET, POST) */
-  SocketHTTP_Version version;   /**< Protocol version (e.g., HTTP/1.1) */
+  SocketHTTP_Method method;   /**< Request method (e.g., GET, POST) */
+  SocketHTTP_Version version; /**< Protocol version (e.g., HTTP/1.1) */
 
   /* Request target components (per RFC 9110 Section 7; may be partial) */
-  const char *scheme;           /**< Scheme for absolute-form URI (e.g., "https"; NULL otherwise) */
-  const char *authority;        /**< Authority component (host[:port]; NULL for relative/asterisk form) */
-  const char *path;             /**< Path and query (e.g., "/resource?param=value"; "*" for OPTIONS *) */
+  const char *scheme;    /**< Scheme for absolute-form URI (e.g., "https"; NULL
+                            otherwise) */
+  const char *authority; /**< Authority component (host[:port]; NULL for
+                            relative/asterisk form) */
+  const char *path; /**< Path and query (e.g., "/resource?param=value"; "*" for
+                       OPTIONS *) */
 
   SocketHTTP_Headers_T headers; /**< Request headers (NULL if none) */
 
   /* Body and transfer information */
-  int has_body;                 /**< 1 if request includes body data */
-  int64_t content_length;       /**< Exact body length or -1 for chunked/unknown */
+  int has_body;           /**< 1 if request includes body data */
+  int64_t content_length; /**< Exact body length or -1 for chunked/unknown */
 } SocketHTTP_Request;
 
 /**
@@ -1208,24 +1344,26 @@ typedef struct
  * @ingroup http
  *
  * Captures semantics of HTTP response independent of wire format.
- * Reason phrase is optional and only relevant for HTTP/1.x; ignored in HTTP/2+.
- * Used by protocol parsers and high-level APIs.
- * Body info for transfer; actual body separate.
+ * Reason phrase is optional and only relevant for HTTP/1.x; ignored in
+ * HTTP/2+. Used by protocol parsers and high-level APIs. Body info for
+ * transfer; actual body separate.
  * @see SocketHTTP1_Parser_get_response() for HTTP/1.1 parsing.
  * @see SocketHTTP2_Stream_recv_headers() for HTTP/2 headers reception.
  * @see SocketHTTP_Request for request counterpart.
  */
 typedef struct
 {
-  SocketHTTP_Version version;      /**< Protocol version of response */
-  int status_code;                 /**< Status code (100-599) */
-  const char *reason_phrase;       /**< Reason phrase (HTTP/1.x only; NULL or empty for HTTP/2+) */
+  SocketHTTP_Version version; /**< Protocol version of response */
+  int status_code;            /**< Status code (100-599) */
+  const char *reason_phrase;  /**< Reason phrase (HTTP/1.x only; NULL or empty
+                                 for HTTP/2+) */
 
-  SocketHTTP_Headers_T headers;    /**< Response headers (NULL if none) */
+  SocketHTTP_Headers_T headers; /**< Response headers (NULL if none) */
 
   /* Body and transfer information */
-  int has_body;                    /**< 1 if response includes body */
-  int64_t content_length;          /**< Body length or -1 for chunked/unknown/transfer-encoding */
+  int has_body;           /**< 1 if response includes body */
+  int64_t content_length; /**< Body length or -1 for
+                             chunked/unknown/transfer-encoding */
 } SocketHTTP_Response;
 
 /** @} */

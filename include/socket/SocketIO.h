@@ -1,7 +1,8 @@
 /**
  * @file SocketIO.h
  * @ingroup core_io
- * @brief Internal I/O abstraction layer for socket operations with TLS support.
+ * @brief Internal I/O abstraction layer for socket operations with TLS
+ * support.
  *
  * Provides internal I/O operations that automatically route through TLS
  * when enabled, or use raw socket operations otherwise. This abstraction
@@ -37,9 +38,12 @@
  * @param buf Data to send
  * @param len Length of data
  * @param flags Send flags (MSG_NOSIGNAL, etc.)
- * @return Number of bytes sent, or 0 if operation would block (EAGAIN/EWOULDBLOCK).
- * @throws Socket_Failed on underlying socket errors such as invalid file descriptor or network issues.
- * @throws SocketTLS_Failed on TLS encryption or write failures (#if SOCKET_HAS_TLS).
+ * @return Number of bytes sent, or 0 if operation would block
+ * (EAGAIN/EWOULDBLOCK).
+ * @throws Socket_Failed on underlying socket errors such as invalid file
+ * descriptor or network issues.
+ * @throws SocketTLS_Failed on TLS encryption or write failures (#if
+ * SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note Routes through SSL_write() if TLS is enabled, otherwise uses send().
  * @note Handles partial sends and EAGAIN mapping.
@@ -47,7 +51,8 @@
  * @see Socket_send() for the public synchronous send interface.
  * @see socket_recv_internal() for the corresponding receive operation.
  * @see socket_sendv_internal() for scatter-gather send support.
- * @see @ref SocketTLS_Failed "SocketTLS_Failed" exception for TLS-specific errors.
+ * @see @ref SocketTLS_Failed "SocketTLS_Failed" exception for TLS-specific
+ * errors.
  */
 extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
                                      int flags);
@@ -59,10 +64,14 @@ extern ssize_t socket_send_internal (T socket, const void *buf, size_t len,
  * @param buf Buffer for received data
  * @param len Buffer size
  * @param flags Receive flags
- * @return Number of bytes received, or 0 if would block (EAGAIN/EWOULDBLOCK) or EOF (connection closed).
- * @throws Socket_Failed on underlying socket errors such as invalid file descriptor or network issues.
- * @throws SocketTLS_Failed on TLS decryption or read failures (#if SOCKET_HAS_TLS).
- * @throws Socket_Closed on connection closure detected by recv returning 0 or ECONNRESET.
+ * @return Number of bytes received, or 0 if would block (EAGAIN/EWOULDBLOCK)
+ * or EOF (connection closed).
+ * @throws Socket_Failed on underlying socket errors such as invalid file
+ * descriptor or network issues.
+ * @throws SocketTLS_Failed on TLS decryption or read failures (#if
+ * SOCKET_HAS_TLS).
+ * @throws Socket_Closed on connection closure detected by recv returning 0 or
+ * ECONNRESET.
  * @threadsafe Yes - operates on single socket.
  * @note Routes through SSL_read() if TLS is enabled, otherwise uses recv().
  * @note Maps SSL errors to errno (EAGAIN for WANT_READ/WRITE).
@@ -85,7 +94,8 @@ extern ssize_t socket_recv_internal (T socket, void *buf, size_t len,
  * @param flags Send flags
  * @return Total number of bytes sent from iov buffers, or 0 if would block.
  * @throws Socket_Failed on underlying socket or vectored I/O errors.
- * @throws SocketTLS_Failed on TLS write failures or buffer allocation issues (#if SOCKET_HAS_TLS).
+ * @throws SocketTLS_Failed on TLS write failures or buffer allocation issues
+ * (#if SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note For TLS: Copies iov to temp buffer, calls SSL_write().
  * @note For non-TLS: Uses writev() directly.
@@ -106,10 +116,12 @@ extern ssize_t socket_sendv_internal (T socket, const struct iovec *iov,
  * @param iov Array of iovec structures
  * @param iovcnt Number of iovec structures
  * @param flags Receive flags
- * @return Total number of bytes received into iov buffers, or 0 if would block or EOF.
+ * @return Total number of bytes received into iov buffers, or 0 if would block
+ * or EOF.
  * @throws Socket_Failed on underlying socket or vectored I/O errors.
  * @throws SocketTLS_Failed on TLS read failures (#if SOCKET_HAS_TLS).
- * @throws Socket_Closed on connection closure detected by readv returning 0 or ECONNRESET.
+ * @throws Socket_Closed on connection closure detected by readv returning 0 or
+ * ECONNRESET.
  * @threadsafe Yes - operates on single socket.
  * @note For TLS: Calls SSL_read() into first iov, advances manually.
  * @note For non-TLS: Uses readv() directly.
@@ -129,7 +141,8 @@ extern ssize_t socket_recvv_internal (T socket, struct iovec *iov, int iovcnt,
  * @return 1 if TLS is enabled on the socket, 0 otherwise.
  * @threadsafe Yes - atomic read of socket state.
  * @see SocketTLS_enable() to enable TLS on a socket.
- * @see socket_tls_want_read() and socket_tls_want_write() for checking TLS handshake needs.
+ * @see socket_tls_want_read() and socket_tls_want_write() for checking TLS
+ * handshake needs.
  * @see @ref group__security for TLS module documentation.
  */
 extern int socket_is_tls_enabled (const T socket);
@@ -139,7 +152,8 @@ extern int socket_is_tls_enabled (const T socket);
  * @ingroup core_io
  * @param socket TLS-enabled socket to query.
  * @return 1 if TLS needs more input data, 0 otherwise.
- * @note Used in event loops to determine if POLL_READ should be enabled for TLS sockets.
+ * @note Used in event loops to determine if POLL_READ should be enabled for
+ * TLS sockets.
  * @threadsafe Yes - read-only access to TLS state.
  * @see SocketTLS_handshake() for performing TLS handshake.
  * @see socket_tls_want_write() for write readiness.
@@ -153,7 +167,8 @@ extern int socket_tls_want_read (const T socket);
  * @ingroup core_io
  * @param socket TLS-enabled socket to query.
  * @return 1 if TLS needs to output data, 0 otherwise.
- * @note Used in event loops to determine if POLL_WRITE should be enabled for TLS sockets.
+ * @note Used in event loops to determine if POLL_WRITE should be enabled for
+ * TLS sockets.
  * @threadsafe Yes - read-only access to TLS state.
  * @see SocketTLS_handshake() for performing TLS handshake.
  * @see socket_tls_want_read() for read readiness.
@@ -200,13 +215,15 @@ extern SSL *socket_get_ssl (T socket);
  * @param socket Socket instance
  * @return SSL* pointer if TLS is fully ready for I/O operations.
  * @throws Socket_Failed if socket is invalid or TLS not enabled.
- * @throws SocketTLS_HandshakeFailed if TLS handshake is not complete or failed (#if SOCKET_HAS_TLS).
+ * @throws SocketTLS_HandshakeFailed if TLS handshake is not complete or failed
+ * (#if SOCKET_HAS_TLS).
  * @threadsafe Yes - operates on single socket.
  * @note Shared helper for TLS I/O functions.
  *
  * @see socket_send_internal() and similar for TLS readiness check.
  * @see SocketTLS_handshake() if manual handshake needed.
- * @see @ref SocketTLS_Failed "SocketTLS_Failed" or @ref Socket_Failed "Socket_Failed" on error.
+ * @see @ref SocketTLS_Failed "SocketTLS_Failed" or @ref Socket_Failed
+ * "Socket_Failed" on error.
  */
 extern SSL *socket_validate_tls_ready (T socket);
 #endif
@@ -220,7 +237,8 @@ extern SSL *socket_validate_tls_ready (T socket);
  * @threadsafe Yes - reads errno (thread-local in POSIX).
  * @note Use this instead of inline errno checks for consistency.
  *
- * @see socketio_is_connection_closed_send() and socketio_is_connection_closed_recv() for related error checks.
+ * @see socketio_is_connection_closed_send() and
+ * socketio_is_connection_closed_recv() for related error checks.
  * @see EAGAIN and EWOULDBLOCK in <errno.h> for details.
  */
 static inline int

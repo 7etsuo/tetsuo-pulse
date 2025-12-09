@@ -1,36 +1,108 @@
 /**
  * @file SocketHPACK.h
  * @ingroup http
- * @brief HPACK header compression (RFC 7541) for HTTP/2.
+ * @brief HPACK header compression/decompression module for HTTP/2 (RFC 7541).
+ *
+ * This module implements the full HPACK algorithm for efficient HTTP/2 header
+ * field representation and transmission. It handles header compression to
+ * reduce bandwidth and decompression with security safeguards.
+ *
+ * ## Key Components
+ *
+ * - **Static Table**: Fixed 61 entries of common headers (Appendix A).
+ * - **Dynamic Table**: Growable table for repeated headers with eviction
+ * policy.
+ * - **Encoding Primitives**: Integer, string (literal/Huffman), indexing
+ * modes.
+ * - **Encoder/Decoder**: Stateful instances for block-level operations.
+ *
+ * ## Architecture Overview
+ *
+ * ```
+ * +-------------------+     +-------------------+
+ * |   HTTP/2 Layer    |     |   Application     |
+ * | (SocketHTTP2)     |<--->| (Request/Response)|
+ * +-------------------+     +-------------------+
+ *           ^                        ^
+ *           | Uses                   | Produces
+ *           v                        v
+ * +-------------------+     +-------------------+
+ * |   HPACK Encoder   |     | HPACK Decoder     |
+ * | - Table Mgmt      |     | - Table Updates   |
+ * | - Header Encoding |     | - Header Decoding |
+ * +-------------------+     +-------------------+
+ *           ^                        ^
+ *           | Shared                 | Shared
+ *           v                        v
+ * +-------------------+     +-------------------+
+ * |   Dynamic Table   |<--->|   (Shared State)  |
+ * | (FIFO Circular)   |     +-------------------+
+ * +-------------------+               ^
+ *           ^                         |
+ *           | Static                  |
+ *           v                         |
+ * +-------------------+               |
+ * |   Static Table    |<--------------+
+ * | (61 Fixed Entries)|
+ * +-------------------+
+ * ```
+ *
+ * ## Module Dependencies
+ *
+ * - **Foundation**: Arena_T for memory, Except_T for errors.
+ * - **HTTP Core**: SocketHTTP_Headers_T compatibility (optional integration).
+ * - **Used By**: SocketHTTP2_Conn_T for frame processing.
+ *
+ * ## Thread Safety
+ *
+ * - Individual encoder/decoder instances: NOT thread-safe (internal state
+ * mutation).
+ * - Static functions (huffman_encode, int_encode): thread-safe.
+ * - Dynamic table: NOT thread-safe; synchronize adds/gets.
+ * - Recommendation: One encoder/decoder per connection/thread.
+ *
+ * ## Security Features
+ *
+ * - Configurable limits on table size, header sizes, list size.
+ * - Decompression bomb protection via expansion ratio check.
+ * - Validation of encoding primitives (Huffman padding, integer overflows).
+ * - Automatic never-indexing for sensitive headers (e.g., authorization,
+ * cookie).
+ * - Limits on table size updates per block to prevent DoS.
+ *
+ * ## Performance Characteristics
+ *
+ * - Encoding/Decoding: O(n) linear in header block size.
+ * - Table operations: O(1) add/get/evict via circular buffer.
+ * - Huffman: DFA-based decoding for speed, optional encoding.
+ *
+ * ## Configuration Limits
+ *
+ * See defined constants:
+ * - SOCKETHPACK_DEFAULT_TABLE_SIZE (4096 bytes)
+ * - SOCKETHPACK_MAX_TABLE_SIZE (64KB)
+ * - SOCKETHPACK_MAX_HEADER_SIZE (8KB)
+ * - SOCKETHPACK_MAX_HEADER_LIST_SIZE (64KB)
+ *
+ * ## Integration Notes
+ *
+ * - Use with SocketHTTP2_Conn_new() for automatic setup.
+ * - Manual use: Create encoder/decoder, manage table size via SETTINGS.
+ * - Error handling: Check SocketHPACK_Result; use SocketHPACK_result_string()
+ * for logging.
+ * - Testing: Use test_hpack binary in build/ for validation.
+ *
  * @defgroup hpack HPACK Header Compression Module
  * @ingroup http
  * @{
  *
- * Provides HPACK header compression for HTTP/2, including:
- * - Static table (61 common headers per RFC 7541 Appendix A)
- * - Dynamic table with FIFO eviction
- * - Huffman encoding/decoding (RFC 7541 Appendix B)
- * - Variable-length integer encoding (RFC 7541 Section 5.1)
- *
- * Features:
- * - O(n) single-pass Huffman decoding via DFA
- * - O(1) dynamic table add/evict via circular buffer
- * - HPACK bomb prevention with configurable limits
- * - Thread-safe exception handling
- *
- * Thread safety: Encoder/decoder instances are NOT thread-safe.
- * Use one instance per thread or external synchronization.
- *
- * Security notes:
- * - Enforces maximum header size limits
- * - Validates Huffman padding (max 7 bits of 1s)
- * - Limits dynamic table size updates per header block
- * - Never indexes sensitive headers marked with never_index
- *
- * @see SocketHTTP2.h for HTTP/2 integration.
- * @see SocketHPACK_Encoder_new() for creating encoders.
- * @see SocketHPACK_Decoder_new() for creating decoders.
- * @see @ref group__http for core HTTP types and utilities.
+ * @see SocketHTTP2.h for HTTP/2 protocol layer integration.
+ * @see SocketHPACK_Encoder_new() primary entry for compression.
+ * @see SocketHPACK_Decoder_new() primary entry for decompression.
+ * @see @ref group__http for supporting HTTP types.
+ * @see docs/HTTP-REFACTOR.md for refactoring notes.
+ * @see docs/SECURITY.md#hpack for security deep dive.
+ * @see https://tools.ietf.org/html/rfc7541 for full specification.
  */
 
 #ifndef SOCKETHPACK_INCLUDED
@@ -188,52 +260,258 @@ typedef struct
 typedef struct SocketHPACK_Table *SocketHPACK_Table_T;
 
 /**
- * @brief Create dynamic table.
+ * @brief Create a new dynamic HPACK table for header compression.
  * @ingroup http
- * @param max_size Maximum table size in bytes (includes 32-byte overhead per entry).
- * @param arena Memory arena for allocations.
- * @return New table instance.
- * @throws SocketHPACK_Error on allocation failure.
- * @threadsafe Yes (arena must be thread-safe or thread-local).
  *
- * Creates a new dynamic table with the specified maximum size.
- * The table uses a circular buffer for O(1) FIFO operations.
+ * Initializes a dynamic table used for storing header fields to reduce
+ * redundancy in HTTP/2 header blocks (RFC 7541). The table supports eviction
+ * of least recently used (oldest) entries when size limits are reached, using
+ * a circular buffer for efficiency. All internal allocations (entries,
+ * strings) are arena-managed for fast cleanup.
  *
- * @see SocketHPACK_Table_free() for cleanup.
- * @see SocketHPACK_Table_set_max_size() for resizing after creation.
+ * @param[in] max_size Maximum allowed size for the table in bytes. Includes
+ * SOCKETHPACK_ENTRY_OVERHEAD (32 bytes) per entry. Must be 0 <= max_size <=
+ * SOCKETHPACK_MAX_TABLE_SIZE. Default recommendation:
+ * SOCKETHPACK_DEFAULT_TABLE_SIZE (4096).
+ * @param[in] arena Arena_T instance for all memory allocations. Table lifetime
+ * is bound to this arena.
+ *
+ * @return Opaque pointer to new dynamic table instance.
+ *
+ * @throws SocketHPACK_Error If max_size invalid or internal initialization
+ * fails.
+ * @throws Arena_Failed If arena allocation fails (propagated).
+ *
+ * @threadsafe Yes - atomic creation; arena must be synchronized if shared
+ * across threads.
+ *
+ * ## Basic Usage
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * SocketHPACK_Table_T table = NULL;
+ * TRY {
+ *     table = SocketHPACK_Table_new(SOCKETHPACK_DEFAULT_TABLE_SIZE, arena);
+ *     assert(table != NULL);
+ *     // Table ready for use in encoders/decoders
+ * } EXCEPT(Arena_Failed, SocketHPACK_Error) {
+ *     fprintf(stderr, "Failed to create table: %s\n",
+ * Except_message(Except_stack)); return -1; } END_TRY;
+ * // Use table...
+ * SocketHPACK_Table_free(&table);
+ * @endcode
+ *
+ * ## Advanced Configuration
+ *
+ * | max_size Value | Recommended For | Expected Entries | Compression Impact |
+ * |----------------|-----------------|------------------|--------------------|
+ * | 0 | Minimal memory | 0 | No dynamic compression |
+ * | 4096 (default) | General use | ~10-20 | Good balance |
+ * | 16384 | High-volume HTTP/2 | ~50-100 | Better ratios |
+ * | 65536 (max) | Servers | ~200+ | Optimal but memory-intensive |
+ *
+ * @note Table starts empty (size=0, count=0). Populate during encoding or
+ * manually.
+ * @note Strings added to table are copied into arena; originals can be freed
+ * after.
+ * @note Use with SocketHPACK_Encoder_new() or SocketHPACK_Decoder_new() for
+ * HTTP/2.
+ *
+ * @warning Large max_size increases memory footprint; monitor with
+ * SocketHPACK_Table_size().
+ * @warning Never pass NULL arena; will raise Arena_Failed.
+ *
+ * @complexity O(1) - constant time initialization and allocation
+ *
+ * @see SocketHPACK_Table_free() for paired cleanup
+ * @see SocketHPACK_Table_add() to populate with headers
+ * @see SocketHPACK_Table_set_max_size() for dynamic resizing
+ * @see SocketHPACK_Encoder_new() for encoder integration
+ * @see Arena.h for memory management details
+ * @see docs/HTTP-REFACTOR.md for performance tuning
+ * @see https://tools.ietf.org/html/rfc7541#section-4 for RFC specification
  */
 extern SocketHPACK_Table_T SocketHPACK_Table_new (size_t max_size,
                                                   Arena_T arena);
 
 /**
- * @brief Free dynamic table
+ * @brief Dispose of a dynamic table instance and release its resources.
  * @ingroup http
- * @param table Pointer to table pointer (will be set to NULL)
- * @threadsafe No
  *
- * Frees the dynamic table. Memory is returned to the arena.
+ * Safely frees the dynamic table, returning all allocated memory to the arena.
+ * The table pointer is set to NULL to prevent use-after-free errors.
+ *
+ * This function does not throw exceptions as it performs no allocations.
+ * It is safe to call on already-NULL pointers (no-op).
+ *
+ * @param[in,out] table Pointer to the dynamic table instance. Set to NULL on
+ * success.
+ *
+ * @threadsafe No - caller must ensure no concurrent access to the table or
+ * arena.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * Arena_T arena = Arena_new();
+ * TRY {
+ *     SocketHPACK_Table_T table =
+ * SocketHPACK_Table_new(SOCKETHPACK_DEFAULT_TABLE_SIZE, arena);
+ *     // ... use table for encoding/decoding ...
+ * } EXCEPT(SocketHPACK_Error) {
+ *     // Handle error
+ * } FINALLY {
+ *     SocketHPACK_Table_free(&table);
+ * } END_TRY;
+ * Arena_dispose(&arena);
+ * @endcode
+ *
+ * ## Important Notes
+ *
+ * - Always pair with SocketHPACK_Table_new() using the same arena for
+ * lifecycle management.
+ * - No individual header strings are freed; they remain in the arena until
+ * Arena_clear() or Arena_dispose().
+ * - In multi-threaded environments, synchronize access to shared arenas.
+ *
+ * @note This operation does not iterate over table entries; memory is managed
+ * by the arena.
+ *
+ * @warning Failing to free tables can lead to arena exhaustion and memory
+ * leaks.
+ *
+ * @complexity O(1) - constant time operation
+ *
+ * @see SocketHPACK_Table_new() for table creation
+ * @see Arena_dispose() for complete resource cleanup
+ * @see SocketHPACK_Encoder_free() and SocketHPACK_Decoder_free() for related
+ * cleanup patterns
+ * @see docs/HTTP.md for HTTP/2 header compression overview
  */
 extern void SocketHPACK_Table_free (SocketHPACK_Table_T *table);
 
 /**
- * @brief Update maximum table size
+ * @brief Update the maximum size of the dynamic table.
  * @ingroup http
- * @param table Dynamic table
- * @param max_size New maximum size in bytes
- * @threadsafe No
  *
- * Updates the maximum table size, evicting entries as needed.
- * This corresponds to a SETTINGS_HEADER_TABLE_SIZE update.
+ * Changes the dynamic table's maximum capacity, potentially evicting the
+ * oldest entries to fit within the new limit. This operation is typically
+ * triggered by a HTTP/2 SETTINGS frame updating HEADER_TABLE_SIZE. Entries are
+ * evicted from the oldest (highest index) until the table size is <= max_size.
+ *
+ * @param[in] table The dynamic table instance to update.
+ * @param[in] max_size New maximum table size in bytes, including overhead per
+ * entry. Must be >= 0 and <= SOCKETHPACK_MAX_TABLE_SIZE.
+ *
+ * @throws SocketHPACK_Error If max_size is invalid (negative or exceeds
+ * maximum allowed).
+ *
+ * @threadsafe No - concurrent updates or accesses may lead to inconsistent
+ * state or data races.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketHPACK_Table_T table = ...;  // Initialized table
+ *
+ * // Increase for better compression
+ * TRY {
+ *     SocketHPACK_Table_set_max_size(table, 16384);  // 16KB
+ * } EXCEPT(SocketHPACK_Error) {
+ *     SOCKET_LOG_ERROR_MSG("Failed to update table size: %s",
+ * Socket_GetLastError());
+ * }
+ *
+ * // Reduce size, evicting if necessary
+ * SocketHPACK_Table_set_max_size(table, 2048);   // 2KB
+ * @endcode
+ *
+ * ## Eviction Behavior
+ *
+ * | Condition | Action |
+ * |-----------|--------|
+ * | new_size >= current_size | No eviction |
+ * | new_size < current_size | Evict oldest entries until compliant |
+ * | new_size == 0 | Clear entire table |
+ *
+ * ## Query After Update
+ *
+ * After calling, verify with:
+ * - SocketHPACK_Table_size(table) <= max_size
+ * - SocketHPACK_Table_max_size(table) == max_size
+ *
+ * @note Affects compression efficiency; larger tables improve ratios but use
+ * more memory.
+ * @note Synchronized between encoder/decoder via SETTINGS frames in HTTP/2.
+ *
+ * @warning Frequent size changes can cause unnecessary evictions and
+ * performance overhead.
+ *
+ * @complexity O(n) worst case - linear in number of entries if full eviction
+ * needed
+ * @complexity O(1) average - if no or few evictions
+ *
+ * @see SocketHPACK_Table_new() for initial configuration
+ * @see SocketHPACK_Table_size() to get current usage
+ * @see SocketHPACK_Table_count() for entry count changes
+ * @see SocketHPACK_Decoder_set_table_size() for decoder synchronization
+ * @see SocketHPACK_Encoder_set_table_size() for encoder updates
+ * @see docs/HTTP.md#hpack-dynamic-table for HTTP/2 specifics
  */
 extern void SocketHPACK_Table_set_max_size (SocketHPACK_Table_T table,
                                             size_t max_size);
 
 /**
- * @brief Get current table size in bytes
+ * @brief Query the current size of the dynamic table in bytes.
  * @ingroup http
- * @param table Dynamic table
- * @return Current size (sum of all entry sizes including overhead)
- * @threadsafe No
+ *
+ * Returns the total size of all entries in the dynamic table, including the
+ * 32-byte overhead per entry as per RFC 7541 Section 4.1. This value
+ * represents memory usage and is always <= the maximum table size set via
+ * SocketHPACK_Table_set_max_size().
+ *
+ * @param[in] table The dynamic table instance to query.
+ *
+ * @return Current table size in bytes (sum of name/value lengths +
+ * SOCKETHPACK_ENTRY_OVERHEAD * entry count).
+ *
+ * @threadsafe No - concurrent table modifications (add/evict) may cause
+ * inconsistent return values.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketHPACK_Table_T table = SocketHPACK_Table_new(4096, arena);
+ * size_t size = SocketHPACK_Table_size(table);  // Initially 0
+ *
+ * // After adding entries
+ * SocketHPACK_Table_add(table, ":method", 7, "GET", 3);
+ * size = SocketHPACK_Table_size(table);  // ~42 bytes (value + name +
+ * overhead)
+ *
+ * printf("Table size: %zu bytes\n", size);
+ * @endcode
+ *
+ * ## Size Calculation
+ *
+ * Total size = \sum (name_len + value_len) + (count *
+ * SOCKETHPACK_ENTRY_OVERHEAD)
+ *
+ * | Component | Description |
+ * |-----------|-------------|
+ * | Header Data | Sum of all name and value string lengths |
+ * | Overhead | 32 bytes per entry for indexing and metadata |
+ *
+ * @note Size does not include static table; only dynamic entries.
+ * @note Returns 0 for empty table.
+ *
+ * @complexity O(1) - maintained incrementally during add/evict operations
+ *
+ * @see SocketHPACK_Table_count() for entry count
+ * @see SocketHPACK_Table_max_size() for capacity limit
+ * @see SocketHPACK_Table_add() for adding entries that increase size
+ * @see SocketHPACK_ENTRY_OVERHEAD for per-entry cost
+ * @see docs/HTTP-REFACTOR.md#hpack-memory-management for tuning advice
  */
 extern size_t SocketHPACK_Table_size (SocketHPACK_Table_T table);
 
@@ -405,7 +683,8 @@ typedef struct SocketHPACK_Decoder *SocketHPACK_Decoder_T;
  * @brief Configuration for HPACK decoder instance.
  * @ingroup http
  *
- * Controls security limits like max header sizes and decompression bomb prevention.
+ * Controls security limits like max header sizes and decompression bomb
+ * prevention.
  */
 typedef struct
 {
@@ -455,20 +734,121 @@ SocketHPACK_Decoder_new (const SocketHPACK_DecoderConfig *config,
 extern void SocketHPACK_Decoder_free (SocketHPACK_Decoder_T *decoder);
 
 /**
- * @brief Decode header block
+ * @brief Decode a complete HPACK header block into headers array.
  * @ingroup http
- * @param decoder Decoder instance
- * @param input Encoded header block
- * @param input_len Block length
- * @param headers Output array for decoded headers
- * @param max_headers Maximum headers to decode
- * @param header_count Output - number of headers decoded
- * @param arena Arena for header string allocation
- * @return Result code
- * @threadsafe No
  *
- * Decodes a complete HPACK header block in one call.
- * Header strings are allocated from the provided arena.
+ * Performs full decompression of an HPACK-encoded header block from HTTP/2
+ * HEADERS or PUSH_PROMISE frames. Supports all HPACK representations: indexed
+ * headers, literal headers (with/without indexing), dynamic table updates.
+ * Single-pass decoding with validation against decoder config limits to
+ * prevent security issues like decompression bombs. Decoded headers include
+ * pseudo-headers (e.g., :method, :authority) and regular headers, preserving
+ * block order. Name and value strings are null-terminated and allocated from
+ * the arena for easy use.
+ *
+ * @param[in] decoder Initialized decoder with security configuration (max
+ * sizes, expansion ratio).
+ * @param[in] input Pointer to the encoded HPACK header block data.
+ * @param[in] input_len Number of bytes in the input buffer.
+ * @param[out] headers Pre-allocated array of SocketHPACK_Header to store
+ * decoded results.
+ * @param[in] max_headers Capacity of headers array (safety limit against
+ * excessive headers).
+ * @param[out] header_count Pointer to receive the number of decoded headers
+ * written to array.
+ * @param[in] arena Arena_T for allocating copies of header name and value
+ * strings.
+ *
+ * @return SocketHPACK_Result indicating success or error:
+ *         - HPACK_OK: Complete decode, *header_count populated.
+ *         - HPACK_INCOMPLETE: Partial input; call again with more data.
+ *         - HPACK_ERROR_*: Specific failure (e.g., HPACK_ERROR_INVALID_INDEX,
+ * HPACK_ERROR_HUFFMAN).
+ *
+ * @throws SocketHPACK_Error On validation failures, limit violations, or
+ * decoding errors.
+ * @throws Arena_Failed If string allocations exceed arena capacity.
+ *
+ * @threadsafe No - modifies decoder state (table updates); requires external
+ * synchronization for shared use.
+ *
+ * ## Basic Usage Pattern
+ *
+ * @code{.c}
+ * // In HTTP/2 frame processing loop
+ * SocketHPACK_Header headers[128];  // Reasonable max for most requests
+ * size_t num_headers = 0;
+ * const unsigned char *hpdata = frame->headers.payload;
+ * size_t hplen = frame->headers.length;
+ *
+ * TRY {
+ *     SocketHPACK_Result res = SocketHPACK_Decoder_decode(decoder, hpdata,
+ * hplen, headers, 128, &num_headers, arena); if (res == HPACK_OK) {
+ *         // Process headers
+ *         for (size_t i = 0; i < num_headers; ++i) {
+ *             if (headers[i].never_index) {
+ *                 // Handle sensitive header (e.g., authorization)
+ *             }
+ *             // Convert to HTTP request/response as needed
+ *         }
+ *     } else if (res == HPACK_INCOMPLETE) {
+ *         // Buffer more data and retry (rare for complete frames)
+ *     } else {
+ *         // Protocol error; consider GOAWAY or connection close
+ *         SOCKET_LOG_ERROR_MSG("HPACK decode failed: %s",
+ * SocketHPACK_result_string(res)); RAISE(SocketHTTP2_ProtocolError);
+ *     }
+ * } EXCEPT (SocketHPACK_Error) {
+ *     // Log and handle
+ * } END_TRY;
+ * @endcode
+ *
+ * ## Error Codes and Recovery
+ *
+ * | Code | Typical Cause | Recommended Action |
+ * |------|---------------|--------------------|
+ * | HPACK_ERROR_INVALID_INDEX | Invalid table index | Peer error; send
+ * RST_STREAM or GOAWAY | | HPACK_ERROR_HUFFMAN | Corrupt Huffman codes/padding
+ * | Validate peer; close connection | | HPACK_ERROR_TABLE_SIZE | Invalid size
+ * update > max | Protocol violation; reject update | | HPACK_ERROR_HEADER_SIZE
+ * | Single header exceeds limit | Increase config or drop oversized | |
+ * HPACK_ERROR_LIST_SIZE | Total size exceeds limit | Increase config or
+ * truncate headers | | HPACK_ERROR_BOMB | Excessive expansion ratio | Tighten
+ * max_expansion_ratio; ban peer IP |
+ *
+ * ## Security Considerations
+ *
+ * - Configurable limits prevent DoS via large headers or table updates.
+ * - max_expansion_ratio guards against "HPACK bombs" where encoded is small
+ * but decoded huge.
+ * - never_index flag respected for sensitive headers (e.g., cookies, auth).
+ * - Table size updates limited per block (SOCKETHPACK_MAX_TABLE_UPDATES).
+ *
+ * @note On success, *header_count <= max_headers; array not null-padded.
+ * @note Pseudo-headers must appear before regular headers per RFC; order
+ * preserved.
+ * @note Supports Huffman decoding with padding validation (max 7 trailing
+ * 1-bits).
+ * @note Partial decodes (HPACK_INCOMPLETE) advance internal state; resume with
+ * more input.
+ * @note Arena strings lifetime ends with arena clear/dispose; copy if needed
+ * longer.
+ *
+ * @warning Always validate *header_count before accessing headers array.
+ * @warning Do not reuse headers array across calls without clearing or size
+ * check.
+ * @warning In production, log and monitor error rates for HPACK_ERROR_* codes.
+ *
+ * @complexity O(n + m) where n=input size, m=output headers (linear scan +
+ * allocations)
+ *
+ * @see SocketHPACK_Decoder_new() for creating secure decoders
+ * @see SocketHPACK_DecoderConfig for limit tuning
+ * @see SocketHPACK_Header for output structure details
+ * @see SocketHPACK_result_string() to get human-readable errors
+ * @see SocketHTTP2.h for HTTP/2 frame integration
+ * @see docs/SECURITY.md#hpack-security for attack mitigations
+ * @see https://tools.ietf.org/html/rfc7541#section-6 for decoding spec
  */
 extern SocketHPACK_Result
 SocketHPACK_Decoder_decode (SocketHPACK_Decoder_T decoder,
@@ -612,7 +992,8 @@ extern SocketHPACK_Result SocketHPACK_static_get (size_t index,
  * @param name_len Name length
  * @param value Header value (NULL to match name only)
  * @param value_len Value length
- * @return Index (1-61) on exact match, negative index if only name matches, 0 if not found
+ * @return Index (1-61) on exact match, negative index if only name matches, 0
+ * if not found
  * @threadsafe Yes
  *
  * Searches for an entry in the static table.

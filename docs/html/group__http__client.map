@@ -1,4 +1,8 @@
 <map id="HTTP Client Module" name="HTTP Client Module">
-<area shape="rect" id="Node000002" href="$group__http.html" title="Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support." alt="" coords="5,5,116,31"/>
-<area shape="rect" id="Node000001" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="164,5,305,31"/>
+<area shape="rect" id="Node000002" href="$group__http.html" title="Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support." alt="" coords="5,109,116,134"/>
+<area shape="rect" id="Node000001" title="High&#45;level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O,..." alt="" coords="164,109,305,134"/>
+<area shape="rect" id="Node000006" href="$group__http__client__auth.html" title="Internal buffer sizes for HTTP authentication header generation and computation." alt="" coords="368,5,512,45"/>
+<area shape="rect" id="Node000005" href="$group__http__client__cookie.html" title="Limits and buffer sizes for HTTP client cookie handling and jar management." alt="" coords="368,69,512,109"/>
+<area shape="rect" id="Node000003" href="$group__http__client__limits.html" title="Limits on redirects, connections, and retries for safety and performance." alt="" coords="353,133,527,173"/>
+<area shape="rect" id="Node000004" href="$group__http__client__retry.html" title="Parameters for automatic retry logic on transient failures." alt="" coords="373,197,507,237"/>
 </map>

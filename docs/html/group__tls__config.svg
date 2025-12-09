@@ -21,7 +21,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="group__security.html" target="_top" xlink:title="TLS encryption and security protection mechanisms.">
+<g id="a_Node000002"><a xlink:href="group__security.html" target="_top" xlink:title="Comprehensive security protections for network applications.">
 <polygon fill="white" stroke="#666666" points="92,-26.43 0,-26.43 0,-7.43 92,-7.43 92,-26.43"/>
 <text text-anchor="middle" x="46" y="-14.43" font-family="Helvetica,sans-Serif" font-size="10.00">Security Modules</text>
 </a>

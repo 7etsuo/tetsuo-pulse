@@ -20,7 +20,7 @@
 <!-- Node2 -->
 <g id="Node000002" class="node">
 <title>Node2</title>
-<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for the Socket module, including internal structure definition....">
+<g id="a_Node000002"><a xlink:href="Socket-private_8h.html" target="_top" xlink:title="Private implementation details for Socket module: internal structure and shared utilities....">
 <polygon fill="white" stroke="#666666" points="241.88,-140 153.88,-140 153.88,-121 241.88,-121 241.88,-140"/>
 <text text-anchor="middle" x="197.88" y="-128" font-family="Helvetica,sans-Serif" font-size="10.00">Socket&#45;private.h</text>
 </a>
@@ -56,7 +56,7 @@
 <!-- Node5 -->
 <g id="Node000005" class="node">
 <title>Node5</title>
-<g id="a_Node000005"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Asynchronous I/O operations using platform&#45;optimized mechanisms.">
+<g id="a_Node000005"><a xlink:href="SocketAsync_8h.html" target="_top" xlink:title="Platform&#45;optimized asynchronous I/O for high&#45;performance networking.">
 <polygon fill="white" stroke="#666666" points="1391.38,-195 1308.38,-195 1308.38,-176 1391.38,-176 1391.38,-195"/>
 <text text-anchor="middle" x="1349.88" y="-183" font-family="Helvetica,sans-Serif" font-size="10.00">SocketAsync.h</text>
 </a>
@@ -74,7 +74,7 @@
 <!-- Node6 -->
 <g id="Node000006" class="node">
 <title>Node6</title>
-<g id="a_Node000006"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title="Internal implementation details for SocketPoll module.">
+<g id="a_Node000006"><a xlink:href="SocketPoll-private_8h.html" target="_top" xlink:title=" ">
 <polygon fill="white" stroke="#666666" points="1271.88,-79.5 1167.88,-79.5 1167.88,-60.5 1271.88,-60.5 1271.88,-79.5"/>
 <text text-anchor="middle" x="1219.88" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll&#45;private.h</text>
 </a>
@@ -92,7 +92,7 @@
 <!-- Node7 -->
 <g id="Node000007" class="node">
 <title>Node7</title>
-<g id="a_Node000007"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for the SocketCommon module.">
+<g id="a_Node000007"><a xlink:href="SocketCommon-private_8h.html" target="_top" xlink:title="Private declarations for SocketCommon module providing shared socket infrastructure.">
 <polygon fill="white" stroke="#666666" points="261.88,-195 133.88,-195 133.88,-176 261.88,-176 261.88,-195"/>
 <text text-anchor="middle" x="197.88" y="-183" font-family="Helvetica,sans-Serif" font-size="10.00">SocketCommon&#45;private.h</text>
 </a>
@@ -273,7 +273,7 @@
 <!-- Node22 -->
 <g id="Node000022" class="node">
 <title>Node22</title>
-<g id="a_Node000022"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Abstract interface for platform&#45;specific polling implementations.">
+<g id="a_Node000022"><a xlink:href="SocketPoll__backend_8h.html" target="_top" xlink:title="Defines internal backend abstraction for cross&#45;platform polling.">
 <polygon fill="white" stroke="#666666" points="1229.88,-140 1115.88,-140 1115.88,-121 1229.88,-121 1229.88,-140"/>
 <text text-anchor="middle" x="1172.88" y="-128" font-family="Helvetica,sans-Serif" font-size="10.00">SocketPoll_backend.h</text>
 </a>
@@ -381,7 +381,7 @@
 <!-- Node28 -->
 <g id="Node000028" class="node">
 <title>Node28</title>
-<g id="a_Node000028"><a xlink:href="SocketReconnect-private_8h.html" target="_top" xlink:title="Internal implementation details for automatic reconnection framework.">
+<g id="a_Node000028"><a xlink:href="SocketReconnect-private_8h.html" target="_top" xlink:title="Private header for SocketReconnect module internals.">
 <polygon fill="white" stroke="#666666" points="2041.38,-140 1906.38,-140 1906.38,-121 2041.38,-121 2041.38,-140"/>
 <text text-anchor="middle" x="1973.88" y="-128" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect&#45;private.h</text>
 </a>
@@ -399,7 +399,7 @@
 <!-- Node29 -->
 <g id="Node000029" class="node">
 <title>Node29</title>
-<g id="a_Node000029"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework with exponential backoff and circuit breaker.">
+<g id="a_Node000029"><a xlink:href="SocketReconnect_8h.html" target="_top" xlink:title="Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patte...">
 <polygon fill="white" stroke="#666666" points="1902.38,-195 1799.38,-195 1799.38,-176 1902.38,-176 1902.38,-195"/>
 <text text-anchor="middle" x="1850.88" y="-183" font-family="Helvetica,sans-Serif" font-size="10.00">SocketReconnect.h</text>
 </a>
@@ -417,7 +417,7 @@
 <!-- Node30 -->
 <g id="Node000030" class="node">
 <title>Node30</title>
-<g id="a_Node000030"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="TLS/SSL socket integration with TLS 1.3 support.">
+<g id="a_Node000030"><a xlink:href="SocketTLS_8h.html" target="_top" xlink:title="High&#45;level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">
 <polygon fill="white" stroke="#666666" points="451.88,-195 377.88,-195 377.88,-176 451.88,-176 451.88,-195"/>
 <text text-anchor="middle" x="414.88" y="-183" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS.h</text>
 </a>
@@ -489,7 +489,7 @@
 <!-- Node3 -->
 <g id="Node000003" class="node">
 <title>Node3</title>
-<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="TLS internal shared definitions and helper functions.">
+<g id="a_Node000003"><a xlink:href="SocketTLS-private_8h.html" target="_top" xlink:title="Internal TLS module shared definitions, macros, and helper functions.">
 <polygon fill="white" stroke="#666666" points="399.88,-79.5 293.88,-79.5 293.88,-60.5 399.88,-60.5 399.88,-79.5"/>
 <text text-anchor="middle" x="346.88" y="-67.5" font-family="Helvetica,sans-Serif" font-size="10.00">SocketTLS&#45;private.h</text>
 </a>

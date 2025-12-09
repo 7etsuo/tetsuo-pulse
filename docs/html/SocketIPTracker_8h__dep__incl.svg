@@ -21,7 +21,7 @@
 <!-- Node1 -->
 <g id="Node000001" class="node">
 <title>Node1</title>
-<g id="a_Node000001"><a xlink:title="Per&#45;IP connection tracking for rate limiting and DoS protection.">
+<g id="a_Node000001"><a xlink:title="Header for IP connection tracker module.">
 <polygon fill="#999999" stroke="#666666" points="191.5,-74 93.5,-74 93.5,-55 191.5,-55 191.5,-74"/>
 <text text-anchor="middle" x="142.5" y="-62" font-family="Helvetica,sans-Serif" font-size="10.00">SocketIPTracker.h</text>
 </a>

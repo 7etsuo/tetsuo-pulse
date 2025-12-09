@@ -16,7 +16,7 @@
 <area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="583,29,461,43,320,68,253,85,195,105,149,128,119,154,104,169,86,180,47,191,15,193,6,186,37,181,119,183,265,195,492,223,524,227,524,232,491,228,265,201,118,188,38,186,11,187,16,187,46,186,84,175,101,165,115,150,146,123,193,100,252,80,319,63,460,38,582,23"/>
 <area shape="rect" id="Node000009" href="$Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks." alt="" coords="1522,225,1624,251"/>
 <area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="730,19,1001,31,1361,55,1536,72,1687,93,1800,119,1838,134,1860,150,1870,164,1874,177,1872,188,1866,198,1844,214,1810,225,1725,237,1639,240,1638,235,1724,232,1809,220,1842,209,1862,195,1867,187,1868,177,1865,166,1857,154,1835,139,1799,124,1686,99,1535,77,1360,60,1001,36,729,24"/>
-<area shape="rect" id="Node000011" href="$SocketConfig_8h.html" title="Compile&#45;time configuration and platform detection for the socket library." alt="" coords="888,152,1029,177"/>
+<area shape="rect" id="Node000011" href="$SocketConfig_8h.html" title="Compile&#45;time and runtime configuration constants, limits, and platform adaptations." alt="" coords="888,152,1029,177"/>
 <area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="682,28,785,76,925,144,922,149,783,81,680,33"/>
 <area shape="rect" id="Node000019" href="$SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling." alt="" coords="1334,79,1457,104"/>
 <area shape="poly" id="edge20_Node000001_Node000019" title=" " alt="" coords="730,24,1321,80,1320,85,729,29"/>

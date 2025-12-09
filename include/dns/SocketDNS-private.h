@@ -3,18 +3,24 @@
 
 /**
  * @file SocketDNS-private.h
- * @brief Internal structures, enums, and prototypes for asynchronous DNS resolver implementation.
+ * @brief Internal structures, enums, and prototypes for asynchronous DNS
+ * resolver implementation.
  * @ingroup dns
  *
- * Defines private data structures, state enumerations, and internal function prototypes
- * for the thread-pool based DNS resolution module. Intended solely for library maintainers.
- * Applications must use public API in SocketDNS.h exclusively.
+ * Defines private data structures, state enumerations, and internal function
+ * prototypes for the thread-pool based DNS resolution module. Intended solely
+ * for library maintainers. Applications must use public API in SocketDNS.h
+ * exclusively.
  *
  * Core internal architecture:
- * - #SocketDNS_T: Resolver with arena, worker threads, request queue/hash, sync primitives, completion pipe
- * - #SocketDNS_Request_T: Per-request state including hostname, callback, result, timeout tracking
- * - RequestState enum: Lifecycle tracking (PENDING -> PROCESSING -> COMPLETE/CANCELLED)
- * - Hash table (SOCKET_DNS_REQUEST_HASH_SIZE buckets) for O(1) request lookup/removal
+ * - #SocketDNS_T: Resolver with arena, worker threads, request queue/hash,
+ * sync primitives, completion pipe
+ * - #SocketDNS_Request_T: Per-request state including hostname, callback,
+ * result, timeout tracking
+ * - RequestState enum: Lifecycle tracking (PENDING -> PROCESSING ->
+ * COMPLETE/CANCELLED)
+ * - Hash table (SOCKET_DNS_REQUEST_HASH_SIZE buckets) for O(1) request
+ * lookup/removal
  * - Mutex-protected FIFO queue for pending requests
  * - Pipe FD for non-blocking completion notification to SocketPoll
  *
@@ -24,8 +30,10 @@
  * - POSIX threads (pthread) and <netdb.h> for getaddrinfo()
  *
  * Security considerations:
- * - Deterministic pointer hashing mitigates collision attacks but monitor max_pending
- * - Worker threads isolated; callbacks execute in worker context (no main thread reentrancy)
+ * - Deterministic pointer hashing mitigates collision attacks but monitor
+ * max_pending
+ * - Worker threads isolated; callbacks execute in worker context (no main
+ * thread reentrancy)
  * - Timeouts prevent DoS from slow/broken DNS servers
  *
  * @see SocketDNS.h for public asynchronous API (resolve, pollfd, getresult).
@@ -34,7 +42,8 @@
  * @see @ref dns "DNS module overview" and @ref core_io "Core I/O group".
  * @see docs/ASYNC_IO.md for integration with event loops.
  * @warning INTERNAL USE ONLY - unstable ABI, may change without notice.
- * @warning Callback functions must be reentrant and fast; see SocketDNS_Callback documentation.
+ * @warning Callback functions must be reentrant and fast; see
+ * SocketDNS_Callback documentation.
  */
 
 /* System headers */
@@ -57,8 +66,9 @@
  * @brief Opaque handle for a single DNS resolution request.
  * @ingroup dns
  *
- * Created by SocketDNS_resolve(), used to retrieve results, cancel, or via callback.
- * Lifetime managed by resolver; invalid after completion or cancellation.
+ * Created by SocketDNS_resolve(), used to retrieve results, cancel, or via
+ * callback. Lifetime managed by resolver; invalid after completion or
+ * cancellation.
  * @see SocketDNS_resolve()
  * @see SocketDNS_cancel()
  * @see SocketDNS_getresult()
@@ -83,8 +93,10 @@ typedef struct Arena_T *Arena_T;
  * @param error getaddrinfo() error code (0=success, see <netdb.h> for others).
  * @param data User data passed to SocketDNS_resolve().
  *
- * Called from worker thread context upon completion (success, error, or timeout).
- * @note Executed in a dedicated DNS worker thread - NOT the thread that submitted the request.
+ * Called from worker thread context upon completion (success, error, or
+ * timeout).
+ * @note Executed in a dedicated DNS worker thread - NOT the thread that
+ * submitted the request.
  * @note Must complete quickly; blocking stalls the worker pool.
  * @note Takes ownership of 'result'; free with freeaddrinfo() after use.
  * @note Do NOT call SocketDNS_free(dns) from callback (deadlock risk).
@@ -92,7 +104,8 @@ typedef struct Arena_T *Arena_T;
  * @see SocketDNS_resolve() to submit request with callback.
  * @see SocketDNS_Callback safety notes in SocketDNS.h documentation.
  */
-typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *, int, void *);
+typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *,
+                                    int, void *);
 
 /*
  * =============================================================================
@@ -101,23 +114,47 @@ typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *, in
  */
 
 /**
- * @brief Enumeration of DNS request processing states.
+ * @brief Enumeration of DNS request lifecycle states.
  * @ingroup dns
  *
- * Tracks the lifecycle of individual resolution requests through the async pipeline:
- * - Submitted requests transition PENDING -> PROCESSING -> COMPLETE/CANCELLED
- * - State used for synchronization, timeout checks, and result availability
- * - Atomic updates under mutex protection
+ * Defines the processing states for individual DNS resolution requests.
+ * Requests transition linearly: REQ_PENDING → REQ_PROCESSING → (REQ_COMPLETE |
+ * REQ_CANCELLED)
  *
- * @see SocketDNS_Request_T::state field.
- * @see queue_append(), process_single_request(), cancel_pending_request()
+ * State transitions are atomic under mutex protection to ensure consistency
+ * across threads (submitters, workers, pollers). Used for:
+ * - Queue management and worker assignment
+ * - Timeout detection and forced completion
+ * - Result availability checks
+ * - Cancellation safety
+ *
+ *  State Transition Table
+ *
+ * | State       | Description                          | Transitions From |
+ * Actions Available          |
+ * |-------------|--------------------------------------|---------------------------|----------------------------|
+ * | REQ_PENDING | Queued, waiting for worker           | SocketDNS_resolve()
+ * | cancel, timeout check      | | REQ_PROCESSING | Worker executing
+ * getaddrinfo()     | Worker dequeues           | no cancel (unsafe), timeout|
+ * | REQ_COMPLETE | Result ready, callback pending      | getaddrinfo()
+ * success/error| getresult, invoke callback | | REQ_CANCELLED | User
+ * cancelled, no further action   | SocketDNS_cancel()        | geterror
+ * (EAI_NONAME)      |
+ *
+ * @see SocketDNS_Request_T::state field for storage.
+ * @see submit_dns_request() for PENDING insertion.
+ * @see process_single_request() for PROCESSING → COMPLETE.
+ * @see cancel_pending_request() for CANCELLED transition.
+ * @see request_timed_out() for timeout handling.
  */
 typedef enum
 {
-  REQ_PENDING,    /**< Request queued, awaiting worker assignment */
-  REQ_PROCESSING, /**< Worker actively calling getaddrinfo() */
-  REQ_COMPLETE,   /**< Resolution finished; result/error ready */
-  REQ_CANCELLED   /**< User cancelled before processing complete */
+  REQ_PENDING, /**< Request enqueued, awaiting assignment to worker thread */
+  REQ_PROCESSING, /**< Dequeued and actively being resolved by worker
+                     (getaddrinfo active) */
+  REQ_COMPLETE,   /**< Resolution complete; result/error stored, ready for
+                     retrieval/callback */
+  REQ_CANCELLED /**< Cancelled by user before processing; no result produced */
 } RequestState;
 
 /**
@@ -125,8 +162,9 @@ typedef enum
  * @ingroup dns
  *
  * Defines cleanup scope for cleanup_on_init_failure() based on init progress.
- * Values correspond to initialization order to enable reverse-order resource release.
- * Used in TRY/EXCEPT blocks during SocketDNS_new() to ensure no leaks on failure.
+ * Values correspond to initialization order to enable reverse-order resource
+ * release. Used in TRY/EXCEPT blocks during SocketDNS_new() to ensure no leaks
+ * on failure.
  *
  * @see initialize_dns_components()
  * @see cleanup_on_init_failure()
@@ -176,11 +214,11 @@ struct SocketDNS_Request_T
   SocketDNS_Callback callback; /**< Completion callback (NULL for polling) */
   void *callback_data;         /**< User data passed to callback */
   RequestState state;          /**< Current request lifecycle state */
-  struct addrinfo *result;     /**< Resolution result (owned until retrieved) */
-  int error;                   /**< getaddrinfo() error code (0 on success) */
+  struct addrinfo *result; /**< Resolution result (owned until retrieved) */
+  int error;               /**< getaddrinfo() error code (0 on success) */
   struct SocketDNS_Request_T *queue_next; /**< Queue linked list pointer */
   struct SocketDNS_Request_T *hash_next;  /**< Hash table chain pointer */
-  unsigned hash_value;         /**< Cached hash for O(1) removal */
+  unsigned hash_value;                    /**< Cached hash for O(1) removal */
   struct timespec submit_time; /**< CLOCK_MONOTONIC submission timestamp */
   int timeout_override_ms;     /**< Per-request timeout (-1 = use default) */
   struct SocketDNS_T *dns_resolver; /**< Back-pointer to owning resolver */
@@ -268,62 +306,228 @@ extern const Except_T SocketDNS_Failed;
 /**
  * @brief Allocate and zero-initialize DNS resolver structure from heap memory.
  * @ingroup dns
+ *
+ * Performs calloc(1, sizeof(struct SocketDNS_T)) for zero-initialization of
+all fields.
+ * Used during SocketDNS_new() bootstrap before arena allocation.
+ * Caller must subsequently call initialize_dns_fields() and other init
+functions.
+ *
  * @return Pointer to allocated and zeroed SocketDNS_T instance.
+ *
  * @throws SocketDNS_Failed on memory allocation failure (calloc failure).
  *
- * Performs calloc(1, sizeof(struct SocketDNS_T)) for zero-initialization of all fields.
- * Used during SocketDNS_new() bootstrap before arena allocation.
- * Caller must subsequently call initialize_dns_fields() and other init functions.
+ * @threadsafe No - intended for single-threaded initialization in
+SocketDNS_new().
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * struct SocketDNS_T *dns = allocate_dns_resolver();
+ * if (dns == NULL) {
+
+extern struct SocketDNS_T * allocate_dns_resolver (void);
+ *     // Handle allocation failure (ENOMEM)
+ *     RAISE(SocketDNS_Failed);
+ * }
+ * TRY {
+ *     initialize_dns_fields(dns);
+ *     initialize_dns_components(dns);
+
+extern void initialize_dns_components (struct SocketDNS_T *dns);
+ *     // Success: dns ready for use
+ * } EXCEPT(SocketDNS_Failed) {
+ *     cleanup_on_init_failure(dns, DNS_CLEAN_NONE);  // Or appropriate level
+ *     free(dns);
+ *     RAISE;
+ * } END_TRY;
+ * @endcode
  *
  * @note Heap allocation (not arena); arena is initialized later for requests.
- * @see initialize_dns_fields() to set default values.
- * @see initialize_dns_components() for full setup including threads and sync.
- * @see SocketDNS_new() public entry point that orchestrates allocation + init.
- */
-extern struct SocketDNS_T *allocate_dns_resolver (void);
+ * Caller owns the pointer until cleanup_on_init_failure() or SocketDNS_free().
+ *
+ * @complexity O(1) - single calloc() call.
+ *
+ * @warning Do not use directly; part of internal SocketDNS_new()
+implementation.
+ * Applications must use public SocketDNS_new() API.
+ *
+ * @see initialize_dns_fields() for field initialization.
+ * @see initialize_dns_components() for component setup (threads, sync
+primitives).
 
-/**
- * @brief Initialize basic DNS resolver fields to default values.
- * @ingroup dns
- * @param dns DNS resolver to initialize.
- *
- * Sets all fields to safe defaults (NULL pointers, zero values).
- * Called before initialize_dns_components().
- */
-extern void initialize_dns_fields (struct SocketDNS_T *dns);
-
-/**
- * @brief Initialize core DNS resolver components: arena, synchronization primitives, pipe, and worker threads.
- * @ingroup dns
- * @param dns Pre-allocated DNS resolver structure (from allocate_dns_resolver()).
- * @throws SocketDNS_Failed on allocation failure (arena), synchronization init failure (pthread), pipe creation failure, or thread creation failure.
- *
- * Orchestrates full resolver setup:
- * - Arena allocation for requests/hostnames
- * - Mutex and condition variables for queue/result signaling
- * - Completion pipe for SocketPoll integration
- * - Worker thread pool startup
- *
- * Must be called after allocate_dns_resolver() and initialize_dns_fields().
- * Handles partial failure cleanup via cleanup_on_init_failure().
- * @pre dns is allocated and fields initialized to defaults.
- * @note All internal state protected by mutex post-init.
- * @threadsafe No - single-threaded initialization.
- * @see allocate_dns_resolver() for structure allocation.
- * @see start_dns_workers() to signal workers active.
- * @see destroy_dns_resources() for symmetric cleanup.
- * @see SocketDNS_new() public wrapper.
- */
 extern void initialize_dns_components (struct SocketDNS_T *dns);
+ * @see cleanup_on_init_failure() for error cleanup.
+ * @see SocketDNS_new() public constructor that orchestrates this allocation.
+ */
 
 /**
- * @brief Configure thread attributes for worker thread creation.
+ * @brief Initialize basic DNS resolver fields to safe default values.
  * @ingroup dns
- * @param attr Thread attributes structure to configure.
  *
- * Sets thread attributes for detached, default-priority worker threads.
+ * Sets all fields in the DNS resolver structure to safe defaults:
+ * - NULL for pointers (arena, workers, queue pointers, hash table entries)
+ * - 0/1 for counters and flags (num_workers, queue_size, shutdown, etc.)
+ * - Default values for configurable limits (max_pending, timeout)
+ *
+ * This ensures the structure is in a consistent state before component
+ * initialization (mutex, pipe, threads). Zero-initialization from calloc
+ * is supplemented with explicit defaults for clarity and future-proofing.
+ *
+ * @param[in,out] dns Pre-allocated DNS resolver structure (from
+allocate_dns_resolver()).
+ *
+ * @threadsafe No - called during single-threaded initialization.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * struct SocketDNS_T *dns = allocate_dns_resolver();
+ * TRY {
+ *     initialize_dns_fields(dns);  // Set defaults
+
+extern void initialize_dns_fields (struct SocketDNS_T *dns);
+ *     // Now safe to call initialize_dns_components(dns)
+ * } EXCEPT(SocketDNS_Failed) {
+ *     // Minimal cleanup needed (already zeroed)
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Explicitly sets defaults even after calloc() for code clarity
+ * and to handle future field additions without relying on zero-init.
+ *
+ * @complexity O(1) - direct field assignments, no loops or allocations.
+ *
+ * @see allocate_dns_resolver() for structure allocation.
+ * @see initialize_dns_components() next step after fields init.
+ * @see reset_dns_state() for symmetric reset during cleanup.
+ * @see SocketDNS_new() orchestrating function.
  */
-extern void setup_thread_attributes (pthread_attr_t *attr);
+
+/**
+ * @brief Initialize core DNS resolver components including arena, sync
+ * primitives, pipe, and threads.
+ * @ingroup dns
+ *
+ * Orchestrates the complete setup of resolver internals:
+ * 1. Arena allocation for request structures and hostnames
+ * 2. Synchronization primitives (recursive mutex + 2 condition vars)
+ * 3. Non-blocking completion pipe for event loop integration
+ * 4. Worker thread pool creation (SOCKET_DNS_THREAD_COUNT threads)
+ *
+ * Uses TRY/EXCEPT blocks internally for exception-safe partial failure
+ * recovery. Cleanup levels track init progress for precise resource release on
+ * errors.
+ *
+ * @param[in,out] dns Pre-allocated and field-initialized DNS resolver (from
+ * allocate_dns_resolver() + initialize_dns_fields()).
+ *
+ * @throws SocketDNS_Failed on:
+ * - Arena_new() failure (ENOMEM)
+ * - pthread_mutex_init() / pthread_cond_init() failure (EAGAIN, ENOMEM)
+ * - pipe() or socketpair() failure for completion signaling (EMFILE,
+ * EAFNOSUPPORT)
+ * - pthread_create() failure for workers (EAGAIN, EINVAL, EMFILE, EPERM)
+ *
+ * @threadsafe No - single-threaded initialization phase only.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * struct SocketDNS_T *dns = allocate_dns_resolver();
+ * enum DnsCleanupLevel cleanup_level = DNS_CLEAN_NONE;
+ * TRY {
+ *     initialize_dns_fields(dns);
+ *     cleanup_level = DNS_CLEAN_MUTEX;
+ *     initialize_synchronization(dns);  // Or direct calls
+ *     cleanup_level = DNS_CLEAN_PIPE;
+ *     initialize_pipe(dns);
+ *     cleanup_level = DNS_CLEAN_ARENA;
+ *     create_worker_threads(dns);
+ *     start_dns_workers(dns);
+ *     // Full init complete - return dns to SocketDNS_new()
+ * } EXCEPT(SocketDNS_Failed) {
+ *     cleanup_on_init_failure(dns, cleanup_level);
+ *     free(dns);
+ *     RAISE;
+ * } END_TRY;
+ * @endcode
+ *
+ * @note Recursive mutex allows nested locking during init/cleanup.
+ * @note Pipe FD [0] is pollfd for reading completions; [1] for writing
+ * signals.
+ * @note Worker threads start in suspended state until start_dns_workers().
+ *
+ * @complexity O(n) where n = number of worker threads (typically small, ~4-8).
+ *
+ * @warning Partial failures cleaned up automatically; do not reuse partially
+ * init dns.
+ * @warning Thread creation may fail under resource exhaustion (ulimit -u).
+ *
+ * @pre dns->arena == NULL, dns->workers == NULL, dns->mutex uninitialized,
+ * etc.
+ * @see cleanup_on_init_failure() for symmetric error handling.
+ * @see create_worker_threads() for thread spawning details.
+ * @see initialize_synchronization() / initialize_pipe() sub-components.
+ * @see SocketDNS_new() public API entry point.
+ * @see docs/ASYNC_IO.md for async integration patterns.
+ */
+
+/**
+ * @brief Configure pthread attributes for DNS worker threads.
+ * @ingroup dns
+ *
+ * Sets up thread attributes for detached operation with default stack size
+ * and scheduling policy. Ensures workers run independently without join
+ * requirements during shutdown.
+ *
+ * Specific settings:
+ * - Detached state: PTHREAD_CREATE_DETACHED (no pthread_join needed)
+ * - Inherit scheduler: PTHREAD_EXPLICIT_SCHED not set (inherits parent)
+ * - Default stack size and guards (platform defaults)
+ *
+ * @param[in,out] attr Pointer to pthread_attr_t structure to configure.
+ *     Must be initialized (via pthread_attr_init) before call.
+ *     Modified in place with worker-specific attributes.
+ *
+ * @return Void - raises SocketDNS_Failed on pthread_attr_* failure (rare).
+ *     Implementation uses TRY/EXCEPT internally.
+ *
+ * @throws SocketDNS_Failed if pthread_attr_setdetachstate() or other attr
+ * calls fail.
+ *
+ * @threadsafe Yes - reentrant, modifies local attr structure only.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * pthread_attr_t attr;
+ * TRY {
+ *     pthread_attr_init(&attr);
+ *     setup_thread_attributes(&attr);
+ *     // Now attr is ready for pthread_create()
+ *     int ret = pthread_create(&thread_id, &attr, worker_thread, dns);
+ *     if (ret != 0) RAISE_FMT(SocketDNS_Failed, "pthread_create failed: %s",
+ * strerror(ret)); } EXCEPT(SocketDNS_Failed) {
+ *     // Handle error
+ * } FINALLY {
+ *     pthread_attr_destroy(&attr);
+ * } END_TRY;
+ * @endcode
+ *
+ * @complexity O(1) - fixed number of pthread_attr_* calls.
+ *
+ * @note Detached threads simplify shutdown; no explicit joins required.
+ * @note Defaults to platform scheduler policy (SCHED_OTHER typically).
+ *
+ * @warning Caller must pthread_attr_destroy(&attr) after use, even on failure.
+ * Caller must pthread_attr_init(&attr) before calling this function.
+ *
+ * @see create_single_worker_thread() for using configured attributes.
+ * @see create_worker_threads() for multi-thread creation.
+ * @see worker_thread() thread entry point.
+ * @see SocketDNS_new() high-level initialization.
+ */
 
 /**
  * @brief Create a single worker thread.
@@ -341,14 +545,16 @@ extern int create_single_worker_thread (struct SocketDNS_T *dns,
  * @brief Spawn the configured number of DNS worker threads.
  * @ingroup dns
  * @param dns DNS resolver instance (with num_workers set).
- * @throws SocketDNS_Failed if pthread_create() fails for any thread (ENOMEM, etc.).
+ * @throws SocketDNS_Failed if pthread_create() fails for any thread (ENOMEM,
+ * etc.).
  *
- * Creates dns->num_workers (default SOCKET_DNS_THREAD_COUNT) detached worker threads.
- * Each thread runs worker_thread() loop until shutdown.
- * Threads are stored in dns->workers array (arena-allocated).
+ * Creates dns->num_workers (default SOCKET_DNS_THREAD_COUNT) detached worker
+ * threads. Each thread runs worker_thread() loop until shutdown. Threads are
+ * stored in dns->workers array (arena-allocated).
  *
  * @note Threads are created detached with default scheduling attributes.
- * @note Partial success: some threads may start before failure; cleanup handles join.
+ * @note Partial success: some threads may start before failure; cleanup
+ * handles join.
  * @threadsafe Conditional - must be called under single thread during init.
  * @see setup_thread_attributes() for thread config.
  * @see create_single_worker_thread() low-level single thread creation.
@@ -391,7 +597,8 @@ extern void initialize_queue_condition (struct SocketDNS_T *dns);
  * @ingroup dns
  * @param dns DNS resolver instance.
  *
- * Creates condition variable used to wake polling threads when results complete.
+ * Creates condition variable used to wake polling threads when results
+ * complete.
  */
 extern void initialize_result_condition (struct SocketDNS_T *dns);
 
@@ -400,7 +607,8 @@ extern void initialize_result_condition (struct SocketDNS_T *dns);
  * @ingroup dns
  * @param dns DNS resolver instance.
  *
- * Calls initialize_mutex(), initialize_queue_condition(), and initialize_result_condition().
+ * Calls initialize_mutex(), initialize_queue_condition(), and
+ * initialize_result_condition().
  */
 extern void initialize_synchronization (struct SocketDNS_T *dns);
 
@@ -499,7 +707,8 @@ extern void reset_dns_state (struct SocketDNS_T *dns);
  * @ingroup dns
  * @param dns DNS resolver instance.
  *
- * Calls all cleanup functions in proper order. Safe to call on partially initialized instances.
+ * Calls all cleanup functions in proper order. Safe to call on partially
+ * initialized instances.
  */
 extern void destroy_dns_resources (struct SocketDNS_T *dns);
 
@@ -507,7 +716,8 @@ extern void destroy_dns_resources (struct SocketDNS_T *dns);
  * @brief Free a linked list of DNS requests.
  * @ingroup dns
  * @param head Head of request list to free.
- * @param use_hash_next Whether to use hash_next (1) or queue_next (0) for traversal.
+ * @param use_hash_next Whether to use hash_next (1) or queue_next (0) for
+ * traversal.
  *
  * Frees all requests in the list and their associated memory.
  */
@@ -561,7 +771,8 @@ extern unsigned request_hash_function (const struct SocketDNS_Request_T *req);
  * @param dns DNS resolver instance.
  * @return Newly allocated request structure.
  *
- * Allocates memory for request structure. Fields must be initialized before use.
+ * Allocates memory for request structure. Fields must be initialized before
+ * use.
  */
 extern struct SocketDNS_Request_T *
 allocate_request_structure (struct SocketDNS_T *dns);
@@ -634,15 +845,49 @@ extern void hash_table_remove (struct SocketDNS_T *dns,
                                struct SocketDNS_Request_T *req);
 
 /**
- * @brief Append request to processing queue.
+ * @brief Append a DNS request to the end of the FIFO processing queue.
  * @ingroup dns
- * @param dns DNS resolver instance.
- * @param req Request to queue.
  *
- * Adds request to end of FIFO queue and updates queue size.
+ * Inserts the request into the tail of the queue (FIFO order) and increments
+ * the queue_size counter. Updates queue_tail pointer and sets req->queue_next
+ * = NULL. Must be called under mutex lock (internal invariant).
+ *
+ * Queue is singly-linked via SocketDNS_Request_T::queue_next field.
+ * Used during request submission after hash table insertion.
+ *
+ * @param[in,out] dns DNS resolver (queue_head/tail/size modified).
+ * @param[in] req Request to append (req->queue_next set to NULL).
+ *
+ * @threadsafe No - requires exclusive access via dns->mutex.
+ *
+ *  Usage Example
+ *
+ * @code{.c}
+ * pthread_mutex_lock(&dns->mutex);
+ * if (check_queue_limit(dns)) {
+ *     // Reject or queue overflow handling
+ *     pthread_mutex_unlock(&dns->mutex);
+ *     return;
+ * }
+ * hash_table_insert(dns, req);
+ * queue_append(dns, req);
+ * pthread_cond_broadcast(&dns->queue_cond);  // Wake workers
+ * pthread_mutex_unlock(&dns->mutex);
+ * @endcode
+ *
+ * @complexity O(1) - direct pointer updates, no traversal.
+ *
+ * @note FIFO ensures fair processing order for submitted requests.
+ * @note Called only from submit_dns_request() under lock.
+ *
+ * @warning Invalid if called without holding dns->mutex (race conditions).
+ * @warning req must not already be in queue or hash table.
+ *
+ * @see queue_remove() for removal operations.
+ * @see check_queue_limit() for capacity check before append.
+ * @see submit_dns_request() coordinating insert + append + signal.
+ * @see dequeue_request() for head removal by workers.
  */
-extern void queue_append (struct SocketDNS_T *dns,
-                          struct SocketDNS_Request_T *req);
 
 /**
  * @brief Remove request from queue head position.
@@ -733,7 +978,8 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
  *
  * Compares elapsed time since submission against effective timeout.
  *
- * @see @ref foundation::SocketTimer "SocketTimer" for timer management utilities.
+ * @see @ref foundation::SocketTimer "SocketTimer" for timer management
+ * utilities.
  */
 extern int request_timed_out (const struct SocketDNS_T *dns,
                               const struct SocketDNS_Request_T *req);
@@ -917,9 +1163,11 @@ extern void invoke_callback (struct SocketDNS_T *dns,
  * @param host Hostname string to validate.
  * @param port Port number to validate.
  *
- * Validates that host is non-NULL, non-empty, and port is in valid range (1-65535).
- * Raises SocketDNS_Failed exception on invalid parameters.
+ * Validates that host is non-NULL, non-empty, and port is in valid range
+ * (1-65535). Raises SocketDNS_Failed exception on invalid parameters.
  */
 extern void validate_resolve_params (const char *host, int port);
+
+extern struct SocketDNS_T *allocate_dns_resolver (void);
 
 #endif /* SOCKETDNS_PRIVATE_INCLUDED */
