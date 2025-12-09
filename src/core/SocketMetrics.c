@@ -134,6 +134,9 @@ static _Atomic int64_t gauge_values[SOCKET_GAUGE_METRIC_COUNT];
 static Histogram histogram_values[SOCKET_HISTOGRAM_METRIC_COUNT];
 static pthread_mutex_t metrics_global_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* Peak connection tracking */
+static _Atomic int peak_socket_count = 0;
+
 /* ============================================================================
  * Metric Name Tables
  * ============================================================================
@@ -1449,4 +1452,70 @@ SocketMetrics_category_name (SocketMetricCategory category)
   if (category < 0 || category >= SOCKET_METRIC_CAT_COUNT)
     return "unknown";
   return category_names[category];
+}
+
+/* ============================================================================
+ * Socket Count and Peak Tracking
+ * ============================================================================
+ */
+
+/**
+ * SocketMetrics_get_socket_count - Get current count of open sockets
+ *
+ * Returns: Current number of Socket_T instances
+ * Thread-safe: Yes - wraps Socket_debug_live_count()
+ */
+int
+SocketMetrics_get_socket_count (void)
+{
+  /* Forward to the underlying Socket live count implementation */
+  extern int Socket_debug_live_count (void);
+  return Socket_debug_live_count ();
+}
+
+/**
+ * SocketMetrics_get_peak_connections - Get peak connection count
+ *
+ * Returns: Highest socket count since init/reset
+ * Thread-safe: Yes - atomic read
+ */
+int
+SocketMetrics_get_peak_connections (void)
+{
+  return atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
+}
+
+/**
+ * SocketMetrics_reset_peaks - Reset peak counters to current values
+ *
+ * Thread-safe: Yes - atomic update
+ */
+void
+SocketMetrics_reset_peaks (void)
+{
+  int current = SocketMetrics_get_socket_count ();
+  atomic_store_explicit (&peak_socket_count, current, memory_order_relaxed);
+}
+
+/**
+ * SocketMetrics_update_peak_if_needed - Update peak if current is higher
+ *
+ * Called from socket creation path to track peak.
+ * Thread-safe: Yes - uses compare-and-swap
+ */
+void
+SocketMetrics_update_peak_if_needed (int current_count)
+{
+  int old_peak = atomic_load_explicit (&peak_socket_count, memory_order_relaxed);
+
+  /* Retry compare-and-swap until we either update or find a higher value */
+  while (current_count > old_peak)
+    {
+      if (atomic_compare_exchange_weak_explicit (&peak_socket_count, &old_peak,
+                                                 current_count,
+                                                 memory_order_relaxed,
+                                                 memory_order_relaxed))
+        break;
+      /* old_peak was updated by the failed CAS, loop again */
+    }
 }

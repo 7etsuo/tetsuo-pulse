@@ -18,17 +18,17 @@
 ## Socket Statistics & Metrics
 
 ### Per-Socket Statistics
-- [ ] Define `SocketStats_T` structure (bytes_sent, bytes_received, packets, timestamps)
-- [ ] `Socket_getstats(socket, stats)` - Retrieve socket statistics
-- [ ] `Socket_resetstats(socket)` - Reset statistics counters
-- [ ] Track connection establishment time
-- [ ] Track last send/recv timestamps
-- [ ] Optional: RTT estimation from TCP_INFO
+- [x] Define `SocketStats_T` structure (bytes_sent, bytes_received, packets, timestamps)
+- [x] `Socket_getstats(socket, stats)` - Retrieve socket statistics
+- [x] `Socket_resetstats(socket)` - Reset statistics counters
+- [x] Track connection establishment time (create_time_ms, connect_time_ms)
+- [x] Track last send/recv timestamps (last_send_time_ms, last_recv_time_ms)
+- [x] Optional: RTT estimation from TCP_INFO (Linux only, rtt_us/rtt_var_us)
 
 ### Global Metrics Enhancement
-- [ ] `SocketMetrics_get_socket_count()` - Currently open sockets
-- [ ] `SocketMetrics_get_peak_connections()` - High watermark
-- [ ] `SocketMetrics_reset_peaks()` - Reset peak counters
+- [x] `SocketMetrics_get_socket_count()` - Currently open sockets
+- [x] `SocketMetrics_get_peak_connections()` - High watermark
+- [x] `SocketMetrics_reset_peaks()` - Reset peak counters
 
 ---
 

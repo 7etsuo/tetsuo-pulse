@@ -960,6 +960,108 @@ extern const char *SocketMetrics_histogram_help (SocketHistogramMetric metric);
 extern const char *SocketMetrics_category_name (SocketMetricCategory category);
 
 /* ============================================================================
+ * Socket Count and Peak Tracking
+ * ============================================================================
+ */
+
+/**
+ * @brief Get current count of open sockets.
+ * @ingroup utilities
+ *
+ * Returns the number of Socket_T instances currently allocated (not freed).
+ * This is useful for monitoring resource usage and detecting leaks.
+ *
+ * @return Current count of open Socket_T instances (>= 0)
+ *
+ * @threadsafe Yes - atomic counter read
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int before = SocketMetrics_get_socket_count();
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * assert(SocketMetrics_get_socket_count() == before + 1);
+ * Socket_free(&sock);
+ * assert(SocketMetrics_get_socket_count() == before);
+ * @endcode
+ *
+ * @note This wraps Socket_debug_live_count() for consistency with metrics API
+ * @see SocketMetrics_get_peak_connections() for high watermark
+ * @see Socket_debug_live_count() for underlying implementation
+ */
+extern int SocketMetrics_get_socket_count (void);
+
+/**
+ * @brief Get peak (high watermark) count of simultaneous connections.
+ * @ingroup utilities
+ *
+ * Returns the highest number of Socket_T instances that were allocated
+ * simultaneously since the library was initialized or since the last call
+ * to SocketMetrics_reset_peaks().
+ *
+ * This is useful for capacity planning and understanding peak load.
+ *
+ * @return Peak socket count since init/reset (>= 0)
+ *
+ * @threadsafe Yes - atomic counter read
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // After running load test
+ * printf("Peak connections: %d\n", SocketMetrics_get_peak_connections());
+ * printf("Current connections: %d\n", SocketMetrics_get_socket_count());
+ *
+ * // Reset for next interval
+ * SocketMetrics_reset_peaks();
+ * @endcode
+ *
+ * @see SocketMetrics_get_socket_count() for current count
+ * @see SocketMetrics_reset_peaks() to reset high watermark
+ */
+extern int SocketMetrics_get_peak_connections (void);
+
+/**
+ * @brief Reset peak connection counters.
+ * @ingroup utilities
+ *
+ * Resets the peak (high watermark) connection count to the current count.
+ * This is useful for interval-based monitoring where you want to track
+ * peak usage per time period.
+ *
+ * @threadsafe Yes - atomic update
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Log peaks every hour
+ * while (running) {
+ *     sleep(3600);
+ *     printf("Peak this hour: %d\n", SocketMetrics_get_peak_connections());
+ *     SocketMetrics_reset_peaks();
+ * }
+ * @endcode
+ *
+ * @see SocketMetrics_get_peak_connections() to query peak
+ * @see SocketMetrics_reset() to reset all metrics including peaks
+ */
+extern void SocketMetrics_reset_peaks (void);
+
+/**
+ * @brief Internal: Update peak counter if current count is higher.
+ * @ingroup utilities
+ * @internal
+ *
+ * Called from socket creation paths to track peak connections.
+ * Applications should not call this directly.
+ *
+ * @param[in] current_count Current socket count
+ *
+ * @threadsafe Yes - uses atomic compare-and-swap
+ */
+extern void SocketMetrics_update_peak_if_needed (int current_count);
+
+/* ============================================================================
  * Convenience Macros
  * ============================================================================
  */

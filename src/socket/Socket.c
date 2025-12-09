@@ -24,6 +24,7 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
+#include "core/SocketMetrics.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 #define SOCKET_LOG_COMPONENT "Socket"
@@ -36,6 +37,8 @@
 
 #include <sys/stat.h>
 #include <sys/un.h>
+
+/* For TCP_INFO (Linux-specific RTT stats) - netinet/tcp.h included via SocketConfig.h */
 
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS-private.h" /* For tls_cleanup_alpn_temp etc. */
@@ -243,11 +246,19 @@ Socket_new (int domain, int type, int protocol)
 
   sock->base = base;
 
+  /* Initialize per-socket statistics */
+  sock->base->stats.create_time_ms = Socket_get_monotonic_ms ();
+  sock->base->stats.rtt_us = -1;
+  sock->base->stats.rtt_var_us = -1;
+
 #if SOCKET_HAS_TLS
   socket_init_tls_fields (sock);
 #endif
 
   socket_live_increment ();
+
+  /* Update peak connection tracking */
+  SocketMetrics_update_peak_if_needed (Socket_debug_live_count ());
 
   return sock;
 }
@@ -1518,6 +1529,79 @@ Socket_bandwidth_wait_ms (T socket, size_t bytes)
     }
 
   return SocketRateLimit_wait_time_ms (socket->bandwidth_limiter, bytes);
+}
+
+/* ==================== Per-Socket Statistics ==================== */
+
+/**
+ * Socket_getstats - Retrieve current statistics for a socket
+ * @socket: Socket to query
+ * @stats: Output structure for statistics
+ *
+ * Thread-safe: Yes - atomic copy of stats
+ */
+void
+Socket_getstats (const T socket, SocketStats_T *stats)
+{
+  assert (socket);
+  assert (stats);
+
+  /* Copy stats atomically using mutex */
+  pthread_mutex_lock (&socket->base->mutex);
+  *stats = socket->base->stats;
+  pthread_mutex_unlock (&socket->base->mutex);
+
+  /* Try to get RTT from TCP_INFO (Linux only) */
+#if defined(__linux__) && defined(TCP_INFO)
+  {
+    struct tcp_info info;
+    socklen_t info_len = sizeof (info);
+
+    if (getsockopt (SocketBase_fd (socket->base), IPPROTO_TCP, TCP_INFO, &info,
+                    &info_len)
+        == 0)
+      {
+        stats->rtt_us = (int32_t)info.tcpi_rtt;
+        stats->rtt_var_us = (int32_t)info.tcpi_rttvar;
+      }
+    else
+      {
+        stats->rtt_us = -1;
+        stats->rtt_var_us = -1;
+      }
+  }
+#else
+  stats->rtt_us = -1;
+  stats->rtt_var_us = -1;
+#endif
+}
+
+/**
+ * Socket_resetstats - Reset statistics counters for a socket
+ * @socket: Socket to reset
+ *
+ * Resets all counters except create_time_ms which preserves original value.
+ * Thread-safe: Yes - uses mutex
+ */
+void
+Socket_resetstats (T socket)
+{
+  assert (socket);
+
+  pthread_mutex_lock (&socket->base->mutex);
+
+  /* Preserve create_time_ms */
+  int64_t create_time = socket->base->stats.create_time_ms;
+
+  /* Zero all stats */
+  memset (&socket->base->stats, 0, sizeof (SocketStats_T));
+
+  /* Restore preserved fields */
+  socket->base->stats.create_time_ms = create_time;
+  socket->base->stats.rtt_us = -1;
+  socket->base->stats.rtt_var_us = -1;
+
+  pthread_mutex_unlock (&socket->base->mutex);
 }
 
 #undef T

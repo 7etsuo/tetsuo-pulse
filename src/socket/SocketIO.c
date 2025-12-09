@@ -141,16 +141,32 @@ socket_recv_raw (T socket, void *buf, size_t len, int flags)
 ssize_t
 socket_send_internal (T socket, const void *buf, size_t len, int flags)
 {
+  ssize_t result;
+
   assert (socket);
   assert (buf);
   assert (len > 0);
 
 #if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
-    return socket_send_tls (socket, buf, len);
+    result = socket_send_tls (socket, buf, len);
+  else
 #endif
+    result = socket_send_raw (socket, buf, len, flags);
 
-  return socket_send_raw (socket, buf, len, flags);
+  /* Update per-socket statistics */
+  if (result > 0)
+    {
+      socket->base->stats.bytes_sent += (uint64_t)result;
+      socket->base->stats.packets_sent++;
+      socket->base->stats.last_send_time_ms = Socket_get_monotonic_ms ();
+    }
+  else if (result < 0)
+    {
+      socket->base->stats.send_errors++;
+    }
+
+  return result;
 }
 
 /**
@@ -165,16 +181,32 @@ socket_send_internal (T socket, const void *buf, size_t len, int flags)
 ssize_t
 socket_recv_internal (T socket, void *buf, size_t len, int flags)
 {
+  ssize_t result;
+
   assert (socket);
   assert (buf);
   assert (len > 0);
 
 #if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
-    return socket_recv_tls (socket, buf, len);
+    result = socket_recv_tls (socket, buf, len);
+  else
 #endif
+    result = socket_recv_raw (socket, buf, len, flags);
 
-  return socket_recv_raw (socket, buf, len, flags);
+  /* Update per-socket statistics */
+  if (result > 0)
+    {
+      socket->base->stats.bytes_received += (uint64_t)result;
+      socket->base->stats.packets_received++;
+      socket->base->stats.last_recv_time_ms = Socket_get_monotonic_ms ();
+    }
+  else if (result < 0)
+    {
+      socket->base->stats.recv_errors++;
+    }
+
+  return result;
 }
 
 /**

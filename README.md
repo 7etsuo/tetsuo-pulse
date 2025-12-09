@@ -1118,6 +1118,49 @@ SocketMetrics_get(&snapshot);
 
 /* Reset metrics */
 SocketMetrics_reset();
+
+/* Socket count and peak tracking */
+int current = SocketMetrics_get_socket_count();
+int peak = SocketMetrics_get_peak_connections();
+SocketMetrics_reset_peaks();  /* Reset high watermark */
+```
+
+### Per-Socket Statistics
+
+Track I/O statistics for individual sockets:
+
+```c
+#include "socket/Socket.h"
+
+Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+Socket_connect(sock, "example.com", 80);
+
+/* ... send/recv operations ... */
+
+/* Get per-socket statistics */
+SocketStats_T stats;
+Socket_getstats(sock, &stats);
+
+printf("Bytes: %zu sent, %zu received\n",
+       (size_t)stats.bytes_sent, (size_t)stats.bytes_received);
+printf("Packets: %zu sent, %zu received\n",
+       (size_t)stats.packets_sent, (size_t)stats.packets_received);
+printf("Errors: %zu send, %zu recv\n",
+       (size_t)stats.send_errors, (size_t)stats.recv_errors);
+printf("Last activity: send=%lld ms, recv=%lld ms ago\n",
+       (long long)(Socket_get_monotonic_ms() - stats.last_send_time_ms),
+       (long long)(Socket_get_monotonic_ms() - stats.last_recv_time_ms));
+
+/* RTT estimation (Linux only via TCP_INFO) */
+if (stats.rtt_us >= 0) {
+    printf("RTT: %.2f ms (var: %.2f ms)\n",
+           stats.rtt_us / 1000.0, stats.rtt_var_us / 1000.0);
+}
+
+/* Reset statistics for next interval */
+Socket_resetstats(sock);
+
+Socket_free(&sock);
 ```
 
 ### Advanced TCP Options

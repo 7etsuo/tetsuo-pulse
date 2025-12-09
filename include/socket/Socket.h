@@ -623,6 +623,143 @@ extern T Socket_new_from_fd (int fd);
 extern int Socket_debug_live_count (void);
 
 /* ============================================================================
+ * Per-Socket Statistics
+ * ============================================================================
+ */
+
+/**
+ * @brief Per-socket I/O statistics structure.
+ * @ingroup core_io
+ *
+ * Tracks cumulative statistics for a single socket instance including bytes
+ * transferred, packet counts, and timing information. Statistics are updated
+ * automatically by send/recv operations and can be queried or reset via
+ * Socket_getstats() and Socket_resetstats().
+ *
+ * All timing values use monotonic clock (milliseconds since epoch or socket
+ * creation).
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
+ * Socket_connect(sock, "example.com", 80);
+ *
+ * // ... send/recv operations ...
+ *
+ * SocketStats_T stats;
+ * Socket_getstats(sock, &stats);
+ * printf("Sent: %zu bytes in %zu packets\n", stats.bytes_sent,
+ * stats.packets_sent); printf("Connect time: %lld ms\n",
+ * (long long)stats.connect_time_ms); printf("Last recv: %lld ms ago\n",
+ *        (long long)(Socket_get_monotonic_ms() - stats.last_recv_time_ms));
+ *
+ * Socket_resetstats(sock);  // Reset counters for next interval
+ * Socket_free(&sock);
+ * @endcode
+ *
+ * @threadsafe Partial - stats snapshot is atomic, but rapid updates may race
+ * @see Socket_getstats() to retrieve current statistics
+ * @see Socket_resetstats() to reset counters
+ * @see SocketMetrics_get_socket_count() for global socket metrics
+ */
+typedef struct SocketStats
+{
+  /* Byte counters */
+  uint64_t bytes_sent;     /**< Total bytes sent since creation/reset */
+  uint64_t bytes_received; /**< Total bytes received since creation/reset */
+
+  /* Packet counters */
+  uint64_t packets_sent;     /**< Number of send operations */
+  uint64_t packets_received; /**< Number of recv operations */
+
+  /* Error counters */
+  uint64_t send_errors; /**< Number of failed send operations */
+  uint64_t recv_errors; /**< Number of failed recv operations */
+
+  /* Timing information (milliseconds, monotonic clock) */
+  int64_t create_time_ms;  /**< Socket creation timestamp */
+  int64_t connect_time_ms; /**< Time spent in connect() (0 if not connected) */
+  int64_t last_send_time_ms; /**< Last successful send timestamp (0 if never)
+                              */
+  int64_t last_recv_time_ms; /**< Last successful recv timestamp (0 if never)
+                              */
+
+  /* Optional: RTT estimation from TCP_INFO (Linux only, -1 if unavailable) */
+  int32_t rtt_us;     /**< Smoothed RTT in microseconds (-1 if N/A) */
+  int32_t rtt_var_us; /**< RTT variance in microseconds (-1 if N/A) */
+} SocketStats_T;
+
+/**
+ * @brief Retrieve current statistics for a socket.
+ * @ingroup core_io
+ *
+ * Copies the current per-socket statistics to the provided structure.
+ * Statistics include cumulative bytes/packets transferred, error counts,
+ * and timing information.
+ *
+ * @param[in] socket Socket to query
+ * @param[out] stats Output structure for statistics (must not be NULL)
+ *
+ * @throws Socket_Failed if socket is invalid
+ *
+ * @threadsafe Yes - atomic snapshot of statistics
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketStats_T stats;
+ * Socket_getstats(sock, &stats);
+ *
+ * printf("Transfer: %zu bytes sent, %zu bytes received\n",
+ *        (size_t)stats.bytes_sent, (size_t)stats.bytes_received);
+ * printf("Packets: %zu sent, %zu received\n",
+ *        (size_t)stats.packets_sent, (size_t)stats.packets_received);
+ *
+ * if (stats.rtt_us >= 0) {
+ *     printf("RTT: %.2f ms\n", stats.rtt_us / 1000.0);
+ * }
+ * @endcode
+ *
+ * @note RTT fields only populated on Linux via TCP_INFO; -1 on other platforms
+ * @see Socket_resetstats() to reset counters
+ * @see SocketStats_T for field descriptions
+ */
+extern void Socket_getstats (const T socket, SocketStats_T *stats);
+
+/**
+ * @brief Reset statistics counters for a socket.
+ * @ingroup core_io
+ *
+ * Resets all per-socket statistics counters to zero except for create_time_ms
+ * which preserves the original creation timestamp. Useful for interval-based
+ * monitoring where you want to track stats per time period.
+ *
+ * @param[in] socket Socket to reset
+ *
+ * @throws Socket_Failed if socket is invalid
+ *
+ * @threadsafe Yes - atomic reset
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Log stats every minute
+ * while (running) {
+ *     sleep(60);
+ *     SocketStats_T stats;
+ *     Socket_getstats(sock, &stats);
+ *     log_stats(&stats);
+ *     Socket_resetstats(sock);  // Reset for next interval
+ * }
+ * @endcode
+ *
+ * @see Socket_getstats() to retrieve statistics
+ * @see SocketStats_T for field descriptions
+ */
+extern void Socket_resetstats (T socket);
+
+/* ============================================================================
  * Connection Operations
  * ============================================================================
  */
