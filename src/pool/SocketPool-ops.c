@@ -476,6 +476,84 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/**
+ * SocketPool_find - Find first connection matching predicate
+ * @pool: Pool instance
+ * @predicate: Callback that returns non-zero for matching connections
+ * @userdata: User data passed to predicate
+ *
+ * Returns: First matching connection or NULL if none found
+ * Thread-safe: Yes - holds mutex during search
+ * Complexity: O(n) worst case
+ */
+Connection_T
+SocketPool_find (T pool, SocketPool_Predicate predicate, void *userdata)
+{
+  Connection_T result = NULL;
+
+  assert (pool);
+  assert (predicate);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  for (size_t i = 0; i < pool->maxconns; i++)
+    {
+      if (pool->connections[i].active)
+        {
+          if (predicate (&pool->connections[i], userdata))
+            {
+              result = &pool->connections[i];
+              break;
+            }
+        }
+    }
+
+  pthread_mutex_unlock (&pool->mutex);
+  return result;
+}
+
+/**
+ * SocketPool_filter - Find all connections matching predicate
+ * @pool: Pool instance
+ * @predicate: Callback that returns non-zero for matching connections
+ * @userdata: User data passed to predicate
+ * @results: Array to receive matching connections
+ * @max_results: Maximum number of results to return
+ *
+ * Returns: Number of matching connections found
+ * Thread-safe: Yes - holds mutex during search
+ * Complexity: O(n)
+ */
+size_t
+SocketPool_filter (T pool, SocketPool_Predicate predicate, void *userdata,
+                   Connection_T *results, size_t max_results)
+{
+  size_t found = 0;
+
+  assert (pool);
+  assert (predicate);
+  assert (results || max_results == 0);
+
+  if (max_results == 0)
+    return 0;
+
+  pthread_mutex_lock (&pool->mutex);
+
+  for (size_t i = 0; i < pool->maxconns && found < max_results; i++)
+    {
+      if (pool->connections[i].active)
+        {
+          if (predicate (&pool->connections[i], userdata))
+            {
+              results[found++] = &pool->connections[i];
+            }
+        }
+    }
+
+  pthread_mutex_unlock (&pool->mutex);
+  return found;
+}
+
 /* ============================================================================
  * Batch Accept Operations
  * ============================================================================

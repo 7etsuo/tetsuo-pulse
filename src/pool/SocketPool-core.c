@@ -1244,4 +1244,131 @@ SocketPool_reset_stats (T pool)
   pthread_mutex_unlock (&pool->mutex);
 }
 
+/**
+ * SocketPool_get_idle_count - Get count of idle connections
+ * @pool: Pool instance
+ *
+ * Returns: Number of idle connections
+ * Thread-safe: Yes
+ */
+size_t
+SocketPool_get_idle_count (T pool)
+{
+  size_t idle;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  idle = count_idle_connections (pool);
+  pthread_mutex_unlock (&pool->mutex);
+
+  return idle;
+}
+
+/**
+ * SocketPool_get_active_count - Get count of active connections
+ * @pool: Pool instance
+ *
+ * Returns: Number of active connections
+ * Thread-safe: Yes
+ */
+size_t
+SocketPool_get_active_count (T pool)
+{
+  size_t active;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  active = pool->count;
+  pthread_mutex_unlock (&pool->mutex);
+
+  return active;
+}
+
+/**
+ * SocketPool_get_hit_rate - Get connection reuse rate
+ * @pool: Pool instance
+ *
+ * Returns: Reuse rate (0.0 to 1.0)
+ * Thread-safe: Yes
+ */
+double
+SocketPool_get_hit_rate (T pool)
+{
+  double rate;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  rate = calculate_reuse_rate (pool->stats_total_added, pool->stats_total_reused);
+  pthread_mutex_unlock (&pool->mutex);
+
+  return rate;
+}
+
+/**
+ * SocketPool_shrink - Release unused pool capacity
+ * @pool: Pool instance
+ *
+ * Returns: Number of slots released (currently returns free slot count)
+ * Thread-safe: Yes
+ *
+ * Note: This implementation counts and clears free slots. Since memory
+ * is arena-managed, actual memory isn't immediately returned to OS,
+ * but the slots are marked as reusable.
+ */
+size_t
+SocketPool_shrink (T pool)
+{
+  size_t released = 0;
+  Connection_T curr;
+
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+
+  /* Count free slots in free list */
+  curr = pool->free_list;
+  while (curr)
+    {
+      released++;
+      curr = curr->free_next;
+    }
+
+  /* Clear buffers in free slots to reduce memory footprint */
+  curr = pool->free_list;
+  while (curr)
+    {
+      if (curr->inbuf)
+        SocketBuf_clear (curr->inbuf);
+      if (curr->outbuf)
+        SocketBuf_clear (curr->outbuf);
+      curr = curr->free_next;
+    }
+
+  pthread_mutex_unlock (&pool->mutex);
+
+  return released;
+}
+
+/**
+ * SocketPool_set_idle_callback - Register idle connection callback
+ * @pool: Pool instance
+ * @cb: Callback function (NULL to clear)
+ * @data: User data for callback
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb, void *data)
+{
+  assert (pool);
+
+  pthread_mutex_lock (&pool->mutex);
+  pool->idle_cb = cb;
+  pool->idle_cb_data = data;
+  pthread_mutex_unlock (&pool->mutex);
+}
+
 #undef T

@@ -546,6 +546,53 @@ SocketPool_free(&pool);
 Arena_dispose(&arena);
 ```
 
+### Connection Pool Statistics & Filtering
+
+```c
+#include "pool/SocketPool.h"
+
+/* Get pool statistics */
+SocketPool_Stats stats;
+SocketPool_get_stats(pool, &stats);
+printf("Active: %zu, Idle: %zu, Reuse rate: %.1f%%\n",
+       stats.current_active, stats.current_idle, stats.reuse_rate * 100.0);
+
+/* Convenience stat functions */
+size_t active = SocketPool_get_active_count(pool);
+size_t idle = SocketPool_get_idle_count(pool);
+double hit_rate = SocketPool_get_hit_rate(pool);
+
+/* Find connections matching criteria */
+int is_from_subnet(Connection_T conn, void *data) {
+    const char *subnet = (const char *)data;
+    return strncmp(Socket_getpeeraddr(Connection_socket(conn)), subnet, 7) == 0;
+}
+
+/* Find first matching connection */
+Connection_T conn = SocketPool_find(pool, is_from_subnet, "192.168");
+
+/* Get all matching connections */
+Connection_T matches[100];
+size_t count = SocketPool_filter(pool, is_from_subnet, "192.168", matches, 100);
+for (size_t i = 0; i < count; i++) {
+    /* Process matching connections */
+}
+
+/* Register idle callback */
+void on_idle(Connection_T conn, void *data) {
+    printf("Connection went idle: %s\n",
+           Socket_getpeeraddr(Connection_socket(conn)));
+}
+SocketPool_set_idle_callback(pool, on_idle, NULL);
+
+/* Shrink pool to release unused memory */
+size_t released = SocketPool_shrink(pool);
+printf("Released %zu unused slots\n", released);
+
+/* Reset statistics for new measurement window */
+SocketPool_reset_stats(pool);
+```
+
 ### SYN Flood Protection
 
 ```c

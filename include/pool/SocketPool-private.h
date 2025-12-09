@@ -522,6 +522,11 @@ struct T
       resize_cb;        /**< Pool resize notification callback */
   void *resize_cb_data; /**< User data for resize callback */
 
+  /* Idle callback */
+  SocketPool_IdleCallback
+      idle_cb;        /**< Callback when connection becomes idle */
+  void *idle_cb_data; /**< User data for idle callback */
+
   /* Statistics tracking */
   uint64_t stats_total_added;     /**< Total connections added */
   uint64_t stats_total_removed;   /**< Total connections removed */

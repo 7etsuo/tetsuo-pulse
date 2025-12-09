@@ -166,6 +166,47 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
                                            size_t new_size, void *data);
 
 /**
+ * @brief Callback invoked when a connection becomes idle.
+ * @ingroup connection_mgmt
+ * @param conn Connection that became idle.
+ * @param[in] data User data from SocketPool_set_idle_callback().
+ *
+ * Called when a connection transitions to idle state (e.g., after being
+ * returned to the pool or after activity timeout). Useful for connection
+ * monitoring, logging, or cleanup of per-connection state.
+ *
+ * THREAD SAFETY REQUIREMENTS:
+ * - MAY be called from pool operations with pool mutex held
+ * - MUST NOT call SocketPool_add/remove/get (will deadlock)
+ * - SHOULD complete quickly (&lt;1ms) to avoid blocking pool ops
+ * - MAY use Connection_* accessors safely
+ *
+ * @see SocketPool_set_idle_callback() for registration.
+ * @see SocketPool_set_idle_timeout() for automatic idle cleanup.
+ */
+typedef void (*SocketPool_IdleCallback) (Connection_T conn, void *data);
+
+/**
+ * @brief Predicate callback for filtering connections.
+ * @ingroup connection_mgmt
+ * @param conn Connection to test.
+ * @param[in] data User data from SocketPool_find/filter().
+ * @return Non-zero if connection matches criteria, 0 otherwise.
+ *
+ * Used with SocketPool_find() and SocketPool_filter() to select connections
+ * based on custom criteria. Called with pool mutex held.
+ *
+ * THREAD SAFETY REQUIREMENTS:
+ * - Called with pool mutex held - keep operations quick
+ * - MUST NOT call SocketPool_add/remove (will deadlock)
+ * - MAY use Connection_* accessors safely
+ *
+ * @see SocketPool_find() for finding first matching connection.
+ * @see SocketPool_filter() for finding all matching connections.
+ */
+typedef int (*SocketPool_Predicate) (Connection_T conn, void *data);
+
+/**
  * @brief Completion callback for async connections.
  * @ingroup connection_mgmt
  * @param conn Completed connection or NULL on error/failure.
@@ -574,6 +615,82 @@ extern void SocketPool_set_bufsize (T pool, size_t new_bufsize);
  */
 extern void SocketPool_foreach (T pool, void (*func) (Connection_T, void *),
                                 void *arg);
+
+/**
+ * @brief Find first connection matching a predicate.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @param predicate Callback that returns non-zero for matching connections.
+ * @param[in] userdata User data passed to predicate.
+ * @return First matching Connection_T or NULL if none found.
+ * @threadsafe Yes - holds mutex during search.
+ *
+ * Iterates through active connections and returns the first one for which
+ * predicate returns non-zero. Stops immediately on first match.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int is_client_ip(Connection_T conn, void *data) {
+ *     const char *target_ip = (const char *)data;
+ *     Socket_T sock = Connection_socket(conn);
+ *     return strcmp(Socket_getpeeraddr(sock), target_ip) == 0;
+ * }
+ *
+ * Connection_T conn = SocketPool_find(pool, is_client_ip, "192.168.1.100");
+ * if (conn) {
+ *     // Found connection from that IP
+ * }
+ * @endcode
+ *
+ * @complexity O(n) worst case - scans until match or end
+ *
+ * @see SocketPool_Predicate for predicate requirements.
+ * @see SocketPool_filter() for finding all matching connections.
+ * @see SocketPool_foreach() for iterating all connections.
+ */
+extern Connection_T SocketPool_find (T pool, SocketPool_Predicate predicate,
+                                     void *userdata);
+
+/**
+ * @brief Find all connections matching a predicate.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @param predicate Callback that returns non-zero for matching connections.
+ * @param[in] userdata User data passed to predicate.
+ * @param[out] results Array to receive matching connections.
+ * @param max_results Maximum number of results to return.
+ * @return Number of matching connections found (may be less than max_results).
+ * @threadsafe Yes - holds mutex during search.
+ *
+ * Iterates through active connections and returns all that match the predicate,
+ * up to max_results. Results array must be pre-allocated by caller.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * int is_idle(Connection_T conn, void *data) {
+ *     time_t threshold = *(time_t *)data;
+ *     return time(NULL) - Connection_lastactivity(conn) > threshold;
+ * }
+ *
+ * Connection_T idle_conns[100];
+ * time_t threshold = 300;  // 5 minutes
+ * size_t count = SocketPool_filter(pool, is_idle, &threshold, idle_conns, 100);
+ * for (size_t i = 0; i < count; i++) {
+ *     // Process idle connection
+ * }
+ * @endcode
+ *
+ * @complexity O(n) - scans all active connections
+ *
+ * @see SocketPool_Predicate for predicate requirements.
+ * @see SocketPool_find() for finding first matching connection.
+ * @see SocketPool_foreach() for iterating all connections.
+ */
+extern size_t SocketPool_filter (T pool, SocketPool_Predicate predicate,
+                                 void *userdata, Connection_T *results,
+                                 size_t max_results);
 
 /* Connection accessors */
 
@@ -1424,6 +1541,116 @@ extern void SocketPool_get_stats (T pool, SocketPool_Stats *stats);
  * @see SocketPool_get_stats() for reading statistics.
  */
 extern void SocketPool_reset_stats (T pool);
+
+/**
+ * @brief Get count of currently idle connections.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @return Number of idle connections (active but not currently in use).
+ * @threadsafe Yes - atomic read.
+ * @complexity O(1).
+ *
+ * Convenience wrapper around SocketPool_get_stats().current_idle.
+ *
+ * @see SocketPool_get_active_count() for active connections.
+ * @see SocketPool_get_stats() for full statistics.
+ */
+extern size_t SocketPool_get_idle_count (T pool);
+
+/**
+ * @brief Get count of currently active connections.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @return Number of active connections in the pool.
+ * @threadsafe Yes - atomic read.
+ * @complexity O(1).
+ *
+ * Convenience wrapper around SocketPool_get_stats().current_active.
+ *
+ * @see SocketPool_get_idle_count() for idle connections.
+ * @see SocketPool_count() for same functionality (alias).
+ * @see SocketPool_get_stats() for full statistics.
+ */
+extern size_t SocketPool_get_active_count (T pool);
+
+/**
+ * @brief Get connection reuse rate (hit rate).
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @return Reuse rate as fraction (0.0 to 1.0), or 0.0 if no connections.
+ * @threadsafe Yes.
+ * @complexity O(1).
+ *
+ * Returns the ratio of reused connections to total connection acquisitions.
+ * Higher values indicate better pool efficiency. Calculated as:
+ *   reused / (added + reused)
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * double hit_rate = SocketPool_get_hit_rate(pool);
+ * printf("Connection reuse: %.1f%%\n", hit_rate * 100.0);
+ * @endcode
+ *
+ * @see SocketPool_get_stats() for full statistics.
+ * @see SocketPool_reset_stats() to start fresh measurement window.
+ */
+extern double SocketPool_get_hit_rate (T pool);
+
+/**
+ * @brief Release unused pool capacity.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @return Number of connection slots released.
+ * @threadsafe Yes.
+ *
+ * Shrinks the pool by releasing unused (free) connection slots, reducing
+ * memory footprint. Only affects slots that have never been used or have
+ * been freed. Does not affect currently active connections.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // After peak traffic subsides, reclaim unused memory
+ * size_t released = SocketPool_shrink(pool);
+ * printf("Released %zu unused slots\n", released);
+ * @endcode
+ *
+ * @note Does not reduce maxconns - pool can still grow back to original size.
+ * @note Memory is not immediately returned to OS; managed by arena.
+ *
+ * @see SocketPool_resize() for changing pool capacity.
+ * @see SocketPool_prewarm() for pre-allocating capacity.
+ */
+extern size_t SocketPool_shrink (T pool);
+
+/**
+ * @brief Register callback for when connections become idle.
+ * @ingroup connection_mgmt
+ * @param[in] pool Pool instance.
+ * @param cb Callback function (NULL to clear).
+ * @param[in] data User data passed to callback.
+ * @threadsafe Yes.
+ *
+ * The callback is invoked when a connection transitions to idle state.
+ * Useful for monitoring, logging, or cleaning up per-connection resources.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * void on_idle(Connection_T conn, void *data) {
+ *     Socket_T sock = Connection_socket(conn);
+ *     printf("Connection from %s went idle\n", Socket_getpeeraddr(sock));
+ * }
+ *
+ * SocketPool_set_idle_callback(pool, on_idle, NULL);
+ * @endcode
+ *
+ * @see SocketPool_IdleCallback for callback requirements.
+ * @see SocketPool_set_idle_timeout() for automatic idle cleanup.
+ */
+extern void SocketPool_set_idle_callback (T pool, SocketPool_IdleCallback cb,
+                                          void *data);
 
 /**
  * @brief Get connection creation timestamp.

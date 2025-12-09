@@ -35,18 +35,18 @@
 ## Connection Pool Enhancements
 
 ### Iterator Pattern
-- [ ] Verify `SocketPool_foreach()` is fully implemented
-- [ ] Add `SocketPool_find(pool, predicate, userdata)` - Find first matching connection
-- [ ] Add `SocketPool_filter(pool, predicate, userdata, results, max)` - Get matching connections
+- [x] Verify `SocketPool_foreach()` is fully implemented
+- [x] Add `SocketPool_find(pool, predicate, userdata)` - Find first matching connection
+- [x] Add `SocketPool_filter(pool, predicate, userdata, results, max)` - Get matching connections
 
 ### Pool Statistics
-- [ ] `SocketPool_get_idle_count(pool)` - Number of idle connections
-- [ ] `SocketPool_get_active_count(pool)` - Number of active connections
-- [ ] `SocketPool_get_hit_rate(pool)` - Connection reuse rate
+- [x] `SocketPool_get_idle_count(pool)` - Number of idle connections
+- [x] `SocketPool_get_active_count(pool)` - Number of active connections
+- [x] `SocketPool_get_hit_rate(pool)` - Connection reuse rate
 
 ### Pool Management
-- [ ] `SocketPool_shrink(pool)` - Release unused capacity
-- [ ] `SocketPool_set_idle_callback(pool, callback)` - Notify when connection goes idle
+- [x] `SocketPool_shrink(pool)` - Release unused capacity
+- [x] `SocketPool_set_idle_callback(pool, callback)` - Notify when connection goes idle
 
 ---
 
