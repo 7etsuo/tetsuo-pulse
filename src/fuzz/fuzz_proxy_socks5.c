@@ -30,21 +30,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   memset (&conn, 0, sizeof (conn));
 
   /* Test method selection response parsing */
-  memcpy (conn.recv_buf, data, size < sizeof (conn.recv_buf)
-                                   ? size
-                                   : sizeof (conn.recv_buf) - 1);
-  conn.recv_len = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
+  memcpy (conn.recv_buf, data,
+          size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1);
+  conn.recv_len
+      = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
   conn.username = "testuser";
   conn.password = "testpass";
 
   proxy_socks5_recv_method (&conn);
 
   /* Test authentication response parsing */
-  conn.recv_len = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
+  conn.recv_len
+      = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
   proxy_socks5_recv_auth (&conn);
 
   /* Test connect response parsing */
-  conn.recv_len = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
+  conn.recv_len
+      = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
   proxy_socks5_recv_connect (&conn);
 
   /* Test reply code mapping */
@@ -55,4 +57,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

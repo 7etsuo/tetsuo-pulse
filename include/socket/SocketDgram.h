@@ -2,14 +2,15 @@
 #define SOCKETDGRAM_INCLUDED
 
 #include "core/Except.h"
+#include "socket/SocketCommon.h" /* For SocketBase_T and Unix support */
 #include <stddef.h>
 #include <sys/socket.h>
-#include "socket/SocketCommon.h"  /* For SocketBase_T and Unix support */
 
 /**
  * @file SocketDgram.h
  * @ingroup core_io
- * @brief High-level UDP/datagram socket interface with multicast and broadcast support.
+ * @brief High-level UDP/datagram socket interface with multicast and broadcast
+ * support.
  *
  * Provides a high-level, exception-based interface for UDP/datagram sockets.
  * All functions use exceptions for error handling, making code cleaner

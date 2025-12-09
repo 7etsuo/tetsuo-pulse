@@ -48,7 +48,7 @@ TEST (socketdns_pollfd)
 TEST (socketdns_resolve_localhost)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -71,7 +71,7 @@ TEST (socketdns_resolve_localhost)
 TEST (socketdns_resolve_loopback_ip)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -94,7 +94,7 @@ TEST (socketdns_resolve_loopback_ip)
 TEST (socketdns_resolve_ipv6_loopback)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "::1", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -117,7 +117,7 @@ TEST (socketdns_resolve_ipv6_loopback)
 TEST (socketdns_resolve_with_port)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 8080, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -137,7 +137,7 @@ TEST (socketdns_resolve_with_port)
 TEST (socketdns_resolve_without_port)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -159,7 +159,7 @@ TEST (socketdns_resolve_without_port)
 TEST (socketdns_multiple_resolutions)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req1 = NULL, req2 = NULL, req3 = NULL;
+  Request_T req1 = NULL, req2 = NULL, req3 = NULL;
 
   TRY req1 = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   req2 = SocketDNS_resolve (dns, "127.0.0.1", 443, NULL, NULL);
@@ -195,7 +195,7 @@ TEST (socketdns_sequential_resolutions)
   TRY volatile int i;
   for (i = 0; i < 10; i++)
     {
-      SocketDNS_Request_T req
+      Request_T req
           = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
       ASSERT_NOT_NULL (req);
       usleep (50000);
@@ -213,7 +213,7 @@ TEST (socketdns_sequential_resolutions)
 /* ==================== Callback Tests ==================== */
 
 static void
-slow_queue_callback (SocketDNS_Request_T req, struct addrinfo *result,
+slow_queue_callback (Request_T req, struct addrinfo *result,
                      int error, void *data)
 {
   (void)req;
@@ -227,7 +227,7 @@ slow_queue_callback (SocketDNS_Request_T req, struct addrinfo *result,
 
 static atomic_int callback_invoked;
 static void
-test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
+test_callback (Request_T req, struct addrinfo *result, int error,
                void *data)
 {
   (void)req;
@@ -241,7 +241,7 @@ test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
 TEST (socketdns_callback_invoked)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY callback_invoked = 0;
   req = SocketDNS_resolve (dns, "127.0.0.1", 80, test_callback, NULL);
@@ -260,7 +260,7 @@ TEST (socketdns_callback_invoked)
 static atomic_int test_received_data;
 
 static void
-callback_check_data (SocketDNS_Request_T r, struct addrinfo *res, int err,
+callback_check_data (Request_T r, struct addrinfo *res, int err,
                      void *d)
 {
   (void)r;
@@ -274,7 +274,7 @@ callback_check_data (SocketDNS_Request_T r, struct addrinfo *res, int err,
 TEST (socketdns_callback_with_user_data)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   int user_data = 12345;
 
   TRY test_received_data = 0;
@@ -297,7 +297,7 @@ TEST (socketdns_callback_with_user_data)
 TEST (socketdns_cancel_request)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -314,7 +314,7 @@ TEST (socketdns_cancel_request)
 TEST (socketdns_cancel_multiple)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req1 = NULL, req2 = NULL;
+  Request_T req1 = NULL, req2 = NULL;
 
   TRY req1 = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   req2 = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
@@ -336,7 +336,7 @@ TEST (socketdns_cancel_multiple)
 TEST (socketdns_check_returns_completion_count)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY
   {
@@ -360,7 +360,7 @@ TEST (socketdns_check_returns_completion_count)
 TEST (socketdns_check_before_completion)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY
   {
@@ -387,7 +387,7 @@ TEST (socketdns_check_before_completion)
 TEST (socketdns_getresult_before_completion)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   struct addrinfo *result = SocketDNS_getresult (dns, req);
@@ -401,7 +401,7 @@ TEST (socketdns_getresult_before_completion)
 TEST (socketdns_getresult_after_completion)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -424,7 +424,7 @@ TEST (socketdns_getresult_after_completion)
 TEST (socketdns_getresult_clears_result)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
   usleep (100000);
@@ -448,7 +448,7 @@ TEST (socketdns_getresult_clears_result)
 TEST (socketdns_many_concurrent_resolutions)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T requests[20];
+  Request_T requests[20];
 
   TRY volatile int i;
   volatile int completed = 0;
@@ -482,7 +482,7 @@ TEST (socketdns_many_concurrent_resolutions)
 TEST (socketdns_rapid_resolution_requests)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T requests[50] = { 0 };
+  Request_T requests[50] = { 0 };
 
   TRY
   {
@@ -514,7 +514,7 @@ TEST (socketdns_resolve_cancel_cycle)
   TRY volatile int i;
   for (i = 0; i < 20; i++)
     {
-      SocketDNS_Request_T req
+      Request_T req
           = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
       SocketDNS_cancel (dns, req);
     }
@@ -534,7 +534,7 @@ thread_resolve_requests (void *arg)
   for (volatile int i = 0; i < 10; i++)
     {
       int stop = 0;
-      SocketDNS_Request_T req = NULL;
+      Request_T req = NULL;
       struct addrinfo *result = NULL;
 
       TRY
@@ -636,7 +636,7 @@ thread_cancel_requests (void *arg)
   for (volatile int i = 0; i < 10; i++)
     {
       int stop = 0;
-      TRY SocketDNS_Request_T req
+      TRY Request_T req
           = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
       usleep (5000);
       SocketDNS_cancel (dns, req);
@@ -672,7 +672,7 @@ TEST (socketdns_concurrent_cancel)
 TEST(socketdns_thread_pool_processes_requests)
 {
     SocketDNS_T dns = SocketDNS_new();
-    SocketDNS_Request_T requests[10];
+    Request_T requests[10];
 
     TRY
         volatile int i;
@@ -717,7 +717,7 @@ TEST (socketdns_resolve_null_hostname)
 TEST (socketdns_resolve_empty_hostname)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   int caught = 0;
 
   TRY
@@ -746,7 +746,7 @@ TEST (socketdns_resolve_empty_hostname)
 TEST (socketdns_resolve_invalid_port_negative)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   int caught = 0;
 
   TRY
@@ -775,7 +775,7 @@ TEST (socketdns_resolve_invalid_port_negative)
 TEST (socketdns_resolve_invalid_port_too_large)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   int caught = 0;
 
   TRY
@@ -804,7 +804,7 @@ TEST (socketdns_resolve_invalid_port_too_large)
 TEST (socketdns_resolve_valid_port_zero)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   struct addrinfo *result = NULL;
 
   TRY
@@ -832,7 +832,7 @@ TEST (socketdns_resolve_valid_port_zero)
 TEST (socketdns_resolve_valid_port_max)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   struct addrinfo *result = NULL;
 
   TRY
@@ -892,7 +892,7 @@ TEST (socketdns_getresult_null_request)
 TEST (socketdns_getresult_pending_request)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -909,7 +909,7 @@ TEST (socketdns_getresult_pending_request)
 TEST (socketdns_getresult_cancelled_request)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY req = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
   ASSERT_NOT_NULL (req);
@@ -930,7 +930,7 @@ TEST (socketdns_getresult_cancelled_request)
 TEST (socketdns_queue_full_handling)
 {
   SocketDNS_T dns = SocketDNS_new ();
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   size_t original_limit = 0;
   int limit_overridden = 0;
   int queue_full_triggered = 0;
@@ -981,8 +981,8 @@ TEST (socketdns_multiple_resolvers_independent)
 {
   SocketDNS_T dns1 = SocketDNS_new ();
   SocketDNS_T dns2 = SocketDNS_new ();
-  SocketDNS_Request_T req1 = NULL;
-  SocketDNS_Request_T req2 = NULL;
+  Request_T req1 = NULL;
+  Request_T req2 = NULL;
   struct addrinfo *res1 = NULL;
   struct addrinfo *res2 = NULL;
 
@@ -1074,7 +1074,7 @@ TEST (socketdns_timeout_affects_requests)
   ASSERT_EQ (timeout, 30000);
 
   /* Make a request and verify it works */
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
   struct addrinfo *result = NULL;
 
   TRY
@@ -1113,7 +1113,7 @@ TEST (socketdns_request_timeout_in_worker)
 
   /* Submit a request - use a hostname that requires actual DNS lookup
    * (not just IP parsing) so it takes time. We use an invalid/slow host. */
-  SocketDNS_Request_T req = NULL;
+  Request_T req = NULL;
 
   TRY
   {

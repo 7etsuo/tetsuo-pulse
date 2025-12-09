@@ -70,16 +70,18 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   free (input_with_trailer);
   inflateEnd (&strm);
 
-  /* Result doesn't matter - we're just testing for crashes in inflate with trailer.
- * Updated for SocketWS-deflate fixes: tests growth, overflow checks, flush phases indirectly via malformed input.
- */
+  /* Result doesn't matter - we're just testing for crashes in inflate with
+   * trailer. Updated for SocketWS-deflate fixes: tests growth, overflow
+   * checks, flush phases indirectly via malformed input.
+   */
   (void)ret;
 
   /* Additional test for large input simulation (but capped) */
-  if (size > 65536) {
-    // Skip very large to avoid OOM, but checks in code handle
-    return 0;
-  }
+  if (size > 65536)
+    {
+      // Skip very large to avoid OOM, but checks in code handle
+      return 0;
+    }
 
   return 0;
 }
@@ -95,4 +97,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKETWS_HAS_DEFLATE */
-

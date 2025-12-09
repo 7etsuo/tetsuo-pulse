@@ -12,11 +12,11 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
+#include "core/SocketConfig.h" /* For SOCKET_HAS_TLS */
 #include "core/SocketCrypto.h"
 #include "core/SocketUTF8.h"
-#include "socket/SocketWS.h"
 #include "socket/SocketWS-private.h"
+#include "socket/SocketWS.h"
 #include "test/Test.h"
 
 /* Suppress unused variable warnings in Release builds (NDEBUG defined)
@@ -25,38 +25,40 @@
 
 /* ============================================================================
  * Test Counters
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_START(name)                                                       \
-  do                                                                           \
-    {                                                                          \
-      printf ("  Testing %s...", name);                                        \
-      fflush (stdout);                                                         \
-      tests_run++;                                                             \
-    }                                                                          \
+#define TEST_START(name)                                                      \
+  do                                                                          \
+    {                                                                         \
+      printf ("  Testing %s...", name);                                       \
+      fflush (stdout);                                                        \
+      tests_run++;                                                            \
+    }                                                                         \
   while (0)
 
-#define TEST_PASS()                                                            \
-  do                                                                           \
-    {                                                                          \
-      printf (" PASSED\n");                                                    \
-      tests_passed++;                                                          \
-    }                                                                          \
+#define TEST_PASS()                                                           \
+  do                                                                          \
+    {                                                                         \
+      printf (" PASSED\n");                                                   \
+      tests_passed++;                                                         \
+    }                                                                         \
   while (0)
 
-#define TEST_FAIL(msg)                                                         \
-  do                                                                           \
-    {                                                                          \
-      printf (" FAILED: %s\n", msg);                                           \
-    }                                                                          \
+#define TEST_FAIL(msg)                                                        \
+  do                                                                          \
+    {                                                                         \
+      printf (" FAILED: %s\n", msg);                                          \
+    }                                                                         \
   while (0)
 
 /* ============================================================================
  * Test: Configuration Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_config_defaults (void)
@@ -73,7 +75,8 @@ test_config_defaults (void)
   assert (config.max_fragments == SOCKETWS_MAX_FRAGMENTS);
   assert (config.validate_utf8 == 1);
   assert (config.enable_permessage_deflate == 0);
-  assert (config.deflate_max_window_bits == SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS);
+  assert (config.deflate_max_window_bits
+          == SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS);
   assert (config.ping_interval_ms == SOCKETWS_DEFAULT_PING_INTERVAL_MS);
   assert (config.ping_timeout_ms == SOCKETWS_DEFAULT_PING_TIMEOUT_MS);
 
@@ -82,7 +85,8 @@ test_config_defaults (void)
 
 /* ============================================================================
  * Test: XOR Masking
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_masking_simple (void)
@@ -167,7 +171,8 @@ test_masking_with_offset (void)
 
 /* ============================================================================
  * Test: Frame Header Building
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_frame_header_small (void)
@@ -220,7 +225,8 @@ test_frame_header_large (void)
   TEST_START ("frame_header_large");
 
   /* Large payload (64-bit length) */
-  len = ws_frame_build_header (header, 1, WS_OPCODE_BINARY, 0, NULL, payload_len);
+  len = ws_frame_build_header (header, 1, WS_OPCODE_BINARY, 0, NULL,
+                               payload_len);
 
   assert (len == 10);
   assert ((header[1] & 0x7F) == 127);
@@ -241,7 +247,7 @@ test_frame_header_masked (void)
   /* Masked frame */
   len = ws_frame_build_header (header, 1, WS_OPCODE_TEXT, 1, mask, 50);
 
-  assert (len == 6); /* 2 base + 4 mask */
+  assert (len == 6);                /* 2 base + 4 mask */
   assert ((header[1] & 0x80) != 0); /* Masked */
   assert (memcmp (header + 2, mask, 4) == 0);
   TEST_UNUSED (len);
@@ -251,7 +257,8 @@ test_frame_header_masked (void)
 
 /* ============================================================================
  * Test: Frame Header Parsing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_frame_parse_simple (void)
@@ -329,8 +336,8 @@ static void
 test_frame_parse_extended64 (void)
 {
   SocketWS_FrameParse frame;
-  unsigned char data[] = { 0x82, 0x7F, 0x00, 0x00, 0x00, 0x00,
-                           0x00, 0x01, 0x00, 0x00 }; /* 65536 bytes */
+  unsigned char data[] = { 0x82, 0x7F, 0x00, 0x00, 0x00,
+                           0x00, 0x00, 0x01, 0x00, 0x00 }; /* 65536 bytes */
   size_t consumed;
   SocketWS_Error err;
 
@@ -351,8 +358,8 @@ static void
 test_frame_parse_control (void)
 {
   SocketWS_FrameParse frame;
-  unsigned char ping[] = { 0x89, 0x00 }; /* PING, no payload */
-  unsigned char pong[] = { 0x8A, 0x00 }; /* PONG, no payload */
+  unsigned char ping[] = { 0x89, 0x00 };              /* PING, no payload */
+  unsigned char pong[] = { 0x8A, 0x00 };              /* PONG, no payload */
   unsigned char close[] = { 0x88, 0x02, 0x03, 0xE8 }; /* CLOSE 1000 */
   size_t consumed;
   SocketWS_Error err;
@@ -413,7 +420,8 @@ test_frame_parse_incremental (void)
 
 /* ============================================================================
  * Test: Protocol Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_frame_parse_invalid_opcode (void)
@@ -476,7 +484,8 @@ test_frame_parse_control_too_large (void)
 
 /* ============================================================================
  * Test: Opcode Validation Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_opcode_helpers (void)
@@ -511,7 +520,8 @@ test_opcode_helpers (void)
 
 /* ============================================================================
  * Test: Close Code Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_close_code_validation (void)
@@ -545,7 +555,8 @@ test_close_code_validation (void)
 
 /* ============================================================================
  * Test: Error Strings
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_error_strings (void)
@@ -554,12 +565,14 @@ test_error_strings (void)
 
   assert (strcmp (SocketWS_error_string (WS_OK), "OK") == 0);
   assert (strcmp (SocketWS_error_string (WS_ERROR), "General error") == 0);
-  assert (strcmp (SocketWS_error_string (WS_ERROR_HANDSHAKE), "Handshake failed")
-          == 0);
+  assert (
+      strcmp (SocketWS_error_string (WS_ERROR_HANDSHAKE), "Handshake failed")
+      == 0);
   assert (strcmp (SocketWS_error_string (WS_ERROR_PROTOCOL), "Protocol error")
           == 0);
-  assert (strcmp (SocketWS_error_string (WS_ERROR_INVALID_UTF8), "Invalid UTF-8")
-          == 0);
+  assert (
+      strcmp (SocketWS_error_string (WS_ERROR_INVALID_UTF8), "Invalid UTF-8")
+      == 0);
   assert (SocketWS_error_string ((SocketWS_Error)999) != NULL);
 
   TEST_PASS ();
@@ -567,7 +580,8 @@ test_error_strings (void)
 
 /* ============================================================================
  * Test: WebSocket Key Generation (using SocketCrypto)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_websocket_key_generation (void)
@@ -596,7 +610,8 @@ test_websocket_key_generation (void)
 
 /* ============================================================================
  * Test: WebSocket Accept Computation (using SocketCrypto)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #if SOCKET_HAS_TLS
 static void
@@ -621,14 +636,16 @@ test_websocket_accept_computation (void)
 
 /* ============================================================================
  * Tests: WebSocket Compression (permessage-deflate)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifdef SOCKETWS_HAS_DEFLATE
 
 static void
 test_ws_compression_roundtrip (void)
 {
-  (void)SocketWS_DetailedException; /* Suppress unused module exception warning */
+  (void)SocketWS_DetailedException; /* Suppress unused module exception warning
+                                     */
   TEST_START ("ws_compression_roundtrip");
 
   Arena_T arena = Arena_new ();
@@ -655,13 +672,16 @@ test_ws_compression_roundtrip (void)
   size_t decomp_len = 0;
 
   // Compress
-  int comp_ret = ws_compress_message (ws, (const unsigned char *)test_str, test_len, &compressed, &comp_len);
+  int comp_ret = ws_compress_message (ws, (const unsigned char *)test_str,
+                                      test_len, &compressed, &comp_len);
   assert (comp_ret == 0);
   assert (comp_len > 0);
-  assert (comp_len < test_len * 2); // Reasonable compression or slight expansion
+  assert (comp_len
+          < test_len * 2); // Reasonable compression or slight expansion
 
   // Decompress
-  int decomp_ret = ws_decompress_message (ws, compressed, comp_len, &decompressed, &decomp_len);
+  int decomp_ret = ws_decompress_message (ws, compressed, comp_len,
+                                          &decompressed, &decomp_len);
   assert (decomp_ret == 0);
   assert (decomp_len == test_len);
   assert (memcmp (decompressed, test_str, test_len) == 0);
@@ -706,7 +726,9 @@ test_ws_compression_errors (void)
   size_t large_input = ws->config.max_message_size * 10;
   unsigned char *large_comp = NULL;
   size_t large_comp_len = 0;
-  int large_ret = ws_compress_message (ws, (const unsigned char *)"", large_input, &large_comp, &large_comp_len); // Large avail_in
+  int large_ret
+      = ws_compress_message (ws, (const unsigned char *)"", large_input,
+                             &large_comp, &large_comp_len); // Large avail_in
   assert (large_ret == -1); // Expect failure due to size checks during growth
   // Note: Verifies overflow/ size limit enforcement
   ws_compression_free (ws);
@@ -720,7 +742,8 @@ test_ws_compression_errors (void)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -772,11 +795,11 @@ main (void)
   test_ws_compression_roundtrip ();
   test_ws_compression_errors ();
 #else
-  printf ("  [SKIPPED] Compression tests (requires zlib/SOCKETWS_HAS_DEFLATE)\n");
+  printf (
+      "  [SKIPPED] Compression tests (requires zlib/SOCKETWS_HAS_DEFLATE)\n");
 #endif
 
   printf ("\n=== Results: %d/%d tests passed ===\n", tests_passed, tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }
-

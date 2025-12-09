@@ -40,7 +40,8 @@
 
 /* ============================================================================
  * Test Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define TEST_PORT_BASE 47000
 #define TEST_TIMEOUT_MS 5000
@@ -55,7 +56,8 @@ get_h2_test_port (void)
 
 /* ============================================================================
  * Certificate File Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static char cert_file[64];
 static char key_file[64];
@@ -96,7 +98,8 @@ cleanup_temp_cert_files (void)
 
 /* ============================================================================
  * HTTP/2 Server Thread
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -135,8 +138,7 @@ h2_server_thread_func (void *arg)
   server->client_connected = 1;
 
   /* TLS handshake - enable TLS on the socket */
-  TRY
-  SocketTLS_enable (client, server->tls_ctx);
+  TRY SocketTLS_enable (client, server->tls_ctx);
 
   TLSHandshakeState hs_state;
   int hs_loops = 0;
@@ -190,9 +192,9 @@ h2_server_thread_func (void *arg)
 
       /* Send server SETTINGS frame */
       unsigned char settings_frame[9] = {
-        0x00, 0x00, 0x00, /* Length: 0 (empty settings) */
-        0x04,             /* Type: SETTINGS */
-        0x00,             /* Flags: 0 */
+        0x00, 0x00, 0x00,      /* Length: 0 (empty settings) */
+        0x04,                  /* Type: SETTINGS */
+        0x00,                  /* Flags: 0 */
         0x00, 0x00, 0x00, 0x00 /* Stream ID: 0 */
       };
       SocketTLS_send (client, settings_frame, 9);
@@ -205,8 +207,8 @@ h2_server_thread_func (void *arg)
           if (buf[3] == 0x04)
             { /* SETTINGS type */
               /* Send SETTINGS ACK */
-              unsigned char settings_ack[9] = { 0x00, 0x00, 0x00, 0x04, 0x01,
-                                                0x00, 0x00, 0x00, 0x00 };
+              unsigned char settings_ack[9]
+                  = { 0x00, 0x00, 0x00, 0x04, 0x01, 0x00, 0x00, 0x00, 0x00 };
               SocketTLS_send (client, settings_ack, 9);
             }
         }
@@ -234,8 +236,8 @@ h2_server_start (H2TestServer *server)
   server->port = port;
 
   /* Create TLS context */
-  TRY
-  server->tls_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+  TRY server->tls_ctx
+      = SocketTLSContext_new_server (cert_file, key_file, NULL);
   EXCEPT (SocketTLS_Failed)
   return -1;
   END_TRY;
@@ -255,8 +257,7 @@ h2_server_start (H2TestServer *server)
       return -1;
     }
 
-  TRY
-  Socket_setreuseaddr (server->listen_socket);
+  TRY Socket_setreuseaddr (server->listen_socket);
   Socket_bind (server->listen_socket, "127.0.0.1", port);
   Socket_listen (server->listen_socket, 5);
   EXCEPT (Socket_Failed)
@@ -305,7 +306,8 @@ h2_server_stop (H2TestServer *server)
 
 /* ============================================================================
  * Integration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http2_integration_tls_alpn)
 {
@@ -329,8 +331,9 @@ TEST (http2_integration_tls_alpn)
     }
 
   TRY
-  /* Create client TLS context */
-  client_ctx = SocketTLSContext_new_client (NULL);
+      /* Create client TLS context */
+      client_ctx
+      = SocketTLSContext_new_client (NULL);
   ASSERT_NOT_NULL (client_ctx);
 
   /* Disable certificate verification for self-signed cert */
@@ -408,8 +411,9 @@ TEST (http2_integration_connection_preface)
     }
 
   TRY
-  /* Create client TLS context */
-  client_ctx = SocketTLSContext_new_client (NULL);
+      /* Create client TLS context */
+      client_ctx
+      = SocketTLSContext_new_client (NULL);
   SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
 
   const char *alpn_protos[] = { "h2" };
@@ -502,7 +506,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  int result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
+  int result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
+                                               &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 18);
   ASSERT_EQ (header.type, HTTP2_FRAME_SETTINGS);
@@ -520,7 +525,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x00; /* Stream ID: 0 */
 
-  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
+  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
+                                           &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 8);
   ASSERT_EQ (header.type, HTTP2_FRAME_PING);
@@ -536,7 +542,8 @@ TEST (http2_integration_frame_parsing)
   data[7] = 0x00;
   data[8] = 0x01; /* Stream ID: 1 */
 
-  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &header);
+  result = SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9,
+                                           &header);
   ASSERT_EQ (result, 0);
   ASSERT_EQ (header.length, 256);
   ASSERT_EQ (header.type, HTTP2_FRAME_DATA);
@@ -581,7 +588,8 @@ TEST (http2_integration_no_tls)
 
 /* ============================================================================
  * Main Entry Point
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)

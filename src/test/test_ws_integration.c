@@ -32,7 +32,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
+#include "core/SocketConfig.h" /* For SOCKET_HAS_TLS */
 #include "core/SocketCrypto.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
@@ -44,7 +44,8 @@
 
 /* ============================================================================
  * Test Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define TEST_PORT_BASE 46000
 #define TEST_TIMEOUT_MS 5000
@@ -59,7 +60,8 @@ get_ws_test_port (void)
 
 /* ============================================================================
  * WebSocket Server Infrastructure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -124,7 +126,8 @@ server_accept_websocket (WSTestServer *server)
   config.role = WS_ROLE_SERVER;
   config.validate_utf8 = 1;
 
-  server->ws = SocketWS_server_accept (server->client_socket, request, &config);
+  server->ws
+      = SocketWS_server_accept (server->client_socket, request, &config);
   SocketHTTP1_Parser_free (&parser);
 
   if (server->ws == NULL)
@@ -215,8 +218,7 @@ ws_server_start (WSTestServer *server)
       return -1;
     }
 
-  TRY
-  Socket_setreuseaddr (server->listen_socket);
+  TRY Socket_setreuseaddr (server->listen_socket);
   Socket_bind (server->listen_socket, "127.0.0.1", port);
   Socket_listen (server->listen_socket, 5);
   EXCEPT (Socket_Failed)
@@ -268,7 +270,8 @@ ws_server_stop (WSTestServer *server)
 
 /* ============================================================================
  * Integration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (ws_integration_handshake)
 {
@@ -286,8 +289,9 @@ TEST (ws_integration_handshake)
     }
 
   TRY
-  /* Connect to server */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect to server */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   ASSERT_NOT_NULL (client_socket);
 
   Socket_connect (client_socket, "127.0.0.1", server.port);
@@ -353,8 +357,9 @@ TEST (ws_integration_send_text)
     }
 
   TRY
-  /* Connect and handshake */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect and handshake */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_connect (client_socket, "127.0.0.1", server.port);
 
   SocketWS_config_defaults (&config);
@@ -383,7 +388,8 @@ TEST (ws_integration_send_text)
   result = SocketWS_send_text (ws, test_message, strlen (test_message));
   ASSERT_EQ (result, 0);
 
-  /* Note: Receiving is not tested as SocketWS_recv_message is not implemented */
+  /* Note: Receiving is not tested as SocketWS_recv_message is not implemented
+   */
 
   SocketWS_close (ws, WS_CLOSE_NORMAL, NULL);
 
@@ -421,8 +427,9 @@ TEST (ws_integration_send_binary)
     }
 
   TRY
-  /* Connect and handshake */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect and handshake */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_connect (client_socket, "127.0.0.1", server.port);
 
   SocketWS_config_defaults (&config);
@@ -483,8 +490,9 @@ TEST (ws_integration_ping)
     }
 
   TRY
-  /* Connect and handshake */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect and handshake */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_connect (client_socket, "127.0.0.1", server.port);
 
   SocketWS_config_defaults (&config);
@@ -544,8 +552,9 @@ TEST (ws_integration_close)
     }
 
   TRY
-  /* Connect and handshake */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect and handshake */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_connect (client_socket, "127.0.0.1", server.port);
 
   SocketWS_config_defaults (&config);
@@ -607,8 +616,9 @@ TEST (ws_integration_state_transitions)
     }
 
   TRY
-  /* Connect */
-  client_socket = Socket_new (AF_INET, SOCK_STREAM, 0);
+      /* Connect */
+      client_socket
+      = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_connect (client_socket, "127.0.0.1", server.port);
 
   SocketWS_config_defaults (&config);
@@ -655,7 +665,8 @@ TEST (ws_integration_state_transitions)
 
 /* ============================================================================
  * Main Entry Point
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -666,7 +677,8 @@ main (void)
   Test_run_all ();
 #else
   printf ("\n[SKIPPED] WebSocket integration tests require TLS support\n");
-  printf ("WebSocket handshake uses SHA-1 for Sec-WebSocket-Accept computation\n");
+  printf (
+      "WebSocket handshake uses SHA-1 for Sec-WebSocket-Accept computation\n");
 #endif
 
   printf ("\n");

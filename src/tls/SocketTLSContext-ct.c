@@ -14,15 +14,15 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketTLS-private.h"
 #include "core/SocketMetrics.h"
+#include "tls/SocketTLS-private.h"
 #include <assert.h>
 #include <openssl/opensslv.h>
-#include <openssl/ssl.h>  /* For SSL_CT_VALIDATION_* constants and SSL_CTX_enable_ct */
+#include <openssl/ssl.h> /* For SSL_CT_VALIDATION_* constants and SSL_CTX_enable_ct */
 
 #define T SocketTLSContext_T
 
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* ============================================================================
  * CT Support Detection
@@ -43,8 +43,9 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
 
 #if SOCKET_HAS_CT_SUPPORT
 
-/* Custom CT validation callback removed: using OpenSSL built-in policy for proper SCT validation.
- * This ensures correct handling of SCT verification, log consistency, and timestamps.
+/* Custom CT validation callback removed: using OpenSSL built-in policy for
+ * proper SCT validation. This ensures correct handling of SCT verification,
+ * log consistency, and timestamps.
  */
 
 void
@@ -54,11 +55,15 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
   assert (ctx->ssl_ctx);
 
   if (ctx->is_server)
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CT verification is for clients only");
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                         "CT verification is for clients only");
 
-  int openssl_mode = (mode == CT_VALIDATION_STRICT) ? SSL_CT_VALIDATION_STRICT : SSL_CT_VALIDATION_PERMISSIVE;
+  int openssl_mode = (mode == CT_VALIDATION_STRICT)
+                         ? SSL_CT_VALIDATION_STRICT
+                         : SSL_CT_VALIDATION_PERMISSIVE;
 
-  /* Enable CT verification with OpenSSL built-in policy matching the requested mode */
+  /* Enable CT verification with OpenSSL built-in policy matching the requested
+   * mode */
   if (SSL_CTX_enable_ct (ctx->ssl_ctx, openssl_mode) != 1)
     {
       ctx_raise_openssl_error ("Failed to enable Certificate Transparency");
@@ -92,13 +97,15 @@ SocketTLSContext_set_ctlog_list_file (T ctx, const char *log_file)
   assert (ctx->ssl_ctx);
 
   if (ctx->is_server)
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Custom CT log list is for clients only");
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                         "Custom CT log list is for clients only");
 
   if (!log_file || !*log_file)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "CT log file path cannot be empty");
 
   if (!tls_validate_file_path (log_file))
-    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid CT log file path: %s", log_file);
+    RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Invalid CT log file path: %s",
+                         log_file);
 
   /* Load custom CT log list file, overriding OpenSSL defaults */
   if (SSL_CTX_set_ctlog_list_file (ctx->ssl_ctx, log_file) != 1)
@@ -132,9 +139,9 @@ SocketTLSContext_enable_ct (T ctx, CTValidationMode mode)
 {
   (void)mode;
   assert (ctx);
-  RAISE_CTX_ERROR_MSG (
-      SocketTLS_Failed,
-      "Certificate Transparency not supported (requires OpenSSL 1.1.0+ with CT)");
+  RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                       "Certificate Transparency not supported (requires "
+                       "OpenSSL 1.1.0+ with CT)");
 }
 
 int
@@ -149,4 +156,3 @@ SocketTLSContext_ct_enabled (T ctx)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

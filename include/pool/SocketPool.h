@@ -5,12 +5,12 @@
 #include "core/Except.h"
 #include "core/SocketSYNProtect.h"
 #include "core/SocketUtil.h" /* For socket_error_buf in macros */
+#include "dns/SocketDNS.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketReconnect.h"
 #include <stddef.h>
 #include <time.h>
-#include "dns/SocketDNS.h"
 
 /**
  * @defgroup connection_mgmt Connection Management Modules
@@ -18,7 +18,8 @@
  *
  * The Connection Management group handles connection lifecycle, pooling,
  * and resilience patterns. Key components include:
- * - SocketPool (pooling): Connection pooling with automatic lifecycle management
+ * - SocketPool (pooling): Connection pooling with automatic lifecycle
+ * management
  * - SocketReconnect (reconnection): Auto-reconnection with circuit breaker
  * - SocketRateLimit (rate-limit): Token bucket rate limiting
  * - SocketSYNProtect (syn-flood): SYN flood protection
@@ -98,11 +99,13 @@ typedef void (*SocketPool_ResizeCallback) (T pool, size_t old_size,
  * The pool mutex is NOT held during callback invocation, so the callback
  * MAY safely call other SocketPool functions.
  */
-typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error, void *data);
+typedef void (*SocketPool_ConnectCallback) (Connection_T conn, int error,
+                                            void *data);
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_Failed - Pool operation failure
@@ -143,15 +146,18 @@ extern T SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize);
  * Returns: 0 on success, -1 on error (out_socket/out_req undefined)
  * Raises: SocketPool_Failed on error
  * Thread-safe: Yes
- * Creates a new Socket_T, configures pool defaults (non-blocking, reuseaddr, etc.),
- * starts async DNS resolution + connect preparation via Socket_connect_async.
- * User must monitor out_req with SocketDNS (check/pollfd/getresult), then
- * call Socket_connect_with_addrinfo(out_socket, res) on completion, then
- * SocketPool_add(pool, out_socket) to add to pool.
- * On error/cancel, Socket_free(&out_socket) and handle.
- * Integrates SocketDNS for non-blocking hostname resolution in pooled connections.
+ * Creates a new Socket_T, configures pool defaults (non-blocking, reuseaddr,
+ * etc.), starts async DNS resolution + connect preparation via
+ * Socket_connect_async. User must monitor out_req with SocketDNS
+ * (check/pollfd/getresult), then call Socket_connect_with_addrinfo(out_socket,
+ * res) on completion, then SocketPool_add(pool, out_socket) to add to pool. On
+ * error/cancel, Socket_free(&out_socket) and handle. Integrates SocketDNS for
+ * non-blocking hostname resolution in pooled connections.
  */
-extern int SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host, int port, Socket_T *out_socket, SocketDNS_Request_T *out_req);
+extern int SocketPool_prepare_connection (T pool, SocketDNS_T dns,
+                                          const char *host, int port,
+                                          Socket_T *out_socket,
+                                          Request_T *out_req);
 
 /**
  * SocketPool_free - Free a connection pool
@@ -166,19 +172,21 @@ extern void SocketPool_free (T *pool);
  * @pool: Pool instance
  * @host: Remote hostname or IP address
  * @port: Remote port number
- * @callback: Completion callback (see SocketPool_ConnectCallback for thread safety)
+ * @callback: Completion callback (see SocketPool_ConnectCallback for thread
+ * safety)
  * @data: User data passed to callback
  *
  * Returns: SocketDNS_Request_T for monitoring completion
- * Raises: SocketPool_Failed on invalid params, allocation error, or limit reached
- * Thread-safe: Yes
+ * Raises: SocketPool_Failed on invalid params, allocation error, or limit
+ * reached Thread-safe: Yes
  *
  * Starts async DNS resolution + connect + pool add. On completion:
  * - Success: callback(conn, 0, data) with Connection_T added to pool
  * - Failure: callback(NULL, error_code, data)
  *
  * IMPORTANT: The callback is invoked from a DNS worker thread, not the calling
- * thread. See SocketPool_ConnectCallback documentation for thread safety requirements.
+ * thread. See SocketPool_ConnectCallback documentation for thread safety
+ * requirements.
  *
  * Security: Limited to SOCKET_POOL_MAX_ASYNC_PENDING concurrent operations
  * to prevent resource exhaustion attacks.
@@ -187,7 +195,9 @@ extern void SocketPool_free (T *pool);
  * SocketPool_add is called internally on successful connect.
  * Caller owns no resources; pool manages connection lifecycle.
  */
-extern SocketDNS_Request_T SocketPool_connect_async (T pool, const char *host, int port, SocketPool_ConnectCallback callback, void *data);
+extern Request_T
+SocketPool_connect_async (T pool, const char *host, int port,
+                          SocketPool_ConnectCallback callback, void *data);
 
 /**
  * SocketPool_get - Look up connection by socket
@@ -215,11 +225,14 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  * @server: Server socket (listening, non-blocking)
  * @max_accepts: Max to accept (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
  * @max_accepts: Maximum number to accept (1 to SOCKET_POOL_MAX_BATCH_ACCEPTS)
- * @accepted_capacity: Size of accepted array provided by caller (must be >= max_accepts to avoid overflow)
- * @accepted: Output array for accepted Socket_T pointers (caller-allocated, filled up to count returned)
+ * @accepted_capacity: Size of accepted array provided by caller (must be >=
+ * max_accepts to avoid overflow)
+ * @accepted: Output array for accepted Socket_T pointers (caller-allocated,
+ * filled up to count returned)
  *
- * Returns: Number of sockets accepted and added to pool (0 to min(max_accepts, accepted_capacity, available_slots))
- * Note: Validates accepted_capacity >= max_accepts; raises SocketPool_Failed if not.
+ * Returns: Number of sockets accepted and added to pool (0 to min(max_accepts,
+ * accepted_capacity, available_slots)) Note: Validates accepted_capacity >=
+ * max_accepts; raises SocketPool_Failed if not.
  *
  * Returns: Number accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
@@ -239,9 +252,11 @@ extern Connection_T SocketPool_add (T pool, Socket_T socket);
  *
  * Example UNSAFE usage (DO NOT DO THIS):
  *   Socket_T accepted[10];   // Array too small!
- *   int count = SocketPool_accept_batch(pool, server, 100, accepted); // OVERFLOW!
+ *   int count = SocketPool_accept_batch(pool, server, 100, accepted); //
+ * OVERFLOW!
  */
-extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accepted_capacity,
+extern int SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+                                    size_t accepted_capacity,
                                     Socket_T *accepted);
 
 /**
@@ -367,7 +382,8 @@ extern int Connection_isactive (const Connection_T conn);
 
 /* ============================================================================
  * Reconnection Support
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
@@ -380,8 +396,9 @@ extern int Connection_isactive (const Connection_T conn);
  * Does not affect existing connections - use SocketPool_enable_reconnect()
  * for those.
  */
-extern void SocketPool_set_reconnect_policy (T pool,
-                                             const SocketReconnect_Policy_T *policy);
+extern void
+SocketPool_set_reconnect_policy (T pool,
+                                 const SocketReconnect_Policy_T *policy);
 
 /**
  * SocketPool_enable_reconnect - Enable auto-reconnect for a connection
@@ -456,7 +473,8 @@ extern int Connection_has_reconnect (const Connection_T conn);
 
 /* ============================================================================
  * Rate Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_setconnrate - Set connection rate limit
@@ -511,7 +529,8 @@ extern int SocketPool_getmaxperip (T pool);
  * Thread-safe: Yes
  *
  * Checks both connection rate and per-IP limits.
- * Does NOT consume rate limit tokens - use SocketPool_accept_limited() for that.
+ * Does NOT consume rate limit tokens - use SocketPool_accept_limited() for
+ * that.
  */
 extern int SocketPool_accept_allowed (T pool, const char *client_ip);
 
@@ -520,17 +539,18 @@ extern int SocketPool_accept_allowed (T pool, const char *client_ip);
  * @pool: Pool instance
  * @server: Server socket to accept from
  *
- * Returns: Accepted socket, or NULL if draining/stopped, rate limited, or accept failed
- * Thread-safe: Yes - acquires pool mutex for rate checks
+ * Returns: Accepted socket, or NULL if draining/stopped, rate limited, or
+ * accept failed Thread-safe: Yes - acquires pool mutex for rate checks
  *
  * Returns NULL immediately if pool is draining or stopped.
  * Consumes a rate token before attempting accept. If accept fails,
  * the token is NOT refunded (prevents DoS via rapid accept failures).
  *
- * If per-IP limiting enabled (SocketPool_setmaxperip > 0), automatically tracks
- * client IP after successful accept. If subsequent SocketPool_add fails,
- * caller MUST call SocketPool_release_ip(pool, Socket_getpeeraddr(client))
- * and Socket_free(&client) to avoid IP slot/FD leaks (DoS vector).
+ * If per-IP limiting enabled (SocketPool_setmaxperip > 0), automatically
+ * tracks client IP after successful accept. If subsequent SocketPool_add
+ * fails, caller MUST call SocketPool_release_ip(pool,
+ * Socket_getpeeraddr(client)) and Socket_free(&client) to avoid IP slot/FD
+ * leaks (DoS vector).
  *
  * Like Socket_accept() but with rate limiting and optional SYN protection.
  */
@@ -573,7 +593,8 @@ extern int SocketPool_ip_count (T pool, const char *ip);
 
 /* ============================================================================
  * SYN Flood Protection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_syn_protection - Enable SYN flood protection for pool
@@ -659,9 +680,9 @@ extern Socket_T SocketPool_accept_protected (T pool, Socket_T server,
  */
 typedef enum
 {
-  POOL_STATE_RUNNING = 0,   /**< Normal operation - accepting connections */
-  POOL_STATE_DRAINING,      /**< Rejecting new, waiting for existing to close */
-  POOL_STATE_STOPPED        /**< Fully stopped - safe to free */
+  POOL_STATE_RUNNING = 0, /**< Normal operation - accepting connections */
+  POOL_STATE_DRAINING,    /**< Rejecting new, waiting for existing to close */
+  POOL_STATE_STOPPED      /**< Fully stopped - safe to free */
 } SocketPool_State;
 
 /**
@@ -669,9 +690,9 @@ typedef enum
  */
 typedef enum
 {
-  POOL_HEALTH_HEALTHY = 0,  /**< Accept traffic normally */
-  POOL_HEALTH_DRAINING,     /**< Finishing existing connections, reject new */
-  POOL_HEALTH_STOPPED       /**< Not accepting any traffic */
+  POOL_HEALTH_HEALTHY = 0, /**< Accept traffic normally */
+  POOL_HEALTH_DRAINING,    /**< Finishing existing connections, reject new */
+  POOL_HEALTH_STOPPED      /**< Not accepting any traffic */
 } SocketPool_Health;
 
 /**
@@ -778,9 +799,8 @@ extern int SocketPool_drain_poll (T pool);
  * SocketPool_drain_remaining_ms - Get time until forced shutdown
  * @pool: Pool instance
  *
- * Returns: Milliseconds until timeout, 0 if already expired, -1 if not draining
- * Thread-safe: Yes - atomic read
- * Complexity: O(1)
+ * Returns: Milliseconds until timeout, 0 if already expired, -1 if not
+ * draining Thread-safe: Yes - atomic read Complexity: O(1)
  *
  * Use as timeout hint for poll/select during drain.
  */
@@ -826,15 +846,16 @@ extern int SocketPool_drain_wait (T pool, int timeout_ms);
  *
  * Thread-safe: Yes
  *
- * Callback is invoked exactly once when drain completes (transitions to STOPPED).
- * Safe to call SocketPool_free() from callback.
+ * Callback is invoked exactly once when drain completes (transitions to
+ * STOPPED). Safe to call SocketPool_free() from callback.
  */
 extern void SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb,
                                            void *data);
 
 /* ============================================================================
  * Idle Connection Cleanup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_idle_timeout - Set idle connection timeout
@@ -885,17 +906,18 @@ extern size_t SocketPool_run_idle_cleanup (T pool);
 
 /* ============================================================================
  * Connection Health Check
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Connection health status
  */
 typedef enum
 {
-  POOL_CONN_HEALTHY = 0,    /**< Connection is healthy and usable */
-  POOL_CONN_DISCONNECTED,   /**< Connection has been disconnected */
-  POOL_CONN_ERROR,          /**< Connection has a socket error */
-  POOL_CONN_STALE           /**< Connection has exceeded max age */
+  POOL_CONN_HEALTHY = 0,  /**< Connection is healthy and usable */
+  POOL_CONN_DISCONNECTED, /**< Connection has been disconnected */
+  POOL_CONN_ERROR,        /**< Connection has a socket error */
+  POOL_CONN_STALE         /**< Connection has exceeded max age */
 } SocketPool_ConnHealth;
 
 /**
@@ -916,7 +938,8 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
 
 /* ============================================================================
  * Connection Validation Callback
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_ValidationCallback - Callback to validate connection before reuse
@@ -958,13 +981,14 @@ extern SocketPool_ConnHealth SocketPool_check_connection (T pool,
  * When set, callback is invoked during SocketPool_get() to validate
  * connections before reuse. Use for application-level health checks.
  */
-extern void SocketPool_set_validation_callback (T pool,
-                                                SocketPool_ValidationCallback cb,
-                                                void *data);
+extern void
+SocketPool_set_validation_callback (T pool, SocketPool_ValidationCallback cb,
+                                    void *data);
 
 /* ============================================================================
  * Pool Resize Callback
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_ResizeCallback - Callback invoked after pool resize
@@ -987,12 +1011,14 @@ extern void SocketPool_set_validation_callback (T pool,
  *
  * Callback is invoked after successful pool resize operations.
  */
-extern void SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
+extern void SocketPool_set_resize_callback (T pool,
+                                            SocketPool_ResizeCallback cb,
                                             void *data);
 
 /* ============================================================================
  * Pool Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_Stats - Pool statistics snapshot
@@ -1003,23 +1029,26 @@ extern void SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb
 typedef struct SocketPool_Stats
 {
   /* Cumulative counters */
-  uint64_t total_added;             /**< Total connections added to pool */
-  uint64_t total_removed;           /**< Total connections removed from pool */
-  uint64_t total_reused;            /**< Total connections reused (returned via get) */
-  uint64_t total_health_checks;     /**< Total health checks performed */
-  uint64_t total_health_failures;   /**< Total health check failures */
-  uint64_t total_validation_failures; /**< Total validation callback failures */
-  uint64_t total_idle_cleanups;     /**< Connections removed due to idle timeout */
-  
+  uint64_t total_added;   /**< Total connections added to pool */
+  uint64_t total_removed; /**< Total connections removed from pool */
+  uint64_t total_reused;  /**< Total connections reused (returned via get) */
+  uint64_t total_health_checks;   /**< Total health checks performed */
+  uint64_t total_health_failures; /**< Total health check failures */
+  uint64_t
+      total_validation_failures; /**< Total validation callback failures */
+  uint64_t total_idle_cleanups; /**< Connections removed due to idle timeout */
+
   /* Current state */
-  size_t current_active;            /**< Current active connection count */
-  size_t current_idle;              /**< Current idle connection count (active but not in use) */
-  size_t max_connections;           /**< Maximum connection capacity */
-  
+  size_t current_active;  /**< Current active connection count */
+  size_t current_idle;    /**< Current idle connection count (active but not in
+                             use) */
+  size_t max_connections; /**< Maximum connection capacity */
+
   /* Calculated metrics */
-  double reuse_rate;                /**< Reuse rate: reused / (added + reused) */
-  double avg_connection_age_sec;    /**< Average age of active connections (seconds) */
-  double churn_rate_per_sec;        /**< Churn rate: (added + removed) / window_sec */
+  double reuse_rate;             /**< Reuse rate: reused / (added + reused) */
+  double avg_connection_age_sec; /**< Average age of active connections
+                                    (seconds) */
+  double churn_rate_per_sec; /**< Churn rate: (added + removed) / window_sec */
 } SocketPool_Stats;
 
 /**

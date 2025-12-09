@@ -32,7 +32,8 @@
 
 /* ============================================================================
  * Hash Table Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Hash table size - uses central configuration for consistency */
 #define SOCKET_HASH_SIZE SOCKET_HASH_TABLE_SIZE
@@ -112,7 +113,8 @@ extern __thread Except_T SocketPool_DetailedException;
 
 /* ============================================================================
  * Connection Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 struct Connection
 {
@@ -121,17 +123,19 @@ struct Connection
   SocketBuf_T outbuf;
   void *data;
   time_t last_activity;
-  time_t created_at;                /**< Connection creation timestamp (for age tracking) */
+  time_t created_at; /**< Connection creation timestamp (for age tracking) */
   int active;
   struct Connection *hash_next;
   struct Connection *free_next;
-  SocketReconnect_T reconnect;      /**< Auto-reconnection context (NULL if disabled) */
-  char *tracked_ip;                 /**< Tracked IP for per-IP limiting (NULL if not tracked) */
+  SocketReconnect_T
+      reconnect; /**< Auto-reconnection context (NULL if disabled) */
+  char
+      *tracked_ip; /**< Tracked IP for per-IP limiting (NULL if not tracked) */
 #if SOCKET_HAS_TLS
-  SocketTLSContext_T tls_ctx;       /**< TLS context for this connection */
-  int tls_handshake_complete;       /**< TLS handshake state */
-  SSL_SESSION *tls_session;         /**< Saved session for potential reuse */
-  int last_socket_fd;               /**< FD of last socket (for session persistence) */
+  SocketTLSContext_T tls_ctx; /**< TLS context for this connection */
+  int tls_handshake_complete; /**< TLS handshake state */
+  SSL_SESSION *tls_session;   /**< Saved session for potential reuse */
+  int last_socket_fd; /**< FD of last socket (for session persistence) */
 #endif
 };
 
@@ -139,7 +143,8 @@ typedef struct Connection *Connection_T;
 
 /* ============================================================================
  * Async Connect Context Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * AsyncConnectContext - Context for tracking async connect operations
@@ -151,7 +156,7 @@ struct AsyncConnectContext
 {
   SocketPool_T pool;                /**< Pool instance */
   Socket_T socket;                  /**< Socket being connected */
-  SocketDNS_Request_T req;          /**< DNS request handle */
+  Request_T req;          /**< DNS request handle */
   SocketPool_ConnectCallback cb;    /**< User callback */
   void *user_data;                  /**< User data for callback */
   struct AsyncConnectContext *next; /**< Next context in list */
@@ -160,63 +165,74 @@ typedef struct AsyncConnectContext *AsyncConnectContext_T;
 
 /* ============================================================================
  * Pool Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define T SocketPool_T
 struct T
 {
-  struct Connection *connections;   /**< Pre-allocated connection array */
-  Connection_T *hash_table;         /**< Hash table for O(1) lookup */
-  Connection_T free_list;           /**< Linked list of free slots */
-  Socket_T *cleanup_buffer;         /**< Buffer for cleanup operations */
-  size_t maxconns;                  /**< Maximum connections */
-  size_t bufsize;                   /**< Buffer size per connection */
-  size_t count;                     /**< Active connection count */
-  Arena_T arena;                    /**< Memory arena */
-  pthread_mutex_t mutex;            /**< Thread safety mutex */
-  SocketDNS_T dns;                  /**< Internal DNS resolver (lazy init) */
-  AsyncConnectContext_T async_ctx;  /**< Linked list of pending async connects */
-  size_t async_pending_count;       /**< Count of pending async connects (security limit) */
-  
+  struct Connection *connections; /**< Pre-allocated connection array */
+  Connection_T *hash_table;       /**< Hash table for O(1) lookup */
+  Connection_T free_list;         /**< Linked list of free slots */
+  Socket_T *cleanup_buffer;       /**< Buffer for cleanup operations */
+  size_t maxconns;                /**< Maximum connections */
+  size_t bufsize;                 /**< Buffer size per connection */
+  size_t count;                   /**< Active connection count */
+  Arena_T arena;                  /**< Memory arena */
+  pthread_mutex_t mutex;          /**< Thread safety mutex */
+  SocketDNS_T dns;                /**< Internal DNS resolver (lazy init) */
+  AsyncConnectContext_T
+      async_ctx;              /**< Linked list of pending async connects */
+  size_t async_pending_count; /**< Count of pending async connects (security
+                                 limit) */
+
   /* Reconnection support */
-  SocketReconnect_Policy_T reconnect_policy; /**< Default reconnection policy */
-  int reconnect_enabled;            /**< 1 if default reconnection enabled */
-  
+  SocketReconnect_Policy_T
+      reconnect_policy;  /**< Default reconnection policy */
+  int reconnect_enabled; /**< 1 if default reconnection enabled */
+
   /* Rate limiting support */
-  SocketRateLimit_T conn_limiter;   /**< Connection rate limiter (NULL if disabled) */
-  SocketIPTracker_T ip_tracker;     /**< Per-IP connection tracker (NULL if disabled) */
-  
+  SocketRateLimit_T
+      conn_limiter; /**< Connection rate limiter (NULL if disabled) */
+  SocketIPTracker_T
+      ip_tracker; /**< Per-IP connection tracker (NULL if disabled) */
+
   /* SYN flood protection */
-  SocketSYNProtect_T syn_protect;   /**< SYN flood protection (NULL if disabled) */
-  
+  SocketSYNProtect_T
+      syn_protect; /**< SYN flood protection (NULL if disabled) */
+
   /* Graceful shutdown (drain) state */
-  _Atomic int state;                /**< SocketPool_State (C11 atomic for lock-free reads) */
-  int64_t drain_deadline_ms;        /**< Monotonic deadline for forced shutdown */
+  _Atomic int state; /**< SocketPool_State (C11 atomic for lock-free reads) */
+  int64_t drain_deadline_ms; /**< Monotonic deadline for forced shutdown */
   SocketPool_DrainCallback drain_cb; /**< Drain completion callback */
-  void *drain_cb_data;              /**< User data for drain callback */
-  
+  void *drain_cb_data;               /**< User data for drain callback */
+
   /* Idle connection cleanup */
-  time_t idle_timeout_sec;          /**< Idle timeout in seconds (0 = disabled) */
-  int64_t last_cleanup_ms;          /**< Last cleanup timestamp (monotonic) */
-  int64_t cleanup_interval_ms;      /**< Interval between cleanup runs */
-  
+  time_t idle_timeout_sec;     /**< Idle timeout in seconds (0 = disabled) */
+  int64_t last_cleanup_ms;     /**< Last cleanup timestamp (monotonic) */
+  int64_t cleanup_interval_ms; /**< Interval between cleanup runs */
+
   /* Validation callback */
-  SocketPool_ValidationCallback validation_cb; /**< Connection validation callback */
-  void *validation_cb_data;         /**< User data for validation callback */
-  
+  SocketPool_ValidationCallback
+      validation_cb;        /**< Connection validation callback */
+  void *validation_cb_data; /**< User data for validation callback */
+
   /* Resize callback */
-  SocketPool_ResizeCallback resize_cb; /**< Pool resize notification callback */
-  void *resize_cb_data;             /**< User data for resize callback */
-  
+  SocketPool_ResizeCallback
+      resize_cb;        /**< Pool resize notification callback */
+  void *resize_cb_data; /**< User data for resize callback */
+
   /* Statistics tracking */
-  uint64_t stats_total_added;       /**< Total connections added */
-  uint64_t stats_total_removed;     /**< Total connections removed */
-  uint64_t stats_total_reused;      /**< Total connections reused */
-  uint64_t stats_health_checks;     /**< Total health checks performed */
-  uint64_t stats_health_failures;   /**< Total health check failures */
-  uint64_t stats_validation_failures; /**< Total validation callback failures */
-  uint64_t stats_idle_cleanups;     /**< Total connections cleaned up due to idle */
-  int64_t stats_start_time_ms;      /**< Statistics window start time */
+  uint64_t stats_total_added;     /**< Total connections added */
+  uint64_t stats_total_removed;   /**< Total connections removed */
+  uint64_t stats_total_reused;    /**< Total connections reused */
+  uint64_t stats_health_checks;   /**< Total health checks performed */
+  uint64_t stats_health_failures; /**< Total health check failures */
+  uint64_t
+      stats_validation_failures; /**< Total validation callback failures */
+  uint64_t
+      stats_idle_cleanups;     /**< Total connections cleaned up due to idle */
+  int64_t stats_start_time_ms; /**< Statistics window start time */
 };
 #undef T
 
@@ -280,7 +296,8 @@ extern unsigned socketpool_hash (const Socket_T socket);
 
 /* ============================================================================
  * Core Functions (from SocketPool-core.c)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * safe_time - Get current time with error handling
@@ -293,7 +310,8 @@ extern time_t safe_time (void);
 
 /* ============================================================================
  * Shared Range Enforcement (inline to avoid duplicate definitions)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketpool_enforce_range - Clamp value to min/max bounds

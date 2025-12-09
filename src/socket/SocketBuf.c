@@ -21,9 +21,9 @@
 #include "core/Except.h"
 #include "core/SocketConfig.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "socket/SocketBuf.h"
-#include "core/SocketSecurity.h"
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketBuf"
@@ -36,20 +36,28 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketBuf);
 
 /* Module-local convenience macros for error handling */
 #define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (SocketBuf, e)
-#define RAISE_MSG(e, fmt, ...) SOCKET_RAISE_MSG (SocketBuf, e, fmt, ##__VA_ARGS__)
+#define RAISE_MSG(e, fmt, ...)                                                \
+  SOCKET_RAISE_MSG (SocketBuf, e, fmt, ##__VA_ARGS__)
 
 /* Validation macros for defensive programming */
-#define VALIDATE_BUF(buf) \
-  do { \
-    if (!buf) RAISE_MODULE_ERROR (SocketBuf_Failed); \
-    SOCKETBUF_INVARIANTS (buf); \
-  } while (0)
+#define VALIDATE_BUF(buf)                                                     \
+  do                                                                          \
+    {                                                                         \
+      if (!buf)                                                               \
+        RAISE_MODULE_ERROR (SocketBuf_Failed);                                \
+      SOCKETBUF_INVARIANTS (buf);                                             \
+    }                                                                         \
+  while (0)
 
-#define VALIDATE_BUF_CONST(buf, retval) \
-  do { \
-    if (!buf) return (retval); \
-    if (!SocketBuf_check_invariants (buf)) return (retval); \
-  } while (0)
+#define VALIDATE_BUF_CONST(buf, retval)                                       \
+  do                                                                          \
+    {                                                                         \
+      if (!buf)                                                               \
+        return (retval);                                                      \
+      if (!SocketBuf_check_invariants (buf))                                  \
+        return (retval);                                                      \
+    }                                                                         \
+  while (0)
 
 #define T SocketBuf_T
 
@@ -102,9 +110,11 @@ SocketBuf_check_invariants (const T buf)
 static void
 new_validate_capacity (size_t capacity)
 {
-  if (capacity == 0 || !SOCKET_VALID_BUFFER_SIZE(capacity) || !SOCKET_SECURITY_VALID_SIZE(capacity))
+  if (capacity == 0 || !SOCKET_VALID_BUFFER_SIZE (capacity)
+      || !SOCKET_SECURITY_VALID_SIZE (capacity))
     RAISE_MSG (SocketBuf_Failed,
-               "SocketBuf_new: invalid capacity (0 < size <= %u bytes and valid allocation)",
+               "SocketBuf_new: invalid capacity (0 < size <= %u bytes and "
+               "valid allocation)",
                SOCKET_MAX_BUFFER_SIZE);
 }
 
@@ -168,9 +178,11 @@ SocketBuf_new (Arena_T arena, size_t capacity)
 void
 SocketBuf_release (T *bufp)
 {
-  if (!bufp) return;
+  if (!bufp)
+    return;
   T buf = *bufp;
-  if (!buf) return;
+  if (!buf)
+    return;
   *bufp = NULL;
 }
 
@@ -333,7 +345,8 @@ SocketBuf_consume (T buf, size_t len)
   VALIDATE_BUF (buf);
 
   if (len > buf->size)
-    RAISE_MSG (SocketBuf_Failed, "consume len %zu exceeds available data %zu", len, buf->size);
+    RAISE_MSG (SocketBuf_Failed, "consume len %zu exceeds available data %zu",
+               len, buf->size);
 
   buf->head = (buf->head + len) % buf->capacity;
   buf->size -= len;
@@ -412,16 +425,20 @@ SocketBuf_secureclear (T buf)
 static size_t
 reserve_calc_new_capacity (size_t current_cap, size_t total_needed)
 {
-  if (!SOCKET_SECURITY_VALID_SIZE (total_needed) || !SOCKET_VALID_BUFFER_SIZE (total_needed))
+  if (!SOCKET_SECURITY_VALID_SIZE (total_needed)
+      || !SOCKET_VALID_BUFFER_SIZE (total_needed))
     return 0;
 
   size_t doubled;
-  if (current_cap == 0) {
-    doubled = SOCKETBUF_INITIAL_CAPACITY;
-  } else {
-    if (SocketSecurity_check_multiply (current_cap, 2, &doubled) != 1)
-      return 0;
-  }
+  if (current_cap == 0)
+    {
+      doubled = SOCKETBUF_INITIAL_CAPACITY;
+    }
+  else
+    {
+      if (SocketSecurity_check_multiply (current_cap, 2, &doubled) != 1)
+        return 0;
+    }
 
   size_t new_cap = (doubled > total_needed) ? doubled : total_needed;
 
@@ -507,18 +524,21 @@ SocketBuf_reserve (T buf, size_t min_space)
   SOCKETBUF_INVARIANTS (buf);
 
   if (!SOCKET_SECURITY_VALID_SIZE (min_space))
-    RAISE_MSG (SocketBuf_Failed, "min_space exceeds security allocation limit");
+    RAISE_MSG (SocketBuf_Failed,
+               "min_space exceeds security allocation limit");
 
   size_t total_needed;
   if (SocketSecurity_check_add (buf->size, min_space, &total_needed) != 1)
-    RAISE_MSG (SocketBuf_Failed, "Overflow calculating total capacity needed in reserve");
+    RAISE_MSG (SocketBuf_Failed,
+               "Overflow calculating total capacity needed in reserve");
 
   if (total_needed <= buf->capacity)
     return;
 
   size_t new_cap = reserve_calc_new_capacity (buf->capacity, total_needed);
   if (new_cap == 0)
-    RAISE_MSG (SocketBuf_Failed, "SocketBuf reserve: new capacity invalid (overflow or exceeds limits)");
+    RAISE_MSG (SocketBuf_Failed, "SocketBuf reserve: new capacity invalid "
+                                 "(overflow or exceeds limits)");
 
   /* Arena allocation - old buffer remains allocated until arena disposal.
    * See function doc for rationale on this acceptable memory behavior. */
@@ -537,7 +557,8 @@ SocketBuf_readptr (T buf, size_t *len)
 {
   if (!buf || !len)
     {
-      if (len) *len = 0;
+      if (len)
+        *len = 0;
       return NULL;
     }
 
@@ -570,7 +591,8 @@ SocketBuf_writeptr (T buf, size_t *len)
 {
   if (!buf || !len)
     {
-      if (len) *len = 0;
+      if (len)
+        *len = 0;
       return NULL;
     }
 
@@ -605,7 +627,8 @@ SocketBuf_written (T buf, size_t len)
   VALIDATE_BUF (buf);
 
   if (len > buf->capacity - buf->size)
-    RAISE_MSG (SocketBuf_Failed, "written len %zu exceeds available space %zu", len, buf->capacity - buf->size);
+    RAISE_MSG (SocketBuf_Failed, "written len %zu exceeds available space %zu",
+               len, buf->capacity - buf->size);
 
   buf->tail = (buf->tail + len) % buf->capacity;
   buf->size += len;

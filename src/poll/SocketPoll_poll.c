@@ -14,7 +14,8 @@
  * - Uses fd_to_index mapping table for O(1) FD lookup via find_fd_index()
  * - Dynamically expands capacity as needed with overflow protection
  * - backend_get_event requires O(n) scan due to poll(2) design limitation
- * - All constants from SocketConfig.h: POLL_INITIAL_FDS, POLL_INITIAL_FD_MAP_SIZE
+ * - All constants from SocketConfig.h: POLL_INITIAL_FDS,
+ * POLL_INITIAL_FD_MAP_SIZE
  *
  * THREAD SAFETY: Individual backend instances are NOT thread-safe.
  * Each thread should use its own SocketPoll instance.
@@ -28,9 +29,9 @@
 #include <string.h>
 #include <time.h>
 
+#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "core/SocketSecurity.h"
-#include "core/Arena.h"
 #include "poll/SocketPoll_backend.h"
 
 /* Sentinel value indicating FD not in poll set */
@@ -46,9 +47,10 @@ struct T
   int capacity;        /* Capacity of fds array */
   int maxevents;       /* Maximum events per wait (not strictly enforced) */
   int last_wait_count; /* Number of events from last wait */
-  int last_nev;        /* Valid events from last backend_wait (0 on error/timeout) - for consistency with other backends */
-  int max_fd;          /* Maximum FD value seen */
-  int max_fd_limit;    /* Maximum allowed size for FD mapping to prevent OOM */
+  int last_nev; /* Valid events from last backend_wait (0 on error/timeout) -
+                   for consistency with other backends */
+  int max_fd;   /* Maximum FD value seen */
+  int max_fd_limit; /* Maximum allowed size for FD mapping to prevent OOM */
 };
 #undef T
 
@@ -118,9 +120,9 @@ safe_realloc_array (void *ptr, size_t num, size_t elem_size)
 {
   size_t total;
 
-  /* Reject zero-size allocation to avoid implementation-defined realloc(ptr, 0)
-   * behavior. Per POSIX, realloc(ptr, 0) may return NULL or a non-NULL pointer
-   * that cannot be dereferenced. We treat this as an error. */
+  /* Reject zero-size allocation to avoid implementation-defined realloc(ptr,
+   * 0) behavior. Per POSIX, realloc(ptr, 0) may return NULL or a non-NULL
+   * pointer that cannot be dereferenced. We treat this as an error. */
   if (num == 0)
     {
       errno = EINVAL;
@@ -253,7 +255,8 @@ allocate_fd_mapping (const int size)
 static int
 alloc_and_init_fds (PollBackend_T backend)
 {
-  backend->fds = safe_calloc_array ((size_t)backend->capacity, sizeof (struct pollfd));
+  backend->fds
+      = safe_calloc_array ((size_t)backend->capacity, sizeof (struct pollfd));
   return backend->fds ? 0 : -1;
 }
 
@@ -288,7 +291,7 @@ backend_new (Arena_T arena, const int maxevents)
   /* Set maximum FD mapping limit based on security allocation limits */
   SocketSecurityLimits limits;
   SocketSecurity_get_limits (&limits);
-  backend->max_fd_limit = (int) (limits.max_allocation / sizeof (int));
+  backend->max_fd_limit = (int)(limits.max_allocation / sizeof (int));
   if (backend->max_fd_limit > INT_MAX)
     backend->max_fd_limit = INT_MAX;
   if (backend->max_fd_limit < backend->max_fd)
@@ -297,7 +300,7 @@ backend_new (Arena_T arena, const int maxevents)
   if (alloc_and_init_fd_mapping (backend) < 0)
     {
       free (backend->fds); /* stdlib free */
-      return NULL; /* arena owns backend */
+      return NULL;         /* arena owns backend */
     }
 
   backend->nfds = 0;
@@ -374,7 +377,8 @@ ensure_fd_mapping (PollBackend_T backend, const int fd)
       return -1;
     }
 
-  int *new_mapping = safe_realloc_array (backend->fd_to_index, (size_t)new_max, sizeof (int));
+  int *new_mapping = safe_realloc_array (backend->fd_to_index, (size_t)new_max,
+                                         sizeof (int));
   if (!new_mapping)
     return -1;
 
@@ -411,7 +415,8 @@ ensure_capacity (PollBackend_T backend)
   if (safe_int_double (backend->capacity, &new_capacity) < 0)
     return -1;
 
-  struct pollfd *new_fds = safe_realloc_array (backend->fds, (size_t)new_capacity, sizeof (struct pollfd));
+  struct pollfd *new_fds = safe_realloc_array (
+      backend->fds, (size_t)new_capacity, sizeof (struct pollfd));
   if (!new_fds)
     return -1;
 
@@ -450,7 +455,8 @@ translate_to_poll_events (const unsigned events)
  * translate_from_poll_events - Convert poll(2) revents to SocketPoll events
  * @revents: poll(2) returned event mask
  *
- * Returns: SocketPoll event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
+ * Returns: SocketPoll event flags (POLL_READ | POLL_WRITE | POLL_ERROR |
+ * POLL_HANGUP)
  *
  * Maps POLLIN/POLLOUT/POLLERR/POLLHUP to POLL_READ/WRITE/ERROR/HANGUP.
  */
@@ -474,7 +480,8 @@ translate_from_poll_events (const short revents)
   return events;
 }
 
-/* ==================== Backend Interface Implementation ==================== */
+/* ==================== Backend Interface Implementation ====================
+ */
 
 static int
 add_fd_to_array (PollBackend_T backend, int fd, unsigned events)
@@ -640,7 +647,8 @@ perform_poll_wait (PollBackend_T backend, int timeout_ms)
   backend->last_nev = result;
   if (backend->last_nev == 0)
     {
-      /* Ensure revents cleared on timeout (poll should do this, but explicit) */
+      /* Ensure revents cleared on timeout (poll should do this, but explicit)
+       */
       for (int j = 0; j < backend->nfds; j++)
         backend->fds[j].revents = 0;
     }
@@ -673,7 +681,8 @@ backend_wait (PollBackend_T backend, const int timeout_ms)
 /**
  * backend_get_event - Get event details for index
  * @backend: Backend instance (checks against last_nev for valid range)
- * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent
+ * backend_wait)
  * @fd_out: Output - file descriptor with events
  * @events_out: Output - events that occurred (POLL_READ | POLL_WRITE | etc.)
  *

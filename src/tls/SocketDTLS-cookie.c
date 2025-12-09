@@ -15,10 +15,10 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketDTLS-private.h"
+#include "core/Except.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketMetrics.h"
-#include "core/Except.h"
+#include "tls/SocketDTLS-private.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
@@ -33,15 +33,15 @@
 /**
  * get_time_bucket - Get current monotonic time bucket
  *
- * Returns monotonic time truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC intervals.
- * Uses Socket_get_monotonic_ms() to prevent clock manipulation attacks.
- * This allows cookies to be valid for approximately the lifetime period
- * without needing to embed exact timestamp in cookie.
+ * Returns monotonic time truncated to SOCKET_DTLS_COOKIE_LIFETIME_SEC
+ * intervals. Uses Socket_get_monotonic_ms() to prevent clock manipulation
+ * attacks. This allows cookies to be valid for approximately the lifetime
+ * period without needing to embed exact timestamp in cookie.
  */
 static uint32_t
 get_time_bucket (void)
 {
-  int64_t now_ms = Socket_get_monotonic_ms();
+  int64_t now_ms = Socket_get_monotonic_ms ();
   int64_t lifetime_ms = (int64_t)SOCKET_DTLS_COOKIE_LIFETIME_SEC * 1000LL;
   return (uint32_t)(now_ms / lifetime_ms);
 }
@@ -55,7 +55,8 @@ get_time_bucket (void)
  * Tries getpeername() via underlying socket fd first, falls back to
  * BIO_dgram_get_peer() for DTLS/UDP peer tracking.
  *
- * Returns: 0 on success, -1 on failure (unknown address family or extraction failed)
+ * Returns: 0 on success, -1 on failure (unknown address family or extraction
+ * failed)
  */
 static int
 get_peer_address_from_ssl (SSL *ssl, struct sockaddr_storage *peer_addr,
@@ -156,10 +157,7 @@ compute_cookie_hmac (const unsigned char *secret,
                               input_len, out_cookie);
     result = 0;
   }
-  EXCEPT (SocketCrypto_Failed)
-  {
-    result = -1;
-  }
+  EXCEPT (SocketCrypto_Failed) { result = -1; }
   END_TRY;
 
   return result;
@@ -181,8 +179,8 @@ compute_cookie_hmac (const unsigned char *secret,
  */
 int
 dtls_generate_cookie_hmac (const unsigned char *secret,
-                           const struct sockaddr *peer_addr, socklen_t peer_len,
-                           unsigned char *out_cookie)
+                           const struct sockaddr *peer_addr,
+                           socklen_t peer_len, unsigned char *out_cookie)
 {
   if (!secret || !peer_addr || !out_cookie)
     return -1;
@@ -203,7 +201,8 @@ dtls_generate_cookie_hmac (const unsigned char *secret,
  * @cookie: Output buffer for cookie
  * @cookie_len: Output for cookie length
  *
- * Called by OpenSSL during DTLS handshake when server sends HelloVerifyRequest.
+ * Called by OpenSSL during DTLS handshake when server sends
+ * HelloVerifyRequest.
  *
  * Returns: 1 on success, 0 on failure
  */
@@ -275,9 +274,12 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                            peer_len, timestamp, expected_cookie)
       == 0)
     {
-      if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
+      if (SocketCrypto_secure_compare (cookie, expected_cookie,
+                                       SOCKET_DTLS_COOKIE_LEN)
+          == 0)
         {
-          SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
+          SocketCrypto_secure_clear (expected_cookie,
+                                     sizeof (expected_cookie));
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
         }
@@ -288,9 +290,12 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                            peer_len, timestamp - 1, expected_cookie)
       == 0)
     {
-      if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN) == 0)
+      if (SocketCrypto_secure_compare (cookie, expected_cookie,
+                                       SOCKET_DTLS_COOKIE_LEN)
+          == 0)
         {
-          SocketCrypto_secure_clear (expected_cookie, sizeof (expected_cookie));
+          SocketCrypto_secure_clear (expected_cookie,
+                                     sizeof (expected_cookie));
           pthread_mutex_unlock (&ctx->cookie.secret_mutex);
           return 1;
         }
@@ -309,7 +314,8 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                                timestamp, expected_cookie)
           == 0)
         {
-          if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
+          if (SocketCrypto_secure_compare (cookie, expected_cookie,
+                                           SOCKET_DTLS_COOKIE_LEN)
               == 0)
             {
               pthread_mutex_unlock (&ctx->cookie.secret_mutex);
@@ -322,7 +328,8 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
                                timestamp - 1, expected_cookie)
           == 0)
         {
-          if (SocketCrypto_secure_compare (cookie, expected_cookie, SOCKET_DTLS_COOKIE_LEN)
+          if (SocketCrypto_secure_compare (cookie, expected_cookie,
+                                           SOCKET_DTLS_COOKIE_LEN)
               == 0)
             {
               pthread_mutex_unlock (&ctx->cookie.secret_mutex);
@@ -343,4 +350,3 @@ dtls_cookie_verify_cb (SSL *ssl, const unsigned char *cookie,
 }
 
 #endif /* SOCKET_HAS_TLS */
-

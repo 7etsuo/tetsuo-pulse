@@ -4,7 +4,8 @@
 /**
  * @file SocketDTLS.h
  * @ingroup security
- * @brief DTLS (Datagram TLS) encryption for UDP sockets with DTLS 1.2+ support.
+ * @brief DTLS (Datagram TLS) encryption for UDP sockets with DTLS 1.2+
+ * support.
  *
  * Provides DTLS (Datagram TLS) encryption for UDP sockets, enabling secure
  * communication over unreliable datagram transport. Mirrors the SocketTLS
@@ -26,7 +27,8 @@
  *
  * References:
  * - RFC 6347: Datagram Transport Layer Security Version 1.2
- * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
+ * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol
+ * Version 1.3
  *
  * @see SocketDTLS_enable() for enabling DTLS on UDP sockets.
  * @see SocketDTLS_handshake_loop() for DTLS handshake.
@@ -53,12 +55,14 @@ typedef struct SocketDTLSContext_T *SocketDTLSContext_T;
  * ============================================================================
  */
 
-extern const Except_T SocketDTLS_Failed;          /**< General DTLS operation failure */
-extern const Except_T SocketDTLS_HandshakeFailed; /**< DTLS handshake failure */
-extern const Except_T SocketDTLS_VerifyFailed;    /**< Certificate verification failure */
-extern const Except_T SocketDTLS_CookieFailed;    /**< Cookie exchange failure */
-extern const Except_T SocketDTLS_TimeoutExpired;  /**< Handshake timeout */
-extern const Except_T SocketDTLS_ShutdownFailed;  /**< DTLS shutdown failure */
+extern const Except_T SocketDTLS_Failed; /**< General DTLS operation failure */
+extern const Except_T
+    SocketDTLS_HandshakeFailed; /**< DTLS handshake failure */
+extern const Except_T
+    SocketDTLS_VerifyFailed; /**< Certificate verification failure */
+extern const Except_T SocketDTLS_CookieFailed; /**< Cookie exchange failure */
+extern const Except_T SocketDTLS_TimeoutExpired; /**< Handshake timeout */
+extern const Except_T SocketDTLS_ShutdownFailed; /**< DTLS shutdown failure */
 
 /* ============================================================================
  * Handshake State Machine
@@ -68,19 +72,19 @@ extern const Except_T SocketDTLS_ShutdownFailed;  /**< DTLS shutdown failure */
 /**
  * DTLSHandshakeState - DTLS handshake progress states
  *
- * Used to track non-blocking handshake progress and integrate with event loops.
- * WANT_READ/WANT_WRITE indicate socket should be added to poll for the
+ * Used to track non-blocking handshake progress and integrate with event
+ * loops. WANT_READ/WANT_WRITE indicate socket should be added to poll for the
  * corresponding event before calling handshake again.
  */
 typedef enum
 {
-  DTLS_HANDSHAKE_NOT_STARTED = 0, /**< Handshake not yet initiated */
-  DTLS_HANDSHAKE_IN_PROGRESS = 1, /**< Handshake in progress */
-  DTLS_HANDSHAKE_WANT_READ = 2,   /**< Need to read from socket */
-  DTLS_HANDSHAKE_WANT_WRITE = 3,  /**< Need to write to socket */
+  DTLS_HANDSHAKE_NOT_STARTED = 0,     /**< Handshake not yet initiated */
+  DTLS_HANDSHAKE_IN_PROGRESS = 1,     /**< Handshake in progress */
+  DTLS_HANDSHAKE_WANT_READ = 2,       /**< Need to read from socket */
+  DTLS_HANDSHAKE_WANT_WRITE = 3,      /**< Need to write to socket */
   DTLS_HANDSHAKE_COOKIE_EXCHANGE = 4, /**< Cookie exchange in progress */
-  DTLS_HANDSHAKE_COMPLETE = 5,    /**< Handshake completed successfully */
-  DTLS_HANDSHAKE_ERROR = 6        /**< Handshake failed */
+  DTLS_HANDSHAKE_COMPLETE = 5,        /**< Handshake completed successfully */
+  DTLS_HANDSHAKE_ERROR = 6            /**< Handshake failed */
 } DTLSHandshakeState;
 
 /* ============================================================================
@@ -179,7 +183,8 @@ extern void SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu);
 extern DTLSHandshakeState SocketDTLS_handshake (SocketDgram_T socket);
 
 /**
- * SocketDTLS_handshake_loop - Complete handshake with timeout (blocking helper)
+ * SocketDTLS_handshake_loop - Complete handshake with timeout (blocking
+ * helper)
  * @socket: The datagram socket instance with DTLS enabled
  * @timeout_ms: Maximum time to wait for handshake (0 for non-blocking single
  * step)
@@ -284,8 +289,9 @@ extern ssize_t SocketDTLS_sendto (SocketDgram_T socket, const void *buf,
  * Raises: SocketDTLS_Failed on errors
  * Thread-safe: No
  */
-extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket, void *buf, size_t len,
-                                    char *host, size_t host_len, int *port);
+extern ssize_t SocketDTLS_recvfrom (SocketDgram_T socket, void *buf,
+                                    size_t len, char *host, size_t host_len,
+                                    int *port);
 
 /* ============================================================================
  * DTLS Connection Information
@@ -330,7 +336,8 @@ extern long SocketDTLS_get_verify_result (SocketDgram_T socket);
  * SocketDTLS_is_session_reused - Check if DTLS session was resumed
  * @socket: The datagram socket instance with completed handshake
  *
- * Determines if the connection used a resumed session (faster 1-RTT handshake).
+ * Determines if the connection used a resumed session (faster 1-RTT
+ * handshake).
  *
  * Returns: 1 if reused, 0 if full handshake, -1 if unavailable
  * Thread-safe: Yes
@@ -421,4 +428,3 @@ extern DTLSHandshakeState SocketDTLS_get_last_state (SocketDgram_T socket);
 #endif /* SOCKET_HAS_TLS */
 
 #endif /* SOCKETDTLS_INCLUDED */
-

@@ -167,8 +167,9 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #endif
 
 #ifndef SOCKET_TLS_MAX_CRL_SIZE
-#define SOCKET_TLS_MAX_CRL_SIZE (10 * 1024 * 1024) /* Max 10MB for CRL files  \
-                                                    */
+#define SOCKET_TLS_MAX_CRL_SIZE                                               \
+  (10 * 1024 * 1024) /* Max 10MB for CRL files                                \
+                      */
 #define SOCKET_TLS_MAX_CRL_FILES_IN_DIR                                       \
   1000 /* Max CRL files in directory to prevent exhaustion */
 #endif

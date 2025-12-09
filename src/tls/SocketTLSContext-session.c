@@ -20,15 +20,15 @@
 
 #if SOCKET_HAS_TLS
 
+#include "core/SocketSecurity.h"
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
-#include <string.h>
-#include "core/SocketSecurity.h"
 #include <limits.h> /* for LONG_MAX */
+#include <string.h>
 
 #define T SocketTLSContext_T
 
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* ============================================================================
  * Session Cache Callbacks (Internal)
@@ -122,17 +122,21 @@ set_cache_size (T ctx, size_t size)
 
   SocketSecurityLimits limits;
   SocketSecurity_get_limits (&limits);
-  if (size > limits.tls_session_cache_size) {
-    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "Session cache size %zu exceeds security limit of %zu",
-                         size, limits.tls_session_cache_size);
-  }
+  if (size > limits.tls_session_cache_size)
+    {
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session cache size %zu exceeds security limit of %zu", size,
+          limits.tls_session_cache_size);
+    }
 
-  if (size > (size_t) LONG_MAX) {
-    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "Session cache size %zu exceeds maximum supported value %ld",
-                         size, LONG_MAX);
-  }
+  if (size > (size_t)LONG_MAX)
+    {
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session cache size %zu exceeds maximum supported value %ld", size,
+          LONG_MAX);
+    }
 
   if (SSL_CTX_sess_set_cache_size (ctx->ssl_ctx, (long)size) == 0)
     ctx_raise_openssl_error ("Failed to set session cache size");
@@ -149,7 +153,8 @@ set_cache_size (T ctx, size_t size)
  * SocketTLSContext_enable_session_cache - Enable TLS session caching
  * @ctx: TLS context (must not be NULL)
  * @max_sessions: Maximum cached sessions (0 = use OpenSSL default)
- * @timeout_seconds: Session timeout (<=0 = use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT)
+ * @timeout_seconds: Session timeout (<=0 = use
+ * SOCKET_TLS_SESSION_TIMEOUT_DEFAULT)
  *
  * Raises: SocketTLS_Failed on configuration error
  *
@@ -179,15 +184,16 @@ SocketTLSContext_enable_session_cache (T ctx, size_t max_sessions,
   if (max_sessions > 0)
     set_cache_size (ctx, max_sessions);
 
-  long sess_timeout = timeout_seconds > 0
-                                ? timeout_seconds
-                                : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT;
+  long sess_timeout = timeout_seconds > 0 ? timeout_seconds
+                                          : SOCKET_TLS_SESSION_TIMEOUT_DEFAULT;
   const long MAX_SESSION_TIMEOUT = 2592000L; /* 30 days in seconds */
-  if (sess_timeout > MAX_SESSION_TIMEOUT) {
-    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                         "Session timeout %ld seconds exceeds maximum allowed %ld",
-                         sess_timeout, MAX_SESSION_TIMEOUT);
-  }
+  if (sess_timeout > MAX_SESSION_TIMEOUT)
+    {
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session timeout %ld seconds exceeds maximum allowed %ld",
+          sess_timeout, MAX_SESSION_TIMEOUT);
+    }
   SSL_CTX_set_timeout (ctx->ssl_ctx, sess_timeout);
   ctx->session_cache_enabled = 1;
 }
@@ -257,7 +263,8 @@ SocketTLSContext_get_cache_stats (T ctx, size_t *hits, size_t *misses,
 /**
  * SocketTLSContext_enable_session_tickets - Enable TLS session tickets
  * @ctx: TLS context (must not be NULL)
- * @key: Session ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN bytes)
+ * @key: Session ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN
+ * bytes)
  * @key_len: Key length (must equal SOCKET_TLS_TICKET_KEY_LEN = 80)
  *
  * Raises: SocketTLS_Failed on invalid key length or OpenSSL error
@@ -283,9 +290,10 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
 
   if (key_len != SOCKET_TLS_TICKET_KEY_LEN)
     {
-      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                           "Session ticket key length must be exactly %d bytes",
-                           SOCKET_TLS_TICKET_KEY_LEN);
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session ticket key length must be exactly %d bytes",
+          SOCKET_TLS_TICKET_KEY_LEN);
     }
 
   if (key == NULL)

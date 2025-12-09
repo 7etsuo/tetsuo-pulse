@@ -15,17 +15,17 @@
 #include <string.h>
 
 /* Project headers - Arena.h included to ensure T macro is defined/undefined
- * before we define our module's T. SocketDNS-private.h forward-declares Arena_T
- * but doesn't include Arena.h to avoid T macro conflicts in other contexts. */
+ * before we define our module's T. SocketDNS-private.h forward-declares
+ * Arena_T but doesn't include Arena.h to avoid T macro conflicts in other
+ * contexts. */
 #include "core/Arena.h"
-#include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
+#include "dns/SocketDNS.h"
 #include "socket/SocketCommon-private.h"
 
 /* Define our module's T macro (Arena.h undefs T at end of header) */
 #undef T /* Defensive: ensure clean slate */
 #define T SocketDNS_T
-#define Request_T SocketDNS_Request_T
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS"
@@ -49,8 +49,6 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketDNS);
  * Validation Functions
  * =============================================================================
  */
-
-
 
 /**
  * validate_resolve_params - Validate parameters for DNS resolution
@@ -108,8 +106,7 @@ validate_request_ownership_locked (const struct SocketDNS_T *dns,
  * Removes request from queue and marks as cancelled with appropriate error.
  */
 static void
-cancel_pending_state (struct SocketDNS_T *dns,
-                      struct SocketDNS_Request_T *req)
+cancel_pending_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 {
   cancel_pending_request (dns, req);
   req->error = dns_cancellation_error ();
@@ -168,8 +165,9 @@ cancel_complete_state (struct SocketDNS_Request_T *req)
  * Thread-safe: Must be called with mutex locked
  */
 static void
-handle_cancel_by_state (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                        int *send_signal, int *cancelled)
+handle_cancel_by_state (struct SocketDNS_T *dns,
+                        struct SocketDNS_Request_T *req, int *send_signal,
+                        int *cancelled)
 {
   switch (req->state)
     {
@@ -221,7 +219,8 @@ transfer_result_ownership (struct SocketDNS_Request_T *req)
 
   if (req->state == REQ_COMPLETE)
     {
-      /* If no callback, transfer ownership to caller; else callback consumed it
+      /* If no callback, transfer ownership to caller; else callback consumed
+       * it
        */
       if (!req->callback)
         {
@@ -276,24 +275,24 @@ init_completed_request_fields (struct SocketDNS_Request_T *req,
 }
 
 /* Forward declarations for synchronous resolution helpers */
-static int
-wait_for_completion (struct SocketDNS_T *dns,
-                     const struct SocketDNS_Request_T *req, int timeout_ms);
+static int wait_for_completion (struct SocketDNS_T *dns,
+                                const struct SocketDNS_Request_T *req,
+                                int timeout_ms);
 
-static void
-handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                     int timeout_ms, const char *host);
+static void handle_sync_timeout (struct SocketDNS_T *dns,
+                                 struct SocketDNS_Request_T *req,
+                                 int timeout_ms, const char *host);
 
-static void
-handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                   int error, const char *host);
+static void handle_sync_error (struct SocketDNS_T *dns,
+                               struct SocketDNS_Request_T *req, int error,
+                               const char *host);
 
 /**
  * @brief Fast-path synchronous resolution for IP addresses and wildcard binds.
  *
- * Performs direct getaddrinfo() call without involving the thread pool for cases
- * where resolution can be done synchronously and immediately (IP addresses or
- * NULL host for wildcard binding with AI_PASSIVE flag).
+ * Performs direct getaddrinfo() call without involving the thread pool for
+ * cases where resolution can be done synchronously and immediately (IP
+ * addresses or NULL host for wildcard binding with AI_PASSIVE flag).
  *
  * @param host Hostname or IP address string (NULL for wildcard/AI_PASSIVE)
  * @port Port number to associate with addresses
@@ -307,7 +306,8 @@ handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
  * @threadsafe Yes - no shared state modified
  *
  * @see SocketCommon_resolve_address() for underlying resolution logic
- * @see SocketCommon_copy_addrinfo() for result duplication to transfer ownership
+ * @see SocketCommon_copy_addrinfo() for result duplication to transfer
+ * ownership
  * @see SocketDNS_resolve_sync() for full synchronous API usage
  */
 static struct addrinfo *
@@ -316,7 +316,8 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
   struct addrinfo *tmp_res = NULL;
   int family = hints ? hints->ai_family : AF_UNSPEC;
 
-  SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed, family, 1);
+  SocketCommon_resolve_address (host, port, hints, &tmp_res, SocketDNS_Failed,
+                                family, 1);
 
   struct addrinfo *result = SocketCommon_copy_addrinfo (tmp_res);
   SocketCommon_free_addrinfo (tmp_res);
@@ -325,7 +326,8 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
 }
 
 /**
- * @brief Wait for async request completion and retrieve result under mutex protection.
+ * @brief Wait for async request completion and retrieve result under mutex
+ * protection.
  *
  * Internal helper for synchronous resolution wrapper. Locks mutex, waits for
  * completion or timeout, handles timeout/error cases by raising exceptions,
@@ -337,16 +339,19 @@ dns_sync_fast_path (const char *host, int port, const struct addrinfo *hints)
  * @param host Hostname for error messages (may be NULL)
  *
  * @return Resolved addrinfo (ownership transferred, caller must free)
- * @throws SocketDNS_Failed on timeout or resolution error (unlocks before raise)
+ * @throws SocketDNS_Failed on timeout or resolution error (unlocks before
+ * raise)
  *
  * @threadsafe Yes - acquires/releases mutex internally
  *
  * @note Called immediately after SocketDNS_resolve() in sync wrapper path.
- * @note Uses wait_for_completion(), handle_sync_timeout(), handle_sync_error().
+ * @note Uses wait_for_completion(), handle_sync_timeout(),
+ * handle_sync_error().
  */
 static struct addrinfo *
-wait_and_retrieve_result (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
-                          int timeout_ms, const char *host)
+wait_and_retrieve_result (struct SocketDNS_T *dns,
+                          struct SocketDNS_Request_T *req, int timeout_ms,
+                          const char *host)
 {
   int error;
   struct addrinfo *result;
@@ -377,7 +382,8 @@ wait_and_retrieve_result (struct SocketDNS_T *dns, struct SocketDNS_Request_T *r
 /**
  * SocketDNS_new - Create new DNS resolver instance
  *
- * Allocates and initializes a new SocketDNS_T instance with default configuration:
+ * Allocates and initializes a new SocketDNS_T instance with default
+ * configuration:
  * - num_workers = SOCKET_DNS_DEFAULT_NUM_WORKERS (typically CPU cores)
  * - max_pending = SOCKET_DNS_MAX_PENDING (typically 1000)
  * - request_timeout_ms = SOCKET_DNS_DEFAULT_TIMEOUT_MS (typically 5000ms)
@@ -486,7 +492,8 @@ check_queue_capacity (struct SocketDNS_T *dns)
       size_t max_pending = dns->max_pending;
       pthread_mutex_unlock (&dns->mutex);
       SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "DNS request queue full (max %zu pending)", max_pending);
+                        "DNS request queue full (max %zu pending)",
+                        max_pending);
     }
 
   pthread_mutex_unlock (&dns->mutex);
@@ -543,20 +550,23 @@ submit_resolve_request (struct SocketDNS_T *dns, Request_T req)
  * @callback: Completion callback (NULL for polling mode)
  * @data: User data passed to callback (ignored if no callback)
  *
- * Submits a DNS resolution request to the thread pool. If host is NULL or valid IP,
- * may use fast-path synchronous resolution internally but still returns Request_T.
+ * Submits a DNS resolution request to the thread pool. If host is NULL or
+ * valid IP, may use fast-path synchronous resolution internally but still
+ * returns Request_T.
  *
- * Returns: Request handle for tracking completion (valid until result retrieved)
- * Raises: SocketDNS_Failed if queue full (max_pending exceeded) or validation fails
- * Thread-safe: Yes - protects internal queue and hash table with mutex
+ * Returns: Request handle for tracking completion (valid until result
+ * retrieved) Raises: SocketDNS_Failed if queue full (max_pending exceeded) or
+ * validation fails Thread-safe: Yes - protects internal queue and hash table
+ * with mutex
  *
  * Validation:
- * - Hostname validated per RFC 1123 (alphanumeric, hyphen, dot-separated labels)
+ * - Hostname validated per RFC 1123 (alphanumeric, hyphen, dot-separated
+ * labels)
  * - IP addresses supported (IPv4/IPv6)
  * - Port validated (1-65535, 0 allowed for unspecified)
  *
- * Callback Mode: If callback provided, invoked from worker thread on completion.
- * See SocketDNS_Callback doc for thread safety requirements.
+ * Callback Mode: If callback provided, invoked from worker thread on
+ * completion. See SocketDNS_Callback doc for thread safety requirements.
  *
  * Polling Mode: If NULL callback, use SocketDNS_pollfd() + SocketDNS_check() +
  * SocketDNS_getresult(req) to retrieve results.
@@ -591,25 +601,28 @@ SocketDNS_resolve (struct SocketDNS_T *dns, const char *host, int port,
  * @dns: DNS resolver instance
  * @req: Request handle to cancel
  *
- * Cancels the specified request if it is pending or processing. Completed requests
- * are marked as cancelled but results remain retrievable. Already-cancelled requests
- * are ignored.
+ * Cancels the specified request if it is pending or processing. Completed
+ * requests are marked as cancelled but results remain retrievable.
+ * Already-cancelled requests are ignored.
  *
  * Cancellation semantics by state:
  * - REQ_PENDING: Removed from queue, never processed
- * - REQ_PROCESSING: Marked cancelled; worker discards result after getaddrinfo()
- * - REQ_COMPLETE: Result preserved if polling mode; callback already consumed if applicable
+ * - REQ_PROCESSING: Marked cancelled; worker discards result after
+ * getaddrinfo()
+ * - REQ_COMPLETE: Result preserved if polling mode; callback already consumed
+ * if applicable
  * - REQ_CANCELLED: No-op
  *
  * Sends completion signal to wake waiters and increments cancellation metric.
- * Request handle becomes invalid after retrieval or free (use SocketDNS_geterror).
+ * Request handle becomes invalid after retrieval or free (use
+ * SocketDNS_geterror).
  *
  * Raises: None (safe to call on NULL or invalid handles)
  * Thread-safe: Yes - acquires mutex for state update and signalling
  *
- * Note: Cancellation is best-effort for processing requests (worker may complete
- * shortly after cancel call). For guaranteed non-processing, call before submit.
- * Cancelled requests return EAI_CANCELED error code.
+ * Note: Cancellation is best-effort for processing requests (worker may
+ * complete shortly after cancel call). For guaranteed non-processing, call
+ * before submit. Cancelled requests return EAI_CANCELED error code.
  */
 void
 SocketDNS_cancel (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
@@ -678,8 +691,9 @@ SocketDNS_getmaxpending (struct SocketDNS_T *dns)
  * @max_pending: New queue capacity limit (0 = capacity 0 / queuing disabled)
  *
  * Updates the maximum number of pending requests the queue can hold.
- * Cannot reduce below current queue_size (would reject new requests prematurely).
- * New limit takes effect immediately for future SocketDNS_resolve() calls.
+ * Cannot reduce below current queue_size (would reject new requests
+ * prematurely). New limit takes effect immediately for future
+ * SocketDNS_resolve() calls.
  *
  * Raises: SocketDNS_Failed if new limit < current queue_size
  * Thread-safe: Yes - updates under mutex protection
@@ -723,8 +737,9 @@ SocketDNS_setmaxpending (struct SocketDNS_T *dns, size_t max_pending)
  * Thread-safe: Yes - atomic read under mutex
  * Raises: None
  *
- * Note: 0 means no timeout (wait indefinitely). Negative values are sanitized to 0.
- * Per-request overrides via SocketDNS_request_settimeout() take precedence.
+ * Note: 0 means no timeout (wait indefinitely). Negative values are sanitized
+ * to 0. Per-request overrides via SocketDNS_request_settimeout() take
+ * precedence.
  */
 int
 SocketDNS_gettimeout (struct SocketDNS_T *dns)
@@ -754,8 +769,9 @@ SocketDNS_gettimeout (struct SocketDNS_T *dns)
  * Thread-safe: Yes - updates under mutex
  *
  * Note: Affects new requests only. Use SocketDNS_request_settimeout() for
- * existing requests. Default: SOCKET_DNS_DEFAULT_TIMEOUT_MS (typically 5000ms).
- * For sync resolution, uses this value if timeout_ms <= 0 in SocketDNS_resolve_sync().
+ * existing requests. Default: SOCKET_DNS_DEFAULT_TIMEOUT_MS (typically
+ * 5000ms). For sync resolution, uses this value if timeout_ms <= 0 in
+ * SocketDNS_resolve_sync().
  */
 void
 SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
@@ -773,7 +789,8 @@ SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
  * @dns: DNS resolver instance
  *
  * Returns the read-end file descriptor of the completion pipe.
- * Add this FD to SocketPoll with POLL_READ interest to detect completed requests.
+ * Add this FD to SocketPoll with POLL_READ interest to detect completed
+ * requests.
  *
  * Returns: Pipe FD (>=0) or -1 if dns NULL or pipe invalid (shutdown state)
  * Raises: None
@@ -782,10 +799,11 @@ SocketDNS_settimeout (struct SocketDNS_T *dns, int timeout_ms)
  * Usage:
  *   int dns_fd = SocketDNS_pollfd(dns);
  *   SocketPoll_add(poll, dns_fd, POLL_READ, dns_userdata);
- *   // When POLL_READ on dns_fd, call SocketDNS_check(dns) to process completions
+ *   // When POLL_READ on dns_fd, call SocketDNS_check(dns) to process
+ * completions
  *
- * Note: FD is edge-triggered compatible. Always drain fully with SocketDNS_check()
- * to avoid missed signals under high load.
+ * Note: FD is edge-triggered compatible. Always drain fully with
+ * SocketDNS_check() to avoid missed signals under high load.
  */
 int
 SocketDNS_pollfd (struct SocketDNS_T *dns)
@@ -855,9 +873,10 @@ SocketDNS_check (struct SocketDNS_T *dns)
  * @dns: DNS resolver instance
  * @req: Request handle
  *
- * Retrieves the addrinfo result if request is complete and no callback was used.
- * Transfers ownership of result to caller (must free with SocketCommon_free_addrinfo).
- * Invalidates the request handle (subsequent calls return NULL).
+ * Retrieves the addrinfo result if request is complete and no callback was
+ * used. Transfers ownership of result to caller (must free with
+ * SocketCommon_free_addrinfo). Invalidates the request handle (subsequent
+ * calls return NULL).
  *
  * Returns: addrinfo result (ownership transferred) or NULL if:
  *          - Request not complete (still pending/processing)
@@ -911,8 +930,9 @@ SocketDNS_getresult (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
  * Raises: None
  * Thread-safe: Yes - read under mutex
  *
- * Usage: Always call after SocketDNS_getresult() or in callback to check success.
- * For retry decisions, use SocketError_is_retryable_errno(error) or check EAI_AGAIN.
+ * Usage: Always call after SocketDNS_getresult() or in callback to check
+ * success. For retry decisions, use SocketError_is_retryable_errno(error) or
+ * check EAI_AGAIN.
  */
 int
 SocketDNS_geterror (struct SocketDNS_T *dns,
@@ -939,7 +959,8 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
 }
 
 /**
- * SocketDNS_create_completed_request - Create pre-completed request (internal/testing)
+ * SocketDNS_create_completed_request - Create pre-completed request
+ * (internal/testing)
  * @dns: DNS resolver instance
  * @result: Pre-resolved addrinfo (copied, original freed)
  * @port: Port number for request
@@ -952,9 +973,10 @@ SocketDNS_geterror (struct SocketDNS_T *dns,
  * Raises: SocketDNS_Failed on allocation or copy failure
  * Thread-safe: Yes - inserts under mutex and signals
  *
- * Note: Primarily for internal use. Applications should use SocketDNS_resolve()
- * or SocketDNS_resolve_sync(). Result is copied; caller does not retain ownership.
- * Increments completion metric and sends pipe signal.
+ * Note: Primarily for internal use. Applications should use
+ * SocketDNS_resolve() or SocketDNS_resolve_sync(). Result is copied; caller
+ * does not retain ownership. Increments completion metric and sends pipe
+ * signal.
  */
 Request_T
 SocketDNS_create_completed_request (struct SocketDNS_T *dns,
@@ -962,8 +984,9 @@ SocketDNS_create_completed_request (struct SocketDNS_T *dns,
 {
   if (!dns || !result)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Invalid NULL dns or result in create_completed_request");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          "Invalid NULL dns or result in create_completed_request");
     }
 
   Request_T req = allocate_request_structure (dns);
@@ -1033,7 +1056,8 @@ compute_deadline (int timeout_ms, struct timespec *deadline)
 {
   clock_gettime (CLOCK_REALTIME, deadline);
   deadline->tv_sec += timeout_ms / SOCKET_MS_PER_SECOND;
-  deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND) * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
+  deadline->tv_nsec += (timeout_ms % SOCKET_MS_PER_SECOND)
+                       * (SOCKET_NS_PER_SECOND / SOCKET_MS_PER_SECOND);
 
   /* Normalize nanoseconds (handle overflow from ms->ns conversion) */
   if (deadline->tv_nsec >= SOCKET_NS_PER_SECOND)
@@ -1087,7 +1111,8 @@ wait_for_completion (struct SocketDNS_T *dns,
  *
  * Raises: SocketDNS_Failed (always)
  *
- * Cancels the request and raises timeout exception. Unlocks mutex before raise.
+ * Cancels the request and raises timeout exception. Unlocks mutex before
+ * raise.
  */
 static void
 handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
@@ -1112,7 +1137,8 @@ handle_sync_timeout (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
  *
  * Raises: SocketDNS_Failed (always)
  *
- * Removes request from hash table and raises error. Unlocks mutex before raise.
+ * Removes request from hash table and raises error. Unlocks mutex before
+ * raise.
  */
 static void
 handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
@@ -1121,7 +1147,8 @@ handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
   hash_table_remove (dns, req);
   pthread_mutex_unlock (&dns->mutex);
 
-  SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed, "DNS resolution failed: %s (%s)",
+  SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                    "DNS resolution failed: %s (%s)",
                     host ? host : "(wildcard)", gai_strerror (error));
 }
 
@@ -1132,8 +1159,9 @@ handle_sync_error (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req,
  * @port: Port number
  * @timeout_ms: Effective timeout in milliseconds
  *
- * Returns: Resolved addrinfo (caller must free with SocketCommon_free_addrinfo)
- * Raises: SocketDNS_Failed on timeout or resolution error
+ * Returns: Resolved addrinfo (caller must free with
+ * SocketCommon_free_addrinfo) Raises: SocketDNS_Failed on timeout or
+ * resolution error
  *
  * Submits async request and blocks until completion or timeout.
  */
@@ -1167,17 +1195,18 @@ resolve_async_with_wait (struct SocketDNS_T *dns, const char *host, int port,
  * Raises: SocketDNS_Failed on resolution failure, timeout, or invalid params
  * Thread-safe: Yes, but blocks calling thread until complete or timeout
  *
- * Timeout: Effective timeout = timeout_ms >0 ? timeout_ms : dns->request_timeout_ms
- * If both 0, waits indefinitely (avoid in production).
+ * Timeout: Effective timeout = timeout_ms >0 ? timeout_ms :
+ * dns->request_timeout_ms If both 0, waits indefinitely (avoid in production).
  *
- * Hints: Supports standard getaddrinfo hints (family, socktype, protocol, flags).
- * Fast-path automatically sets AI_NUMERICHOST/AI_PASSIVE as needed.
+ * Hints: Supports standard getaddrinfo hints (family, socktype, protocol,
+ * flags). Fast-path automatically sets AI_NUMERICHOST/AI_PASSIVE as needed.
  *
  * Validation: Same as SocketDNS_resolve (hostname/port checks).
- * Error details available via SocketError_categorize_errno if needed post-raise.
+ * Error details available via SocketError_categorize_errno if needed
+ * post-raise.
  *
- * Usage: Convenience wrapper for apps needing sync API with timeout protection.
- * For non-blocking, prefer SocketDNS_resolve + poll/callback.
+ * Usage: Convenience wrapper for apps needing sync API with timeout
+ * protection. For non-blocking, prefer SocketDNS_resolve + poll/callback.
  */
 struct addrinfo *
 SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
@@ -1187,13 +1216,15 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   if (!dns)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "SocketDNS_resolve_sync requires non-NULL dns resolver");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          "SocketDNS_resolve_sync requires non-NULL dns resolver");
     }
 
   effective_timeout = (timeout_ms > 0) ? timeout_ms : dns->request_timeout_ms;
 
-  /* Fast path: IP addresses and wildcard use direct synchronous resolution via helper */
+  /* Fast path: IP addresses and wildcard use direct synchronous resolution via
+   * helper */
   if (host == NULL || socketcommon_is_ip_address (host))
     return dns_sync_fast_path (host, port, hints);
 

@@ -168,14 +168,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     (void)SocketRateLimit_get_rate (limiter);
     (void)SocketRateLimit_get_bucket_size (limiter);
   }
-  EXCEPT (Arena_Failed)
-  {
-    /* Memory allocation failure */
-  }
-  EXCEPT (SocketRateLimit_Failed)
-  {
-    /* Rate limiter operation failure */
-  }
+  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
+  EXCEPT (SocketRateLimit_Failed) { /* Rate limiter operation failure */ }
   FINALLY
   {
     if (limiter)
@@ -187,4 +181,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

@@ -395,8 +395,9 @@ Socket_sendall (T socket, const void *buf, size_t len)
  * @buf: Buffer for received data
  * @len: Buffer size (> 0)
  *
- * Returns: Total bytes received (equals len on success, partial on would-block)
- * Raises: Socket_Closed on peer close or ECONNRESET, Socket_Failed on error
+ * Returns: Total bytes received (equals len on success, partial on
+ * would-block) Raises: Socket_Closed on peer close or ECONNRESET,
+ * Socket_Failed on error
  */
 ssize_t
 Socket_recvall (T socket, void *buf, size_t len)
@@ -477,10 +478,7 @@ Socket_sendvall (T socket, const struct iovec *iov, int iovcnt)
   RERAISE;
   EXCEPT (Socket_Failed)
   RERAISE;
-  FINALLY
-  {
-    free (iov_copy);
-  }
+  FINALLY { free (iov_copy); }
   END_TRY;
 
   return (ssize_t)total_sent;
@@ -540,10 +538,7 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   RERAISE;
   EXCEPT (Socket_Failed)
   RERAISE;
-  FINALLY
-  {
-    free (iov_copy);
-  }
+  FINALLY { free (iov_copy); }
   END_TRY;
 
   return (ssize_t)total_received;

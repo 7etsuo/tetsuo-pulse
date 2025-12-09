@@ -1,8 +1,8 @@
 /**
  * test_coverage.c - Additional coverage tests for achieving 100% gcov
  *
- * This file contains targeted tests for code paths not covered by existing tests.
- * Focus areas:
+ * This file contains targeted tests for code paths not covered by existing
+ * tests. Focus areas:
  * - Error paths and edge cases
  * - TLS session management callbacks
  * - Socket pool operations
@@ -14,18 +14,19 @@
 /* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
 /* cppcheck-suppress-file unreadVariable ; intentional test patterns */
 
-#include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketUtil.h"
+#include "dns/SocketDNS.h"
+#include "poll/SocketPoll.h"
+#include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketDgram.h"
 #include "socket/SocketReconnect.h"
-#include "pool/SocketPool.h"
-#include "dns/SocketDNS.h"
-#include "poll/SocketPoll.h"
+#include "test/Test.h"
 
+#include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -34,7 +35,6 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 
 #if SOCKET_HAS_TLS
 #include "tls/SocketTLS.h"
@@ -43,7 +43,8 @@
 
 /* ============================================================================
  * Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 create_listening_server (int *out_port)
@@ -73,7 +74,8 @@ create_listening_server (int *out_port)
 
 /* ============================================================================
  * Socket Error Path Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socket_new_from_invalid_fd)
 {
@@ -266,7 +268,8 @@ TEST (cov_socket_recv_not_connected)
 
 /* ============================================================================
  * Socket Options Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socket_options_all)
 {
@@ -302,7 +305,8 @@ TEST (cov_socket_options_all)
 
 /* ============================================================================
  * Socket Dgram Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socketdgram_send_recv)
 {
@@ -325,7 +329,8 @@ TEST (cov_socketdgram_send_recv)
 
     /* Send datagram */
     char msg[] = "test datagram";
-    ssize_t sent = SocketDgram_sendto (sender, msg, sizeof (msg), "127.0.0.1", port);
+    ssize_t sent
+        = SocketDgram_sendto (sender, msg, sizeof (msg), "127.0.0.1", port);
     ASSERT (sent > 0);
 
     /* Receive datagram */
@@ -336,7 +341,9 @@ TEST (cov_socketdgram_send_recv)
     SocketDgram_setnonblocking (receiver);
     usleep (50000); /* Wait for packet */
 
-    ssize_t recvd = SocketDgram_recvfrom (receiver, buf, sizeof (buf), from_addr, sizeof (from_addr), &from_port);
+    ssize_t recvd
+        = SocketDgram_recvfrom (receiver, buf, sizeof (buf), from_addr,
+                                sizeof (from_addr), &from_port);
     if (recvd > 0)
       {
         ASSERT (strcmp (buf, msg) == 0);
@@ -386,7 +393,8 @@ TEST (cov_socketdgram_broadcast)
 
 /* ============================================================================
  * Socket Buffer Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socketbuf_operations)
 {
@@ -498,7 +506,8 @@ TEST (cov_socketbuf_direct_access)
 
 /* ============================================================================
  * Socket Poll Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socketpoll_timeout)
 {
@@ -571,7 +580,8 @@ TEST (cov_socketpoll_modify)
 
 /* ============================================================================
  * Socket Pool Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socketpool_resize)
 {
@@ -718,7 +728,8 @@ TEST (cov_socketpool_foreach)
 
 /* ============================================================================
  * Socket Reconnect Additional Edge Case Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socketreconnect_backoff_minimum_delay)
 {
@@ -761,7 +772,7 @@ TEST (cov_socketreconnect_max_delay_cap)
   SocketReconnect_policy_defaults (&policy);
   policy.multiplier = 100.0; /* Very large to hit max_delay cap */
   policy.initial_delay_ms = 100;
-  policy.max_delay_ms = 150;  /* Will cap at this */
+  policy.max_delay_ms = 150; /* Will cap at this */
   policy.jitter = 0.0;
   policy.max_attempts = 3;
 
@@ -1041,7 +1052,8 @@ TEST (cov_socketreconnect_unlimited_attempts)
 
 /* ============================================================================
  * Arena Edge Cases
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_arena_large_allocation)
 {
@@ -1083,13 +1095,14 @@ TEST (cov_arena_calloc)
 
 /* ============================================================================
  * DNS Edge Cases
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static atomic_int dns_callback_called = 0;
 static atomic_int dns_callback_error = 0;
 
 static void
-dns_test_callback (SocketDNS_Request_T req, struct addrinfo *result, int error,
+dns_test_callback (Request_T req, struct addrinfo *result, int error,
                    void *data)
 {
   (void)req;
@@ -1114,7 +1127,7 @@ TEST (cov_dns_resolve_async)
     ASSERT_NOT_NULL (dns);
 
     /* Resolve localhost asynchronously */
-    SocketDNS_Request_T req
+    Request_T req
         = SocketDNS_resolve (dns, "localhost", 80, dns_test_callback, NULL);
     if (req)
       {
@@ -1151,8 +1164,9 @@ TEST (cov_dns_resolve_invalid)
     dns = SocketDNS_new ();
 
     /* Try to resolve invalid hostname */
-    SocketDNS_Request_T req = SocketDNS_resolve (
-        dns, "this-host-should-not-exist.invalid", 80, dns_test_callback, NULL);
+    Request_T req
+        = SocketDNS_resolve (dns, "this-host-should-not-exist.invalid", 80,
+                             dns_test_callback, NULL);
     if (req)
       {
         /* Wait for callback */
@@ -1174,7 +1188,8 @@ TEST (cov_dns_resolve_invalid)
 
 /* ============================================================================
  * TLS Tests (if available)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #if SOCKET_HAS_TLS
 
@@ -1321,9 +1336,14 @@ TEST (cov_tls_ocsp_response_too_large)
     unsigned char *large_response = malloc (LARGE_OCSP_RESPONSE_SIZE);
     if (large_response)
       {
-        memset (large_response, 0x30, LARGE_OCSP_RESPONSE_SIZE); /* ASN.1 SEQUENCE tag */
+        memset (large_response, 0x30,
+                LARGE_OCSP_RESPONSE_SIZE); /* ASN.1 SEQUENCE tag */
 
-        TRY { SocketTLSContext_set_ocsp_response (ctx, large_response, LARGE_OCSP_RESPONSE_SIZE); }
+        TRY
+        {
+          SocketTLSContext_set_ocsp_response (ctx, large_response,
+                                              LARGE_OCSP_RESPONSE_SIZE);
+        }
         EXCEPT (SocketTLS_Failed) { raised = 1; }
         END_TRY;
 
@@ -1370,7 +1390,8 @@ TEST (cov_tls_protocol_version_fallback)
 
 /* ============================================================================
  * Utility Function Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (cov_socket_timeouts)
 {
@@ -1410,7 +1431,8 @@ TEST (cov_socket_timeouts)
 
 /* ============================================================================
  * Main
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)

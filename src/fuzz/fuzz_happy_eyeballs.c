@@ -121,8 +121,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   if (hostname[0] == '\0')
     {
       /* Need at least some hostname */
-      strncpy (hostname, "localhost", sizeof(hostname) - 1);
-      hostname[sizeof(hostname) - 1] = '\0';
+      strncpy (hostname, "localhost", sizeof (hostname) - 1);
+      hostname[sizeof (hostname) - 1] = '\0';
     }
 
   /* Verify configuration values are within reasonable bounds */

@@ -37,7 +37,8 @@ static void release_connection_resources (T pool, Connection_T conn,
 
 /* ============================================================================
  * Free List Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * find_free_slot - Get next free slot from free list
@@ -151,7 +152,8 @@ prepare_free_slot (T pool, Connection_T conn)
 
 /* ============================================================================
  * Connection Slot Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * update_existing_slot - Update activity timestamp
@@ -293,7 +295,8 @@ SocketPool_connections_reset_slot (Connection_T conn)
 
 /* ============================================================================
  * TLS Session Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #if SOCKET_HAS_TLS
 /**
@@ -446,10 +449,11 @@ save_tls_session (Connection_T conn, Socket_T socket)
     return;
 
   /* Free any existing session before saving new one to avoid leaks */
-  if (conn->tls_session) {
-    SSL_SESSION_free(conn->tls_session);
-    conn->tls_session = NULL;
-  }
+  if (conn->tls_session)
+    {
+      SSL_SESSION_free (conn->tls_session);
+      conn->tls_session = NULL;
+    }
 
   sess = SSL_get1_session (ssl);
   if (sess)
@@ -476,7 +480,8 @@ cleanup_tls_and_save_session (Connection_T conn, Socket_T socket)
 
 /* ============================================================================
  * Connection Add/Get/Remove API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * handle_existing_slot - Handle case when socket already exists in pool
@@ -489,7 +494,8 @@ cleanup_tls_and_save_session (Connection_T conn, Socket_T socket)
 static Connection_T
 handle_existing_slot (Connection_T conn, time_t now)
 {
-  /* Secure clear buffers on reuse to prevent data leakage (security.md Section 20) */
+  /* Secure clear buffers on reuse to prevent data leakage (security.md Section
+   * 20) */
   SocketBuf_secureclear (conn->inbuf);
   SocketBuf_secureclear (conn->outbuf);
   update_existing_slot (conn, now);
@@ -606,9 +612,11 @@ SocketPool_add (T pool, Socket_T socket)
   Connection_T conn;
   time_t now;
 
-  if (!pool || !socket) {
-    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_add");
-  }
+  if (!pool || !socket)
+    {
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_add");
+    }
   assert (pool);
   assert (socket);
 
@@ -652,7 +660,8 @@ get_unlocked (T pool, Socket_T socket, time_t now)
  * Returns: 1 if connection is valid (or no callback set), 0 if invalid
  * Thread-safe: Call with mutex held
  */
-static void remove_known_connection (T pool, Connection_T conn, Socket_T socket);
+static void remove_known_connection (T pool, Connection_T conn,
+                                     Socket_T socket);
 
 static int
 run_validation_callback_unlocked (T pool, Connection_T conn)
@@ -678,22 +687,26 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
 
   /* Re-validate: Check if connection still exists and matches */
   current_conn = find_slot (pool, Connection_socket (conn));
-  if (!current_conn || current_conn != conn) {
-    /* Already removed by another thread - assume handled */
-    if (!valid) {
-      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                       "Validation invalid but connection already removed");
+  if (!current_conn || current_conn != conn)
+    {
+      /* Already removed by another thread - assume handled */
+      if (!valid)
+        {
+          SocketLog_emitf (
+              SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+              "Validation invalid but connection already removed");
+        }
+      return 1; /* Treat as valid (gone) */
     }
-    return 1; /* Treat as valid (gone) */
-  }
 
   if (valid)
     return 1;
 
   /* Still invalid and present - remove it */
   pool->stats_validation_failures++;
-  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "Connection validation callback returned invalid - removing");
+  SocketLog_emitf (
+      SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+      "Connection validation callback returned invalid - removing");
   remove_known_connection (pool, conn, conn->socket);
   return 0;
 }
@@ -710,7 +723,8 @@ run_validation_callback_unlocked (T pool, Connection_T conn)
  * connection. If the callback returns 0, the connection is removed
  * from the pool and NULL is returned.
  */
-static void remove_known_connection (T pool, Connection_T conn, Socket_T socket);
+static void remove_known_connection (T pool, Connection_T conn,
+                                     Socket_T socket);
 
 Connection_T
 SocketPool_get (T pool, Socket_T socket)
@@ -718,9 +732,11 @@ SocketPool_get (T pool, Socket_T socket)
   Connection_T conn;
   time_t now;
 
-  if (!pool || !socket) {
-    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_get");
-  }
+  if (!pool || !socket)
+    {
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_get");
+    }
   assert (pool);
   assert (socket);
 
@@ -729,21 +745,26 @@ SocketPool_get (T pool, Socket_T socket)
   pthread_mutex_lock (&pool->mutex);
   conn = get_unlocked (pool, socket, now);
 
-  /* Run validation callback if connection found (now handles removal internally) */
-  if (conn) {
-    if (!run_validation_callback_unlocked (pool, conn)) {
-      /* Callback indicated invalid; re-check and remove if still present */
-      conn = find_slot (pool, socket);
-      if (conn) {
-        remove_known_connection (pool, conn, socket);
-      }
-      pthread_mutex_unlock (&pool->mutex);
-      return NULL;
+  /* Run validation callback if connection found (now handles removal
+   * internally) */
+  if (conn)
+    {
+      if (!run_validation_callback_unlocked (pool, conn))
+        {
+          /* Callback indicated invalid; re-check and remove if still present
+           */
+          conn = find_slot (pool, socket);
+          if (conn)
+            {
+              remove_known_connection (pool, conn, socket);
+            }
+          pthread_mutex_unlock (&pool->mutex);
+          return NULL;
+        }
+      /* Valid connection - update stats */
+      pool->stats_total_reused++;
+      SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
     }
-    /* Valid connection - update stats */
-    pool->stats_total_reused++;
-    SocketMetrics_increment (SOCKET_METRIC_POOL_CONNECTIONS_REUSED, 1);
-  }
 
   pthread_mutex_unlock (&pool->mutex);
 
@@ -845,10 +866,12 @@ remove_unlocked (T pool, Socket_T socket)
 void
 SocketPool_remove (T pool, Socket_T socket)
 {
-  if (!pool || !socket) {
-    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or socket in SocketPool_remove");
-    return;
-  }
+  if (!pool || !socket)
+    {
+      RAISE_POOL_MSG (SocketPool_Failed,
+                      "Invalid NULL pool or socket in SocketPool_remove");
+      return;
+    }
   assert (pool);
   assert (socket);
 
@@ -859,7 +882,8 @@ SocketPool_remove (T pool, Socket_T socket)
 
 /* ============================================================================
  * Idle Connection Cleanup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_timed_out - Check if time difference exceeds timeout
@@ -1009,10 +1033,12 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
   time_t now;
   size_t close_count;
 
-  if (!pool || !pool->cleanup_buffer) {
-    SOCKET_LOG_ERROR_MSG ("Invalid pool or missing cleanup_buffer in SocketPool_cleanup");
-    return;
-  }
+  if (!pool || !pool->cleanup_buffer)
+    {
+      SOCKET_LOG_ERROR_MSG (
+          "Invalid pool or missing cleanup_buffer in SocketPool_cleanup");
+      return;
+    }
   assert (pool);
   assert (pool->cleanup_buffer);
 
@@ -1027,7 +1053,8 @@ SocketPool_cleanup (T pool, time_t idle_timeout)
 
 /* ============================================================================
  * Connection Accessor Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Connection_socket - Get connection's socket
@@ -1143,7 +1170,8 @@ Connection_created_at (const Connection_T conn)
 
 /* ============================================================================
  * Connection Health Check
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * check_socket_error - Check socket for errors via SO_ERROR
@@ -1166,7 +1194,6 @@ check_socket_error (int fd)
 
   return error;
 }
-
 
 /**
  * check_socket_health - Check basic socket health (error and connected state)
@@ -1215,9 +1242,12 @@ SocketPool_check_connection (T pool, Connection_T conn)
 {
   time_t idle_timeout;
 
-  if (!pool || !conn) {
-    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL pool or conn in SocketPool_check_connection");
-  }
+  if (!pool || !conn)
+    {
+      RAISE_POOL_MSG (
+          SocketPool_Failed,
+          "Invalid NULL pool or conn in SocketPool_check_connection");
+    }
   assert (pool);
   assert (conn);
 
@@ -1230,7 +1260,9 @@ SocketPool_check_connection (T pool, Connection_T conn)
   pool->stats_health_checks++;
   idle_timeout = pool->idle_timeout_sec;
   time_t check_now = safe_time ();
-  int is_stale = (idle_timeout > 0 && is_timed_out (check_now, conn->last_activity, idle_timeout));
+  int is_stale
+      = (idle_timeout > 0
+         && is_timed_out (check_now, conn->last_activity, idle_timeout));
   if (is_stale)
     {
       pool->stats_health_failures++;

@@ -119,8 +119,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     ctx = SocketTLSContext_new_client (NULL);
 
     /* Parse protocols from fuzz data */
-    parse_protocols_from_fuzz (proto_data, proto_size, 
-                               (const char ***)&protos, (size_t *)&count);
+    parse_protocols_from_fuzz (proto_data, proto_size, (const char ***)&protos,
+                               (size_t *)&count);
 
     if (ctx && protos && count > 0)
       {
@@ -128,7 +128,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           {
           case 0:
             /* Test set_alpn_protos with fuzzed protocol list */
-            SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx, 
+            SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
                                               (const char **)protos, count);
             break;
 
@@ -137,7 +137,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             if (count >= 1)
               {
                 const char *single[1] = { (const char *)protos[0] };
-                SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx, 
+                SocketTLSContext_set_alpn_protos ((SocketTLSContext_T)ctx,
                                                   single, 1);
               }
             break;
@@ -153,10 +153,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
   }
-  EXCEPT (SocketTLS_Failed)
-  {
-    /* Expected for invalid protocols */
-  }
+  EXCEPT (SocketTLS_Failed) { /* Expected for invalid protocols */ }
   FINALLY
   {
     if (protos)
@@ -185,4 +182,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

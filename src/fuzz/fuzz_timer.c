@@ -67,7 +67,8 @@ read_u16 (const uint8_t *p)
  * execute_op - Execute a single timer operation
  */
 static void
-execute_op (SocketPoll_T poll, uint8_t op, const uint8_t *args, size_t args_len)
+execute_op (SocketPoll_T poll, uint8_t op, const uint8_t *args,
+            size_t args_len)
 {
   switch (op % TIMER_OP_COUNT)
     {
@@ -108,9 +109,8 @@ execute_op (SocketPoll_T poll, uint8_t op, const uint8_t *args, size_t args_len)
 
         TRY
         {
-          SocketTimer_T t
-              = SocketTimer_add_repeating (poll, interval_ms, timer_callback,
-                                           NULL);
+          SocketTimer_T t = SocketTimer_add_repeating (poll, interval_ms,
+                                                       timer_callback, NULL);
           if (t)
             {
               timers[timer_count++] = t;
@@ -142,10 +142,7 @@ execute_op (SocketPoll_T poll, uint8_t op, const uint8_t *args, size_t args_len)
           timers[timer_count - 1] = NULL;
           timer_count--;
         }
-        EXCEPT (SocketTimer_Failed)
-        {
-          /* Timer already fired or invalid */
-        }
+        EXCEPT (SocketTimer_Failed) { /* Timer already fired or invalid */ }
         END_TRY;
       }
       break;
@@ -163,10 +160,7 @@ execute_op (SocketPoll_T poll, uint8_t op, const uint8_t *args, size_t args_len)
           int64_t remaining = SocketTimer_remaining (poll, timers[idx]);
           (void)remaining;
         }
-        EXCEPT (SocketTimer_Failed)
-        {
-          /* Timer already fired or invalid */
-        }
+        EXCEPT (SocketTimer_Failed) { /* Timer already fired or invalid */ }
         END_TRY;
       }
       break;
@@ -233,30 +227,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       {
         if (timers[j])
           {
-            TRY
-            {
-              SocketTimer_cancel (poll, timers[j]);
-            }
-            EXCEPT (SocketTimer_Failed)
-            {
-              /* Already fired */
-            }
+            TRY { SocketTimer_cancel (poll, timers[j]); }
+            EXCEPT (SocketTimer_Failed) { /* Already fired */ }
             END_TRY;
           }
       }
   }
-  EXCEPT (Arena_Failed)
-  {
-    /* Memory allocation failure */
-  }
-  EXCEPT (SocketPoll_Failed)
-  {
-    /* Poll operation failure */
-  }
-  EXCEPT (SocketTimer_Failed)
-  {
-    /* Timer operation failure */
-  }
+  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
+  EXCEPT (SocketPoll_Failed) { /* Poll operation failure */ }
+  EXCEPT (SocketTimer_Failed) { /* Timer operation failure */ }
   FINALLY
   {
     if (poll)
@@ -268,4 +247,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

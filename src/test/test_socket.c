@@ -31,8 +31,8 @@
 #include "core/SocketUtil.h"
 #include "dns/SocketDNS.h"
 #include "socket/Socket.h"
-#include "socket/SocketCommon.h"
 #include "socket/SocketCommon-private.h"
+#include "socket/SocketCommon.h"
 #include "test/Test.h"
 
 #define TEST_UNIX_SOCKET_PATH "/tmp/test_socket_unix"
@@ -1512,8 +1512,8 @@ TEST (socket_sendfile_with_nonzero_offset)
   int file_fd = -1;
   const char *test_file = "/tmp/socket_sendfile_offset_test.txt";
   const char *test_data = "SKIP_THIS_PART_SEND_THIS_PART";
-  size_t skip_len = 15;  /* "SKIP_THIS_PART_" */
-  size_t send_len = 14;  /* "SEND_THIS_PART" */
+  size_t skip_len = 15; /* "SKIP_THIS_PART_" */
+  size_t send_len = 14; /* "SEND_THIS_PART" */
   size_t total_len = skip_len + send_len;
 
   TRY
@@ -1535,7 +1535,7 @@ TEST (socket_sendfile_with_nonzero_offset)
     accepted = Socket_accept (server);
 
     /* Transfer file starting from non-zero offset */
-    off_t offset = (off_t)skip_len;  /* Start after "SKIP_THIS_PART_" */
+    off_t offset = (off_t)skip_len; /* Start after "SKIP_THIS_PART_" */
     ssize_t sent = Socket_sendfile (client, file_fd, &offset, send_len);
     ASSERT (sent > 0);
 
@@ -2477,7 +2477,7 @@ TEST(socket_bind_async_basic)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
-        SocketDNS_Request_T req = Socket_bind_async(dns, socket, "127.0.0.1", 0);
+        Request_T req = Socket_bind_async(dns, socket, "127.0.0.1", 0);
         ASSERT_NOT_NULL(req);
         usleep(100000);
         SocketDNS_check(dns);
@@ -2504,7 +2504,7 @@ TEST(socket_bind_async_wildcard)
     Socket_T socket = Socket_new(AF_INET, SOCK_STREAM, 0);
 
     TRY
-        SocketDNS_Request_T req = Socket_bind_async(dns, socket, NULL, 0);
+        Request_T req = Socket_bind_async(dns, socket, NULL, 0);
         ASSERT_NOT_NULL(req);
         usleep(100000);
         SocketDNS_check(dns);
@@ -2539,7 +2539,7 @@ TEST(socket_connect_async_basic)
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         int port = ntohs(addr.sin_port);
         
-        SocketDNS_Request_T req = Socket_connect_async(dns, client, "127.0.0.1", port);
+        Request_T req = Socket_connect_async(dns, client, "127.0.0.1", port);
         ASSERT_NOT_NULL(req);
         usleep(100000);
         SocketDNS_check(dns);
@@ -2574,7 +2574,7 @@ TEST(socket_connect_async_localhost)
         getsockname(Socket_fd(server), (struct sockaddr *)&addr, &len);
         int port = ntohs(addr.sin_port);
         
-        SocketDNS_Request_T req = Socket_connect_async(dns, client, "localhost", port);
+        Request_T req = Socket_connect_async(dns, client, "localhost", port);
         ASSERT_NOT_NULL(req);
         usleep(200000);
         SocketDNS_check(dns);
@@ -2856,7 +2856,7 @@ TEST (socket_bind_async_wildcard_uses_ai_passive)
 {
   SocketDNS_T dns = NULL;
   Socket_T socket = NULL;
-  SocketDNS_Request_T req;
+  Request_T req;
   struct addrinfo *res = NULL;
 
   TRY dns = SocketDNS_new ();
@@ -2921,10 +2921,7 @@ TEST (socket_keepalive_set_get)
     ASSERT (count > 0);
 #endif
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -2944,10 +2941,7 @@ TEST (socket_keepalive_disabled_returns_zeros)
     ASSERT_EQ (0, interval);
     ASSERT_EQ (0, count);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -2982,10 +2976,7 @@ TEST (socket_nodelay_set_get)
     ASSERT_EQ (nodelay, 0);
 #endif
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3004,10 +2995,7 @@ TEST (socket_rcvbuf_set_get)
     /* Kernel may double the size */
     ASSERT (size >= 32768);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3026,10 +3014,7 @@ TEST (socket_sndbuf_set_get)
     /* Kernel may double the size */
     ASSERT (size >= 32768);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3083,10 +3068,7 @@ TEST (socket_fastopen_set_get)
     int result = Socket_getfastopen (socket);
     ASSERT (result >= 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* TCP_FASTOPEN may not be supported */
-  }
+  EXCEPT (Socket_Failed) { /* TCP_FASTOPEN may not be supported */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3105,10 +3087,7 @@ TEST (socket_usertimeout_set_get)
     /* Should be approximately 5000ms or 0 if not supported */
     ASSERT (timeout == 5000 || timeout == 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* TCP_USER_TIMEOUT may not be supported */
-  }
+  EXCEPT (Socket_Failed) { /* TCP_USER_TIMEOUT may not be supported */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3146,10 +3125,7 @@ TEST (socket_shutdown_read)
         Socket_shutdown (accepted, SOCKET_SHUT_RD);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected */
-  }
+  EXCEPT (Socket_Failed) { /* Expected */ }
   END_TRY;
 
   if (accepted)
@@ -3190,10 +3166,7 @@ TEST (socket_shutdown_write)
         Socket_shutdown (accepted, SOCKET_SHUT_WR);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected */
-  }
+  EXCEPT (Socket_Failed) { /* Expected */ }
   END_TRY;
 
   if (accepted)
@@ -3234,10 +3207,7 @@ TEST (socket_shutdown_both)
         Socket_shutdown (accepted, SOCKET_SHUT_RDWR);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected */
-  }
+  EXCEPT (Socket_Failed) { /* Expected */ }
   END_TRY;
 
   if (accepted)
@@ -3351,10 +3321,7 @@ TEST (socket_gettimeout)
     int timeout = Socket_gettimeout (socket);
     ASSERT_EQ (5, timeout);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3394,10 +3361,7 @@ TEST (socket_setcloexec)
     /* Disable close-on-exec */
     Socket_setcloexec (socket, 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some platforms */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some platforms */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -3813,14 +3777,8 @@ TEST (socket_sendv_recvv_basic)
           }
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected */
-  }
-  EXCEPT (Socket_Closed)
-  {
-    /* Expected */
-  }
+  EXCEPT (Socket_Failed) { /* Expected */ }
+  EXCEPT (Socket_Closed) { /* Expected */ }
   END_TRY;
 
   if (accepted)
@@ -4010,7 +3968,8 @@ TEST (socket_getrcvbuf_getsndbuf_on_udp)
   Socket_free (&udp);
 }
 
-/* ==================== SocketCommon 100% Coverage Tests ==================== */
+/* ==================== SocketCommon 100% Coverage Tests ====================
+ */
 
 /* Hostname Validation Coverage Tests */
 
@@ -4057,11 +4016,13 @@ TEST (socketcommon_validate_hostname_internal_no_exceptions)
   memset (long_hostname, 'a', sizeof (long_hostname) - 1);
   long_hostname[sizeof (long_hostname) - 1] = '\0';
 
-  int result = socketcommon_validate_hostname_internal (long_hostname, 0, Socket_Failed);
+  int result = socketcommon_validate_hostname_internal (long_hostname, 0,
+                                                        Socket_Failed);
   ASSERT_EQ (-1, result);
 
   /* Test invalid characters without exceptions */
-  result = socketcommon_validate_hostname_internal ("host name", 0, Socket_Failed);
+  result = socketcommon_validate_hostname_internal ("host name", 0,
+                                                    Socket_Failed);
   ASSERT_EQ (-1, result);
 }
 
@@ -4100,26 +4061,28 @@ TEST (socketcommon_format_bind_error_eafnosupport)
 
 TEST (socketcommon_format_bind_error_default)
 {
-  errno = EINVAL;  /* Some other error */
+  errno = EINVAL; /* Some other error */
   SocketCommon_format_bind_error ("127.0.0.1", 8080);
 }
 
 TEST (socketcommon_format_bind_error_null_host)
 {
   errno = EADDRINUSE;
-  SocketCommon_format_bind_error (NULL, 8080);  /* Should use "any" */
+  SocketCommon_format_bind_error (NULL, 8080); /* Should use "any" */
 }
 
 TEST (socketcommon_handle_bind_error_eaddrinuse)
 {
-  int result = SocketCommon_handle_bind_error (EADDRINUSE, "127.0.0.1:8080", Socket_Failed);
-  ASSERT_EQ (-1, result);  /* Returns -1, doesn't raise */
+  int result = SocketCommon_handle_bind_error (EADDRINUSE, "127.0.0.1:8080",
+                                               Socket_Failed);
+  ASSERT_EQ (-1, result); /* Returns -1, doesn't raise */
 }
 
 TEST (socketcommon_handle_bind_error_eaddrnotavail)
 {
-  int result = SocketCommon_handle_bind_error (EADDRNOTAVAIL, "192.168.255.255:8080", Socket_Failed);
-  ASSERT_EQ (-1, result);  /* Returns -1, doesn't raise */
+  int result = SocketCommon_handle_bind_error (
+      EADDRNOTAVAIL, "192.168.255.255:8080", Socket_Failed);
+  ASSERT_EQ (-1, result); /* Returns -1, doesn't raise */
 }
 
 TEST (socketcommon_handle_bind_error_eacces)
@@ -4148,7 +4111,10 @@ TEST (socketcommon_handle_bind_error_other)
 {
   volatile int raised = 0;
 
-  TRY { SocketCommon_handle_bind_error (EINVAL, "127.0.0.1:8080", Socket_Failed); }
+  TRY
+  {
+    SocketCommon_handle_bind_error (EINVAL, "127.0.0.1:8080", Socket_Failed);
+  }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
@@ -4191,7 +4157,7 @@ TEST (socketcommon_advance_iov_too_far)
   iov[0].iov_base = buf;
   iov[0].iov_len = 10;
 
-  TRY { SocketCommon_advance_iov (iov, 1, 20); }  /* 20 > 10 */
+  TRY { SocketCommon_advance_iov (iov, 1, 20); } /* 20 > 10 */
   EXCEPT (SocketCommon_Failed) { raised = 1; }
   END_TRY;
 
@@ -4211,7 +4177,7 @@ TEST (socketcommon_sync_iov_progress_basic)
   original[1].iov_len = 100;
 
   /* Setup copy with partial progress in buf1 */
-  copy[0].iov_base = buf1 + 50;  /* Advanced 50 bytes */
+  copy[0].iov_base = buf1 + 50; /* Advanced 50 bytes */
   copy[0].iov_len = 50;
   copy[1].iov_base = buf2;
   copy[1].iov_len = 100;
@@ -4221,7 +4187,7 @@ TEST (socketcommon_sync_iov_progress_basic)
   /* Original should now reflect progress */
   ASSERT_EQ (50, original[0].iov_len);
   ASSERT_EQ (buf1 + 50, original[0].iov_base);
-  ASSERT_EQ (100, original[1].iov_len);  /* Unchanged */
+  ASSERT_EQ (100, original[1].iov_len); /* Unchanged */
 }
 
 TEST (socketcommon_sync_iov_progress_null_original)
@@ -4396,7 +4362,8 @@ TEST (socketcommon_join_multicast_invalid_group)
   TRY
   {
     base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
-    SocketCommon_join_multicast (base, "not.a.valid.multicast", NULL, Socket_Failed);
+    SocketCommon_join_multicast (base, "not.a.valid.multicast", NULL,
+                                 Socket_Failed);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4415,13 +4382,11 @@ TEST (socketcommon_leave_multicast_ipv4)
   TRY
   {
     base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
-    /* Try to leave a group we didn't join - will fail but covers the code path */
+    /* Try to leave a group we didn't join - will fail but covers the code path
+     */
     SocketCommon_leave_multicast (base, "224.0.0.1", NULL, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected - can't leave group not joined */
-  }
+  EXCEPT (Socket_Failed) { /* Expected - can't leave group not joined */ }
   END_TRY;
 
   if (base)
@@ -4437,12 +4402,10 @@ TEST (socketcommon_join_multicast_with_interface)
   {
     base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
     /* Try with explicit interface */
-    SocketCommon_join_multicast (base, "224.0.0.1", "127.0.0.1", Socket_Failed);
+    SocketCommon_join_multicast (base, "224.0.0.1", "127.0.0.1",
+                                 Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected - may fail for various reasons */
-  }
+  EXCEPT (Socket_Failed) { /* Expected - may fail for various reasons */ }
   END_TRY;
 
   if (base)
@@ -4459,7 +4422,8 @@ TEST (socketcommon_join_multicast_invalid_interface)
   {
     base = SocketCommon_new_base (AF_INET, SOCK_DGRAM, 0);
     /* Invalid interface address */
-    SocketCommon_join_multicast (base, "224.0.0.1", "not.an.ip", Socket_Failed);
+    SocketCommon_join_multicast (base, "224.0.0.1", "not.an.ip",
+                                 Socket_Failed);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4482,10 +4446,7 @@ TEST (socketcommon_set_ttl_ipv4)
     base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
     SocketCommon_set_ttl (base, AF_INET, 64, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some systems */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
   END_TRY;
 
   if (base)
@@ -4502,10 +4463,7 @@ TEST (socketcommon_set_ttl_ipv6)
     base = SocketCommon_new_base (AF_INET6, SOCK_STREAM, 0);
     SocketCommon_set_ttl (base, AF_INET6, 64, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some systems */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
   END_TRY;
 
   if (base)
@@ -4521,7 +4479,8 @@ TEST (socketcommon_set_ttl_invalid_family)
   TRY
   {
     base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
-    SocketCommon_set_ttl (base, AF_UNIX, 64, Socket_Failed);  /* Invalid family for TTL */
+    SocketCommon_set_ttl (base, AF_UNIX, 64,
+                          Socket_Failed); /* Invalid family for TTL */
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4551,10 +4510,7 @@ TEST (socketbase_domain_valid)
     int domain = SocketBase_domain (base);
     ASSERT_EQ (AF_INET, domain);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -4583,10 +4539,7 @@ TEST (socketbase_set_timeouts_valid)
     ASSERT_EQ (3000, retrieved->dns_timeout_ms);
     ASSERT_EQ (10000, retrieved->operation_timeout_ms);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -4611,10 +4564,7 @@ TEST (socketbase_set_timeouts_null_timeouts)
     /* Should not crash with NULL timeouts */
     SocketBase_set_timeouts (base, NULL);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -4634,8 +4584,9 @@ TEST (socketcommon_resolve_address_invalid_host)
 
   TRY
   {
-    SocketCommon_resolve_address ("this.host.definitely.does.not.exist.invalid",
-                                  80, &hints, &res, Socket_Failed, AF_UNSPEC, 1);
+    SocketCommon_resolve_address (
+        "this.host.definitely.does.not.exist.invalid", 80, &hints, &res,
+        Socket_Failed, AF_UNSPEC, 1);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4653,13 +4604,14 @@ TEST (socketcommon_resolve_address_family_mismatch)
   volatile int raised = 0;
 
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
-  hints.ai_family = AF_INET;  /* Force IPv4 only */
+  hints.ai_family = AF_INET; /* Force IPv4 only */
 
   TRY
   {
     /* Try to resolve IPv6 address with IPv4-only hints */
     SocketCommon_resolve_address ("::1", 80, &hints, &res, Socket_Failed,
-                                  AF_INET6, 1);  /* Expect IPv6 but hints say IPv4 */
+                                  AF_INET6,
+                                  1); /* Expect IPv6 but hints say IPv4 */
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4679,8 +4631,9 @@ TEST (socketcommon_resolve_address_no_exceptions)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
 
   /* Call with use_exceptions=0 */
-  int result = SocketCommon_resolve_address ("this.host.definitely.does.not.exist.invalid",
-                                             80, &hints, &res, Socket_Failed, AF_UNSPEC, 0);
+  int result = SocketCommon_resolve_address (
+      "this.host.definitely.does.not.exist.invalid", 80, &hints, &res,
+      Socket_Failed, AF_UNSPEC, 0);
   ASSERT_EQ (-1, result);
   if (res)
     freeaddrinfo (res);
@@ -4695,14 +4648,14 @@ TEST (socketcommon_reverse_lookup_failure)
   volatile int raised = 0;
 
   memset (&addr, 0, sizeof (addr));
-  addr.sin_family = 255;  /* Invalid family */
+  addr.sin_family = 255; /* Invalid family */
   addr.sin_port = htons (80);
 
   TRY
   {
-    SocketCommon_reverse_lookup ((struct sockaddr *)&addr, sizeof (addr),
-                                 host, sizeof (host), serv, sizeof (serv),
-                                 NI_NUMERICHOST | NI_NUMERICSERV, Socket_Failed);
+    SocketCommon_reverse_lookup (
+        (struct sockaddr *)&addr, sizeof (addr), host, sizeof (host), serv,
+        sizeof (serv), NI_NUMERICHOST | NI_NUMERICSERV, Socket_Failed);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -4761,10 +4714,7 @@ TEST (socketcommon_set_nonblock_disable)
     /* Disable non-blocking - covers the else branch */
     SocketCommon_set_nonblock (base, false, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -4782,10 +4732,7 @@ TEST (socketcommon_set_cloexec_fd)
     SocketCommon_set_cloexec_fd (fd, true, Socket_Failed);
     SocketCommon_set_cloexec_fd (fd, false, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   close (fd);
@@ -4802,10 +4749,7 @@ TEST (socketcommon_setcloexec_with_error)
     SocketCommon_setcloexec_with_error (base, 1, Socket_Failed);
     SocketCommon_setcloexec_with_error (base, 0, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -4820,7 +4764,7 @@ TEST (socketcommon_cidr_match_partial_byte_mask)
   /* These tests exercise the partial byte masking code path */
   int result;
   result = SocketCommon_cidr_match ("192.168.1.1", "192.168.1.0/25");
-  ASSERT (result >= 0);  /* Just verify no error */
+  ASSERT (result >= 0); /* Just verify no error */
   result = SocketCommon_cidr_match ("192.168.1.127", "192.168.1.0/25");
   ASSERT (result >= 0);
   result = SocketCommon_cidr_match ("192.168.1.128", "192.168.1.0/25");
@@ -4886,7 +4830,7 @@ TEST (socketcommon_copy_addrinfo_chain)
   struct addrinfo *copy = NULL;
 
   memset (&hints, 0, sizeof (hints));
-  hints.ai_family = AF_UNSPEC;  /* May return multiple results */
+  hints.ai_family = AF_UNSPEC; /* May return multiple results */
   hints.ai_socktype = SOCK_STREAM;
 
   int result = getaddrinfo ("localhost", "80", &hints, &res);
@@ -4988,10 +4932,7 @@ TEST (socketcommon_get_socket_family)
     int family = SocketCommon_get_socket_family (base);
     ASSERT_EQ (AF_INET, family);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -5009,10 +4950,7 @@ TEST (socketcommon_get_family_with_raise)
     int family = SocketCommon_get_family (base, true, Socket_Failed);
     ASSERT_EQ (AF_INET6, family);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -5039,12 +4977,10 @@ TEST (socketcommon_try_bind_resolved_addresses_success)
   {
     base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
     /* First bind should succeed */
-    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET, Socket_Failed);
+    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET,
+                                              Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail if address already in use */
-  }
+  EXCEPT (Socket_Failed) { /* May fail if address already in use */ }
   END_TRY;
 
   /* Clean up */
@@ -5067,10 +5003,7 @@ TEST (socketcommon_new_base_and_free)
     ASSERT (SocketBase_fd (base) >= 0);
     ASSERT_NOT_NULL (SocketBase_arena (base));
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (base)
@@ -5138,14 +5071,15 @@ TEST (socketcommon_try_bind_address_failure)
 
   memset (&addr, 0, sizeof (addr));
   addr.sin_family = AF_INET;
-  addr.sin_port = htons (1);  /* Privileged port */
+  addr.sin_port = htons (1); /* Privileged port */
   inet_pton (AF_INET, "127.0.0.1", &addr.sin_addr);
 
   TRY
   {
     base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
     /* Try to bind to privileged port - should fail for non-root */
-    SocketCommon_try_bind_address (base, (struct sockaddr *)&addr, sizeof (addr), Socket_Failed);
+    SocketCommon_try_bind_address (base, (struct sockaddr *)&addr,
+                                   sizeof (addr), Socket_Failed);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -5177,7 +5111,8 @@ TEST (socketcommon_try_bind_resolved_addresses_all_fail)
   {
     /* First socket binds successfully */
     base1 = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
-    SocketCommon_try_bind_resolved_addresses (base1, res, AF_INET, Socket_Failed);
+    SocketCommon_try_bind_resolved_addresses (base1, res, AF_INET,
+                                              Socket_Failed);
 
     /* Get the port that was assigned */
     struct sockaddr_storage local;
@@ -5200,7 +5135,8 @@ TEST (socketcommon_try_bind_resolved_addresses_all_fail)
 
     /* Second socket tries to bind to same address - should fail */
     base2 = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
-    SocketCommon_try_bind_resolved_addresses (base2, res, AF_INET, Socket_Failed);
+    SocketCommon_try_bind_resolved_addresses (base2, res, AF_INET,
+                                              Socket_Failed);
   }
   EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
@@ -5246,7 +5182,7 @@ TEST (socketcommon_copy_addrinfo_empty_addr)
   memset (&src, 0, sizeof (src));
   src.ai_family = AF_INET;
   src.ai_socktype = SOCK_STREAM;
-  src.ai_addr = NULL;  /* NULL address */
+  src.ai_addr = NULL; /* NULL address */
   src.ai_addrlen = 0;
   src.ai_next = NULL;
 
@@ -5266,13 +5202,11 @@ TEST (socketcommon_leave_multicast_ipv6)
   TRY
   {
     base = SocketCommon_new_base (AF_INET6, SOCK_DGRAM, 0);
-    /* Try to leave a group we didn't join - will fail but covers IPv6 leave path */
+    /* Try to leave a group we didn't join - will fail but covers IPv6 leave
+     * path */
     SocketCommon_leave_multicast (base, "ff02::1", NULL, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected - can't leave group not joined */
-  }
+  EXCEPT (Socket_Failed) { /* Expected - can't leave group not joined */ }
   END_TRY;
 
   if (base)
@@ -5286,7 +5220,7 @@ TEST (socketcommon_iov_overflow_detection)
   char buf1[10], buf2[10];
 
   iov[0].iov_base = buf1;
-  iov[0].iov_len = SIZE_MAX;  /* Will cause overflow */
+  iov[0].iov_len = SIZE_MAX; /* Will cause overflow */
   iov[1].iov_base = buf2;
   iov[1].iov_len = 1;
 
@@ -5313,7 +5247,8 @@ TEST (socketcommon_get_family_fallback)
     addr.sin_addr.s_addr = htonl (INADDR_ANY);
     addr.sin_port = 0;
 
-    int result = bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr));
+    int result
+        = bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr));
     if (result == 0)
       {
         /* Now get_socket_family should work via getsockname */
@@ -5321,10 +5256,7 @@ TEST (socketcommon_get_family_fallback)
         ASSERT_EQ (AF_INET, family);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail */
-  }
+  EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
 
   if (base)
@@ -5343,10 +5275,7 @@ TEST (socketcommon_update_local_endpoint_unbound)
     SocketCommon_update_local_endpoint (base);
     /* Local addr should be NULL or set to defaults */
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail */
-  }
+  EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
 
   if (base)
@@ -5395,9 +5324,11 @@ TEST (socketcommon_join_multicast_unix_socket)
 TEST (socketcommon_validate_hostname_null)
 {
   /* NULL hostname should be valid (any address) */
-  int result = socketcommon_validate_hostname_internal (NULL, 0, Socket_Failed);
+  int result
+      = socketcommon_validate_hostname_internal (NULL, 0, Socket_Failed);
   /* NULL is valid for bind - returns success */
-  ASSERT (result >= 0 || result == -1);  /* May accept or reject depending on impl */
+  ASSERT (result >= 0
+          || result == -1); /* May accept or reject depending on impl */
 }
 
 TEST (socketcommon_try_bind_family_mismatch)
@@ -5419,12 +5350,10 @@ TEST (socketcommon_try_bind_family_mismatch)
     /* Create IPv6 socket but try to bind IPv4 address */
     base = SocketCommon_new_base (AF_INET6, SOCK_STREAM, 0);
     /* This should skip the address because family doesn't match */
-    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET6, Socket_Failed);
+    SocketCommon_try_bind_resolved_addresses (base, res, AF_INET6,
+                                              Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected - no matching address found */
-  }
+  EXCEPT (Socket_Failed) { /* Expected - no matching address found */ }
   END_TRY;
 
   freeaddrinfo (res);
@@ -5441,8 +5370,8 @@ TEST (socketcommon_resolve_address_family_no_match)
   SocketCommon_setup_hints (&hints, SOCK_STREAM, 0);
 
   /* Resolve with use_exceptions=0 and require IPv6, but get IPv4 only */
-  int result = SocketCommon_resolve_address ("127.0.0.1", 80, &hints, &res, Socket_Failed,
-                                             AF_INET6, 0);
+  int result = SocketCommon_resolve_address ("127.0.0.1", 80, &hints, &res,
+                                             Socket_Failed, AF_INET6, 0);
   /* Should return -1 for no matching family, and res is freed on error */
   ASSERT_EQ (-1, result);
   /* res is NULL after validation failure - the function frees it */
@@ -5462,10 +5391,7 @@ TEST (socketcommon_set_option_successful)
     SocketCommon_setreuseport (base, Socket_Failed);
     SocketCommon_settimeout (base, 5, Socket_Failed);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some systems */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
   END_TRY;
 
   if (base)
@@ -5492,10 +5418,11 @@ TEST (socketcommon_sanitize_timeout)
   int result = socketcommon_sanitize_timeout (5000);
   ASSERT_EQ (5000, result);
 
-  result = socketcommon_sanitize_timeout (-1);  /* Should be clamped or use default */
+  result = socketcommon_sanitize_timeout (
+      -1); /* Should be clamped or use default */
   ASSERT (result >= 0);
 
-  result = socketcommon_sanitize_timeout (0);  /* Should be allowed */
+  result = socketcommon_sanitize_timeout (0); /* Should be allowed */
   ASSERT_EQ (0, result);
 }
 
@@ -5509,7 +5436,7 @@ TEST (socketcommon_cache_endpoint_with_invalid_addr)
 
   /* Setup invalid address family to trigger getnameinfo failure */
   memset (&addr, 0, sizeof (addr));
-  addr.sin_family = 255;  /* Invalid family */
+  addr.sin_family = 255; /* Invalid family */
   addr.sin_port = htons (8080);
 
   int result = SocketCommon_cache_endpoint (arena, (struct sockaddr *)&addr,
@@ -5528,29 +5455,27 @@ TEST (socketcommon_update_local_endpoint_bound)
   TRY
   {
     base = SocketCommon_new_base (AF_INET, SOCK_STREAM, 0);
-    
+
     /* Bind to get a local endpoint */
     struct sockaddr_in addr;
     memset (&addr, 0, sizeof (addr));
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = htonl (INADDR_LOOPBACK);
     addr.sin_port = 0;
-    
-    if (bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr)) == 0)
+
+    if (bind (SocketBase_fd (base), (struct sockaddr *)&addr, sizeof (addr))
+        == 0)
       {
         /* Update should succeed and cache the endpoint */
         SocketCommon_update_local_endpoint (base);
-        
+
         char *local = SocketBase_localaddr (base);
         int port = SocketBase_localport (base);
         ASSERT_NOT_NULL (local);
         ASSERT (port > 0);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail */
-  }
+  EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
 
   if (base)
@@ -5578,10 +5503,7 @@ TEST (socketcommon_alloc_iov_copy_basic)
     /* Free copy - uses malloc internally */
     free (copy);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail */
-  }
+  EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
 }
 
@@ -5606,10 +5528,7 @@ TEST (socket_setbandwidth_enable_disable)
     Socket_setbandwidth (socket, 0);
     ASSERT_EQ (0, Socket_getbandwidth (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&socket);
@@ -5629,10 +5548,7 @@ TEST (socket_getbandwidth_returns_configured_value)
     Socket_setbandwidth (socket, 1000000);
     ASSERT_EQ (1000000, Socket_getbandwidth (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&socket);
@@ -5658,10 +5574,7 @@ TEST (socket_setbandwidth_reconfigures_existing_limiter)
     Socket_setbandwidth (socket, 5000);
     ASSERT_EQ (5000, Socket_getbandwidth (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&socket);
@@ -5690,10 +5603,7 @@ TEST (socket_send_limited_without_limit_behaves_as_send)
     ssize_t received = Socket_recv (socket2, buf, sizeof (buf));
     ASSERT (received > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -5726,10 +5636,7 @@ TEST (socket_send_limited_with_limit_partial_send)
     ssize_t received = Socket_recv (socket2, buf, sizeof (buf));
     ASSERT (received > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -5761,10 +5668,7 @@ TEST (socket_recv_limited_without_limit_behaves_as_recv)
     ssize_t received = Socket_recv_limited (socket2, buf, sizeof (buf));
     ASSERT (received > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -5797,10 +5701,7 @@ TEST (socket_recv_limited_with_limit)
     ssize_t received = Socket_recv_limited (socket2, buf, sizeof (buf));
     ASSERT (received > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -5836,10 +5737,7 @@ TEST (socket_bandwidth_wait_ms_with_limit)
     int64_t wait = Socket_bandwidth_wait_ms (socket, 100);
     ASSERT (wait >= 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&socket);
@@ -5962,10 +5860,7 @@ TEST (socket_listen_large_backlog_clamps_to_max)
     /* If we get here, it worked (value was clamped) */
     ASSERT (Socket_islistening (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&socket);
@@ -6071,10 +5966,7 @@ TEST (socket_bind_unix_abstract_namespace)
     /* Should succeed - abstract namespace doesn't create file */
     ASSERT (Socket_isbound (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some systems */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
   END_TRY;
 
   Socket_free (&socket);
@@ -6101,10 +5993,7 @@ TEST (socket_connect_unix_abstract_namespace)
     if (accepted)
       Socket_free (&accepted);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some systems */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some systems */ }
   END_TRY;
 
   Socket_free (&server);
@@ -6144,7 +6033,7 @@ TEST (socket_bind_async_cancel_basic)
   setup_signals ();
   SocketDNS_T dns = NULL;
   Socket_T socket = NULL;
-  volatile SocketDNS_Request_T req = NULL;
+  volatile Request_T req = NULL;
 
   TRY
   {
@@ -6161,10 +6050,7 @@ TEST (socket_bind_async_cancel_basic)
     Socket_bind_async_cancel (dns, req);
     req = NULL; /* Prevent double-cancel */
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail */
-  }
+  EXCEPT (Socket_Failed) { /* May fail */ }
   END_TRY;
 
   if (req)
@@ -6188,10 +6074,7 @@ TEST (socket_bind_async_cancel_null_request_safe)
     /* Cancel with NULL request should be safe */
     Socket_bind_async_cancel (dns, NULL);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   if (dns)
@@ -6233,10 +6116,7 @@ TEST (socket_getlocaladdr_after_bind)
     /* Should be "127.0.0.1" or similar */
     ASSERT (strlen (local) > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   Socket_free (&socket);
@@ -6255,10 +6135,7 @@ TEST (socket_getlocalport_after_bind)
     /* Port 0 means kernel assigns - should be > 0 after bind */
     ASSERT (port > 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   Socket_free (&socket);
@@ -6303,10 +6180,7 @@ TEST (socket_bind_eaddrinuse)
     /* Try to bind second socket to same port - should fail with EADDRINUSE */
     Socket_bind (socket2, "127.0.0.1", port);
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   /* Note: bind may succeed due to OS differences, so we don't assert raised */
@@ -6343,10 +6217,7 @@ TEST (socket_isconnected_caches_peer_info)
     const char *peer = Socket_getpeeraddr (client);
     ASSERT_NOT_NULL (peer);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   Socket_free (&server);
@@ -6379,10 +6250,7 @@ TEST (socket_send_limited_rate_limited_returns_zero)
     /* Should be 0 (rate limited) or positive (if some tokens available) */
     ASSERT (sent2 >= 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -6420,10 +6288,7 @@ TEST (socket_recv_limited_rate_limited_returns_zero)
     ssize_t recv2 = Socket_recv_limited (socket2, buf, sizeof (buf));
     ASSERT (recv2 >= 0);
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   if (socket1)
@@ -6456,10 +6321,7 @@ TEST (socket_bind_with_addrinfo_success)
     Socket_bind_with_addrinfo (socket, res);
     ASSERT (Socket_isbound (socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   freeaddrinfo (res);
@@ -6500,10 +6362,7 @@ TEST (socket_bind_with_addrinfo_failure)
         Socket_bind_with_addrinfo (socket2, res);
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   /* Cleanup */
@@ -6526,10 +6385,7 @@ TEST (socket_listen_on_unbound_socket)
     /* Try to listen without binding first - should fail */
     Socket_listen (socket, 5);
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   /* May succeed or fail depending on OS */
@@ -6546,10 +6402,7 @@ TEST (socket_bind_unix_stale_socket_file)
   Socket_T old_socket = Socket_new (AF_UNIX, SOCK_STREAM, 0);
   ASSERT_NOT_NULL (old_socket);
 
-  TRY
-  {
-    Socket_bind_unix (old_socket, path);
-  }
+  TRY { Socket_bind_unix (old_socket, path); }
   EXCEPT (Socket_Failed)
   {
     Socket_free (&old_socket);
@@ -6571,10 +6424,7 @@ TEST (socket_bind_unix_stale_socket_file)
     /* Should succeed by unlinking stale file first */
     ASSERT (Socket_isbound (new_socket));
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail if permissions prevent unlink */
-  }
+  EXCEPT (Socket_Failed) { /* May fail if permissions prevent unlink */ }
   END_TRY;
 
   cleanup_unix_socket (path);
@@ -6589,21 +6439,16 @@ TEST (socket_connect_unix_other_error)
   volatile int raised = 0;
 
   /* Try to connect to a path that's a regular file, not a socket */
-  TRY
-  {
-    Socket_connect_unix (socket, "/etc/passwd");
-  }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  TRY { Socket_connect_unix (socket, "/etc/passwd"); }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   ASSERT_EQ (1, raised);
   Socket_free (&socket);
 }
 
-/* ==================== File Descriptor Passing (SCM_RIGHTS) Tests ==================== */
+/* ==================== File Descriptor Passing (SCM_RIGHTS) Tests
+ * ==================== */
 
 TEST (socket_sendfd_recvfd_basic)
 {
@@ -6633,7 +6478,8 @@ TEST (socket_sendfd_recvfd_basic)
     ASSERT_EQ (1, result);
     ASSERT_NE (-1, received_fd);
 
-    /* Verify the received FD works - write to pipe[1], read from received_fd */
+    /* Verify the received FD works - write to pipe[1], read from received_fd
+     */
     const char *test_msg = "FD passing test";
     ssize_t written = write (pipefd[1], test_msg, strlen (test_msg));
     ASSERT_EQ ((ssize_t)strlen (test_msg), written);
@@ -6648,10 +6494,7 @@ TEST (socket_sendfd_recvfd_basic)
     SAFE_CLOSE (pipefd[1]);
     SAFE_CLOSE (received_fd);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0); /* Test failed */
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); /* Test failed */ }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6692,10 +6535,7 @@ TEST (socket_sendfd_recvfd_file)
     SAFE_CLOSE (fd);
     SAFE_CLOSE (received_fd);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6740,15 +6580,13 @@ TEST (socket_sendfd_recvfd_socket)
     ASSERT_EQ (0, getsockopt (received_fd, SOL_SOCKET, SO_TYPE, &val, &len));
     ASSERT_EQ (SOCK_STREAM, val); /* Should be a stream socket */
 
-    /* Note: SO_ACCEPTCONN check skipped - macOS returns error for FD-passed sockets */
+    /* Note: SO_ACCEPTCONN check skipped - macOS returns error for FD-passed
+     * sockets */
 
     SAFE_CLOSE (received_fd);
     Socket_free (&listener);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6807,10 +6645,7 @@ TEST (socket_sendfds_recvfds_multiple)
     for (size_t i = 0; i < received_count; i++)
       SAFE_CLOSE (received_fds[i]);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6834,10 +6669,7 @@ TEST (socket_sendfd_invalid_socket_type)
     SAFE_CLOSE (pipefd[0]);
     SAFE_CLOSE (pipefd[1]);
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   ASSERT_EQ (1, raised);
@@ -6851,10 +6683,7 @@ TEST (socket_sendfd_invalid_fd)
   Socket_T sock1 = NULL;
   Socket_T sock2 = NULL;
 
-  TRY
-  {
-    SocketPair_new (SOCK_STREAM, &sock1, &sock2);
-  }
+  TRY { SocketPair_new (SOCK_STREAM, &sock1, &sock2); }
   EXCEPT (Socket_Failed)
   {
     ASSERT (0);
@@ -6868,10 +6697,7 @@ TEST (socket_sendfd_invalid_fd)
     /* Try to send invalid FD */
     Socket_sendfd (sock1, -1);
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   ASSERT_EQ (1, raised);
@@ -6903,14 +6729,8 @@ TEST (socket_recvfd_no_fd_sent)
     ASSERT_EQ (1, result);
     ASSERT_EQ (-1, received_fd); /* No FD was sent */
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
-  EXCEPT (Socket_Closed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
+  EXCEPT (Socket_Closed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6952,10 +6772,7 @@ TEST (socket_sendfd_nonblocking)
     SAFE_CLOSE (pipefd[1]);
     SAFE_CLOSE (received_fd);
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -6969,10 +6786,7 @@ TEST (socket_sendfds_count_zero_fails)
   Socket_T sock1 = NULL;
   Socket_T sock2 = NULL;
 
-  TRY
-  {
-    SocketPair_new (SOCK_STREAM, &sock1, &sock2);
-  }
+  TRY { SocketPair_new (SOCK_STREAM, &sock1, &sock2); }
   EXCEPT (Socket_Failed)
   {
     ASSERT (0);
@@ -6986,10 +6800,7 @@ TEST (socket_sendfds_count_zero_fails)
     int fds[1] = { 0 };
     Socket_sendfds (sock1, fds, 0); /* count = 0 should fail */
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   ASSERT_EQ (1, raised);
@@ -7004,10 +6815,7 @@ TEST (socket_sendfds_count_exceeds_max_fails)
   Socket_T sock1 = NULL;
   Socket_T sock2 = NULL;
 
-  TRY
-  {
-    SocketPair_new (SOCK_STREAM, &sock1, &sock2);
-  }
+  TRY { SocketPair_new (SOCK_STREAM, &sock1, &sock2); }
   EXCEPT (Socket_Failed)
   {
     ASSERT (0);
@@ -7022,10 +6830,7 @@ TEST (socket_sendfds_count_exceeds_max_fails)
     /* Exceeds SOCKET_MAX_FDS_PER_MSG */
     Socket_sendfds (sock1, fds, SOCKET_MAX_FDS_PER_MSG + 1);
   }
-  EXCEPT (Socket_Failed)
-  {
-    raised = 1;
-  }
+  EXCEPT (Socket_Failed) { raised = 1; }
   END_TRY;
 
   ASSERT_EQ (1, raised);
@@ -7054,14 +6859,8 @@ TEST (socket_sendfd_peer_closed)
     ASSERT_EQ (0, pipe (pipefd));
 
     volatile int closed_raised = 0;
-    TRY
-    {
-      Socket_sendfd (sock1, pipefd[0]);
-    }
-    EXCEPT (Socket_Closed)
-    {
-      closed_raised = 1;
-    }
+    TRY { Socket_sendfd (sock1, pipefd[0]); }
+    EXCEPT (Socket_Closed) { closed_raised = 1; }
     END_TRY;
 
     /* On some systems, first send may succeed but next will fail */
@@ -7071,17 +6870,15 @@ TEST (socket_sendfd_peer_closed)
     SAFE_CLOSE (pipefd[0]);
     SAFE_CLOSE (pipefd[1]);
   }
-  EXCEPT (Socket_Failed)
-  {
-    /* May fail on some error paths, acceptable */
-  }
+  EXCEPT (Socket_Failed) { /* May fail on some error paths, acceptable */ }
   END_TRY;
 
   Socket_free (&sock1);
   Socket_free (&sock2);
 }
 
-/* ==================== FD Passing Integration Test (fork-based) ==================== */
+/* ==================== FD Passing Integration Test (fork-based)
+ * ==================== */
 
 TEST (socket_fd_passing_fork_integration)
 {
@@ -7118,7 +6915,7 @@ TEST (socket_fd_passing_fork_integration)
     if (pid == 0)
       {
         /* Child process - receive FD and accept connection */
-        Socket_free (&sock1); /* Close sender end in child */
+        Socket_free (&sock1);    /* Close sender end in child */
         Socket_free (&listener); /* Close original listener in child */
 
         int received_fd = -1;
@@ -7199,10 +6996,7 @@ TEST (socket_fd_passing_fork_integration)
         ASSERT_EQ (0, WEXITSTATUS (status));
       }
   }
-  EXCEPT (Socket_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (Socket_Failed) { ASSERT (0); }
   END_TRY;
 
   Socket_free (&sock1);
@@ -7252,10 +7046,7 @@ TEST (socket_islistening_with_error)
     /* Server is still listening even with pending connection */
     ASSERT_EQ (1, Socket_islistening (server));
   }
-  EXCEPT (Socket_Failed)
-  {
-    (void)0;
-  }
+  EXCEPT (Socket_Failed) { (void)0; }
   END_TRY;
 
   Socket_free (&server);

@@ -39,11 +39,13 @@
  *
  * Per RFC 9113, PRIORITY frames are deprecated and should be ignored.
  * This implementation follows that recommendation.
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_process_priority - Process PRIORITY frame (deprecated)
- * @conn: HTTP/2 connection context (unused - kept for dispatch API consistency)
+ * @conn: HTTP/2 connection context (unused - kept for dispatch API
+ * consistency)
  * @header: Frame header (provides stream ID and confirms PRIORITY type)
  * @payload: Frame payload (ignored per RFC 9113)
  *
@@ -51,9 +53,9 @@
  * Raises: None - any validation errors raised earlier in frame parser
  * Thread-safe: Yes - thread-safe logging; no changes to connection state
  *
- * Per RFC 9113 Section 5.3.2: PRIORITY frames deprecated - endpoints MAY ignore them.
- * Logs frame receipt for debugging non-compliant peers.
- * No parsing or state changes performed.
+ * Per RFC 9113 Section 5.3.2: PRIORITY frames deprecated - endpoints MAY
+ * ignore them. Logs frame receipt for debugging non-compliant peers. No
+ * parsing or state changes performed.
  *
  * Prior validation in frame parser ensures: stream ID > 0, payload len == 5.
  */
@@ -62,11 +64,12 @@ http2_process_priority (SocketHTTP2_Conn_T conn,
                         const SocketHTTP2_FrameHeader *header,
                         const unsigned char *payload)
 {
-        SOCKET_LOG_DEBUG_MSG("Ignoring deprecated HTTP/2 PRIORITY frame on stream %u (payload len=%u)",
-                             header->stream_id, (unsigned)header->length);
+  SOCKET_LOG_DEBUG_MSG ("Ignoring deprecated HTTP/2 PRIORITY frame on stream "
+                        "%u (payload len=%u)",
+                        header->stream_id, (unsigned)header->length);
 
-        (void)conn; /* Unused parameter for API consistency */
-        (void)payload;
+  (void)conn; /* Unused parameter for API consistency */
+  (void)payload;
 
-        return 0;
+  return 0;
 }

@@ -9,17 +9,16 @@
  */
 
 #include "core/Arena.h"
+#include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketReconnect.h"
 #include <stdint.h>
-#include "core/SocketUtil.h"
-#include "core/SocketCrypto.h"
-
-
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Error buffer size */
 #ifndef SOCKET_RECONNECT_ERROR_BUFSIZE
@@ -33,21 +32,23 @@
 
 /* ============================================================================
  * Circuit Breaker State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_CircuitState - Internal circuit breaker state
  */
 typedef enum
 {
-  CIRCUIT_CLOSED = 0,   /**< Normal operation, connections allowed */
-  CIRCUIT_OPEN,         /**< Blocking connections, too many failures */
-  CIRCUIT_HALF_OPEN     /**< Allowing probe connection */
+  CIRCUIT_CLOSED = 0, /**< Normal operation, connections allowed */
+  CIRCUIT_OPEN,       /**< Blocking connections, too many failures */
+  CIRCUIT_HALF_OPEN   /**< Allowing probe connection */
 } SocketReconnect_CircuitState;
 
 /* ============================================================================
  * Main Context Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_T - Reconnecting connection context
@@ -58,49 +59,50 @@ typedef enum
 struct SocketReconnect_T
 {
   /* Configuration */
-  SocketReconnect_Policy_T policy;    /**< Reconnection policy */
-  char *host;                          /**< Target hostname (copied) */
-  int port;                            /**< Target port */
+  SocketReconnect_Policy_T policy; /**< Reconnection policy */
+  char *host;                      /**< Target hostname (copied) */
+  int port;                        /**< Target port */
 
   /* Internal resources */
-  Arena_T arena;                       /**< Memory arena for allocations */
-  Socket_T socket;                     /**< Current socket (NULL if disconnected) */
+  Arena_T arena;   /**< Memory arena for allocations */
+  Socket_T socket; /**< Current socket (NULL if disconnected) */
 
   /* Callbacks */
-  SocketReconnect_Callback callback;   /**< State change callback */
+  SocketReconnect_Callback callback;        /**< State change callback */
   SocketReconnect_HealthCheck health_check; /**< Custom health check */
-  void *userdata;                      /**< User data for callbacks */
+  void *userdata;                           /**< User data for callbacks */
 
   /* State machine */
-  SocketReconnect_State state;         /**< Current state */
+  SocketReconnect_State state;                /**< Current state */
   SocketReconnect_CircuitState circuit_state; /**< Circuit breaker state */
 
   /* Connection tracking */
-  int attempt_count;                   /**< Attempts since last success/reset */
-  int consecutive_failures;            /**< Consecutive failures (for circuit breaker) */
-  int total_attempts;                  /**< Total attempts lifetime */
-  int total_successes;                 /**< Total successful connections lifetime */
+  int attempt_count;        /**< Attempts since last success/reset */
+  int consecutive_failures; /**< Consecutive failures (for circuit breaker) */
+  int total_attempts;       /**< Total attempts lifetime */
+  int total_successes;      /**< Total successful connections lifetime */
 
   /* Timing */
-  int64_t state_start_time_ms;         /**< When current state started */
-  int64_t last_attempt_time_ms;        /**< When last attempt was made */
-  int64_t last_success_time_ms;        /**< When last successful connection */
-  int64_t backoff_until_ms;            /**< Time when backoff expires */
-  int64_t circuit_open_time_ms;        /**< When circuit breaker opened */
-  int64_t last_health_check_ms;        /**< When last health check ran */
-  int current_backoff_delay_ms;        /**< Current computed backoff delay */
+  int64_t state_start_time_ms;  /**< When current state started */
+  int64_t last_attempt_time_ms; /**< When last attempt was made */
+  int64_t last_success_time_ms; /**< When last successful connection */
+  int64_t backoff_until_ms;     /**< Time when backoff expires */
+  int64_t circuit_open_time_ms; /**< When circuit breaker opened */
+  int64_t last_health_check_ms; /**< When last health check ran */
+  int current_backoff_delay_ms; /**< Current computed backoff delay */
 
   /* Connection state */
-  int connect_in_progress;             /**< Non-blocking connect pending */
+  int connect_in_progress; /**< Non-blocking connect pending */
 
   /* Error tracking */
   char error_buf[SOCKET_RECONNECT_ERROR_BUFSIZE]; /**< Last error message */
-  int last_error;                      /**< Last errno value */
+  int last_error;                                 /**< Last errno value */
 };
 
 /* ============================================================================
  * Internal Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketreconnect_get_time_ms - Get current monotonic time in milliseconds
@@ -165,4 +167,3 @@ socketreconnect_random_double (void)
 }
 
 #endif /* SOCKETRECONNECT_PRIVATE_INCLUDED */
-

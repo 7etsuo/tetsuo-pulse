@@ -45,31 +45,33 @@
  *
  * Uses centralized socket_error_buf and SocketDTLS_DetailedException.
  */
-#define RAISE_DTLS_ERROR(exception) \
-  SOCKET_RAISE_MODULE_ERROR(SocketDTLS, exception)
+#define RAISE_DTLS_ERROR(exception)                                           \
+  SOCKET_RAISE_MODULE_ERROR (SocketDTLS, exception)
 
 /**
  * RAISE_DTLS_ERROR_MSG - Raise DTLS exception with specific message
  * @exception: Exception type to raise
  * @msg: Error message string
  */
-#define RAISE_DTLS_ERROR_MSG(exception, msg) \
-  do { \
-    SOCKET_ERROR_MSG(msg); \
-    RAISE_DTLS_ERROR(exception); \
-  } while (0)
+#define RAISE_DTLS_ERROR_MSG(exception, msg)                                  \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_ERROR_MSG (msg);                                                 \
+      RAISE_DTLS_ERROR (exception);                                           \
+    }                                                                         \
+  while (0)
 
 /**
  * REQUIRE_DTLS_ENABLED - Validate DTLS is enabled on socket
  * @socket: Socket to validate
  * @exception: Exception to raise on failure
  */
-#define REQUIRE_DTLS_ENABLED(socket, exception)                                \
-  do                                                                           \
-    {                                                                          \
-      if (!(socket)->dtls_enabled)                                             \
-        RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");        \
-    }                                                                          \
+#define REQUIRE_DTLS_ENABLED(socket, exception)                               \
+  do                                                                          \
+    {                                                                         \
+      if (!(socket)->dtls_enabled)                                            \
+        RAISE_DTLS_ERROR_MSG (exception, "DTLS not enabled on socket");       \
+    }                                                                         \
   while (0)
 
 /**
@@ -78,7 +80,7 @@
  *
  * Uses centralized socket_error_buf.
  */
-#define DTLS_ERROR_MSG(msg) SOCKET_ERROR_MSG(msg)
+#define DTLS_ERROR_MSG(msg) SOCKET_ERROR_MSG (msg)
 
 /**
  * DTLS_ERROR_FMT - Format error message with arguments
@@ -87,7 +89,7 @@
  *
  * Uses centralized socket_error_buf with errno if set.
  */
-#define DTLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT(fmt, ##__VA_ARGS__)
+#define DTLS_ERROR_FMT(fmt, ...) SOCKET_ERROR_FMT (fmt, ##__VA_ARGS__)
 
 /**
  * VALIDATE_DTLS_IO_READY - Validate socket is ready for DTLS I/O
@@ -97,25 +99,25 @@
  * Checks dtls_enabled, handshake_done, and SSL object availability.
  * Returns SSL* on success, raises exception on failure.
  */
-#define VALIDATE_DTLS_IO_READY(socket, exception)                              \
-  ({                                                                           \
-    if (!(socket)->dtls_enabled)                                               \
-      {                                                                        \
-        DTLS_ERROR_MSG ("DTLS not enabled on socket");                         \
-        RAISE_DTLS_ERROR (exception);                                          \
-      }                                                                        \
-    if (!(socket)->dtls_handshake_done)                                        \
-      {                                                                        \
-        DTLS_ERROR_MSG ("DTLS handshake not complete");                        \
-        RAISE_DTLS_ERROR (exception);                                          \
-      }                                                                        \
-    SSL *_ssl = dtls_socket_get_ssl (socket);                                  \
-    if (!_ssl)                                                                 \
-      {                                                                        \
-        DTLS_ERROR_MSG ("SSL object not available");                           \
-        RAISE_DTLS_ERROR (exception);                                          \
-      }                                                                        \
-    _ssl;                                                                      \
+#define VALIDATE_DTLS_IO_READY(socket, exception)                             \
+  ({                                                                          \
+    if (!(socket)->dtls_enabled)                                              \
+      {                                                                       \
+        DTLS_ERROR_MSG ("DTLS not enabled on socket");                        \
+        RAISE_DTLS_ERROR (exception);                                         \
+      }                                                                       \
+    if (!(socket)->dtls_handshake_done)                                       \
+      {                                                                       \
+        DTLS_ERROR_MSG ("DTLS handshake not complete");                       \
+        RAISE_DTLS_ERROR (exception);                                         \
+      }                                                                       \
+    SSL *_ssl = dtls_socket_get_ssl (socket);                                 \
+    if (!_ssl)                                                                \
+      {                                                                       \
+        DTLS_ERROR_MSG ("SSL object not available");                          \
+        RAISE_DTLS_ERROR (exception);                                         \
+      }                                                                       \
+    _ssl;                                                                     \
   })
 
 /* ============================================================================
@@ -194,13 +196,13 @@ dtls_format_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      SOCKET_ERROR_MSG("%s: %s", context, err_str);
+      SOCKET_ERROR_MSG ("%s: %s", context, err_str);
     }
   else
     {
-      SOCKET_ERROR_MSG("%s: Unknown error", context);
+      SOCKET_ERROR_MSG ("%s: Unknown error", context);
     }
-  ERR_clear_error();  /* Clear remaining OpenSSL error queue */
+  ERR_clear_error (); /* Clear remaining OpenSSL error queue */
 }
 
 /* ============================================================================
@@ -225,14 +227,16 @@ dtls_validate_file_path (const char *path)
     return 0;
 
   /* Check for path traversal sequences (prefer absolute paths) */
-  if (path[0] != '/' ) { /* Optional: warn or reject relative; preference for absolute */
-    /* Relative paths accepted but may be insecure if cwd untrusted */
-  }
-  if (strstr (path, "../") != NULL || strstr (path, "..\\") != NULL ||
-      strstr (path, "/..") != NULL || strstr (path, "\\..") != NULL ||
-      strstr (path, "..") != NULL) {
-    return 0;
-  }
+  if (path[0] != '/')
+    { /* Optional: warn or reject relative; preference for absolute */
+      /* Relative paths accepted but may be insecure if cwd untrusted */
+    }
+  if (strstr (path, "../") != NULL || strstr (path, "..\\") != NULL
+      || strstr (path, "/..") != NULL || strstr (path, "\\..") != NULL
+      || strstr (path, "..") != NULL)
+    {
+      return 0;
+    }
 
   /* Check for control characters */
   for (size_t i = 0; i < len; i++)
@@ -244,8 +248,6 @@ dtls_validate_file_path (const char *path)
 
   return 1;
 }
-
-
 
 /* ============================================================================
  * SocketDTLSContext_T Structure Definition
@@ -260,8 +262,10 @@ dtls_validate_file_path (const char *path)
 typedef struct
 {
   unsigned char secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< HMAC secret */
-  unsigned char prev_secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< Previous secret for rotation */
-  int cookie_enabled;                                       /**< Cookie exchange enabled */
+  unsigned char
+      prev_secret[SOCKET_DTLS_COOKIE_SECRET_LEN]; /**< Previous secret for
+                                                     rotation */
+  int cookie_enabled;           /**< Cookie exchange enabled */
   pthread_mutex_t secret_mutex; /**< Protects secret rotation */
 } DTLSContextCookie;
 
@@ -270,9 +274,9 @@ typedef struct
  */
 typedef struct
 {
-  const char **protocols;  /**< Array of protocol strings */
-  size_t count;            /**< Number of protocols */
-  const char *selected;    /**< Negotiated protocol (for clients) */
+  const char **protocols; /**< Array of protocol strings */
+  size_t count;           /**< Number of protocols */
+  const char *selected;   /**< Negotiated protocol (for clients) */
 } DTLSContextALPN;
 
 /**
@@ -283,16 +287,16 @@ typedef struct
  */
 struct T
 {
-  SSL_CTX *ssl_ctx;             /**< OpenSSL context */
-  Arena_T arena;                /**< Arena for allocations */
-  int is_server;                /**< 1 for server, 0 for client */
-  size_t mtu;                   /**< Configured MTU */
-  int session_cache_enabled;    /**< Session cache flag */
-  size_t session_cache_size;    /**< Session cache size */
-  size_t cache_hits;            /**< Session resumptions */
-  size_t cache_misses;          /**< Full handshakes */
-  size_t cache_stores;          /**< New sessions stored */
-  pthread_mutex_t stats_mutex;  /**< Thread-safe stats update */
+  SSL_CTX *ssl_ctx;            /**< OpenSSL context */
+  Arena_T arena;               /**< Arena for allocations */
+  int is_server;               /**< 1 for server, 0 for client */
+  size_t mtu;                  /**< Configured MTU */
+  int session_cache_enabled;   /**< Session cache flag */
+  size_t session_cache_size;   /**< Session cache size */
+  size_t cache_hits;           /**< Session resumptions */
+  size_t cache_misses;         /**< Full handshakes */
+  size_t cache_stores;         /**< New sessions stored */
+  pthread_mutex_t stats_mutex; /**< Thread-safe stats update */
 
   /* Cookie exchange (DTLS-specific DoS protection) */
   DTLSContextCookie cookie;
@@ -311,7 +315,8 @@ struct T
  */
 
 #ifdef _WIN32
-extern __declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
+extern
+    __declspec (thread) char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
 extern __declspec (thread) Except_T SocketDTLSContext_DetailedException;
 #else
 extern __thread char dtls_context_error_buf[SOCKET_DTLS_ERROR_BUFSIZE];
@@ -321,23 +326,31 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
 /**
  * RAISE_DTLS_CTX_ERROR - Raise context exception with current error buffer
  */
-#define RAISE_DTLS_CTX_ERROR(exception)                                        \
-  do                                                                           \
-    {                                                                          \
-      SocketDTLSContext_DetailedException = (exception);                       \
-      SocketDTLSContext_DetailedException.reason = dtls_context_error_buf;     \
-      RAISE (SocketDTLSContext_DetailedException);                             \
-    }                                                                          \
+#define RAISE_DTLS_CTX_ERROR(exception)                                       \
+  do                                                                          \
+    {                                                                         \
+      SocketDTLSContext_DetailedException = (exception);                      \
+      SocketDTLSContext_DetailedException.reason = dtls_context_error_buf;    \
+      RAISE (SocketDTLSContext_DetailedException);                            \
+    }                                                                         \
   while (0)
 
 /**
  * RAISE_DTLS_CTX_ERROR_MSG - Raise context exception with specific message
  */
-#define RAISE_DTLS_CTX_ERROR_MSG(exception, msg)                               \
-  do { SOCKET_RAISE_MSG(SocketDTLSContext, exception, msg); } while(0)
+#define RAISE_DTLS_CTX_ERROR_MSG(exception, msg)                              \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_RAISE_MSG (SocketDTLSContext, exception, msg);                   \
+    }                                                                         \
+  while (0)
 
-#define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...)                          \
-  do { SOCKET_RAISE_FMT(SocketDTLSContext, exception, fmt, __VA_ARGS__); } while(0)
+#define RAISE_DTLS_CTX_ERROR_FMT(exception, fmt, ...)                         \
+  do                                                                          \
+    {                                                                         \
+      SOCKET_RAISE_FMT (SocketDTLSContext, exception, fmt, __VA_ARGS__);      \
+    }                                                                         \
+  while (0)
 
 /* ============================================================================
  * Utility Macros
@@ -400,4 +413,3 @@ extern SocketDTLSContext_T dtls_context_get_from_ssl (const SSL *ssl);
 #endif /* SOCKET_HAS_TLS */
 
 #endif /* SOCKETDTLS_PRIVATE_INCLUDED */
-

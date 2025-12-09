@@ -16,7 +16,6 @@
  * the library are functioning correctly.
  */
 
-#include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketConfig.h"
@@ -25,9 +24,10 @@
 #include "core/SocketUTF8.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
-#include "http/SocketHTTPClient.h"
 #include "http/SocketHTTPClient-private.h"
+#include "http/SocketHTTPClient.h"
 #include "socket/SocketBuf.h"
+#include "test/Test.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -35,17 +35,21 @@
 #include <string.h>
 
 /* Helper function to create repeated character string */
-static const char *string_repeat(char c, size_t count) {
+static const char *
+string_repeat (char c, size_t count)
+{
   static char buffer[1024]; // Sufficient for tests
-  if (count >= sizeof(buffer) - 1) count = sizeof(buffer) - 1;
-  memset(buffer, c, count);
+  if (count >= sizeof (buffer) - 1)
+    count = sizeof (buffer) - 1;
+  memset (buffer, c, count);
   buffer[count] = '\0';
   return buffer;
 }
 
 /* ============================================================================
  * Security Limits Query Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_limits_populated)
 {
@@ -111,7 +115,8 @@ TEST (security_ws_limits_query)
 
 /* ============================================================================
  * Integer Overflow Protection Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_overflow_multiply_safe)
 {
@@ -140,8 +145,7 @@ TEST (security_overflow_multiply_detects)
   ASSERT (!SocketSecurity_check_multiply (SIZE_MAX / 2 + 1, 2, &result));
 
   /* Large multiplication that would overflow */
-  ASSERT (
-      !SocketSecurity_check_multiply (SIZE_MAX / 1000 + 1, 1001, &result));
+  ASSERT (!SocketSecurity_check_multiply (SIZE_MAX / 1000 + 1, 1001, &result));
 }
 
 TEST (security_overflow_add_safe)
@@ -233,7 +237,8 @@ TEST (security_validation_macros)
 
 /* ============================================================================
  * Arena Overflow Protection Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_arena_overflow_protection)
 {
@@ -264,7 +269,8 @@ TEST (security_arena_overflow_protection)
 
 /* ============================================================================
  * Buffer Safety Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_buffer_bounds_checking)
 {
@@ -336,7 +342,8 @@ TEST (security_buffer_secure_clear)
 
 /* ============================================================================
  * HTTP Security Tests - Request Smuggling Prevention
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_http1_smuggling_cl_te_rejected)
 {
@@ -353,9 +360,8 @@ TEST (security_http1_smuggling_cl_te_rejected)
                         "\r\n";
 
   size_t consumed;
-  SocketHTTP1_Result result
-      = SocketHTTP1_Parser_execute (parser, request, strlen (request),
-                                    &consumed);
+  SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+      parser, request, strlen (request), &consumed);
 
   /* Must be rejected as smuggling attempt */
   ASSERT_EQ (HTTP1_ERROR_SMUGGLING_DETECTED, result);
@@ -379,9 +385,8 @@ TEST (security_http1_smuggling_te_cl_rejected)
                         "\r\n";
 
   size_t consumed;
-  SocketHTTP1_Result result
-      = SocketHTTP1_Parser_execute (parser, request, strlen (request),
-                                    &consumed);
+  SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+      parser, request, strlen (request), &consumed);
 
   ASSERT_EQ (HTTP1_ERROR_SMUGGLING_DETECTED, result);
 
@@ -391,7 +396,8 @@ TEST (security_http1_smuggling_te_cl_rejected)
 
 /* ============================================================================
  * HTTP Security Tests - Header Injection Prevention
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_http_header_name_injection_rejected)
 {
@@ -435,7 +441,8 @@ TEST (security_http_header_name_invalid_chars_rejected)
 
   /* Header name with space (invalid per RFC 9110) should be rejected */
   /* Returns -1 on invalid header name */
-  int result = SocketHTTP_Headers_add (headers, "Invalid Header Name", "value");
+  int result
+      = SocketHTTP_Headers_add (headers, "Invalid Header Name", "value");
   ASSERT_EQ (-1, result);
 
   /* Headers freed when arena is disposed */
@@ -444,7 +451,8 @@ TEST (security_http_header_name_invalid_chars_rejected)
 
 /* ============================================================================
  * UTF-8 Security Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_utf8_overlong_rejected)
 {
@@ -494,18 +502,19 @@ TEST (security_utf8_too_large_rejected)
 TEST (security_utf8_invalid_continuation_rejected)
 {
   /* Invalid continuation byte */
-  const unsigned char invalid[] = { 0xC2, 0x00 }; /* NUL instead of 0x80-0xBF */
+  const unsigned char invalid[]
+      = { 0xC2, 0x00 }; /* NUL instead of 0x80-0xBF */
   ASSERT_EQ (UTF8_INVALID, SocketUTF8_validate (invalid, sizeof (invalid)));
 
   /* Missing continuation */
   const unsigned char missing[] = { 0xE0, 0xA0 }; /* Need one more byte */
-  ASSERT_EQ (UTF8_INCOMPLETE,
-             SocketUTF8_validate (missing, sizeof (missing)));
+  ASSERT_EQ (UTF8_INCOMPLETE, SocketUTF8_validate (missing, sizeof (missing)));
 }
 
 /* ============================================================================
  * Cryptographic Security Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_secure_compare_constant_time)
 {
@@ -514,22 +523,22 @@ TEST (security_secure_compare_constant_time)
   const char *different = "different_token_00000";
 
   /* Equal comparison should return 0 */
-  ASSERT_EQ (0, SocketCrypto_secure_compare (secret1, secret2,
-                                             strlen (secret1)));
+  ASSERT_EQ (0,
+             SocketCrypto_secure_compare (secret1, secret2, strlen (secret1)));
 
   /* Different comparison should return non-zero */
-  ASSERT_NE (0, SocketCrypto_secure_compare (secret1, different,
-                                             strlen (secret1)));
+  ASSERT_NE (
+      0, SocketCrypto_secure_compare (secret1, different, strlen (secret1)));
 
   /* First byte difference should behave same as last byte difference */
   const char *diff_first = "Xecret_token_12345678";
   const char *diff_last = "secret_token_1234567X";
 
   /* Both should return non-zero (not equal) */
-  ASSERT_NE (0, SocketCrypto_secure_compare (secret1, diff_first,
-                                             strlen (secret1)));
-  ASSERT_NE (0, SocketCrypto_secure_compare (secret1, diff_last,
-                                             strlen (secret1)));
+  ASSERT_NE (
+      0, SocketCrypto_secure_compare (secret1, diff_first, strlen (secret1)));
+  ASSERT_NE (
+      0, SocketCrypto_secure_compare (secret1, diff_last, strlen (secret1)));
 }
 
 TEST (security_secure_clear)
@@ -573,7 +582,8 @@ TEST (security_random_bytes)
 
 /* ============================================================================
  * Size Limit Enforcement Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_http1_line_limit_enforced)
 {
@@ -590,12 +600,12 @@ TEST (security_http1_line_limit_enforced)
 
   /* Request line exceeding limit */
   char long_request[256];
-  snprintf (long_request, sizeof (long_request), "GET /%s HTTP/1.1\r\n", string_repeat('a', 145));
+  snprintf (long_request, sizeof (long_request), "GET /%s HTTP/1.1\r\n",
+            string_repeat ('a', 145));
 
   size_t consumed;
-  SocketHTTP1_Result result
-      = SocketHTTP1_Parser_execute (parser, long_request, strlen (long_request),
-                                    &consumed);
+  SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+      parser, long_request, strlen (long_request), &consumed);
 
   /* Should be rejected as line too long */
   ASSERT_EQ (HTTP1_ERROR_LINE_TOO_LONG, result);
@@ -626,9 +636,8 @@ TEST (security_http1_header_limit_enforced)
                         "\r\n";
 
   size_t consumed;
-  SocketHTTP1_Result result
-      = SocketHTTP1_Parser_execute (parser, request, strlen (request),
-                                    &consumed);
+  SocketHTTP1_Result result = SocketHTTP1_Parser_execute (
+      parser, request, strlen (request), &consumed);
 
   /* Should be rejected as too many headers */
   ASSERT_EQ (HTTP1_ERROR_TOO_MANY_HEADERS, result);
@@ -639,7 +648,8 @@ TEST (security_http1_header_limit_enforced)
 
 /* ============================================================================
  * Feature Detection Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_feature_detection)
 {
@@ -659,12 +669,13 @@ TEST (security_feature_detection)
 
 /* ============================================================================
  * Port Validation Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_port_validation)
 {
   /* Valid ports */
-  ASSERT (SOCKET_VALID_PORT (0));     /* Port 0 = any available port */
+  ASSERT (SOCKET_VALID_PORT (0)); /* Port 0 = any available port */
   ASSERT (SOCKET_VALID_PORT (1));
   ASSERT (SOCKET_VALID_PORT (80));
   ASSERT (SOCKET_VALID_PORT (443));
@@ -679,7 +690,8 @@ TEST (security_port_validation)
 
 /* ============================================================================
  * Cookie Security Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (security_cookie_set_invalid_name_chars_rejected)
 {
@@ -693,23 +705,24 @@ TEST (security_cookie_set_invalid_name_chars_rejected)
 
   /* Cookie name with invalid characters should be rejected */
   const char *invalid_headers[] = {
-    "name=value; name=invalid\rchar",  /* CRLF injection */
-    "name=value; name=invalid\nchar",  /* LF injection */
+    "name=value; name=invalid\rchar",   /* CRLF injection */
+    "name=value; name=invalid\nchar",   /* LF injection */
     "name=value; name=invalid\x00char", /* NUL byte */
-    "name=value; name=invalid char", /* Control char */
-    "name=value; name=invalid char", /* DEL */
-    "name=value; name=invalid char", /* High control */
+    "name=value; name=invalid char",    /* Control char */
+    "name=value; name=invalid char",    /* DEL */
+    "name=value; name=invalid char",    /* High control */
     "name=value; name=invalid;name",    /* Semicolon in name */
     "name=value; name=invalid=value",   /* Equals in name */
     "name=value; name=invalid,value",   /* Comma in name */
     "name=value; name=invalid value"    /* Space in name */
   };
 
-  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0;
+       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                          strlen (invalid_headers[i]),
-                                          &uri, &cookie, arena);
+                                            strlen (invalid_headers[i]), &uri,
+                                            &cookie, arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -728,25 +741,26 @@ TEST (security_cookie_set_invalid_value_chars_rejected)
 
   /* Cookie value with invalid characters should be rejected */
   const char *invalid_headers[] = {
-    "name=value\rinvalid",  /* Bare CR */
-    "name=value\ninvalid",  /* Bare LF */
-    "name=value\x00invalid", /* NUL byte */
-    "name=value\x1finvalid", /* Control char */
-    "name=value\x7finvalid", /* DEL */
-    "name=value\x80invalid", /* High control */
+    "name=value\rinvalid",    /* Bare CR */
+    "name=value\ninvalid",    /* Bare LF */
+    "name=value\x00invalid",  /* NUL byte */
+    "name=value\x1finvalid",  /* Control char */
+    "name=value\x7finvalid",  /* DEL */
+    "name=value\x80invalid",  /* High control */
     "name=\"value\";invalid", /* Semicolon in quoted value (after quote) */
     "name=\"value\";invalid", /* Wait, this is valid - semicolon after quote */
     /* Actually, unquoted values can't have semicolon */
-    "name=value;invalid",   /* Semicolon in unquoted value */
-    "name=value,invalid",   /* Comma in unquoted value */
-    "name=value invalid"    /* Space in unquoted value */
+    "name=value;invalid", /* Semicolon in unquoted value */
+    "name=value,invalid", /* Comma in unquoted value */
+    "name=value invalid"  /* Space in unquoted value */
   };
 
-  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0;
+       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                          strlen (invalid_headers[i]),
-                                          &uri, &cookie, arena);
+                                            strlen (invalid_headers[i]), &uri,
+                                            &cookie, arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -765,18 +779,19 @@ TEST (security_cookie_set_unclosed_quote_rejected)
 
   /* Unclosed quoted values should be rejected */
   const char *invalid_headers[] = {
-    "name=\"value",        /* Missing closing quote */
-    "name=\"value\\",      /* Escape at end */
-    "name=\"value\\\"",    /* Incomplete escape */
-    "name=\"value\r\n",    /* CRLF in quoted value */
-    "name=\"value\n",      /* LF in quoted value */
+    "name=\"value",     /* Missing closing quote */
+    "name=\"value\\",   /* Escape at end */
+    "name=\"value\\\"", /* Incomplete escape */
+    "name=\"value\r\n", /* CRLF in quoted value */
+    "name=\"value\n",   /* LF in quoted value */
   };
 
-  for (size_t i = 0; i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
+  for (size_t i = 0;
+       i < sizeof (invalid_headers) / sizeof (invalid_headers[0]); i++)
     {
       result = httpclient_parse_set_cookie (invalid_headers[i],
-                                          strlen (invalid_headers[i]),
-                                          &uri, &cookie, arena);
+                                            strlen (invalid_headers[i]), &uri,
+                                            &cookie, arena);
       ASSERT_EQ (-1, result); /* Should be rejected */
     }
 
@@ -795,12 +810,15 @@ TEST (security_cookie_set_huge_max_age_clamped)
   SocketHTTP_URI_parse (uri_str, strlen (uri_str), &uri, arena);
 
   /* Huge Max-Age should be clamped to prevent overflow.
-   * Include Domain attribute since cookie parsing requires it or valid URI host */
-  const char *huge_max_age = "name=value; Max-Age=999999999999999999999; Domain=example.com";
+   * Include Domain attribute since cookie parsing requires it or valid URI
+   * host */
+  const char *huge_max_age
+      = "name=value; Max-Age=999999999999999999999; Domain=example.com";
   result = httpclient_parse_set_cookie (huge_max_age, strlen (huge_max_age),
-                                      &uri, &cookie, arena);
+                                        &uri, &cookie, arena);
   ASSERT_EQ (0, result);
-  ASSERT (cookie.expires < time (NULL) + HTTPCLIENT_MAX_COOKIE_AGE_SEC + 10); /* Should be clamped */
+  ASSERT (cookie.expires < time (NULL) + HTTPCLIENT_MAX_COOKIE_AGE_SEC
+                               + 10); /* Should be clamped */
 
   Arena_dispose (&arena);
 }
@@ -817,13 +835,12 @@ TEST (security_cookie_set_huge_domain_rejected)
 
   /* Domain too long should be rejected */
   char huge_domain[HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 100];
-  snprintf (huge_domain, sizeof (huge_domain),
-           "name=value; Domain=%.*s",
-           HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50,
-           string_repeat ('a', HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50));
+  snprintf (huge_domain, sizeof (huge_domain), "name=value; Domain=%.*s",
+            HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50,
+            string_repeat ('a', HTTPCLIENT_COOKIE_MAX_DOMAIN_LEN + 50));
 
   result = httpclient_parse_set_cookie (huge_domain, strlen (huge_domain),
-                                      &uri, &cookie, arena);
+                                        &uri, &cookie, arena);
   ASSERT_EQ (-1, result); /* Should be rejected */
 
   Arena_dispose (&arena);
@@ -831,10 +848,11 @@ TEST (security_cookie_set_huge_domain_rejected)
 
 TEST (security_cookie_jar_max_cookies_enforced)
 {
-  /* 
+  /*
    * Test cookie limit enforcement. We use a reduced iteration count for
    * test performance while still validating the core behavior.
-   * The actual limit (HTTPCLIENT_MAX_COOKIES = 10000) is too slow to test fully.
+   * The actual limit (HTTPCLIENT_MAX_COOKIES = 10000) is too slow to test
+   * fully.
    */
   SocketHTTPClient_CookieJar_T jar = SocketHTTPClient_CookieJar_new ();
   ASSERT_NOT_NULL (jar);
@@ -861,8 +879,8 @@ TEST (security_cookie_jar_max_cookies_enforced)
     }
 
   /* Verify all cookies were stored by checking one exists */
-  const SocketHTTPClient_Cookie *stored =
-    SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "cookie50");
+  const SocketHTTPClient_Cookie *stored
+      = SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "cookie50");
   ASSERT_NOT_NULL (stored);
 
   SocketHTTPClient_CookieJar_free (&jar);
@@ -874,23 +892,21 @@ TEST (security_cookie_samesite_enforced)
   ASSERT_NOT_NULL (jar);
 
   /* Test SameSite=None without Secure should be rejected by cookie jar */
-  SocketHTTPClient_Cookie none_cookie = {
-    .name = "test_none",
-    .value = "value",
-    .domain = "example.com",
-    .path = "/",
-    .secure = 0, /* Not secure */
-    .same_site = COOKIE_SAMESITE_NONE
-  };
+  SocketHTTPClient_Cookie none_cookie = { .name = "test_none",
+                                          .value = "value",
+                                          .domain = "example.com",
+                                          .path = "/",
+                                          .secure = 0, /* Not secure */
+                                          .same_site = COOKIE_SAMESITE_NONE };
 
-  /* SameSite=None without Secure should still be stored (enforcement at send time)
-   * but we can verify the cookie was stored with correct attributes */
+  /* SameSite=None without Secure should still be stored (enforcement at send
+   * time) but we can verify the cookie was stored with correct attributes */
   int result = SocketHTTPClient_CookieJar_set (jar, &none_cookie);
   ASSERT_EQ (0, result);
 
   /* Verify cookie was stored */
-  const SocketHTTPClient_Cookie *stored = 
-    SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "test_none");
+  const SocketHTTPClient_Cookie *stored
+      = SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "test_none");
   ASSERT_NOT_NULL (stored);
   ASSERT_EQ (COOKIE_SAMESITE_NONE, stored->same_site);
   ASSERT_EQ (0, stored->secure);
@@ -904,21 +920,20 @@ TEST (security_cookie_samesite_strict_stored)
   ASSERT_NOT_NULL (jar);
 
   /* Test SameSite=Strict cookie storage */
-  SocketHTTPClient_Cookie strict_cookie = {
-    .name = "test_strict",
-    .value = "value",
-    .domain = "example.com",
-    .path = "/",
-    .secure = 0,
-    .same_site = COOKIE_SAMESITE_STRICT
-  };
+  SocketHTTPClient_Cookie strict_cookie
+      = { .name = "test_strict",
+          .value = "value",
+          .domain = "example.com",
+          .path = "/",
+          .secure = 0,
+          .same_site = COOKIE_SAMESITE_STRICT };
 
   int result = SocketHTTPClient_CookieJar_set (jar, &strict_cookie);
   ASSERT_EQ (0, result);
 
   /* Verify cookie was stored with correct SameSite attribute */
-  const SocketHTTPClient_Cookie *stored =
-    SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "test_strict");
+  const SocketHTTPClient_Cookie *stored = SocketHTTPClient_CookieJar_get (
+      jar, "example.com", "/", "test_strict");
   ASSERT_NOT_NULL (stored);
   ASSERT_EQ (COOKIE_SAMESITE_STRICT, stored->same_site);
 
@@ -950,8 +965,8 @@ TEST (security_cookie_file_load_malformed_rejected)
   ASSERT_EQ (0, result);
 
   /* Should have the valid cookie */
-  const SocketHTTPClient_Cookie *cookie =
-    SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "name");
+  const SocketHTTPClient_Cookie *cookie
+      = SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "name");
   ASSERT_NOT_NULL (cookie);
   ASSERT (strcmp ("value", cookie->value) == 0);
 
@@ -965,8 +980,9 @@ TEST (security_cookie_file_load_large_rejected)
 {
   /*
    * Test cookie file loading with reasonable file size.
-   * We use a reduced count for test performance while validating core behavior.
-   * The actual limit (HTTPCLIENT_MAX_COOKIES = 10000) is too slow for unit tests.
+   * We use a reduced count for test performance while validating core
+   * behavior. The actual limit (HTTPCLIENT_MAX_COOKIES = 10000) is too slow
+   * for unit tests.
    */
   const char *temp_filename = "/tmp/test_cookies_large.txt";
   FILE *f = fopen (temp_filename, "w");
@@ -981,7 +997,7 @@ TEST (security_cookie_file_load_large_rejected)
   const size_t test_cookie_count = 200;
   for (size_t i = 0; i < test_cookie_count; i++)
     {
-      fprintf (f, "example.com\tTRUE\t/\tFALSE\t%ld\tcookie%zu\tvalue%zu\n", 
+      fprintf (f, "example.com\tTRUE\t/\tFALSE\t%ld\tcookie%zu\tvalue%zu\n",
                (long)future, i, i);
     }
   fclose (f);
@@ -994,8 +1010,8 @@ TEST (security_cookie_file_load_large_rejected)
   ASSERT_EQ (0, result);
 
   /* Verify cookies were loaded by checking one exists */
-  const SocketHTTPClient_Cookie *cookie =
-    SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "cookie100");
+  const SocketHTTPClient_Cookie *cookie
+      = SocketHTTPClient_CookieJar_get (jar, "example.com", "/", "cookie100");
   ASSERT_NOT_NULL (cookie);
   ASSERT (strcmp ("value100", cookie->value) == 0);
 
@@ -1007,7 +1023,8 @@ TEST (security_cookie_file_load_large_rejected)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -1020,4 +1037,3 @@ main (void)
 
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

@@ -47,7 +47,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     }
 
   /* Test decode with explicit length */
-  ssize_t result = SocketCrypto_base64_decode (input, size, output, max_decoded);
+  ssize_t result
+      = SocketCrypto_base64_decode (input, size, output, max_decoded);
 
   /* Validate result is within expected bounds */
   if (result >= 0)
@@ -86,4 +87,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

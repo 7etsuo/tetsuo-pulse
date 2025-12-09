@@ -7,9 +7,9 @@
  * Handles absolute URIs, relative references, and IPv6 addresses.
  */
 
-#include "http/SocketHTTP.h"
-#include "http/SocketHTTP-private.h"
 #include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
+#include "http/SocketHTTP.h"
 
 #include <assert.h>
 #include <ctype.h>
@@ -18,13 +18,15 @@
 
 /* ============================================================================
  * Module-Specific Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /* ============================================================================
  * Constants for Media Type Parsing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Length of "charset" parameter name */
 #define MEDIATYPE_CHARSET_LEN 7
@@ -34,16 +36,20 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /* ============================================================================
  * Internal Helper Functions - Character Classification
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Forward declarations for validation functions */
 static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len);
 
-static SocketHTTP_URIResult validate_userinfo (const char *userinfo, size_t len);
+static SocketHTTP_URIResult validate_userinfo (const char *userinfo,
+                                               size_t len);
 
-static SocketHTTP_URIResult validate_host (const char *host, size_t len, int *out_is_ipv6);
+static SocketHTTP_URIResult validate_host (const char *host, size_t len,
+                                           int *out_is_ipv6);
 
-static SocketHTTP_URIResult validate_path_query (const char *s, size_t len, int is_path);
+static SocketHTTP_URIResult validate_path_query (const char *s, size_t len,
+                                                 int is_path);
 
 static SocketHTTP_URIResult validate_fragment (const char *s, size_t len);
 
@@ -81,7 +87,8 @@ is_control_char (char c)
 
 /* ============================================================================
  * Internal Helper Functions - String Allocation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * arena_strdup_n - Allocate and copy string into arena
@@ -147,7 +154,8 @@ uri_alloc_component (Arena_T arena, const char *start, const char *end,
 
 /* ============================================================================
  * URI Parsing - State Machine Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * URIParseContext - Context for URI parsing state machine
@@ -608,7 +616,8 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
   SocketHTTP_URIResult r;
 
   /* Scheme (with lowercase conversion) */
-  if (ctx->scheme_start && ctx->scheme_end && ctx->scheme_end > ctx->scheme_start)
+  if (ctx->scheme_start && ctx->scheme_end
+      && ctx->scheme_end > ctx->scheme_start)
     {
       size_t slen = (size_t)(ctx->scheme_end - ctx->scheme_start);
       char *s = arena_strdup_n (arena, ctx->scheme_start, slen);
@@ -672,8 +681,8 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
       size_t path_len_calc = (size_t)(path_end - ctx->path_start);
       if (path_len_calc > 4096)
         return URI_PARSE_TOO_LONG;
-      r = uri_alloc_component (arena, ctx->path_start, path_end,
-                               &result->path, &result->path_len);
+      r = uri_alloc_component (arena, ctx->path_start, path_end, &result->path,
+                               &result->path_len);
       if (r != URI_PARSE_OK)
         return r;
 
@@ -741,7 +750,8 @@ uri_alloc_all_components (const URIParseContext *ctx, SocketHTTP_URI *result,
 
 /* ============================================================================
  * URI Parsing - Public API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const char *
 SocketHTTP_URI_result_string (SocketHTTP_URIResult result)
@@ -824,7 +834,8 @@ SocketHTTP_URI_is_secure (const SocketHTTP_URI *uri)
 
 /* ============================================================================
  * Percent Encoding/Decoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 ssize_t
 SocketHTTP_URI_encode (const char *input, size_t len, char *output,
@@ -911,7 +922,8 @@ SocketHTTP_URI_decode (const char *input, size_t len, char *output,
 
 /* ============================================================================
  * URI Build - Helper Macros
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define URI_APPEND_STR(out, pos, size, s, l)                                  \
   do                                                                          \
@@ -1005,7 +1017,8 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 
 /* ============================================================================
  * Media Type Parsing - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_token_char - Check if character is valid HTTP token character (RFC 7230)
@@ -1016,15 +1029,16 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
 static inline int
 is_token_char (unsigned char c)
 {
-  return isalnum (c) ||
-         c == '!' || c == '#' || c == '$' || c == '%' || c == '&' || c == '\'' ||
-         c == '*' || c == '+' || c == '-' || c == '.' ||
-         c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+  return isalnum (c) || c == '!' || c == '#' || c == '$' || c == '%'
+         || c == '&' || c == '\'' || c == '*' || c == '+' || c == '-'
+         || c == '.' || c == '^' || c == '_' || c == '`' || c == '|'
+         || c == '~';
 }
 
 /* ============================================================================
  * URI Component Validation Helpers (RFC 3986)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_unreserved - Check if character is unreserved (RFC 3986)
@@ -1068,7 +1082,8 @@ is_pchar_raw (unsigned char c)
 
 static SocketHTTP_URIResult
 validate_string_chars (const char *start, size_t len,
-                       int (*validator)(unsigned char), SocketHTTP_URIResult error_type)
+                       int (*validator) (unsigned char),
+                       SocketHTTP_URIResult error_type)
 {
   for (size_t i = 0; i < len; i++)
     {
@@ -1144,9 +1159,11 @@ is_userinfo_raw (unsigned char c)
  * Returns: URI_PARSE_OK or URI_PARSE_INVALID_HOST
  */
 
-static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len)
+static SocketHTTP_URIResult
+validate_reg_name (const char *host, size_t len)
 {
-  SocketHTTP_URIResult r = validate_string_chars (host, len, is_reg_name_raw, URI_PARSE_INVALID_HOST);
+  SocketHTTP_URIResult r = validate_string_chars (host, len, is_reg_name_raw,
+                                                  URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (host, len);
@@ -1162,7 +1179,8 @@ static SocketHTTP_URIResult validate_reg_name (const char *host, size_t len)
 static SocketHTTP_URIResult
 validate_userinfo (const char *userinfo, size_t len)
 {
-  SocketHTTP_URIResult r = validate_string_chars (userinfo, len, is_userinfo_raw, URI_PARSE_ERROR);
+  SocketHTTP_URIResult r = validate_string_chars (
+      userinfo, len, is_userinfo_raw, URI_PARSE_ERROR);
   if (r != URI_PARSE_OK)
     return r;
   return validate_pct_encoded (userinfo, len);
@@ -1199,7 +1217,8 @@ validate_ipv6_literal (const char *host, size_t len)
     return URI_PARSE_INVALID_HOST;
 
   // Basic char check inside
-  SocketHTTP_URIResult r = validate_string_chars (host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
+  SocketHTTP_URIResult r = validate_string_chars (
+      host + 1, inner_len, is_ipv6_char, URI_PARSE_INVALID_HOST);
   if (r != URI_PARSE_OK)
     return r;
 
@@ -1220,12 +1239,11 @@ validate_ipv6_literal (const char *host, size_t len)
  * Returns: URI_PARSE_OK or error
  */
 
-
 static SocketHTTP_URIResult
 validate_host (const char *host, size_t len, int *out_is_ipv6)
 {
   if (!host || len == 0)
-    return URI_PARSE_OK;  // Empty host allowed in some contexts?
+    return URI_PARSE_OK; // Empty host allowed in some contexts?
 
   *out_is_ipv6 = 0;
 
@@ -1249,11 +1267,11 @@ validate_host (const char *host, size_t len, int *out_is_ipv6)
  * Returns: URI_PARSE_OK or URI_PARSE_INVALID_PATH/QUERY
  */
 
-
 static SocketHTTP_URIResult
 validate_path_query (const char *s, size_t len, int is_path)
 {
-  SocketHTTP_URIResult err = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
+  SocketHTTP_URIResult err
+      = is_path ? URI_PARSE_INVALID_PATH : URI_PARSE_INVALID_QUERY;
   size_t i = 0;
   while (i < len)
     {
@@ -1293,11 +1311,10 @@ validate_path_query (const char *s, size_t len, int is_path)
  * Returns: URI_PARSE_OK or URI_PARSE_INVALID_QUERY (reused)
  */
 
-
 static SocketHTTP_URIResult
 validate_fragment (const char *s, size_t len)
 {
-  return validate_path_query (s, len, 0);  // Treat as query-like
+  return validate_path_query (s, len, 0); // Treat as query-like
 }
 
 /**
@@ -1361,7 +1378,7 @@ parse_quoted_value (const char *p, const char *end, const char **value_start,
               *value_len = 0;
               return end;
             }
-          p++;  // Skip escaped character
+          p++; // Skip escaped character
         }
       p++;
     }
@@ -1458,18 +1475,18 @@ mediatype_parse_parameter (const char *p, const char *end,
   p = find_token_end (p, end, "=; \t");
 
   if (p >= end || *p != '=')
-    return NULL;  /* Missing '=' - invalid parameter */
+    return NULL; /* Missing '=' - invalid parameter */
 
   size_t param_len = (size_t)(p - param_start);
 
   if (param_len == 0)
-    return NULL;  /* Empty parameter name */
+    return NULL; /* Empty parameter name */
 
   // Validate parameter name is valid token characters (RFC 7230)
   for (const char *pp = param_start; pp < param_start + param_len; pp++)
     {
       if (!is_token_char ((unsigned char)*pp))
-        return NULL;  /* Invalid character in parameter name */
+        return NULL; /* Invalid character in parameter name */
     }
 
   p++;
@@ -1492,13 +1509,13 @@ mediatype_parse_parameter (const char *p, const char *end,
       value_len = (size_t)(p - value_start);
 
       if (value_len == 0)
-        return NULL;  /* Empty unquoted value */
+        return NULL; /* Empty unquoted value */
 
       // Validate unquoted parameter value is valid token characters (RFC 7230)
       for (const char *vp = value_start; vp < value_start + value_len; vp++)
         {
           if (!is_token_char ((unsigned char)*vp))
-            return NULL;  /* Invalid character in parameter value */
+            return NULL; /* Invalid character in parameter value */
         }
     }
 
@@ -1534,7 +1551,8 @@ mediatype_parse_parameter (const char *p, const char *end,
 
 /* ============================================================================
  * Media Type Parsing - Public API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP_MediaType_parse (const char *value, size_t len,
@@ -1559,7 +1577,7 @@ SocketHTTP_MediaType_parse (const char *value, size_t len,
     {
       p = mediatype_parse_parameter (p, end, result, arena);
       if (p == NULL)
-        return -1;  /* Parameter parsing error */
+        return -1; /* Parameter parsing error */
     }
 
   return 0;
@@ -1599,7 +1617,8 @@ SocketHTTP_MediaType_matches (const SocketHTTP_MediaType *type,
 
 /* ============================================================================
  * Accept Header Parsing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * qvalue_compare - Compare function for qsort by quality descending

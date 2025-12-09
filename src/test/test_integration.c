@@ -224,7 +224,7 @@ TEST (integration_dns_cancellation_signal)
   SocketDNS_T dns = SocketDNS_new ();
   ASSERT_NOT_NULL (dns);
 
-  SocketDNS_Request_T req
+  Request_T req
       = SocketDNS_resolve (dns, "localhost", 0, NULL, NULL);
   ASSERT_NOT_NULL (req);
 

@@ -37,7 +37,8 @@
 
 /* ============================================================================
  * Configuration Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Maximum WebSocket frame size (default 16MB) */
 #ifndef SOCKETWS_MAX_FRAME_SIZE
@@ -46,7 +47,8 @@
 
 /* ============================================================================
  * Handshake Constants (RFC 6455 Section 4)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** WebSocket protocol version per RFC 6455 */
 #define SOCKETWS_PROTOCOL_VERSION "13"
@@ -81,7 +83,8 @@
 
 /* ============================================================================
  * XOR Masking Constants (RFC 6455 Section 5.3)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Alignment size for optimized 64-bit XOR masking */
 #define SOCKETWS_XOR_ALIGN_SIZE 8
@@ -97,7 +100,8 @@
 
 /* ============================================================================
  * Frame Header Constants (RFC 6455 Section 5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Minimum frame header size: 1 byte (FIN+RSV+opcode) + 1 byte (MASK+len) */
 #define SOCKETWS_BASE_HEADER_SIZE 2
@@ -122,7 +126,8 @@
 
 /* ============================================================================
  * Frame Header Bit Masks (RFC 6455 Section 5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** FIN bit: indicates final fragment of message */
 #define SOCKETWS_FIN_BIT 0x80
@@ -147,7 +152,8 @@
 
 /* ============================================================================
  * Send Buffer Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Chunk size for data frame payload sending (8KB) */
 #ifndef SOCKETWS_SEND_CHUNK_SIZE
@@ -199,15 +205,16 @@
 
 /* ============================================================================
  * Frame Parsing State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
-  WS_FRAME_STATE_HEADER,        /* Reading frame header */
-  WS_FRAME_STATE_EXTENDED_LEN,  /* Reading extended length */
-  WS_FRAME_STATE_MASK_KEY,      /* Reading mask key */
-  WS_FRAME_STATE_PAYLOAD,       /* Reading payload */
-  WS_FRAME_STATE_COMPLETE       /* Frame complete */
+  WS_FRAME_STATE_HEADER,       /* Reading frame header */
+  WS_FRAME_STATE_EXTENDED_LEN, /* Reading extended length */
+  WS_FRAME_STATE_MASK_KEY,     /* Reading mask key */
+  WS_FRAME_STATE_PAYLOAD,      /* Reading payload */
+  WS_FRAME_STATE_COMPLETE      /* Frame complete */
 } SocketWS_FrameState;
 
 typedef struct
@@ -216,7 +223,7 @@ typedef struct
 
   /* Parsed header fields */
   int fin;
-  int rsv1;                     /* RSV1 = compression flag */
+  int rsv1; /* RSV1 = compression flag */
   int rsv2;
   int rsv3;
   SocketWS_Opcode opcode;
@@ -236,16 +243,17 @@ typedef struct
 
 /* ============================================================================
  * Message Reassembly State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
-  SocketWS_Opcode type;         /* TEXT or BINARY (from first frame) */
-  unsigned char *data;          /* Reassembly buffer */
-  size_t len;                   /* Current message length */
-  size_t capacity;              /* Buffer capacity */
-  size_t fragment_count;        /* Number of fragments received */
-  int compressed;               /* RSV1 set on first fragment */
+  SocketWS_Opcode type;  /* TEXT or BINARY (from first frame) */
+  unsigned char *data;   /* Reassembly buffer */
+  size_t len;            /* Current message length */
+  size_t capacity;       /* Buffer capacity */
+  size_t fragment_count; /* Number of fragments received */
+  int compressed;        /* RSV1 set on first fragment */
 
   /* UTF-8 validation state (for TEXT messages) */
   SocketUTF8_State utf8_state;
@@ -255,7 +263,8 @@ typedef struct
 
 /* ============================================================================
  * Handshake State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
@@ -296,13 +305,14 @@ typedef struct
 
 /* ============================================================================
  * Compression State (RFC 7692)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifdef SOCKETWS_HAS_DEFLATE
 typedef struct
 {
-  z_stream deflate_stream;      /* For compression */
-  z_stream inflate_stream;      /* For decompression */
+  z_stream deflate_stream; /* For compression */
+  z_stream inflate_stream; /* For decompression */
   int deflate_initialized;
   int inflate_initialized;
 
@@ -323,15 +333,16 @@ typedef struct
 
 /* ============================================================================
  * Main WebSocket Context Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 struct SocketWS
 {
   /* Underlying resources */
-  Socket_T socket;              /* TCP/TLS socket (may be NULL if transferred) */
-  Arena_T arena;                /* Memory arena for all allocations */
-  SocketBuf_T recv_buf;         /* Receive circular buffer */
-  SocketBuf_T send_buf;         /* Send circular buffer */
+  Socket_T socket;      /* TCP/TLS socket (may be NULL if transferred) */
+  Arena_T arena;        /* Memory arena for all allocations */
+  SocketBuf_T recv_buf; /* Receive circular buffer */
+  SocketBuf_T send_buf; /* Send circular buffer */
 
   /* Configuration (copied on create) */
   SocketWS_Config config;
@@ -356,8 +367,8 @@ struct SocketWS
 #endif
 
   /* Close state */
-  int close_sent;               /* We sent CLOSE frame */
-  int close_received;           /* We received CLOSE frame */
+  int close_sent;     /* We sent CLOSE frame */
+  int close_received; /* We received CLOSE frame */
   SocketWS_CloseCode close_code;
   char close_reason[SOCKETWS_MAX_CLOSE_REASON + 1];
 
@@ -371,7 +382,7 @@ struct SocketWS
 
   /* Auto-ping timer (using SocketTimer) */
   SocketTimer_T ping_timer;
-  SocketPoll_T poll;            /* For timer integration */
+  SocketPoll_T poll; /* For timer integration */
 
   /* Error tracking */
   SocketWS_Error last_error;
@@ -389,7 +400,8 @@ typedef struct SocketWS *SocketWS_T;
 
 /* ============================================================================
  * Thread-Local Exception Support
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Declare module-specific exception using centralized macros */
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
@@ -399,7 +411,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketWS);
 
 /* ============================================================================
  * Internal Helper Functions - Memory
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_copy_string - Copy string to arena
@@ -412,7 +425,8 @@ char *ws_copy_string (Arena_T arena, const char *str);
 
 /* ============================================================================
  * Internal Helper Functions - Frame Sending
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_send_control_frame - Send a control frame (PING/PONG/CLOSE)
@@ -441,7 +455,8 @@ int ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Internal Helper Functions - Frame Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_frame_reset - Reset frame parsing state for next frame
@@ -504,7 +519,8 @@ size_t ws_mask_payload_offset (unsigned char *data, size_t len,
 
 /* ============================================================================
  * Internal Helper Functions - Handshake
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_handshake_client_init - Initialize client handshake
@@ -552,7 +568,8 @@ int ws_handshake_validate_accept (SocketWS_T ws, const char *accept);
 
 /* ============================================================================
  * Internal Helper Functions - Compression
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #ifdef SOCKETWS_HAS_DEFLATE
 /**
@@ -600,7 +617,8 @@ int ws_decompress_message (SocketWS_T ws, const unsigned char *input,
 
 /* ============================================================================
  * Internal Helper Functions - Control Frames
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_send_close - Send CLOSE frame
@@ -646,7 +664,8 @@ int ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Internal Helper Functions - Message Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_message_reset - Reset message assembly state
@@ -677,7 +696,8 @@ int ws_message_finalize (SocketWS_T ws);
 
 /* ============================================================================
  * Internal Helper Functions - Auto-Ping
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_auto_ping_start - Start auto-ping timer
@@ -702,7 +722,8 @@ void ws_auto_ping_callback (void *userdata);
 
 /* ============================================================================
  * Internal Helper Functions - I/O
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_flush_send_buffer - Flush send buffer to socket
@@ -730,7 +751,8 @@ void ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...);
 
 /* ============================================================================
  * Validation Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_is_control_opcode - Check if opcode is control frame
@@ -780,4 +802,3 @@ ws_is_valid_close_code (int code)
 }
 
 #endif /* SOCKETWS_PRIVATE_INCLUDED */
-

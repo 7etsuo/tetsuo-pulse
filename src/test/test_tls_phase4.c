@@ -30,7 +30,8 @@ generate_test_certs (const char *cert_file, const char *key_file)
   FILE *f;
 
   /* Generate self-signed certificate for testing.
-   * Note: -addext requires OpenSSL 1.1.1+, so we use basic options for compatibility */
+   * Note: -addext requires OpenSSL 1.1.1+, so we use basic options for
+   * compatibility */
   snprintf (
       cmd, sizeof (cmd),
       "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 -nodes "
@@ -503,9 +504,8 @@ TEST (tls_load_certificate_invalid_path)
 
   TRY
   {
-    SocketTLSContext_T ctx
-        = SocketTLSContext_new_server ("/nonexistent/cert.pem",
-                                       "/nonexistent/key.pem", NULL);
+    SocketTLSContext_T ctx = SocketTLSContext_new_server (
+        "/nonexistent/cert.pem", "/nonexistent/key.pem", NULL);
     (void)ctx;
   }
   EXCEPT (SocketTLS_Failed) { raised = 1; }
@@ -877,7 +877,8 @@ TEST (tls_set_cipher_list_invalid)
   /* Test with invalid cipher list */
   TRY
   {
-    SocketTLSContext_set_cipher_list (ctx, "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
+    SocketTLSContext_set_cipher_list (ctx,
+                                      "INVALID_CIPHER_THAT_DOES_NOT_EXIST");
   }
   EXCEPT (SocketTLS_Failed) { raised = 1; }
   END_TRY;
@@ -932,7 +933,8 @@ TEST (tls_ocsp_response_set_valid)
     unsigned char invalid_resp[] = { 0x30, 0x03, 0x02, 0x01, 0x00 };
     TRY
     {
-      SocketTLSContext_set_ocsp_response (ctx, invalid_resp, sizeof (invalid_resp));
+      SocketTLSContext_set_ocsp_response (ctx, invalid_resp,
+                                          sizeof (invalid_resp));
       /* May or may not raise depending on OpenSSL parsing */
     }
     EXCEPT (SocketTLS_Failed) { /* May be expected */ }
@@ -1161,8 +1163,8 @@ TEST (tls_verify_error_string_api)
     (void)err; /* Either outcome acceptable for self-signed */
 
     /* Test with NULL socket */
-    const char *null_err = SocketTLS_get_verify_error_string (NULL, err_buf,
-                                                              sizeof (err_buf));
+    const char *null_err
+        = SocketTLS_get_verify_error_string (NULL, err_buf, sizeof (err_buf));
     ASSERT_NULL (null_err);
 
     /* Test with NULL buffer */
@@ -1259,7 +1261,9 @@ TEST (tls_alpn_protos_validation)
   /* Test invalid characters (now rejects per full RFC 7301 printable ASCII) */
   TRY
   {
-    const char *invalid_chars[] = { "h2", "http/1.1 ", "!invalid space and !", "spdy" }; // space 0x20 invalid, ! 0x21 ok but test
+    const char *invalid_chars[]
+        = { "h2", "http/1.1 ", "!invalid space and !",
+            "spdy" }; // space 0x20 invalid, ! 0x21 ok but test
     SocketTLSContext_set_alpn_protos (ctx, invalid_chars, 4);
     ASSERT (0); /* Should raise on invalid chars */
   }
@@ -1275,7 +1279,7 @@ TEST (tls_alpn_protos_validation)
   /* Test too long protocol */
   TRY
   {
-    char long_proto[300] = {0};
+    char long_proto[300] = { 0 };
     memset (long_proto, 'a', 299);
     long_proto[299] = '\0';
     const char *protos_long[] = { long_proto };
@@ -1286,7 +1290,7 @@ TEST (tls_alpn_protos_validation)
   END_TRY;
 
   /* Test too many protocols (exceeds max) */
-    const char *many_protos[17];
+  const char *many_protos[17];
   TRY
   {
     for (int i = 0; i < 17; i++)
@@ -1302,7 +1306,8 @@ TEST (tls_alpn_protos_validation)
   FINALLY
   {
     /* Cleanup test leak */
-    for (int i = 0; i < 17; i++) free ((void*)many_protos[i]);
+    for (int i = 0; i < 17; i++)
+      free ((void *)many_protos[i]);
   }
   END_TRY;
 
@@ -1322,7 +1327,8 @@ TEST (tls_alpn_protos_validation)
 #endif
 }
 
-/* ==================== Session Ticket Key Validation Tests ==================== */
+/* ==================== Session Ticket Key Validation Tests
+ * ==================== */
 
 TEST (tls_session_tickets_key_length)
 {
@@ -1470,7 +1476,8 @@ TEST (tls_double_enable)
 #endif
 }
 
-/* ==================== Verify Callback Exception Handling Tests ==================== */
+/* ==================== Verify Callback Exception Handling Tests
+ * ==================== */
 
 TEST (tls_verify_callback_exception)
 {
@@ -1581,7 +1588,8 @@ TEST (tls_session_cache_zero_size)
 #endif
 }
 
-/* ==================== Session Cache Stats NULL Context Test ==================== */
+/* ==================== Session Cache Stats NULL Context Test
+ * ==================== */
 
 TEST (session_cache_stats_null_context)
 {
@@ -1598,7 +1606,8 @@ TEST (session_cache_stats_null_context)
 #endif
 }
 
-/* ==================== Session Cache Stats Disabled Test ==================== */
+/* ==================== Session Cache Stats Disabled Test ====================
+ */
 
 TEST (session_cache_stats_disabled)
 {
@@ -1620,7 +1629,8 @@ TEST (session_cache_stats_disabled)
 #endif
 }
 
-/* ==================== Session Cache Stats Partial NULL Pointers Test ==================== */
+/* ==================== Session Cache Stats Partial NULL Pointers Test
+ * ==================== */
 
 TEST (session_cache_stats_partial_null)
 {
@@ -1696,7 +1706,8 @@ TEST (session_cache_server_mode)
 #endif
 }
 
-/* ==================== Session Cache Timeout Defaults Test ==================== */
+/* ==================== Session Cache Timeout Defaults Test
+ * ==================== */
 
 TEST (session_cache_timeout_defaults)
 {
@@ -1714,7 +1725,8 @@ TEST (session_cache_timeout_defaults)
   /* Create new context for negative timeout test */
   ctx = SocketTLSContext_new_client (NULL);
 
-  /* Test with negative timeout - should use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT */
+  /* Test with negative timeout - should use SOCKET_TLS_SESSION_TIMEOUT_DEFAULT
+   */
   TRY { SocketTLSContext_enable_session_cache (ctx, 100, -1); }
   EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
   END_TRY;
@@ -1726,7 +1738,8 @@ TEST (session_cache_timeout_defaults)
 #endif
 }
 
-/* ==================== Session Cache With Zero Max Sessions Test ==================== */
+/* ==================== Session Cache With Zero Max Sessions Test
+ * ==================== */
 
 TEST (session_cache_zero_max_sessions)
 {
@@ -1752,7 +1765,8 @@ TEST (session_cache_zero_max_sessions)
 #endif
 }
 
-/* ==================== Session Resumption Integration Test ==================== */
+/* ==================== Session Resumption Integration Test
+ * ==================== */
 
 TEST (session_resumption_stats)
 {
@@ -1869,7 +1883,8 @@ TEST (tls_verify_mode_all_cases)
 #endif
 }
 
-/* ==================== Verify Callback Generic Exception Test ==================== */
+/* ==================== Verify Callback Generic Exception Test
+ * ==================== */
 
 /* Custom exception for testing the ELSE block in internal_verify_callback */
 static const Except_T Test_GenericException
@@ -2000,7 +2015,8 @@ TEST (tls_crl_load_null_path)
 
 /* Helper to generate a simple CRL file for testing */
 static int
-generate_test_crl (const char *ca_cert, const char *ca_key, const char *crl_file)
+generate_test_crl (const char *ca_cert, const char *ca_key,
+                   const char *crl_file)
 {
   char cmd[2048];
   /* Generate a CRL from the CA */
@@ -2031,7 +2047,8 @@ TEST (tls_crl_load_file)
   Arena_T arena = Arena_new ();
   SocketTLSContext_T ctx = SocketTLSContext_new_client (NULL);
 
-  /* Test file load path (cert file is not a CRL but exercises file detection) */
+  /* Test file load path (cert file is not a CRL but exercises file detection)
+   */
   TRY
   {
     /* This will stat the file (not dir), then try to load as CRL.
@@ -2220,7 +2237,8 @@ TEST (tls_ocsp_status_socket_states)
     ASSERT_EQ (status, 0);
 
     /* Note: Testing tls_ssl = NULL would require internal manipulation
-     * which isn't safe. The above tests cover validate_socket_for_ocsp paths. */
+     * which isn't safe. The above tests cover validate_socket_for_ocsp paths.
+     */
   }
   FINALLY
   {
@@ -2316,7 +2334,8 @@ TEST (tls_ocsp_status_no_response)
 #endif
 }
 
-/* ==================== OCSP Gen Callback Integration Test ==================== */
+/* ==================== OCSP Gen Callback Integration Test ====================
+ */
 
 /* Counter to verify callback was actually invoked */
 static volatile int ocsp_gen_callback_invoked = 0;
@@ -2424,7 +2443,8 @@ TEST (tls_ocsp_gen_callback_integration)
 
 /* ==================== OCSP With Valid Response Test ==================== */
 
-/* Create a minimal valid-looking OCSP response that passes d2i_OCSP_RESPONSE */
+/* Create a minimal valid-looking OCSP response that passes d2i_OCSP_RESPONSE
+ */
 static OCSP_RESPONSE *
 create_mock_ocsp_response (void)
 {
@@ -2453,8 +2473,8 @@ create_full_ocsp_response (void)
     return NULL;
 
   /* Create the full response with the basic response */
-  OCSP_RESPONSE *resp = OCSP_response_create (OCSP_RESPONSE_STATUS_SUCCESSFUL,
-                                              basic);
+  OCSP_RESPONSE *resp
+      = OCSP_response_create (OCSP_RESPONSE_STATUS_SUCCESSFUL, basic);
   OCSP_BASICRESP_free (basic);
   return resp;
 }
@@ -2484,7 +2504,8 @@ successful_ocsp_gen_cb (SSL *ssl, void *arg)
   (void)ssl;
   (void)arg;
   ocsp_gen_callback_invoked = 1;
-  /* Return SUCCESSFUL status response to exercise validate_ocsp_basic_response */
+  /* Return SUCCESSFUL status response to exercise validate_ocsp_basic_response
+   */
   return create_successful_ocsp_response ();
 }
 
@@ -2577,7 +2598,8 @@ TEST (tls_ocsp_with_valid_response)
 #endif
 }
 
-/* ==================== OCSP With Successful Status Response Test ==================== */
+/* ==================== OCSP With Successful Status Response Test
+ * ==================== */
 
 TEST (tls_ocsp_with_successful_response)
 {
@@ -2668,7 +2690,8 @@ TEST (tls_ocsp_with_successful_response)
 #endif
 }
 
-/* ==================== OCSP With Full Basic Response Test ==================== */
+/* ==================== OCSP With Full Basic Response Test ====================
+ */
 
 TEST (tls_ocsp_with_full_basic_response)
 {
@@ -2695,7 +2718,8 @@ TEST (tls_ocsp_with_full_basic_response)
 
     /* Set OCSP gen callback that returns response with basic response
      * This exercises validate_ocsp_basic_response success path */
-    SocketTLSContext_set_ocsp_gen_callback (server_ctx, full_ocsp_gen_cb, NULL);
+    SocketTLSContext_set_ocsp_gen_callback (server_ctx, full_ocsp_gen_cb,
+                                            NULL);
 
     ASSERT_EQ (socketpair (AF_UNIX, SOCK_STREAM, 0, sv), 0);
     server_sock = Socket_new_from_fd (sv[0]);
@@ -2777,8 +2801,8 @@ create_invalid_pem (const char *path)
 
 /* Helper to generate two separate cert/key pairs for mismatch testing */
 static int
-generate_two_cert_pairs (const char *cert1, const char *key1, const char *cert2,
-                         const char *key2)
+generate_two_cert_pairs (const char *cert1, const char *key1,
+                         const char *cert2, const char *key2)
 {
   char cmd[1024];
 
@@ -2805,7 +2829,8 @@ generate_two_cert_pairs (const char *cert1, const char *key1, const char *cert2,
   return 0;
 }
 
-/* ==================== Test 1: Certificate Loading Error Paths ==================== */
+/* ==================== Test 1: Certificate Loading Error Paths
+ * ==================== */
 
 TEST (tls_load_certificate_errors)
 {
@@ -2833,14 +2858,20 @@ TEST (tls_load_certificate_errors)
 
     /* Test 1: Path traversal in cert path - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, "../etc/passwd", valid_key); }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, "../etc/passwd", valid_key);
+    }
     EXCEPT (SocketTLS_Failed) { raised = 1; }
     END_TRY;
     ASSERT_EQ (raised, 1);
 
     /* Test 2: Path traversal in key path - should raise */
     raised = 0;
-    TRY { SocketTLSContext_load_certificate (ctx, valid_cert, "../etc/passwd"); }
+    TRY
+    {
+      SocketTLSContext_load_certificate (ctx, valid_cert, "../etc/passwd");
+    }
     EXCEPT (SocketTLS_Failed) { raised = 1; }
     END_TRY;
     ASSERT_EQ (raised, 1);
@@ -2987,10 +3018,7 @@ TEST (tls_load_ca_directory_fallback)
 
   /* Test with /tmp (another directory) */
   TRY { SocketTLSContext_load_ca (ctx, "/tmp"); }
-  EXCEPT (SocketTLS_Failed)
-  {
-    /* May fail if no valid CA files */
-  }
+  EXCEPT (SocketTLS_Failed) { /* May fail if no valid CA files */ }
   END_TRY;
 
   /* Test path with control characters - should raise */
@@ -3007,7 +3035,8 @@ TEST (tls_load_ca_directory_fallback)
 #endif
 }
 
-/* ==================== Test 3: SNI Client Context Rejection ==================== */
+/* ==================== Test 3: SNI Client Context Rejection
+ * ==================== */
 
 TEST (tls_sni_client_context_rejection)
 {
@@ -3056,7 +3085,8 @@ TEST (tls_sni_client_context_rejection)
 #endif
 }
 
-/* ==================== Test 4: SNI Max Certificates Limit ==================== */
+/* ==================== Test 4: SNI Max Certificates Limit ====================
+ */
 
 /* Note: Testing 100 cert limit would require generating 101 certificates
  * which is slow. Instead we verify the limit check path works. */
@@ -3114,8 +3144,9 @@ TEST (tls_sni_capacity_expansion)
   const char *certs[6]
       = { "/tmp/test_exp1.crt", "/tmp/test_exp2.crt", "/tmp/test_exp3.crt",
           "/tmp/test_exp4.crt", "/tmp/test_exp5.crt", "/tmp/test_exp6.crt" };
-  const char *keys[6] = { "/tmp/test_exp1.key", "/tmp/test_exp2.key", "/tmp/test_exp3.key",
-                          "/tmp/test_exp4.key", "/tmp/test_exp5.key", "/tmp/test_exp6.key" };
+  const char *keys[6]
+      = { "/tmp/test_exp1.key", "/tmp/test_exp2.key", "/tmp/test_exp3.key",
+          "/tmp/test_exp4.key", "/tmp/test_exp5.key", "/tmp/test_exp6.key" };
   const char *hosts[6]
       = { "host1.example.com", "host2.example.com", "host3.example.com",
           "host4.example.com", "host5.example.com", "host6.example.com" };
@@ -3135,10 +3166,11 @@ TEST (tls_sni_capacity_expansion)
   volatile int i;
   for (i = 0; i < 6; i++)
     {
-      snprintf (cmd, sizeof (cmd),
-                "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
-                "-nodes -subj '/CN=%s' 2>/dev/null",
-                keys[i], certs[i], hosts[i]);
+      snprintf (
+          cmd, sizeof (cmd),
+          "openssl req -x509 -newkey rsa:2048 -keyout %s -out %s -days 1 "
+          "-nodes -subj '/CN=%s' 2>/dev/null",
+          keys[i], certs[i], hosts[i]);
       if (system (cmd) != 0)
         {
           /* Cleanup any generated certs */
@@ -3291,8 +3323,8 @@ TEST (tls_sni_invalid_hostname)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "host_name.example.com", cert_file,
-                                        key_file);
+      SocketTLSContext_add_certificate (ctx, "host_name.example.com",
+                                        cert_file, key_file);
     }
     EXCEPT (SocketTLS_Failed) { raised = 1; }
     END_TRY;
@@ -3450,8 +3482,7 @@ TEST (tls_sni_callback_selection)
 
   TRY
   {
-    server_ctx
-        = SocketTLSContext_new_server (default_cert, default_key, NULL);
+    server_ctx = SocketTLSContext_new_server (default_cert, default_key, NULL);
     ASSERT_NOT_NULL (server_ctx);
 
     /* Add SNI certificate for snihost1.example.com */
@@ -3508,7 +3539,8 @@ TEST (tls_sni_callback_selection)
     }
     EXCEPT (SocketTLS_HandshakeFailed)
     {
-      /* May fail due to cert verification - acceptable, SNI code path still exercised */
+      /* May fail due to cert verification - acceptable, SNI code path still
+       * exercised */
     }
     END_TRY;
 
@@ -3517,7 +3549,8 @@ TEST (tls_sni_callback_selection)
   }
   EXCEPT (SocketTLS_Failed)
   {
-    /* Skip test if cert loading/SNI setup fails (may happen due to OpenSSL config) */
+    /* Skip test if cert loading/SNI setup fails (may happen due to OpenSSL
+     * config) */
   }
   FINALLY
   {
@@ -3591,8 +3624,7 @@ TEST (tls_sni_callback_no_match)
 
   TRY
   {
-    server_ctx
-        = SocketTLSContext_new_server (default_cert, default_key, NULL);
+    server_ctx = SocketTLSContext_new_server (default_cert, default_key, NULL);
   }
   EXCEPT (SocketTLS_Failed)
   {
@@ -3634,10 +3666,7 @@ TEST (tls_sni_callback_no_match)
 
     /* Set SNI hostname to UNKNOWN host - should trigger no-match path */
     TRY { SocketTLS_set_hostname (client_sock, "unknown.example.com"); }
-    EXCEPT (SocketTLS_Failed)
-    {
-      /* May fail */
-    }
+    EXCEPT (SocketTLS_Failed) { /* May fail */ }
     END_TRY;
 
     Socket_setnonblocking (server_sock);
@@ -3666,7 +3695,8 @@ TEST (tls_sni_callback_no_match)
     }
     EXCEPT (SocketTLS_HandshakeFailed)
     {
-      /* May fail due to cert verification - acceptable, SNI code path still exercised */
+      /* May fail due to cert verification - acceptable, SNI code path still
+       * exercised */
     }
     END_TRY;
 
@@ -3674,7 +3704,8 @@ TEST (tls_sni_callback_no_match)
   }
   EXCEPT (SocketTLS_Failed)
   {
-    /* Skip test if cert loading/SNI setup fails (may happen due to OpenSSL config) */
+    /* Skip test if cert loading/SNI setup fails (may happen due to OpenSSL
+     * config) */
   }
   FINALLY
   {
@@ -3697,7 +3728,8 @@ TEST (tls_sni_callback_no_match)
 #endif
 }
 
-/* ==================== Test 10: Invalid PEM File Parsing ==================== */
+/* ==================== Test 10: Invalid PEM File Parsing ====================
+ */
 
 TEST (tls_load_invalid_pem_files)
 {
@@ -3773,7 +3805,8 @@ TEST (tls_load_invalid_pem_files)
 #endif
 }
 
-/* ==================== Test: SNI Add Certificate Invalid Path ==================== */
+/* ==================== Test: SNI Add Certificate Invalid Path
+ * ==================== */
 
 TEST (tls_sni_add_certificate_path_traversal)
 {
@@ -3821,7 +3854,8 @@ TEST (tls_sni_add_certificate_path_traversal)
     raised = 0;
     TRY
     {
-      SocketTLSContext_add_certificate (ctx, "valid.example.com", "", key_file);
+      SocketTLSContext_add_certificate (ctx, "valid.example.com", "",
+                                        key_file);
     }
     EXCEPT (SocketTLS_Failed) { raised = 1; }
     END_TRY;

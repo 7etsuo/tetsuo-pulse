@@ -31,6 +31,7 @@
 #include "core/SocketTimer.h"
 #include "core/SocketUTF8.h"
 #define SOCKET_LOG_COMPONENT "SocketWS"
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
@@ -38,11 +39,11 @@
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketWS-private.h"
-#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Module Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Initial message assembly buffer capacity */
 #define SOCKETWS_INITIAL_MESSAGE_CAPACITY 4096
@@ -52,20 +53,22 @@
 
 /* ============================================================================
  * Exception Definitions
- * ============================================================================ */
+ * ============================================================================
+ */
 
-const Except_T SocketWS_Failed = { &SocketWS_Failed,
-                                   "WebSocket operation failed" };
-const Except_T SocketWS_ProtocolError = { &SocketWS_ProtocolError,
-                                          "WebSocket protocol error" };
-const Except_T SocketWS_Closed = { &SocketWS_Closed,
-                                   "WebSocket connection closed" };
+const Except_T SocketWS_Failed
+    = { &SocketWS_Failed, "WebSocket operation failed" };
+const Except_T SocketWS_ProtocolError
+    = { &SocketWS_ProtocolError, "WebSocket protocol error" };
+const Except_T SocketWS_Closed
+    = { &SocketWS_Closed, "WebSocket connection closed" };
 
 /* Thread-local exception - defined via macro in private header */
 
 /* ============================================================================
  * Configuration Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketWS_config_defaults (SocketWS_Config *config)
@@ -89,7 +92,8 @@ SocketWS_config_defaults (SocketWS_Config *config)
 
 /* ============================================================================
  * Internal Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_alloc_context - Allocate and initialize WebSocket context
@@ -192,11 +196,13 @@ ws_alloc_context (Arena_T arena, const SocketWS_Config *config)
   return ws;
 }
 
-/* ws_copy_string is declared in private header and defined in SocketWS-handshake.c */
+/* ws_copy_string is declared in private header and defined in
+ * SocketWS-handshake.c */
 
 /* ============================================================================
  * Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 ws_set_error (SocketWS_T ws, SocketWS_Error error, const char *fmt, ...)
@@ -242,7 +248,8 @@ ws_ensure_open (SocketWS_T ws)
 
 /* ============================================================================
  * Frame State Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 ws_frame_reset (SocketWS_FrameParse *frame)
@@ -256,7 +263,8 @@ ws_frame_reset (SocketWS_FrameParse *frame)
 
 /* ============================================================================
  * Message Assembly Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 ws_message_reset (SocketWS_MessageAssembly *message)
@@ -283,10 +291,12 @@ ws_message_check_limits (SocketWS_T ws, size_t additional_len)
 {
   SocketWS_MessageAssembly *msg = &ws->message;
   size_t new_len;
-  if (!SocketSecurity_check_add(msg->len, additional_len, &new_len)) {
-    ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE, "Message size addition overflow in check_limits");
-    return -1;
-  }
+  if (!SocketSecurity_check_add (msg->len, additional_len, &new_len))
+    {
+      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+                    "Message size addition overflow in check_limits");
+      return -1;
+    }
 
   if (msg->fragment_count >= ws->config.max_fragments)
     {
@@ -323,17 +333,21 @@ ws_message_grow_buffer (SocketWS_T ws, size_t required_len)
   if (required_len <= msg->capacity)
     return 0;
 
-  new_capacity = msg->capacity ? msg->capacity : SOCKETWS_INITIAL_MESSAGE_CAPACITY;
+  new_capacity
+      = msg->capacity ? msg->capacity : SOCKETWS_INITIAL_MESSAGE_CAPACITY;
   size_t iterations = 0;
-  while (new_capacity < required_len && iterations < 64) {  // Prevent potential loop on overflow
-    size_t temp;
-    if (!SocketSecurity_check_multiply(new_capacity, SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR, &temp)) {
-      new_capacity = required_len > new_capacity ? required_len : SIZE_MAX;
-      break;
+  while (new_capacity < required_len && iterations < 64)
+    { // Prevent potential loop on overflow
+      size_t temp;
+      if (!SocketSecurity_check_multiply (
+              new_capacity, SOCKETWS_MESSAGE_BUFFER_GROWTH_FACTOR, &temp))
+        {
+          new_capacity = required_len > new_capacity ? required_len : SIZE_MAX;
+          break;
+        }
+      new_capacity = temp;
+      iterations++;
     }
-    new_capacity = temp;
-    iterations++;
-  }
 
   if (new_capacity > ws->config.max_message_size)
     new_capacity = ws->config.max_message_size;
@@ -394,10 +408,12 @@ ws_message_append (SocketWS_T ws, const unsigned char *data, size_t len,
 
   assert (ws);
   msg = &ws->message;
-  if (!SocketSecurity_check_add(msg->len, len, &new_len)) {
-    ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE, "Message size addition overflow in append");
-    return -1;
-  }
+  if (!SocketSecurity_check_add (msg->len, len, &new_len))
+    {
+      ws_set_error (ws, WS_ERROR_MESSAGE_TOO_LARGE,
+                    "Message size addition overflow in append");
+      return -1;
+    }
 
   if (ws_message_check_limits (ws, len) < 0)
     return -1;
@@ -448,7 +464,8 @@ ws_message_finalize (SocketWS_T ws)
 
 /* ============================================================================
  * I/O Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_send_contiguous - Send contiguous data from send buffer
@@ -553,7 +570,8 @@ ws_fill_recv_buffer (SocketWS_T ws)
 
 /* ============================================================================
  * Control Frame Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_store_close_reason - Store close reason in context
@@ -685,9 +703,8 @@ ws_send_ping (SocketWS_T ws, const unsigned char *payload, size_t len)
 
   if (len > SOCKETWS_MAX_CONTROL_PAYLOAD)
     {
-      ws_set_error (ws, WS_ERROR_PROTOCOL,
-                    "Ping payload too large: %zu > %d", len,
-                    SOCKETWS_MAX_CONTROL_PAYLOAD);
+      ws_set_error (ws, WS_ERROR_PROTOCOL, "Ping payload too large: %zu > %d",
+                    len, SOCKETWS_MAX_CONTROL_PAYLOAD);
       return -1;
     }
 
@@ -742,8 +759,8 @@ ws_send_pong (SocketWS_T ws, const unsigned char *payload, size_t len)
  */
 static int
 ws_parse_close_payload (const unsigned char *payload, size_t len,
-                        SocketWS_CloseCode *code_out,
-                        const char **reason_out, size_t *reason_len_out)
+                        SocketWS_CloseCode *code_out, const char **reason_out,
+                        size_t *reason_len_out)
 {
   *code_out = WS_CLOSE_NO_STATUS;
   *reason_out = NULL;
@@ -781,10 +798,12 @@ ws_validate_and_store_close_reason (SocketWS_T ws, const char *reason,
   /* Validate close reason as UTF-8 */
   if (ws->config.validate_utf8 && reason_len > 0)
     {
-      SocketUTF8_Result result = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
+      SocketUTF8_Result result
+          = SocketUTF8_validate ((const unsigned char *)reason, reason_len);
       if (result != UTF8_VALID)
         {
-          ws_set_error (ws, WS_ERROR_INVALID_UTF8, "Invalid UTF-8 in close reason");
+          ws_set_error (ws, WS_ERROR_INVALID_UTF8,
+                        "Invalid UTF-8 in close reason");
           return -1;
         }
     }
@@ -818,7 +837,8 @@ ws_handle_close_frame (SocketWS_T ws, const unsigned char *payload, size_t len)
   if (ws_validate_and_store_close_reason (ws, reason, reason_len) < 0)
     {
       /* Send protocol error close */
-      ws_send_close (ws, WS_CLOSE_INVALID_PAYLOAD, "Invalid UTF-8 in close reason");
+      ws_send_close (ws, WS_CLOSE_INVALID_PAYLOAD,
+                     "Invalid UTF-8 in close reason");
       ws->state = WS_STATE_CLOSED;
       return -1;
     }
@@ -850,14 +870,20 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
       ws->last_pong_received_time = Socket_get_monotonic_ms ();
       ws->awaiting_pong = 0;
 
-      // Optional: Validate pong payload matches pending ping (prevents spoofing)
-      if (ws->pending_ping_len > 0 && 
-          (len != (size_t)ws->pending_ping_len ||
-           SocketCrypto_secure_compare(payload, (const unsigned char*)ws->pending_ping_payload, len) != 0)) {
-        SOCKET_LOG_WARN_MSG("Pong payload mismatch - possible spoofing; closing connection");
-        ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Pong payload mismatch");
-        return -1;
-      }
+      // Optional: Validate pong payload matches pending ping (prevents
+      // spoofing)
+      if (ws->pending_ping_len > 0
+          && (len != (size_t)ws->pending_ping_len
+              || SocketCrypto_secure_compare (
+                     payload, (const unsigned char *)ws->pending_ping_payload,
+                     len)
+                     != 0))
+        {
+          SOCKET_LOG_WARN_MSG (
+              "Pong payload mismatch - possible spoofing; closing connection");
+          ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Pong payload mismatch");
+          return -1;
+        }
 
       return 0;
 
@@ -870,7 +896,8 @@ ws_handle_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Auto-Ping Timer Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 ws_auto_ping_callback (void *userdata)
@@ -916,9 +943,8 @@ ws_auto_ping_start (SocketWS_T ws, SocketPoll_T poll)
     }
 
   ws->poll = poll;
-  ws->ping_timer
-      = SocketTimer_add_repeating (poll, ws->config.ping_interval_ms,
-                                   ws_auto_ping_callback, ws);
+  ws->ping_timer = SocketTimer_add_repeating (
+      poll, ws->config.ping_interval_ms, ws_auto_ping_callback, ws);
 
   if (!ws->ping_timer)
     {
@@ -943,7 +969,8 @@ ws_auto_ping_stop (SocketWS_T ws)
 
 /* ============================================================================
  * Public API - Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_prepare_config - Prepare configuration with role
@@ -986,7 +1013,8 @@ ws_create_context (const SocketWS_Config *config)
   if (!ws)
     {
       Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to allocate WebSocket context");
+      SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+                        "Failed to allocate WebSocket context");
     }
 
   return ws;
@@ -1013,7 +1041,8 @@ SocketWS_client_new (Socket_T socket, const char *host, const char *path,
 
     if (ws_handshake_client_init (ws) < 0)
       {
-        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to initialize handshake");
+        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+                          "Failed to initialize handshake");
       }
   }
   EXCEPT (SocketWS_Failed)
@@ -1046,7 +1075,8 @@ SocketWS_server_accept (Socket_T socket, const SocketHTTP_Request *request,
 
     if (ws_handshake_server_init (ws, request) < 0)
       {
-        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed, "Failed to initialize server handshake");
+        SOCKET_RAISE_MSG (SocketWS, SocketWS_Failed,
+                          "Failed to initialize server handshake");
       }
   }
   EXCEPT (SocketWS_Failed)
@@ -1094,7 +1124,8 @@ SocketWS_free (SocketWS_T *wsp)
 
 /* ============================================================================
  * Public API - State Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketWS_State
 SocketWS_state (SocketWS_T ws)
@@ -1184,7 +1215,8 @@ SocketWS_error_string (SocketWS_Error error)
 
 /* ============================================================================
  * Public API - Handshake
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketWS_handshake (SocketWS_T ws)
@@ -1215,7 +1247,8 @@ SocketWS_handshake (SocketWS_T ws)
 
 /* ============================================================================
  * Public API - Event Loop Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketWS_pollfd (SocketWS_T ws)
@@ -1283,7 +1316,8 @@ SocketWS_process (SocketWS_T ws, unsigned events)
 
 /* ============================================================================
  * Public API - Sending
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketWS_send_text (SocketWS_T ws, const char *data, size_t len)
@@ -1357,5 +1391,3 @@ SocketWS_close (SocketWS_T ws, int code, const char *reason)
 
   return ws_send_close (ws, (SocketWS_CloseCode)code, reason);
 }
-
-

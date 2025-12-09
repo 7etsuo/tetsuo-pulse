@@ -198,7 +198,8 @@ TEST (pinning_add_hex_with_prefix)
 
   /* Add with "sha256//" prefix (HPKP format) */
   const char *hex_hash
-      = "sha256//aabbccdd00112233aabbccdd00112233aabbccdd00112233aabbccdd00112233";
+      = "sha256//"
+        "aabbccdd00112233aabbccdd00112233aabbccdd00112233aabbccdd00112233";
   SocketTLSContext_add_pin_hex (ctx, hex_hash);
 
   ASSERT_EQ (SocketTLSContext_get_pin_count (ctx), 1);
@@ -370,7 +371,8 @@ TEST (pinning_invalid_hex_format)
   TRY
   {
     SocketTLSContext_add_pin_hex (
-        ctx, "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg");
+        ctx,
+        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg");
   }
   EXCEPT (SocketTLS_Failed) { caught = 1; }
   END_TRY;
@@ -641,7 +643,10 @@ TEST (pinning_handshake_with_wrong_pin_enforce)
               && server_state != TLS_HANDSHAKE_ERROR)
             server_state = SocketTLS_handshake (server);
         }
-        EXCEPT (SocketTLS_HandshakeFailed) { server_state = TLS_HANDSHAKE_ERROR; }
+        EXCEPT (SocketTLS_HandshakeFailed)
+        {
+          server_state = TLS_HANDSHAKE_ERROR;
+        }
         END_TRY;
 
         loops++;
@@ -752,7 +757,8 @@ TEST (pinning_binary_search_correctness)
   unsigned char hashes[10][32];
   for (int i = 0; i < 10; i++)
     {
-      memset (hashes[i], (unsigned char)(i * 17), 32); /* Non-sequential values */
+      memset (hashes[i], (unsigned char)(i * 17),
+              32); /* Non-sequential values */
     }
 
   /* Add in random order */
@@ -820,4 +826,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

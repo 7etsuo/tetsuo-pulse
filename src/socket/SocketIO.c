@@ -38,16 +38,16 @@
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketIO);
 
 /* Convenience macros for unified error+raise pattern */
-#define RAISE_FMT(e, fmt, ...)                                                 \
+#define RAISE_FMT(e, fmt, ...)                                                \
   SOCKET_RAISE_FMT (SocketIO, e, fmt, ##__VA_ARGS__)
-#define RAISE_MSG(e, fmt, ...)                                                 \
+#define RAISE_MSG(e, fmt, ...)                                                \
   SOCKET_RAISE_MSG (SocketIO, e, fmt, ##__VA_ARGS__)
 
 #if SOCKET_HAS_TLS
+#include "core/SocketCrypto.h"
 #include "tls/SocketTLS.h"
 #include <openssl/err.h>
 #include <openssl/ssl.h>
-#include "core/SocketCrypto.h"
 #endif
 
 #define T Socket_T
@@ -60,7 +60,8 @@ extern int Socket_fd (const T socket);
 /* Note: Some functions are extern (declared in header), some are static */
 static ssize_t socket_send_tls (T socket, const void *buf, size_t len);
 static ssize_t socket_recv_tls (T socket, void *buf, size_t len);
-static ssize_t socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt);
+static ssize_t socket_sendv_tls (T socket, const struct iovec *iov,
+                                 int iovcnt);
 static ssize_t socket_recvv_tls (T socket, struct iovec *iov, int iovcnt);
 #endif
 
@@ -262,7 +263,7 @@ socket_sendv_internal (T socket, const struct iovec *iov, int iovcnt,
   assert (iovcnt <= IOV_MAX);
 
   /* Runtime validation via common function (raises on invalid) */
-  (void) SocketCommon_calculate_total_iov_len (iov, iovcnt);
+  (void)SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
 #if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
@@ -291,7 +292,7 @@ socket_recvv_internal (T socket, struct iovec *iov, int iovcnt, int flags)
   assert (iovcnt <= IOV_MAX);
 
   /* Runtime validation via common function (raises on invalid) */
-  (void) SocketCommon_calculate_total_iov_len (iov, iovcnt);
+  (void)SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
 #if SOCKET_HAS_TLS
   if (socket->tls_enabled && socket->tls_ssl)
@@ -592,9 +593,10 @@ socket_recv_tls (T socket, void *buf, size_t len)
  * Raises: Socket_Failed if buffer too small or overflow detected
  * Thread-safe: Yes (operates on local data)
  *
- * Security: Pre-validates total iovec size using SocketCommon_calculate_total_iov_len
- * which performs overflow-safe summation. This prevents integer overflow
- * attacks that could bypass the per-iteration buffer bounds check.
+ * Security: Pre-validates total iovec size using
+ * SocketCommon_calculate_total_iov_len which performs overflow-safe summation.
+ * This prevents integer overflow attacks that could bypass the per-iteration
+ * buffer bounds check.
  */
 static size_t
 copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
@@ -607,15 +609,20 @@ copy_iov_to_buffer (const struct iovec *iov, int iovcnt, void *buffer,
   if (total == 0 && iovcnt > 0)
     RAISE_MSG (Socket_Failed, "iovec total size overflow or invalid");
   if (total > buffer_size)
-    RAISE_FMT (Socket_Failed, "Buffer too small for iovec (need %zu, have %zu)",
-               total, buffer_size);
+    RAISE_FMT (Socket_Failed,
+               "Buffer too small for iovec (need %zu, have %zu)", total,
+               buffer_size);
 
   /* Validate iov_base non-NULL for positive lengths */
-  for (int i = 0; i < iovcnt; i++) {
-    if (iov[i].iov_len > 0 && iov[i].iov_base == NULL) {
-      RAISE_FMT (Socket_Failed, "iov[%d].iov_base is NULL with iov_len=%zu", i, iov[i].iov_len);
+  for (int i = 0; i < iovcnt; i++)
+    {
+      if (iov[i].iov_len > 0 && iov[i].iov_base == NULL)
+        {
+          RAISE_FMT (Socket_Failed,
+                     "iov[%d].iov_base is NULL with iov_len=%zu", i,
+                     iov[i].iov_len);
+        }
     }
-  }
 
   for (int i = 0; i < iovcnt; i++)
     {
@@ -644,23 +651,30 @@ distribute_buffer_to_iov (const void *buffer, size_t buffer_len,
   size_t src_offset = 0;
 
   /* Pre-validate iov params and bases (symmetric to copy_iov_to_buffer) */
-  if (!iov || iovcnt <= 0 || iovcnt > IOV_MAX) {
-    RAISE_FMT (Socket_Failed, "Invalid distribute iov params: iovcnt=%d", iovcnt);
-  }
-  size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
-  if (buffer_len > total_capacity) {
-    RAISE_FMT (Socket_Failed, "buffer_len %zu exceeds iov capacity %zu", buffer_len, total_capacity);
-  }
-  for (int j = 0; j < iovcnt; j++) {
-    if (iov[j].iov_len > 0 && iov[j].iov_base == NULL) {
-      RAISE_FMT (Socket_Failed, "iov[%d].iov_base is NULL with iov_len=%zu", j, iov[j].iov_len);
+  if (!iov || iovcnt <= 0 || iovcnt > IOV_MAX)
+    {
+      RAISE_FMT (Socket_Failed, "Invalid distribute iov params: iovcnt=%d",
+                 iovcnt);
     }
-  }
+  size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
+  if (buffer_len > total_capacity)
+    {
+      RAISE_FMT (Socket_Failed, "buffer_len %zu exceeds iov capacity %zu",
+                 buffer_len, total_capacity);
+    }
+  for (int j = 0; j < iovcnt; j++)
+    {
+      if (iov[j].iov_len > 0 && iov[j].iov_base == NULL)
+        {
+          RAISE_FMT (Socket_Failed,
+                     "iov[%d].iov_base is NULL with iov_len=%zu", j,
+                     iov[j].iov_len);
+        }
+    }
 
   for (int i = 0; i < iovcnt && remaining > 0; i++)
     {
-      size_t chunk
-          = (remaining > iov[i].iov_len) ? iov[i].iov_len : remaining;
+      size_t chunk = (remaining > iov[i].iov_len) ? iov[i].iov_len : remaining;
       memcpy (iov[i].iov_base, (char *)buffer + src_offset, chunk);
       src_offset += chunk;
       remaining -= chunk;
@@ -685,7 +699,8 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
   SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_len = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
-  /* Validate total size fits in int to prevent truncation (SSL_write takes int) */
+  /* Validate total size fits in int to prevent truncation (SSL_write takes
+   * int) */
   if (total_len > INT_MAX)
     RAISE_FMT (SocketTLS_Failed,
                "TLS sendv size exceeds INT_MAX (total_len=%zu)", total_len);
@@ -693,12 +708,14 @@ socket_sendv_tls (T socket, const struct iovec *iov, int iovcnt)
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_len, 1, __FILE__, __LINE__);
   if (!temp_buf)
-    RAISE_MSG (Socket_Failed, SOCKET_ENOMEM ": Cannot allocate TLS sendv buffer");
+    RAISE_MSG (Socket_Failed,
+               SOCKET_ENOMEM ": Cannot allocate TLS sendv buffer");
 
   copy_iov_to_buffer (iov, iovcnt, temp_buf, total_len);
 
   int ssl_result = SSL_write (ssl, temp_buf, (int)total_len);
-  SocketCrypto_secure_clear (temp_buf, total_len);  /* Clear plaintext copy after encryption attempt */
+  SocketCrypto_secure_clear (
+      temp_buf, total_len); /* Clear plaintext copy after encryption attempt */
 
   if (ssl_result <= 0)
     {
@@ -727,7 +744,8 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
   SSL *ssl = socket_validate_tls_ready (socket);
   size_t total_capacity = SocketCommon_calculate_total_iov_len (iov, iovcnt);
 
-  /* Validate total size fits in int to prevent truncation (SSL_read takes int) */
+  /* Validate total size fits in int to prevent truncation (SSL_read takes int)
+   */
   if (total_capacity > INT_MAX)
     RAISE_FMT (SocketTLS_Failed,
                "TLS recvv size exceeds INT_MAX (total_capacity=%zu)",
@@ -736,12 +754,16 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
   Arena_T arena = SocketBase_arena (socket->base);
   void *temp_buf = Arena_calloc (arena, total_capacity, 1, __FILE__, __LINE__);
   if (!temp_buf)
-    RAISE_MSG (Socket_Failed, SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
+    RAISE_MSG (Socket_Failed,
+               SOCKET_ENOMEM ": Cannot allocate TLS recvv buffer");
 
   int ssl_result = SSL_read (ssl, temp_buf, (int)total_capacity);
-  if (ssl_result > 0) {
-    SocketCrypto_secure_clear (temp_buf, (size_t)ssl_result);  /* Clear decrypted data after copy to user buffers */
-  }
+  if (ssl_result > 0)
+    {
+      SocketCrypto_secure_clear (
+          temp_buf, (size_t)ssl_result); /* Clear decrypted data after copy to
+                                            user buffers */
+    }
 
   if (ssl_result <= 0)
     {
@@ -753,8 +775,11 @@ socket_recvv_tls (T socket, struct iovec *iov, int iovcnt)
       RAISE_FMT (SocketTLS_Failed, "TLS recvv failed (iovcnt=%d)", iovcnt);
     }
 
-  size_t copied = distribute_buffer_to_iov (temp_buf, (size_t)ssl_result, iov, iovcnt);
-  SocketCrypto_secure_clear (temp_buf, (size_t)ssl_result);  /* Clear decrypted data from temp buffer after copying to user iov */
+  size_t copied
+      = distribute_buffer_to_iov (temp_buf, (size_t)ssl_result, iov, iovcnt);
+  SocketCrypto_secure_clear (
+      temp_buf, (size_t)ssl_result); /* Clear decrypted data from temp buffer
+                                        after copying to user iov */
   return (ssize_t)copied;
 }
 

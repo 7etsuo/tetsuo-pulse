@@ -9,7 +9,8 @@
 /**
  * @file SocketReconnect.h
  * @ingroup core_io
- * @brief Automatic reconnection framework with exponential backoff and circuit breaker.
+ * @brief Automatic reconnection framework with exponential backoff and circuit
+ * breaker.
  *
  * Provides automatic reconnection with exponential backoff, circuit breaker
  * pattern, and health monitoring for resilient network connections.
@@ -34,8 +35,8 @@
  * - Callbacks are invoked from the same thread that calls process/tick
  *
  * Usage (I/O Passthrough):
- *   SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL, NULL, NULL);
- *   SocketReconnect_connect(conn);
+ *   SocketReconnect_T conn = SocketReconnect_new("example.com", 443, NULL,
+ * NULL, NULL); SocketReconnect_connect(conn);
  *   // Use SocketReconnect_send/recv - auto-reconnects on error
  *   ssize_t n = SocketReconnect_send(conn, data, len);
  *
@@ -53,7 +54,8 @@ extern const Except_T SocketReconnect_Failed;
 
 /* ============================================================================
  * Reconnection State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_State - State of reconnection connection
@@ -63,13 +65,14 @@ typedef enum
   RECONNECT_DISCONNECTED = 0, /**< Not connected, not attempting */
   RECONNECT_CONNECTING,       /**< Connection attempt in progress */
   RECONNECT_CONNECTED,        /**< Successfully connected */
-  RECONNECT_BACKOFF,          /**< Waiting before retry (exponential backoff) */
-  RECONNECT_CIRCUIT_OPEN      /**< Circuit breaker open, blocking attempts */
+  RECONNECT_BACKOFF,     /**< Waiting before retry (exponential backoff) */
+  RECONNECT_CIRCUIT_OPEN /**< Circuit breaker open, blocking attempts */
 } SocketReconnect_State;
 
 /* ============================================================================
  * Backoff Policy Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_Policy_T - Reconnection policy configuration
@@ -79,19 +82,24 @@ typedef enum
 typedef struct SocketReconnect_Policy
 {
   /* Exponential backoff settings */
-  int initial_delay_ms;  /**< First retry delay (default: 100ms) */
-  int max_delay_ms;      /**< Maximum backoff cap (default: 30000ms) */
-  double multiplier;     /**< Backoff multiplier (default: 2.0) */
-  double jitter;         /**< Jitter factor 0.0-1.0 (default: 0.25) */
-  int max_attempts;      /**< Max attempts before giving up, 0=unlimited (default: 10) */
+  int initial_delay_ms; /**< First retry delay (default: 100ms) */
+  int max_delay_ms;     /**< Maximum backoff cap (default: 30000ms) */
+  double multiplier;    /**< Backoff multiplier (default: 2.0) */
+  double jitter;        /**< Jitter factor 0.0-1.0 (default: 0.25) */
+  int max_attempts; /**< Max attempts before giving up, 0=unlimited (default:
+                       10) */
 
   /* Circuit breaker settings */
-  int circuit_failure_threshold; /**< Consecutive failures before opening (default: 5) */
-  int circuit_reset_timeout_ms;  /**< Time before half-open probe (default: 60000ms) */
+  int circuit_failure_threshold; /**< Consecutive failures before opening
+                                    (default: 5) */
+  int circuit_reset_timeout_ms;  /**< Time before half-open probe (default:
+                                    60000ms) */
 
   /* Health monitoring settings */
-  int health_check_interval_ms;  /**< Interval between health checks, 0=disabled (default: 30000ms) */
-  int health_check_timeout_ms;   /**< Timeout for health check (default: 5000ms) */
+  int health_check_interval_ms; /**< Interval between health checks, 0=disabled
+                                   (default: 30000ms) */
+  int health_check_timeout_ms;  /**< Timeout for health check (default: 5000ms)
+                                 */
 } SocketReconnect_Policy_T;
 
 /* Default policy values */
@@ -133,7 +141,8 @@ typedef struct SocketReconnect_Policy
 
 /* ============================================================================
  * Event Callbacks
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_Callback - State change callback function
@@ -175,7 +184,8 @@ typedef int (*SocketReconnect_HealthCheck) (T conn, Socket_T socket,
  */
 /* ============================================================================
  * Context Creation and Destruction
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_new - Create a new reconnecting connection
@@ -209,7 +219,8 @@ extern void SocketReconnect_free (T *conn);
 
 /* ============================================================================
  * Connection Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_connect - Start connecting
@@ -246,7 +257,8 @@ extern void SocketReconnect_reset (T conn);
 
 /* ============================================================================
  * Socket Access
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_socket - Get underlying socket
@@ -262,7 +274,8 @@ extern Socket_T SocketReconnect_socket (T conn);
 
 /* ============================================================================
  * State Query
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_state - Get current state
@@ -302,7 +315,8 @@ extern int SocketReconnect_failures (T conn);
 
 /* ============================================================================
  * Event Loop Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_pollfd - Get file descriptor for poll integration
@@ -356,7 +370,8 @@ extern void SocketReconnect_tick (T conn);
 
 /* ============================================================================
  * Health Check Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_set_health_check - Set custom health check function
@@ -369,12 +384,13 @@ extern void SocketReconnect_tick (T conn);
  * policy.health_check_timeout_ms to avoid blocking the calling thread.
  * Default health check polls socket with configurable timeout.
  */
-extern void SocketReconnect_set_health_check (T conn,
-                                              SocketReconnect_HealthCheck check);
+extern void
+SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check);
 
 /* ============================================================================
  * Policy Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_policy_defaults - Initialize policy with defaults
@@ -397,7 +413,8 @@ extern void SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy);
 
 /* ============================================================================
  * I/O Passthrough (Auto-Reconnect on Error)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_send - Send data with auto-reconnect on error
@@ -435,7 +452,8 @@ extern ssize_t SocketReconnect_recv (T conn, void *buf, size_t len);
 
 /* ============================================================================
  * State Names (for logging/debugging)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketReconnect_state_name - Get string name for state
@@ -448,4 +466,3 @@ extern const char *SocketReconnect_state_name (SocketReconnect_State state);
 
 #undef T
 #endif /* SOCKETRECONNECT_INCLUDED */
-

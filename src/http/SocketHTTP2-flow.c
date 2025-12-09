@@ -23,27 +23,30 @@
 
 #include "core/SocketUtil.h"
 
+#include "core/SocketSecurity.h"
 #include <assert.h>
 #include <stdint.h>
-#include "core/SocketSecurity.h"
 
 /* ============================================================================
  * Logging Component
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2-flow"
 
 /* ============================================================================
  * Constants (RFC 9113 Section 5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Maximum window size (2^31 - 1) per RFC 9113 Section 5.2.1 */
 #define HTTP2_MAX_WINDOW_SIZE 0x7FFFFFFF
 
 /* ============================================================================
  * Static Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * flow_consume_window - Consume bytes from a flow control window
@@ -67,7 +70,8 @@ flow_consume_window (int32_t *window, size_t bytes)
 
   if (consume > *window)
     {
-      SOCKET_LOG_WARN_MSG("Flow control violation: consume %ld > window %ld", (long)consume, (long)*window);
+      SOCKET_LOG_WARN_MSG ("Flow control violation: consume %ld > window %ld",
+                           (long)consume, (long)*window);
       return -1;
     }
 
@@ -90,21 +94,26 @@ flow_consume_window (int32_t *window, size_t bytes)
 static int
 flow_update_window (int32_t *window, uint32_t increment)
 {
-  if (increment == 0) {
-    SOCKET_LOG_WARN_MSG("Invalid zero window increment");
-    return -1;
-  }
+  if (increment == 0)
+    {
+      SOCKET_LOG_WARN_MSG ("Invalid zero window increment");
+      return -1;
+    }
 
-  if (*window < 0) {
-    SOCKET_LOG_WARN_MSG("Negative flow window: %d", *window);
-    return -1;
-  }
+  if (*window < 0)
+    {
+      SOCKET_LOG_WARN_MSG ("Negative flow window: %d", *window);
+      return -1;
+    }
 
   size_t new_value;
-  if (!SocketSecurity_check_add((size_t)*window, (size_t)increment, &new_value) ||
-      new_value > (size_t)HTTP2_MAX_WINDOW_SIZE)
+  if (!SocketSecurity_check_add ((size_t)*window, (size_t)increment,
+                                 &new_value)
+      || new_value > (size_t)HTTP2_MAX_WINDOW_SIZE)
     {
-      SOCKET_LOG_WARN_MSG("Flow window update overflow or invalid: current %u + %u > max %u", (unsigned)*window, increment, HTTP2_MAX_WINDOW_SIZE);
+      SOCKET_LOG_WARN_MSG (
+          "Flow window update overflow or invalid: current %u + %u > max %u",
+          (unsigned)*window, increment, HTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
@@ -114,27 +123,30 @@ flow_update_window (int32_t *window, uint32_t increment)
 
 /* ============================================================================
  * Validation Helper
- * ============================================================================ */
+ * ============================================================================
+ */
 
- /**
-  * http2_flow_validate - Validate stream belongs to connection
-  * @conn: HTTP/2 connection (required, const compatible)
-  * @stream: Stream to validate (may be NULL, const compatible)
-  *
-  * Returns: 0 if valid, -1 if mismatch
-  * Thread-safe: Yes - read-only
-  *
-  * Common validation extracted from all flow functions to eliminate duplication.
-  * Logs error on stream-connection mismatch.
-  */
+/**
+ * http2_flow_validate - Validate stream belongs to connection
+ * @conn: HTTP/2 connection (required, const compatible)
+ * @stream: Stream to validate (may be NULL, const compatible)
+ *
+ * Returns: 0 if valid, -1 if mismatch
+ * Thread-safe: Yes - read-only
+ *
+ * Common validation extracted from all flow functions to eliminate
+ * duplication. Logs error on stream-connection mismatch.
+ */
 static inline int
-http2_flow_validate (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stream_T stream)
+http2_flow_validate (const SocketHTTP2_Conn_T conn,
+                     const SocketHTTP2_Stream_T stream)
 {
   assert (conn);
 
   if (stream && stream->conn != conn)
     {
-      SOCKET_LOG_ERROR_MSG("Invalid stream %u for conn - mismatch", stream->id);
+      SOCKET_LOG_ERROR_MSG ("Invalid stream %u for conn - mismatch",
+                            stream->id);
       return -1;
     }
 
@@ -143,7 +155,8 @@ http2_flow_validate (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stream_T s
 
 /* ============================================================================
  * Generic Flow Level Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_flow_consume_level - Consume windows at connection and stream level
@@ -162,17 +175,17 @@ static int
 http2_flow_consume_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                           int is_recv, size_t bytes)
 {
-  if (http2_flow_validate(conn, stream) < 0)
+  if (http2_flow_validate (conn, stream) < 0)
     return -1;
 
   int32_t *cwindow = is_recv ? &conn->recv_window : &conn->send_window;
-  if (flow_consume_window(cwindow, bytes) < 0)
+  if (flow_consume_window (cwindow, bytes) < 0)
     return -1;
 
   if (stream)
     {
       int32_t *swindow = is_recv ? &stream->recv_window : &stream->send_window;
-      if (flow_consume_window(swindow, bytes) < 0)
+      if (flow_consume_window (swindow, bytes) < 0)
         return -1;
     }
 
@@ -196,7 +209,7 @@ static int
 http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          int is_recv, uint32_t increment)
 {
-  if (http2_flow_validate(conn, stream) < 0)
+  if (http2_flow_validate (conn, stream) < 0)
     return -1;
 
   int32_t *window;
@@ -205,12 +218,13 @@ http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
   else
     window = is_recv ? &conn->recv_window : &conn->send_window;
 
-  return flow_update_window(window, increment);
+  return flow_update_window (window, increment);
 }
 
 /* ============================================================================
  * Flow Control - Receive Window (Inbound DATA)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_flow_consume_recv - Consume receive window for inbound DATA
@@ -219,7 +233,8 @@ http2_flow_update_level (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * @bytes: Number of bytes received
  *
  * Returns: 0 on success, -1 on flow control violation
- * Thread-safe: No - modifies shared connection/stream windows; caller must synchronize access
+ * Thread-safe: No - modifies shared connection/stream windows; caller must
+ * synchronize access
  *
  * Called when DATA frame is received. Both connection and stream
  * windows (if stream provided) must have capacity. On violation,
@@ -229,7 +244,7 @@ int
 http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
-  return http2_flow_consume_level(conn, stream, 1, bytes);
+  return http2_flow_consume_level (conn, stream, 1, bytes);
 }
 
 /**
@@ -239,22 +254,24 @@ http2_flow_consume_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * @increment: Window increment to apply to our receive window
  *
  * Returns: 0 on success, -1 if update would cause overflow
- * Thread-safe: No - modifies shared connection/stream windows; caller must synchronize access
+ * Thread-safe: No - modifies shared connection/stream windows; caller must
+ * synchronize access
  *
- * Called when sending WINDOW_UPDATE frame to peer (increasing our capacity to receive).
- * Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per RFC 9113.
- * Logs warning on error.
+ * Called when sending WINDOW_UPDATE frame to peer (increasing our capacity to
+ * receive). Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per
+ * RFC 9113. Logs warning on error.
  */
 int
 http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
-  return http2_flow_update_level(conn, stream, 1, increment);
+  return http2_flow_update_level (conn, stream, 1, increment);
 }
 
 /* ============================================================================
  * Flow Control - Send Window (Outbound DATA)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_flow_consume_send - Consume send window for outbound DATA
@@ -263,7 +280,8 @@ http2_flow_update_recv (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * @bytes: Number of bytes to send
  *
  * Returns: 0 on success, -1 if insufficient window
- * Thread-safe: No - modifies shared connection/stream windows; caller must synchronize access
+ * Thread-safe: No - modifies shared connection/stream windows; caller must
+ * synchronize access
  *
  * Called before sending DATA frame. Both connection and stream
  * windows (if stream provided) must have capacity. On violation,
@@ -273,7 +291,7 @@ int
 http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                          size_t bytes)
 {
-  return http2_flow_consume_level(conn, stream, 0, bytes);
+  return http2_flow_consume_level (conn, stream, 0, bytes);
 }
 
 /**
@@ -283,22 +301,24 @@ http2_flow_consume_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * @increment: Window increment from peer's WINDOW_UPDATE frame
  *
  * Returns: 0 on success, -1 if update would cause overflow
- * Thread-safe: No - modifies shared connection/stream windows; caller must synchronize access
+ * Thread-safe: No - modifies shared connection/stream windows; caller must
+ * synchronize access
  *
- * Called when WINDOW_UPDATE frame received from peer (increasing our capacity to send).
- * Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per RFC 9113.
- * Logs warning on error.
+ * Called when WINDOW_UPDATE frame received from peer (increasing our capacity
+ * to send). Overflow beyond HTTP2_MAX_WINDOW_SIZE is a flow control error per
+ * RFC 9113. Logs warning on error.
  */
 int
 http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
                         uint32_t increment)
 {
-  return http2_flow_update_level(conn, stream, 0, increment);
+  return http2_flow_update_level (conn, stream, 0, increment);
 }
 
 /* ============================================================================
  * Flow Control - Window Query
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_flow_available_send - Get available send window
@@ -315,9 +335,10 @@ http2_flow_update_send (SocketHTTP2_Conn_T conn, SocketHTTP2_Stream_T stream,
  * Use before sending DATA to determine safe payload size.
  */
 int32_t
-http2_flow_available_send (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stream_T stream)
+http2_flow_available_send (const SocketHTTP2_Conn_T conn,
+                           const SocketHTTP2_Stream_T stream)
 {
-  if (http2_flow_validate(conn, stream) < 0)
+  if (http2_flow_validate (conn, stream) < 0)
     return 0;
 
   int32_t available = conn->send_window;
@@ -330,17 +351,20 @@ http2_flow_available_send (const SocketHTTP2_Conn_T conn, const SocketHTTP2_Stre
 
 /* ============================================================================
  * Flow Control - Window Adjustment (for SETTINGS changes)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
- * http2_flow_adjust_window - Adjust window by signed delta (SETTINGS initial window change)
+ * http2_flow_adjust_window - Adjust window by signed delta (SETTINGS initial
+ * window change)
  * @window: Pointer to window value (int32_t)
  * @delta: Signed adjustment (+increase, -decrease)
  *
- * Returns: 0 on success, -1 if adjustment invalid (negative window or overflow)
- * Thread-safe: No - modifies window directly
+ * Returns: 0 on success, -1 if adjustment invalid (negative window or
+ * overflow) Thread-safe: No - modifies window directly
  *
- * Per RFC 9113 Section 6.5.2: Adjusts window for SETTINGS_INITIAL_WINDOW_SIZE change.
+ * Per RFC 9113 Section 6.5.2: Adjusts window for SETTINGS_INITIAL_WINDOW_SIZE
+ * change.
  * - Negative window after adjustment -> FLOW_CONTROL_ERROR
  * - Window > HTTP2_MAX_WINDOW_SIZE -> error (defense against invalid settings)
  * - Logs warning on error.
@@ -356,17 +380,20 @@ http2_flow_adjust_window (int32_t *window, int32_t delta)
 
   if (new_value < 0)
     {
-      SOCKET_LOG_WARN_MSG("Flow window adjustment would make negative: current %ld + %ld", (long)*window, (long)delta);
+      SOCKET_LOG_WARN_MSG (
+          "Flow window adjustment would make negative: current %ld + %ld",
+          (long)*window, (long)delta);
       return -1;
     }
 
   if (new_value > HTTP2_MAX_WINDOW_SIZE)
     {
-      SOCKET_LOG_WARN_MSG("Flow window adjustment overflow: current %ld + %ld > max %u", (long)*window, (long)delta, HTTP2_MAX_WINDOW_SIZE);
+      SOCKET_LOG_WARN_MSG (
+          "Flow window adjustment overflow: current %ld + %ld > max %u",
+          (long)*window, (long)delta, HTTP2_MAX_WINDOW_SIZE);
       return -1;
     }
 
   *window = (int32_t)new_value;
   return 0;
 }
-

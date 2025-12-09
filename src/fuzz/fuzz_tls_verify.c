@@ -9,8 +9,9 @@
  * - OCSP_response_status() - Response status validation
  * - OCSP_response_get1_basic() - Basic response extraction
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_verify
- * Run:   ./fuzz_tls_verify corpus/tls_verify/ -fork=16 -max_len=65536
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_verify Run:   ./fuzz_tls_verify corpus/tls_verify/ -fork=16
+ * -max_len=65536
  */
 
 #if SOCKET_HAS_TLS
@@ -256,4 +257,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

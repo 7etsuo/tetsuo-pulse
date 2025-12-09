@@ -7,8 +7,8 @@
  * memory safety issues, and unexpected behavior.
  */
 
-#include "http/SocketHTTP.h"
 #include "core/Arena.h"
+#include "http/SocketHTTP.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -36,8 +36,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   char output[SOCKETHTTP_MAX_URI_LEN + 1];
 
   /* Test URI parsing */
-  SocketHTTP_URIResult result = SocketHTTP_URI_parse (
-      (const char *)data, size, &uri, arena);
+  SocketHTTP_URIResult result
+      = SocketHTTP_URI_parse ((const char *)data, size, &uri, arena);
 
   /* If parse succeeded, test related functions */
   if (result == URI_PARSE_OK)
@@ -74,4 +74,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   Arena_dispose (&arena);
   return 0;
 }
-

@@ -3,26 +3,25 @@
  *
  * Part of the Socket Library
  *
- * Handles individual HTTP connection lifecycle, I/O, parsing, response sending.
+ * Handles individual HTTP connection lifecycle, I/O, parsing, response
+ * sending.
  *
  * Following C Interfaces and Implementations patterns
  */
 
 #include <stdlib.h>
 
-#include "http/SocketHTTPServer-private.h"
+#include "core/SocketMetrics.h" /* for any metrics if added */
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTPServer-private.h"
 #include "socket/Socket.h"
-#include "core/SocketMetrics.h" /* for any metrics if added */
 
 SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
 
 /* Forward declarations */
 static void record_request_latency (SocketHTTPServer_T server,
                                     int64_t request_start_ms);
-
-
 
 int
 connection_read (SocketHTTPServer_T server, ServerConnection *conn)
@@ -165,63 +164,81 @@ connection_parse_request (SocketHTTPServer_T server, ServerConnection *conn)
 
       if (conn->request->has_body && !conn->body_streaming)
         {
-          SocketHTTP1_BodyMode mode = SocketHTTP1_Parser_body_mode (conn->parser);
+          SocketHTTP1_BodyMode mode
+              = SocketHTTP1_Parser_body_mode (conn->parser);
           int64_t cl = SocketHTTP1_Parser_content_length (conn->parser);
           size_t max_body = server->config.max_body_size;
 
           size_t capacity = 0;
-          if (mode == HTTP1_BODY_CONTENT_LENGTH && cl > 0) {
-            if ((size_t)cl > max_body) {
-              SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-              connection_send_error (server, conn, 413, "Payload Too Large");
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
+          if (mode == HTTP1_BODY_CONTENT_LENGTH && cl > 0)
+            {
+              if ((size_t)cl > max_body)
+                {
+                  SocketMetrics_counter_inc (
+                      SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+                  connection_send_error (server, conn, 413,
+                                         "Payload Too Large");
+                  conn->state = CONN_STATE_CLOSED;
+                  return -1;
+                }
+              capacity = (size_t)cl;
             }
-            capacity = (size_t)cl;
-          } else if (mode == HTTP1_BODY_CHUNKED || mode == HTTP1_BODY_UNTIL_CLOSE) {
-            /* Use max for unknown size */
-            capacity = max_body;
-          }
-
-          if (capacity > 0) {
-            conn->body_capacity = capacity;
-            conn->body = Arena_alloc (conn->arena, capacity, __FILE__, __LINE__);
-            if (conn->body == NULL) {
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
-            }
-            conn->memory_used += capacity;
-            conn->body_mode = mode;  /* Track mode in conn if needed */
-
-            /* Initial body read using centralized API */
-            const void *input;
-            size_t input_len, consumed, written;
-            input = SocketBuf_readptr (conn->inbuf, &input_len);
-            SocketHTTP1_Result r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input, input_len, &consumed,
-                                                                 (char *)conn->body, capacity, &written);
-            SocketBuf_consume (conn->inbuf, consumed);
-            conn->body_len = written;
-
-            /* Reject oversized bodies early to prevent DoS - even on initial read */
-            if (conn->body_len > server->config.max_body_size &&
-                !SocketHTTP1_Parser_body_complete (conn->parser)) {
-              SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-              connection_send_error (server, conn, 413, "Payload Too Large");
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
+          else if (mode == HTTP1_BODY_CHUNKED
+                   || mode == HTTP1_BODY_UNTIL_CLOSE)
+            {
+              /* Use max for unknown size */
+              capacity = max_body;
             }
 
-            if (r == HTTP1_ERROR) {
-              conn->state = CONN_STATE_CLOSED;
-              return -1;
-            }
+          if (capacity > 0)
+            {
+              conn->body_capacity = capacity;
+              conn->body
+                  = Arena_alloc (conn->arena, capacity, __FILE__, __LINE__);
+              if (conn->body == NULL)
+                {
+                  conn->state = CONN_STATE_CLOSED;
+                  return -1;
+                }
+              conn->memory_used += capacity;
+              conn->body_mode = mode; /* Track mode in conn if needed */
 
-            if (!SocketHTTP1_Parser_body_complete (conn->parser)) {
-              conn->state = CONN_STATE_READING_BODY;
-              return 0;  /* Need more data */
+              /* Initial body read using centralized API */
+              const void *input;
+              size_t input_len, consumed, written;
+              input = SocketBuf_readptr (conn->inbuf, &input_len);
+              SocketHTTP1_Result r = SocketHTTP1_Parser_read_body (
+                  conn->parser, (const char *)input, input_len, &consumed,
+                  (char *)conn->body, capacity, &written);
+              SocketBuf_consume (conn->inbuf, consumed);
+              conn->body_len = written;
+
+              /* Reject oversized bodies early to prevent DoS - even on initial
+               * read */
+              if (conn->body_len > server->config.max_body_size
+                  && !SocketHTTP1_Parser_body_complete (conn->parser))
+                {
+                  SocketMetrics_counter_inc (
+                      SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+                  connection_send_error (server, conn, 413,
+                                         "Payload Too Large");
+                  conn->state = CONN_STATE_CLOSED;
+                  return -1;
+                }
+
+              if (r == HTTP1_ERROR)
+                {
+                  conn->state = CONN_STATE_CLOSED;
+                  return -1;
+                }
+
+              if (!SocketHTTP1_Parser_body_complete (conn->parser))
+                {
+                  conn->state = CONN_STATE_READING_BODY;
+                  return 0; /* Need more data */
+                }
+              /* Else body complete, fall to HANDLING */
             }
-            /* Else body complete, fall to HANDLING */
-          }
         }
 
       conn->state = CONN_STATE_HANDLING;
@@ -320,7 +337,8 @@ connection_create_parser (Arena_T arena, const SocketHTTPServer_Config *config)
   SocketHTTP1_Config pcfg;
   SocketHTTP1_config_defaults (&pcfg);
   pcfg.max_header_size = config->max_header_size;
-  SocketHTTP1_Parser_T p = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
+  SocketHTTP1_Parser_T p
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &pcfg, arena);
   if (p == NULL)
     RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
   return p;
@@ -333,7 +351,8 @@ record_request_latency (SocketHTTPServer_T server, int64_t request_start_ms)
   if (request_start_ms > 0)
     {
       int64_t elapsed_ms = Socket_get_monotonic_ms () - request_start_ms;
-      SocketMetrics_histogram_observe (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, (double)elapsed_ms);
+      SocketMetrics_histogram_observe (
+          SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, (double)elapsed_ms);
     }
   /* latency_record removed - use metrics histogram */
 }
@@ -375,14 +394,16 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
     /* Create I/O buffers */
     conn->inbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
     conn->outbuf = SocketBuf_new (arena, HTTPSERVER_IO_BUFFER_SIZE);
-    /* Note: SocketBuf_new raises on fail, so no NULL check needed if using exception policy */
+    /* Note: SocketBuf_new raises on fail, so no NULL check needed if using
+     * exception policy */
     transferred = 4; /* buffers transferred */
 
     /* Create response headers */
     conn->response_headers = SocketHTTP_Headers_new (arena);
     /* Assume raises on fail or handle in SocketHTTP_Headers_new */
 
-    /* Initialize memory tracking (base allocation: conn struct + I/O buffers) */
+    /* Initialize memory tracking (base allocation: conn struct + I/O buffers)
+     */
     conn->memory_used = sizeof (*conn) + (2 * HTTPSERVER_IO_BUFFER_SIZE);
 
     /* Track per-IP connections */
@@ -390,10 +411,11 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
       {
         if (!SocketIPTracker_track (server->ip_tracker, conn->client_addr))
           {
-            /* Connection limit reached for this IP - trigger cleanup via FINALLY
-             * Note: DO NOT use RETURN here as it skips FINALLY cleanup
-             * Leave transferred at 4 so FINALLY cleans up arena, socket, and conn */
-            SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);
+            /* Connection limit reached for this IP - trigger cleanup via
+             * FINALLY Note: DO NOT use RETURN here as it skips FINALLY cleanup
+             * Leave transferred at 4 so FINALLY cleans up arena, socket, and
+             * conn */
+            SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);
             goto cleanup_and_return_null;
           }
       }
@@ -405,16 +427,16 @@ connection_new (SocketHTTPServer_T server, Socket_T socket)
     server->connections = conn;
 
     /* Thread-safe metrics calls - no lock needed */
-  SocketMetrics_gauge_inc(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
-  SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+    SocketMetrics_gauge_inc (SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+    SocketMetrics_counter_inc (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
 
     transferred = 5; /* fully transferred */
     RETURN conn;
 
-cleanup_and_return_null:
-    /* Explicit cleanup path for rejected connections (e.g., IP limit exceeded)
-     * This label is jumped to from validation failures above */
-    ;  /* Empty statement needed after label before block end */
+  cleanup_and_return_null:
+      /* Explicit cleanup path for rejected connections (e.g., IP limit
+       * exceeded) This label is jumped to from validation failures above */
+      ; /* Empty statement needed after label before block end */
   }
   FINALLY
   {
@@ -465,7 +487,7 @@ connection_close (SocketHTTPServer_T server, ServerConnection *conn)
   if (conn->next != NULL)
     conn->next->prev = conn->prev;
 
-  SocketMetrics_gauge_dec(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+  SocketMetrics_gauge_dec (SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
 
   /* Free arena */
   if (conn->arena != NULL)

@@ -9,8 +9,8 @@
  * - Character validation (alphanumeric + hyphen)
  * - Label boundary checking (dots, leading/trailing hyphens)
  *
- * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make fuzz_tls_sni
- * Run:   ./fuzz_tls_sni corpus/tls_sni/ -fork=16 -max_len=512
+ * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
+ * fuzz_tls_sni Run:   ./fuzz_tls_sni corpus/tls_sni/ -fork=16 -max_len=512
  */
 
 #if SOCKET_HAS_TLS
@@ -280,4 +280,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

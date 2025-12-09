@@ -28,14 +28,14 @@
 /* Operation types */
 typedef enum
 {
-  OP_LIFECYCLE = 0,     /* Create/free async context */
-  OP_SEND_SUBMIT,       /* Submit async send */
-  OP_RECV_SUBMIT,       /* Submit async recv */
-  OP_CANCEL,            /* Cancel operation */
-  OP_PROCESS,           /* Process completions */
-  OP_MULTI_SUBMIT,      /* Submit multiple requests */
-  OP_ACCESSORS,         /* Test accessor functions */
-  OP_STRESS_HASH        /* Stress test request hash table */
+  OP_LIFECYCLE = 0, /* Create/free async context */
+  OP_SEND_SUBMIT,   /* Submit async send */
+  OP_RECV_SUBMIT,   /* Submit async recv */
+  OP_CANCEL,        /* Cancel operation */
+  OP_PROCESS,       /* Process completions */
+  OP_MULTI_SUBMIT,  /* Submit multiple requests */
+  OP_ACCESSORS,     /* Test accessor functions */
+  OP_STRESS_HASH    /* Stress test request hash table */
 } AsyncOp;
 
 /* Callback tracking */
@@ -128,7 +128,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Create async context and socket for send test */
           async = SocketAsync_new (arena);
 
-          /* Create a socket (will fail to connect but that's OK for fuzzing) */
+          /* Create a socket (will fail to connect but that's OK for fuzzing)
+           */
           socket = Socket_new (AF_INET, SOCK_STREAM, 0);
 
           /* Submit async send - will queue in fallback mode */
@@ -228,14 +229,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               if (i % 2 == 0)
                 {
                   req_id = SocketAsync_send (async, socket, send_buf,
-                                             64 + (i * 10), test_callback, NULL,
-                                             ASYNC_FLAG_NONE);
+                                             64 + (i * 10), test_callback,
+                                             NULL, ASYNC_FLAG_NONE);
                 }
               else
                 {
                   req_id = SocketAsync_recv (async, socket, recv_buf,
-                                             64 + (i * 10), test_callback, NULL,
-                                             ASYNC_FLAG_NONE);
+                                             64 + (i * 10), test_callback,
+                                             NULL, ASYNC_FLAG_NONE);
                 }
               if (req_id > 0)
                 request_ids[num_requests++] = req_id;
@@ -282,11 +283,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           for (int i = 0; i < count && num_requests < 32; i++)
             {
-              unsigned req_id = SocketAsync_send (async, socket, send_buf,
-                                                  16 + (i % 100), test_callback,
-                                                  (void *)(uintptr_t)i,
-                                                  (i % 2) ? ASYNC_FLAG_URGENT
-                                                          : ASYNC_FLAG_NONE);
+              unsigned req_id = SocketAsync_send (
+                  async, socket, send_buf, 16 + (i % 100), test_callback,
+                  (void *)(uintptr_t)i,
+                  (i % 2) ? ASYNC_FLAG_URGENT : ASYNC_FLAG_NONE);
               if (req_id > 0 && num_requests < 32)
                 request_ids[num_requests++] = req_id;
             }
@@ -318,18 +318,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketAsync_Failed)
-  {
-    /* Expected for some operations */
-  }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected for socket operations */
-  }
-  ELSE
-  {
-    /* Other exceptions - also OK for fuzzing */
-  }
+  EXCEPT (SocketAsync_Failed) { /* Expected for some operations */ }
+  EXCEPT (Socket_Failed) { /* Expected for socket operations */ }
+  ELSE { /* Other exceptions - also OK for fuzzing */ }
   END_TRY;
 
   /* Cleanup */
@@ -342,4 +333,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

@@ -136,7 +136,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 test_arena = Arena_new ();
                 if (test_arena)
                   {
-                    test_pool = SocketPool_new (test_arena, test_size, bufsize);
+                    test_pool
+                        = SocketPool_new (test_arena, test_size, bufsize);
                     /* Verify pool properties */
                     size_t count = SocketPool_count (test_pool);
                     assert (count == 0);
@@ -150,10 +151,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 if (test_arena)
                   Arena_dispose (&test_arena);
               }
-              EXCEPT (Arena_Failed)
-              {
-                /* Arena allocation can fail */
-              }
+              EXCEPT (Arena_Failed) { /* Arena allocation can fail */ }
               END_TRY;
             }
         }
@@ -162,8 +160,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case OP_ADD_CONNECTIONS:
         {
           /* Create some sockets and add them to pool */
-          int num_to_add
-              = size >= 5 ? (data[4] % MAX_FUZZ_SOCKETS) + 1 : 1;
+          int num_to_add = size >= 5 ? (data[4] % MAX_FUZZ_SOCKETS) + 1 : 1;
           if ((size_t)num_to_add > pool_size)
             num_to_add = (int)pool_size;
 
@@ -187,10 +184,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                       }
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-                /* Socket creation can fail */
-              }
+              EXCEPT (Socket_Failed) { /* Socket creation can fail */ }
               EXCEPT (SocketPool_Failed)
               {
                 /* Pool add can fail (pool full) */
@@ -223,12 +217,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -265,12 +255,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -311,9 +297,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                 Socket_free (&fake);
               }
           }
-          EXCEPT (Socket_Failed)
-          {
-          }
+          EXCEPT (Socket_Failed) {}
           END_TRY;
         }
         break;
@@ -336,12 +320,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -350,10 +330,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               size_t new_size = (data[5] % MAX_FUZZ_POOL_SIZE) + 1;
               TRY { SocketPool_resize (pool, new_size); }
-              EXCEPT (SocketPool_Failed)
-              {
-                /* Resize can fail */
-              }
+              EXCEPT (SocketPool_Failed) { /* Resize can fail */ }
               END_TRY;
             }
         }
@@ -377,12 +354,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -411,12 +384,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -456,12 +425,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -505,12 +470,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                       }
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
         }
@@ -535,12 +496,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                     SocketPool_add (pool, sock);
                   }
               }
-              EXCEPT (Socket_Failed)
-              {
-              }
-              EXCEPT (SocketPool_Failed)
-              {
-              }
+              EXCEPT (Socket_Failed) {}
+              EXCEPT (SocketPool_Failed) {}
               END_TRY;
             }
 
@@ -578,12 +535,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
                         SocketPool_add (pool, sock);
                       }
                   }
-                  EXCEPT (Socket_Failed)
-                  {
-                  }
-                  EXCEPT (SocketPool_Failed)
-                  {
-                  }
+                  EXCEPT (Socket_Failed) {}
+                  EXCEPT (SocketPool_Failed) {}
                   END_TRY;
                 }
 
@@ -608,18 +561,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketPool_Failed)
-  {
-    /* Expected for some operations */
-  }
-  EXCEPT (Socket_Failed)
-  {
-    /* Socket creation can fail */
-  }
-  EXCEPT (Arena_Failed)
-  {
-    /* Memory allocation can fail */
-  }
+  EXCEPT (SocketPool_Failed) { /* Expected for some operations */ }
+  EXCEPT (Socket_Failed) { /* Socket creation can fail */ }
+  EXCEPT (Arena_Failed) { /* Memory allocation can fail */ }
   FINALLY
   {
     /* Clean up all sockets */
@@ -646,4 +590,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

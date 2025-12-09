@@ -17,12 +17,13 @@
 #include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 
+typedef struct SocketDNS_Request_T SocketDNS_Request_T;
+
 /* Forward declaration - full definition in Arena.h */
 typedef struct Arena_T *Arena_T;
 
-/* Forward typedef for callback */
-typedef void (*SocketDNS_Callback) (struct SocketDNS_Request_T *,
-                                    struct addrinfo *, int, void *);
+/* Callback typedef - must be defined before struct that uses it */
+typedef void (*SocketDNS_Callback) (SocketDNS_Request_T *, struct addrinfo *, int, void *);
 
 /*
  * =============================================================================

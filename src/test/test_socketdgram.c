@@ -1469,9 +1469,8 @@ TEST (socketdgram_connect_invalid_address)
   TRY
   {
     /* Try to connect to an invalid/unresolvable address */
-    SocketDgram_connect (socket,
-                         "this.hostname.definitely.does.not.exist.invalid",
-                         12345);
+    SocketDgram_connect (
+        socket, "this.hostname.definitely.does.not.exist.invalid", 12345);
   }
   EXCEPT (SocketDgram_Failed)
   raised = 1;

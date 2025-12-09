@@ -42,7 +42,8 @@
 
 /* ============================================================================
  * Safe snprintf Helper
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_snprintf_checked - Write formatted string with overflow check
@@ -53,9 +54,9 @@
  *
  * Returns: 0 on success, -1 if buffer overflow would occur
  */
-static int
-ws_snprintf_checked (char *buf, size_t size, size_t *offset, const char *fmt,
-                     ...) __attribute__ ((format (printf, 4, 5)));
+static int ws_snprintf_checked (char *buf, size_t size, size_t *offset,
+                                const char *fmt, ...)
+    __attribute__ ((format (printf, 4, 5)));
 
 static int
 ws_snprintf_checked (char *buf, size_t size, size_t *offset, const char *fmt,
@@ -84,7 +85,8 @@ ws_snprintf_checked (char *buf, size_t size, size_t *offset, const char *fmt,
 
 /* ============================================================================
  * Client Request Building - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_generate_handshake_keys - Generate client key and expected accept
@@ -99,7 +101,8 @@ ws_generate_handshake_keys (SocketWS_T ws)
 
   if (SocketCrypto_websocket_key (ws->handshake.client_key) != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Failed to generate WebSocket key");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Failed to generate WebSocket key");
       return -1;
     }
 
@@ -107,7 +110,8 @@ ws_generate_handshake_keys (SocketWS_T ws)
                                      ws->handshake.expected_accept)
       != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Failed to compute expected accept");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Failed to compute expected accept");
       return -1;
     }
 
@@ -124,7 +128,8 @@ ws_generate_handshake_keys (SocketWS_T ws)
  * Returns: 0 on success, -1 on error
  */
 static int
-ws_write_request_line (char *buf, size_t size, size_t *offset, const char *path)
+ws_write_request_line (char *buf, size_t size, size_t *offset,
+                       const char *path)
 {
   return ws_snprintf_checked (buf, size, offset, "GET %s HTTP/1.1\r\n",
                               path ? path : "/");
@@ -148,14 +153,15 @@ ws_write_host_header (char *buf, size_t size, size_t *offset, const char *host,
 
   assert (host);
 
-  omit_port = (port == SOCKETWS_DEFAULT_HTTP_PORT
-               || port == SOCKETWS_DEFAULT_HTTPS_PORT
-               || port == SOCKETWS_NO_PORT);
+  omit_port
+      = (port == SOCKETWS_DEFAULT_HTTP_PORT
+         || port == SOCKETWS_DEFAULT_HTTPS_PORT || port == SOCKETWS_NO_PORT);
 
   if (omit_port)
     return ws_snprintf_checked (buf, size, offset, "Host: %s\r\n", host);
 
-  return ws_snprintf_checked (buf, size, offset, "Host: %s:%d\r\n", host, port);
+  return ws_snprintf_checked (buf, size, offset, "Host: %s:%d\r\n", host,
+                              port);
 }
 
 /**
@@ -176,8 +182,9 @@ ws_write_websocket_headers (char *buf, size_t size, size_t *offset,
                               "Connection: %s\r\n"
                               "Sec-WebSocket-Key: %s\r\n"
                               "Sec-WebSocket-Version: %s\r\n",
-                              SOCKETWS_UPGRADE_VALUE, SOCKETWS_CONNECTION_VALUE,
-                              client_key, SOCKETWS_PROTOCOL_VERSION);
+                              SOCKETWS_UPGRADE_VALUE,
+                              SOCKETWS_CONNECTION_VALUE, client_key,
+                              SOCKETWS_PROTOCOL_VERSION);
 }
 
 /**
@@ -247,7 +254,8 @@ ws_write_compression_header (char *buf, size_t size, size_t *offset,
 
   if (config->deflate_max_window_bits < SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS)
     {
-      if (ws_snprintf_checked (buf, size, offset, "; client_max_window_bits=%d",
+      if (ws_snprintf_checked (buf, size, offset,
+                               "; client_max_window_bits=%d",
                                config->deflate_max_window_bits)
           < 0)
         return -1;
@@ -273,7 +281,8 @@ ws_build_client_request (SocketWS_T ws)
   buf = ALLOC (ws->arena, SOCKETWS_HANDSHAKE_REQUEST_SIZE);
   if (!buf)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Failed to allocate request buffer");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Failed to allocate request buffer");
       return -1;
     }
 
@@ -296,8 +305,8 @@ ws_build_client_request (SocketWS_T ws)
       return -1;
     }
 
-  if (ws_write_websocket_headers (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE, &offset,
-                                  ws->handshake.client_key)
+  if (ws_write_websocket_headers (buf, SOCKETWS_HANDSHAKE_REQUEST_SIZE,
+                                  &offset, ws->handshake.client_key)
       < 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE, "WebSocket headers too long");
@@ -337,7 +346,8 @@ ws_build_client_request (SocketWS_T ws)
 
 /* ============================================================================
  * Client Response Validation - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_validate_status_101 - Validate HTTP 101 status code
@@ -395,7 +405,8 @@ ws_validate_connection_upgrade (SocketWS_T ws, SocketHTTP_Headers_T headers)
   const char *connection;
 
   connection = SocketHTTP_Headers_get (headers, "Connection");
-  if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
+  if (!connection
+      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
                     "Missing or invalid Connection header: %s",
@@ -433,24 +444,28 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
   if (accept_len != expected_len)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Accept length: %zu (expected %zu)", accept_len, expected_len);
+                    "Invalid Sec-WebSocket-Accept length: %zu (expected %zu)",
+                    accept_len, expected_len);
       return -1;
     }
 
   unsigned char temp_hash[20];
-  ssize_t decoded_len = SocketCrypto_base64_decode (accept, accept_len, temp_hash, sizeof (temp_hash));
+  ssize_t decoded_len = SocketCrypto_base64_decode (
+      accept, accept_len, temp_hash, sizeof (temp_hash));
   if (decoded_len != 20)
     {
       SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Accept format (base64 decode failed or wrong length: %zd)", decoded_len);
+                    "Invalid Sec-WebSocket-Accept format (base64 decode "
+                    "failed or wrong length: %zd)",
+                    decoded_len);
       return -1;
     }
   SocketCrypto_secure_clear (temp_hash, sizeof (temp_hash));
 
   if (SocketCrypto_secure_compare (accept, ws->handshake.expected_accept,
                                    accept_len)
-         != 0)
+      != 0)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
                     "Invalid Sec-WebSocket-Accept value");
@@ -468,7 +483,8 @@ ws_validate_accept_value (SocketWS_T ws, SocketHTTP_Headers_T headers)
  * Returns: 0 on success, -1 on error
  */
 static int
-ws_validate_negotiated_subprotocol (SocketWS_T ws, SocketHTTP_Headers_T headers)
+ws_validate_negotiated_subprotocol (SocketWS_T ws,
+                                    SocketHTTP_Headers_T headers)
 {
   const char *protocol;
   const char *const *p;
@@ -527,7 +543,8 @@ ws_parse_window_bits (const char *extensions, const char *param_name)
   {
     char *endptr;
     long v = strtol (eq + 1, &endptr, 10);
-    value = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
+    value
+        = (v >= 8 && v <= 15) ? (int)v : SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
   }
   if (value < 8 || value > 15)
     return SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS;
@@ -571,8 +588,7 @@ ws_parse_negotiated_extensions (SocketWS_T ws, SocketHTTP_Headers_T headers)
 {
   const char *extensions;
 
-  extensions
-      = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Extensions");
+  extensions = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Extensions");
   if (!extensions)
     return;
 
@@ -625,15 +641,18 @@ ws_validate_upgrade_response (SocketWS_T ws,
 #endif
 
   // Clear sensitive handshake data after successful validation
-  SocketCrypto_secure_clear (ws->handshake.client_key, sizeof (ws->handshake.client_key));
-  SocketCrypto_secure_clear (ws->handshake.expected_accept, sizeof (ws->handshake.expected_accept));
+  SocketCrypto_secure_clear (ws->handshake.client_key,
+                             sizeof (ws->handshake.client_key));
+  SocketCrypto_secure_clear (ws->handshake.expected_accept,
+                             sizeof (ws->handshake.expected_accept));
 
   return 0;
 }
 
 /* ============================================================================
  * Client Handshake - State Machine
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 ws_handshake_client_init (SocketWS_T ws)
@@ -822,7 +841,8 @@ ws_handshake_client_process (SocketWS_T ws)
 
 /* ============================================================================
  * Server Response Building - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_write_101_status_line - Write HTTP 101 status and core headers
@@ -842,8 +862,8 @@ ws_write_101_status_line (char *buf, size_t size, size_t *offset,
                               "Upgrade: %s\r\n"
                               "Connection: %s\r\n"
                               "Sec-WebSocket-Accept: %s\r\n",
-                              SOCKETWS_UPGRADE_VALUE, SOCKETWS_CONNECTION_VALUE,
-                              accept_value);
+                              SOCKETWS_UPGRADE_VALUE,
+                              SOCKETWS_CONNECTION_VALUE, accept_value);
 }
 
 /**
@@ -984,7 +1004,8 @@ ws_build_server_response (SocketWS_T ws, const char *client_key)
 
 /* ============================================================================
  * Server Handshake - Validation Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_validate_client_upgrade_header - Validate Upgrade header from client
@@ -1001,14 +1022,16 @@ ws_validate_client_upgrade_header (SocketWS_T ws, SocketHTTP_Headers_T headers)
   upgrade = SocketHTTP_Headers_get (headers, "Upgrade");
   if (!upgrade || strcasecmp (upgrade, SOCKETWS_UPGRADE_VALUE) != 0)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Missing or invalid Upgrade header");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE,
+                    "Missing or invalid Upgrade header");
       return -1;
     }
   return 0;
 }
 
 /**
- * ws_validate_client_connection_header - Validate Connection header from client
+ * ws_validate_client_connection_header - Validate Connection header from
+ * client
  * @ws: WebSocket context
  * @headers: HTTP headers
  *
@@ -1021,7 +1044,8 @@ ws_validate_client_connection_header (SocketWS_T ws,
   const char *connection;
 
   connection = SocketHTTP_Headers_get (headers, "Connection");
-  if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
+  if (!connection
+      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
                     "Missing or invalid Connection header");
@@ -1047,8 +1071,7 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
   key = SocketHTTP_Headers_get (headers, "Sec-WebSocket-Key");
   if (!key)
     {
-      ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Missing Sec-WebSocket-Key");
+      ws_set_error (ws, WS_ERROR_HANDSHAKE, "Missing Sec-WebSocket-Key");
       return -1;
     }
 
@@ -1056,17 +1079,21 @@ ws_validate_client_key (SocketWS_T ws, SocketHTTP_Headers_T headers,
   if (key_len != SOCKETWS_KEY_BASE64_LENGTH)
     {
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Key length: %zu (expected %d)", key_len, SOCKETWS_KEY_BASE64_LENGTH);
+                    "Invalid Sec-WebSocket-Key length: %zu (expected %d)",
+                    key_len, SOCKETWS_KEY_BASE64_LENGTH);
       return -1;
     }
 
   unsigned char temp[16];
-  ssize_t decoded_len = SocketCrypto_base64_decode (key, key_len, temp, sizeof (temp));
+  ssize_t decoded_len
+      = SocketCrypto_base64_decode (key, key_len, temp, sizeof (temp));
   if (decoded_len != 16)
     {
       SocketCrypto_secure_clear (temp, sizeof (temp));
       ws_set_error (ws, WS_ERROR_HANDSHAKE,
-                    "Invalid Sec-WebSocket-Key format (base64 decode failed or wrong length: %zd)", decoded_len);
+                    "Invalid Sec-WebSocket-Key format (base64 decode failed "
+                    "or wrong length: %zd)",
+                    decoded_len);
       return -1;
     }
   SocketCrypto_secure_clear (temp, sizeof (temp));
@@ -1300,7 +1327,8 @@ ws_handshake_validate_accept (SocketWS_T ws, const char *accept)
 
 /* ============================================================================
  * Helper - Copy String to Arena
- * ============================================================================ */
+ * ============================================================================
+ */
 
 char *
 ws_copy_string (Arena_T arena, const char *str)
@@ -1321,7 +1349,8 @@ ws_copy_string (Arena_T arena, const char *str)
 
 /* ============================================================================
  * Public API - Check WebSocket Upgrade
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
@@ -1344,7 +1373,8 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
     return 0;
 
   connection = SocketHTTP_Headers_get (request->headers, "Connection");
-  if (!connection || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
+  if (!connection
+      || strcasestr (connection, SOCKETWS_CONNECTION_VALUE) == NULL)
     return 0;
 
   version = SocketHTTP_Headers_get (request->headers, "Sec-WebSocket-Version");
@@ -1363,7 +1393,7 @@ SocketWS_is_upgrade (const SocketHTTP_Request *request)
 void
 SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
 {
-  char buf[1024];  // Increased for safety
+  char buf[1024]; // Increased for safety
   char status_phrase[64];
   const char *body_text;
   size_t body_len;
@@ -1382,8 +1412,8 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
     }
   else
     {
-      strncpy (status_phrase, "WebSocket Error", sizeof(status_phrase) - 1);
-      status_phrase[sizeof(status_phrase) - 1] = '\0';
+      strncpy (status_phrase, "WebSocket Error", sizeof (status_phrase) - 1);
+      status_phrase[sizeof (status_phrase) - 1] = '\0';
     }
 
   body_len = strlen (body_text);
@@ -1399,8 +1429,8 @@ SocketWS_server_reject (Socket_T socket, int status_code, const char *reason)
                       "Connection: close\r\n"
                       "\r\n"
                       "%.*s",
-                      status_code, status_phrase, body_len,
-                      (int)body_len, body_text);
+                      status_code, status_phrase, body_len, (int)body_len,
+                      body_text);
 
   if (written > 0 && (size_t)written <= sizeof (buf))
     {

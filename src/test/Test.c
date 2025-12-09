@@ -130,7 +130,8 @@ Test_fail_ne (const char *expected_str, const char *actual_str,
  * Uses TRY/EXCEPT to catch Test_Failed exceptions raised by ASSERT macros,
  * allowing FINALLY blocks in tests to execute for proper cleanup.
  * Prints summary of test results.
- * Thread Safety: Not thread-safe (intended for single-threaded test execution).
+ * Thread Safety: Not thread-safe (intended for single-threaded test
+ * execution).
  */
 void
 Test_run_all (void)
@@ -169,10 +170,7 @@ Test_run_all (void)
       /* Run test function with exception handling.
        * Test_Failed is caught to allow FINALLY blocks to execute in tests,
        * ensuring proper cleanup of resources even when assertions fail. */
-      TRY
-      {
-        current_test->func ();
-      }
+      TRY { current_test->func (); }
       EXCEPT (Test_Failed)
       {
         /* Test_Failed was raised by ASSERT macro - failure already recorded

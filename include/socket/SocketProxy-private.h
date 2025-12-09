@@ -25,7 +25,8 @@
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Error buffer size */
 #ifndef SOCKET_PROXY_ERROR_BUFSIZE
@@ -34,7 +35,8 @@
 
 /** Internal I/O buffer size */
 #ifndef SOCKET_PROXY_BUFFER_SIZE
-#define SOCKET_PROXY_BUFFER_SIZE 65536  // Increased for large HTTP headers (64KB max per SocketHTTP.h)
+#define SOCKET_PROXY_BUFFER_SIZE                                              \
+  65536 // Increased for large HTTP headers (64KB max per SocketHTTP.h)
 #endif
 
 /** Maximum URL length for parsing */
@@ -60,7 +62,8 @@
 
 /* ============================================================================
  * SOCKS Protocol Constants (RFC 1928, RFC 1929)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** SOCKS4 version */
 #define SOCKS4_VERSION 4
@@ -108,24 +111,25 @@
 #define SOCKS5_REPLY_ADDRESS_TYPE_NOT_SUPPORTED 0x08
 
 /** SOCKS5 address sizes (RFC 1928 Section 4) */
-#define SOCKS5_IPV4_ADDR_SIZE 4   /**< IPv4 address bytes */
-#define SOCKS5_IPV6_ADDR_SIZE 16  /**< IPv6 address bytes */
-#define SOCKS5_PORT_SIZE 2        /**< Port bytes (network order) */
+#define SOCKS5_IPV4_ADDR_SIZE 4  /**< IPv4 address bytes */
+#define SOCKS5_IPV6_ADDR_SIZE 16 /**< IPv6 address bytes */
+#define SOCKS5_PORT_SIZE 2       /**< Port bytes (network order) */
 
 /** SOCKS5 response sizes */
-#define SOCKS5_METHOD_RESPONSE_SIZE 2  /**< VER + METHOD */
-#define SOCKS5_AUTH_RESPONSE_SIZE 2    /**< VER + STATUS */
-#define SOCKS5_CONNECT_HEADER_SIZE 4   /**< VER + REP + RSV + ATYP */
+#define SOCKS5_METHOD_RESPONSE_SIZE 2 /**< VER + METHOD */
+#define SOCKS5_AUTH_RESPONSE_SIZE 2   /**< VER + STATUS */
+#define SOCKS5_CONNECT_HEADER_SIZE 4  /**< VER + REP + RSV + ATYP */
 
 /** SOCKS5 greeting response sizes */
-#define SOCKS5_CONNECT_IPV4_RESPONSE_SIZE                                      \
+#define SOCKS5_CONNECT_IPV4_RESPONSE_SIZE                                     \
   (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV4_ADDR_SIZE + SOCKS5_PORT_SIZE)
-#define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE                                      \
+#define SOCKS5_CONNECT_IPV6_RESPONSE_SIZE                                     \
   (SOCKS5_CONNECT_HEADER_SIZE + SOCKS5_IPV6_ADDR_SIZE + SOCKS5_PORT_SIZE)
 
 /* ============================================================================
  * Internal Protocol State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_ProtoState - Protocol-specific sub-state
@@ -198,7 +202,8 @@ typedef enum
 
 /* ============================================================================
  * Main Context Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Conn_T - Proxy connection context
@@ -212,31 +217,31 @@ typedef enum
 struct SocketProxy_Conn_T
 {
   /* Configuration (copied from user) */
-  SocketProxyType type;               /**< Proxy type */
-  char *proxy_host;                   /**< Proxy hostname (arena copy) */
-  int proxy_port;                     /**< Proxy port */
-  char *username;                     /**< Username (arena copy, may be NULL) */
-  char *password;                     /**< Password (arena copy, may be NULL) */
-  char *target_host;                  /**< Target hostname (arena copy) */
-  int target_port;                    /**< Target port */
-  int connect_timeout_ms;             /**< Proxy connect timeout */
-  int handshake_timeout_ms;           /**< Handshake timeout */
+  SocketProxyType type;     /**< Proxy type */
+  char *proxy_host;         /**< Proxy hostname (arena copy) */
+  int proxy_port;           /**< Proxy port */
+  char *username;           /**< Username (arena copy, may be NULL) */
+  char *password;           /**< Password (arena copy, may be NULL) */
+  char *target_host;        /**< Target hostname (arena copy) */
+  int target_port;          /**< Target port */
+  int connect_timeout_ms;   /**< Proxy connect timeout */
+  int handshake_timeout_ms; /**< Handshake timeout */
   SocketHTTP_Headers_T extra_headers; /**< HTTP CONNECT extra headers */
-    #if SOCKET_HAS_TLS
+#if SOCKET_HAS_TLS
   SocketTLSContext_T tls_ctx; /**< TLS context from config (copied ptr) */
-  int tls_enabled;             /**< 1 after successful TLS handshake to proxy */
+  int tls_enabled;            /**< 1 after successful TLS handshake to proxy */
 #endif
 
   /* Internal resources (owned) */
-  Arena_T arena;      /**< Memory arena for all allocations */
-  Socket_T socket;    /**< Proxy socket (transferred to caller on success) */
-  SocketBuf_T recvbuf;/**< Receive buffer for protocol parsing */
+  Arena_T arena;       /**< Memory arena for all allocations */
+  Socket_T socket;     /**< Proxy socket (transferred to caller on success) */
+  SocketBuf_T recvbuf; /**< Receive buffer for protocol parsing */
 
   /* Async connection resources */
-  SocketDNS_T dns;    /**< DNS resolver for async connection */
-  SocketPoll_T poll;  /**< Poll instance for async connection */
-  SocketHE_T he;      /**< HappyEyeballs context (during connect) */
-  int owns_dns_poll;  /**< 1 if we own dns/poll (sync wrapper), 0 if external */
+  SocketDNS_T dns;   /**< DNS resolver for async connection */
+  SocketPoll_T poll; /**< Poll instance for async connection */
+  SocketHE_T he;     /**< HappyEyeballs context (during connect) */
+  int owns_dns_poll; /**< 1 if we own dns/poll (sync wrapper), 0 if external */
 
   /* HTTP CONNECT specific */
   SocketHTTP1_Parser_T http_parser; /**< HTTP response parser */
@@ -247,29 +252,30 @@ struct SocketProxy_Conn_T
   SocketProxy_Result result;          /**< Final result */
 
   /* SOCKS5 state */
-  int socks5_auth_method;           /**< Selected auth method */
-  int socks5_need_auth;             /**< 1 if auth required */
+  int socks5_auth_method; /**< Selected auth method */
+  int socks5_need_auth;   /**< 1 if auth required */
 
   /* Timing */
-  int64_t start_time_ms;            /**< When operation started */
-  int64_t handshake_start_time_ms;  /**< When handshake started */
+  int64_t start_time_ms;           /**< When operation started */
+  int64_t handshake_start_time_ms; /**< When handshake started */
 
   /* I/O state */
   unsigned char send_buf[SOCKET_PROXY_BUFFER_SIZE]; /**< Send buffer */
-  size_t send_len;                  /**< Data in send buffer */
-  size_t send_offset;               /**< Bytes already sent */
+  size_t send_len;                                  /**< Data in send buffer */
+  size_t send_offset;                               /**< Bytes already sent */
   unsigned char recv_buf[SOCKET_PROXY_BUFFER_SIZE]; /**< Temp receive buffer */
-  size_t recv_len;                  /**< Data in receive buffer */
-  size_t recv_offset;               /**< Bytes already processed */
+  size_t recv_len;    /**< Data in receive buffer */
+  size_t recv_offset; /**< Bytes already processed */
 
   /* Error tracking */
   char error_buf[SOCKET_PROXY_ERROR_BUFSIZE]; /**< Error message */
-  int transferred;                  /**< 1 if socket transferred to caller */
+  int transferred; /**< 1 if socket transferred to caller */
 };
 
 /* ============================================================================
  * Internal Helper Functions - Time
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketproxy_get_time_ms - Get monotonic time in milliseconds
@@ -305,7 +311,8 @@ socketproxy_elapsed_ms (int64_t start_ms)
 
 /* ============================================================================
  * Protocol Handler Function Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Protocol send function type
@@ -326,7 +333,8 @@ typedef SocketProxy_Result (*ProxyRecvFunc) (struct SocketProxy_Conn_T *conn);
 
 /* ============================================================================
  * Internal Protocol Functions - SOCKS5 (RFC 1928/1929)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * proxy_socks5_send_greeting - Build SOCKS5 greeting message
@@ -389,7 +397,8 @@ extern SocketProxy_Result proxy_socks5_reply_to_result (int reply);
 
 /* ============================================================================
  * Internal Protocol Functions - SOCKS4/4a
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * proxy_socks4_send_connect - Build SOCKS4 connect request
@@ -426,7 +435,8 @@ extern SocketProxy_Result proxy_socks4_reply_to_result (int reply);
 
 /* ============================================================================
  * Internal Protocol Functions - HTTP CONNECT
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * proxy_http_send_connect - Build HTTP CONNECT request
@@ -455,7 +465,8 @@ extern SocketProxy_Result proxy_http_status_to_result (int status);
 
 /* ============================================================================
  * Internal State Machine Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketproxy_advance_state - Advance state machine
@@ -493,7 +504,8 @@ extern int socketproxy_do_recv (struct SocketProxy_Conn_T *conn);
 
 /* ============================================================================
  * Internal URL Parser Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketproxy_parse_scheme - Parse URL scheme and set proxy type
@@ -503,7 +515,8 @@ extern int socketproxy_do_recv (struct SocketProxy_Conn_T *conn);
  *
  * Returns: 0 on success, -1 on error
  */
-extern int socketproxy_parse_scheme (const char *url, SocketProxy_Config *config,
+extern int socketproxy_parse_scheme (const char *url,
+                                     SocketProxy_Config *config,
                                      const char **end);
 
 /**
@@ -516,8 +529,8 @@ extern int socketproxy_parse_scheme (const char *url, SocketProxy_Config *config
  * Returns: 0 on success, -1 on error
  */
 extern int socketproxy_parse_userinfo (const char *start,
-                                       SocketProxy_Config *config, Arena_T arena,
-                                       const char **end);
+                                       SocketProxy_Config *config,
+                                       Arena_T arena, const char **end);
 
 /**
  * socketproxy_parse_hostport - Parse host[:port]
@@ -530,8 +543,6 @@ extern int socketproxy_parse_userinfo (const char *start,
  */
 extern int socketproxy_parse_hostport (const char *start,
                                        SocketProxy_Config *config,
-                                       Arena_T arena,
-                                       size_t *consumed_out);
+                                       Arena_T arena, size_t *consumed_out);
 
 #endif /* SOCKETPROXY_PRIVATE_INCLUDED */
-

@@ -7,19 +7,17 @@
  * case-insensitive lookup using hash table with separate chaining.
  */
 
-#include "http/SocketHTTP.h"
-#include "http/SocketHTTP-private.h"
 #include "core/SocketUtil.h"
+#include "http/SocketHTTP-private.h"
+#include "http/SocketHTTP.h"
 
-
-
-
-#include <string.h>
 #include "core/SocketSecurity.h"
+#include <string.h>
 
 /* ============================================================================
  * Module-Specific Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #if defined(__GNUC__)
 #pragma GCC diagnostic push
@@ -35,7 +33,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /* ============================================================================
  * Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Overhead for null terminators in header entry size calculation */
 #define HEADER_ENTRY_NULL_OVERHEAD 2
@@ -45,14 +44,13 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 
 /* ============================================================================
  * Internal Helper Functions - String Operations
- * ============================================================================ */
-
-
-
+ * ============================================================================
+ */
 
 /* ============================================================================
  * Internal Helper Functions - Hash Table Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * find_entry - Find header entry by name (case-insensitive)
@@ -65,7 +63,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP);
 static HeaderEntry *
 find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len, SOCKETHTTP_HEADER_BUCKETS);
+  unsigned bucket = socket_util_hash_djb2_ci_len (name, name_len,
+                                                  SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry *entry = headers->buckets[bucket];
 
   /* SECURITY: Limit traversal to prevent hash collision DoS */
@@ -73,10 +72,14 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
   while (entry)
     {
       chain_len++;
-      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN * 2) {  /* Allow double for search tolerance */
-        SOCKET_LOG_WARN_MSG ("SocketHTTP", "Excessive hash chain length %d in bucket %u - potential DoS", chain_len, bucket);
-        return NULL;
-      }
+      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN * 2)
+        { /* Allow double for search tolerance */
+          SOCKET_LOG_WARN_MSG (
+              "SocketHTTP",
+              "Excessive hash chain length %d in bucket %u - potential DoS",
+              chain_len, bucket);
+          return NULL;
+        }
       if (sockethttp_name_equal (entry->name, entry->name_len, name, name_len))
         return entry;
       entry = entry->hash_next;
@@ -95,15 +98,18 @@ find_entry (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 static int
 add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len, SOCKETHTTP_HEADER_BUCKETS);
+  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len,
+                                                  SOCKETHTTP_HEADER_BUCKETS);
 
   /* SECURITY: Check current chain length to prevent hash collision DoS */
   int chain_len = 0;
-  for (HeaderEntry *curr = headers->buckets[bucket]; curr; curr = curr->hash_next) {
-    chain_len++;
-    if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN)
-      return -1;  /* Bucket too crowded - potential DoS */
-  }
+  for (HeaderEntry *curr = headers->buckets[bucket]; curr;
+       curr = curr->hash_next)
+    {
+      chain_len++;
+      if (chain_len > SOCKETHTTP_MAX_CHAIN_LEN)
+        return -1; /* Bucket too crowded - potential DoS */
+    }
   if (chain_len >= SOCKETHTTP_MAX_CHAIN_LEN)
     return -1;
 
@@ -120,7 +126,8 @@ add_to_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 static void
 remove_from_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 {
-  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len, SOCKETHTTP_HEADER_BUCKETS);
+  unsigned bucket = socket_util_hash_djb2_ci_len (entry->name, entry->name_len,
+                                                  SOCKETHTTP_HEADER_BUCKETS);
   HeaderEntry **pp = &headers->buckets[bucket];
 
   while (*pp)
@@ -136,7 +143,8 @@ remove_from_bucket (SocketHTTP_Headers_T headers, HeaderEntry *entry)
 
 /* ============================================================================
  * Internal Helper Functions - List Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * add_to_list - Add entry to insertion-order list
@@ -185,17 +193,26 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 
   size_t delta_temp;
   size_t delta;
-  if (!SocketSecurity_check_add (entry->name_len, entry->value_len, &delta_temp) ||
-      !SocketSecurity_check_add (delta_temp, HEADER_ENTRY_NULL_OVERHEAD, &delta)) {
-    /* Invalid entry sizes, reset total */
-    headers->total_size = 0;
-    SOCKET_LOG_WARN_MSG ("SocketHTTP", "Invalid header entry sizes in remove");
-  } else if (delta > headers->total_size) {
-    headers->total_size = 0;
-    SOCKET_LOG_WARN_MSG ("SocketHTTP", "Header total_size underflow in remove");
-  } else {
-    headers->total_size -= delta;
-  }
+  if (!SocketSecurity_check_add (entry->name_len, entry->value_len,
+                                 &delta_temp)
+      || !SocketSecurity_check_add (delta_temp, HEADER_ENTRY_NULL_OVERHEAD,
+                                    &delta))
+    {
+      /* Invalid entry sizes, reset total */
+      headers->total_size = 0;
+      SOCKET_LOG_WARN_MSG ("SocketHTTP",
+                           "Invalid header entry sizes in remove");
+    }
+  else if (delta > headers->total_size)
+    {
+      headers->total_size = 0;
+      SOCKET_LOG_WARN_MSG ("SocketHTTP",
+                           "Header total_size underflow in remove");
+    }
+  else
+    {
+      headers->total_size -= delta;
+    }
 
   remove_from_bucket (headers, entry);
   remove_from_list (headers, entry);
@@ -206,7 +223,8 @@ remove_one_n (SocketHTTP_Headers_T headers, const char *name, size_t name_len)
 
 /* ============================================================================
  * Internal Helper Functions - Token Matching
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * skip_token_delimiters - Skip whitespace and comma delimiters
@@ -257,7 +275,8 @@ token_equal_ci (const char *token, size_t token_len, const char *target,
 
 /* ============================================================================
  * Internal Helper Functions - Header Entry Allocation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * validate_header_limits - Check header count and size limits
@@ -270,11 +289,13 @@ static int
 validate_header_limits (SocketHTTP_Headers_T headers, size_t entry_size)
 {
   size_t new_count;
-  if (!SocketSecurity_check_add (headers->count, 1, &new_count) || new_count > SOCKETHTTP_MAX_HEADERS)
+  if (!SocketSecurity_check_add (headers->count, 1, &new_count)
+      || new_count > SOCKETHTTP_MAX_HEADERS)
     return -1;
 
   size_t new_total;
-  if (!SocketSecurity_check_add (headers->total_size, entry_size, &new_total) || new_total > SOCKETHTTP_MAX_HEADER_SIZE)
+  if (!SocketSecurity_check_add (headers->total_size, entry_size, &new_total)
+      || new_total > SOCKETHTTP_MAX_HEADER_SIZE)
     return -1;
   return 0;
 }
@@ -316,18 +337,21 @@ allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
                       size_t value_len)
 {
   char *value_copy;
-  if (value && value_len > 0) {
-    value_copy = ALLOC (arena, value_len + 1);
-    if (!value_copy)
-      return -1;
-    memcpy (value_copy, value, value_len);
-    value_copy[value_len] = '\0';
-  } else {
-    value_copy = ALLOC (arena, 1);
-    if (!value_copy)
-      return -1;
-    *value_copy = '\0';
-  }
+  if (value && value_len > 0)
+    {
+      value_copy = ALLOC (arena, value_len + 1);
+      if (!value_copy)
+        return -1;
+      memcpy (value_copy, value, value_len);
+      value_copy[value_len] = '\0';
+    }
+  else
+    {
+      value_copy = ALLOC (arena, 1);
+      if (!value_copy)
+        return -1;
+      *value_copy = '\0';
+    }
   entry->value = value_copy;
   entry->value_len = value_len ? value_len : 0;
   return 0;
@@ -335,7 +359,8 @@ allocate_entry_value (Arena_T arena, HeaderEntry *entry, const char *value,
 
 /* ============================================================================
  * Header Collection Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTP_Headers_T
 SocketHTTP_Headers_new (Arena_T arena)
@@ -369,12 +394,14 @@ SocketHTTP_Headers_clear (SocketHTTP_Headers_T headers)
   headers->count = 0;
   headers->total_size = 0;
 
-  /* Note: Memory is arena-allocated, actual freeing happens on Arena_dispose */
+  /* Note: Memory is arena-allocated, actual freeing happens on Arena_dispose
+   */
 }
 
 /* ============================================================================
  * Adding Headers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
@@ -393,7 +420,8 @@ SocketHTTP_Headers_add_n (SocketHTTP_Headers_T headers, const char *name,
   if (!SocketSecurity_check_add (name_len, value_len, &temp_size))
     return -1;
   size_t entry_size;
-  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD, &entry_size))
+  if (!SocketSecurity_check_add (temp_size, HEADER_ENTRY_NULL_OVERHEAD,
+                                 &entry_size))
     return -1;
   if (validate_header_limits (headers, entry_size) < 0)
     return -1;
@@ -442,7 +470,8 @@ SocketHTTP_Headers_set (SocketHTTP_Headers_T headers, const char *name,
 
 /* ============================================================================
  * Retrieving Headers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const char *
 SocketHTTP_Headers_get (SocketHTTP_Headers_T headers, const char *name)
@@ -476,24 +505,28 @@ SocketHTTP_Headers_get_int (SocketHTTP_Headers_T headers, const char *name,
 
   /* Parse optional sign */
   int negative = 0;
-  if (*p == '-') {
-    negative = 1;
-    p++;
-  } else if (*p == '+') {
-    p++;
-  }
+  if (*p == '-')
+    {
+      negative = 1;
+      p++;
+    }
+  else if (*p == '+')
+    {
+      p++;
+    }
 
   /* Parse digits with overflow protection */
   if (!(*p >= '0' && *p <= '9'))
     return -1;
   int64_t result = 0;
-  while (*p >= '0' && *p <= '9') {
-    int digit = *p - '0';
-    if (result > (INT64_MAX - digit) / 10)
-      return -1; /* Overflow */
-    result = result * 10 + digit;
-    p++;
-  }
+  while (*p >= '0' && *p <= '9')
+    {
+      int digit = *p - '0';
+      if (result > (INT64_MAX - digit) / 10)
+        return -1; /* Overflow */
+      result = result * 10 + digit;
+      p++;
+    }
 
   /* Skip trailing whitespace */
   while (*p == ' ' || *p == '\t')
@@ -528,7 +561,8 @@ SocketHTTP_Headers_get_all (SocketHTTP_Headers_T headers, const char *name,
 
 /* ============================================================================
  * Checking Headers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP_Headers_has (SocketHTTP_Headers_T headers, const char *name)
@@ -576,7 +610,8 @@ SocketHTTP_Headers_contains (SocketHTTP_Headers_T headers, const char *name,
 
 /* ============================================================================
  * Removing Headers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP_Headers_remove (SocketHTTP_Headers_T headers, const char *name)
@@ -604,7 +639,8 @@ SocketHTTP_Headers_remove_all (SocketHTTP_Headers_T headers, const char *name)
 
 /* ============================================================================
  * Iteration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 size_t
 SocketHTTP_Headers_count (SocketHTTP_Headers_T headers)

@@ -7,8 +7,8 @@
  * media type parsing, and content negotiation.
  */
 
-#include "http/SocketHTTP.h"
 #include "core/Arena.h"
+#include "http/SocketHTTP.h"
 #include "test/Test.h"
 
 #include <stdio.h>
@@ -18,7 +18,8 @@
 
 /* ============================================================================
  * Test Counters
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int tests_run = 0;
 static int tests_passed = 0;
@@ -40,23 +41,29 @@ static int tests_passed = 0;
 
 /* ============================================================================
  * HTTP Version Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_version_string (void)
 {
   printf ("Testing HTTP version strings...\n");
 
-  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_0_9),
-                       "HTTP/0.9") == 0, "HTTP/0.9 string");
-  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_1_0),
-                       "HTTP/1.0") == 0, "HTTP/1.0 string");
-  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_1_1),
-                       "HTTP/1.1") == 0, "HTTP/1.1 string");
-  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_2),
-                       "HTTP/2") == 0, "HTTP/2 string");
-  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_3),
-                       "HTTP/3") == 0, "HTTP/3 string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP_version_string (HTTP_VERSION_0_9), "HTTP/0.9") == 0,
+      "HTTP/0.9 string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP_version_string (HTTP_VERSION_1_0), "HTTP/1.0") == 0,
+      "HTTP/1.0 string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP_version_string (HTTP_VERSION_1_1), "HTTP/1.1") == 0,
+      "HTTP/1.1 string");
+  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_2), "HTTP/2")
+                   == 0,
+               "HTTP/2 string");
+  TEST_ASSERT (strcmp (SocketHTTP_version_string (HTTP_VERSION_3), "HTTP/3")
+                   == 0,
+               "HTTP/3 string");
 }
 
 static void
@@ -80,7 +87,8 @@ test_version_parse (void)
 
 /* ============================================================================
  * HTTP Method Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_method_name (void)
@@ -95,16 +103,21 @@ test_method_name (void)
                "POST name");
   TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_PUT), "PUT") == 0,
                "PUT name");
-  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_DELETE),
-                       "DELETE") == 0, "DELETE name");
-  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_CONNECT),
-                       "CONNECT") == 0, "CONNECT name");
-  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_OPTIONS),
-                       "OPTIONS") == 0, "OPTIONS name");
-  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_TRACE),
-                       "TRACE") == 0, "TRACE name");
-  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_PATCH),
-                       "PATCH") == 0, "PATCH name");
+  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_DELETE), "DELETE")
+                   == 0,
+               "DELETE name");
+  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_CONNECT), "CONNECT")
+                   == 0,
+               "CONNECT name");
+  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_OPTIONS), "OPTIONS")
+                   == 0,
+               "OPTIONS name");
+  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_TRACE), "TRACE")
+                   == 0,
+               "TRACE name");
+  TEST_ASSERT (strcmp (SocketHTTP_method_name (HTTP_METHOD_PATCH), "PATCH")
+                   == 0,
+               "PATCH name");
   TEST_ASSERT (SocketHTTP_method_name (HTTP_METHOD_UNKNOWN) == NULL,
                "UNKNOWN returns NULL");
 }
@@ -177,7 +190,8 @@ test_method_valid (void)
 
 /* ============================================================================
  * HTTP Status Code Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_status_reason (void)
@@ -189,16 +203,18 @@ test_status_reason (void)
                "201 Created");
   TEST_ASSERT (strcmp (SocketHTTP_status_reason (204), "No Content") == 0,
                "204 No Content");
-  TEST_ASSERT (strcmp (SocketHTTP_status_reason (301),
-                       "Moved Permanently") == 0, "301 Moved Permanently");
+  TEST_ASSERT (strcmp (SocketHTTP_status_reason (301), "Moved Permanently")
+                   == 0,
+               "301 Moved Permanently");
   TEST_ASSERT (strcmp (SocketHTTP_status_reason (400), "Bad Request") == 0,
                "400 Bad Request");
   TEST_ASSERT (strcmp (SocketHTTP_status_reason (404), "Not Found") == 0,
                "404 Not Found");
   TEST_ASSERT (strcmp (SocketHTTP_status_reason (418), "I'm a Teapot") == 0,
                "418 I'm a Teapot");
-  TEST_ASSERT (strcmp (SocketHTTP_status_reason (500),
-                       "Internal Server Error") == 0, "500 Internal Server Error");
+  TEST_ASSERT (strcmp (SocketHTTP_status_reason (500), "Internal Server Error")
+                   == 0,
+               "500 Internal Server Error");
   TEST_ASSERT (strcmp (SocketHTTP_status_reason (999), "Unknown") == 0,
                "Unknown code");
 }
@@ -235,7 +251,8 @@ test_status_valid (void)
 
 /* ============================================================================
  * HTTP Header Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_headers_basic (void)
@@ -248,8 +265,9 @@ test_headers_basic (void)
 
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 0, "Initial count is 0");
 
-  TEST_ASSERT (SocketHTTP_Headers_add (headers, "Content-Type",
-                                       "text/html") == 0, "Add Content-Type");
+  TEST_ASSERT (SocketHTTP_Headers_add (headers, "Content-Type", "text/html")
+                   == 0,
+               "Add Content-Type");
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 1, "Count is 1");
 
   const char *value = SocketHTTP_Headers_get (headers, "Content-Type");
@@ -282,7 +300,8 @@ test_headers_multi (void)
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 3, "Count is 3");
 
   const char *values[10];
-  size_t count = SocketHTTP_Headers_get_all (headers, "Set-Cookie", values, 10);
+  size_t count
+      = SocketHTTP_Headers_get_all (headers, "Set-Cookie", values, 10);
   TEST_ASSERT (count == 3, "Get all returns 3");
   TEST_ASSERT (strcmp (values[0], "a=1") == 0, "First cookie");
   TEST_ASSERT (strcmp (values[1], "b=2") == 0, "Second cookie");
@@ -304,7 +323,8 @@ test_headers_set (void)
   TEST_ASSERT (SocketHTTP_Headers_count (headers) == 2, "Count is 2");
 
   SocketHTTP_Headers_set (headers, "Content-Type", "application/json");
-  TEST_ASSERT (SocketHTTP_Headers_count (headers) == 1, "Count is 1 after set");
+  TEST_ASSERT (SocketHTTP_Headers_count (headers) == 1,
+               "Count is 1 after set");
 
   const char *value = SocketHTTP_Headers_get (headers, "Content-Type");
   TEST_ASSERT (strcmp (value, "application/json") == 0, "Value replaced");
@@ -348,16 +368,18 @@ test_headers_contains (void)
   SocketHTTP_Headers_add (headers, "Connection", "keep-alive, upgrade");
   SocketHTTP_Headers_add (headers, "Accept-Encoding", "gzip, deflate, br");
 
-  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection",
-                                            "keep-alive") == 1,
-               "Contains keep-alive");
-  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection",
-                                            "upgrade") == 1,
+  TEST_ASSERT (
+      SocketHTTP_Headers_contains (headers, "Connection", "keep-alive") == 1,
+      "Contains keep-alive");
+  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection", "upgrade")
+                   == 1,
                "Contains upgrade");
-  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection",
-                                            "close") == 0, "Not contains close");
-  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Accept-Encoding",
-                                            "br") == 1, "Contains br");
+  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Connection", "close")
+                   == 0,
+               "Not contains close");
+  TEST_ASSERT (SocketHTTP_Headers_contains (headers, "Accept-Encoding", "br")
+                   == 1,
+               "Contains br");
 
   Arena_dispose (&arena);
 }
@@ -375,8 +397,9 @@ test_headers_get_int (void)
   SocketHTTP_Headers_add (headers, "Bad", "not-a-number");
 
   int64_t val;
-  TEST_ASSERT (SocketHTTP_Headers_get_int (headers, "Content-Length",
-                                           &val) == 0, "Parse Content-Length");
+  TEST_ASSERT (SocketHTTP_Headers_get_int (headers, "Content-Length", &val)
+                   == 0,
+               "Parse Content-Length");
   TEST_ASSERT (val == 12345, "Content-Length value");
 
   TEST_ASSERT (SocketHTTP_Headers_get_int (headers, "Max-Age", &val) == 0,
@@ -404,7 +427,8 @@ test_header_validation (void)
                "Space in name invalid");
   TEST_ASSERT (SocketHTTP_header_name_valid ("Invalid:Header", 14) == 0,
                "Colon in name invalid");
-  TEST_ASSERT (SocketHTTP_header_name_valid ("", 0) == 0, "Empty name invalid");
+  TEST_ASSERT (SocketHTTP_header_name_valid ("", 0) == 0,
+               "Empty name invalid");
 
   TEST_ASSERT (SocketHTTP_header_value_valid ("normal value", 12) == 1,
                "Normal value valid");
@@ -435,7 +459,8 @@ test_header_validation (void)
 
 /* ============================================================================
  * URI Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_uri_basic (void)
@@ -465,8 +490,8 @@ test_uri_with_port (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  result = SocketHTTP_URI_parse ("https://example.com:8443/path", 0, &uri,
-                                 arena);
+  result
+      = SocketHTTP_URI_parse ("https://example.com:8443/path", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse URI with port");
   TEST_ASSERT (strcmp (uri.scheme, "https") == 0, "Scheme");
   TEST_ASSERT (strcmp (uri.host, "example.com") == 0, "Host");
@@ -539,8 +564,10 @@ test_uri_relative (void)
 
   result = SocketHTTP_URI_parse ("/path/to/resource?query=1", 0, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_OK, "Parse relative URI");
-  TEST_ASSERT (uri.path && strcmp (uri.path, "/path/to/resource") == 0, "Relative path");
-  TEST_ASSERT (uri.query && strcmp (uri.query, "query=1") == 0, "Relative query");
+  TEST_ASSERT (uri.path && strcmp (uri.path, "/path/to/resource") == 0,
+               "Relative path");
+  TEST_ASSERT (uri.query && strcmp (uri.query, "query=1") == 0,
+               "Relative query");
   TEST_ASSERT (uri.scheme == NULL, "No scheme in relative");
   TEST_ASSERT (uri.host == NULL, "No host in relative");
 
@@ -556,8 +583,11 @@ test_uri_security_invalid (void)
   SocketHTTP_URI uri;
   SocketHTTP_URIResult result;
 
-  // Control char in path (use sizeof-1 to get full length including embedded NUL)
-  result = SocketHTTP_URI_parse ("http://example.com/pat\0h", sizeof("http://example.com/pat\0h") - 1, &uri, arena);
+  // Control char in path (use sizeof-1 to get full length including embedded
+  // NUL)
+  result = SocketHTTP_URI_parse ("http://example.com/pat\0h",
+                                 sizeof ("http://example.com/pat\0h") - 1,
+                                 &uri, arena);
   TEST_ASSERT (result == URI_PARSE_ERROR, "Reject control char (NUL) in path");
 
   // Invalid host char (space)
@@ -566,21 +596,24 @@ test_uri_security_invalid (void)
 
   // Invalid reg-name char in host
   result = SocketHTTP_URI_parse ("http://exa<mple.com/path", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject < in host (reg-name)");
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST,
+               "Reject < in host (reg-name)");
 
   // Malformed IPv6 literal
   result = SocketHTTP_URI_parse ("http://[::g]:80/path", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject invalid char in IPv6");
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST,
+               "Reject invalid char in IPv6");
 
   // Unmatched IPv6 bracket
   result = SocketHTTP_URI_parse ("http://[::1/path", 0, &uri, arena);
-  TEST_ASSERT (result == URI_PARSE_INVALID_HOST, "Reject unmatched IPv6 bracket");
+  TEST_ASSERT (result == URI_PARSE_INVALID_HOST,
+               "Reject unmatched IPv6 bracket");
 
   // Oversized host
   char long_host[310] = "http://";
   memset (long_host + 7, 'a', 290);
-  strncpy (long_host + 297, "/path", 12);  /* Safe copy with room for null */
-  long_host[308] = '\0';  /* Ensure null termination */
+  strncpy (long_host + 297, "/path", 12); /* Safe copy with room for null */
+  long_host[308] = '\0';                  /* Ensure null termination */
   result = SocketHTTP_URI_parse (long_host, 300, &uri, arena);
   TEST_ASSERT (result == URI_PARSE_TOO_LONG, "Reject oversized host >255");
 
@@ -609,13 +642,12 @@ test_mediatype_security (void)
   TEST_ASSERT (res == -1, "Reject invalid param name char");
 
   // Incomplete escape in quoted
-  res = SocketHTTP_MediaType_parse ("text/plain; boundary=\\\"abc\\", 0, &mt, arena);
+  res = SocketHTTP_MediaType_parse ("text/plain; boundary=\\\"abc\\", 0, &mt,
+                                    arena);
   TEST_ASSERT (res == -1, "Reject incomplete escape in quoted value");
 
   Arena_dispose (&arena);
 }
-
-
 
 static void
 test_uri_userinfo (void)
@@ -692,7 +724,8 @@ test_uri_build (void)
 
   ssize_t len = SocketHTTP_URI_build (&uri, buf, sizeof (buf));
   TEST_ASSERT (len > 0, "Build succeeds");
-  TEST_ASSERT (strcmp (buf, "https://user@example.com:8080/path?query#frag") == 0,
+  TEST_ASSERT (strcmp (buf, "https://user@example.com:8080/path?query#frag")
+                   == 0,
                "Build result");
 
   Arena_dispose (&arena);
@@ -700,7 +733,8 @@ test_uri_build (void)
 
 /* ============================================================================
  * Date Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_date_imf_fixdate (void)
@@ -787,7 +821,8 @@ test_date_invalid (void)
 
 /* ============================================================================
  * Media Type Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_media_type_basic (void)
@@ -837,8 +872,7 @@ test_media_type_matches (void)
                "Exact match");
   TEST_ASSERT (SocketHTTP_MediaType_matches (&mt, "application/*") == 1,
                "Wildcard subtype");
-  TEST_ASSERT (SocketHTTP_MediaType_matches (&mt, "*/*") == 1,
-               "Wildcard all");
+  TEST_ASSERT (SocketHTTP_MediaType_matches (&mt, "*/*") == 1, "Wildcard all");
   TEST_ASSERT (SocketHTTP_MediaType_matches (&mt, "text/json") == 0,
                "Type mismatch");
 
@@ -847,7 +881,8 @@ test_media_type_matches (void)
 
 /* ============================================================================
  * Accept Header Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_accept_parsing (void)
@@ -862,7 +897,8 @@ test_accept_parsing (void)
 
   TEST_ASSERT (count == 3, "Parse 3 values");
   /* Should be sorted by quality */
-  TEST_ASSERT (strcmp (results[0].value, "text/html") == 0, "First: text/html");
+  TEST_ASSERT (strcmp (results[0].value, "text/html") == 0,
+               "First: text/html");
   TEST_ASSERT (results[0].quality == 1.0f, "First quality 1.0");
   TEST_ASSERT (strcmp (results[1].value, "application/json") == 0,
                "Second: application/json");
@@ -875,7 +911,8 @@ test_accept_parsing (void)
 
 /* ============================================================================
  * Coding Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_coding (void)
@@ -903,7 +940,8 @@ test_coding (void)
 
 /* ============================================================================
  * Main
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -970,4 +1008,3 @@ main (void)
 
   return (tests_passed == tests_run) ? 0 : 1;
 }
-

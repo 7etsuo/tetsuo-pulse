@@ -22,7 +22,8 @@
  * - Thread-safe operation
  *
  * Platform Requirements:
- * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if unavailable)
+ * - Linux: kernel 5.1+ for io_uring (falls back to edge-triggered if
+ * unavailable)
  * - macOS/BSD: kqueue with AIO support
  * - All platforms: Non-blocking sockets (automatically handled)
  *

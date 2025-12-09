@@ -153,9 +153,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (Socket_Failed) { }
-  EXCEPT (SocketCommon_Failed) { }
-  ELSE { }
+  EXCEPT (Socket_Failed) {}
+  EXCEPT (SocketCommon_Failed) {}
+  ELSE {}
   END_TRY;
 
   if (socket)

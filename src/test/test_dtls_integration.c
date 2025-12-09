@@ -29,9 +29,9 @@
 #include "test/Test.h"
 
 #if SOCKET_HAS_TLS
+#include "core/SocketMetrics.h"
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSConfig.h"
-#include "core/SocketMetrics.h"
 #include "tls/SocketDTLSContext.h"
 
 /* Helper to generate temporary self-signed certificate */
@@ -439,8 +439,10 @@ TEST (dtls_double_enable_error)
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
-  uint64_t before_total = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
-  uint64_t before_failed = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+  uint64_t before_total
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+  uint64_t before_failed
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
 
   TRY
   {
@@ -452,12 +454,12 @@ TEST (dtls_double_enable_error)
     ASSERT_EQ (SocketDTLS_is_enabled (socket), 1);
 
     /* Verify metrics: total incremented on successful enable */
-    uint64_t total_after = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+    uint64_t total_after
+        = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
     ASSERT_EQ (total_after, before_total + 1);
-    uint64_t failed_after = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+    uint64_t failed_after
+        = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
     ASSERT_EQ (failed_after, before_failed);
-
-
 
     /* Second enable should fail */
     TRY { SocketDTLS_enable (socket, ctx); }
@@ -486,8 +488,10 @@ TEST (dtls_io_before_handshake_error)
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
-  uint64_t before_total = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
-  uint64_t before_failed = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+  uint64_t before_total
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+  uint64_t before_failed
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
 
   TRY
   {
@@ -530,8 +534,10 @@ TEST (dtls_cookie_exchange_client_error)
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
-  uint64_t before_total = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
-  uint64_t before_failed = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+  uint64_t before_total
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+  uint64_t before_failed
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
 
   TRY
   {
@@ -562,8 +568,10 @@ TEST (dtls_invalid_mtu_error)
   SocketDTLSContext_T ctx = NULL;
   volatile int caught_error = 0;
 
-  uint64_t before_total = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
-  uint64_t before_failed = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
+  uint64_t before_total
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_TOTAL);
+  uint64_t before_failed
+      = SocketMetrics_counter_get (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
 
   TRY
   {
@@ -688,4 +696,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

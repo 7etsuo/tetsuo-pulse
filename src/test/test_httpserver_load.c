@@ -41,11 +41,13 @@
 
 /* ============================================================================
  * Test Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define TEST_PORT_BASE 19000
 #define TEST_HOST "127.0.0.1"
-#define LOAD_TEST_CONNECTIONS 100  /* Reduced for unit test (actual: 10000+) */
+#define LOAD_TEST_CONNECTIONS 100 /* Reduced for unit test (actual: 10000+)   \
+                                   */
 #define LOAD_TEST_CONCURRENT 50
 #define LOAD_TEST_REQUESTS_PER_CONN 10
 #define CLIENT_THREADS 4
@@ -76,7 +78,8 @@ get_test_port (void)
 
 /* ============================================================================
  * Simple Request Handler
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 simple_handler (SocketHTTPServer_Request_T req, void *userdata)
@@ -106,7 +109,8 @@ simple_handler (SocketHTTPServer_Request_T req, void *userdata)
 
 /* ============================================================================
  * Streaming Response Handler
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 streaming_handler (SocketHTTPServer_Request_T req, void *userdata)
@@ -135,7 +139,8 @@ streaming_handler (SocketHTTPServer_Request_T req, void *userdata)
 
 /* ============================================================================
  * Validation Handler (Middleware Test)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 validation_callback (SocketHTTPServer_Request_T req, int *reject_status,
@@ -155,7 +160,8 @@ validation_callback (SocketHTTPServer_Request_T req, int *reject_status,
 
 /* ============================================================================
  * Client Thread
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -222,7 +228,8 @@ client_thread (void *arg)
 
 /* ============================================================================
  * Server Runner Thread
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -246,7 +253,8 @@ server_thread (void *arg)
 
 /* ============================================================================
  * Basic Server Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_config_defaults)
 {
@@ -315,7 +323,8 @@ TEST (httpserver_set_handler)
 
 /* ============================================================================
  * Single Client Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_single_request)
 {
@@ -382,7 +391,8 @@ TEST (httpserver_single_request)
 
 /* ============================================================================
  * Streaming Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_streaming_response)
 {
@@ -427,8 +437,9 @@ TEST (httpserver_streaming_response)
       char response[2048];
       size_t total = 0;
       ssize_t n;
-      while ((n = recv (fd, response + total, sizeof (response) - total - 1, 0))
-             > 0)
+      while (
+          (n = recv (fd, response + total, sizeof (response) - total - 1, 0))
+          > 0)
         {
           total += (size_t)n;
           if (total >= sizeof (response) - 1)
@@ -455,7 +466,8 @@ TEST (httpserver_streaming_response)
 
 /* ============================================================================
  * Validation/Middleware Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_validation_reject)
 {
@@ -518,7 +530,8 @@ TEST (httpserver_validation_reject)
 
 /* ============================================================================
  * Rate Limiting Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_rate_limiting)
 {
@@ -598,7 +611,8 @@ TEST (httpserver_rate_limiting)
 
 /* ============================================================================
  * Graceful Shutdown Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_graceful_shutdown)
 {
@@ -632,7 +646,8 @@ TEST (httpserver_graceful_shutdown)
 
 /* ============================================================================
  * Statistics Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_statistics)
 {
@@ -691,7 +706,7 @@ TEST (httpserver_statistics)
   SocketHTTPServer_stats (server, &stats);
 
   /* Verify stats structure is valid (total_requests is size_t) */
-  (void)stats.total_requests;  /* May have processed some */
+  (void)stats.total_requests; /* May have processed some */
   (void)stats.total_bytes_sent;
 
   /* Test reset */
@@ -708,7 +723,8 @@ TEST (httpserver_statistics)
 
 /* ============================================================================
  * Load Tests (Scaled down for unit testing)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (httpserver_concurrent_connections)
 {
@@ -719,7 +735,8 @@ TEST (httpserver_concurrent_connections)
   SocketHTTPServer_config_defaults (&config);
   config.port = port;
   config.max_connections = LOAD_TEST_CONNECTIONS * 2;
-  config.max_connections_per_client = 0; /* Disable per-client limit for test */
+  config.max_connections_per_client
+      = 0; /* Disable per-client limit for test */
 
   SocketHTTPServer_T server = SocketHTTPServer_new (&config);
   ASSERT_NOT_NULL (server);
@@ -836,7 +853,8 @@ TEST (httpserver_per_client_limit)
 
   /* Should have been limited (some may still connect due to timing) */
   /* The limit is enforced server-side when connection is added to pool */
-  printf ("  Per-client connections allowed: %d (limit: 3)\n", connected_count);
+  printf ("  Per-client connections allowed: %d (limit: 3)\n",
+          connected_count);
   ASSERT (connected_count <= 10); /* Server-side rejection may lag */
 
   SocketHTTPServer_free (&server);
@@ -844,7 +862,8 @@ TEST (httpserver_per_client_limit)
 
 /* ============================================================================
  * Main
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -858,4 +877,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

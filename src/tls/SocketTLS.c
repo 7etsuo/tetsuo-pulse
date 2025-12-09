@@ -16,17 +16,17 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketTLS-private.h"
-#include "tls/SocketTLSContext.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
+#include "poll/SocketPoll.h"
+#include "tls/SocketTLS-private.h"
+#include "tls/SocketTLSContext.h"
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <openssl/x509_vfy.h>
-#include "poll/SocketPoll.h"
-#include <string.h>
 #include <stdint.h>
+#include <string.h>
 
 #define T SocketTLS_T
 
@@ -35,7 +35,8 @@
  * ============================================================================
  */
 
-const Except_T SocketTLS_Failed = { &SocketTLS_Failed, "TLS operation failed" };
+const Except_T SocketTLS_Failed
+    = { &SocketTLS_Failed, "TLS operation failed" };
 const Except_T SocketTLS_HandshakeFailed
     = { &SocketTLS_HandshakeFailed, "TLS handshake failed" };
 const Except_T SocketTLS_VerifyFailed
@@ -49,7 +50,7 @@ const Except_T SocketTLS_ShutdownFailed
  * Thread-Local Error Buffers
  * ============================================================================
  */
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLS);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLS);
 /* ============================================================================
  * Internal Helper Functions
  * ============================================================================
@@ -73,7 +74,8 @@ tls_alloc_buf (Socket_T socket, const char *purpose)
   Arena_T arena = SocketBase_arena (socket->base);
   void *buf = Arena_alloc (arena, SOCKET_TLS_BUFFER_SIZE, __FILE__, __LINE__);
   if (!buf)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate TLS %s buffer", purpose);
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate TLS %s buffer",
+                         purpose);
   return buf;
 }
 
@@ -107,9 +109,8 @@ allocate_tls_buffers (Socket_T socket)
  * @buf: Buffer pointer
  * @size: Buffer size
  *
- * Uses SocketCrypto_secure_clear to wipe sensitive data that cannot be optimized away.
- * No-op if buf is NULL.
- * Thread-safe: Yes
+ * Uses SocketCrypto_secure_clear to wipe sensitive data that cannot be
+ * optimized away. No-op if buf is NULL. Thread-safe: Yes
  */
 static void
 tls_secure_clear_buf (void *buf, size_t size)
@@ -136,7 +137,7 @@ free_tls_resources (Socket_T socket)
     {
       SSL *ssl = (SSL *)socket->tls_ssl;
       SSL_set_app_data (ssl, NULL);
-      tls_cleanup_alpn_temp (ssl);  /* Free ALPN temp buffer if stored */
+      tls_cleanup_alpn_temp (ssl); /* Free ALPN temp buffer if stored */
       SSL_free (ssl);
       socket->tls_ssl = NULL;
       socket->tls_ctx = NULL;
@@ -150,7 +151,8 @@ free_tls_resources (Socket_T socket)
   if (socket->tls_sni_hostname)
     {
       size_t hostname_len = strlen (socket->tls_sni_hostname) + 1;
-      SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname, hostname_len);
+      SocketCrypto_secure_clear ((void *)socket->tls_sni_hostname,
+                                 hostname_len);
       socket->tls_sni_hostname = NULL;
     }
 
@@ -182,7 +184,8 @@ validate_tls_enable_preconditions (Socket_T socket)
 
   int fd = SocketBase_fd (socket->base);
   if (fd < 0)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Socket not connected (invalid fd)");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                         "Socket not connected (invalid fd)");
 }
 
 /**
@@ -206,11 +209,10 @@ create_ssl_object (SocketTLSContext_T ctx)
 
   /* Enable non-blocking modes for proper partial write handling */
   long mode = SSL_get_mode (ssl);
-  SSL_set_mode (ssl, mode | 
-      SSL_MODE_ENABLE_PARTIAL_WRITE | 
-      SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
+  SSL_set_mode (ssl, mode | SSL_MODE_ENABLE_PARTIAL_WRITE
+                         | SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER |
 #ifdef SSL_MODE_AUTO_RETRY
-      SSL_MODE_AUTO_RETRY
+                         SSL_MODE_AUTO_RETRY
 #endif
   );
 
@@ -229,9 +231,11 @@ associate_ssl_with_fd (SSL *ssl, int fd)
 {
   if (SSL_set_fd (ssl, fd) != 1)
     {
-      tls_cleanup_alpn_temp (ssl);  /* Cleanup any ex_data before free on error */
+      tls_cleanup_alpn_temp (
+          ssl); /* Cleanup any ex_data before free on error */
       SSL_free (ssl);
-      RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to associate SSL with fd");
+      RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                           "Failed to associate SSL with fd");
     }
 }
 
@@ -298,7 +302,8 @@ copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
   socket->tls_sni_hostname = Arena_alloc (SocketBase_arena (socket->base),
                                           len + 1, __FILE__, __LINE__);
   if (!socket->tls_sni_hostname)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to allocate hostname buffer");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                         "Failed to allocate hostname buffer");
 
   memcpy ((char *)socket->tls_sni_hostname, hostname, len + 1);
 }
@@ -317,14 +322,16 @@ copy_hostname_to_socket (Socket_T socket, const char *hostname, size_t len)
 static void
 apply_sni_to_ssl (SSL *ssl, const char *hostname)
 {
-  /* Enable peer certificate verification - required for hostname check to work */
+  /* Enable peer certificate verification - required for hostname check to work
+   */
   SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
 
   if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
     RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to set SNI hostname");
 
   if (SSL_set1_host (ssl, hostname) != 1)
-    RAISE_TLS_ERROR_MSG (SocketTLS_Failed, "Failed to enable hostname verification");
+    RAISE_TLS_ERROR_MSG (SocketTLS_Failed,
+                         "Failed to enable hostname verification");
 }
 
 void
@@ -375,7 +382,8 @@ SocketTLS_handshake (Socket_T socket)
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
-    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "SSL object not available");
+    RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
+                         "SSL object not available");
 
   int result = SSL_do_handshake (ssl);
   if (result == 1)
@@ -422,9 +430,8 @@ state_to_poll_events (TLSHandshakeState state)
  * @events: Poll events to wait for (SocketPoll_Events bitmask)
  * @timeout_ms: Poll timeout in milliseconds
  *
- * Returns: 1 if socket is ready (events occurred), 0 on timeout or EINTR (retry)
- * Raises: SocketTLS_HandshakeFailed on poll error
- * Thread-safe: No
+ * Returns: 1 if socket is ready (events occurred), 0 on timeout or EINTR
+ * (retry) Raises: SocketTLS_HandshakeFailed on poll error Thread-safe: No
  */
 static int
 do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
@@ -433,30 +440,31 @@ do_handshake_poll (Socket_T socket, unsigned events, int timeout_ms)
   int rc;
 
   TRY
-    {
-      poll = SocketPoll_new (16); /* Small capacity for single FD poll */
-      if (!poll)
-        RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed, "Failed to create temporary poll instance");
+  {
+    poll = SocketPoll_new (16); /* Small capacity for single FD poll */
+    if (!poll)
+      RAISE_TLS_ERROR_MSG (SocketTLS_HandshakeFailed,
+                           "Failed to create temporary poll instance");
 
-      SocketPoll_add (poll, socket, events, NULL);
+    SocketPoll_add (poll, socket, events, NULL);
 
-      SocketEvent_T evs[16];
-      SocketEvent_T *events = evs;
-      rc = SocketPoll_wait (poll, &events, timeout_ms);
-      if (rc < 0)
-        {
-          if (errno == EINTR)
-            return 0; /* Caller should retry */
-          TLS_ERROR_FMT ("SocketPoll_wait failed: %s", strerror (errno));
-          RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
-        }
-      /* rc >= 0: success (0=timeout, >0=ready) */
-    }
+    SocketEvent_T evs[16];
+    SocketEvent_T *events = evs;
+    rc = SocketPoll_wait (poll, &events, timeout_ms);
+    if (rc < 0)
+      {
+        if (errno == EINTR)
+          return 0; /* Caller should retry */
+        TLS_ERROR_FMT ("SocketPoll_wait failed: %s", strerror (errno));
+        RAISE_TLS_ERROR (SocketTLS_HandshakeFailed);
+      }
+    /* rc >= 0: success (0=timeout, >0=ready) */
+  }
   FINALLY
-    {
-      if (poll)
-        SocketPoll_free (&poll);
-    }
+  {
+    if (poll)
+      SocketPoll_free (&poll);
+  }
   END_TRY;
 
   return 1; /* Success (ready or timeout) */
@@ -489,7 +497,8 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
 
   validate_handshake_preconditions (socket);
 
-  int64_t deadline = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
+  int64_t deadline
+      = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
 
   while (true)
     {
@@ -509,7 +518,8 @@ SocketTLS_handshake_loop (Socket_T socket, int timeout_ms)
         }
 
       unsigned events = state_to_poll_events (state);
-      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      int poll_timeout
+          = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
       if (!do_handshake_poll (socket, events, poll_timeout))
         continue; /* EINTR or partial timeout, check deadline again */
 
@@ -556,9 +566,11 @@ SocketTLS_shutdown (Socket_T socket)
       SSL *ssl = tls_socket_get_ssl (socket);
       if (!ssl)
         {
-          tls_format_openssl_error ("SSL object not available during shutdown");
+          tls_format_openssl_error (
+              "SSL object not available during shutdown");
           free_tls_resources (socket);
-          RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "SSL object lost during shutdown");
+          RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed,
+                               "SSL object lost during shutdown");
         }
 
       int result = SSL_shutdown (ssl);
@@ -586,7 +598,8 @@ SocketTLS_shutdown (Socket_T socket)
 
       /* Need I/O for remaining shutdown steps */
       unsigned events = POLL_READ | POLL_WRITE; /* Shutdown may need both */
-      int poll_timeout = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      int poll_timeout
+          = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
       if (!do_handshake_poll (socket, events, poll_timeout))
         continue; /* EINTR or timeout slice, retry */
     }
@@ -594,7 +607,8 @@ SocketTLS_shutdown (Socket_T socket)
   /* Timeout */
   tls_format_openssl_error ("Shutdown timeout");
   free_tls_resources (socket);
-  RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed, "TLS shutdown timeout after %d ms", timeout_ms);
+  RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed,
+                       "TLS shutdown timeout after %d ms", timeout_ms);
 }
 
 /* ============================================================================
@@ -766,4 +780,3 @@ SocketTLS_get_alpn_selected (Socket_T socket)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

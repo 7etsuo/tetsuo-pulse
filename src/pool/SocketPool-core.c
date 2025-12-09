@@ -28,7 +28,8 @@
 
 /* ============================================================================
  * Exception Definition
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketPool_Failed
     = { &SocketPool_Failed, "SocketPool operation failed" };
@@ -49,7 +50,8 @@ __thread Except_T SocketPool_DetailedException;
 
 /* ============================================================================
  * Time Utility
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * safe_time - Retrieve current time with error checking
@@ -69,7 +71,8 @@ safe_time (void)
 
 /* ============================================================================
  * Hash Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * socketpool_hash - Compute hash value for socket file descriptor
@@ -168,7 +171,8 @@ find_slot (T pool, const Socket_T socket)
 
 /* ============================================================================
  * Allocation Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_connections_allocate_array - Allocate connections array
@@ -197,7 +201,8 @@ SocketPool_connections_allocate_array (size_t maxconns)
 Connection_T *
 SocketPool_connections_allocate_hash_table (Arena_T arena)
 {
-  Connection_T *table = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
+  Connection_T *table
+      = CALLOC (arena, SOCKET_HASH_SIZE, sizeof (Connection_T));
   if (!table)
     RAISE_POOL_MSG (SocketPool_Failed,
                     SOCKET_ENOMEM ": Cannot allocate hash table");
@@ -224,7 +229,8 @@ SocketPool_cleanup_allocate_buffer (Arena_T arena, size_t maxconns)
 
 /* ============================================================================
  * Slot Initialization
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_connections_initialize_slot - Initialize connection slot
@@ -283,7 +289,8 @@ SocketPool_connections_alloc_buffers (Arena_T arena, size_t bufsize,
 
 /* ============================================================================
  * Pool Creation Helpers (static)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * allocate_pool_structure - Allocate the main pool structure
@@ -468,7 +475,8 @@ static void
 validate_pool_params (Arena_T arena, size_t maxconns, size_t bufsize)
 {
   if (!arena)
-    RAISE_POOL_MSG (SocketPool_Failed, "Invalid NULL arena for SocketPool_new");
+    RAISE_POOL_MSG (SocketPool_Failed,
+                    "Invalid NULL arena for SocketPool_new");
 
   if (!SOCKET_VALID_CONNECTION_COUNT (maxconns))
     RAISE_POOL_MSG (SocketPool_Failed,
@@ -508,7 +516,8 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
 
 /* ============================================================================
  * Pool Lifecycle API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_new - Create a new connection pool
@@ -517,9 +526,9 @@ construct_pool (Arena_T arena, size_t maxconns, size_t bufsize)
  * @bufsize: Size of I/O buffers per connection
  *
  * Returns: New pool instance (never returns NULL on success)
- * Raises: SocketPool_Failed or Arena_Failed on allocation/initialization failure
- * Thread-safe: Yes - returns new instance
- * Automatically pre-warms SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
+ * Raises: SocketPool_Failed or Arena_Failed on allocation/initialization
+ * failure Thread-safe: Yes - returns new instance Automatically pre-warms
+ * SOCKET_POOL_DEFAULT_PREWARM_PCT slots.
  */
 T
 SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
@@ -542,7 +551,8 @@ SocketPool_new (Arena_T arena, size_t maxconns, size_t bufsize)
 
 /* ============================================================================
  * Pool Destruction Helpers (static)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * free_tls_sessions - Free all TLS sessions in pool
@@ -622,7 +632,8 @@ free_dns_resolver (T pool)
   if (pool->dns)
     SocketDNS_free (&pool->dns);
 
-  /* Now safe to free sockets in pending async contexts - no race with callbacks */
+  /* Now safe to free sockets in pending async contexts - no race with
+   * callbacks */
   free_pending_async_contexts (pool);
 }
 
@@ -678,7 +689,8 @@ SocketPool_free (T *pool)
 
 /* ============================================================================
  * Reconnection Support - Internal Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * update_connection_socket - Update connection with new socket after reconnect
@@ -762,8 +774,8 @@ static void
 create_reconnect_context (Connection_T conn, const char *host, int port,
                           const SocketReconnect_Policy_T *policy)
 {
-  conn->reconnect
-      = SocketReconnect_new (host, port, policy, reconnect_state_callback, conn);
+  conn->reconnect = SocketReconnect_new (host, port, policy,
+                                         reconnect_state_callback, conn);
 }
 
 /**
@@ -781,7 +793,8 @@ log_reconnect_enabled (const char *host, int port)
 
 /* ============================================================================
  * Reconnection Support - Public API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_reconnect_policy - Set default reconnection policy for pool
@@ -791,7 +804,8 @@ log_reconnect_enabled (const char *host, int port)
  * Thread-safe: Yes
  */
 void
-SocketPool_set_reconnect_policy (T pool, const SocketReconnect_Policy_T *policy)
+SocketPool_set_reconnect_policy (T pool,
+                                 const SocketReconnect_Policy_T *policy)
 {
   assert (pool);
 
@@ -833,10 +847,7 @@ SocketPool_enable_reconnect (T pool, Connection_T conn, const char *host,
   free_existing_reconnect (conn);
   const SocketReconnect_Policy_T *policy = get_reconnect_policy (pool);
 
-  TRY
-  {
-    create_reconnect_context (conn, host, port, policy);
-  }
+  TRY { create_reconnect_context (conn, host, port, policy); }
   EXCEPT (SocketReconnect_Failed)
   {
     pthread_mutex_unlock (&pool->mutex);
@@ -964,7 +975,8 @@ SocketPool_reconnect_timeout_ms (T pool)
 
 /* ============================================================================
  * Connection Reconnection Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Connection_reconnect - Get reconnection context for connection
@@ -998,7 +1010,8 @@ Connection_has_reconnect (const Connection_T conn)
 
 /* ============================================================================
  * Callback Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_validation_callback - Set connection validation callback
@@ -1042,7 +1055,8 @@ SocketPool_set_resize_callback (T pool, SocketPool_ResizeCallback cb,
 
 /* ============================================================================
  * Pool Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * calculate_reuse_rate - Calculate connection reuse rate
@@ -1060,7 +1074,8 @@ calculate_reuse_rate (uint64_t added, uint64_t reused)
   /* Security: Check for overflow before addition */
   if (added > UINT64_MAX - reused)
     {
-      /* Overflow would occur - use saturated addition for best-effort result */
+      /* Overflow would occur - use saturated addition for best-effort result
+       */
       return (double)reused / (double)UINT64_MAX;
     }
 
@@ -1187,9 +1202,8 @@ SocketPool_get_stats (T pool, SocketPool_Stats *stats)
 
   /* Churn rate over stats window */
   window_sec = (double)(now_ms - pool->stats_start_time_ms) / 1000.0;
-  stats->churn_rate_per_sec = calculate_churn_rate (pool->stats_total_added,
-                                                    pool->stats_total_removed,
-                                                    window_sec);
+  stats->churn_rate_per_sec = calculate_churn_rate (
+      pool->stats_total_added, pool->stats_total_removed, window_sec);
 
   pthread_mutex_unlock (&pool->mutex);
 }

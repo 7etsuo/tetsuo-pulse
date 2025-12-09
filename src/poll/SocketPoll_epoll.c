@@ -17,9 +17,9 @@
 #include <stdlib.h>
 #include <sys/epoll.h>
 
+#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
-#include "core/Arena.h"
 
 /* Backend instance structure */
 #define T PollBackend_T
@@ -29,7 +29,7 @@ struct T
   int epfd;                   /* epoll file descriptor */
   struct epoll_event *events; /* Event array for results */
   int maxevents;              /* Maximum events per wait */
-  int last_nev;                 /* Valid events from last backend_wait (0 on error/timeout) */
+  int last_nev; /* Valid events from last backend_wait (0 on error/timeout) */
 };
 #undef T
 
@@ -114,7 +114,8 @@ epoll_ctl_helper (const PollBackend_T backend, int fd, unsigned events, int op)
  * @maxevents: Maximum events to return per wait (must be > 0)
  *
  * Returns: New backend instance, or NULL on failure (errno set). On partial
- * failure, allocated memory is left allocated in arena (freed by Arena_dispose).
+ * failure, allocated memory is left allocated in arena (freed by
+ * Arena_dispose).
  *
  * Creates an epoll instance and allocates the event array from arena
  * for storing results from epoll_wait. Uses epoll_create1(0) for
@@ -139,7 +140,8 @@ backend_new (Arena_T arena, int maxevents)
       return NULL; /* partial allocation leaked to arena dispose */
     }
 
-  backend->events = CALLOC (arena, (size_t)maxevents, sizeof (struct epoll_event));
+  backend->events
+      = CALLOC (arena, (size_t)maxevents, sizeof (struct epoll_event));
   if (!backend->events)
     {
       SAFE_CLOSE (backend->epfd);
@@ -258,7 +260,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   if (nev < 0)
     {
       backend->last_nev = 0;
-      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct epoll_event));
+      memset (backend->events, 0,
+              (size_t)backend->maxevents * sizeof (struct epoll_event));
       if (errno == EINTR)
         return 0;
       return -1;
@@ -267,7 +270,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   backend->last_nev = nev;
   if (backend->last_nev == 0)
     {
-      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct epoll_event));
+      memset (backend->events, 0,
+              (size_t)backend->maxevents * sizeof (struct epoll_event));
     }
   return nev;
 }
@@ -275,11 +279,13 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 /**
  * backend_get_event - Retrieve event at specified index
  * @backend: Backend instance (const - read-only access to events array)
- * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent
+ * backend_wait)
  * @fd_out: Output for file descriptor
  * @events_out: Output for abstract poll event flags
  *
- * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >= maxevents).
+ * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >=
+ * maxevents).
  *
  * Retrieves the fd and translated events for a ready event.
  * Must be called after backend_wait returns > 0.

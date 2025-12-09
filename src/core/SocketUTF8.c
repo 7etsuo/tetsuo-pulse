@@ -25,7 +25,8 @@
 
 /* ============================================================================
  * Exception Definition
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketUTF8_Failed
     = { &SocketUTF8_Failed, "UTF-8 validation failed" };
@@ -39,7 +40,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketUTF8);
  *
  * The DFA uses two tables:
  * 1. utf8_class[256]: Maps each byte to a character class (0-11)
- * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State transitions
+ * 2. utf8_state[UTF8_NUM_DFA_STATES * UTF8_NUM_CHAR_CLASSES]: State
+ * transitions
  *
  * States (UTF8_NUM_DFA_STATES = 9):
  *   0 = UTF8_DFA_ACCEPT (valid complete sequence)
@@ -161,24 +163,27 @@ static const uint8_t utf8_state_bytes[] = {
 
 /* ============================================================================
  * DFA State Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * DFA state identifiers for readability
  */
-#define UTF8_STATE_ACCEPT          0
-#define UTF8_STATE_REJECT          1
-#define UTF8_STATE_2BYTE_EXPECT    2  /* Expecting 1 continuation */
-#define UTF8_STATE_E0_SPECIAL      3  /* After E0, expect A0-BF then cont */
-#define UTF8_STATE_3BYTE_EXPECT    4  /* Expecting 2 continuations (3-byte mid) */
-#define UTF8_STATE_ED_SPECIAL      5  /* After ED, expect 80-9F then cont */
-#define UTF8_STATE_F0_SPECIAL      6  /* After F0, expect 90-BF then 2 cont */
-#define UTF8_STATE_4BYTE_EXPECT    7  /* Expecting 3 continuations */
-#define UTF8_STATE_F4_SPECIAL      8  /* After F4, expect 80-8F then 2 cont */
+#define UTF8_STATE_ACCEPT 0
+#define UTF8_STATE_REJECT 1
+#define UTF8_STATE_2BYTE_EXPECT 2 /* Expecting 1 continuation */
+#define UTF8_STATE_E0_SPECIAL 3   /* After E0, expect A0-BF then cont */
+#define UTF8_STATE_3BYTE_EXPECT 4 /* Expecting 2 continuations (3-byte mid)   \
+                                   */
+#define UTF8_STATE_ED_SPECIAL 5   /* After ED, expect 80-9F then cont */
+#define UTF8_STATE_F0_SPECIAL 6   /* After F0, expect 90-BF then 2 cont */
+#define UTF8_STATE_4BYTE_EXPECT 7 /* Expecting 3 continuations */
+#define UTF8_STATE_F4_SPECIAL 8   /* After F4, expect 80-8F then 2 cont */
 
 /* ============================================================================
  * Result String Table
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static const char *utf8_result_strings[] = {
   "Valid UTF-8",                            /* UTF8_VALID */
@@ -191,53 +196,55 @@ static const char *utf8_result_strings[] = {
 
 /* ============================================================================
  * Byte Pattern Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * UTF-8 byte masks and start bytes for lead/continuation identification
  */
-#define UTF8_CONTINUATION_MASK     0xC0
-#define UTF8_CONTINUATION_START    0x80
-#define UTF8_ASCII_HIGH_BIT        0x80
+#define UTF8_CONTINUATION_MASK 0xC0
+#define UTF8_CONTINUATION_START 0x80
+#define UTF8_ASCII_HIGH_BIT 0x80
 
-#define UTF8_2BYTE_MASK            0xE0
-#define UTF8_2BYTE_START           0xC0
-#define UTF8_2BYTE_OVERLONG_END    0xC1  /* C0-C1 invalid overlong starts */
-#define UTF8_2BYTE_MIN_VALID       0xC2  /* C2-DF valid, C0-C1 overlong invalid */
+#define UTF8_2BYTE_MASK 0xE0
+#define UTF8_2BYTE_START 0xC0
+#define UTF8_2BYTE_OVERLONG_END 0xC1 /* C0-C1 invalid overlong starts */
+#define UTF8_2BYTE_MIN_VALID 0xC2    /* C2-DF valid, C0-C1 overlong invalid */
 
-#define UTF8_3BYTE_MASK            0xF0
-#define UTF8_3BYTE_START           0xE0
+#define UTF8_3BYTE_MASK 0xF0
+#define UTF8_3BYTE_START 0xE0
 
-#define UTF8_4BYTE_MASK            0xF8
-#define UTF8_4BYTE_START           0xF0
-#define UTF8_4BYTE_MAX_VALID       0xF4  /* F0-F4 valid, F5-FF invalid */
+#define UTF8_4BYTE_MASK 0xF8
+#define UTF8_4BYTE_START 0xF0
+#define UTF8_4BYTE_MAX_VALID 0xF4 /* F0-F4 valid, F5-FF invalid */
 
-#define UTF8_INVALID_5BYTE_START   0xF5
+#define UTF8_INVALID_5BYTE_START 0xF5
 
 /* Lead byte payload bit masks */
-#define UTF8_2BYTE_LEAD_MASK       0x1F  /* 5 bits after 110 */
-#define UTF8_3BYTE_LEAD_MASK       0x0F  /* 4 bits after 1110 */
-#define UTF8_4BYTE_LEAD_MASK       0x07  /* 3 bits after 11110 */
+#define UTF8_2BYTE_LEAD_MASK 0x1F /* 5 bits after 110 */
+#define UTF8_3BYTE_LEAD_MASK 0x0F /* 4 bits after 1110 */
+#define UTF8_4BYTE_LEAD_MASK 0x07 /* 3 bits after 11110 */
 
 /* Continuation payload mask (6 bits) */
-#define UTF8_CONTINUATION_MASK_VAL 0x3F  /* 6 bits after 10 */
+#define UTF8_CONTINUATION_MASK_VAL 0x3F /* 6 bits after 10 */
 
 /* Specific overlong/surrogate/too-large ranges */
-#define UTF8_E0_OVERLONG_MIN       0x80
-#define UTF8_E0_OVERLONG_MAX       0x9F
+#define UTF8_E0_OVERLONG_MIN 0x80
+#define UTF8_E0_OVERLONG_MAX 0x9F
 
-#define UTF8_ED_SURROGATE_MIN      0xA0
-#define UTF8_ED_SURROGATE_MAX      0xBF
+#define UTF8_ED_SURROGATE_MIN 0xA0
+#define UTF8_ED_SURROGATE_MAX 0xBF
 
-#define UTF8_F0_OVERLONG_MIN       0x80
-#define UTF8_F0_OVERLONG_MAX       0x8F
+#define UTF8_F0_OVERLONG_MIN 0x80
+#define UTF8_F0_OVERLONG_MAX 0x8F
 
-#define UTF8_F4_TOO_LARGE_MIN      0x90
-#define UTF8_F4_TOO_LARGE_MAX      0xBF
+#define UTF8_F4_TOO_LARGE_MIN 0x90
+#define UTF8_F4_TOO_LARGE_MAX 0xBF
 
 /* ============================================================================
  * DFA Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * dfa_transition - Compute next DFA state from current state and char class
@@ -265,23 +272,29 @@ dfa_transition (uint32_t state, uint8_t char_class)
  * Thread-safe: Yes (modifies caller-owned state)
  */
 static void
-update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state, uint32_t curr_state)
+update_sequence_tracking (SocketUTF8_State *state, uint32_t prev_state,
+                          uint32_t curr_state)
 {
-  if (prev_state == UTF8_STATE_ACCEPT && curr_state != UTF8_STATE_ACCEPT) {
-    state->bytes_needed = utf8_state_bytes[curr_state];
-    state->bytes_seen = 1;
-  } else if (prev_state != UTF8_STATE_ACCEPT) {
-    state->bytes_seen++;
-    if (curr_state == UTF8_STATE_ACCEPT) {
-      state->bytes_needed = 0;
-      state->bytes_seen = 0;
+  if (prev_state == UTF8_STATE_ACCEPT && curr_state != UTF8_STATE_ACCEPT)
+    {
+      state->bytes_needed = utf8_state_bytes[curr_state];
+      state->bytes_seen = 1;
     }
-  }
+  else if (prev_state != UTF8_STATE_ACCEPT)
+    {
+      state->bytes_seen++;
+      if (curr_state == UTF8_STATE_ACCEPT)
+        {
+          state->bytes_needed = 0;
+          state->bytes_seen = 0;
+        }
+    }
 }
 
 /* ============================================================================
  * Internal Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_continuation_byte - Check if byte is valid UTF-8 continuation
@@ -332,7 +345,8 @@ static SocketUTF8_Result
 classify_error (uint32_t prev_state, unsigned char byte)
 {
   /* Check for overlong 2-byte encodings (C0-C1 starts) - only from accept */
-  if (prev_state == UTF8_STATE_ACCEPT && byte >= UTF8_2BYTE_START && byte <= UTF8_2BYTE_OVERLONG_END)
+  if (prev_state == UTF8_STATE_ACCEPT && byte >= UTF8_2BYTE_START
+      && byte <= UTF8_2BYTE_OVERLONG_END)
     return UTF8_OVERLONG;
 
   /* Check for invalid bytes (F5-FF) - only from accept state */
@@ -340,19 +354,23 @@ classify_error (uint32_t prev_state, unsigned char byte)
     return UTF8_INVALID;
 
   /* E0 followed by 80-9F is overlong 3-byte */
-  if (prev_state == UTF8_STATE_E0_SPECIAL && byte >= UTF8_E0_OVERLONG_MIN && byte <= UTF8_E0_OVERLONG_MAX)
+  if (prev_state == UTF8_STATE_E0_SPECIAL && byte >= UTF8_E0_OVERLONG_MIN
+      && byte <= UTF8_E0_OVERLONG_MAX)
     return UTF8_OVERLONG;
 
   /* ED followed by A0-BF is surrogate */
-  if (prev_state == UTF8_STATE_ED_SPECIAL && byte >= UTF8_ED_SURROGATE_MIN && byte <= UTF8_ED_SURROGATE_MAX)
+  if (prev_state == UTF8_STATE_ED_SPECIAL && byte >= UTF8_ED_SURROGATE_MIN
+      && byte <= UTF8_ED_SURROGATE_MAX)
     return UTF8_SURROGATE;
 
   /* F0 followed by 80-8F is overlong 4-byte */
-  if (prev_state == UTF8_STATE_F0_SPECIAL && byte >= UTF8_F0_OVERLONG_MIN && byte <= UTF8_F0_OVERLONG_MAX)
+  if (prev_state == UTF8_STATE_F0_SPECIAL && byte >= UTF8_F0_OVERLONG_MIN
+      && byte <= UTF8_F0_OVERLONG_MAX)
     return UTF8_OVERLONG;
 
   /* F4 followed by 90-BF exceeds U+10FFFF */
-  if (prev_state == UTF8_STATE_F4_SPECIAL && byte >= UTF8_F4_TOO_LARGE_MIN && byte <= UTF8_F4_TOO_LARGE_MAX)
+  if (prev_state == UTF8_STATE_F4_SPECIAL && byte >= UTF8_F4_TOO_LARGE_MIN
+      && byte <= UTF8_F4_TOO_LARGE_MAX)
     return UTF8_TOO_LARGE;
 
   return UTF8_INVALID;
@@ -374,15 +392,17 @@ classify_first_byte_error (unsigned char byte)
 
 /* ============================================================================
  * One-Shot Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketUTF8_Result
 SocketUTF8_validate (const unsigned char *data, size_t len)
 {
-  if (len > 0 && !data) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                      "data must not be NULL when len > 0");
-  }
+  if (len > 0 && !data)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "data must not be NULL when len > 0");
+    }
 
   uint32_t state = UTF8_STATE_ACCEPT;
   uint32_t prev_state;
@@ -415,14 +435,17 @@ SocketUTF8_validate_str (const char *str)
 
 /* ============================================================================
  * Incremental Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketUTF8_init (SocketUTF8_State *state)
 {
-  if (!state) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "state must not be NULL");
-  }
+  if (!state)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "state must not be NULL");
+    }
 
   state->state = UTF8_STATE_ACCEPT;
   state->bytes_needed = 0;
@@ -433,7 +456,8 @@ SocketUTF8_init (SocketUTF8_State *state)
  * get_current_status - Get current validation status from DFA state
  * @dfa_state: Current DFA state
  *
- * Returns: UTF8_VALID if accept, UTF8_INVALID if reject, UTF8_INCOMPLETE otherwise
+ * Returns: UTF8_VALID if accept, UTF8_INVALID if reject, UTF8_INCOMPLETE
+ * otherwise
  */
 static inline SocketUTF8_Result
 get_current_status (uint32_t state)
@@ -449,13 +473,16 @@ SocketUTF8_Result
 SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
                    size_t len)
 {
-  if (!state) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "state must not be NULL");
-  }
-  if (len > 0 && !data) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                      "data must not be NULL when len > 0");
-  }
+  if (!state)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "state must not be NULL");
+    }
+  if (len > 0 && !data)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "data must not be NULL when len > 0");
+    }
 
   uint32_t dfa_state;
   uint32_t prev_state;
@@ -492,9 +519,11 @@ SocketUTF8_update (SocketUTF8_State *state, const unsigned char *data,
 SocketUTF8_Result
 SocketUTF8_finish (const SocketUTF8_State *state)
 {
-  if (!state) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "state must not be NULL");
-  }
+  if (!state)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "state must not be NULL");
+    }
   return get_current_status (state->state);
 }
 
@@ -506,7 +535,8 @@ SocketUTF8_reset (SocketUTF8_State *state)
 
 /* ============================================================================
  * UTF-8 Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketUTF8_codepoint_len (uint32_t codepoint)
@@ -561,9 +591,10 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
 {
   int len;
 
-  if (!output) {
-    return 0;
-  }
+  if (!output)
+    {
+      return 0;
+    }
 
   len = SocketUTF8_codepoint_len (codepoint);
   if (len == 0)
@@ -576,21 +607,35 @@ SocketUTF8_encode (uint32_t codepoint, unsigned char *output)
       break;
 
     case 2:
-      output[0] = (unsigned char)(UTF8_2BYTE_START | ((codepoint >> 6) & UTF8_2BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START | (codepoint & UTF8_CONTINUATION_MASK_VAL));
+      output[0] = (unsigned char)(UTF8_2BYTE_START
+                                  | ((codepoint >> 6) & UTF8_2BYTE_LEAD_MASK));
+      output[1] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
 
     case 3:
-      output[0] = (unsigned char)(UTF8_3BYTE_START | ((codepoint >> 12) & UTF8_3BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
-      output[2] = (unsigned char)(UTF8_CONTINUATION_START | (codepoint & UTF8_CONTINUATION_MASK_VAL));
+      output[0]
+          = (unsigned char)(UTF8_3BYTE_START
+                            | ((codepoint >> 12) & UTF8_3BYTE_LEAD_MASK));
+      output[1]
+          = (unsigned char)(UTF8_CONTINUATION_START
+                            | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
+      output[2] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
 
     case 4:
-      output[0] = (unsigned char)(UTF8_4BYTE_START | ((codepoint >> 18) & UTF8_4BYTE_LEAD_MASK));
-      output[1] = (unsigned char)(UTF8_CONTINUATION_START | ((codepoint >> 12) & UTF8_CONTINUATION_MASK_VAL));
-      output[2] = (unsigned char)(UTF8_CONTINUATION_START | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
-      output[3] = (unsigned char)(UTF8_CONTINUATION_START | (codepoint & UTF8_CONTINUATION_MASK_VAL));
+      output[0]
+          = (unsigned char)(UTF8_4BYTE_START
+                            | ((codepoint >> 18) & UTF8_4BYTE_LEAD_MASK));
+      output[1] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | ((codepoint >> 12)
+                                     & UTF8_CONTINUATION_MASK_VAL));
+      output[2]
+          = (unsigned char)(UTF8_CONTINUATION_START
+                            | ((codepoint >> 6) & UTF8_CONTINUATION_MASK_VAL));
+      output[3] = (unsigned char)(UTF8_CONTINUATION_START
+                                  | (codepoint & UTF8_CONTINUATION_MASK_VAL));
       break;
     }
 
@@ -617,7 +662,8 @@ decode_2byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
       return UTF8_INVALID;
     }
 
-  cp = ((uint32_t)(data[0] & UTF8_2BYTE_LEAD_MASK) << 6) | (data[1] & UTF8_CONTINUATION_MASK_VAL);
+  cp = ((uint32_t)(data[0] & UTF8_2BYTE_LEAD_MASK) << 6)
+       | (data[1] & UTF8_CONTINUATION_MASK_VAL);
 
   if (cp < (SOCKET_UTF8_1BYTE_MAX + 1u))
     {
@@ -653,7 +699,8 @@ decode_3byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
       return UTF8_INVALID;
     }
 
-  cp = ((uint32_t)(data[0] & UTF8_3BYTE_LEAD_MASK) << 12) | ((uint32_t)(data[1] & UTF8_CONTINUATION_MASK_VAL) << 6)
+  cp = ((uint32_t)(data[0] & UTF8_3BYTE_LEAD_MASK) << 12)
+       | ((uint32_t)(data[1] & UTF8_CONTINUATION_MASK_VAL) << 6)
        | (data[2] & UTF8_CONTINUATION_MASK_VAL);
 
   if (cp < (SOCKET_UTF8_2BYTE_MAX + 1u))
@@ -697,8 +744,10 @@ decode_4byte (const unsigned char *data, uint32_t *codepoint, size_t *consumed)
       return UTF8_INVALID;
     }
 
-  cp = ((uint32_t)(data[0] & UTF8_4BYTE_LEAD_MASK) << 18) | ((uint32_t)(data[1] & UTF8_CONTINUATION_MASK_VAL) << 12)
-       | ((uint32_t)(data[2] & UTF8_CONTINUATION_MASK_VAL) << 6) | (data[3] & UTF8_CONTINUATION_MASK_VAL);
+  cp = ((uint32_t)(data[0] & UTF8_4BYTE_LEAD_MASK) << 18)
+       | ((uint32_t)(data[1] & UTF8_CONTINUATION_MASK_VAL) << 12)
+       | ((uint32_t)(data[2] & UTF8_CONTINUATION_MASK_VAL) << 6)
+       | (data[3] & UTF8_CONTINUATION_MASK_VAL);
 
   if (cp < SOCKET_UTF8_4BYTE_MIN)
     {
@@ -728,10 +777,11 @@ SocketUTF8_decode (const unsigned char *data, size_t len, uint32_t *codepoint,
   int seq_len;
   SocketUTF8_Result result;
 
-  if (len > 0 && !data) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                      "data must not be NULL when len > 0");
-  }
+  if (len > 0 && !data)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "data must not be NULL when len > 0");
+    }
 
   if (len == 0)
     {
@@ -792,13 +842,16 @@ SocketUTF8_Result
 SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
                              size_t *count)
 {
-  if (!count) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed, "count output must not be NULL");
-  }
-  if (len > 0 && !data) {
-    SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
-                      "data must not be NULL when len > 0");
-  }
+  if (!count)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "count output must not be NULL");
+    }
+  if (len > 0 && !data)
+    {
+      SOCKET_RAISE_MSG (SocketUTF8, SocketUTF8_Failed,
+                        "data must not be NULL when len > 0");
+    }
 
   size_t cp_count = 0;
   size_t pos = 0;
@@ -816,9 +869,10 @@ SocketUTF8_count_codepoints (const unsigned char *data, size_t len,
       if (result != UTF8_VALID)
         return result;
 
-      if (consumed == 0) {  /* Safety: prevent infinite loop */
-        return UTF8_INVALID;
-      }
+      if (consumed == 0)
+        { /* Safety: prevent infinite loop */
+          return UTF8_INVALID;
+        }
 
       cp_count++;
       pos += consumed;

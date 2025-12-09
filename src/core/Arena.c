@@ -15,7 +15,8 @@
  * - Thread-safe chunk management with mutex protection
  *
  * Thread Safety:
- * - All operations fully thread-safe with per-arena and global mutex protection
+ * - All operations fully thread-safe with per-arena and global mutex
+ * protection
  * - Multiple threads can safely allocate from the same arena concurrently
  * - Each arena has its own mutex protecting allocation state
  * - Global free chunk cache protected by separate mutex
@@ -32,9 +33,9 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketSecurity.h"
 #include "core/SocketConfig.h"
 #include "core/SocketMetrics.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
 
 #define T Arena_T
@@ -131,7 +132,8 @@ static _Atomic size_t global_memory_limit = 0; /* 0 = unlimited */
 void
 SocketConfig_set_max_memory (size_t max_bytes)
 {
-  atomic_store_explicit (&global_memory_limit, max_bytes, memory_order_release);
+  atomic_store_explicit (&global_memory_limit, max_bytes,
+                         memory_order_release);
 }
 
 size_t
@@ -171,7 +173,8 @@ static int check_alloc_allowed (size_t current, size_t nbytes, size_t limit);
 static int
 global_memory_try_unlimited (size_t nbytes)
 {
-  atomic_fetch_add_explicit (&global_memory_used, nbytes, memory_order_relaxed);
+  atomic_fetch_add_explicit (&global_memory_used, nbytes,
+                             memory_order_relaxed);
   return 1;
 }
 
@@ -187,7 +190,8 @@ global_memory_try_unlimited (size_t nbytes)
 static int
 global_memory_try_limited (size_t limit, size_t nbytes)
 {
-  size_t current = atomic_load_explicit (&global_memory_used, memory_order_acquire);
+  size_t current
+      = atomic_load_explicit (&global_memory_used, memory_order_acquire);
   size_t desired;
 
   do
@@ -197,9 +201,9 @@ global_memory_try_limited (size_t limit, size_t nbytes)
 
       desired = current + nbytes;
     }
-  while (!atomic_compare_exchange_weak_explicit (
-      &global_memory_used, &current, desired, memory_order_acq_rel,
-      memory_order_acquire));
+  while (!atomic_compare_exchange_weak_explicit (&global_memory_used, &current,
+                                                 desired, memory_order_acq_rel,
+                                                 memory_order_acquire));
 
   return 1;
 }
@@ -207,7 +211,8 @@ global_memory_try_limited (size_t limit, size_t nbytes)
 static int
 global_memory_try_alloc (size_t nbytes)
 {
-  size_t limit = atomic_load_explicit (&global_memory_limit, memory_order_acquire);
+  size_t limit
+      = atomic_load_explicit (&global_memory_limit, memory_order_acquire);
 
   /* No limit set - always allow */
   if (limit == 0)
@@ -215,7 +220,6 @@ global_memory_try_alloc (size_t nbytes)
 
   return global_memory_try_limited (limit, nbytes);
 }
-
 
 /**
  * global_memory_release - Release bytes back to global pool
@@ -226,7 +230,8 @@ global_memory_try_alloc (size_t nbytes)
 static void
 global_memory_release (size_t nbytes)
 {
-  atomic_fetch_sub_explicit (&global_memory_used, nbytes, memory_order_relaxed);
+  atomic_fetch_sub_explicit (&global_memory_used, nbytes,
+                             memory_order_relaxed);
 }
 
 /* ==================== Global Memory Helper Functions ==================== */
@@ -246,7 +251,7 @@ static int
 check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 {
   size_t desired;
-  if (!SocketSecurity_check_add(current, nbytes, &desired))
+  if (!SocketSecurity_check_add (current, nbytes, &desired))
     return 0;
 
   if (limit > 0 && desired > limit)
@@ -258,8 +263,8 @@ check_alloc_allowed (size_t current, size_t nbytes, size_t limit)
 /* ==================== Validation Macros ==================== */
 
 #define ARENA_VALID_PTR_ARITH(ptr, offset, max)                               \
-  (((uintptr_t) (ptr) <= UINTPTR_MAX - (offset))                              \
-   && ((uintptr_t) (ptr) + (offset) <= (uintptr_t) (max)))
+  (((uintptr_t)(ptr) <= UINTPTR_MAX - (offset))                               \
+   && ((uintptr_t)(ptr) + (offset) <= (uintptr_t)(max)))
 
 /* ==================== Allocation Helper Functions ==================== */
 
@@ -276,15 +281,20 @@ validate_chunk_size (size_t chunk_size, size_t *total_out)
 {
   size_t total;
 
-  if (!SocketSecurity_check_add(sizeof(union header), chunk_size, &total)) {
-    SOCKET_ERROR_MSG ("Chunk size overflow: sizeof(header)=%zu + chunk_size=%zu", sizeof(union header), chunk_size);
-    return ARENA_FAILURE;
-  }
+  if (!SocketSecurity_check_add (sizeof (union header), chunk_size, &total))
+    {
+      SOCKET_ERROR_MSG (
+          "Chunk size overflow: sizeof(header)=%zu + chunk_size=%zu",
+          sizeof (union header), chunk_size);
+      return ARENA_FAILURE;
+    }
 
-  if (!SocketSecurity_check_size(total)) {
-    SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu (limit=%zu)", total, SocketSecurity_get_max_allocation());
-    return ARENA_FAILURE;
-  }
+  if (!SocketSecurity_check_size (total))
+    {
+      SOCKET_ERROR_MSG ("Chunk size exceeds maximum: %zu (limit=%zu)", total,
+                        SocketSecurity_get_max_allocation ());
+      return ARENA_FAILURE;
+    }
 
   *total_out = total;
   return ARENA_SUCCESS;
@@ -303,14 +313,15 @@ validate_chunk_size (size_t chunk_size, size_t *total_out)
 static int
 acquire_global_memory (size_t total)
 {
-  if (!global_memory_try_alloc (total)) {
-    SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_MEMORY_EXCEEDED);
-    SOCKET_ERROR_MSG ("Global memory limit exceeded: requested %zu bytes, "
-                      "limit %zu, used %zu",
-                      total, SocketConfig_get_max_memory (),
-                      SocketConfig_get_memory_used ());
-    return ARENA_FAILURE;
-  }
+  if (!global_memory_try_alloc (total))
+    {
+      SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_MEMORY_EXCEEDED);
+      SOCKET_ERROR_MSG ("Global memory limit exceeded: requested %zu bytes, "
+                        "limit %zu, used %zu",
+                        total, SocketConfig_get_max_memory (),
+                        SocketConfig_get_memory_used ());
+      return ARENA_FAILURE;
+    }
 
   return ARENA_SUCCESS;
 }
@@ -329,19 +340,21 @@ static struct ChunkHeader *
 allocate_raw_chunk (size_t total)
 {
   struct ChunkHeader *ptr = malloc (total);
-  if (ptr == NULL) {
-    global_memory_release (total);
-    SOCKET_ERROR_MSG ("Cannot allocate chunk: %zu bytes", total);
-    return NULL;
-  }
+  if (ptr == NULL)
+    {
+      global_memory_release (total);
+      SOCKET_ERROR_MSG ("Cannot allocate chunk: %zu bytes", total);
+      return NULL;
+    }
 
   /* Validate pointer arithmetic won't overflow */
-  if (!ARENA_VALID_PTR_ARITH (ptr, total, (void *)UINTPTR_MAX)) {
-    free (ptr);
-    global_memory_release (total);
-    SOCKET_ERROR_MSG ("Invalid pointer arithmetic for chunk");
-    return NULL;
-  }
+  if (!ARENA_VALID_PTR_ARITH (ptr, total, (void *)UINTPTR_MAX))
+    {
+      free (ptr);
+      global_memory_release (total);
+      SOCKET_ERROR_MSG ("Invalid pointer arithmetic for chunk");
+      return NULL;
+    }
 
   return ptr;
 }
@@ -438,7 +451,7 @@ chunk_cache_return (struct ChunkHeader *chunk)
 static int
 arena_validate_nbytes (size_t nbytes)
 {
-  return SocketSecurity_check_size(nbytes);
+  return SocketSecurity_check_size (nbytes);
 }
 
 /**
@@ -478,8 +491,9 @@ arena_calculate_aligned_size (size_t nbytes)
 
   final_size = arena_align_size (nbytes);
 
-  /* Defensive check for rounding overflow (possible if align large relative to max) */
-  if (!SocketSecurity_check_size(final_size))
+  /* Defensive check for rounding overflow (possible if align large relative to
+   * max) */
+  if (!SocketSecurity_check_size (final_size))
     return 0;
 
   return final_size;
@@ -539,8 +553,6 @@ arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
   ptr = allocate_raw_chunk (total);
   if (ptr == NULL)
     return ARENA_FAILURE;
-
-
 
   ptr->chunk_size = chunk_size;
   *ptr_out = ptr;
@@ -632,7 +644,8 @@ arena_release_all_chunks (T arena)
  * Acquires new chunks as needed until arena has sufficient space.
  */
 /**
- * arena_ensure_space - Ensure sufficient space in current chunk or allocate new
+ * arena_ensure_space - Ensure sufficient space in current chunk or allocate
+ * new
  * @arena: Arena instance
  * @aligned_size: Required aligned space
  *
@@ -645,7 +658,7 @@ static int
 arena_ensure_space (T arena, size_t aligned_size)
 {
   while (arena->avail == NULL || arena->limit == NULL
-         || (size_t) (arena->limit - arena->avail) < aligned_size)
+         || (size_t)(arena->limit - arena->avail) < aligned_size)
     {
       if (arena_get_chunk (arena, aligned_size) != ARENA_SUCCESS)
         return ARENA_FAILURE;
@@ -679,8 +692,8 @@ validate_arena (const T arena, const char *func)
 static inline void
 arena_ignore_debug_info (const char *file, int line)
 {
-  (void) file;
-  (void) line;
+  (void)file;
+  (void)line;
 }
 
 /**
@@ -696,9 +709,10 @@ arena_get_aligned_or_raise (size_t nbytes)
 {
   size_t aligned_size = arena_calculate_aligned_size (nbytes);
   if (aligned_size == 0)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
-                      nbytes);
+    SOCKET_RAISE_MSG (
+        Arena, Arena_Failed,
+        "Invalid allocation size: %zu bytes (overflow or exceeds limit)",
+        nbytes);
   return aligned_size;
 }
 
@@ -749,7 +763,8 @@ Arena_new (void)
   if (pthread_mutex_init (&arena->mutex, NULL) != 0)
     {
       free (arena);
-      SOCKET_RAISE_MSG (Arena, Arena_Failed, "Failed to initialize arena mutex");
+      SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                        "Failed to initialize arena mutex");
     }
 
   arena->prev = NULL;
@@ -790,9 +805,8 @@ Arena_dispose (T *ap)
  * @line: Source line number (for debugging)
  *
  * Returns: Pointer to allocated memory
- * Raises: Arena_Failed if allocation fails due to insufficient space or overflow
- * Thread-safe: Yes
- * Pre-conditions: arena != NULL, nbytes > 0
+ * Raises: Arena_Failed if allocation fails due to insufficient space or
+ * overflow Thread-safe: Yes Pre-conditions: arena != NULL, nbytes > 0
  *
  * Allocates memory from the arena with proper alignment and overflow
  * protection. Memory remains valid until the arena is cleared or disposed.
@@ -804,7 +818,8 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
   validate_arena (arena, "Arena_alloc");
 
   if (nbytes == 0)
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "Zero size allocation in Arena_alloc");
+    SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                      "Zero size allocation in Arena_alloc");
 
   size_t aligned_size = arena_get_aligned_or_raise (nbytes);
 
@@ -814,7 +829,6 @@ Arena_alloc (T arena, size_t nbytes, const char *file, int line)
 
   return result;
 }
-
 
 /**
  * Arena_calloc - Allocate and zero memory from arena
@@ -847,16 +861,19 @@ validate_calloc_params (size_t count, size_t nbytes, const char *func)
 {
   if (count == 0 || nbytes == 0)
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "Invalid count (%zu) or nbytes (%zu) in %s", count, nbytes, func);
+                      "Invalid count (%zu) or nbytes (%zu) in %s", count,
+                      nbytes, func);
 
   size_t total;
-  if (!SocketSecurity_check_multiply(count, nbytes, &total))
+  if (!SocketSecurity_check_multiply (count, nbytes, &total))
     SOCKET_RAISE_MSG (Arena, Arena_Failed,
-                      "calloc overflow: count=%zu, nbytes=%zu in %s", count, nbytes, func);
+                      "calloc overflow: count=%zu, nbytes=%zu in %s", count,
+                      nbytes, func);
 
-  if (!SocketSecurity_check_size(total))
-    SOCKET_RAISE_MSG (Arena, Arena_Failed, "calloc size exceeds maximum: %zu (limit=%zu) in %s",
-                      total, SocketSecurity_get_max_allocation(), func);
+  if (!SocketSecurity_check_size (total))
+    SOCKET_RAISE_MSG (Arena, Arena_Failed,
+                      "calloc size exceeds maximum: %zu (limit=%zu) in %s",
+                      total, SocketSecurity_get_max_allocation (), func);
 }
 
 void *
@@ -872,7 +889,6 @@ Arena_calloc (T arena, size_t count, size_t nbytes, const char *file, int line)
 
   return ptr;
 }
-
 
 /**
  * Arena_clear - Clear all allocations from arena

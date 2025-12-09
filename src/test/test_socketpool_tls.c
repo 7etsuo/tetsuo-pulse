@@ -86,7 +86,8 @@ TEST (socketpool_tls_session_persistence)
   time_t now = time (NULL);
   SSL_SESSION *mock_session = SSL_SESSION_new ();
   ASSERT_NOT_NULL (mock_session);
-  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout (OpenSSL 3.4+) */
+  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout
+   * (OpenSSL 3.4+) */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -112,7 +113,8 @@ TEST (socketpool_tls_session_persistence)
   ASSERT_NOT_NULL (conn2);
   ASSERT_EQ (conn1, conn2); /* Same slot reused */
   ASSERT_NOT_NULL (conn2->tls_session);
-  ASSERT_EQ (conn2->tls_session, mock_session); /* Persisted across remove/add */
+  ASSERT_EQ (conn2->tls_session,
+             mock_session); /* Persisted across remove/add */
 
   /* Test new socket in same slot clears old session (security) */
   Socket_T socket2 = Socket_new (AF_INET, SOCK_STREAM, 0);
@@ -127,7 +129,7 @@ TEST (socketpool_tls_session_persistence)
   socket2->tls_ssl = (void *)ssl2;
   Connection_T conn3 = SocketPool_add (pool, socket2);
   ASSERT_NOT_NULL (conn3);
-  ASSERT_EQ (conn3, conn1); /* Same slot */
+  ASSERT_EQ (conn3, conn1);         /* Same slot */
   ASSERT_NULL (conn3->tls_session); /* Cleared for new socket/endpoint */
 
   /* Cleanup */
@@ -160,7 +162,8 @@ TEST (socketpool_tls_session_validation)
   ASSERT_NOT_NULL (mock_ctx);
   SSL_SESSION *mock_session = SSL_SESSION_new ();
   ASSERT_NOT_NULL (mock_session);
-  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout (OpenSSL 3.4+) */
+  /* Suppress deprecated warnings for SSL_SESSION_set_time/set_timeout
+   * (OpenSSL 3.4+) */
 #if defined(__GNUC__) || defined(__clang__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

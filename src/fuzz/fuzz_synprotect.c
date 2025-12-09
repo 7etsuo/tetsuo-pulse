@@ -58,7 +58,8 @@ read_int (const uint8_t **data, size_t *remaining)
  * Returns: Length of string read
  */
 static size_t
-read_string (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
+read_string (char *buf, size_t bufsize, const uint8_t **data,
+             size_t *remaining)
 {
   size_t len = 0;
 
@@ -123,7 +124,8 @@ generate_random_ip (char *buf, size_t bufsize, const uint8_t **data,
  * generate_cidr - Generate CIDR notation from fuzzer data
  */
 static void
-generate_cidr (char *buf, size_t bufsize, const uint8_t **data, size_t *remaining)
+generate_cidr (char *buf, size_t bufsize, const uint8_t **data,
+               size_t *remaining)
 {
   uint8_t type = read_byte (data, remaining) % 4;
 
@@ -232,8 +234,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           case 7: /* Blacklist add */
             generate_random_ip (ip_buf, sizeof (ip_buf), &ptr, &remaining);
-            SocketSYNProtect_blacklist_add (protect, ip_buf,
-                                            read_int (&ptr, &remaining) % 60000);
+            SocketSYNProtect_blacklist_add (
+                protect, ip_buf, read_int (&ptr, &remaining) % 60000);
             break;
 
           case 8: /* Blacklist remove */
@@ -261,20 +263,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             break;
           }
       }
-      ELSE
-      {
-        /* Ignore exceptions during fuzzing */
-      }
+      ELSE { /* Ignore exceptions during fuzzing */ }
       END_TRY;
     }
 
   /* Cleanup */
   TRY { SocketSYNProtect_free (&protect); }
-  ELSE
-  { /* Ignore cleanup exceptions */
-  }
+  ELSE { /* Ignore cleanup exceptions */ }
   END_TRY;
 
   return 0;
 }
-

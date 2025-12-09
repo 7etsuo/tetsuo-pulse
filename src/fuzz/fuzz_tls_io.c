@@ -21,13 +21,13 @@
 #include "core/Except.h"
 
 /* Ignore SIGPIPE - OpenSSL may trigger it on unconnected sockets */
-__attribute__((constructor)) static void
+__attribute__ ((constructor)) static void
 ignore_sigpipe (void)
 {
   signal (SIGPIPE, SIG_IGN);
 }
-#include "socket/Socket.h"
 #include "socket/Socket-private.h"
+#include "socket/Socket.h"
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSContext.h"
 
@@ -153,14 +153,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed) { }
-  EXCEPT (SocketTLS_HandshakeFailed) { }
-  EXCEPT (SocketTLS_VerifyFailed) { }
-  EXCEPT (SocketTLS_ProtocolError) { }
-  EXCEPT (SocketTLS_ShutdownFailed) { }
-  EXCEPT (Socket_Failed) { }
-  EXCEPT (Socket_Closed) { }
-  ELSE { }
+  EXCEPT (SocketTLS_Failed) {}
+  EXCEPT (SocketTLS_HandshakeFailed) {}
+  EXCEPT (SocketTLS_VerifyFailed) {}
+  EXCEPT (SocketTLS_ProtocolError) {}
+  EXCEPT (SocketTLS_ShutdownFailed) {}
+  EXCEPT (Socket_Failed) {}
+  EXCEPT (Socket_Closed) {}
+  ELSE {}
   END_TRY;
 
   /* Cleanup */

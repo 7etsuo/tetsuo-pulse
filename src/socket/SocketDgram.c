@@ -38,11 +38,11 @@
 #include "socket/SocketIO.h"
 
 #if SOCKET_HAS_TLS
-#include <openssl/ssl.h>
 #include "core/SocketCrypto.h"
-#include "tls/SocketDTLSConfig.h"
 #include "tls/SocketDTLS.h"
-#include "tls/SocketTLS-private.h"  /* For shared tls_cleanup_alpn_temp (if DTLS uses ALPN) */
+#include "tls/SocketDTLSConfig.h"
+#include "tls/SocketTLS-private.h" /* For shared tls_cleanup_alpn_temp (if DTLS uses ALPN) */
+#include <openssl/ssl.h>
 #endif
 
 #define T SocketDgram_T
@@ -132,7 +132,8 @@ SocketDgram_free (T *socket)
   if (s->dtls_ssl)
     {
       SSL_set_app_data ((SSL *)s->dtls_ssl, NULL);
-      tls_cleanup_alpn_temp ((SSL *)s->dtls_ssl);  /* Free ALPN temp if stored (shared with TLS) */
+      tls_cleanup_alpn_temp (
+          (SSL *)s->dtls_ssl); /* Free ALPN temp if stored (shared with TLS) */
       SSL_free ((SSL *)s->dtls_ssl);
       s->dtls_ssl = NULL;
       s->dtls_ctx = NULL;
@@ -140,13 +141,15 @@ SocketDgram_free (T *socket)
   /* Securely clear DTLS buffers if allocated */
   if (s->dtls_read_buf)
     {
-      SocketCrypto_secure_clear (s->dtls_read_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      SocketCrypto_secure_clear (s->dtls_read_buf,
+                                 SOCKET_DTLS_MAX_RECORD_SIZE);
       s->dtls_read_buf = NULL;
       s->dtls_read_buf_len = 0;
     }
   if (s->dtls_write_buf)
     {
-      SocketCrypto_secure_clear (s->dtls_write_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      SocketCrypto_secure_clear (s->dtls_write_buf,
+                                 SOCKET_DTLS_MAX_RECORD_SIZE);
       s->dtls_write_buf = NULL;
       s->dtls_write_buf_len = 0;
     }
@@ -296,9 +299,10 @@ extract_sender_info (const struct sockaddr_storage *addr, socklen_t addrlen,
     {
       char *endptr;
       long port_long = strtol (serv, &endptr, 10);
-      *port = (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
-                  ? (int)port_long
-                  : 0;
+      *port
+          = (*endptr == '\0' && port_long > 0 && port_long <= SOCKET_MAX_PORT)
+                ? (int)port_long
+                : 0;
     }
   else
     {
@@ -538,7 +542,8 @@ void
 SocketDgram_setcloexec (T socket, int enable)
 {
   assert (socket);
-  SocketCommon_setcloexec_with_error (socket->base, enable, SocketDgram_Failed);
+  SocketCommon_setcloexec_with_error (socket->base, enable,
+                                      SocketDgram_Failed);
 }
 
 /**
@@ -622,7 +627,7 @@ SocketDgram_isconnected (T socket)
   memset (&addr, 0, sizeof (addr));
   return getpeername (SocketBase_fd (socket->base), (struct sockaddr *)&addr,
                       &len)
-             == 0
+                 == 0
              ? 1
              : 0;
 }
@@ -757,8 +762,8 @@ dgram_perform_address_operation (T socket, const char *host, int port,
   if (op == DGRAM_OP_BIND)
     SocketCommon_format_bind_error (host, port);
   else
-    SOCKET_ERROR_FMT ("Failed to connect to %.*s:%d", SOCKET_ERROR_MAX_HOSTNAME,
-                      host, port);
+    SOCKET_ERROR_FMT ("Failed to connect to %.*s:%d",
+                      SOCKET_ERROR_MAX_HOSTNAME, host, port);
 
   SocketCommon_free_addrinfo (res);
   RAISE_MODULE_ERROR (SocketDgram_Failed);
@@ -889,8 +894,8 @@ SocketDgram_recvall (T socket, void *buf, size_t len)
 
   while (total_received < len)
     {
-      ssize_t received
-          = SocketDgram_recv (socket, ptr + total_received, len - total_received);
+      ssize_t received = SocketDgram_recv (socket, ptr + total_received,
+                                           len - total_received);
       if (received == 0)
         return (ssize_t)total_received;
       total_received += (size_t)received;

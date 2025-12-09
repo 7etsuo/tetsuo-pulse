@@ -2,8 +2,8 @@
 #define SOCKETBUF_INCLUDED
 
 #include "core/Arena.h"
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /**
  * @file SocketBuf.h

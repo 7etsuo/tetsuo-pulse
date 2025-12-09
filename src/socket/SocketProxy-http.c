@@ -24,34 +24,38 @@
 
 #include "http/SocketHTTP1.h"
 
-
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Buffer size for Basic auth credentials (username:password) */
-#define SOCKET_PROXY_CREDENTIALS_BUFSIZE (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + 2)
+#define SOCKET_PROXY_CREDENTIALS_BUFSIZE                                      \
+  (SOCKET_PROXY_MAX_USERNAME_LEN + SOCKET_PROXY_MAX_PASSWORD_LEN + 2)
 
 /** Buffer size for Base64-encoded auth header value */
-#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3) + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + 32)
+#define SOCKET_PROXY_AUTH_HEADER_BUFSIZE                                      \
+  ((SOCKET_PROXY_CREDENTIALS_BUFSIZE * 4 / 3)                                 \
+   + SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN + 32)
 
 /** Length of "Basic " prefix for Proxy-Authorization header */
-#define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof("Basic ") - 1)
+#define SOCKET_PROXY_BASIC_AUTH_PREFIX_LEN (sizeof ("Basic ") - 1)
 
 /** CRLF size for HTTP line endings */
-#define SOCKET_PROXY_CRLF_SIZE (sizeof("\r\n") - 1)
+#define SOCKET_PROXY_CRLF_SIZE (sizeof ("\r\n") - 1)
 
 /* ============================================================================
  * Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
- * append_formatted - Append formatted string to request buffer with bounds check
+ * append_formatted - Append formatted string to request buffer with bounds
+ * check
  * @buf: Buffer start pointer
  * @len: Pointer to current length (updated on success)
  * @remaining: Pointer to remaining space (updated on success)
@@ -62,7 +66,8 @@
  *
  * Returns: 0 on success, -1 on truncation/error
  *
- * Consolidates the repeated pattern of snprintf + bounds check + error handling.
+ * Consolidates the repeated pattern of snprintf + bounds check + error
+ * handling.
  */
 static int
 append_formatted (char *buf, size_t *len, size_t *remaining, char *error_buf,
@@ -180,7 +185,8 @@ append_host_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
 }
 
 /**
- * append_auth_header - Append Proxy-Authorization header if credentials present
+ * append_auth_header - Append Proxy-Authorization header if credentials
+ * present
  */
 static int
 append_auth_header (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
@@ -223,9 +229,8 @@ append_extra_headers (struct SocketProxy_Conn_T *conn, char *buf, size_t *len,
   if (conn->extra_headers == NULL)
     return 0;
 
-  headers_len
-      = SocketHTTP1_serialize_headers (conn->extra_headers, buf + *len,
-                                       *remaining);
+  headers_len = SocketHTTP1_serialize_headers (conn->extra_headers, buf + *len,
+                                               *remaining);
   if (headers_len < 0)
     {
       snprintf (conn->error_buf, sizeof (conn->error_buf),
@@ -345,9 +350,9 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
   size_t consumed;
   const SocketHTTP_Response *response;
 
-  parse_result = SocketHTTP1_Parser_execute (
-      conn->http_parser, (const char *)conn->recv_buf, conn->recv_len,
-      &consumed);
+  parse_result = SocketHTTP1_Parser_execute (conn->http_parser,
+                                             (const char *)conn->recv_buf,
+                                             conn->recv_len, &consumed);
 
   /* Shift consumed data out of buffer */
   if (consumed > 0)
@@ -379,7 +384,8 @@ parse_http_response (struct SocketProxy_Conn_T *conn)
 
     default:
       snprintf (conn->error_buf, sizeof (conn->error_buf),
-                "HTTP parse error: %s", SocketHTTP1_result_string (parse_result));
+                "HTTP parse error: %s",
+                SocketHTTP1_result_string (parse_result));
       return PROXY_ERROR_PROTOCOL;
     }
 }
@@ -395,7 +401,8 @@ proxy_http_recv_response (struct SocketProxy_Conn_T *conn)
 
 /* ============================================================================
  * HTTP Status Code Mapping
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * map_4xx_status - Map 4xx client error to result

@@ -9,7 +9,8 @@
  * systems and can block indefinitely in tests.
  */
 
-/* cppcheck-suppress-file duplicateCondition ; intentional double-cancel test */
+/* cppcheck-suppress-file duplicateCondition ; intentional double-cancel test
+ */
 /* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */
 
 /* cppcheck-suppress-file variableScope ; volatile across TRY/EXCEPT */

@@ -4,7 +4,8 @@
 /**
  * @file SocketHappyEyeballs.h
  * @ingroup core_io
- * @brief Happy Eyeballs (RFC 8305) implementation for fast dual-stack connections.
+ * @brief Happy Eyeballs (RFC 8305) implementation for fast dual-stack
+ * connections.
  *
  * Implements the Happy Eyeballs algorithm for fast dual-stack connection
  * establishment. This algorithm races IPv6 and IPv4 connection attempts
@@ -73,7 +74,8 @@ extern const Except_T SocketHE_Failed;
 
 /* ============================================================================
  * Connection State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_State - State of Happy Eyeballs operation
@@ -95,7 +97,8 @@ typedef enum
 
 /* ============================================================================
  * Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_Config_T - Happy Eyeballs configuration
@@ -105,17 +108,19 @@ typedef enum
  */
 typedef struct SocketHE_Config
 {
-  int first_attempt_delay_ms; /**< Delay before starting second family (250ms) */
+  int first_attempt_delay_ms; /**< Delay before starting second family (250ms)
+                               */
   int attempt_timeout_ms;     /**< Per-attempt connection timeout (5000ms) */
   int total_timeout_ms;       /**< Overall operation timeout (30000ms) */
-  int dns_timeout_ms;         /**< DNS resolution timeout (5000ms, 0=use total) */
-  int prefer_ipv6;            /**< 1 = IPv6 first (default), 0 = IPv4 first */
-  int max_attempts;           /**< Maximum simultaneous attempts (2) */
+  int dns_timeout_ms; /**< DNS resolution timeout (5000ms, 0=use total) */
+  int prefer_ipv6;    /**< 1 = IPv6 first (default), 0 = IPv4 first */
+  int max_attempts;   /**< Maximum simultaneous attempts (2) */
 } SocketHE_Config_T;
 
 /* ============================================================================
  * Configuration Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** RFC 8305 recommends 250ms delay before starting fallback family */
 #ifndef SOCKET_HE_DEFAULT_FIRST_ATTEMPT_DELAY_MS
@@ -154,7 +159,8 @@ typedef struct SocketHE_Config
 
 /* ============================================================================
  * Synchronous API (Simple Usage)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHappyEyeballs_connect - Connect using Happy Eyeballs (blocking)
@@ -178,7 +184,8 @@ extern Socket_T SocketHappyEyeballs_connect (const char *host, int port,
 
 /* ============================================================================
  * Asynchronous API (Event-Driven Usage)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHappyEyeballs_start - Start async Happy Eyeballs connection
@@ -265,7 +272,8 @@ extern void SocketHappyEyeballs_free (T *he);
 
 /* ============================================================================
  * State Query
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHappyEyeballs_state - Get current operation state
@@ -289,7 +297,8 @@ extern const char *SocketHappyEyeballs_error (T he);
 
 /* ============================================================================
  * Configuration Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHappyEyeballs_config_defaults - Initialize config with defaults
@@ -303,7 +312,8 @@ extern void SocketHappyEyeballs_config_defaults (SocketHE_Config_T *config);
 
 /* ============================================================================
  * Timer Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHappyEyeballs_next_timeout_ms - Get time until next timer expiry

@@ -25,37 +25,40 @@
 
 #include "core/SocketCrypto.h"
 
+#include "core/SocketUTF8.h"
+#include "socket/SocketCommon.h"
 #include <arpa/inet.h>
 #include <assert.h>
 #include <errno.h>
 #include <string.h>
-#include "core/SocketUTF8.h"
-#include "socket/SocketCommon.h"
 
-        /* ============================================================================
-         * Internal Helper Functions
-         * ============================================================================ */
+/* ============================================================================
+ * Internal Helper Functions
+ * ============================================================================
+ */
 
-        static SocketProxy_Result
-        proxy_socks5_check_version (struct SocketProxy_Conn_T *conn, unsigned char got,
-                                    unsigned char expected, const char *field)
-        {
-                if (got != expected) {
-                        socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                                               "Invalid SOCKS5 %s version: got 0x%02X expected 0x%02X",
-                                               field, got, expected);
-                        return PROXY_ERROR_PROTOCOL;
-                }
-                return PROXY_OK;
-        }
+static SocketProxy_Result
+proxy_socks5_check_version (struct SocketProxy_Conn_T *conn, unsigned char got,
+                            unsigned char expected, const char *field)
+{
+  if (got != expected)
+    {
+      socketproxy_set_error (
+          conn, PROXY_ERROR_PROTOCOL,
+          "Invalid SOCKS5 %s version: got 0x%02X expected 0x%02X", field, got,
+          expected);
+      return PROXY_ERROR_PROTOCOL;
+    }
+  return PROXY_OK;
+}
 
-        static inline SocketProxy_Result
-        proxy_socks5_ensure_data (struct SocketProxy_Conn_T *conn, size_t needed)
-        {
-                if (conn->recv_len < needed)
-                        return PROXY_IN_PROGRESS;
-                return PROXY_OK;
-        }
+static inline SocketProxy_Result
+proxy_socks5_ensure_data (struct SocketProxy_Conn_T *conn, size_t needed)
+{
+  if (conn->recv_len < needed)
+    return PROXY_IN_PROGRESS;
+  return PROXY_OK;
+}
 
 /* ============================================================================
  * SOCKS5 Greeting (RFC 1928 Section 3)
@@ -90,15 +93,15 @@ proxy_socks5_send_greeting (struct SocketProxy_Conn_T *conn)
   if (conn->username != NULL && conn->password != NULL)
     {
       /* Offer both no-auth and password auth */
-      buf[len++] = 2;                   /* NMETHODS */
-      buf[len++] = SOCKS5_AUTH_NONE;    /* Method 0: no auth */
-      buf[len++] = SOCKS5_AUTH_PASSWORD;/* Method 2: username/password */
+      buf[len++] = 2;                    /* NMETHODS */
+      buf[len++] = SOCKS5_AUTH_NONE;     /* Method 0: no auth */
+      buf[len++] = SOCKS5_AUTH_PASSWORD; /* Method 2: username/password */
     }
   else
     {
       /* Only offer no-auth */
-      buf[len++] = 1;                   /* NMETHODS */
-      buf[len++] = SOCKS5_AUTH_NONE;    /* Method 0: no auth */
+      buf[len++] = 1;                /* NMETHODS */
+      buf[len++] = SOCKS5_AUTH_NONE; /* Method 0: no auth */
     }
 
   conn->send_len = len;
@@ -129,13 +132,16 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
 
   /* Need at least VER + METHOD bytes */
   {
-    SocketProxy_Result res = proxy_socks5_ensure_data (conn, SOCKS5_METHOD_RESPONSE_SIZE);
-    if (res != PROXY_OK) return res;
+    SocketProxy_Result res
+        = proxy_socks5_ensure_data (conn, SOCKS5_METHOD_RESPONSE_SIZE);
+    if (res != PROXY_OK)
+      return res;
   }
 
   /* Validate version */
   {
-    SocketProxy_Result res = proxy_socks5_check_version (conn, buf[0], SOCKS5_VERSION, "protocol");
+    SocketProxy_Result res = proxy_socks5_check_version (
+        conn, buf[0], SOCKS5_VERSION, "protocol");
     if (res != PROXY_OK)
       return res;
   }
@@ -165,8 +171,9 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
       /* Username/password authentication required */
       if (conn->username == NULL || conn->password == NULL)
         {
-          socketproxy_set_error (conn, PROXY_ERROR_AUTH_REQUIRED,
-                             "Server requires authentication but no credentials provided");
+          socketproxy_set_error (
+              conn, PROXY_ERROR_AUTH_REQUIRED,
+              "Server requires authentication but no credentials provided");
           return PROXY_ERROR_AUTH_REQUIRED;
         }
       conn->socks5_need_auth = 1;
@@ -178,7 +185,7 @@ proxy_socks5_recv_method (struct SocketProxy_Conn_T *conn)
 
   /* Unsupported method */
   socketproxy_set_error (conn, PROXY_ERROR_UNSUPPORTED,
-                          "Unsupported authentication method: 0x%02X", buf[1]);
+                         "Unsupported authentication method: 0x%02X", buf[1]);
   return PROXY_ERROR_UNSUPPORTED;
 }
 
@@ -217,34 +224,35 @@ proxy_socks5_send_auth (struct SocketProxy_Conn_T *conn)
   /* Validate lengths */
   if (ulen > SOCKET_PROXY_MAX_USERNAME_LEN)
     {
-      socketproxy_set_error (conn, PROXY_ERROR,
-                             "Username too long: %zu bytes", ulen);
+      socketproxy_set_error (conn, PROXY_ERROR, "Username too long: %zu bytes",
+                             ulen);
       return -1;
     }
   if (plen > SOCKET_PROXY_MAX_PASSWORD_LEN)
     {
-      socketproxy_set_error (conn, PROXY_ERROR,
-                             "Password too long: %zu bytes", plen);
+      socketproxy_set_error (conn, PROXY_ERROR, "Password too long: %zu bytes",
+                             plen);
       return -1;
     }
 
   /* Additional validation using common helpers */
-  TRY
-    SocketCommon_validate_hostname (conn->username, SocketProxy_Failed);
-    if (SocketUTF8_validate_str (conn->username) != UTF8_VALID) {
+  TRY SocketCommon_validate_hostname (conn->username, SocketProxy_Failed);
+  if (SocketUTF8_validate_str (conn->username) != UTF8_VALID)
+    {
       PROXY_ERROR_MSG ("Invalid UTF-8 in username");
       socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
       return -1;
     }
-    SocketCommon_validate_hostname (conn->password, SocketProxy_Failed);
-    if (SocketUTF8_validate_str (conn->password) != UTF8_VALID) {
+  SocketCommon_validate_hostname (conn->password, SocketProxy_Failed);
+  if (SocketUTF8_validate_str (conn->password) != UTF8_VALID)
+    {
       PROXY_ERROR_MSG ("Invalid UTF-8 in password");
       socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
       return -1;
     }
   EXCEPT (SocketProxy_Failed)
-    socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
-    return -1;
+  socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
+  return -1;
   END_TRY;
 
   /* Build auth request */
@@ -285,13 +293,16 @@ proxy_socks5_recv_auth (struct SocketProxy_Conn_T *conn)
 
   /* Need at least VER + STATUS bytes */
   {
-    SocketProxy_Result res = proxy_socks5_ensure_data (conn, SOCKS5_AUTH_RESPONSE_SIZE);
-    if (res != PROXY_OK) return res;
+    SocketProxy_Result res
+        = proxy_socks5_ensure_data (conn, SOCKS5_AUTH_RESPONSE_SIZE);
+    if (res != PROXY_OK)
+      return res;
   }
 
   /* Validate version */
   {
-    SocketProxy_Result res = proxy_socks5_check_version (conn, buf[0], SOCKS5_AUTH_VERSION, "auth sub-negotiation");
+    SocketProxy_Result res = proxy_socks5_check_version (
+        conn, buf[0], SOCKS5_AUTH_VERSION, "auth sub-negotiation");
     if (res != PROXY_OK)
       return res;
   }
@@ -351,23 +362,23 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
   size_t host_len;
 
   /* Additional validation using common helpers */
-  TRY
-    SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
-    SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
-    if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID) {
+  TRY SocketCommon_validate_port (conn->target_port, SocketProxy_Failed);
+  SocketCommon_validate_hostname (conn->target_host, SocketProxy_Failed);
+  if (SocketUTF8_validate_str (conn->target_host) != UTF8_VALID)
+    {
       PROXY_ERROR_MSG ("Invalid UTF-8 in target host");
       socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
       return -1;
     }
   EXCEPT (SocketProxy_Failed)
-    socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
-    return -1;
+  socketproxy_set_error (conn, PROXY_ERROR, "%s", socket_error_buf);
+  return -1;
   END_TRY;
 
   /* Header */
-  buf[len++] = SOCKS5_VERSION;    /* VER */
-  buf[len++] = SOCKS5_CMD_CONNECT;/* CMD = CONNECT */
-  buf[len++] = 0x00;              /* RSV */
+  buf[len++] = SOCKS5_VERSION;     /* VER */
+  buf[len++] = SOCKS5_CMD_CONNECT; /* CMD = CONNECT */
+  buf[len++] = 0x00;               /* RSV */
 
   /* Determine address type */
   if (inet_pton (AF_INET, conn->target_host, &ipv4) == 1)
@@ -392,20 +403,24 @@ proxy_socks5_send_connect (struct SocketProxy_Conn_T *conn)
       /* Validate length and content */
       if (host_len == 0 || host_len > SOCKET_PROXY_MAX_HOSTNAME_LEN)
         {
-          socketproxy_set_error (conn, PROXY_ERROR,
-                                 "Hostname invalid length: %zu bytes (must be 1-%d)", host_len, SOCKET_PROXY_MAX_HOSTNAME_LEN);
+          socketproxy_set_error (
+              conn, PROXY_ERROR,
+              "Hostname invalid length: %zu bytes (must be 1-%d)", host_len,
+              SOCKET_PROXY_MAX_HOSTNAME_LEN);
           return -1;
         }
       if (strpbrk (conn->target_host, "\r\n") != NULL)
         {
-          socketproxy_set_error (conn, PROXY_ERROR,
-                                 "Hostname contains forbidden characters (CR or LF)");
+          socketproxy_set_error (
+              conn, PROXY_ERROR,
+              "Hostname contains forbidden characters (CR or LF)");
           return -1;
         }
       if (conn->target_port < 1 || conn->target_port > 65535)
         {
           socketproxy_set_error (conn, PROXY_ERROR,
-                                 "Invalid target port %d (must be 1-65535)", conn->target_port);
+                                 "Invalid target port %d (must be 1-65535)",
+                                 conn->target_port);
           return -1;
         }
 
@@ -458,13 +473,16 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
 
   /* Need at least VER + REP + RSV + ATYP bytes for header */
   {
-    SocketProxy_Result res = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE);
-    if (res != PROXY_OK) return res;
+    SocketProxy_Result res
+        = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE);
+    if (res != PROXY_OK)
+      return res;
   }
 
   /* Validate version */
   {
-    SocketProxy_Result res = proxy_socks5_check_version (conn, buf[0], SOCKS5_VERSION, "connect response");
+    SocketProxy_Result res = proxy_socks5_check_version (
+        conn, buf[0], SOCKS5_VERSION, "connect response");
     if (res != PROXY_OK)
       return res;
   }
@@ -486,8 +504,10 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
     case SOCKS5_ATYP_DOMAIN:
       /* Need header + length byte to read domain length */
       {
-        SocketProxy_Result res = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE + 1);
-        if (res != PROXY_OK) return res;
+        SocketProxy_Result res
+            = proxy_socks5_ensure_data (conn, SOCKS5_CONNECT_HEADER_SIZE + 1);
+        if (res != PROXY_OK)
+          return res;
       }
       addr_len = buf[4];
       /* header + len byte + domain + port */
@@ -501,14 +521,16 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
 
     default:
       socketproxy_set_error (conn, PROXY_ERROR_PROTOCOL,
-                             "Unknown address type in response: 0x%02X", buf[3]);
+                             "Unknown address type in response: 0x%02X",
+                             buf[3]);
       return PROXY_ERROR_PROTOCOL;
     }
 
   /* Wait for complete response */
   {
     SocketProxy_Result res = proxy_socks5_ensure_data (conn, needed);
-    if (res != PROXY_OK) return res;
+    if (res != PROXY_OK)
+      return res;
   }
 
   /* Success - tunnel established */
@@ -518,7 +540,8 @@ proxy_socks5_recv_connect (struct SocketProxy_Conn_T *conn)
 
 /* ============================================================================
  * SOCKS5 Reply Code Mapping
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketProxy_Result
 proxy_socks5_reply_to_result (int reply)
@@ -556,4 +579,3 @@ proxy_socks5_reply_to_result (int reply)
       return PROXY_ERROR_PROTOCOL;
     }
 }
-

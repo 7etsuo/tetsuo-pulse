@@ -20,7 +20,7 @@
 /* Platform guard: kqueue is only available on BSD/macOS.
  * On other platforms, this file compiles as an empty translation unit.
  * CMake selects the appropriate backend file for each platform. */
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)          \
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__NetBSD__)         \
     || defined(__OpenBSD__) || defined(__DragonFly__)
 
 #include <assert.h>
@@ -32,9 +32,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "core/Arena.h"
 #include "core/SocketConfig.h"
 #include "poll/SocketPoll_backend.h"
-#include "core/Arena.h"
 
 /**
  * Backend instance structure
@@ -47,7 +47,7 @@ struct T
   int kq;                /* kqueue file descriptor */
   struct kevent *events; /* Event array for kevent() results */
   int maxevents;         /* Maximum events per wait call */
-  int last_nev;           /* Valid events from last backend_wait (0 on error/timeout) */
+  int last_nev; /* Valid events from last backend_wait (0 on error/timeout) */
 };
 #undef T
 
@@ -261,7 +261,8 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   if (nev < 0)
     {
       backend->last_nev = 0;
-      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct kevent));
+      memset (backend->events, 0,
+              (size_t)backend->maxevents * sizeof (struct kevent));
       /* kevent was interrupted by signal - return 0 to allow retry */
       if (errno == EINTR)
         return 0;
@@ -271,19 +272,24 @@ backend_wait (PollBackend_T backend, int timeout_ms)
   backend->last_nev = nev;
   if (backend->last_nev == 0)
     {
-      memset (backend->events, 0, (size_t)backend->maxevents * sizeof (struct kevent));
+      memset (backend->events, 0,
+              (size_t)backend->maxevents * sizeof (struct kevent));
     }
   return nev;
 }
 
 /**
  * backend_get_event - Retrieve event details from wait results
- * @backend: Backend instance (read-only access to events; last_nev indicates valid range)
- * @index: Event index (0 to backend->last_nev - 1 from most recent backend_wait)
+ * @backend: Backend instance (read-only access to events; last_nev indicates
+ * valid range)
+ * @index: Event index (0 to backend->last_nev - 1 from most recent
+ * backend_wait)
  * @fd_out: Output: file descriptor that triggered the event
- * @events_out: Output: event flags (POLL_READ | POLL_WRITE | POLL_ERROR | POLL_HANGUP)
+ * @events_out: Output: event flags (POLL_READ | POLL_WRITE | POLL_ERROR |
+ * POLL_HANGUP)
  *
- * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >= maxevents)
+ * Returns: 0 on success, -1 if index out of valid range (0 to last_nev-1 or >=
+ * maxevents)
  *
  * Translates kqueue's kevent structure to the portable POLL_* event flags.
  * kqueue reports each filter (read/write) as a separate event, unlike

@@ -42,10 +42,12 @@
 #define EXCEPT_UNCAUGHT_FMT "Uncaught exception"
 
 /** Format string for NULL pointer error */
-#define EXCEPT_NULL_PTR_FMT "FATAL: Except_raise called with NULL exception pointer"
+#define EXCEPT_NULL_PTR_FMT                                                   \
+  "FATAL: Except_raise called with NULL exception pointer"
 
 /** Format string for programming error hint */
-#define EXCEPT_PROG_ERROR_FMT "This indicates a programming error in exception usage"
+#define EXCEPT_PROG_ERROR_FMT                                                 \
+  "This indicates a programming error in exception usage"
 
 /** Abort message */
 #define EXCEPT_ABORTING_FMT "aborting..."
@@ -90,7 +92,7 @@ const Except_T Assert_Failed = { &Assert_Failed, "Assertion failed" };
 static void
 except_flush_stderr (void)
 {
-        fflush (stderr);
+  fflush (stderr);
 }
 
 /**
@@ -104,8 +106,8 @@ except_flush_stderr (void)
 static void
 except_emit_fatal (const char *message)
 {
-        assert (message != NULL);
-        fprintf (stderr, "%s\n", message);
+  assert (message != NULL);
+  fprintf (stderr, "%s\n", message);
 }
 
 /**
@@ -119,9 +121,10 @@ except_emit_fatal (const char *message)
 static void
 except_emit_reason (const Except_T *e)
 {
-        assert (e != NULL);
+  assert (e != NULL);
 
-        fprintf (stderr, ": %s", e->reason != NULL ? e->reason : "(no reason provided)");
+  fprintf (stderr, ": %s",
+           e->reason != NULL ? e->reason : "(no reason provided)");
 }
 
 /**
@@ -137,17 +140,22 @@ except_emit_reason (const Except_T *e)
 static void
 except_emit_location (const char *file, int line)
 {
-        if (file != NULL) {
-          fprintf (stderr, " raised at %s", file);
-          if (line > 0)
-            fprintf (stderr, ":%d\n", line);
-          else
-            fprintf (stderr, "\n");
-        } else if (line > 0) {
-          fprintf (stderr, " raised at line %d\n", line);
-        } else {
-          fprintf (stderr, " (location unknown)\n");
-        }
+  if (file != NULL)
+    {
+      fprintf (stderr, " raised at %s", file);
+      if (line > 0)
+        fprintf (stderr, ":%d\n", line);
+      else
+        fprintf (stderr, "\n");
+    }
+  else if (line > 0)
+    {
+      fprintf (stderr, " raised at line %d\n", line);
+    }
+  else
+    {
+      fprintf (stderr, " (location unknown)\n");
+    }
 }
 
 /**
@@ -165,9 +173,9 @@ except_emit_location (const char *file, int line)
 static void
 except_finish_abort (void)
 {
-        except_emit_fatal (EXCEPT_ABORTING_FMT);
-        except_flush_stderr ();
-        abort ();
+  except_emit_fatal (EXCEPT_ABORTING_FMT);
+  except_flush_stderr ();
+  abort ();
 }
 
 /* ============================================================================
@@ -187,12 +195,12 @@ except_finish_abort (void)
 static void
 except_validate_not_null (const Except_T *e)
 {
-        if (e != NULL)
-          return;
+  if (e != NULL)
+    return;
 
-        except_emit_fatal (EXCEPT_NULL_PTR_FMT);
-        except_emit_fatal (EXCEPT_PROG_ERROR_FMT);
-        except_finish_abort ();
+  except_emit_fatal (EXCEPT_NULL_PTR_FMT);
+  except_emit_fatal (EXCEPT_PROG_ERROR_FMT);
+  except_finish_abort ();
 }
 
 /* ============================================================================
@@ -213,12 +221,11 @@ except_validate_not_null (const Except_T *e)
 static void
 except_abort_uncaught (const Except_T *e, const char *file, int line)
 {
-        fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
-        except_emit_reason (e);
-        except_emit_location (file, line);
-        except_finish_abort ();
+  fprintf (stderr, "%s", EXCEPT_UNCAUGHT_FMT);
+  except_emit_reason (e);
+  except_emit_location (file, line);
+  except_finish_abort ();
 }
-
 
 /* ============================================================================
  * Static Helper Functions - Frame Management
@@ -236,14 +243,14 @@ except_abort_uncaught (const Except_T *e, const char *file, int line)
  */
 static void
 except_store_exception (Except_Frame *frame, const Except_T *e,
-                              const char *file, int line)
+                        const char *file, int line)
 {
-        assert (frame != NULL);
-        assert (e != NULL);
+  assert (frame != NULL);
+  assert (e != NULL);
 
-        frame->exception = e;
-        frame->file = (file != NULL) ? file : EXCEPT_UNKNOWN_FILE;
-        frame->line = (line > 0) ? line : 0;
+  frame->exception = e;
+  frame->file = (file != NULL) ? file : EXCEPT_UNKNOWN_FILE;
+  frame->line = (line > 0) ? line : 0;
 }
 
 /**
@@ -267,8 +274,8 @@ except_store_exception (Except_Frame *frame, const Except_T *e,
 static void
 except_pop_frame (Except_Frame *frame)
 {
-        assert (frame != NULL);
-        Except_stack = frame->prev;
+  assert (frame != NULL);
+  Except_stack = frame->prev;
 }
 
 /**
@@ -296,13 +303,13 @@ except_pop_frame (Except_Frame *frame)
 static void
 except_jump_to_handler (Except_Frame *frame)
 {
-        jmp_buf *env_ptr;
+  jmp_buf *env_ptr;
 
-        assert (frame != NULL);
+  assert (frame != NULL);
 
-        /* Cast away volatile - jmp_buf contents already saved by setjmp */
-        env_ptr = (jmp_buf *)&frame->env;
-        longjmp (*env_ptr, Except_raised);
+  /* Cast away volatile - jmp_buf contents already saved by setjmp */
+  env_ptr = (jmp_buf *)&frame->env;
+  longjmp (*env_ptr, Except_raised);
 }
 
 /* ============================================================================
@@ -338,16 +345,16 @@ except_jump_to_handler (Except_Frame *frame)
 void
 Except_raise (const Except_T *e, const char *file, int line)
 {
-        Except_Frame *frame;
+  Except_Frame *frame;
 
-        except_validate_not_null (e);
+  except_validate_not_null (e);
 
-        frame = Except_stack;
+  frame = Except_stack;
 
-        if (frame == NULL)
-          except_abort_uncaught (e, file, line);
+  if (frame == NULL)
+    except_abort_uncaught (e, file, line);
 
-        except_store_exception (frame, e, file, line);
-        except_pop_frame (frame);
-        except_jump_to_handler (frame);
+  except_store_exception (frame, e, file, line);
+  except_pop_frame (frame);
+  except_jump_to_handler (frame);
 }

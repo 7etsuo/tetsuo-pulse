@@ -180,9 +180,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketDTLS_Failed) { }
-  EXCEPT (SocketDTLS_CookieFailed) { }
-  ELSE { }
+  EXCEPT (SocketDTLS_Failed) {}
+  EXCEPT (SocketDTLS_CookieFailed) {}
+  ELSE {}
   END_TRY;
 
   /* Cleanup */

@@ -473,8 +473,8 @@ typedef struct
   char **cert_files; /* Array of certificate file paths (arena-allocated) */
   char **key_files;  /* Array of private key file paths (arena-allocated) */
   STACK_OF (X509)
-      * *chains; /* Pre-loaded certificate chains for each entry (sk_X509 owns
-                    cert refs; leaf at index 0, followed by intermediates) */
+  **chains; /* Pre-loaded certificate chains for each entry (sk_X509 owns
+               cert refs; leaf at index 0, followed by intermediates) */
   EVP_PKEY **pkeys; /* Pre-loaded private key objects */
   size_t count;     /* Number of certificate mappings */
   size_t capacity;  /* Allocated capacity */

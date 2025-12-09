@@ -12,15 +12,15 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketDTLS-private.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketSecurity.h"
+#include "tls/SocketDTLS-private.h"
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <openssl/err.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include "core/SocketSecurity.h"
 
 #define T SocketDTLSContext_T
 
@@ -29,7 +29,8 @@
  * ============================================================================
  */
 
-const Except_T SocketDTLS_Failed = { &SocketDTLS_Failed, "DTLS operation failed" };
+const Except_T SocketDTLS_Failed
+    = { &SocketDTLS_Failed, "DTLS operation failed" };
 const Except_T SocketDTLS_HandshakeFailed
     = { &SocketDTLS_HandshakeFailed, "DTLS handshake failed" };
 const Except_T SocketDTLS_VerifyFailed
@@ -94,7 +95,7 @@ ctx_raise_openssl_error_dtls (const char *context)
       snprintf (dtls_context_error_buf, SOCKET_DTLS_ERROR_BUFSIZE,
                 "%s: Unknown error", context);
     }
-  ERR_clear_error();  /* Clear remaining OpenSSL error queue */
+  ERR_clear_error (); /* Clear remaining OpenSSL error queue */
   RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
 }
 
@@ -123,16 +124,15 @@ apply_dtls_defaults (SSL_CTX *ssl_ctx, int is_server)
   /* Set explicitly secure options (avoid deprecated SSL_OP_ALL).
      Note: SINGLE_DH_USE and SINGLE_ECDH_USE may be deprecated/redundant in
      newer OpenSSL, but kept for older version compatibility. */
-  SSL_CTX_set_options (ssl_ctx,
-    SSL_OP_CIPHER_SERVER_PREFERENCE |
-    SSL_OP_NO_COMPRESSION |
-    SSL_OP_SINGLE_ECDH_USE |
-    SSL_OP_SINGLE_DH_USE |
-    SSL_OP_NO_RENEGOTIATION
+  SSL_CTX_set_options (
+      ssl_ctx,
+      SSL_OP_CIPHER_SERVER_PREFERENCE | SSL_OP_NO_COMPRESSION
+          | SSL_OP_SINGLE_ECDH_USE | SSL_OP_SINGLE_DH_USE
+          | SSL_OP_NO_RENEGOTIATION
 #if OPENSSL_VERSION_NUMBER >= 0x10101000L
-    | SSL_OP_PRIORITIZE_CHACHA  // NOLINT(misc-redundant-expression)
+          | SSL_OP_PRIORITIZE_CHACHA // NOLINT(misc-redundant-expression)
 #endif
-    );
+  );
 
   /* Set verification depth */
   SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH);
@@ -308,7 +308,8 @@ SocketDTLSContext_free (T *ctx_p)
 
   /* Securely clear cookie secrets using SocketCrypto */
   SocketCrypto_secure_clear (ctx->cookie.secret, sizeof (ctx->cookie.secret));
-  SocketCrypto_secure_clear (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
+  SocketCrypto_secure_clear (ctx->cookie.prev_secret,
+                             sizeof (ctx->cookie.prev_secret));
 
   /* Destroy mutexes */
   pthread_mutex_destroy (&ctx->cookie.secret_mutex);
@@ -341,15 +342,18 @@ SocketDTLSContext_free (T *ctx_p)
  */
 
 static void
-dtls_reject_if_invalid_file (const char *path, size_t max_size, const char *desc)
+dtls_reject_if_invalid_file (const char *path, size_t max_size,
+                             const char *desc)
 {
   int fd = open (path, O_RDONLY | O_NOFOLLOW);
   if (fd == -1)
     {
       int saved_errno = errno;
-      DTLS_ERROR_FMT ("Cannot safely open %s '%s': %s", desc, path, strerror (saved_errno));
+      DTLS_ERROR_FMT ("Cannot safely open %s '%s': %s", desc, path,
+                      strerror (saved_errno));
       if (saved_errno == ELOOP)
-        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s", dtls_context_error_buf);
+        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s",
+                          dtls_context_error_buf);
       else
         RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
@@ -359,21 +363,25 @@ dtls_reject_if_invalid_file (const char *path, size_t max_size, const char *desc
     {
       int saved_errno = errno;
       close (fd);
-      DTLS_ERROR_FMT ("fstat failed for %s '%s': %s", desc, path, strerror (saved_errno));
+      DTLS_ERROR_FMT ("fstat failed for %s '%s': %s", desc, path,
+                      strerror (saved_errno));
       RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
 
   if (!S_ISREG (st.st_mode))
     {
       close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed, "%s '%s' must be a regular file", desc, path);
+      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                "%s '%s' must be a regular file", desc, path);
     }
 
-  size_t file_size = (size_t) st.st_size;
+  size_t file_size = (size_t)st.st_size;
   if (file_size <= 0 || file_size > max_size)
     {
       close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed, "%s '%s' size invalid (max %zu bytes)", desc, path, max_size);
+      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                "%s '%s' size invalid (max %zu bytes)", desc,
+                                path, max_size);
     }
 
   close (fd);
@@ -390,12 +398,14 @@ SocketDTLSContext_load_certificate (T ctx, const char *cert_file,
   if (!dtls_validate_file_path (cert_file))
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid certificate path");
 
-  dtls_reject_if_invalid_file (cert_file, SOCKET_DTLS_MAX_FILE_SIZE, "certificate file");
+  dtls_reject_if_invalid_file (cert_file, SOCKET_DTLS_MAX_FILE_SIZE,
+                               "certificate file");
 
   if (!dtls_validate_file_path (key_file))
     RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Invalid key path");
 
-  dtls_reject_if_invalid_file (key_file, SOCKET_DTLS_MAX_FILE_SIZE, "private key file");
+  dtls_reject_if_invalid_file (key_file, SOCKET_DTLS_MAX_FILE_SIZE,
+                               "private key file");
 
   /* Load certificate */
   if (SSL_CTX_use_certificate_chain_file (ctx->ssl_ctx, cert_file) != 1)
@@ -425,9 +435,11 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
   if (fd == -1)
     {
       int saved_errno = errno;
-      DTLS_ERROR_FMT ("Cannot safely open CA path '%s': %s", ca_file, strerror (saved_errno));
+      DTLS_ERROR_FMT ("Cannot safely open CA path '%s': %s", ca_file,
+                      strerror (saved_errno));
       if (saved_errno == ELOOP)
-        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s", dtls_context_error_buf);
+        SOCKET_RAISE_FMT (SocketDTLSContext, SocketDTLS_Failed, "%s",
+                          dtls_context_error_buf);
       else
         RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
@@ -437,7 +449,8 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
     {
       int saved_errno = errno;
       close (fd);
-      DTLS_ERROR_FMT ("fstat failed for CA path '%s': %s", ca_file, strerror (saved_errno));
+      DTLS_ERROR_FMT ("fstat failed for CA path '%s': %s", ca_file,
+                      strerror (saved_errno));
       RAISE_DTLS_CTX_ERROR (SocketDTLS_Failed);
     }
 
@@ -445,24 +458,26 @@ SocketDTLSContext_load_ca (T ctx, const char *ca_file)
   if (!S_ISREG (st.st_mode) && !S_ISDIR (st.st_mode))
     {
       close (fd);
-      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                "CA path '%s' must be a regular file or directory", ca_file);
+      RAISE_DTLS_CTX_ERROR_FMT (
+          SocketDTLS_Failed,
+          "CA path '%s' must be a regular file or directory", ca_file);
     }
   if (S_ISREG (st.st_mode))
     {
-      size_t file_size = (size_t) st.st_size;
+      size_t file_size = (size_t)st.st_size;
       if (file_size <= 0 || file_size > SOCKET_DTLS_MAX_FILE_SIZE)
         {
           close (fd);
           RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
-                                    "CA file '%s' too large (max %zu bytes)", ca_file,
-                                    SOCKET_DTLS_MAX_FILE_SIZE);
+                                    "CA file '%s' too large (max %zu bytes)",
+                                    ca_file, SOCKET_DTLS_MAX_FILE_SIZE);
         }
     }
 
   close (fd);
 
-  /* Load based on validated type (small race possible after close, but minimized) */
+  /* Load based on validated type (small race possible after close, but
+   * minimized) */
   int result;
   if (S_ISDIR (st.st_mode))
     {
@@ -511,11 +526,15 @@ SocketDTLSContext_enable_cookie_exchange (T ctx)
     }
 
   /* Generate random secret using SocketCrypto */
-  if (SocketCrypto_random_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 0)
-    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Failed to generate cookie secret");
+  if (SocketCrypto_random_bytes (ctx->cookie.secret,
+                                 SOCKET_DTLS_COOKIE_SECRET_LEN)
+      != 0)
+    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                              "Failed to generate cookie secret");
 
   /* Clear previous secret using SocketCrypto */
-  SocketCrypto_secure_clear (ctx->cookie.prev_secret, sizeof (ctx->cookie.prev_secret));
+  SocketCrypto_secure_clear (ctx->cookie.prev_secret,
+                             sizeof (ctx->cookie.prev_secret));
 
   /* Set OpenSSL cookie callbacks */
   SSL_CTX_set_cookie_generate_cb (ctx->ssl_ctx, dtls_cookie_generate_cb);
@@ -533,10 +552,9 @@ SocketDTLSContext_set_cookie_secret (T ctx, const unsigned char *secret,
 
   if (len != SOCKET_DTLS_COOKIE_SECRET_LEN)
     {
-      RAISE_DTLS_CTX_ERROR_FMT (
-          SocketDTLS_Failed,
-          "Cookie secret must be %d bytes (got %zu)",
-          SOCKET_DTLS_COOKIE_SECRET_LEN, len);
+      RAISE_DTLS_CTX_ERROR_FMT (SocketDTLS_Failed,
+                                "Cookie secret must be %d bytes (got %zu)",
+                                SOCKET_DTLS_COOKIE_SECRET_LEN, len);
     }
 
   pthread_mutex_lock (&ctx->cookie.secret_mutex);
@@ -556,10 +574,13 @@ SocketDTLSContext_rotate_cookie_secret (T ctx)
           SOCKET_DTLS_COOKIE_SECRET_LEN);
 
   /* Generate new secret using SocketCrypto */
-  if (SocketCrypto_random_bytes (ctx->cookie.secret, SOCKET_DTLS_COOKIE_SECRET_LEN) != 0)
+  if (SocketCrypto_random_bytes (ctx->cookie.secret,
+                                 SOCKET_DTLS_COOKIE_SECRET_LEN)
+      != 0)
     {
       pthread_mutex_unlock (&ctx->cookie.secret_mutex);
-      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Failed to generate new cookie secret");
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Failed to generate new cookie secret");
     }
 
   pthread_mutex_unlock (&ctx->cookie.secret_mutex);
@@ -715,11 +736,13 @@ SocketDTLSContext_set_alpn_protos (T ctx, const char **protos, size_t count)
         }
 
       size_t total_size;
-      if (!SocketSecurity_check_add (len, 1, &total_size) ||
-          !SocketSecurity_check_size (total_size)) {
-        RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
-                                 "Parameter string too long for secure allocation");
-      }
+      if (!SocketSecurity_check_add (len, 1, &total_size)
+          || !SocketSecurity_check_size (total_size))
+        {
+          RAISE_DTLS_CTX_ERROR_MSG (
+              SocketDTLS_Failed,
+              "Parameter string too long for secure allocation");
+        }
       char *copy = Arena_alloc (ctx->arena, total_size, __FILE__, __LINE__);
       if (!copy)
         RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
@@ -778,9 +801,11 @@ SocketDTLSContext_enable_session_cache (T ctx, size_t max_sessions,
 
   size_t cache_size
       = max_sessions > 0 ? max_sessions : SOCKET_DTLS_SESSION_CACHE_SIZE;
-  if (!SocketSecurity_check_size(cache_size)) {
-    RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed, "Session cache size exceeds security limit");
-  }
+  if (!SocketSecurity_check_size (cache_size))
+    {
+      RAISE_DTLS_CTX_ERROR_MSG (SocketDTLS_Failed,
+                                "Session cache size exceeds security limit");
+    }
   long timeout = timeout_seconds > 0 ? timeout_seconds
                                      : SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT;
 
@@ -888,4 +913,3 @@ dtls_context_get_from_ssl (const SSL *ssl)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

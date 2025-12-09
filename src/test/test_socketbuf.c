@@ -126,7 +126,7 @@ TEST (socketbuf_partial_read)
 TEST (socketbuf_write_beyond_capacity)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
+  SocketBuf_T buf = SocketBuf_new (arena, 512); /* Min buffer is 512 */
 
   /* Create a string longer than 512 bytes */
   char data[600];
@@ -160,7 +160,7 @@ TEST (socketbuf_empty_buffer)
 TEST (socketbuf_full_buffer)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
+  SocketBuf_T buf = SocketBuf_new (arena, 512); /* Min buffer is 512 */
 
   /* Fill 512 bytes */
   char fill_data[512];
@@ -178,7 +178,7 @@ TEST (socketbuf_full_buffer)
 TEST (socketbuf_available_and_space)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
+  SocketBuf_T buf = SocketBuf_new (arena, 512); /* Min buffer is 512 */
 
   ASSERT_EQ (SocketBuf_available (buf), 0);
   ASSERT_EQ (SocketBuf_space (buf), 512);
@@ -237,7 +237,7 @@ TEST (socketbuf_consume)
 TEST (socketbuf_wraparound)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 512);  /* Min buffer is 512 */
+  SocketBuf_T buf = SocketBuf_new (arena, 512); /* Min buffer is 512 */
 
   /* Fill buffer with 512 bytes */
   char fill_data[512];
@@ -262,7 +262,8 @@ TEST (socketbuf_wraparound)
   char full_buf[513] = { 0 };
   size_t read = SocketBuf_read (buf, full_buf, 512);
   ASSERT_EQ (read, 512);
-  /* First 256 bytes should be the remaining original data (A-Z pattern starting at 256) */
+  /* First 256 bytes should be the remaining original data (A-Z pattern
+   * starting at 256) */
   /* Next 256 bytes should be 'X' characters */
   for (int i = 256; i < 512; i++)
     ASSERT (full_buf[i] == 'X');
@@ -335,7 +336,7 @@ TEST (socketbuf_release)
 TEST (socketbuf_write_read_cycle)
 {
   Arena_T arena = Arena_new ();
-  SocketBuf_T buf = SocketBuf_new (arena, 1024);  /* Min buffer is 512 */
+  SocketBuf_T buf = SocketBuf_new (arena, 1024); /* Min buffer is 512 */
 
   for (int i = 0; i < 10; i++)
     {

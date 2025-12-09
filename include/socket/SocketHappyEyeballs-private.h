@@ -25,7 +25,8 @@
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Maximum number of simultaneous connection attempts */
 #ifndef SOCKET_HE_MAX_ATTEMPTS
@@ -37,13 +38,10 @@
 #define SOCKET_HE_ERROR_BUFSIZE 256
 #endif
 
-
-
-
-
 /* ============================================================================
  * Connection Attempt State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_AttemptState - State of individual connection attempt
@@ -62,7 +60,8 @@ typedef enum
 
 /* ============================================================================
  * Connection Attempt Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_Attempt - Single connection attempt
@@ -73,17 +72,18 @@ typedef enum
  */
 typedef struct SocketHE_Attempt
 {
-  Socket_T socket;               /**< Socket for this attempt (NULL if failed) */
-  struct addrinfo *addr;         /**< Address being tried (borrowed from DNS) */
-  SocketHE_AttemptState state;   /**< Current attempt state */
-  int error;                     /**< errno if failed, 0 otherwise */
-  int64_t start_time_ms;         /**< When attempt started (for timeout) */
+  Socket_T socket;             /**< Socket for this attempt (NULL if failed) */
+  struct addrinfo *addr;       /**< Address being tried (borrowed from DNS) */
+  SocketHE_AttemptState state; /**< Current attempt state */
+  int error;                   /**< errno if failed, 0 otherwise */
+  int64_t start_time_ms;       /**< When attempt started (for timeout) */
   struct SocketHE_Attempt *next; /**< Next attempt in linked list */
 } SocketHE_Attempt_T;
 
 /* ============================================================================
  * Sorted Address List
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_AddressEntry - Entry in sorted address list
@@ -102,7 +102,8 @@ typedef struct SocketHE_AddressEntry
 
 /* ============================================================================
  * Main Context Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHE_T - Happy Eyeballs connection context
@@ -131,21 +132,21 @@ struct SocketHE_T
   SocketPoll_T poll; /**< Event poll (NULL for sync API) */
 
   /* Internal resources (owned by this context) */
-  Arena_T arena;  /**< Memory arena for all allocations */
-  int owns_dns;   /**< 1 if we created dns, must free */
-  int owns_poll;  /**< 1 if we created poll, must free */
+  Arena_T arena; /**< Memory arena for all allocations */
+  int owns_dns;  /**< 1 if we created dns, must free */
+  int owns_poll; /**< 1 if we created poll, must free */
 
   /* DNS resolution state */
-  SocketDNS_Request_T dns_request; /**< Active async DNS request */
-  struct addrinfo *resolved;       /**< Resolved addresses (owned, freeaddrinfo) */
-  int dns_complete;                /**< 1 when DNS resolution finished */
-  int dns_error;                   /**< DNS error code if failed */
+  Request_T dns_request; /**< Active async DNS request */
+  struct addrinfo *resolved; /**< Resolved addresses (owned, freeaddrinfo) */
+  int dns_complete;          /**< 1 when DNS resolution finished */
+  int dns_error;             /**< DNS error code if failed */
 
   /* Sorted address list (arena-allocated) */
-  SocketHE_AddressEntry_T *addresses;   /**< Head of sorted address list */
-  SocketHE_AddressEntry_T *next_ipv6;   /**< Next IPv6 address to try */
-  SocketHE_AddressEntry_T *next_ipv4;   /**< Next IPv4 address to try */
-  int interleave_prefer_ipv6;           /**< 1 to try IPv6 next, 0 for IPv4 */
+  SocketHE_AddressEntry_T *addresses; /**< Head of sorted address list */
+  SocketHE_AddressEntry_T *next_ipv6; /**< Next IPv6 address to try */
+  SocketHE_AddressEntry_T *next_ipv4; /**< Next IPv4 address to try */
+  int interleave_prefer_ipv6;         /**< 1 to try IPv6 next, 0 for IPv4 */
 
   /* Connection attempts (arena-allocated linked list) */
   SocketHE_Attempt_T *attempts; /**< List of active/completed attempts */
@@ -163,17 +164,17 @@ struct SocketHE_T
 };
 
 /* Iteration macro for attempt list to reduce duplication */
-#define HE_FOREACH_ATTEMPT(he, iter) \
+#define HE_FOREACH_ATTEMPT(he, iter)                                          \
   for (SocketHE_Attempt_T *iter = (he)->attempts; iter; iter = iter->next)
 
 /* ============================================================================
  * Internal Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
- * NOTE: Monotonic time functions use Socket_get_monotonic_ms() from SocketUtil.h
- * Elapsed time pattern:
- *   int64_t now = Socket_get_monotonic_ms();
+ * NOTE: Monotonic time functions use Socket_get_monotonic_ms() from
+ * SocketUtil.h Elapsed time pattern: int64_t now = Socket_get_monotonic_ms();
  *   int64_t elapsed = (now > start_ms) ? (now - start_ms) : 0;
  */
 

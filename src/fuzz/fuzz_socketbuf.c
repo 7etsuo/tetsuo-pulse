@@ -75,8 +75,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   uint8_t op = data[0];
   uint16_t capacity_raw = read_u16 (data + 1);
-  size_t capacity
-      = (capacity_raw % (MAX_FUZZ_CAPACITY - MIN_FUZZ_CAPACITY)) + MIN_FUZZ_CAPACITY;
+  size_t capacity = (capacity_raw % (MAX_FUZZ_CAPACITY - MIN_FUZZ_CAPACITY))
+                    + MIN_FUZZ_CAPACITY;
   uint16_t len_param = read_u16 (data + 3);
   size_t data_offset = 5;
   size_t data_len = size > data_offset ? size - data_offset : 0;
@@ -108,10 +108,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             assert (SocketBuf_space (small_buf) == MIN_FUZZ_CAPACITY);
             (void)small_buf; /* Suppress unused-but-set warning */
           }
-          EXCEPT (SocketBuf_Failed)
-          {
-            /* Expected for invalid capacities */
-          }
+          EXCEPT (SocketBuf_Failed) { /* Expected for invalid capacities */ }
           END_TRY;
         }
         break;
@@ -177,7 +174,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           buf = SocketBuf_new (arena, capacity);
 
           /* Write initial data */
-          size_t initial_write = data_len > capacity / 2 ? capacity / 2 : data_len;
+          size_t initial_write
+              = data_len > capacity / 2 ? capacity / 2 : data_len;
           if (initial_write > 0)
             SocketBuf_write (buf, data + data_offset, initial_write);
 
@@ -193,7 +191,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               }
               EXCEPT (SocketBuf_Failed)
               {
-                /* Overflow or allocation failure - expected for large values */
+                /* Overflow or allocation failure - expected for large values
+                 */
               }
               END_TRY;
             }
@@ -218,7 +217,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
           if (write_ptr && write_space > 0)
             {
-              size_t direct_write = data_len > write_space ? write_space : data_len;
+              size_t direct_write
+                  = data_len > write_space ? write_space : data_len;
               if (direct_write > 0)
                 {
                   memcpy (write_ptr, data + data_offset, direct_write);
@@ -235,8 +235,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           if (read_ptr && read_avail > 0)
             {
               /* Verify data matches */
-              size_t check_len
-                  = read_avail < data_len ? read_avail : data_len;
+              size_t check_len = read_avail < data_len ? read_avail : data_len;
               if (check_len > 0)
                 assert (memcmp (read_ptr, data + data_offset, check_len) == 0);
             }
@@ -262,9 +261,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
               SocketBuf_read (buf, read_buffer, to_read);
 
               /* Now write more - should wrap around */
-              size_t remaining_data = data_len > first_write ? data_len - first_write : 0;
+              size_t remaining_data
+                  = data_len > first_write ? data_len - first_write : 0;
               size_t space = SocketBuf_space (buf);
-              size_t second_write = remaining_data > space ? space : remaining_data;
+              size_t second_write
+                  = remaining_data > space ? space : remaining_data;
 
               if (second_write > 0)
                 {
@@ -275,7 +276,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
               /* Verify we can read all data back */
               size_t total_available = SocketBuf_available (buf);
-              size_t total_read = SocketBuf_read (buf, read_buffer, total_available);
+              size_t total_read
+                  = SocketBuf_read (buf, read_buffer, total_available);
               assert (total_read == total_available);
             }
         }
@@ -301,7 +303,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           /* Buffer should be usable again */
           if (to_write > 0)
             {
-              size_t written = SocketBuf_write (buf, data + data_offset, to_write);
+              size_t written
+                  = SocketBuf_write (buf, data + data_offset, to_write);
               assert (written == to_write);
             }
         }
@@ -380,14 +383,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketBuf_Failed)
-  {
-    /* Expected for some operations */
-  }
-  EXCEPT (Arena_Failed)
-  {
-    /* Memory allocation can fail */
-  }
+  EXCEPT (SocketBuf_Failed) { /* Expected for some operations */ }
+  EXCEPT (Arena_Failed) { /* Memory allocation can fail */ }
   FINALLY
   {
     /* Release buffer (arena owns memory) */

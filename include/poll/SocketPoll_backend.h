@@ -16,26 +16,30 @@
  * - Other POSIX: poll (fallback)
  */
 
+#include "core/Arena.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
-#include "core/Arena.h"
 
 /* Forward declaration of backend-specific poll structure */
 typedef struct PollBackend_T *PollBackend_T;
 
 /* Common backend macros for duplication removal */
 #ifndef VALIDATE_MAXEVENTS
-#define VALIDATE_MAXEVENTS(maxevents, event_type) \
-  do { \
-    if ((size_t)(maxevents) <= 0) { \
-      errno = EINVAL; \
-      return NULL; \
-    } \
-    if ((size_t)(maxevents) > SIZE_MAX / sizeof(event_type)) { \
-      errno = EOVERFLOW; \
-      return NULL; \
-    } \
-  } while (0)
+#define VALIDATE_MAXEVENTS(maxevents, event_type)                             \
+  do                                                                          \
+    {                                                                         \
+      if ((size_t)(maxevents) <= 0)                                           \
+        {                                                                     \
+          errno = EINVAL;                                                     \
+          return NULL;                                                        \
+        }                                                                     \
+      if ((size_t)(maxevents) > SIZE_MAX / sizeof (event_type))               \
+        {                                                                     \
+          errno = EOVERFLOW;                                                  \
+          return NULL;                                                        \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 #endif
 
 /* ==================== Common Backend Macros ==================== */
@@ -44,15 +48,15 @@ typedef struct PollBackend_T *PollBackend_T;
  * VALIDATE_FD - Validate file descriptor and return error if invalid
  * Used by all backends to eliminate duplicate fd validation code.
  */
-#define VALIDATE_FD(fd)                                                        \
-  do                                                                           \
-    {                                                                          \
-      if ((fd) < 0)                                                            \
-        {                                                                      \
-          errno = EBADF;                                                       \
-          return -1;                                                           \
-        }                                                                      \
-    }                                                                          \
+#define VALIDATE_FD(fd)                                                       \
+  do                                                                          \
+    {                                                                         \
+      if ((fd) < 0)                                                           \
+        {                                                                     \
+          errno = EBADF;                                                      \
+          return -1;                                                          \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 /**
@@ -63,14 +67,16 @@ typedef struct PollBackend_T *PollBackend_T;
  * backend_new - Create new backend instance
  * @arena: Arena for memory allocation (backend and events allocated here)
  * @maxevents: Maximum events to return per wait
- * Returns: Backend instance or NULL on failure (arena allocations leaked on partial failure, freed by caller arena dispose)
+ * Returns: Backend instance or NULL on failure (arena allocations leaked on
+ * partial failure, freed by caller arena dispose)
  */
 extern PollBackend_T backend_new (Arena_T arena, int maxevents);
 
 /**
  * backend_free - Close backend resources
  * @backend: Backend instance (fd closed, memory freed by arena dispose)
- * Note: Only closes the backend fd; memory allocations (struct, events array) are owned by arena and freed by Arena_dispose
+ * Note: Only closes the backend fd; memory allocations (struct, events array)
+ * are owned by arena and freed by Arena_dispose
  */
 extern void backend_free (PollBackend_T backend);
 
@@ -118,8 +124,8 @@ extern int backend_wait (PollBackend_T backend, int timeout_ms);
  * @events_out: Output - events that occurred
  * Returns: 0 on success, -1 on invalid index
  */
-extern int backend_get_event (const PollBackend_T backend, int index, int *fd_out,
-                              unsigned *events_out);
+extern int backend_get_event (const PollBackend_T backend, int index,
+                              int *fd_out, unsigned *events_out);
 
 /**
  * backend_name - Get backend name for debugging

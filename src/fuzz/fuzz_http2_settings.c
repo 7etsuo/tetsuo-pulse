@@ -27,8 +27,7 @@ validate_settings_payload (const uint8_t *data, size_t size)
       uint16_t id = ((uint16_t)data[offset] << 8) | data[offset + 1];
       uint32_t value = ((uint32_t)data[offset + 2] << 24)
                        | ((uint32_t)data[offset + 3] << 16)
-                       | ((uint32_t)data[offset + 4] << 8)
-                       | data[offset + 5];
+                       | ((uint32_t)data[offset + 4] << 8) | data[offset + 5];
 
       /* Validate settings per RFC 9113 */
       switch (id)
@@ -74,4 +73,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

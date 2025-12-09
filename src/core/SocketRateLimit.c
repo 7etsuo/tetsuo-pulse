@@ -15,27 +15,31 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
-#include "core/SocketRateLimit-private.h"
 #include "core/SocketConfig.h"
-#include "socket/SocketCommon.h"
+#include "core/SocketRateLimit-private.h"
 #include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
+#include "socket/SocketCommon.h"
 
 #define T SocketRateLimit_T
 
 /* Live instance count for debugging and leak detection */
-static struct SocketLiveCount ratelimit_live_tracker = SOCKETLIVECOUNT_STATIC_INIT;
+static struct SocketLiveCount ratelimit_live_tracker
+    = SOCKETLIVECOUNT_STATIC_INIT;
 
-#define ratelimit_live_inc() SocketLiveCount_increment (&ratelimit_live_tracker)
-#define ratelimit_live_dec() SocketLiveCount_decrement (&ratelimit_live_tracker)
+#define ratelimit_live_inc()                                                  \
+  SocketLiveCount_increment (&ratelimit_live_tracker)
+#define ratelimit_live_dec()                                                  \
+  SocketLiveCount_decrement (&ratelimit_live_tracker)
 
 /* ============================================================================
  * Exception Definitions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketRateLimit_Failed
     = { &SocketRateLimit_Failed, "Rate limiter operation failed" };
@@ -45,7 +49,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketRateLimit);
 
 /* ============================================================================
  * Pure Helper Functions (No Mutex Required, No Side Effects)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ratelimit_calculate_tokens_to_add - Calculate tokens from elapsed time
@@ -61,7 +66,8 @@ ratelimit_calculate_tokens_to_add (int64_t elapsed_ms, size_t tokens_per_sec)
     return 0;
 
   size_t tokens_per_ms = tokens_per_sec / SOCKET_MS_PER_SECOND;
-  size_t safe_tokens = SocketSecurity_safe_multiply ((size_t)elapsed_ms, tokens_per_ms);
+  size_t safe_tokens
+      = SocketSecurity_safe_multiply ((size_t)elapsed_ms, tokens_per_ms);
   if (safe_tokens == 0) /* Overflow or zero */
     return 0;
   return (safe_tokens > SIZE_MAX) ? SIZE_MAX : safe_tokens;
@@ -98,7 +104,8 @@ ratelimit_calculate_wait_ms (size_t needed, size_t tokens_per_sec)
 
 /* ============================================================================
  * Bucket Operations (Caller Must Hold Mutex)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ratelimit_calculate_elapsed - Calculate elapsed time since last refill
@@ -133,7 +140,8 @@ ratelimit_calculate_elapsed (const T limiter, int64_t now_ms)
  * @now_ms: Current timestamp to record
  */
 /**
- * ratelimit_add_tokens - Add calculated tokens to the bucket (caller holds lock)
+ * ratelimit_add_tokens - Add calculated tokens to the bucket (caller holds
+ * lock)
  * @limiter: Rate limiter instance
  * @tokens_to_add: Number of tokens to add (may cause overflow check)
  * @now_ms: Current monotonic timestamp to record as last_refill_ms
@@ -185,8 +193,8 @@ ratelimit_refill_bucket (T limiter)
   if (elapsed_ms == 0)
     return;
 
-  tokens_to_add
-      = ratelimit_calculate_tokens_to_add (elapsed_ms, limiter->tokens_per_sec);
+  tokens_to_add = ratelimit_calculate_tokens_to_add (elapsed_ms,
+                                                     limiter->tokens_per_sec);
 
   if (tokens_to_add > 0)
     ratelimit_add_tokens (limiter, tokens_to_add, now_ms);
@@ -235,7 +243,8 @@ ratelimit_compute_wait_time (const T limiter, size_t tokens)
 
 /* ============================================================================
  * Lifecycle Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ratelimit_allocate - Allocate limiter structure
@@ -311,14 +320,16 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
   if (*bucket_size == 0)
     *bucket_size = tokens_per_sec;
 
-  if (!SOCKET_SECURITY_VALID_SIZE(tokens_per_sec) || !SOCKET_SECURITY_VALID_SIZE(*bucket_size))
+  if (!SOCKET_SECURITY_VALID_SIZE (tokens_per_sec)
+      || !SOCKET_SECURITY_VALID_SIZE (*bucket_size))
     SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                       "Rate limiter parameters exceed security limits");
 }
 
 /* ============================================================================
  * Mutex Helper Macro
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * WITH_LOCK - Macro to execute code with mutex acquired
@@ -326,8 +337,8 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
  * @code: Code block to execute while mutex is held
  *
  * Simplifies common lock/unlock patterns across public API functions.
- * Does not perform refill - add ratelimit_refill_bucket(limiter) inside code if needed.
- * For cases requiring early unlock, use manual locking.
+ * Does not perform refill - add ratelimit_refill_bucket(limiter) inside code
+ * if needed. For cases requiring early unlock, use manual locking.
  *
  * Example:
  *   WITH_LOCK(limiter, {
@@ -337,23 +348,24 @@ ratelimit_validate_params (size_t tokens_per_sec, size_t *bucket_size)
  *
  * Thread-safe: Yes
  */
-#define WITH_LOCK(limiter, code) \
-  do { \
-    T _l = (T)(limiter); \
-    int lock_err = pthread_mutex_lock (&_l->mutex); \
-    if (lock_err != 0) \
-      SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed, \
-                        "pthread_mutex_lock failed: %s", Socket_safe_strerror(lock_err)); \
-    TRY { \
-      code \
-    } FINALLY { \
-      (void) pthread_mutex_unlock (&_l->mutex); \
-    } END_TRY; \
-  } while (0)
+#define WITH_LOCK(limiter, code)                                              \
+  do                                                                          \
+    {                                                                         \
+      T _l = (T)(limiter);                                                    \
+      int lock_err = pthread_mutex_lock (&_l->mutex);                         \
+      if (lock_err != 0)                                                      \
+        SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,            \
+                          "pthread_mutex_lock failed: %s",                    \
+                          Socket_safe_strerror (lock_err));                   \
+      TRY{ code } FINALLY { (void)pthread_mutex_unlock (&_l->mutex); }        \
+      END_TRY;                                                                \
+    }                                                                         \
+  while (0)
 
 /* ============================================================================
  * Public API - Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRateLimit_new - Create a new token bucket rate limiter
@@ -419,22 +431,27 @@ SocketRateLimit_free (T *limiter)
 
   if (l->initialized == SOCKET_RATELIMIT_MUTEX_INITIALIZED)
     {
-      /* Set shutdown flag while holding lock to synchronize and prevent new operations */
-      WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN; );
+      /* Set shutdown flag while holding lock to synchronize and prevent new
+       * operations */
+      WITH_LOCK (l, l->initialized = SOCKET_RATELIMIT_SHUTDOWN;);
 
       /* Wait for concurrent operations to complete before destroying mutex */
       int retries = 10000; /* max ~10s wait */
-      while (retries-- > 0) {
-        if (pthread_mutex_trylock(&l->mutex) == 0) {
-          pthread_mutex_unlock(&l->mutex);
-          break; /* No holder, safe to destroy */
+      while (retries-- > 0)
+        {
+          if (pthread_mutex_trylock (&l->mutex) == 0)
+            {
+              pthread_mutex_unlock (&l->mutex);
+              break; /* No holder, safe to destroy */
+            }
+          struct timespec ts = { 0, 1000000 }; /* 1ms */
+          nanosleep (&ts, NULL);
         }
-        struct timespec ts = {0, 1000000}; /* 1ms */
-        nanosleep(&ts, NULL);
-      }
-      if (retries < 0) {
-        SOCKET_LOG_WARN_MSG("SocketRateLimit_free: destroying potentially locked mutex after timeout");
-      }
+      if (retries < 0)
+        {
+          SOCKET_LOG_WARN_MSG ("SocketRateLimit_free: destroying potentially "
+                               "locked mutex after timeout");
+        }
 
       pthread_mutex_destroy (&l->mutex);
       ratelimit_live_dec ();
@@ -448,7 +465,8 @@ SocketRateLimit_free (T *limiter)
 
 /* ============================================================================
  * Public API - Token Acquisition
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRateLimit_try_acquire - Try to consume tokens (non-blocking)
@@ -472,14 +490,16 @@ SocketRateLimit_try_acquire (T limiter, size_t tokens)
   if (tokens == 0)
     return 1;
 
-  WITH_LOCK (limiter,
-  {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
-      result = 0;
-    } else {
-      ratelimit_refill_bucket (_l);
-      result = ratelimit_try_consume (_l, tokens);
-    }
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        result = 0;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        result = ratelimit_try_consume (_l, tokens);
+      }
   });
   return result;
 }
@@ -506,16 +526,20 @@ SocketRateLimit_wait_time_ms (T limiter, size_t tokens)
   if (tokens == 0)
     return 0;
 
-  WITH_LOCK (limiter,
-  {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
-      wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-    } else if (tokens > _l->bucket_size) {
-      wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
-    } else {
-      ratelimit_refill_bucket (_l);
-      wait_ms = ratelimit_compute_wait_time (_l, tokens);
-    }
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+      }
+    else if (tokens > _l->bucket_size)
+      {
+        wait_ms = SOCKET_RATELIMIT_IMPOSSIBLE_WAIT;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        wait_ms = ratelimit_compute_wait_time (_l, tokens);
+      }
   });
 
   return wait_ms;
@@ -537,21 +561,24 @@ SocketRateLimit_available (T limiter)
 
   assert (limiter);
 
-  WITH_LOCK (limiter,
-  {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
-      available = 0;
-    } else {
-      ratelimit_refill_bucket (_l);
-      available = _l->tokens;
-    }
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        available = 0;
+      }
+    else
+      {
+        ratelimit_refill_bucket (_l);
+        available = _l->tokens;
+      }
   });
 
   return available;
 }
 
- /**
- * ratelimit_update_rate_locked - Update tokens_per_sec if valid (caller holds lock)
+/**
+ * ratelimit_update_rate_locked - Update tokens_per_sec if valid (caller holds
+ * lock)
  * @limiter: Rate limiter instance (locked)
  * @new_rate: New rate (>0 to set, <=0 ignore)
  *
@@ -565,7 +592,7 @@ ratelimit_update_rate_locked (T limiter, size_t new_rate)
 {
   if (new_rate > 0)
     {
-      if (!SOCKET_SECURITY_VALID_SIZE(new_rate))
+      if (!SOCKET_SECURITY_VALID_SIZE (new_rate))
         SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                           "Invalid tokens_per_sec - exceeds security limits");
       limiter->tokens_per_sec = new_rate;
@@ -573,7 +600,8 @@ ratelimit_update_rate_locked (T limiter, size_t new_rate)
 }
 
 /**
- * ratelimit_update_bucket_locked - Update bucket_size and cap tokens if needed (caller holds lock)
+ * ratelimit_update_bucket_locked - Update bucket_size and cap tokens if needed
+ * (caller holds lock)
  * @limiter: Rate limiter instance (locked)
  * @new_size: New bucket size (>0 to set, <=0 ignore)
  *
@@ -587,7 +615,7 @@ ratelimit_update_bucket_locked (T limiter, size_t new_size)
 {
   if (new_size > 0)
     {
-      if (!SOCKET_SECURITY_VALID_SIZE(new_size))
+      if (!SOCKET_SECURITY_VALID_SIZE (new_size))
         SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                           "Invalid bucket_size - exceeds security limits");
       limiter->bucket_size = new_size;
@@ -598,7 +626,8 @@ ratelimit_update_bucket_locked (T limiter, size_t new_size)
 
 /* ============================================================================
  * Public API - Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ratelimit_reset_locked - Reset bucket to full under lock
@@ -629,8 +658,7 @@ SocketRateLimit_reset (T limiter)
 {
   assert (limiter);
 
-  WITH_LOCK (limiter,
-  {
+  WITH_LOCK (limiter, {
     if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
       SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
                         "Cannot reset shutdown or uninitialized rate limiter");
@@ -647,18 +675,20 @@ SocketRateLimit_reset (T limiter)
  *
  * Thread-safe: Yes - uses internal mutex
  *
- * Allows runtime reconfiguration. Current tokens are capped to new bucket_size.
+ * Allows runtime reconfiguration. Current tokens are capped to new
+ * bucket_size.
  */
 void
-SocketRateLimit_configure (T limiter, size_t tokens_per_sec, size_t bucket_size)
+SocketRateLimit_configure (T limiter, size_t tokens_per_sec,
+                           size_t bucket_size)
 {
   assert (limiter);
 
-  WITH_LOCK (limiter,
-  {
+  WITH_LOCK (limiter, {
     if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
-      SOCKET_RAISE_MSG (SocketRateLimit, SocketRateLimit_Failed,
-                        "Cannot configure shutdown or uninitialized rate limiter");
+      SOCKET_RAISE_MSG (
+          SocketRateLimit, SocketRateLimit_Failed,
+          "Cannot configure shutdown or uninitialized rate limiter");
 
     ratelimit_update_rate_locked (_l, tokens_per_sec);
     ratelimit_update_bucket_locked (_l, bucket_size);
@@ -679,13 +709,15 @@ SocketRateLimit_get_rate (T limiter)
 
   assert (limiter);
 
-  WITH_LOCK (limiter,
-  {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
-      rate = 0;
-    } else {
-      rate = _l->tokens_per_sec;
-    }
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        rate = 0;
+      }
+    else
+      {
+        rate = _l->tokens_per_sec;
+      }
   });
 
   return rate;
@@ -705,13 +737,15 @@ SocketRateLimit_get_bucket_size (T limiter)
 
   assert (limiter);
 
-  WITH_LOCK (limiter,
-  {
-    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED) {
-      size = 0;
-    } else {
-      size = _l->bucket_size;
-    }
+  WITH_LOCK (limiter, {
+    if (_l->initialized != SOCKET_RATELIMIT_MUTEX_INITIALIZED)
+      {
+        size = 0;
+      }
+    else
+      {
+        size = _l->bucket_size;
+      }
   });
 
   return size;
@@ -720,8 +754,8 @@ SocketRateLimit_get_bucket_size (T limiter)
 /**
  * SocketRateLimit_debug_live_count - Get number of live rate limiter instances
  *
- * Returns: Current number of allocated instances (for debugging and leak detection)
- * Thread-safe: Yes
+ * Returns: Current number of allocated instances (for debugging and leak
+ * detection) Thread-safe: Yes
  */
 int
 SocketRateLimit_debug_live_count (void)

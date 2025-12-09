@@ -10,63 +10,64 @@
  * - Connection pool
  */
 
-#include "http/SocketHTTPClient.h"
-#include "http/SocketHTTPClient-private.h" /* For auth helper testing */
-#include "http/SocketHTTP.h"
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"  /* For SOCKET_HAS_TLS */
+#include "core/SocketConfig.h" /* For SOCKET_HAS_TLS */
+#include "http/SocketHTTP.h"
+#include "http/SocketHTTPClient-private.h" /* For auth helper testing */
+#include "http/SocketHTTPClient.h"
 
 #include <assert.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
 
 /* ============================================================================
  * Test Framework
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int tests_run = 0;
 static int tests_passed = 0;
 static int tests_failed = 0;
 
-#define TEST_START(name)                                                       \
-  do                                                                           \
-    {                                                                          \
-      printf ("  Testing: %s... ", name);                                      \
-      fflush (stdout);                                                         \
-      tests_run++;                                                             \
-    }                                                                          \
+#define TEST_START(name)                                                      \
+  do                                                                          \
+    {                                                                         \
+      printf ("  Testing: %s... ", name);                                     \
+      fflush (stdout);                                                        \
+      tests_run++;                                                            \
+    }                                                                         \
   while (0)
 
-#define TEST_PASS()                                                            \
-  do                                                                           \
-    {                                                                          \
-      printf ("PASS\n");                                                       \
-      tests_passed++;                                                          \
-    }                                                                          \
+#define TEST_PASS()                                                           \
+  do                                                                          \
+    {                                                                         \
+      printf ("PASS\n");                                                      \
+      tests_passed++;                                                         \
+    }                                                                         \
   while (0)
 
-#define TEST_FAIL(msg)                                                         \
-  do                                                                           \
-    {                                                                          \
-      printf ("FAIL: %s\n", msg);                                              \
-      tests_failed++;                                                          \
-    }                                                                          \
+#define TEST_FAIL(msg)                                                        \
+  do                                                                          \
+    {                                                                         \
+      printf ("FAIL: %s\n", msg);                                             \
+      tests_failed++;                                                         \
+    }                                                                         \
   while (0)
 
-#define ASSERT_TRUE(cond, msg)                                                 \
-  do                                                                           \
-    {                                                                          \
-      if (!(cond))                                                             \
-        {                                                                      \
-          TEST_FAIL (msg);                                                     \
-          return;                                                              \
-        }                                                                      \
-    }                                                                          \
+#define ASSERT_TRUE(cond, msg)                                                \
+  do                                                                          \
+    {                                                                         \
+      if (!(cond))                                                            \
+        {                                                                     \
+          TEST_FAIL (msg);                                                    \
+          return;                                                             \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 #define ASSERT_EQ(a, b, msg) ASSERT_TRUE ((a) == (b), msg)
@@ -77,7 +78,8 @@ static int tests_failed = 0;
 
 /* ============================================================================
  * Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_config_defaults (void)
@@ -88,10 +90,13 @@ test_config_defaults (void)
 
   SocketHTTPClient_config_defaults (&config);
 
-  ASSERT_EQ (config.max_version, HTTP_VERSION_2, "max_version should be HTTP/2");
-  ASSERT_EQ (config.allow_http2_cleartext, 0, "h2c should be disabled by default");
+  ASSERT_EQ (config.max_version, HTTP_VERSION_2,
+             "max_version should be HTTP/2");
+  ASSERT_EQ (config.allow_http2_cleartext, 0,
+             "h2c should be disabled by default");
   ASSERT_EQ (config.enable_connection_pool, 1, "pooling should be enabled");
-  ASSERT_EQ (config.max_connections_per_host, HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST,
+  ASSERT_EQ (config.max_connections_per_host,
+             HTTPCLIENT_DEFAULT_MAX_CONNS_PER_HOST,
              "max_connections_per_host");
   ASSERT_EQ (config.connect_timeout_ms, HTTPCLIENT_DEFAULT_CONNECT_TIMEOUT_MS,
              "connect_timeout_ms");
@@ -106,7 +111,8 @@ test_config_defaults (void)
 
 /* ============================================================================
  * Client Lifecycle Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_client_new_free (void)
@@ -146,7 +152,8 @@ test_client_with_config (void)
 
 /* ============================================================================
  * Request Builder Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_request_new_free (void)
@@ -183,7 +190,8 @@ test_request_headers (void)
   req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
                                       "http://example.com/");
 
-  result = SocketHTTPClient_Request_header (req, "X-Custom-Header", "test-value");
+  result
+      = SocketHTTPClient_Request_header (req, "X-Custom-Header", "test-value");
   ASSERT_EQ (result, 0, "header add should succeed");
 
   result = SocketHTTPClient_Request_header (req, "Accept", "application/json");
@@ -241,7 +249,8 @@ test_request_timeout (void)
 
 /* ============================================================================
  * Cookie Jar Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_cookie_jar_new_free (void)
@@ -381,7 +390,8 @@ test_cookie_jar_association (void)
 
 /* ============================================================================
  * Authentication Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_auth_basic (void)
@@ -450,7 +460,8 @@ test_auth_per_request (void)
 
 /* ============================================================================
  * Digest Authentication Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test Basic auth header generation
@@ -463,7 +474,8 @@ test_auth_basic_header (void)
 
   TEST_START ("basic auth header generation");
 
-  result = httpclient_auth_basic_header ("user", "pass", output, sizeof (output));
+  result
+      = httpclient_auth_basic_header ("user", "pass", output, sizeof (output));
   ASSERT_EQ (result, 0, "should generate basic auth header");
 
   /* Check that it starts with "Basic " */
@@ -492,11 +504,12 @@ test_auth_digest_md5_no_qop (void)
 
   /* Test with RFC 2617 style (no qop) */
   result = httpclient_auth_digest_response (
-      "user", "pass", "testrealm@host.com", "dcd98b7102dd2f0e8b11d0f600bfb0c093",
-      "/dir/index.html", "GET", NULL, /* qop */
-      NULL,                           /* nc */
-      NULL,                           /* cnonce */
-      0,                              /* MD5 */
+      "user", "pass", "testrealm@host.com",
+      "dcd98b7102dd2f0e8b11d0f600bfb0c093", "/dir/index.html", "GET",
+      NULL, /* qop */
+      NULL, /* nc */
+      NULL, /* cnonce */
+      0,    /* MD5 */
       output, sizeof (output));
 
   ASSERT_EQ (result, 0, "should generate digest response");
@@ -507,7 +520,8 @@ test_auth_digest_md5_no_qop (void)
                    "should contain username");
   ASSERT_NOT_NULL (strstr (output, "realm=\"testrealm@host.com\""),
                    "should contain realm");
-  ASSERT_NOT_NULL (strstr (output, "algorithm=MD5"), "should contain algorithm");
+  ASSERT_NOT_NULL (strstr (output, "algorithm=MD5"),
+                   "should contain algorithm");
   ASSERT_NOT_NULL (strstr (output, "response=\""), "should contain response");
 
   /* Should NOT contain qop fields since qop is NULL */
@@ -566,9 +580,8 @@ test_auth_digest_sha256 (void)
   TEST_START ("digest auth SHA-256");
 
   result = httpclient_auth_digest_response (
-      "user", "secret", "api.example.com", "abc123def456",
-      "/api/v1/data", "POST", "auth", "00000001", "randomcnonce",
-      1,  /* SHA-256 */
+      "user", "secret", "api.example.com", "abc123def456", "/api/v1/data",
+      "POST", "auth", "00000001", "randomcnonce", 1, /* SHA-256 */
       output, sizeof (output));
 
   ASSERT_EQ (result, 0, "should generate SHA-256 digest response");
@@ -621,9 +634,9 @@ test_auth_digest_challenge (void)
   /* Test qop with tab delimiter (word boundary bug fix) */
   const char *www_auth_tab = "Digest realm=\"test\", nonce=\"abc\", "
                              "qop=\"auth\t, auth-int\"";
-  result = httpclient_auth_digest_challenge (www_auth_tab, "user", "pass", "GET",
-                                             "/test", "00000001", output,
-                                             sizeof (output));
+  result = httpclient_auth_digest_challenge (www_auth_tab, "user", "pass",
+                                             "GET", "/test", "00000001",
+                                             output, sizeof (output));
   ASSERT_EQ (result, 0, "should parse qop with tab delimiter");
   ASSERT_NOT_NULL (strstr (output, "qop=auth"),
                    "should select auth with tab boundary");
@@ -754,7 +767,8 @@ test_auth_buffer_overflow_protection (void)
 
 /* ============================================================================
  * Pool Statistics Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_pool_stats (void)
@@ -789,7 +803,8 @@ test_pool_clear (void)
   SocketHTTPClient_pool_clear (client);
 
   SocketHTTPClient_pool_stats (client, &stats);
-  ASSERT_EQ (stats.active_connections, 0, "should have no connections after clear");
+  ASSERT_EQ (stats.active_connections, 0,
+             "should have no connections after clear");
 
   SocketHTTPClient_free (&client);
   TEST_PASS ();
@@ -797,7 +812,8 @@ test_pool_clear (void)
 
 /* ============================================================================
  * Error Handling Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_error_strings (void)
@@ -840,7 +856,8 @@ test_last_error (void)
 
 /* ============================================================================
  * Response Free Test
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_response_free (void)
@@ -862,7 +879,8 @@ test_response_free (void)
 
 /* ============================================================================
  * URL Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_url_parsing_http (void)
@@ -874,8 +892,8 @@ test_url_parsing_http (void)
 
   client = SocketHTTPClient_new (NULL);
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "http://example.com:8080/path/to/resource");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "http://example.com:8080/path/to/resource");
   ASSERT_NOT_NULL (req, "request should be created");
 
   SocketHTTPClient_Request_free (&req);
@@ -893,8 +911,8 @@ test_url_parsing_https (void)
 
   client = SocketHTTPClient_new (NULL);
 
-  req = SocketHTTPClient_Request_new (client, HTTP_METHOD_GET,
-                                      "https://secure.example.com/api/v1/data");
+  req = SocketHTTPClient_Request_new (
+      client, HTTP_METHOD_GET, "https://secure.example.com/api/v1/data");
   ASSERT_NOT_NULL (req, "request should be created");
 
   SocketHTTPClient_Request_free (&req);
@@ -934,7 +952,8 @@ test_url_parsing_various (void)
 
 /* ============================================================================
  * Pool Statistics Extended Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_pool_stats_extended (void)
@@ -964,7 +983,8 @@ test_pool_stats_extended (void)
   ASSERT_EQ (stats.connections_created, 0, "no connections created initially");
   ASSERT_EQ (stats.connections_failed, 0, "no connections failed initially");
   ASSERT_EQ (stats.connections_timed_out, 0, "no timeouts initially");
-  ASSERT_EQ (stats.stale_connections_removed, 0, "no stale removals initially");
+  ASSERT_EQ (stats.stale_connections_removed, 0,
+             "no stale removals initially");
   ASSERT_EQ (stats.pool_exhausted_waits, 0, "no waits initially");
 
   SocketHTTPClient_free (&client);
@@ -973,7 +993,8 @@ test_pool_stats_extended (void)
 
 /* ============================================================================
  * Connection Pool Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_pool_config_limits (void)
@@ -1023,7 +1044,8 @@ test_pool_no_pooling (void)
 
 /* ============================================================================
  * Response Size Limit Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_max_response_size_config (void)
@@ -1045,7 +1067,8 @@ test_max_response_size_config (void)
 
 /* ============================================================================
  * Async Request Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Dummy callback for async tests */
 static void
@@ -1089,7 +1112,8 @@ test_async_cancel (void)
 
 /* ============================================================================
  * Concurrency Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_concurrency_config (void)
@@ -1157,7 +1181,8 @@ test_multiple_clients (void)
 
 /* ============================================================================
  * Timeout Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 test_timeout_configuration (void)
@@ -1191,12 +1216,14 @@ test_timeout_configuration (void)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
 {
-  /* Ignore SIGPIPE - library handles this internally, but explicit for tests */
+  /* Ignore SIGPIPE - library handles this internally, but explicit for tests
+   */
   Socket_ignore_sigpipe ();
 
   printf ("\n");
@@ -1282,4 +1309,3 @@ main (void)
 
   return tests_failed > 0 ? 1 : 0;
 }
-

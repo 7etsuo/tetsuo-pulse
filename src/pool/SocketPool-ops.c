@@ -13,16 +13,16 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sched.h> /* for sched_yield */
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <time.h>
 #include <unistd.h>
-#include <sched.h>  /* for sched_yield */
 
+#include "core/SocketSecurity.h" /* for SocketSecurity_check_multiply */
 #include "dns/SocketDNS.h"
 #include "pool/SocketPool-private.h"
-#include "core/SocketSecurity.h"  /* for SocketSecurity_check_multiply */
 #include "socket/SocketCommon.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
@@ -34,7 +34,8 @@
 
 /* ============================================================================
  * Pool Resize Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * collect_excess_connections - Collect excess active connections for closing
@@ -247,8 +248,7 @@ handle_shrink_excess (T pool, size_t new_maxconns)
   size_t excess_count;
   Socket_T *excess_sockets;
 
-  excess_count
-      = pool->count > new_maxconns ? (pool->count - new_maxconns) : 0;
+  excess_count = pool->count > new_maxconns ? (pool->count - new_maxconns) : 0;
 
   if (excess_count == 0)
     return;
@@ -315,9 +315,8 @@ SocketPool_resize (T pool, size_t new_maxconns)
   /* Rehash only valid slots: min of old and new size.
    * When growing, new slots are uninitialized until initialize_new_slots.
    * When shrinking, array was truncated to new_maxconns. */
-  rehash_active_connections (pool,
-                             old_maxconns < new_maxconns ? old_maxconns
-                                                         : new_maxconns);
+  rehash_active_connections (pool, old_maxconns < new_maxconns ? old_maxconns
+                                                               : new_maxconns);
 
   if (new_maxconns > old_maxconns)
     initialize_new_slots (pool, old_maxconns, new_maxconns);
@@ -344,7 +343,8 @@ SocketPool_resize (T pool, size_t new_maxconns)
 
 /* ============================================================================
  * Pool Tuning Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_prewarm - Pre-allocate buffers for percentage of free slots
@@ -365,17 +365,22 @@ SocketPool_prewarm (T pool, int percentage)
   pthread_mutex_lock (&pool->mutex);
 
   size_t tmp;
-  if (!SocketSecurity_check_multiply(pool->maxconns, (size_t)percentage, &tmp) ||
-      tmp / SOCKET_PERCENTAGE_DIVISOR > pool->maxconns - pool->count) {
-    prewarm_count = 0;  // Safe fallback
-    SOCKET_LOG_WARN_MSG("Prewarm calculation overflow or exceeds available slots; skipping");
-  } else {
-    prewarm_count = tmp / SOCKET_PERCENTAGE_DIVISOR;
-  }
+  if (!SocketSecurity_check_multiply (pool->maxconns, (size_t)percentage, &tmp)
+      || tmp / SOCKET_PERCENTAGE_DIVISOR > pool->maxconns - pool->count)
+    {
+      prewarm_count = 0; // Safe fallback
+      SOCKET_LOG_WARN_MSG (
+          "Prewarm calculation overflow or exceeds available slots; skipping");
+    }
+  else
+    {
+      prewarm_count = tmp / SOCKET_PERCENTAGE_DIVISOR;
+    }
 
   /* Safer: iterate by index over the authoritative connections array
    * to avoid following possibly-stale pointers in free_list.
-   * This prevents heap-use-after-free if the array is reallocated elsewhere. */
+   * This prevents heap-use-after-free if the array is reallocated elsewhere.
+   */
   for (size_t i = 0; i < pool->maxconns && allocated < prewarm_count; i++)
     {
       struct Connection *c = &pool->connections[i];
@@ -451,25 +456,30 @@ SocketPool_foreach (T pool, void (*func) (Connection_T, void *), void *arg)
 
   pthread_mutex_lock (&pool->mutex);
 
-  const size_t batch_size = 100;  // Tune for performance vs contention
-  for (size_t i = 0; i < pool->maxconns; i += batch_size) {
-    size_t end = (i + batch_size < pool->maxconns) ? i + batch_size : pool->maxconns;
-    for (size_t j = i; j < end; ++j) {
-      if (pool->connections[j].active)
-        func (&pool->connections[j], arg);
+  const size_t batch_size = 100; // Tune for performance vs contention
+  for (size_t i = 0; i < pool->maxconns; i += batch_size)
+    {
+      size_t end = (i + batch_size < pool->maxconns) ? i + batch_size
+                                                     : pool->maxconns;
+      for (size_t j = i; j < end; ++j)
+        {
+          if (pool->connections[j].active)
+            func (&pool->connections[j], arg);
+        }
+      if (end < pool->maxconns)
+        {
+          pthread_mutex_unlock (&pool->mutex);
+          pthread_mutex_lock (&pool->mutex); // Yield lock briefly
+        }
     }
-    if (end < pool->maxconns) {
-      pthread_mutex_unlock (&pool->mutex);
-      pthread_mutex_lock (&pool->mutex);  // Yield lock briefly
-    }
-  }
 
   pthread_mutex_unlock (&pool->mutex);
 }
 
 /* ============================================================================
  * Batch Accept Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * accept_connection_direct - Accept connection directly using accept4/accept
@@ -523,8 +533,8 @@ accept_connection_direct (int server_fd)
  * Returns: 1 if valid, 0 if invalid
  */
 static int
-validate_batch_params (T pool, Socket_T server, int max_accepts, size_t accepted_capacity,
-                       Socket_T *accepted)
+validate_batch_params (T pool, Socket_T server, int max_accepts,
+                       size_t accepted_capacity, Socket_T *accepted)
 {
   if (!pool || !server || !accepted)
     return 0;
@@ -538,7 +548,8 @@ validate_batch_params (T pool, Socket_T server, int max_accepts, size_t accepted
 
   if ((size_t)max_accepts > accepted_capacity)
     {
-      SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d", accepted_capacity, max_accepts);
+      SOCKET_ERROR_MSG ("accepted_capacity %zu too small for max_accepts %d",
+                        accepted_capacity, max_accepts);
       return 0;
     }
   return 1;
@@ -638,7 +649,8 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  * @max_accepts: Maximum number of connections to accept
  *               (1-SOCKET_POOL_MAX_BATCH_ACCEPTS)
  * @accepted_capacity: Capacity of the accepted array (must >= max_accepts)
- * @accepted: Output array of accepted sockets (pre-allocated with given capacity)
+ * @accepted: Output array of accepted sockets (pre-allocated with given
+ * capacity)
  *
  * Returns: Number of connections actually accepted (0 to max_accepts)
  * Raises: SocketPool_Failed on error
@@ -650,14 +662,16 @@ accept_one_connection (T pool, int server_fd, Socket_T *accepted, int count)
  * All accepted sockets are automatically added to the pool.
  */
 int
-SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accepted_capacity, /* unused yet */
+SocketPool_accept_batch (T pool, Socket_T server, int max_accepts,
+                         size_t accepted_capacity, /* unused yet */
                          Socket_T *accepted)
 {
   (void)accepted_capacity;
   int count = 0;
   int limit;
 
-  if (!validate_batch_params (pool, server, max_accepts, max_accepts, accepted))  // Use max_accepts as min capacity
+  if (!validate_batch_params (pool, server, max_accepts, max_accepts,
+                              accepted)) // Use max_accepts as min capacity
     return 0;
 
   limit = get_available_slots (pool);
@@ -670,8 +684,8 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accept
   int server_fd = Socket_fd (server);
   for (int i = 0; i < limit; i++)
     {
-      int result = accept_one_connection (pool, server_fd, &accepted[count],
-                                          count);
+      int result
+          = accept_one_connection (pool, server_fd, &accepted[count], count);
       if (result <= 0)
         break;
       count++;
@@ -682,7 +696,8 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accept
 
 /* ============================================================================
  * Async Connection Preparation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * validate_prepare_params - Validate parameters for prepare_connection
@@ -697,7 +712,7 @@ SocketPool_accept_batch (T pool, Socket_T server, int max_accepts, size_t accept
  */
 static void
 validate_prepare_params (T pool, SocketDNS_T dns, const char *host, int port,
-                         Socket_T *out_socket, SocketDNS_Request_T *out_req)
+                         Socket_T *out_socket, Request_T *out_req)
 {
   if (!pool || !dns || !host || !SOCKET_VALID_PORT (port) || !out_socket
       || !out_req)
@@ -750,11 +765,11 @@ apply_pool_timeouts (Socket_T socket)
  * Returns: DNS request handle
  * Raises: SocketPool_Failed on error
  */
-static SocketDNS_Request_T
+static Request_T
 start_async_connect (SocketDNS_T dns, Socket_T socket, const char *host,
                      int port)
 {
-  SocketDNS_Request_T req = Socket_connect_async (dns, socket, host, port);
+  Request_T req = Socket_connect_async (dns, socket, host, port);
   if (!req)
     RAISE_POOL_MSG (SocketPool_Failed, "Failed to start async connect");
   return req;
@@ -780,7 +795,7 @@ start_async_connect (SocketDNS_T dns, Socket_T socket, const char *host,
 int
 SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
                                int port, Socket_T *out_socket,
-                               SocketDNS_Request_T *out_req)
+                               Request_T *out_req)
 {
   Socket_T socket = NULL;
 
@@ -806,7 +821,8 @@ SocketPool_prepare_connection (T pool, SocketDNS_T dns, const char *host,
 
 /* ============================================================================
  * Async Connect with Callback
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* AsyncConnectContext structure is defined in SocketPool-private.h */
 
@@ -916,7 +932,7 @@ get_or_create_dns (T pool)
  * @data: AsyncConnectContext
  */
 static void
-async_connect_dns_callback (SocketDNS_Request_T req, struct addrinfo *result,
+async_connect_dns_callback (Request_T req, struct addrinfo *result,
                             int error, void *data)
 {
   AsyncConnectContext_T ctx = data;
@@ -980,8 +996,7 @@ validate_connect_async_params (T pool, const char *host, int port,
                                SocketPool_ConnectCallback callback)
 {
   if (!pool || !host || !SOCKET_VALID_PORT (port))
-    RAISE_POOL_MSG (SocketPool_Failed,
-                    "Invalid parameters for connect_async");
+    RAISE_POOL_MSG (SocketPool_Failed, "Invalid parameters for connect_async");
   (void)callback; /* Callback may be NULL for poll-mode */
 }
 
@@ -1001,14 +1016,14 @@ validate_connect_async_params (T pool, const char *host, int port,
  * - Success: callback(conn, 0, data) with Connection_T added to pool
  * - Failure: callback(NULL, error_code, data)
  */
-SocketDNS_Request_T
+Request_T
 SocketPool_connect_async (T pool, const char *host, int port,
                           SocketPool_ConnectCallback callback, void *data)
 {
   SocketDNS_T dns;
   volatile Socket_T socket = NULL;
   AsyncConnectContext_T ctx = NULL;
-  volatile SocketDNS_Request_T req = NULL;
+  volatile Request_T req = NULL;
 
   validate_connect_async_params (pool, host, port, callback);
 
@@ -1072,7 +1087,8 @@ SocketPool_connect_async (T pool, const char *host, int port,
 
 /* ============================================================================
  * SYN Flood Protection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_syn_protection - Enable SYN flood protection for pool
@@ -1130,12 +1146,14 @@ apply_syn_throttle (SocketSYN_Action action, SocketSYNProtect_T protect)
 
   if (delay_ms > 0)
     {
-      int64_t start = Socket_get_monotonic_ms();
+      int64_t start = Socket_get_monotonic_ms ();
       int64_t target = start + delay_ms;
-      while (Socket_get_monotonic_ms() < target) {
-        // Minimal busy loop; could add sched_yield() or usleep(1) for less CPU
-        sched_yield();  // Yield to other threads
-      }
+      while (Socket_get_monotonic_ms () < target)
+        {
+          // Minimal busy loop; could add sched_yield() or usleep(1) for less
+          // CPU
+          sched_yield (); // Yield to other threads
+        }
     }
 }
 
@@ -1355,7 +1373,8 @@ SocketPool_accept_protected (T pool, Socket_T server,
           Socket_free (&client);
           return NULL;
         }
-      /* Report success only after challenge - caller should verify data received */
+      /* Report success only after challenge - caller should verify data
+       * received */
       break;
 
     case SYN_ACTION_BLOCK:
@@ -1369,4 +1388,3 @@ SocketPool_accept_protected (T pool, Socket_T server,
 }
 
 #undef T
-

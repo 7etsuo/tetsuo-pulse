@@ -38,7 +38,8 @@
 
 /* ============================================================================
  * Test Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define TEST_PORT_BASE 48000
 #define TEST_TIMEOUT_MS 5000
@@ -53,7 +54,8 @@ get_proxy_test_port (void)
 
 /* ============================================================================
  * Mini SOCKS5 Proxy Server
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -93,16 +95,14 @@ socks5_server_thread_func (void *arg)
 
   server->started = 1;
 
-  /* Accept client - handle Socket_Failed exception when socket is closed during shutdown */
-  TRY
-    {
-      client = Socket_accept (server->listen_socket);
-    }
+  /* Accept client - handle Socket_Failed exception when socket is closed
+   * during shutdown */
+  TRY { client = Socket_accept (server->listen_socket); }
   EXCEPT (Socket_Failed)
-    {
-      /* Socket was closed - expected during server stop */
-      client = NULL;
-    }
+  {
+    /* Socket was closed - expected during server stop */
+    client = NULL;
+  }
   END_TRY;
   if (client == NULL)
     {
@@ -124,16 +124,13 @@ socks5_server_thread_func (void *arg)
   Socket_settimeout (client, 2);
 
   /* SOCKS5 greeting - read client's auth methods */
-  TRY
-    {
-      n = Socket_recv (client, buf, sizeof (buf));
-    }
+  TRY { n = Socket_recv (client, buf, sizeof (buf)); }
   EXCEPT (Socket_Closed)
-    {
-      Socket_free (&client);
-      server->running = 0;
-      return NULL;
-    }
+  {
+    Socket_free (&client);
+    server->running = 0;
+    return NULL;
+  }
   END_TRY;
   if (n < 2 || buf[0] != SOCKS5_VERSION)
     {
@@ -192,16 +189,13 @@ socks5_server_thread_func (void *arg)
   /* Handle username/password auth if required */
   if (auth_method == SOCKS5_AUTH_USERPASS)
     {
-      TRY
-        {
-          n = Socket_recv (client, buf, sizeof (buf));
-        }
+      TRY { n = Socket_recv (client, buf, sizeof (buf)); }
       EXCEPT (Socket_Closed)
-        {
-          Socket_free (&client);
-          server->running = 0;
-          return NULL;
-        }
+      {
+        Socket_free (&client);
+        server->running = 0;
+        return NULL;
+      }
       END_TRY;
       if (n < 3 || buf[0] != 0x01)
         {
@@ -249,16 +243,13 @@ socks5_server_thread_func (void *arg)
     }
 
   /* Read connect request */
-  TRY
-    {
-      n = Socket_recv (client, buf, sizeof (buf));
-    }
+  TRY { n = Socket_recv (client, buf, sizeof (buf)); }
   EXCEPT (Socket_Closed)
-    {
-      Socket_free (&client);
-      server->running = 0;
-      return NULL;
-    }
+  {
+    Socket_free (&client);
+    server->running = 0;
+    return NULL;
+  }
   END_TRY;
   if (n < 4 || buf[0] != SOCKS5_VERSION || buf[1] != SOCKS5_CMD_CONNECT)
     {
@@ -267,7 +258,8 @@ socks5_server_thread_func (void *arg)
       return NULL;
     }
 
-  /* Parse target address (for protocol compliance, but we use our test server) */
+  /* Parse target address (for protocol compliance, but we use our test server)
+   */
   int atyp = buf[3];
   char target_host[256] = { 0 };
 
@@ -281,7 +273,8 @@ socks5_server_thread_func (void *arg)
         }
       snprintf (target_host, sizeof (target_host), "%d.%d.%d.%d", buf[4],
                 buf[5], buf[6], buf[7]);
-      (void)target_host; /* Used for protocol parsing, we use test server port */
+      (void)
+          target_host; /* Used for protocol parsing, we use test server port */
     }
   else if (atyp == SOCKS5_ATYP_DOMAIN)
     {
@@ -294,7 +287,8 @@ socks5_server_thread_func (void *arg)
         }
       memcpy (target_host, buf + 5, dlen);
       target_host[dlen] = '\0';
-      /* Port parsed for protocol compliance: (buf[5 + dlen] << 8) | buf[6 + dlen] */
+      /* Port parsed for protocol compliance: (buf[5 + dlen] << 8) | buf[6 +
+       * dlen] */
     }
   else
     {
@@ -304,8 +298,7 @@ socks5_server_thread_func (void *arg)
     }
 
   /* Connect to target (use our local target server) */
-  TRY
-  target = Socket_new (AF_INET, SOCK_STREAM, 0);
+  TRY target = Socket_new (AF_INET, SOCK_STREAM, 0);
   Socket_settimeout (target, 2);
   Socket_connect (target, "127.0.0.1", server->target_port);
   EXCEPT (Socket_Failed)
@@ -340,28 +333,28 @@ socks5_server_thread_func (void *arg)
   /* For testing, just forward one message each way */
   /* Use TRY/EXCEPT to handle timeout or closed socket gracefully */
   TRY
-    {
-      n = Socket_recv (client, buf, sizeof (buf));
-      if (n > 0)
-        {
-          Socket_send (target, buf, (size_t)n);
-          n = Socket_recv (target, buf, sizeof (buf));
-          if (n > 0)
-            {
-              Socket_send (client, buf, (size_t)n);
-            }
-        }
-    }
+  {
+    n = Socket_recv (client, buf, sizeof (buf));
+    if (n > 0)
+      {
+        Socket_send (target, buf, (size_t)n);
+        n = Socket_recv (target, buf, sizeof (buf));
+        if (n > 0)
+          {
+            Socket_send (client, buf, (size_t)n);
+          }
+      }
+  }
   EXCEPT (Socket_Closed)
-    {
-      /* Connection closed - expected */
-      (void)0;
-    }
+  {
+    /* Connection closed - expected */
+    (void)0;
+  }
   EXCEPT (Socket_Failed)
-    {
-      /* Timeout or other error - expected during shutdown */
-      (void)0;
-    }
+  {
+    /* Timeout or other error - expected during shutdown */
+    (void)0;
+  }
   END_TRY;
 
   Socket_free (&target);
@@ -383,15 +376,12 @@ echo_server_thread_func (void *arg)
   server->echo_started = 1;
 
   /* Handle Socket_Failed exception when socket is closed during shutdown */
-  TRY
-    {
-      client = Socket_accept (server->target_listen);
-    }
+  TRY { client = Socket_accept (server->target_listen); }
   EXCEPT (Socket_Failed)
-    {
-      /* Socket was closed - expected during server stop */
-      client = NULL;
-    }
+  {
+    /* Socket was closed - expected during server stop */
+    client = NULL;
+  }
   END_TRY;
   if (client == NULL)
     return NULL;
@@ -407,20 +397,21 @@ echo_server_thread_func (void *arg)
   /* Set short timeout to prevent blocking forever and speed up cleanup */
   Socket_settimeout (client, 2);
 
-  /* Echo received data - handle Socket_Closed from dummy unblock connections */
+  /* Echo received data - handle Socket_Closed from dummy unblock connections
+   */
   TRY
-    {
-      n = Socket_recv (client, buf, sizeof (buf));
-      if (n > 0)
-        {
-          Socket_send (client, buf, (size_t)n);
-        }
-    }
+  {
+    n = Socket_recv (client, buf, sizeof (buf));
+    if (n > 0)
+      {
+        Socket_send (client, buf, (size_t)n);
+      }
+  }
   EXCEPT (Socket_Closed)
-    {
-      /* Connection closed - expected during shutdown */
-      (void)0;
-    }
+  {
+    /* Connection closed - expected during shutdown */
+    (void)0;
+  }
   END_TRY;
 
   Socket_free (&client);
@@ -446,8 +437,7 @@ socks5_server_start (Socks5TestServer *server, const char *username,
   if (server->listen_socket == NULL)
     return -1;
 
-  TRY
-  Socket_setreuseaddr (server->listen_socket);
+  TRY Socket_setreuseaddr (server->listen_socket);
   Socket_bind (server->listen_socket, "127.0.0.1", server->proxy_port);
   Socket_listen (server->listen_socket, 5);
   EXCEPT (Socket_Failed)
@@ -469,8 +459,7 @@ socks5_server_start (Socks5TestServer *server, const char *username,
       return -1;
     }
 
-  TRY
-  Socket_setreuseaddr (server->target_listen);
+  TRY Socket_setreuseaddr (server->target_listen);
   Socket_bind (server->target_listen, "127.0.0.1", server->target_port);
   Socket_listen (server->target_listen, 5);
   EXCEPT (Socket_Failed)
@@ -519,9 +508,10 @@ socks5_server_start (Socks5TestServer *server, const char *username,
 /* Helper to connect to a listening socket to unblock accept()
  *
  * On macOS, a non-blocking connect that immediately closes may not actually
- * establish the connection before the socket is closed, leaving accept() blocked.
- * We use poll() to wait for the connection to be established (or fail) before
- * closing, ensuring the server's accept() sees the connection attempt.
+ * establish the connection before the socket is closed, leaving accept()
+ * blocked. We use poll() to wait for the connection to be established (or
+ * fail) before closing, ensuring the server's accept() sees the connection
+ * attempt.
  */
 static void
 unblock_accept (int port)
@@ -590,7 +580,8 @@ socks5_server_stop (Socks5TestServer *server)
 
 /* ============================================================================
  * Integration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (proxy_integration_url_parsing)
 {
@@ -648,8 +639,8 @@ TEST (proxy_integration_socks5_no_auth)
     }
 
   TRY
-  /* Configure proxy */
-  memset (&proxy_config, 0, sizeof (proxy_config));
+      /* Configure proxy */
+      memset (&proxy_config, 0, sizeof (proxy_config));
   proxy_config.type = SOCKET_PROXY_SOCKS5;
   proxy_config.host = "127.0.0.1";
   proxy_config.port = server.proxy_port;
@@ -657,8 +648,8 @@ TEST (proxy_integration_socks5_no_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Connect through proxy - this creates socket internally */
-  client = SocketProxy_connect (&proxy_config, "127.0.0.1",
-                                server.target_port);
+  client
+      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
   ASSERT_NOT_NULL (client);
 
   /* Verify tunnel is established */
@@ -707,8 +698,8 @@ TEST (proxy_integration_socks5_with_auth)
     }
 
   TRY
-  /* Configure proxy with credentials */
-  memset (&proxy_config, 0, sizeof (proxy_config));
+      /* Configure proxy with credentials */
+      memset (&proxy_config, 0, sizeof (proxy_config));
   proxy_config.type = SOCKET_PROXY_SOCKS5;
   proxy_config.host = "127.0.0.1";
   proxy_config.port = server.proxy_port;
@@ -718,8 +709,8 @@ TEST (proxy_integration_socks5_with_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Connect through proxy */
-  client = SocketProxy_connect (&proxy_config, "127.0.0.1",
-                                server.target_port);
+  client
+      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
   ASSERT_NOT_NULL (client);
 
   /* Verify tunnel */
@@ -731,7 +722,8 @@ TEST (proxy_integration_socks5_with_auth)
     }
   if (!server.tunnel_established)
     {
-      printf ("  [DEBUG] tunnel not established after %d tries, client_connected=%d\n", 
+      printf ("  [DEBUG] tunnel not established after %d tries, "
+              "client_connected=%d\n",
               tries, server.client_connected);
     }
   ASSERT (server.tunnel_established);
@@ -770,8 +762,8 @@ TEST (proxy_integration_socks5_bad_auth)
     }
 
   TRY
-  /* Configure proxy with wrong credentials */
-  memset (&proxy_config, 0, sizeof (proxy_config));
+      /* Configure proxy with wrong credentials */
+      memset (&proxy_config, 0, sizeof (proxy_config));
   proxy_config.type = SOCKET_PROXY_SOCKS5;
   proxy_config.host = "127.0.0.1";
   proxy_config.port = server.proxy_port;
@@ -781,21 +773,21 @@ TEST (proxy_integration_socks5_bad_auth)
   proxy_config.handshake_timeout_ms = TEST_TIMEOUT_MS;
 
   /* Should fail with auth error - returns NULL */
-  client = SocketProxy_connect (&proxy_config, "127.0.0.1",
-                                server.target_port);
+  client
+      = SocketProxy_connect (&proxy_config, "127.0.0.1", server.target_port);
 
   /* NULL means connection/auth failed */
   ASSERT_NULL (client);
 
   EXCEPT (Socket_Failed)
   /* Expected - connection may be closed */
-  (void) 0;
+  (void)0;
   EXCEPT (Socket_Closed)
   /* Expected - server closes connection on auth failure */
-  (void) 0;
+  (void)0;
   EXCEPT (SocketProxy_Failed)
   /* Expected - auth failure */
-  (void) 0;
+  (void)0;
   FINALLY
   if (client)
     Socket_free (&client);
@@ -820,7 +812,8 @@ TEST (proxy_integration_config_defaults)
 
 /* ============================================================================
  * Main Entry Point
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -832,4 +825,3 @@ main (void)
   printf ("\n");
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

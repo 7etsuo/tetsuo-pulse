@@ -21,14 +21,14 @@
 
 #include "core/Arena.h"
 #include "core/SocketSecurity.h"
-#include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
+#include "dns/SocketDNS.h"
 
-/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end) */
+/* Redefine T after all includes (Arena.h and SocketDNS.h both undef T at end)
+ */
 #undef T
 #define T SocketDNS_T
-#undef Request_T
-#define Request_T SocketDNS_Request_T
+/* Request_T is now properly typedef'd in SocketDNS.h */
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "SocketDNS-internal"
@@ -81,8 +81,9 @@ initialize_queue_condition (struct SocketDNS_T *dns)
   if (pthread_cond_init (&dns->queue_cond, NULL) != 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_MUTEX);
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
-                        "Failed to initialize DNS resolver condition variable");
+      SOCKET_RAISE_MSG (
+          SocketDNS, SocketDNS_Failed,
+          "Failed to initialize DNS resolver condition variable");
     }
 }
 
@@ -160,7 +161,8 @@ set_pipe_nonblocking (struct SocketDNS_T *dns)
   if (flags < 0)
     {
       cleanup_on_init_failure (dns, DNS_CLEAN_ARENA);
-      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed, "Failed to get pipe flags");
+      SOCKET_RAISE_FMT (SocketDNS, SocketDNS_Failed,
+                        "Failed to get pipe flags");
     }
 
   if (fcntl (dns->pipefd[0], F_SETFL, flags | O_NONBLOCK) < 0)
@@ -639,7 +641,8 @@ allocate_request_hostname (struct SocketDNS_T *dns,
   /* Overflow check - defensive (already limited by validate_hostname) */
   if (host_len > SIZE_MAX - 1)
     {
-      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed, "Hostname length overflow");
+      SOCKET_RAISE_MSG (SocketDNS, SocketDNS_Failed,
+                        "Hostname length overflow");
     }
 
   req->host = ALLOC (dns->arena, host_len + 1);
@@ -739,7 +742,8 @@ hash_table_remove (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
    * hash_value is corrupted or request is from different resolver */
   if (hash >= SOCKET_DNS_REQUEST_HASH_SIZE)
     {
-      SOCKET_LOG_DEBUG_MSG ("Invalid hash_value=%u for req=%p in hash_table_remove", hash, req);
+      SOCKET_LOG_DEBUG_MSG (
+          "Invalid hash_value=%u for req=%p in hash_table_remove", hash, req);
       return;
     }
 
@@ -881,7 +885,8 @@ cancel_pending_request (struct SocketDNS_T *dns,
  * @req: Request to check (read-only)
  *
  * Returns: Per-request timeout override if >= 0, else default resolver timeout
- * Thread-safe: Must be called with mutex locked (reads dns->request_timeout_ms)
+ * Thread-safe: Must be called with mutex locked (reads
+ * dns->request_timeout_ms)
  *
  * Allows per-request timeout customization while falling back to resolver-wide
  * default when no override is specified (timeout_override_ms < 0).
@@ -896,12 +901,14 @@ request_effective_timeout_ms (const struct SocketDNS_T *dns,
 }
 
 /**
- * calculate_elapsed_ms - Calculate elapsed milliseconds between two monotonic timestamps
+ * calculate_elapsed_ms - Calculate elapsed milliseconds between two monotonic
+ * timestamps
  * @start: Starting timestamp (earlier in time)
  * @end: Ending timestamp (later in time)
  *
- * Returns: Elapsed milliseconds, or LLONG_MAX on overflow/clock error (treat as timed out)
- * Thread-safe: Yes - pure function, no shared state or side effects
+ * Returns: Elapsed milliseconds, or LLONG_MAX on overflow/clock error (treat
+ * as timed out) Thread-safe: Yes - pure function, no shared state or side
+ * effects
  *
  * Computes precise elapsed time using secure arithmetic to prevent overflow.
  * Assumes monotonic clock (end >= start). Handles nsec borrow from sec_delta.
@@ -914,22 +921,26 @@ calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
   long long sec_delta = (long long)end->tv_sec - (long long)start->tv_sec;
   long long nsec_delta = (long long)end->tv_nsec - (long long)start->tv_nsec;
 
-  if (sec_delta < 0) {
-    // Clock error (monotonic should not decrease)
-    return 0LL;
-  }
+  if (sec_delta < 0)
+    {
+      // Clock error (monotonic should not decrease)
+      return 0LL;
+    }
 
-  if (nsec_delta < 0) {
-    sec_delta--;
-    nsec_delta += SOCKET_NS_PER_SECOND;
-  }
+  if (nsec_delta < 0)
+    {
+      sec_delta--;
+      nsec_delta += SOCKET_NS_PER_SECOND;
+    }
 
   size_t sec_delta_u = (size_t)sec_delta;
   size_t sec_ms_u;
-  if (!SocketSecurity_check_multiply(sec_delta_u, (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u)) {
-    // Overflow: treat as very long elapsed time
-    return LLONG_MAX;
-  }
+  if (!SocketSecurity_check_multiply (sec_delta_u,
+                                      (size_t)SOCKET_MS_PER_SECOND, &sec_ms_u))
+    {
+      // Overflow: treat as very long elapsed time
+      return LLONG_MAX;
+    }
   long long sec_ms = (long long)sec_ms_u;
 
   long long nsec_ms = nsec_delta / (long long)SOCKET_NS_PER_MS;
@@ -944,7 +955,8 @@ calculate_elapsed_ms (const struct timespec *start, const struct timespec *end)
  * @req: Request to check (read-only)
  *
  * Returns: 1 if timed out, 0 otherwise (including when timeout disabled)
- * Thread-safe: Yes - read-only access to req state and pure elapsed calculation
+ * Thread-safe: Yes - read-only access to req state and pure elapsed
+ * calculation
  *
  * Uses CLOCK_MONOTONIC via calculate_elapsed_ms() for reliable timing immune
  * to system clock adjustments. Returns 0 if effective timeout <= 0 (disabled).
@@ -962,8 +974,9 @@ request_timed_out (const struct SocketDNS_T *dns,
   struct timespec now;
   clock_gettime (CLOCK_MONOTONIC, &now);
 
-  long long elapsed_ms = calculate_elapsed_ms(&req->submit_time, &now);
-  return (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms) ? 1 : 0;
+  long long elapsed_ms = calculate_elapsed_ms (&req->submit_time, &now);
+  return (elapsed_ms == LLONG_MAX || elapsed_ms >= (long long)timeout_ms) ? 1
+                                                                          : 0;
 }
 
 /**
@@ -1153,7 +1166,8 @@ perform_dns_resolution (const struct SocketDNS_Request_T *req,
  *
  * Error handling: If result is NULL and error is non-zero, the provided error
  * is preserved (e.g., EAI_AGAIN for timeouts). Only sets EAI_MEMORY if result
- * is NULL and error is 0 (indicating an actual allocation failure during copy).
+ * is NULL and error is 0 (indicating an actual allocation failure during
+ * copy).
  */
 static void
 copy_and_store_result (struct SocketDNS_Request_T *req,
@@ -1244,7 +1258,8 @@ store_resolution_result (struct SocketDNS_T *dns,
  *
  * Thread-safe: Yes - no shared state
  *
- * Copies base hints and adds AI_PASSIVE flag when host is NULL (wildcard bind).
+ * Copies base hints and adds AI_PASSIVE flag when host is NULL (wildcard
+ * bind).
  */
 void
 prepare_local_hints (struct addrinfo *local_hints,
@@ -1265,7 +1280,8 @@ prepare_local_hints (struct addrinfo *local_hints,
  * @result: Resolution result (may be freed if timed out)
  * @res: Resolution error code (may be overridden if timed out)
  * Thread-safe: Locks mutex internally.
- * Checks for timeout after resolution, frees result if timed out, stores result.
+ * Checks for timeout after resolution, frees result if timed out, stores
+ * result.
  */
 void
 handle_resolution_result (struct SocketDNS_T *dns,
@@ -1295,10 +1311,10 @@ handle_resolution_result (struct SocketDNS_T *dns,
  * releases before invoking callback (which may take arbitrary time),
  * then re-acquires to clear result pointer.
  *
- * Security: Callback receives ownership of result and callback pointer is cleared
- * after invocation to prevent use-after-free or double invocation. Both result and
- * callback are NULLed post-invoke. SocketDNS_getresult() returns NULL if callback
- * was provided (ownership transferred).
+ * Security: Callback receives ownership of result and callback pointer is
+ * cleared after invocation to prevent use-after-free or double invocation.
+ * Both result and callback are NULLed post-invoke. SocketDNS_getresult()
+ * returns NULL if callback was provided (ownership transferred).
  */
 void
 invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
@@ -1327,9 +1343,9 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
   /* Invoke callback without mutex held (callback may take arbitrary time) */
   callback (req, result, error, callback_data);
 
-  /* Clear result and callback after invocation to prevent use-after-free or double invocation.
-   * Callback has taken ownership of result and freed it. Clearing callback prevents
-   * potential double calls in race conditions. */
+  /* Clear result and callback after invocation to prevent use-after-free or
+   * double invocation. Callback has taken ownership of result and freed it.
+   * Clearing callback prevents potential double calls in race conditions. */
   pthread_mutex_lock (&dns->mutex);
   req->result = NULL;
   req->callback = NULL;
@@ -1337,16 +1353,18 @@ invoke_callback (struct SocketDNS_T *dns, struct SocketDNS_Request_T *req)
 }
 
 /**
- * check_pre_processing_timeout - Check timeout before starting DNS resolution processing
+ * check_pre_processing_timeout - Check timeout before starting DNS resolution
+ * processing
  * @dns: DNS resolver instance
  * @req: Request to check
  *
  * Returns: 1 if timed out (marked and signaled), 0 if should proceed
  * Thread-safe: Locks mutex internally, caller does not need to hold it
  *
- * Acquires mutex, checks timeout using request_timed_out(), marks/signals if timed out.
- * Unlocks mutex before returning. Prevents race with SocketDNS_request_settimeout().
- * Directly calls mark_request_timeout() to avoid deadlock (already holds mutex).
+ * Acquires mutex, checks timeout using request_timed_out(), marks/signals if
+ * timed out. Unlocks mutex before returning. Prevents race with
+ * SocketDNS_request_settimeout(). Directly calls mark_request_timeout() to
+ * avoid deadlock (already holds mutex).
  */
 static int
 check_pre_processing_timeout (struct SocketDNS_T *dns,
@@ -1430,4 +1448,3 @@ worker_thread (void *arg)
 
 #undef T
 #undef Request_T
-

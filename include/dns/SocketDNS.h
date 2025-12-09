@@ -56,8 +56,8 @@
 #define T SocketDNS_T
 typedef struct T *T;
 
-#define Request_T SocketDNS_Request_T
-typedef struct Request_T *Request_T;
+typedef struct SocketDNS_Request_T SocketDNS_Request_T;
+typedef SocketDNS_Request_T *Request_T;
 
 /* ============================================================================
  * Exception Types
@@ -109,8 +109,8 @@ extern const Except_T SocketDNS_Failed;
  * use the SocketPoll integration pattern instead (pass NULL callback to
  * SocketDNS_resolve and use SocketDNS_check/SocketDNS_getresult).
  */
-typedef void (*SocketDNS_Callback) (Request_T req, struct addrinfo *result,
-                                    int error, void *data);
+typedef void (*SocketDNS_Callback)(SocketDNS_Request_T *req, struct addrinfo *result,
+                                   int error, void *data);
 
 /**
  * SocketDNS_new - Create a new async DNS resolver
@@ -120,7 +120,7 @@ typedef void (*SocketDNS_Callback) (Request_T req, struct addrinfo *result,
  * Creates a thread pool for DNS resolution. Default thread count is
  * SOCKET_DNS_THREAD_COUNT (configurable via SocketConfig.h).
  */
-extern T SocketDNS_new (void);
+extern T SocketDNS_new(void);
 
 /**
  * SocketDNS_free - Free a DNS resolver
@@ -129,7 +129,7 @@ extern T SocketDNS_new (void);
  * Any pending requests that have not been retrieved are cancelled.
  * Thread-safe: Yes - safely shuts down thread pool
  */
-extern void SocketDNS_free (T *dns);
+extern void SocketDNS_free(T *dns);
 
 /**
  * SocketDNS_resolve - Start async DNS resolution
@@ -160,8 +160,8 @@ extern void SocketDNS_free (T *dns);
  *
  * Performance: O(1) queue insertion
  */
-extern Request_T SocketDNS_resolve (T dns, const char *host, int port,
-                                    SocketDNS_Callback callback, void *data);
+extern Request_T SocketDNS_resolve(T dns, const char *host, int port,
+                                   SocketDNS_Callback callback, void *data);
 
 /**
  * SocketDNS_cancel - Cancel a pending DNS resolution
@@ -172,7 +172,7 @@ extern Request_T SocketDNS_resolve (T dns, const char *host, int port,
  * has no effect. The request handle becomes invalid after cancellation.
  * Callbacks will not be invoked for cancelled requests.
  */
-extern void SocketDNS_cancel (T dns, Request_T req);
+extern void SocketDNS_cancel(T dns, Request_T req);
 
 /**
  * SocketDNS_getmaxpending - Get maximum pending request capacity
@@ -180,7 +180,7 @@ extern void SocketDNS_cancel (T dns, Request_T req);
  * Returns: Current pending request limit
  * Thread-safe: Yes
  */
-extern size_t SocketDNS_getmaxpending (T dns);
+extern size_t SocketDNS_getmaxpending(T dns);
 
 /**
  * SocketDNS_setmaxpending - Set maximum pending request capacity
@@ -189,7 +189,7 @@ extern size_t SocketDNS_getmaxpending (T dns);
  * Raises: SocketDNS_Failed if max_pending < current queue depth
  * Thread-safe: Yes
  */
-extern void SocketDNS_setmaxpending (T dns, size_t max_pending);
+extern void SocketDNS_setmaxpending(T dns, size_t max_pending);
 
 /**
  * SocketDNS_gettimeout - Get resolver request timeout in milliseconds
@@ -197,7 +197,7 @@ extern void SocketDNS_setmaxpending (T dns, size_t max_pending);
  * Returns: Timeout in milliseconds (0 disables timeout)
  * Thread-safe: Yes
  */
-extern int SocketDNS_gettimeout (T dns);
+extern int SocketDNS_gettimeout(T dns);
 
 /**
  * SocketDNS_settimeout - Set resolver request timeout in milliseconds
@@ -205,7 +205,7 @@ extern int SocketDNS_gettimeout (T dns);
  * @timeout_ms: Timeout in milliseconds (0 disables timeout)
  * Thread-safe: Yes
  */
-extern void SocketDNS_settimeout (T dns, int timeout_ms);
+extern void SocketDNS_settimeout(T dns, int timeout_ms);
 
 /**
  * SocketDNS_pollfd - Get pollable file descriptor for SocketPoll integration
@@ -217,7 +217,7 @@ extern void SocketDNS_settimeout (T dns, int timeout_ms);
  * and call SocketDNS_check() when events occur.
  * The file descriptor remains valid for the lifetime of the resolver.
  */
-extern int SocketDNS_pollfd (T dns);
+extern int SocketDNS_pollfd(T dns);
 
 /**
  * SocketDNS_check - Check for completed requests (non-blocking)
@@ -229,7 +229,7 @@ extern int SocketDNS_pollfd (T dns);
  * your Request_T handles and call SocketDNS_getresult() after draining to
  * fetch completed results. Call when SocketDNS_pollfd() is readable.
  */
-extern int SocketDNS_check (T dns);
+extern int SocketDNS_check(T dns);
 
 /**
  * SocketDNS_getresult - Get result of completed request
@@ -258,7 +258,7 @@ extern int SocketDNS_check (T dns);
  *
  * Performance: O(1) hash table lookup
  */
-extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
+extern struct addrinfo *SocketDNS_getresult(T dns, Request_T req);
 
 /**
  * SocketDNS_geterror - Get error code for completed request
@@ -273,7 +273,7 @@ extern struct addrinfo *SocketDNS_getresult (T dns, Request_T req);
  * IMPORTANT: Only use request handles returned by SocketDNS_resolve() or
  * SocketDNS_create_completed_request() on the SAME resolver instance.
  */
-extern int SocketDNS_geterror (T dns, const struct SocketDNS_Request_T *req);
+extern int SocketDNS_geterror(T dns, const struct SocketDNS_Request_T *req);
 
 /**
  * SocketDNS_request_settimeout - Override timeout for specific request
@@ -282,8 +282,7 @@ extern int SocketDNS_geterror (T dns, const struct SocketDNS_Request_T *req);
  * @timeout_ms: Timeout in milliseconds (0 disables timeout for this request)
  * Thread-safe: Yes
  */
-extern void SocketDNS_request_settimeout (T dns, Request_T req,
-                                          int timeout_ms);
+extern void SocketDNS_request_settimeout(T dns, Request_T req, int timeout_ms);
 
 /**
  * SocketDNS_create_completed_request - Create a completed request from
@@ -300,7 +299,7 @@ extern void SocketDNS_request_settimeout (T dns, Request_T req,
  * request.
  */
 extern Request_T
-SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
+SocketDNS_create_completed_request(T dns, struct addrinfo *result, int port);
 
 /**
  * SocketDNS_resolve_sync - Synchronous DNS resolution with timeout guarantee
@@ -331,10 +330,10 @@ SocketDNS_create_completed_request (T dns, struct addrinfo *result, int port);
  *   // Use res...
  *   freeaddrinfo(res);
  */
-extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
-                                                int port,
-                                                const struct addrinfo *hints,
-                                                int timeout_ms);
+extern struct addrinfo *SocketDNS_resolve_sync(T dns, const char *host,
+                                               int port,
+                                               const struct addrinfo *hints,
+                                               int timeout_ms);
 
 #undef T
 #undef Request_T

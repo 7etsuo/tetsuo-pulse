@@ -4,27 +4,30 @@
  * Part of the Socket Library
  * Following C Interfaces and Implementations patterns
  *
- * Centralized retry helpers for HTTP client: delay calculation, sleeping, retry decisions.
- * Integrates SocketRetry module for validated exponential backoff with jitter and improved RNG.
- * Handles config-based retry decisions for errors and 5xx status codes.
+ * Centralized retry helpers for HTTP client: delay calculation, sleeping,
+ * retry decisions. Integrates SocketRetry module for validated exponential
+ * backoff with jitter and improved RNG. Handles config-based retry decisions
+ * for errors and 5xx status codes.
  *
- * Exported via SocketHTTPClient-private.h for use in core client implementation.
+ * Exported via SocketHTTPClient-private.h for use in core client
+ * implementation.
  */
 
 #include <errno.h>
 
-
 #include "core/SocketRetry.h"
 #include "http/SocketHTTPClient-private.h"
 
-#define CLEAR_RESPONSE(r) \
-  do { \
-    if ((r)) { \
-      SocketHTTP_Headers_clear ((r)->headers); \
-      memset ((r), 0, sizeof (*(r))); \
-    } \
-  } while (0)
-
+#define CLEAR_RESPONSE(r)                                                     \
+  do                                                                          \
+    {                                                                         \
+      if ((r))                                                                \
+        {                                                                     \
+          SocketHTTP_Headers_clear ((r)->headers);                            \
+          memset ((r), 0, sizeof (*(r)));                                     \
+        }                                                                     \
+    }                                                                         \
+  while (0)
 
 /**
  * calculate_retry_delay - Calculate backoff delay for retry attempt
@@ -34,11 +37,11 @@
  * Returns: Delay in milliseconds with jitter applied, or 1 if invalid input
  * Thread-safe: Yes
  *
- * Uses SocketRetry_calculate_delay for consistent exponential backoff with jitter.
- * Backoff formula: initial * multiplier^(attempt-1), capped at max_delay.
- * multiplier = HTTPCLIENT_RETRY_MULTIPLIER (2.0)
- * Applies +/- HTTPCLIENT_RETRY_JITTER_FACTOR jitter using improved RNG.
- * Handles FP overflow/NaN by clamping to max_delay.
+ * Uses SocketRetry_calculate_delay for consistent exponential backoff with
+ * jitter. Backoff formula: initial * multiplier^(attempt-1), capped at
+ * max_delay. multiplier = HTTPCLIENT_RETRY_MULTIPLIER (2.0) Applies +/-
+ * HTTPCLIENT_RETRY_JITTER_FACTOR jitter using improved RNG. Handles FP
+ * overflow/NaN by clamping to max_delay.
  */
 int
 httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
@@ -46,19 +49,23 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
   if (client == NULL || attempt < 1)
     return 1;
 
-  if (attempt > SOCKET_RETRY_MAX_ATTEMPTS) {
-    SOCKET_LOG_WARN_MSG("Attempt %d exceeds max %d, clamping to max_delay", attempt, SOCKET_RETRY_MAX_ATTEMPTS);
-    return client->config.retry_max_delay_ms > 0 ? client->config.retry_max_delay_ms : 30000;
-  }
+  if (attempt > SOCKET_RETRY_MAX_ATTEMPTS)
+    {
+      SOCKET_LOG_WARN_MSG ("Attempt %d exceeds max %d, clamping to max_delay",
+                           attempt, SOCKET_RETRY_MAX_ATTEMPTS);
+      return client->config.retry_max_delay_ms > 0
+                 ? client->config.retry_max_delay_ms
+                 : 30000;
+    }
 
   SocketRetry_Policy policy;
-  SocketRetry_policy_defaults(&policy);
+  SocketRetry_policy_defaults (&policy);
   policy.initial_delay_ms = client->config.retry_initial_delay_ms;
   policy.max_delay_ms = client->config.retry_max_delay_ms;
   policy.multiplier = HTTPCLIENT_RETRY_MULTIPLIER;
   policy.jitter = HTTPCLIENT_RETRY_JITTER_FACTOR;
 
-  return SocketRetry_calculate_delay(&policy, attempt);
+  return SocketRetry_calculate_delay (&policy, attempt);
 }
 
 /**
@@ -68,8 +75,9 @@ httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt)
  * Thread-safe: Yes
  *
  * Implements precise sleep with EINTR retry loop per POSIX.1-2008.
- * Nanosleep provides relative sleep not affected by clock changes, suitable for backoff delays.
- * Converts ms to timespec: tv_sec = ms/1000, tv_nsec = (ms%1000)*1e6.
+ * Nanosleep provides relative sleep not affected by clock changes, suitable
+ * for backoff delays. Converts ms to timespec: tv_sec = ms/1000, tv_nsec =
+ * (ms%1000)*1e6.
  */
 void
 httpclient_retry_sleep_ms (int ms)
@@ -91,8 +99,6 @@ httpclient_retry_sleep_ms (int ms)
     }
 }
 
-
-
 /**
  * httpclient_should_retry_error - Check if error code should trigger retry
  * @client: HTTP client with retry config (read-only)
@@ -107,10 +113,11 @@ httpclient_retry_sleep_ms (int ms)
  * Other errors always non-retryable.
  */
 int
-httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error)
+httpclient_should_retry_error (const SocketHTTPClient_T client,
+                               SocketHTTPClient_Error error)
 {
   if (client == NULL)
-    return 0;  /* Default: don't retry on invalid client */
+    return 0; /* Default: don't retry on invalid client */
 
   switch (error)
     {
@@ -134,17 +141,18 @@ httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient
  * Returns: 1 if should retry, 0 otherwise
  * Thread-safe: Yes
  *
- * Retries server errors (HTTP status category 5) only if config.retry_on_5xx is enabled.
- * Uses SocketHTTP_status_category for accurate classification.
+ * Retries server errors (HTTP status category 5) only if config.retry_on_5xx
+ * is enabled. Uses SocketHTTP_status_category for accurate classification.
  * IMPORTANT: Enable only for idempotent requests (GET, HEAD, etc.) to avoid
  * duplicate side effects on retry.
- * Non-server-error status codes (including 4xx client errors) are never retried.
+ * Non-server-error status codes (including 4xx client errors) are never
+ * retried.
  */
 int
 httpclient_should_retry_status (const SocketHTTPClient_T client, int status)
 {
   if (client == NULL)
-    return 0;  /* Default: don't retry on invalid client */
+    return 0; /* Default: don't retry on invalid client */
 
   if (SocketHTTP_status_category (status) == HTTP_STATUS_SERVER_ERROR)
     return client->config.retry_on_5xx;

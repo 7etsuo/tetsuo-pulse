@@ -38,17 +38,20 @@
 #include <sys/un.h>
 
 #if SOCKET_HAS_TLS
+#include "tls/SocketTLS-private.h" /* For tls_cleanup_alpn_temp etc. */
 #include <openssl/ssl.h>
-#include "tls/SocketTLS-private.h"  /* For tls_cleanup_alpn_temp etc. */
 #endif
 
 #define T Socket_T
 
 /* Shared live count tracker - see SocketLiveCount.h */
-static struct SocketLiveCount socket_live_tracker = SOCKETLIVECOUNT_STATIC_INIT;
+static struct SocketLiveCount socket_live_tracker
+    = SOCKETLIVECOUNT_STATIC_INIT;
 
-#define socket_live_increment() SocketLiveCount_increment (&socket_live_tracker)
-#define socket_live_decrement() SocketLiveCount_decrement (&socket_live_tracker)
+#define socket_live_increment()                                               \
+  SocketLiveCount_increment (&socket_live_tracker)
+#define socket_live_decrement()                                               \
+  SocketLiveCount_decrement (&socket_live_tracker)
 
 const Except_T Socket_Failed = { &Socket_Failed, "Socket operation failed" };
 const Except_T Socket_Closed = { &Socket_Closed, "Socket closed" };
@@ -56,14 +59,15 @@ const Except_T Socket_Closed = { &Socket_Closed, "Socket closed" };
 /* Thread-local exception for detailed error messages.
  * Prevents race conditions when multiple threads raise same exception. */
 /* Declare module-specific exception using centralized macros */
-SOCKET_DECLARE_MODULE_EXCEPTION(Socket);
+SOCKET_DECLARE_MODULE_EXCEPTION (Socket);
 
 /* Macro to raise exception with detailed error message */
-#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR(Socket, e)
+#define RAISE_MODULE_ERROR(e) SOCKET_RAISE_MODULE_ERROR (Socket, e)
 
 /* ============================================================================
  * Error Retryability
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_error_is_retryable - Check if errno indicates retryable error
@@ -160,12 +164,13 @@ allocate_socket_from_fd (Arena_T arena, int fd)
   T sock;
 
   sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
+  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       Arena_dispose (&arena);
       SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate sock for new_from_fd");
+                        SOCKET_ENOMEM
+                        ": Cannot allocate sock for new_from_fd");
     }
 
   sock->base = Arena_calloc (arena, 1, sizeof (struct SocketBase_T), __FILE__,
@@ -174,7 +179,8 @@ allocate_socket_from_fd (Arena_T arena, int fd)
     {
       Arena_dispose (&arena);
       SOCKET_RAISE_MSG (Socket, Socket_Failed,
-                        SOCKET_ENOMEM ": Cannot allocate base for new_from_fd");
+                        SOCKET_ENOMEM
+                        ": Cannot allocate base for new_from_fd");
     }
 
   sock->base->arena = arena;
@@ -210,7 +216,6 @@ setup_socket_nonblocking (T socket)
     }
 }
 
-
 T
 Socket_new (int domain, int type, int protocol)
 {
@@ -228,7 +233,7 @@ Socket_new (int domain, int type, int protocol)
 
   sock = Arena_calloc (SocketBase_arena (base), 1, sizeof (struct Socket_T),
                        __FILE__, __LINE__);
-  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
+  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       SocketCommon_free_base (&base);
@@ -254,7 +259,8 @@ Socket_free (T *socket)
   if (!s)
     return;
 
-  int was_first = (atomic_exchange_explicit(&s->freed, 1, memory_order_acq_rel) == 0);
+  int was_first
+      = (atomic_exchange_explicit (&s->freed, 1, memory_order_acq_rel) == 0);
   *socket = NULL; /* Invalidate caller pointer before cleanup to avoid UB */
 
   if (!was_first)
@@ -263,12 +269,12 @@ Socket_free (T *socket)
       return;
     }
 
-  /* Stream-specific cleanup (TLS) before base free */
+    /* Stream-specific cleanup (TLS) before base free */
 #if SOCKET_HAS_TLS
   if (s->tls_ssl)
     {
       SSL *tls_ssl = (SSL *)s->tls_ssl;
-      tls_cleanup_alpn_temp (tls_ssl);  /* Free ALPN temp if stored */
+      tls_cleanup_alpn_temp (tls_ssl); /* Free ALPN temp if stored */
       SSL_free (tls_ssl);
       s->tls_ssl = NULL;
     }
@@ -319,7 +325,8 @@ Socket_recv (T socket, void *buf, size_t len)
   return socket_recv_internal (socket, buf, len, 0);
 }
 
-/* ==================== Wrapper Functions for Split APIs ==================== */
+/* ==================== Wrapper Functions for Split APIs ====================
+ */
 
 void
 Socket_listen (Socket_T socket, int backlog)
@@ -548,7 +555,6 @@ Socket_connect_unix (Socket_T socket, const char *path)
   SocketCommon_update_local_endpoint (socket->base);
 }
 
-
 /* ==================== State Queries ====================
  * Merged from Socket-state.c */
 
@@ -567,7 +573,8 @@ Socket_isconnected (T socket)
 
   assert (socket);
 
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
+   */
   memset (&addr, 0, sizeof (addr));
 
   /* Check if we have cached peer address */
@@ -584,10 +591,9 @@ Socket_isconnected (T socket)
           && SocketBase_arena (socket->base) != NULL)
         {
           /* Cache peer info from getpeername result (inline - single use) */
-          if (SocketCommon_cache_endpoint (SocketBase_arena (socket->base),
-                                           (struct sockaddr *)&addr, len,
-                                           &socket->base->remoteaddr,
-                                           &socket->base->remoteport)
+          if (SocketCommon_cache_endpoint (
+                  SocketBase_arena (socket->base), (struct sockaddr *)&addr,
+                  len, &socket->base->remoteaddr, &socket->base->remoteport)
               != 0)
             {
               socket->base->remoteaddr = NULL;
@@ -613,7 +619,8 @@ Socket_isbound (T socket)
 
   assert (socket);
 
-  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory */
+  /* Initialize to zero to avoid Valgrind warnings about uninitialized memory
+   */
   memset (&addr, 0, sizeof (addr));
 
   /* Check if we have cached local address */
@@ -700,7 +707,8 @@ Socket_getlocalport (const T socket)
 /* ==================== Bind Operations ====================
  * Merged from Socket-bind.c */
 
-/* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints directly */
+/* Bind setup uses SocketCommon_validate_port and SocketCommon_setup_hints
+ * directly */
 
 static int
 is_common_bind_error (int err)
@@ -823,7 +831,7 @@ Socket_bind_with_addrinfo (T socket, struct addrinfo *res)
 
 /* ==================== Async Bind Operations ==================== */
 
-SocketDNS_Request_T
+Request_T
 Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
 {
   struct addrinfo hints, *res = NULL;
@@ -852,7 +860,7 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
 
   /* For non-wildcard hosts, use async DNS resolution */
   {
-    SocketDNS_Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
+    Request_T req = SocketDNS_resolve (dns, host, port, NULL, NULL);
     if (socket->base->timeouts.dns_timeout_ms > 0)
       SocketDNS_request_settimeout (dns, req,
                                     socket->base->timeouts.dns_timeout_ms);
@@ -861,7 +869,7 @@ Socket_bind_async (SocketDNS_T dns, T socket, const char *host, int port)
 }
 
 void
-Socket_bind_async_cancel (SocketDNS_T dns, SocketDNS_Request_T req)
+Socket_bind_async_cancel (SocketDNS_T dns, Request_T req)
 {
   assert (dns);
 
@@ -875,7 +883,8 @@ Socket_bind_async_cancel (SocketDNS_T dns, SocketDNS_Request_T req)
 /* Forward declarations */
 static int accept_connection (T socket, struct sockaddr_storage *addr,
                               socklen_t *addrlen);
-static T create_accepted_socket (int newfd, const struct sockaddr_storage *addr,
+static T create_accepted_socket (int newfd,
+                                 const struct sockaddr_storage *addr,
                                  socklen_t addrlen);
 
 /* ==================== Accept Helper Functions ==================== */
@@ -914,9 +923,9 @@ accept_create_arena (int newfd)
 static T
 accept_alloc_socket (Arena_T arena)
 {
-  T newsocket = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__,
-                              __LINE__);
-  atomic_store_explicit(&newsocket->freed, 0, memory_order_relaxed);
+  T newsocket
+      = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
+  atomic_store_explicit (&newsocket->freed, 0, memory_order_relaxed);
   if (!newsocket)
     {
       Arena_dispose (&arena);
@@ -1206,7 +1215,7 @@ socketpair_allocate_socket (int fd, int type, Socket_T *out_socket)
                       SOCKET_ENOMEM ": Cannot allocate arena for socket pair");
 
   sock = Arena_calloc (arena, 1, sizeof (struct Socket_T), __FILE__, __LINE__);
-  atomic_store_explicit(&sock->freed, 0, memory_order_relaxed);
+  atomic_store_explicit (&sock->freed, 0, memory_order_relaxed);
   if (!sock)
     {
       Arena_dispose (&arena);
@@ -1245,7 +1254,8 @@ socketpair_cleanup_socket (Socket_T sock, int fd)
 #if SOCKET_HAS_TLS
       if (sock->tls_ssl)
         {
-          tls_cleanup_alpn_temp ((SSL *)sock->tls_ssl);  /* Free ALPN temp if stored */
+          tls_cleanup_alpn_temp (
+              (SSL *)sock->tls_ssl); /* Free ALPN temp if stored */
           SSL_free ((SSL *)sock->tls_ssl);
           sock->tls_ssl = NULL;
         }
@@ -1285,29 +1295,29 @@ SocketPair_new (int type, Socket_T *socket1, Socket_T *socket2)
   socketpair_create_fds (type, sv);
 
   TRY
-    {
-      /* Allocate first socket - arena owned by sock1->base */
-      (void)socketpair_allocate_socket (sv[0], type, &sock1);
-      sv[0] = -1; /* FD now owned by sock1 */
+  {
+    /* Allocate first socket - arena owned by sock1->base */
+    (void)socketpair_allocate_socket (sv[0], type, &sock1);
+    sv[0] = -1; /* FD now owned by sock1 */
 
-      /* Allocate second socket - arena owned by sock2->base */
-      (void)socketpair_allocate_socket (sv[1], type, &sock2);
-      sv[1] = -1; /* FD now owned by sock2 */
+    /* Allocate second socket - arena owned by sock2->base */
+    (void)socketpair_allocate_socket (sv[1], type, &sock2);
+    sv[1] = -1; /* FD now owned by sock2 */
 
-      /* Transfer ownership to caller */
-      *socket1 = sock1;
-      *socket2 = sock2;
-      sock1 = NULL;
-      sock2 = NULL;
-    }
+    /* Transfer ownership to caller */
+    *socket1 = sock1;
+    *socket2 = sock2;
+    sock1 = NULL;
+    sock2 = NULL;
+  }
   EXCEPT (Socket_Failed)
-    {
-      /* Cleanup in reverse acquisition order */
-      /* socketpair_cleanup_socket handles arena via SocketCommon_free_base */
-      socketpair_cleanup_socket (sock2, sv[1]);
-      socketpair_cleanup_socket (sock1, sv[0]);
-      RERAISE;
-    }
+  {
+    /* Cleanup in reverse acquisition order */
+    /* socketpair_cleanup_socket handles arena via SocketCommon_free_base */
+    socketpair_cleanup_socket (sock2, sv[1]);
+    socketpair_cleanup_socket (sock1, sv[0]);
+    RERAISE;
+  }
   END_TRY;
 }
 
@@ -1395,12 +1405,10 @@ Socket_setbandwidth (T socket, size_t bytes_per_sec)
   else
     {
       /* Create new limiter using socket's arena */
-      TRY
-        socket->bandwidth_limiter
-            = SocketRateLimit_new (SocketBase_arena (socket->base),
-                                   bytes_per_sec, bytes_per_sec);
+      TRY socket->bandwidth_limiter = SocketRateLimit_new (
+          SocketBase_arena (socket->base), bytes_per_sec, bytes_per_sec);
       EXCEPT (SocketRateLimit_Failed)
-        RAISE_MODULE_ERROR (Socket_Failed);
+      RAISE_MODULE_ERROR (Socket_Failed);
       END_TRY;
     }
 }
@@ -1492,7 +1500,8 @@ Socket_recv_limited (T socket, void *buf, size_t len)
   /* Consume tokens for what we actually received */
   if (received > 0)
     {
-      SocketRateLimit_try_acquire (socket->bandwidth_limiter, (size_t)received);
+      SocketRateLimit_try_acquire (socket->bandwidth_limiter,
+                                   (size_t)received);
     }
 
   return received;

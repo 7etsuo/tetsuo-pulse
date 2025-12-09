@@ -41,7 +41,8 @@
 
 /* ============================================================================
  * Internal Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** RFC 6455: MSB of 64-bit payload length must be 0 */
 #define SOCKETWS_PAYLOAD_MSB_MASK (1ULL << 63)
@@ -57,14 +58,18 @@
 
 /* ============================================================================
  * Static Helper Function Declarations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* XOR Masking Helpers */
-static void ws_mask_unaligned_bytes (unsigned char *data, size_t len,
-                                     const unsigned char mask[SOCKETWS_MASK_KEY_SIZE],
-                                     size_t start_offset);
-static void ws_mask_aligned_block (uint64_t *data, size_t count, uint64_t mask64);
-static uint64_t ws_build_mask64 (const unsigned char mask[SOCKETWS_MASK_KEY_SIZE]);
+static void
+ws_mask_unaligned_bytes (unsigned char *data, size_t len,
+                         const unsigned char mask[SOCKETWS_MASK_KEY_SIZE],
+                         size_t start_offset);
+static void ws_mask_aligned_block (uint64_t *data, size_t count,
+                                   uint64_t mask64);
+static uint64_t
+ws_build_mask64 (const unsigned char mask[SOCKETWS_MASK_KEY_SIZE]);
 
 /* Header Buffer Helpers */
 static size_t ws_copy_to_header_buf (SocketWS_FrameParse *frame,
@@ -73,19 +78,22 @@ static size_t ws_copy_to_header_buf (SocketWS_FrameParse *frame,
 
 /* Frame Header Parsing Helpers */
 static SocketWS_Error ws_parse_basic_header (SocketWS_FrameParse *frame);
-static SocketWS_Error ws_validate_frame_header (const SocketWS_FrameParse *frame);
+static SocketWS_Error
+ws_validate_frame_header (const SocketWS_FrameParse *frame);
 static void ws_determine_header_length (SocketWS_FrameParse *frame);
 static SocketWS_Error ws_parse_extended_length (SocketWS_FrameParse *frame);
 static void ws_extract_mask_key (SocketWS_FrameParse *frame);
 static SocketWS_Error ws_process_header_state (SocketWS_FrameParse *frame,
                                                const unsigned char **data,
                                                size_t *len, size_t *consumed);
-static SocketWS_Error ws_process_extended_len_state (SocketWS_FrameParse *frame,
-                                                     const unsigned char **data,
-                                                     size_t *len, size_t *consumed);
+static SocketWS_Error
+ws_process_extended_len_state (SocketWS_FrameParse *frame,
+                               const unsigned char **data, size_t *len,
+                               size_t *consumed);
 static SocketWS_Error ws_process_mask_key_state (SocketWS_FrameParse *frame,
                                                  const unsigned char **data,
-                                                 size_t *len, size_t *consumed);
+                                                 size_t *len,
+                                                 size_t *consumed);
 
 /* Frame Header Building Helpers */
 static size_t ws_encode_payload_length (unsigned char *header, size_t offset,
@@ -99,10 +107,11 @@ static int ws_ensure_mask_key (SocketWS_T ws,
                                int *masked);
 
 /* Send Buffer Helpers */
-static int ws_write_to_send_buffer (SocketWS_T ws, const void *data, size_t len,
-                                    const char *what);
-static int ws_write_frame_header (SocketWS_T ws, int fin, SocketWS_Opcode opcode,
-                                  int masked, const unsigned char *mask_key,
+static int ws_write_to_send_buffer (SocketWS_T ws, const void *data,
+                                    size_t len, const char *what);
+static int ws_write_frame_header (SocketWS_T ws, int fin,
+                                  SocketWS_Opcode opcode, int masked,
+                                  const unsigned char *mask_key,
                                   uint64_t payload_len);
 static int ws_write_masked_payload (SocketWS_T ws, const unsigned char *data,
                                     size_t len, const unsigned char *mask_key);
@@ -116,7 +125,8 @@ static int ws_process_payload (SocketWS_T ws);
 
 /* ============================================================================
  * XOR Masking - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_build_mask64 - Build 64-bit mask from 4-byte key
@@ -168,7 +178,8 @@ ws_mask_aligned_block (uint64_t *data, size_t count, uint64_t mask64)
 
 /* ============================================================================
  * XOR Masking - Public Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_mask_payload - Apply XOR mask to payload (optimized)
@@ -204,9 +215,8 @@ ws_mask_payload (unsigned char *data, size_t len,
     return;
 
   /* Calculate end of aligned region */
-  aligned_end
-      = aligned_start
-        + ((len - aligned_start) & ~(size_t)SOCKETWS_XOR_ALIGN_MASK);
+  aligned_end = aligned_start
+                + ((len - aligned_start) & ~(size_t)SOCKETWS_XOR_ALIGN_MASK);
 
   /* Mask aligned 64-bit blocks */
   mask64 = ws_build_mask64 (mask);
@@ -242,12 +252,13 @@ ws_mask_payload_offset (unsigned char *data, size_t len,
 
 /* ============================================================================
  * Header Buffer Helpers
- * ============================================================================ */
-
+ * ============================================================================
+ */
 
 static SocketWS_Error
-ws_read_header_to_target (SocketWS_FrameParse *frame, const unsigned char **data,
-                          size_t *len, size_t *consumed, size_t target)
+ws_read_header_to_target (SocketWS_FrameParse *frame,
+                          const unsigned char **data, size_t *len,
+                          size_t *consumed, size_t target)
 {
   size_t need = target - frame->header_len;
   if (need == 0)
@@ -265,7 +276,8 @@ ws_read_header_to_target (SocketWS_FrameParse *frame, const unsigned char **data
 
 /* ============================================================================
  * Frame Header Parsing - State Handler Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_parse_basic_header - Parse first 2 bytes of frame header
@@ -285,7 +297,7 @@ ws_parse_basic_header (SocketWS_FrameParse *frame)
   frame->rsv1 = (b0 & SOCKETWS_RSV1_BIT) != 0;
   frame->rsv2 = (b0 & SOCKETWS_RSV2_BIT) != 0;
   frame->rsv3 = (b0 & SOCKETWS_RSV3_BIT) != 0;
-  frame->opcode = (SocketWS_Opcode) (b0 & SOCKETWS_OPCODE_MASK);
+  frame->opcode = (SocketWS_Opcode)(b0 & SOCKETWS_OPCODE_MASK);
   frame->masked = (b1 & SOCKETWS_MASK_BIT) != 0;
   frame->payload_len = b1 & SOCKETWS_PAYLOAD_LEN_MASK;
 
@@ -346,7 +358,8 @@ ws_determine_header_length (SocketWS_FrameParse *frame)
     }
   else if (frame->masked)
     {
-      frame->header_needed = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_MASK_KEY_SIZE;
+      frame->header_needed
+          = SOCKETWS_BASE_HEADER_SIZE + SOCKETWS_MASK_KEY_SIZE;
       frame->state = WS_FRAME_STATE_MASK_KEY;
     }
   else
@@ -412,12 +425,14 @@ ws_extract_mask_key (SocketWS_FrameParse *frame)
  * Returns: WS_OK to continue, WS_ERROR_WOULD_BLOCK, or error
  */
 static SocketWS_Error
-ws_process_header_state (SocketWS_FrameParse *frame, const unsigned char **data,
-                         size_t *len, size_t *consumed)
+ws_process_header_state (SocketWS_FrameParse *frame,
+                         const unsigned char **data, size_t *len,
+                         size_t *consumed)
 {
   SocketWS_Error err;
 
-  err = ws_read_header_to_target (frame, data, len, consumed, SOCKETWS_BASE_HEADER_SIZE);
+  err = ws_read_header_to_target (frame, data, len, consumed,
+                                  SOCKETWS_BASE_HEADER_SIZE);
   if (err != WS_OK)
     return err;
 
@@ -429,7 +444,8 @@ ws_process_header_state (SocketWS_FrameParse *frame, const unsigned char **data,
 
   ws_determine_header_length (frame);
 
-  return (frame->state == WS_FRAME_STATE_PAYLOAD) ? WS_OK : WS_ERROR_WOULD_BLOCK;
+  return (frame->state == WS_FRAME_STATE_PAYLOAD) ? WS_OK
+                                                  : WS_ERROR_WOULD_BLOCK;
 }
 
 /**
@@ -448,7 +464,8 @@ ws_process_extended_len_state (SocketWS_FrameParse *frame,
 {
   SocketWS_Error err;
 
-  err = ws_read_header_to_target (frame, data, len, consumed, frame->header_needed);
+  err = ws_read_header_to_target (frame, data, len, consumed,
+                                  frame->header_needed);
   if (err != WS_OK)
     return err;
 
@@ -484,7 +501,8 @@ ws_process_mask_key_state (SocketWS_FrameParse *frame,
 {
   SocketWS_Error err;
 
-  err = ws_read_header_to_target (frame, data, len, consumed, frame->header_needed);
+  err = ws_read_header_to_target (frame, data, len, consumed,
+                                  frame->header_needed);
   if (err != WS_OK)
     return err;
 
@@ -497,7 +515,8 @@ ws_process_mask_key_state (SocketWS_FrameParse *frame,
 
 /* ============================================================================
  * Frame Header Parsing - Main Function
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_frame_parse_header - Parse frame header incrementally
@@ -555,7 +574,8 @@ ws_frame_parse_header (SocketWS_FrameParse *frame, const unsigned char *data,
 
 /* ============================================================================
  * Frame Header Building - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_encode_64bit_length - Encode 64-bit payload length in network byte order
@@ -614,7 +634,8 @@ ws_encode_payload_length (unsigned char *header, size_t offset, int masked,
 
 /* ============================================================================
  * Frame Header Building - Main Function
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_frame_build_header - Build frame header
@@ -637,7 +658,8 @@ ws_frame_build_header (unsigned char *header, int fin, SocketWS_Opcode opcode,
   assert (header);
 
   /* First byte: FIN + RSV + opcode */
-  header[offset++] = (fin ? SOCKETWS_FIN_BIT : 0) | (opcode & SOCKETWS_OPCODE_MASK);
+  header[offset++]
+      = (fin ? SOCKETWS_FIN_BIT : 0) | (opcode & SOCKETWS_OPCODE_MASK);
 
   /* Second byte and extended length */
   offset = ws_encode_payload_length (header, offset, masked, payload_len);
@@ -654,7 +676,8 @@ ws_frame_build_header (unsigned char *header, int fin, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Mask Key Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_ensure_mask_key - Generate mask key if client role
@@ -668,7 +691,8 @@ ws_frame_build_header (unsigned char *header, int fin, SocketWS_Opcode opcode,
  */
 static int
 ws_ensure_mask_key (SocketWS_T ws,
-                    unsigned char mask_key[SOCKETWS_MASK_KEY_SIZE], int *masked)
+                    unsigned char mask_key[SOCKETWS_MASK_KEY_SIZE],
+                    int *masked)
 {
   *masked = (ws->role == WS_ROLE_CLIENT);
 
@@ -689,7 +713,8 @@ ws_ensure_mask_key (SocketWS_T ws,
 
 /* ============================================================================
  * Send Buffer - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_write_to_send_buffer - Write data to send buffer with error handling
@@ -735,8 +760,8 @@ ws_write_frame_header (SocketWS_T ws, int fin, SocketWS_Opcode opcode,
   unsigned char header[SOCKETWS_MAX_HEADER_SIZE];
   size_t header_len;
 
-  header_len
-      = ws_frame_build_header (header, fin, opcode, masked, mask_key, payload_len);
+  header_len = ws_frame_build_header (header, fin, opcode, masked, mask_key,
+                                      payload_len);
 
   return ws_write_to_send_buffer (ws, header, header_len, "header");
 }
@@ -771,9 +796,9 @@ ws_write_masked_payload (SocketWS_T ws, const unsigned char *data, size_t len,
   while (offset < len)
     {
       size_t remaining = len - offset;
-      size_t to_write
-          = (remaining < SOCKETWS_SEND_CHUNK_SIZE) ? remaining
-                                                   : SOCKETWS_SEND_CHUNK_SIZE;
+      size_t to_write = (remaining < SOCKETWS_SEND_CHUNK_SIZE)
+                            ? remaining
+                            : SOCKETWS_SEND_CHUNK_SIZE;
 
       memcpy (chunk_buf, data + offset, to_write);
 
@@ -792,7 +817,8 @@ ws_write_masked_payload (SocketWS_T ws, const unsigned char *data, size_t len,
 
 /* ============================================================================
  * Frame Sending - Control Frames
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_send_control_frame - Send a control frame
@@ -843,7 +869,8 @@ ws_send_control_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Frame Sending - Data Frames
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_send_data_frame - Send a data frame
@@ -893,9 +920,10 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
            * DEFLATE can slightly expand incompressible data. */
           if (len > ws->config.max_frame_size)
             {
-              ws_set_error (ws, WS_ERROR_FRAME_TOO_LARGE,
-                            "Compressed frame too large: %zu > %zu (original %zu)",
-                            len, ws->config.max_frame_size, original_len);
+              ws_set_error (
+                  ws, WS_ERROR_FRAME_TOO_LARGE,
+                  "Compressed frame too large: %zu > %zu (original %zu)", len,
+                  ws->config.max_frame_size, original_len);
               return -1;
             }
         }
@@ -914,7 +942,8 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
 
 /* ============================================================================
  * Frame Receiving - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_recv_control_payload - Receive and process control frame payload
@@ -923,15 +952,17 @@ ws_send_data_frame (SocketWS_T ws, SocketWS_Opcode opcode,
  *
  * Returns: 0 if control frame handled, -1 on error, -2 if need more data
  */
-static void
-ws_read_and_unmask_chunk (SocketWS_T ws, unsigned char *buf, size_t len);
+static void ws_read_and_unmask_chunk (SocketWS_T ws, unsigned char *buf,
+                                      size_t len);
 
 static int
 ws_recv_control_payload (SocketWS_T ws, size_t available)
 {
   unsigned char control_payload[SOCKETWS_MAX_CONTROL_PAYLOAD];
-  size_t payload_remaining = ws->frame.payload_len - ws->frame.payload_received;
-  size_t to_read = (available < payload_remaining) ? available : payload_remaining;
+  size_t payload_remaining
+      = ws->frame.payload_len - ws->frame.payload_received;
+  size_t to_read
+      = (available < payload_remaining) ? available : payload_remaining;
 
   if (to_read > SOCKETWS_MAX_CONTROL_PAYLOAD)
     to_read = SOCKETWS_MAX_CONTROL_PAYLOAD;
@@ -1082,7 +1113,8 @@ ws_process_payload (SocketWS_T ws)
 
 /* ============================================================================
  * Frame Receiving - Main Function
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * ws_recv_frame - Receive and process next frame
@@ -1129,16 +1161,20 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
           return -1;
         }
 
-      // Validate masking per RFC 6455 Section 5.3: clients MUST mask ALL frames, servers MUST NOT mask any frame
-      if ((ws->role == WS_ROLE_SERVER && ws->frame.masked) ||
-          (ws->role == WS_ROLE_CLIENT && !ws->frame.masked))
+      // Validate masking per RFC 6455 Section 5.3: clients MUST mask ALL
+      // frames, servers MUST NOT mask any frame
+      if ((ws->role == WS_ROLE_SERVER && ws->frame.masked)
+          || (ws->role == WS_ROLE_CLIENT && !ws->frame.masked))
         {
-          ws_set_error (ws, WS_ERROR_PROTOCOL, 
-                        "Invalid frame masking: %s frames not allowed for %s role",
-                        ws->frame.masked ? "Masked" : "Unmasked",
-                        ws->role == WS_ROLE_SERVER ? "server receiving (from client)" : "client receiving (from server)");
+          ws_set_error (
+              ws, WS_ERROR_PROTOCOL,
+              "Invalid frame masking: %s frames not allowed for %s role",
+              ws->frame.masked ? "Masked" : "Unmasked",
+              ws->role == WS_ROLE_SERVER ? "server receiving (from client)"
+                                         : "client receiving (from server)");
           // Send protocol error close per RFC 6455
-          (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR, "Masking violation");
+          (void)ws_send_close (ws, WS_CLOSE_PROTOCOL_ERROR,
+                               "Masking violation");
           return -1;
         }
     }
@@ -1146,16 +1182,19 @@ ws_recv_frame (SocketWS_T ws, SocketWS_FrameParse *frame_out)
   *frame_out = ws->frame;
 
   /* Validate masking bit per RFC 6455 Section 5.3:
-   * - Clients MUST mask all frames sent to server (masked == 1 when received by server)
-   * - Servers MUST NOT mask frames sent to client (masked == 0 when received by client)
+   * - Clients MUST mask all frames sent to server (masked == 1 when received
+   * by server)
+   * - Servers MUST NOT mask frames sent to client (masked == 0 when received
+   * by client)
    */
-  if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked) ||
-      (ws->role == WS_ROLE_CLIENT && ws->frame.masked)) {
-    ws_set_error (ws, WS_ERROR_PROTOCOL,
-                  "Invalid masking in received frame (role=%d, masked=%d)",
-                  (int)ws->role, (int)ws->frame.masked);
-    return -1;
-  }
+  if ((ws->role == WS_ROLE_SERVER && !ws->frame.masked)
+      || (ws->role == WS_ROLE_CLIENT && ws->frame.masked))
+    {
+      ws_set_error (ws, WS_ERROR_PROTOCOL,
+                    "Invalid masking in received frame (role=%d, masked=%d)",
+                    (int)ws->role, (int)ws->frame.masked);
+      return -1;
+    }
 
   if (ws_check_payload_size (ws) < 0)
     return -1;

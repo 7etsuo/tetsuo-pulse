@@ -23,27 +23,25 @@
 #include <limits.h>
 #include <stdlib.h>
 
-
-
-
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
 /* ============================================================================
  * Drain Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Minimum backoff for drain_wait polling (milliseconds) */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MIN_MS  1
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MIN_MS 1
 
 /** Maximum backoff for drain_wait polling (milliseconds) */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MAX_MS  100
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MAX_MS 100
 
 /** Backoff multiplier for drain_wait polling */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER  2
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_BACKOFF_MULTIPLIER 2
 
 /** Infinite timeout sentinel for input */
-#define SOCKET_POOL_SOCKET_POOL_DRAIN_TIMEOUT_INFINITE  (-1)
+#define SOCKET_POOL_SOCKET_POOL_DRAIN_TIMEOUT_INFINITE (-1)
 
 /* Override default log component (SocketUtil.h sets "Socket") */
 #undef SOCKET_LOG_COMPONENT
@@ -53,7 +51,8 @@
 
 /* ============================================================================
  * Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Minimum backoff for drain_wait polling (milliseconds) */
 #define SOCKET_POOL_DRAIN_BACKOFF_MIN_MS 1
@@ -69,7 +68,8 @@
 
 /* ============================================================================
  * Internal Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * load_pool_state - Atomically load pool state with acquire semantics
@@ -82,7 +82,7 @@ static inline SocketPool_State
 load_pool_state (const T pool)
 {
   return (SocketPool_State)atomic_load_explicit (&pool->state,
-                                                  memory_order_acquire);
+                                                 memory_order_acquire);
 }
 
 /**
@@ -120,7 +120,8 @@ shutdown_socket_gracefully (Socket_T sock)
 
 /* ============================================================================
  * Force Close Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * allocate_closing_buffer - Allocate or get buffer for closing sockets
@@ -173,7 +174,8 @@ collect_active_connections (T pool, Socket_T *buffer, size_t max_slots)
   size_t count = 0;
   size_t i;
 
-  for (i = 0; i < pool->maxconns && count < max_slots && count < pool->count; i++)
+  for (i = 0; i < pool->maxconns && count < max_slots && count < pool->count;
+       i++)
     {
       struct Connection *conn = &pool->connections[i];
       if (conn->active && conn->socket)
@@ -211,7 +213,8 @@ close_collected_connections (T pool, Socket_T *sockets, size_t count)
 
 /* ============================================================================
  * State Query Functions (Lock-Free with C11 Atomics)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_state - Get current pool lifecycle state
@@ -289,7 +292,8 @@ SocketPool_is_stopped (const T pool)
 
 /* ============================================================================
  * Internal State Transition Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * transition_to_stopped - Transition pool to STOPPED state and invoke callback
@@ -383,7 +387,8 @@ force_close_all_connections (T pool)
 
 /* ============================================================================
  * Drain API Implementation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_drain - Initiate graceful shutdown
@@ -498,7 +503,8 @@ SocketPool_drain_poll (T pool)
     }
 
   now_ms = Socket_get_monotonic_ms ();
-  if (pool->drain_deadline_ms != INT64_MAX && now_ms >= pool->drain_deadline_ms)
+  if (pool->drain_deadline_ms != INT64_MAX
+      && now_ms >= pool->drain_deadline_ms)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
                        "Pool drain timeout expired, forcing close of %zu "
@@ -639,7 +645,8 @@ SocketPool_set_drain_callback (T pool, SocketPool_DrainCallback cb, void *data)
 
 /* ============================================================================
  * Idle Connection Cleanup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPool_set_idle_timeout - Set idle connection timeout
@@ -735,7 +742,8 @@ SocketPool_run_idle_cleanup (T pool)
     }
 
   now_ms = Socket_get_monotonic_ms ();
-  next_cleanup_ms = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms);
+  next_cleanup_ms
+      = safe_add_ms (pool->last_cleanup_ms, pool->cleanup_interval_ms);
 
   if (now_ms < next_cleanup_ms)
     {
@@ -769,4 +777,3 @@ SocketPool_run_idle_cleanup (T pool)
 }
 
 #undef T
-

@@ -35,7 +35,8 @@
  * - Synchronous API is thread-safe (uses internal resources)
  *
  * Security Notes:
- * - Credentials are cleared from memory after use via SocketCrypto_secure_clear()
+ * - Credentials are cleared from memory after use via
+ * SocketCrypto_secure_clear()
  * - Hostnames are validated (SOCKS5 max 255 bytes)
  * - HTTP response parsing uses strict mode to prevent smuggling
  * - All protocol responses are bounds-checked
@@ -94,14 +95,16 @@ typedef struct SocketHTTP_Headers *SocketHTTP_Headers_T;
 
 /* ============================================================================
  * Opaque Type
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define T SocketProxy_Conn_T
 typedef struct T *T;
 
 /* ============================================================================
  * Exception
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Failed - General proxy operation failure
@@ -113,7 +116,8 @@ extern const Except_T SocketProxy_Failed;
 
 /* ============================================================================
  * Configuration Constants
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /** Default timeout for connecting to proxy server (ms) */
 #ifndef SOCKET_PROXY_DEFAULT_CONNECT_TIMEOUT_MS
@@ -162,7 +166,8 @@ extern const Except_T SocketProxy_Failed;
 
 /* ============================================================================
  * Proxy Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxyType - Supported proxy protocol types
@@ -180,7 +185,8 @@ typedef enum
 
 /* ============================================================================
  * Result Codes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Result - Proxy operation result codes
@@ -189,26 +195,27 @@ typedef enum
  */
 typedef enum
 {
-  PROXY_OK = 0,                  /**< Success - tunnel established */
-  PROXY_IN_PROGRESS,             /**< Operation in progress (async) */
-  PROXY_ERROR,                   /**< Generic error */
-  PROXY_ERROR_CONNECT,           /**< Failed to connect to proxy */
-  PROXY_ERROR_AUTH_REQUIRED,     /**< Proxy requires authentication */
-  PROXY_ERROR_AUTH_FAILED,       /**< Authentication rejected */
-  PROXY_ERROR_FORBIDDEN,         /**< Proxy refused connection to target */
-  PROXY_ERROR_HOST_UNREACHABLE,  /**< Target host unreachable */
+  PROXY_OK = 0,                    /**< Success - tunnel established */
+  PROXY_IN_PROGRESS,               /**< Operation in progress (async) */
+  PROXY_ERROR,                     /**< Generic error */
+  PROXY_ERROR_CONNECT,             /**< Failed to connect to proxy */
+  PROXY_ERROR_AUTH_REQUIRED,       /**< Proxy requires authentication */
+  PROXY_ERROR_AUTH_FAILED,         /**< Authentication rejected */
+  PROXY_ERROR_FORBIDDEN,           /**< Proxy refused connection to target */
+  PROXY_ERROR_HOST_UNREACHABLE,    /**< Target host unreachable */
   PROXY_ERROR_NETWORK_UNREACHABLE, /**< Target network unreachable */
-  PROXY_ERROR_CONNECTION_REFUSED,/**< Target connection refused */
-  PROXY_ERROR_TTL_EXPIRED,       /**< TTL expired */
-  PROXY_ERROR_PROTOCOL,          /**< Protocol error */
-  PROXY_ERROR_UNSUPPORTED,       /**< Unsupported command/feature */
-  PROXY_ERROR_TIMEOUT,           /**< Operation timed out */
-  PROXY_ERROR_CANCELLED          /**< Operation cancelled */
+  PROXY_ERROR_CONNECTION_REFUSED,  /**< Target connection refused */
+  PROXY_ERROR_TTL_EXPIRED,         /**< TTL expired */
+  PROXY_ERROR_PROTOCOL,            /**< Protocol error */
+  PROXY_ERROR_UNSUPPORTED,         /**< Unsupported command/feature */
+  PROXY_ERROR_TIMEOUT,             /**< Operation timed out */
+  PROXY_ERROR_CANCELLED            /**< Operation cancelled */
 } SocketProxy_Result;
 
 /* ============================================================================
  * Connection State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_State - Proxy connection state machine
@@ -220,21 +227,22 @@ typedef enum
  */
 typedef enum
 {
-  PROXY_STATE_IDLE = 0,        /**< Not started */
-  PROXY_STATE_CONNECTING_PROXY,/**< Connecting to proxy (HappyEyeballs) */
-  PROXY_STATE_TLS_TO_PROXY,    /**< TLS handshake to proxy (HTTPS) */
-  PROXY_STATE_HANDSHAKE_SEND,  /**< Sending protocol request */
-  PROXY_STATE_HANDSHAKE_RECV,  /**< Receiving protocol response */
-  PROXY_STATE_AUTH_SEND,       /**< Sending SOCKS5 auth */
-  PROXY_STATE_AUTH_RECV,       /**< Receiving SOCKS5 auth response */
-  PROXY_STATE_CONNECTED,       /**< Tunnel established */
-  PROXY_STATE_FAILED,          /**< Error occurred */
-  PROXY_STATE_CANCELLED        /**< User cancelled */
+  PROXY_STATE_IDLE = 0,         /**< Not started */
+  PROXY_STATE_CONNECTING_PROXY, /**< Connecting to proxy (HappyEyeballs) */
+  PROXY_STATE_TLS_TO_PROXY,     /**< TLS handshake to proxy (HTTPS) */
+  PROXY_STATE_HANDSHAKE_SEND,   /**< Sending protocol request */
+  PROXY_STATE_HANDSHAKE_RECV,   /**< Receiving protocol response */
+  PROXY_STATE_AUTH_SEND,        /**< Sending SOCKS5 auth */
+  PROXY_STATE_AUTH_RECV,        /**< Receiving SOCKS5 auth response */
+  PROXY_STATE_CONNECTED,        /**< Tunnel established */
+  PROXY_STATE_FAILED,           /**< Error occurred */
+  PROXY_STATE_CANCELLED         /**< User cancelled */
 } SocketProxy_State;
 
 /* ============================================================================
  * Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Config - Proxy configuration
@@ -256,9 +264,10 @@ typedef struct SocketProxy_Config
 
   /* HTTP CONNECT specific */
   SocketHTTP_Headers_T extra_headers; /**< Additional headers (optional) */
-    /* TLS for HTTPS proxy (optional) */
+                                      /* TLS for HTTPS proxy (optional) */
 #if SOCKET_HAS_TLS
-  SocketTLSContext_T tls_ctx; /**< TLS context for HTTPS proxies (NULL = use secure defaults) */
+  SocketTLSContext_T tls_ctx; /**< TLS context for HTTPS proxies (NULL = use
+                                 secure defaults) */
 #endif
 
   /* Timeouts (0 = use defaults) */
@@ -268,7 +277,8 @@ typedef struct SocketProxy_Config
 
 /* ============================================================================
  * Configuration Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_config_defaults - Initialize config with defaults
@@ -306,7 +316,8 @@ extern int SocketProxy_parse_url (const char *url, SocketProxy_Config *config,
 
 /* ============================================================================
  * Synchronous API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_connect - Connect to target through proxy (blocking)
@@ -337,27 +348,29 @@ extern Socket_T SocketProxy_connect (const SocketProxy_Config *proxy,
  * @proxy: Proxy configuration (type, auth, timeouts)
  * @target_host: Target hostname or IP
  * @target_port: Target port (1-65535)
- * @arena: Optional arena for internal allocations (e.g., TLS context for HTTPS)
+ * @arena: Optional arena for internal allocations (e.g., TLS context for
+ * HTTPS)
  *
  * Returns: PROXY_OK on success, error code on failure
  * Thread-safe: No
  *
  * Performs proxy handshake on an already-connected socket. For HTTPS proxies,
- * performs TLS handshake if tls_ctx in config or auto-creates secure one using arena.
- * Use this when you need control over the proxy connection establishment.
+ * performs TLS handshake if tls_ctx in config or auto-creates secure one using
+ * arena. Use this when you need control over the proxy connection
+ * establishment.
  *
  * The socket should already be connected to proxy->host:proxy->port.
  * If arena NULL and HTTPS, may fail if no pre-provided tls_ctx.
  */
-extern SocketProxy_Result SocketProxy_tunnel (Socket_T socket,
-                                              const SocketProxy_Config *proxy,
-                                              const char *target_host,
-                                              int target_port,
-                                              Arena_T arena /* optional for TLS context allocation */ );
+extern SocketProxy_Result
+SocketProxy_tunnel (Socket_T socket, const SocketProxy_Config *proxy,
+                    const char *target_host, int target_port,
+                    Arena_T arena /* optional for TLS context allocation */);
 
 /* ============================================================================
  * Asynchronous API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Conn_start - Start truly async proxy connection (event-driven)
@@ -478,7 +491,8 @@ extern void SocketProxy_Conn_free (T *conn);
 
 /* ============================================================================
  * State Query
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Conn_state - Get current connection state
@@ -511,7 +525,8 @@ extern const char *SocketProxy_Conn_error (T conn);
 
 /* ============================================================================
  * Poll Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_Conn_fd - Get file descriptor for poll
@@ -544,7 +559,8 @@ extern int SocketProxy_Conn_next_timeout_ms (T conn);
 
 /* ============================================================================
  * Utility Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketProxy_result_string - Get human-readable result description
@@ -575,4 +591,3 @@ extern const char *SocketProxy_type_string (SocketProxyType type);
 
 #undef T
 #endif /* SOCKETPROXY_INCLUDED */
-

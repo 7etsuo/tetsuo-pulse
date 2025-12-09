@@ -37,7 +37,8 @@
 
 /* ============================================================================
  * Test Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define TEST_PORT_BASE 45000
 #define TEST_SERVER_TIMEOUT_MS 100
@@ -53,7 +54,8 @@ get_test_port (void)
 
 /* ============================================================================
  * Server Thread Infrastructure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -127,13 +129,15 @@ test_server_start (TestServer *ts, SocketHTTPServer_Handler handler,
       EXCEPT (SocketHTTPServer_Failed)
       {
         /* Port might be in use, try next port */
-        if (ts->server) SocketHTTPServer_free (&ts->server);
+        if (ts->server)
+          SocketHTTPServer_free (&ts->server);
         ts->server = NULL;
       }
       EXCEPT (Socket_Failed)
       {
         /* Bind failed - port might be in use, try next port */
-        if (ts->server) SocketHTTPServer_free (&ts->server);
+        if (ts->server)
+          SocketHTTPServer_free (&ts->server);
         ts->server = NULL;
       }
       END_TRY;
@@ -175,7 +179,7 @@ test_server_stop (TestServer *ts)
     return;
 
   ts->running = 0;
-  SocketHTTPServer_stop (ts->server);  /* Stop server BEFORE joining thread */
+  SocketHTTPServer_stop (ts->server); /* Stop server BEFORE joining thread */
   pthread_join (ts->thread, NULL);
 
   SocketHTTPServer_free (&ts->server);
@@ -183,7 +187,8 @@ test_server_stop (TestServer *ts)
 
 /* ============================================================================
  * Request Handlers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static void
 echo_handler (SocketHTTPServer_Request_T req, void *userdata)
@@ -231,8 +236,7 @@ echo_handler (SocketHTTPServer_Request_T req, void *userdata)
   else if (strcmp (path, "/headers") == 0)
     {
       /* Echo a specific header */
-      SocketHTTP_Headers_T headers
-          = SocketHTTPServer_Request_headers (req);
+      SocketHTTP_Headers_T headers = SocketHTTPServer_Request_headers (req);
       const char *custom = SocketHTTP_Headers_get (headers, "X-Custom-Header");
 
       SocketHTTPServer_Request_status (req, 200);
@@ -263,7 +267,8 @@ echo_handler (SocketHTTPServer_Request_T req, void *userdata)
       else
         {
           SocketHTTPServer_Request_status (req, 500);
-          SocketHTTPServer_Request_body_string (req, "Memory allocation failed");
+          SocketHTTPServer_Request_body_string (req,
+                                                "Memory allocation failed");
         }
     }
   else
@@ -279,7 +284,8 @@ echo_handler (SocketHTTPServer_Request_T req, void *userdata)
 
 /* ============================================================================
  * Integration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http_integration_get_request)
 {
@@ -300,8 +306,7 @@ TEST (http_integration_get_request)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_get (client, url, &response);
@@ -310,8 +315,7 @@ TEST (http_integration_get_request)
 
   SocketHTTPClient_Response_free (&response);
   EXCEPT (SocketHTTPClient_Failed)
-  printf ("  [WARN] HTTP client failed: %s\n",
-          SocketHTTPClient_Failed.reason);
+  printf ("  [WARN] HTTP client failed: %s\n", SocketHTTPClient_Failed.reason);
   EXCEPT (SocketHTTPClient_ConnectFailed)
   printf ("  [WARN] Connection failed: %s\n",
           SocketHTTPClient_ConnectFailed.reason);
@@ -344,8 +348,7 @@ TEST (http_integration_post_request)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/echo", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_post (client, url, "text/plain", post_body,
@@ -359,8 +362,7 @@ TEST (http_integration_post_request)
 
   SocketHTTPClient_Response_free (&response);
   EXCEPT (SocketHTTPClient_Failed)
-  printf ("  [WARN] HTTP client failed: %s\n",
-          SocketHTTPClient_Failed.reason);
+  printf ("  [WARN] HTTP client failed: %s\n", SocketHTTPClient_Failed.reason);
   EXCEPT (SocketHTTPClient_ConnectFailed)
   printf ("  [WARN] Connection failed\n");
   FINALLY
@@ -391,8 +393,7 @@ TEST (http_integration_put_request)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/method", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_put (client, url, "text/plain", "", 0, &response);
@@ -436,8 +437,7 @@ TEST (http_integration_delete_request)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/method", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_delete (client, url, &response);
@@ -481,8 +481,7 @@ TEST (http_integration_error_404)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/status/404", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_get (client, url, &response);
@@ -522,8 +521,7 @@ TEST (http_integration_error_500)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/status/500", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_get (client, url, &response);
@@ -563,8 +561,7 @@ TEST (http_integration_large_response)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/large", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   result = SocketHTTPClient_get (client, url, &response);
@@ -606,8 +603,7 @@ TEST (http_integration_multiple_requests)
 
   snprintf (url, sizeof (url), "http://127.0.0.1:%d/", ts.port);
 
-  TRY
-  client = SocketHTTPClient_new (NULL);
+  TRY client = SocketHTTPClient_new (NULL);
   ASSERT_NOT_NULL (client);
 
   /* Make multiple requests to test connection reuse (keep-alive) */
@@ -635,7 +631,8 @@ TEST (http_integration_multiple_requests)
   EXCEPT (SocketHTTPClient_ConnectFailed)
   printf ("  [WARN] Connection failed\n");
   EXCEPT (Socket_Closed)
-  printf ("  [WARN] Connection closed by server (keep-alive may not be supported)\n");
+  printf ("  [WARN] Connection closed by server (keep-alive may not be "
+          "supported)\n");
   FINALLY
   if (client)
     SocketHTTPClient_free (&client);
@@ -645,7 +642,8 @@ TEST (http_integration_multiple_requests)
 
 /* ============================================================================
  * Main Entry Point
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)

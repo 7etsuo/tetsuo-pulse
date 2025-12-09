@@ -13,38 +13,38 @@
  * variable-length codes from 5 to 30 bits.
  */
 
+#include "core/SocketSecurity.h"
 #include "http/SocketHPACK-private.h"
 #include "http/SocketHPACK.h"
-#include "core/SocketSecurity.h"
 #include <stdbool.h>
-
-
-
 
 /* ============================================================================
  * Constants for Huffman Decoding
  *
  * These constants define the bit patterns and ranges for each code length.
  * See RFC 7541 Appendix B for the complete Huffman code table.
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Code length configurations embedded in hpack_decode_configs array above.
  * Masks computed as (1U << bitlen) - 1.
- * Note: 8-bit codes cover only 6 symbols (F8-FD), table has 7 entries with unused '\0' at index 74.
+ * Note: 8-bit codes cover only 6 symbols (F8-FD), table has 7 entries with
+ * unused '\0' at index 74.
  */
 
 /* Minimum bits to attempt decode and bit buffer threshold */
-#define HUFFMAN_MIN_CODE_BITS  5    /* Minimum code length */
-#define HUFFMAN_MAX_PAD_BITS   7    /* Maximum valid EOS padding (per RFC 7541) */
+#define HUFFMAN_MIN_CODE_BITS 5 /* Minimum code length */
+#define HUFFMAN_MAX_PAD_BITS 7  /* Maximum valid EOS padding (per RFC 7541) */
 #define HUFFMAN_REFILL_THRESHOLD 32 /* Refill bit buffer when below this */
-#define HUFFMAN_BITS_PER_BYTE  8    /* Bits per byte constant */
+#define HUFFMAN_BITS_PER_BYTE 8     /* Bits per byte constant */
 
 /* ============================================================================
  * Huffman Encode Table (RFC 7541 Appendix B)
  *
  * Each entry contains the Huffman code and its bit length.
  * Codes are stored right-aligned (ready for bit packing).
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* clang-format off */
 const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS] = {
@@ -329,25 +329,27 @@ const HPACK_HuffmanSymbol hpack_huffman_encode[HPACK_HUFFMAN_SYMBOLS] = {
  * Decode Symbol Table (sorted by code length)
  *
  * Symbols organized by their Huffman code length for fast lookup.
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static const uint16_t hpack_decode_symbols[] = {
-    /* 5-bit codes (10 symbols): '0' '1' '2' 'a' 'c' 'e' 'i' 'o' 's' 't' */
-    '0', '1', '2', 'a', 'c', 'e', 'i', 'o', 's', 't',
-    /* 6-bit codes (26 symbols) */
-    ' ', '%', '-', '.', '/', '3', '4', '5', '6', '7', '8', '9', '=',
-    'A', '_', 'b', 'd', 'f', 'g', 'h', 'l', 'm', 'n', 'p', 'r', 'u',
-    /* 7-bit codes (32 symbols) */
-    ':', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'j', 'k',
-    'q', 'v', 'w', 'x', 'y', 'z',
-    /* 8-bit codes (7 symbols) */
-    '&', '*', ',', ';', 'X', 'Z', '\0', /* '\0' is padding, not used */
+  /* 5-bit codes (10 symbols): '0' '1' '2' 'a' 'c' 'e' 'i' 'o' 's' 't' */
+  '0', '1', '2', 'a', 'c', 'e', 'i', 'o', 's', 't',
+  /* 6-bit codes (26 symbols) */
+  ' ', '%', '-', '.', '/', '3', '4', '5', '6', '7', '8', '9', '=', 'A', '_',
+  'b', 'd', 'f', 'g', 'h', 'l', 'm', 'n', 'p', 'r', 'u',
+  /* 7-bit codes (32 symbols) */
+  ':', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+  'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'j', 'k', 'q', 'v', 'w', 'x',
+  'y', 'z',
+  /* 8-bit codes (7 symbols) */
+  '&', '*', ',', ';', 'X', 'Z', '\0', /* '\0' is padding, not used */
 };
 
 /* ============================================================================
  * Helper Functions - Input Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * validate_buffer - Validate buffer pointer and length
@@ -388,13 +390,14 @@ static int
 validate_decode_params (const unsigned char *input, size_t input_len,
                         unsigned char *output, size_t output_size)
 {
-  return validate_buffer (input, input_len) &&
-         validate_buffer (output, output_size);
+  return validate_buffer (input, input_len)
+         && validate_buffer (output, output_size);
 }
 
 /* ============================================================================
  * Helper Functions - EOS Padding Validation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_valid_eos_padding - Check if remaining bits are valid EOS padding
@@ -415,19 +418,21 @@ is_valid_eos_padding (uint64_t bits, int bits_avail)
     return 0;
 
   pad_mask = (1U << bits_avail) - 1;
-  padding = (uint32_t) (bits & pad_mask);
+  padding = (uint32_t)(bits & pad_mask);
 
   return padding == pad_mask;
 }
 
 /* ============================================================================
  * Helper Functions - Code Decoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Huffman decode configuration for each code length
  */
-typedef struct {
+typedef struct
+{
   int bitlen;
   uint32_t mask;
   uint32_t first_code;
@@ -435,16 +440,18 @@ typedef struct {
   size_t symbol_offset;
 } HuffmanDecodeConfig;
 
-/* Configurations for decoding, ordered by increasing bit length for prefix matching */
+/* Configurations for decoding, ordered by increasing bit length for prefix
+ * matching */
 static const HuffmanDecodeConfig hpack_decode_configs[] = {
-  {5, 0x1Fu, 0x00u, 0x09u, 0u},     /* 5-bit: offset 0 */
-  {6, 0x3Fu, 0x14u, 0x2Du, 10u},    /* 6-bit: offset 10 */
-  {7, 0x7Fu, 0x5Cu, 0x7Bu, 36u},    /* 7-bit: offset 36 */
-  {8, 0xFFu, 0xF8u, 0xFDu, 68u}     /* 8-bit: offset 68 (6 codes: F8-FD map to 68-73) */
+  { 5, 0x1Fu, 0x00u, 0x09u, 0u },  /* 5-bit: offset 0 */
+  { 6, 0x3Fu, 0x14u, 0x2Du, 10u }, /* 6-bit: offset 10 */
+  { 7, 0x7Fu, 0x5Cu, 0x7Bu, 36u }, /* 7-bit: offset 36 */
+  { 8, 0xFFu, 0xF8u, 0xFDu,
+    68u } /* 8-bit: offset 68 (6 codes: F8-FD map to 68-73) */
 };
 
-static const size_t NUM_DECODE_CONFIGS =
-  sizeof(hpack_decode_configs) / sizeof(hpack_decode_configs[0]);
+static const size_t NUM_DECODE_CONFIGS
+    = sizeof (hpack_decode_configs) / sizeof (hpack_decode_configs[0]);
 
 /**
  * try_decode_nbit - Generic decoder for n-bit Huffman codes
@@ -466,14 +473,14 @@ try_decode_nbit (const HuffmanDecodeConfig *cfg, uint64_t bits, int bits_avail,
   if (bits_avail < cfg->bitlen)
     return 0;
 
-  code = ((uint32_t) (bits >> (bits_avail - cfg->bitlen))) & cfg->mask;
+  code = ((uint32_t)(bits >> (bits_avail - cfg->bitlen))) & cfg->mask;
 
   if (code >= cfg->first_code && code <= cfg->last_code)
     {
       size_t idx = cfg->symbol_offset + (code - cfg->first_code);
       if (*out_pos >= output_size)
         return -1;
-      output[(*out_pos)++] = (unsigned char) hpack_decode_symbols[idx];
+      output[(*out_pos)++] = (unsigned char)hpack_decode_symbols[idx];
       return 1;
     }
 
@@ -504,7 +511,8 @@ hpack_find_symbol (uint64_t code, int cl)
 }
 
 /**
- * try_full_decode - Attempt to decode symbols with long codes (9-30 bits) or EOS
+ * try_full_decode - Attempt to decode symbols with long codes (9-30 bits) or
+ * EOS
  * @bits: Current bit accumulator
  * @bits_avail: Pointer to available bits (updated on match)
  * @output: Output buffer (used for normal symbols)
@@ -515,8 +523,8 @@ hpack_find_symbol (uint64_t code, int cl)
  *          0 if no match, -1 on buffer overflow
  */
 static int
-try_full_decode (uint64_t bits, int *bits_avail,
-                 unsigned char *output, size_t *out_pos, size_t output_size)
+try_full_decode (uint64_t bits, int *bits_avail, unsigned char *output,
+                 size_t *out_pos, size_t output_size)
 {
   int maxcl = *bits_avail > 30 ? 30 : *bits_avail;
   for (int cl = 9; cl <= maxcl; cl++)
@@ -526,7 +534,7 @@ try_full_decode (uint64_t bits, int *bits_avail,
       int sym = hpack_find_symbol (thiscode, cl);
       if (sym >= 0)
         {
-          if (sym == 256)  /* EOS symbol */
+          if (sym == 256) /* EOS symbol */
             {
               int pad_b = *bits_avail - cl;
               if (pad_b > HUFFMAN_MAX_PAD_BITS || pad_b < 0)
@@ -534,21 +542,21 @@ try_full_decode (uint64_t bits, int *bits_avail,
               uint64_t pad_mask = (1ULL << pad_b) - 1ULL;
               uint64_t pad = bits & pad_mask;
               if (pad != pad_mask)
-                return 0;  /* Invalid padding after EOS */
-              *bits_avail = 0;  /* Consume EOS + padding bits */
+                return 0;      /* Invalid padding after EOS */
+              *bits_avail = 0; /* Consume EOS + padding bits */
               return 2;
             }
-          else  /* Normal byte symbol 0-255 */
+          else /* Normal byte symbol 0-255 */
             {
               if (*out_pos >= output_size)
                 return -1;
-              output[(*out_pos)++] = (unsigned char) sym;
+              output[(*out_pos)++] = (unsigned char)sym;
               *bits_avail -= cl;
               return 1;
             }
         }
     }
-  return 0;  /* No match */
+  return 0; /* No match */
 }
 
 /**
@@ -559,8 +567,8 @@ try_full_decode (uint64_t bits, int *bits_avail,
  * @out_pos: Pointer to output position (updated on success)
  * @output_size: Total output buffer size
  *
- * Tries short codes (5-8 bits) first for speed, then full table for longer codes/EOS.
- * Updates bits_avail on successful decode.
+ * Tries short codes (5-8 bits) first for speed, then full table for longer
+ * codes/EOS. Updates bits_avail on successful decode.
  *
  * Returns: 1 if normal symbol decoded, 2 if EOS found with valid pad,
  *          0 if no match, -1 on error (buffer overflow)
@@ -575,7 +583,8 @@ try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
   for (size_t i = 0; i < NUM_DECODE_CONFIGS; i++)
     {
       const HuffmanDecodeConfig *cfg = &hpack_decode_configs[i];
-      res = try_decode_nbit (cfg, bits, *bits_avail, output, out_pos, output_size);
+      res = try_decode_nbit (cfg, bits, *bits_avail, output, out_pos,
+                             output_size);
       if (res != 0)
         {
           if (res > 0)
@@ -597,7 +606,8 @@ try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
 
 /* ============================================================================
  * Public API - Huffman Encoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_huffman_encoded_size - Calculate encoded size
@@ -611,20 +621,21 @@ try_decode_symbol (uint64_t bits, int *bits_avail, unsigned char *output,
 size_t
 SocketHPACK_huffman_encoded_size (const unsigned char *input, size_t input_len)
 {
-  size_t bits = hpack_huffman_encode[256].bits;  /* Always include EOS */
+  size_t bits = hpack_huffman_encode[256].bits; /* Always include EOS */
   size_t i;
   size_t sym_bits;
 
   if (!validate_encode_params (input, input_len))
     return 0;
 
-  for (i = 0; i < input_len; i++) {
-    sym_bits = hpack_huffman_encode[input[i]].bits;
-    size_t next_bits;
-    if (!SocketSecurity_check_add(bits, sym_bits, &next_bits))
-      return SIZE_MAX;  /* Overflow indicator */
-    bits = next_bits;
-  }
+  for (i = 0; i < input_len; i++)
+    {
+      sym_bits = hpack_huffman_encode[input[i]].bits;
+      size_t next_bits;
+      if (!SocketSecurity_check_add (bits, sym_bits, &next_bits))
+        return SIZE_MAX; /* Overflow indicator */
+      bits = next_bits;
+    }
 
   /* Round up to bytes, including padding */
   return (bits + (HUFFMAN_BITS_PER_BYTE - 1)) / HUFFMAN_BITS_PER_BYTE;
@@ -672,7 +683,7 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
             return -1;
 
           bits_left -= HUFFMAN_BITS_PER_BYTE;
-          output[out_pos++] = (unsigned char) (bits >> bits_left);
+          output[out_pos++] = (unsigned char)(bits >> bits_left);
         }
     }
 
@@ -689,11 +700,12 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
           return -1;
 
         bits_left -= HUFFMAN_BITS_PER_BYTE;
-        output[out_pos++] = (unsigned char) (bits >> bits_left);
+        output[out_pos++] = (unsigned char)(bits >> bits_left);
       }
   }
 
-  /* Pad remaining bits with 1s (RFC requires padding with '1' bits after EOS) */
+  /* Pad remaining bits with 1s (RFC requires padding with '1' bits after EOS)
+   */
   if (bits_left > 0)
     {
       int pad_bits = HUFFMAN_BITS_PER_BYTE - bits_left;
@@ -702,15 +714,16 @@ SocketHPACK_huffman_encode (const unsigned char *input, size_t input_len,
         return -1;
 
       bits = (bits << pad_bits) | ((1U << pad_bits) - 1);
-      output[out_pos++] = (unsigned char) bits;
+      output[out_pos++] = (unsigned char)bits;
     }
 
-  return (ssize_t) out_pos;
+  return (ssize_t)out_pos;
 }
 
 /* ============================================================================
  * Public API - Huffman Decoding
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHPACK_huffman_decode - Decode HPACK Huffman-encoded data
@@ -756,16 +769,18 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
         break;
 
       /* Try to decode a symbol */
-      decode_result = try_decode_symbol (bits, &bits_avail, output, &out_pos, output_size);
+      decode_result = try_decode_symbol (bits, &bits_avail, output, &out_pos,
+                                         output_size);
 
       if (decode_result < 0)
         return -1; /* Buffer overflow or other error */
 
       if (decode_result == 0)
         {
-          /* No match - check if valid padding (only if EOS already seen or end) */
-          if (bits_avail <= HUFFMAN_MAX_PAD_BITS && bits_avail >= 0 &&
-              is_valid_eos_padding (bits, bits_avail))
+          /* No match - check if valid padding (only if EOS already seen or
+           * end) */
+          if (bits_avail <= HUFFMAN_MAX_PAD_BITS && bits_avail >= 0
+              && is_valid_eos_padding (bits, bits_avail))
             {
               break; /* Valid padding, end of stream */
             }
@@ -783,15 +798,15 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
       /* Mask off consumed high bits */
       if (decode_result > 0)
         {
-          bits &= ((uint64_t) 1 << bits_avail) - 1ULL;
+          bits &= ((uint64_t)1 << bits_avail) - 1ULL;
         }
     }
 
   /* Final validation after loop */
   if (bits_avail > 0)
     {
-      if (bits_avail > HUFFMAN_MAX_PAD_BITS ||
-          !is_valid_eos_padding (bits, bits_avail))
+      if (bits_avail > HUFFMAN_MAX_PAD_BITS
+          || !is_valid_eos_padding (bits, bits_avail))
         return -1; /* Invalid final padding */
     }
 
@@ -799,9 +814,10 @@ SocketHPACK_huffman_decode (const unsigned char *input, size_t input_len,
   if (input_len > 0 && !eos_seen)
     return -1; /* Missing EOS symbol */
 
-  /* Reject if extra input not consumed (but loop already tries to decode extra, failing above) */
+  /* Reject if extra input not consumed (but loop already tries to decode
+   * extra, failing above) */
   if (in_pos < input_len)
     return -1; /* Extra data after EOS/padding */
 
-  return (ssize_t) out_pos;
+  return (ssize_t)out_pos;
 }

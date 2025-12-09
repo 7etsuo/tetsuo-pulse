@@ -15,12 +15,12 @@
 
 /* cppcheck-suppress-file unreadVariable ; intentional test patterns */
 
-#include "test/Test.h"
 #include "core/Except.h"
-#include "socket/Socket.h"
-#include "socket/SocketHappyEyeballs.h"
 #include "dns/SocketDNS.h"
 #include "poll/SocketPoll.h"
+#include "socket/Socket.h"
+#include "socket/SocketHappyEyeballs.h"
+#include "test/Test.h"
 
 #include <signal.h>
 #include <string.h>
@@ -28,7 +28,8 @@
 
 /* ============================================================================
  * Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (he_config_defaults)
 {
@@ -48,8 +49,6 @@ TEST (he_config_custom)
 {
   SocketHE_Config_T config;
 
-
-
   SocketHappyEyeballs_config_defaults (&config);
 
   config.first_attempt_delay_ms = 100;
@@ -67,7 +66,8 @@ TEST (he_config_custom)
 
 /* ============================================================================
  * Synchronous API Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (he_sync_connect_localhost)
 {
@@ -193,7 +193,8 @@ TEST (he_sync_connect_timeout)
 
 /* ============================================================================
  * Asynchronous API Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (he_async_connect_localhost)
 {
@@ -250,7 +251,10 @@ TEST (he_async_connect_localhost)
   SocketHappyEyeballs_config_defaults (&config);
   config.total_timeout_ms = 5000;
 
-  TRY { he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config); }
+  TRY
+  {
+    he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config);
+  }
   EXCEPT (SocketHE_Failed)
   {
     SocketDNS_free (&dns);
@@ -399,7 +403,10 @@ TEST (he_state_transitions)
 
   SocketHappyEyeballs_config_defaults (&config);
 
-  TRY { he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config); }
+  TRY
+  {
+    he = SocketHappyEyeballs_start (dns, poll, "127.0.0.1", port, &config);
+  }
   EXCEPT (SocketHE_Failed)
   {
     SocketDNS_free (&dns);
@@ -442,12 +449,13 @@ TEST (he_state_transitions)
 
 /* ============================================================================
  * Edge Cases
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (he_free_null)
 {
   SocketHE_T he = NULL;
-  SocketHappyEyeballs_free (&he); /* Should not crash */
+  SocketHappyEyeballs_free (&he);  /* Should not crash */
   SocketHappyEyeballs_free (NULL); /* Should not crash */
   ASSERT (1);
 }
@@ -478,7 +486,8 @@ TEST (he_error_message)
 
 /* ============================================================================
  * Main
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -489,4 +498,3 @@ main (void)
   Test_run_all ();
   return Test_get_failures () > 0 ? 1 : 0;
 }
-

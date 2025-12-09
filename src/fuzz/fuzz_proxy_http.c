@@ -38,10 +38,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   conn.http_parser = NULL;
 
   /* Copy fuzzed data into receive buffer */
-  memcpy (conn.recv_buf, data, size < sizeof (conn.recv_buf)
-                                   ? size
-                                   : sizeof (conn.recv_buf) - 1);
-  conn.recv_len = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
+  memcpy (conn.recv_buf, data,
+          size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1);
+  conn.recv_len
+      = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
 
   /* Test HTTP response parsing */
   proxy_http_recv_response (&conn);
@@ -64,4 +64,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

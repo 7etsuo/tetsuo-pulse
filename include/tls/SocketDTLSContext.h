@@ -404,4 +404,3 @@ extern int SocketDTLSContext_has_cookie_exchange (T ctx);
 #endif /* SOCKET_HAS_TLS */
 
 #endif /* SOCKETDTLSCONTEXT_INCLUDED */
-

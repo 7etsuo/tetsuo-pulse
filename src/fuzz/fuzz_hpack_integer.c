@@ -31,27 +31,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Test all prefix bit sizes (1-8) */
     for (int prefix = 1; prefix <= 8; prefix++)
       {
-        SocketHPACK_Result result = SocketHPACK_int_decode (
-            data, size, prefix, &value, &consumed);
+        SocketHPACK_Result result
+            = SocketHPACK_int_decode (data, size, prefix, &value, &consumed);
 
         if (result == HPACK_OK)
           {
             /* Verify by re-encoding */
             unsigned char encoded[16];
-            size_t enc_len
-                = SocketHPACK_int_encode (value, prefix, encoded, sizeof (encoded));
+            size_t enc_len = SocketHPACK_int_encode (value, prefix, encoded,
+                                                     sizeof (encoded));
 
             /* Verify consumed matches encoded length */
             (void)enc_len;
           }
       }
   }
-  EXCEPT (SocketHPACK_Error)
-  {
-    /* Expected for malformed input */
-  }
+  EXCEPT (SocketHPACK_Error) { /* Expected for malformed input */ }
   END_TRY;
 
   return 0;
 }
-

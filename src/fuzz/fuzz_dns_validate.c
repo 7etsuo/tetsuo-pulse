@@ -17,10 +17,10 @@
 #include <string.h>
 
 #include "core/Except.h"
-#include "dns/SocketDNS.h"
 #include "dns/SocketDNS-private.h"
-#include "socket/SocketCommon.h"
+#include "dns/SocketDNS.h"
 #include "socket/SocketCommon-private.h"
+#include "socket/SocketCommon.h"
 
 /* Maximum hostname length per RFC 1035 */
 #define MAX_HOSTNAME_LEN 253
@@ -42,7 +42,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     return 0;
 
   /* Cap at max hostname length + some margin for testing */
-  size_t str_len = size > (MAX_HOSTNAME_LEN + 10) ? (MAX_HOSTNAME_LEN + 10) : size;
+  size_t str_len
+      = size > (MAX_HOSTNAME_LEN + 10) ? (MAX_HOSTNAME_LEN + 10) : size;
 
   /* Create null-terminated string from fuzz input */
   char hostname[MAX_HOSTNAME_LEN + 16];
@@ -58,14 +59,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   (void)is_ip;
 
   /* Test SocketCommon_validate_hostname via exception handling */
-  TRY
-  {
-    SocketCommon_validate_hostname (hostname, SocketDNS_Failed);
-  }
-  EXCEPT (SocketDNS_Failed)
-  {
-    /* Expected for invalid hostnames */
-  }
+  TRY { SocketCommon_validate_hostname (hostname, SocketDNS_Failed); }
+  EXCEPT (SocketDNS_Failed) { /* Expected for invalid hostnames */ }
   END_TRY;
 
   /* Test validate_resolve_params with various combinations */
@@ -82,17 +77,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           }
       }
   }
-  EXCEPT (SocketDNS_Failed)
-  {
-    /* Expected for invalid hostnames */
-  }
+  EXCEPT (SocketDNS_Failed) { /* Expected for invalid hostnames */ }
   END_TRY;
 
   /* Test with NULL hostname (should be allowed for wildcard bind) */
-  TRY
-  {
-    validate_resolve_params (NULL, 8080);
-  }
+  TRY { validate_resolve_params (NULL, 8080); }
   EXCEPT (SocketDNS_Failed)
   {
     /* May or may not raise depending on implementation */

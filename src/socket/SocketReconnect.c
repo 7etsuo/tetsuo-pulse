@@ -17,28 +17,28 @@
  *   HALF_OPEN -> OPEN: On failed probe
  */
 
-#include "socket/SocketReconnect.h"
 #include "socket/SocketReconnect-private.h"
+#include "socket/SocketReconnect.h"
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketUtil.h"
 #include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 #include "socket/Socket.h"
 
 #include <assert.h>
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 
-#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...) \
+#define RAISE_RECONNECT_ERROR_MSG(exception, fmt, ...)                        \
   SOCKET_RAISE_FMT (SocketReconnect, exception, fmt, ##__VA_ARGS__)
 #include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <poll.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -59,15 +59,11 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketReconnect);
 
 /* ============================================================================
  * State Names
- * ============================================================================ */
+ * ============================================================================
+ */
 
-static const char *state_names[] = {
-  "DISCONNECTED",
-  "CONNECTING",
-  "CONNECTED",
-  "BACKOFF",
-  "CIRCUIT_OPEN"
-};
+static const char *state_names[]
+    = { "DISCONNECTED", "CONNECTING", "CONNECTED", "BACKOFF", "CIRCUIT_OPEN" };
 
 const char *
 SocketReconnect_state_name (SocketReconnect_State state)
@@ -79,7 +75,8 @@ SocketReconnect_state_name (SocketReconnect_State state)
 
 /* ============================================================================
  * Policy Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
@@ -90,15 +87,18 @@ SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
   policy->multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
   policy->jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
   policy->max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
-  policy->circuit_failure_threshold = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
+  policy->circuit_failure_threshold
+      = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
   policy->circuit_reset_timeout_ms = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
-  policy->health_check_interval_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
+  policy->health_check_interval_ms
+      = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
   policy->health_check_timeout_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 }
 
 /* ============================================================================
  * Internal State Machine Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * transition_state - Transition to new state with callback
@@ -117,8 +117,7 @@ transition_state (T conn, SocketReconnect_State new_state)
   conn->state_start_time_ms = socketreconnect_get_time_ms ();
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d state transition: %s -> %s",
-                   conn->host, conn->port,
+                   "%s:%d state transition: %s -> %s", conn->host, conn->port,
                    SocketReconnect_state_name (old_state),
                    SocketReconnect_state_name (new_state));
 
@@ -142,7 +141,8 @@ calculate_backoff_delay (T conn)
                  * pow (conn->policy.multiplier, (double)conn->attempt_count);
 
   /* Cap at max delay, handle nan/inf */
-  if (isnan(delay) || isinf(delay) || delay > (double)conn->policy.max_delay_ms)
+  if (isnan (delay) || isinf (delay)
+      || delay > (double)conn->policy.max_delay_ms)
     delay = (double)conn->policy.max_delay_ms;
 
   /* Add jitter: delay * (1 + jitter * (2*random - 1)) */
@@ -174,9 +174,10 @@ update_circuit_breaker (T conn, int success)
       conn->consecutive_failures = 0;
       if (conn->circuit_state != CIRCUIT_CLOSED)
         {
-          SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-                           "%s:%d circuit breaker closed after successful connection",
-                           conn->host, conn->port);
+          SocketLog_emitf (
+              SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+              "%s:%d circuit breaker closed after successful connection",
+              conn->host, conn->port);
           conn->circuit_state = CIRCUIT_CLOSED;
         }
     }
@@ -189,19 +190,22 @@ update_circuit_breaker (T conn, int success)
           /* Probe failed, reopen circuit */
           conn->circuit_state = CIRCUIT_OPEN;
           conn->circuit_open_time_ms = socketreconnect_get_time_ms ();
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "%s:%d circuit breaker reopened after probe failure",
-                           conn->host, conn->port);
+          SocketLog_emitf (
+              SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+              "%s:%d circuit breaker reopened after probe failure", conn->host,
+              conn->port);
         }
-      else if (conn->consecutive_failures >= conn->policy.circuit_failure_threshold
+      else if (conn->consecutive_failures
+                   >= conn->policy.circuit_failure_threshold
                && conn->circuit_state == CIRCUIT_CLOSED)
         {
           /* Too many failures, open circuit */
           conn->circuit_state = CIRCUIT_OPEN;
           conn->circuit_open_time_ms = socketreconnect_get_time_ms ();
-          SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                           "%s:%d circuit breaker opened after %d consecutive failures",
-                           conn->host, conn->port, conn->consecutive_failures);
+          SocketLog_emitf (
+              SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+              "%s:%d circuit breaker opened after %d consecutive failures",
+              conn->host, conn->port, conn->consecutive_failures);
         }
     }
 }
@@ -220,7 +224,8 @@ circuit_allows_attempt (T conn)
 
   if (conn->circuit_state == CIRCUIT_OPEN)
     {
-      int64_t elapsed = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
+      int64_t elapsed
+          = socketreconnect_elapsed_ms (conn->circuit_open_time_ms);
       if (elapsed >= conn->policy.circuit_reset_timeout_ms)
         {
           /* Allow probe attempt */
@@ -254,7 +259,8 @@ close_socket (T conn)
 
 /* ============================================================================
  * Connection Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * start_connect - Initiate connection attempt
@@ -274,8 +280,8 @@ start_connect (T conn)
       snprintf (conn->error_buf, sizeof (conn->error_buf),
                 "Maximum reconnection attempts (%d) reached",
                 conn->policy.max_attempts);
-      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "%s:%d %s", conn->host, conn->port, conn->error_buf);
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT, "%s:%d %s",
+                       conn->host, conn->port, conn->error_buf);
       return 0;
     }
 
@@ -289,18 +295,16 @@ start_connect (T conn)
   /* Clean up any existing socket */
   close_socket (conn);
 
-  /* Create new socket - use AF_INET for IPv4, resolve actual address family later */
-  TRY
-  {
-    conn->socket = Socket_new (AF_INET, SOCK_STREAM, 0);
-  }
+  /* Create new socket - use AF_INET for IPv4, resolve actual address family
+   * later */
+  TRY { conn->socket = Socket_new (AF_INET, SOCK_STREAM, 0); }
   EXCEPT (Socket_Failed)
   {
     int err = Socket_geterrno ();
     snprintf (conn->error_buf, sizeof (conn->error_buf),
               "Failed to create socket: %s", Socket_safe_strerror (err));
     conn->last_error = Socket_geterrno (); /* LCOV_EXCL_LINE */
-    return 0; /* LCOV_EXCL_LINE */
+    return 0;                              /* LCOV_EXCL_LINE */
   }
   END_TRY;
 
@@ -313,8 +317,8 @@ start_connect (T conn)
   if (flags < 0 || fcntl (fd, F_SETFL, flags | O_NONBLOCK) < 0)
     {
       conn->last_error = errno; /* LCOV_EXCL_LINE */
-      close_socket (conn); /* LCOV_EXCL_LINE */
-      return 0; /* LCOV_EXCL_LINE */
+      close_socket (conn);      /* LCOV_EXCL_LINE */
+      return 0;                 /* LCOV_EXCL_LINE */
     }
 
   /* Update attempt tracking */
@@ -323,8 +327,8 @@ start_connect (T conn)
   conn->last_attempt_time_ms = socketreconnect_get_time_ms ();
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d starting connection attempt %d",
-                   conn->host, conn->port, conn->attempt_count);
+                   "%s:%d starting connection attempt %d", conn->host,
+                   conn->port, conn->attempt_count);
 
   /* Start connect - use Socket_connect which handles DNS */
   TRY
@@ -347,8 +351,8 @@ start_connect (T conn)
 
     /* Real failure */
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Connect failed: %s", Socket_safe_strerror (err));
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "Connect failed: %s",
+              Socket_safe_strerror (err));
     conn->last_error = Socket_geterrno ();
     close_socket (conn);
     return 0;
@@ -470,9 +474,8 @@ handle_connect_failure (T conn)
   update_circuit_breaker (conn, 0);
 
   SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                   "%s:%d connection attempt %d failed: %s",
-                   conn->host, conn->port, conn->attempt_count,
-                   conn->error_buf);
+                   "%s:%d connection attempt %d failed: %s", conn->host,
+                   conn->port, conn->attempt_count, conn->error_buf);
 
   /* Check if circuit breaker tripped */
   if (conn->circuit_state == CIRCUIT_OPEN)
@@ -491,19 +494,20 @@ handle_connect_failure (T conn)
 
   /* Enter backoff */
   conn->current_backoff_delay_ms = calculate_backoff_delay (conn);
-  conn->backoff_until_ms = socketreconnect_get_time_ms ()
-                           + conn->current_backoff_delay_ms;
+  conn->backoff_until_ms
+      = socketreconnect_get_time_ms () + conn->current_backoff_delay_ms;
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d backing off for %d ms",
-                   conn->host, conn->port, conn->current_backoff_delay_ms);
+                   "%s:%d backing off for %d ms", conn->host, conn->port,
+                   conn->current_backoff_delay_ms);
 
   transition_state (conn, RECONNECT_BACKOFF);
 }
 
 /* ============================================================================
  * Health Check
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * default_health_check - Default health check implementation
@@ -522,7 +526,7 @@ default_health_check (T conn, Socket_T socket, int timeout_ms, void *userdata)
   struct pollfd pfd;
   int fd, result;
   char buf;
-  int poll_timeout = (timeout_ms > 0) ? timeout_ms : 100;  /* Min 100ms check */
+  int poll_timeout = (timeout_ms > 0) ? timeout_ms : 100; /* Min 100ms check */
 
   (void)conn;
   (void)userdata;
@@ -573,15 +577,16 @@ perform_health_check (T conn)
     return;
 
   check = conn->health_check ? conn->health_check : default_health_check;
-  healthy = check (conn, conn->socket, conn->policy.health_check_timeout_ms, conn->userdata);
+  healthy = check (conn, conn->socket, conn->policy.health_check_timeout_ms,
+                   conn->userdata);
 
   conn->last_health_check_ms = socketreconnect_get_time_ms ();
 
   if (!healthy)
     {
       SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
-                       "%s:%d health check failed, reconnecting",
-                       conn->host, conn->port);
+                       "%s:%d health check failed, reconnecting", conn->host,
+                       conn->port);
       close_socket (conn);
       handle_connect_failure (conn);
     }
@@ -589,7 +594,8 @@ perform_health_check (T conn)
 
 /* ============================================================================
  * Context Creation and Destruction
- * ============================================================================ */
+ * ============================================================================
+ */
 
 T
 SocketReconnect_new (const char *host, int port,
@@ -599,27 +605,32 @@ SocketReconnect_new (const char *host, int port,
   T conn;
   size_t host_len;
 
-  if (!host) {
-    SOCKET_ERROR_MSG ("Host cannot be NULL");
-    RAISE_MODULE_ERROR (SocketReconnect_Failed);
-  }
-  if (!(port > 0 && port <= 65535)) {
-    SOCKET_ERROR_FMT ("Invalid port %d (must be 1-65535)", port);
-    RAISE_MODULE_ERROR (SocketReconnect_Failed);
-  }
+  if (!host)
+    {
+      SOCKET_ERROR_MSG ("Host cannot be NULL");
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);
+    }
+  if (!(port > 0 && port <= 65535))
+    {
+      SOCKET_ERROR_FMT ("Invalid port %d (must be 1-65535)", port);
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);
+    }
 
   conn = calloc (1, sizeof (*conn));
   if (!conn)
     {
-      SOCKET_ERROR_MSG ("Failed to allocate reconnection context"); /* LCOV_EXCL_LINE */
-      RAISE_MODULE_ERROR (SocketReconnect_Failed); /* LCOV_EXCL_LINE */
+      SOCKET_ERROR_MSG (
+          "Failed to allocate reconnection context"); /* LCOV_EXCL_LINE */
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);    /* LCOV_EXCL_LINE */
     }
 
   conn->arena = Arena_new ();
   if (!conn->arena)
     {
       free (conn); /* LCOV_EXCL_LINE */
-      SOCKET_ERROR_MSG ("Failed to create arena for reconnection context"); /* LCOV_EXCL_LINE */
+      SOCKET_ERROR_MSG (
+          "Failed to create arena for reconnection context"); /* LCOV_EXCL_LINE
+                                                               */
       RAISE_MODULE_ERROR (SocketReconnect_Failed); /* LCOV_EXCL_LINE */
     }
 
@@ -630,37 +641,52 @@ SocketReconnect_new (const char *host, int port,
     SocketReconnect_policy_defaults (&conn->policy);
 
   /* Validate policy parameters */
-  if (conn->policy.initial_delay_ms < 1) conn->policy.initial_delay_ms = SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS;
-  if (conn->policy.max_delay_ms < conn->policy.initial_delay_ms) conn->policy.max_delay_ms = SOCKET_RECONNECT_DEFAULT_MAX_DELAY_MS;
-  if (conn->policy.multiplier < 1.0) conn->policy.multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
-  if (conn->policy.jitter < 0.0 || conn->policy.jitter > 1.0) conn->policy.jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
-  if (conn->policy.max_attempts < 0) conn->policy.max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
-  if (conn->policy.circuit_failure_threshold < 1) conn->policy.circuit_failure_threshold = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
-  if (conn->policy.circuit_reset_timeout_ms < 1000) conn->policy.circuit_reset_timeout_ms = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
-  if (conn->policy.health_check_interval_ms < 0) conn->policy.health_check_interval_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
-  if (conn->policy.health_check_timeout_ms < 100) conn->policy.health_check_timeout_ms = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
+  if (conn->policy.initial_delay_ms < 1)
+    conn->policy.initial_delay_ms = SOCKET_RECONNECT_DEFAULT_INITIAL_DELAY_MS;
+  if (conn->policy.max_delay_ms < conn->policy.initial_delay_ms)
+    conn->policy.max_delay_ms = SOCKET_RECONNECT_DEFAULT_MAX_DELAY_MS;
+  if (conn->policy.multiplier < 1.0)
+    conn->policy.multiplier = SOCKET_RECONNECT_DEFAULT_MULTIPLIER;
+  if (conn->policy.jitter < 0.0 || conn->policy.jitter > 1.0)
+    conn->policy.jitter = SOCKET_RECONNECT_DEFAULT_JITTER;
+  if (conn->policy.max_attempts < 0)
+    conn->policy.max_attempts = SOCKET_RECONNECT_DEFAULT_MAX_ATTEMPTS;
+  if (conn->policy.circuit_failure_threshold < 1)
+    conn->policy.circuit_failure_threshold
+        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_THRESHOLD;
+  if (conn->policy.circuit_reset_timeout_ms < 1000)
+    conn->policy.circuit_reset_timeout_ms
+        = SOCKET_RECONNECT_DEFAULT_CIRCUIT_RESET_MS;
+  if (conn->policy.health_check_interval_ms < 0)
+    conn->policy.health_check_interval_ms
+        = SOCKET_RECONNECT_DEFAULT_HEALTH_INTERVAL_MS;
+  if (conn->policy.health_check_timeout_ms < 100)
+    conn->policy.health_check_timeout_ms
+        = SOCKET_RECONNECT_DEFAULT_HEALTH_TIMEOUT_MS;
 
   /* Copy hostname with length validation */
   host_len = strlen (host) + 1;
-  if (!SocketSecurity_check_size (host_len)) {
-    RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed, "Hostname too long for allocation");
-  }
+  if (!SocketSecurity_check_size (host_len))
+    {
+      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
+                                 "Hostname too long for allocation");
+    }
   if (host_len > SOCKET_ERROR_MAX_HOSTNAME + 1)
     {
       Arena_dispose (&conn->arena);
       free (conn);
-      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)",
-                        host_len - 1, SOCKET_ERROR_MAX_HOSTNAME);
+      SOCKET_ERROR_FMT ("Hostname too long (%zu > %d max)", host_len - 1,
+                        SOCKET_ERROR_MAX_HOSTNAME);
       RAISE_MODULE_ERROR (SocketReconnect_Failed);
     }
 
   conn->host = Arena_alloc (conn->arena, host_len, __FILE__, __LINE__);
   if (!conn->host)
     {
-      Arena_dispose (&conn->arena); /* LCOV_EXCL_LINE */
-      free (conn); /* LCOV_EXCL_LINE */
+      Arena_dispose (&conn->arena);                     /* LCOV_EXCL_LINE */
+      free (conn);                                      /* LCOV_EXCL_LINE */
       SOCKET_ERROR_MSG ("Failed to allocate hostname"); /* LCOV_EXCL_LINE */
-      RAISE_MODULE_ERROR (SocketReconnect_Failed); /* LCOV_EXCL_LINE */
+      RAISE_MODULE_ERROR (SocketReconnect_Failed);      /* LCOV_EXCL_LINE */
     }
   memcpy (conn->host, host, host_len);
   conn->port = port;
@@ -701,7 +727,8 @@ SocketReconnect_free (T *conn)
 
 /* ============================================================================
  * Connection Control
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketReconnect_connect (T conn)
@@ -748,8 +775,8 @@ SocketReconnect_disconnect (T conn)
   conn->attempt_count = 0;
   transition_state (conn, RECONNECT_DISCONNECTED);
 
-  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
-                   "%s:%d disconnected", conn->host, conn->port);
+  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT, "%s:%d disconnected",
+                   conn->host, conn->port);
 }
 
 void
@@ -764,13 +791,14 @@ SocketReconnect_reset (T conn)
   conn->last_error = 0;
 
   SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
-                   "%s:%d reset backoff and circuit breaker state",
-                   conn->host, conn->port);
+                   "%s:%d reset backoff and circuit breaker state", conn->host,
+                   conn->port);
 }
 
 /* ============================================================================
  * Socket Access
- * ============================================================================ */
+ * ============================================================================
+ */
 
 Socket_T
 SocketReconnect_socket (T conn)
@@ -785,7 +813,8 @@ SocketReconnect_socket (T conn)
 
 /* ============================================================================
  * State Query
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketReconnect_State
 SocketReconnect_state (T conn)
@@ -817,7 +846,8 @@ SocketReconnect_failures (T conn)
 
 /* ============================================================================
  * Event Loop Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketReconnect_pollfd (T conn)
@@ -873,7 +903,8 @@ SocketReconnect_next_timeout_ms (T conn)
 
     case RECONNECT_CIRCUIT_OPEN:
       remaining = (conn->circuit_open_time_ms
-                   + conn->policy.circuit_reset_timeout_ms) - now;
+                   + conn->policy.circuit_reset_timeout_ms)
+                  - now;
       if (remaining <= 0)
         return 0;
       timeout = (int)remaining;
@@ -884,7 +915,8 @@ SocketReconnect_next_timeout_ms (T conn)
       if (conn->policy.health_check_interval_ms > 0)
         {
           remaining = (conn->last_health_check_ms
-                       + conn->policy.health_check_interval_ms) - now;
+                       + conn->policy.health_check_interval_ms)
+                      - now;
           if (remaining <= 0)
             return 0;
           timeout = (int)remaining;
@@ -927,7 +959,8 @@ SocketReconnect_tick (T conn)
       break;
 
     case RECONNECT_CIRCUIT_OPEN:
-      if (now >= conn->circuit_open_time_ms + conn->policy.circuit_reset_timeout_ms)
+      if (now >= conn->circuit_open_time_ms
+                     + conn->policy.circuit_reset_timeout_ms)
         {
           /* Try probe connection */
           conn->circuit_state = CIRCUIT_HALF_OPEN;
@@ -947,7 +980,8 @@ SocketReconnect_tick (T conn)
     case RECONNECT_CONNECTED:
       /* Health check */
       if (conn->policy.health_check_interval_ms > 0
-          && now >= conn->last_health_check_ms + conn->policy.health_check_interval_ms)
+          && now >= conn->last_health_check_ms
+                        + conn->policy.health_check_interval_ms)
         {
           perform_health_check (conn);
         }
@@ -960,7 +994,8 @@ SocketReconnect_tick (T conn)
 
 /* ============================================================================
  * Health Check Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check)
@@ -971,7 +1006,8 @@ SocketReconnect_set_health_check (T conn, SocketReconnect_HealthCheck check)
 
 /* ============================================================================
  * I/O Passthrough
- * ============================================================================ */
+ * ============================================================================
+ */
 
 ssize_t
 SocketReconnect_send (T conn, const void *buf, size_t len)
@@ -993,8 +1029,8 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
     /* Connection error - trigger reconnect */
     conn->last_error = Socket_geterrno ();
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Send failed: %s", Socket_safe_strerror (err));
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "Send failed: %s",
+              Socket_safe_strerror (err));
     close_socket (conn);
     handle_connect_failure (conn);
     errno = ENOTCONN;
@@ -1033,8 +1069,8 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
     /* Connection error - trigger reconnect */
     conn->last_error = Socket_geterrno ();
     int err = Socket_geterrno ();
-    snprintf (conn->error_buf, sizeof (conn->error_buf),
-              "Recv failed: %s", Socket_safe_strerror (err));
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "Recv failed: %s",
+              Socket_safe_strerror (err));
     close_socket (conn);
     handle_connect_failure (conn);
     return 0;
@@ -1059,4 +1095,3 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
 }
 
 #undef T
-

@@ -62,7 +62,8 @@ typedef struct T *T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketPoll_Failed - Poll operation failure
@@ -102,58 +103,71 @@ typedef struct SocketEvent
 #define SOCKET_POLL_TIMEOUT_USE_DEFAULT (-2)
 
 /**
- * SocketPoll_new - Create a new event poll
- * @maxevents: Maximum events to return per wait call
- * Returns: New poll instance
- * Raises: SocketPoll_Failed on error
- * Thread-safe: Yes - returns new instance
- * Creates an edge-triggered epoll instance for high-performance I/O.
+ * @brief Create a new event poll.
+ * @ingroup event_system
+ * @param maxevents Maximum events to return per wait call.
+ * @return New poll instance.
+ * @throws SocketPoll_Failed on error.
+ * @threadsafe Yes - returns new instance.
+ * @note Creates an edge-triggered epoll instance for high-performance I/O.
+ * @see SocketPoll_free() for cleanup.
+ * @see SocketPoll_wait() for event waiting.
  */
 extern T SocketPoll_new (int maxevents);
 
 /**
- * SocketPoll_free - Free an event poll
- * @poll: Pointer to poll (will be set to NULL)
- * Closes the underlying epoll descriptor
+ * @brief Free an event poll.
+ * @ingroup event_system
+ * @param poll Pointer to poll (will be set to NULL).
+ * @threadsafe Yes.
+ * @note Closes the underlying epoll descriptor.
+ * @see SocketPoll_new() for creation.
  */
 extern void SocketPoll_free (T *poll);
 
 /**
- * SocketPoll_add - Add socket to poll set
- * @poll: Poll instance
- * @socket: Socket to monitor
- * @events: Events to monitor (POLL_READ | POLL_WRITE)
- * @data: User data to associate with socket
- * Socket is automatically set to non-blocking mode
- * Raises: SocketPoll_Failed if socket already added or epoll_ctl fails
- * Thread-safe: Yes - uses internal mutex for socket data mapping
+ * @brief Add socket to poll set.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param socket Socket to monitor.
+ * @param events Events to monitor (POLL_READ | POLL_WRITE).
+ * @param data User data to associate with socket.
+ * @threadsafe Yes - uses internal mutex for socket data mapping.
+ * @note Socket is automatically set to non-blocking mode.
+ * @throws SocketPoll_Failed if socket already added or epoll_ctl fails.
+ * @see SocketPoll_mod() for modifying monitored events.
+ * @see SocketPoll_del() for removal.
  */
 extern void SocketPoll_add (T poll, Socket_T socket, unsigned events,
                             void *data);
 
 /**
- * SocketPoll_mod - Modify monitored events
- * @poll: Poll instance
- * @socket: Socket to modify
- * @events: New events to monitor
- * @data: New user data (updates association)
- * Raises: SocketPoll_Failed if socket not in poll or epoll_ctl fails
- * Thread-safe: Yes - atomic update of socket data mapping
+ * @brief Modify monitored events.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param socket Socket to modify.
+ * @param events New events to monitor.
+ * @param data New user data (updates association).
+ * @threadsafe Yes - atomic update of socket data mapping.
+ * @throws SocketPoll_Failed if socket not in poll or epoll_ctl fails.
+ * @see SocketPoll_add() for initial registration.
+ * @see SocketPoll_del() for removal.
  */
 extern void SocketPoll_mod (T poll, Socket_T socket, unsigned events,
                             void *data);
 
 /**
- * SocketPoll_del - Remove socket from poll set
- * @poll: Poll instance
- * @socket: Socket to remove
- * Silently succeeds if socket not in poll
- * Thread-safe: Yes - uses internal mutex for socket data mapping
- */
-/**
- * Note: On backend error (non-ENOENT), raises leaving state intact for retry.
- * Logs ENOENT warning and cleans data map. Security: Prioritizes backend clean.
- * Single-threaded socket access assumed.
+ * @brief Remove socket from poll set.
+ * @ingroup event_system
+ * @param poll Poll instance.
+ * @param socket Socket to remove.
+ * @threadsafe Yes - uses internal mutex for socket data mapping.
+ * @note Silently succeeds if socket not in poll.
+ * @note On backend error (non-ENOENT), raises leaving state intact for retry.
+ * @note Logs ENOENT warning and cleans data map. Security: Prioritizes backend clean.
+ * @note Single-threaded socket access assumed.
+ * @see SocketPoll_add() for registration.
+ * @see SocketPoll_mod() for modification.
  */
 extern void SocketPoll_del (T poll, Socket_T socket);
 

@@ -154,9 +154,6 @@ generate_request_id_unlocked (T async)
   return id;
 }
 
-
-
-
 /**
  * socket_async_allocate_request - Allocate async request structure
  * @async: Async context
@@ -171,10 +168,7 @@ socket_async_allocate_request (T async)
 
   assert (async);
 
-  TRY
-  {
-    req = CALLOC (async->arena, 1, sizeof (struct AsyncRequest));
-  }
+  TRY { req = CALLOC (async->arena, 1, sizeof (struct AsyncRequest)); }
   EXCEPT (Arena_Failed)
   {
     /* LCOV_EXCL_START */
@@ -203,15 +197,13 @@ socket_async_free_request (T async, struct AsyncRequest *req)
     memset (req, 0, sizeof (*req));
 }
 
-static int
-find_and_remove_request (T async, unsigned request_id,
-                         struct AsyncRequest **out_req,
-                         SocketAsync_Callback *out_cb,
-                         Socket_T *out_socket,
-                         void **out_user_data);
+static int find_and_remove_request (T async, unsigned request_id,
+                                    struct AsyncRequest **out_req,
+                                    SocketAsync_Callback *out_cb,
+                                    Socket_T *out_socket,
+                                    void **out_user_data);
 
-static void
-remove_known_request (T async, struct AsyncRequest *req);
+static void remove_known_request (T async, struct AsyncRequest *req);
 
 /**
  * handle_completion - Handle async operation completion
@@ -231,7 +223,8 @@ handle_completion (T async, unsigned request_id, ssize_t result, int err)
   Socket_T socket;
   void *user_data;
 
-  if (!find_and_remove_request (async, request_id, &req, &cb, &socket, &user_data))
+  if (!find_and_remove_request (async, request_id, &req, &cb, &socket,
+                                &user_data))
     return;
 
   if (cb)
@@ -296,7 +289,8 @@ cleanup_failed_request (T async, struct AsyncRequest *req)
 /* LCOV_EXCL_STOP */
 
 /**
- * find_and_remove_request - Find request by ID, remove from hash table, extract info
+ * find_and_remove_request - Find request by ID, remove from hash table,
+ * extract info
  * @async: Async context
  * @request_id: ID of request to find and remove
  * @out_req: Output: removed request pointer (always set if found)
@@ -306,15 +300,14 @@ cleanup_failed_request (T async, struct AsyncRequest *req)
  *
  * Returns: 1 if found and removed, 0 otherwise
  * Thread-safe: Yes (acquires/releases mutex)
- * 
+ *
  * Extracts callback info under lock for safety, minimizes lock hold time.
  * Outputs initialized to NULL/0 if not found or param NULL.
  */
 static int
 find_and_remove_request (T async, unsigned request_id,
                          struct AsyncRequest **out_req,
-                         SocketAsync_Callback *out_cb,
-                         Socket_T *out_socket,
+                         SocketAsync_Callback *out_cb, Socket_T *out_socket,
                          void **out_user_data)
 {
   unsigned hash;
@@ -325,9 +318,12 @@ find_and_remove_request (T async, unsigned request_id,
   assert (async);
 
   *out_req = NULL;
-  if (out_cb) *out_cb = NULL;
-  if (out_socket) *out_socket = NULL;
-  if (out_user_data) *out_user_data = NULL;
+  if (out_cb)
+    *out_cb = NULL;
+  if (out_socket)
+    *out_socket = NULL;
+  if (out_user_data)
+    *out_user_data = NULL;
 
   hash = request_hash (request_id);
   pthread_mutex_lock (&async->mutex);
@@ -341,9 +337,12 @@ find_and_remove_request (T async, unsigned request_id,
   if (req)
     {
       found = 1;
-      if (out_cb) *out_cb = req->cb;
-      if (out_socket) *out_socket = req->socket;
-      if (out_user_data) *out_user_data = req->user_data;
+      if (out_cb)
+        *out_cb = req->cb;
+      if (out_socket)
+        *out_socket = req->socket;
+      if (out_user_data)
+        *out_user_data = req->user_data;
       *out_req = req;
       *pp = req->next;
     }
@@ -358,7 +357,7 @@ find_and_remove_request (T async, unsigned request_id,
  * @req: Request pointer to remove (validated != NULL)
  *
  * Thread-safe: Yes (acquires/releases mutex)
- * 
+ *
  * Traverses hash chain to find and unlink the specific req pointer.
  * Safe to call even if req already removed (no-op).
  */
@@ -368,7 +367,8 @@ remove_known_request (T async, struct AsyncRequest *req)
   unsigned hash;
   struct AsyncRequest **pp;
 
-  if (!req || !async) return;
+  if (!req || !async)
+    return;
 
   hash = request_hash (req->request_id);
   pthread_mutex_lock (&async->mutex);
@@ -542,8 +542,6 @@ submit_kqueue_aio (T async, struct AsyncRequest *req)
   return 0;
 }
 
-
-
 /**
  * kqueue_perform_io - Perform I/O operation for kqueue completion
  * @req: Request with operation details
@@ -572,7 +570,8 @@ kqueue_perform_io (struct AsyncRequest *req, ssize_t *result, int *err)
       }
     else
       {
-        *result = socket_recv_internal (req->socket, req->recv_buf, req->len, 0);
+        *result
+            = socket_recv_internal (req->socket, req->recv_buf, req->len, 0);
         if (*result == 0)
           {
             *err = EAGAIN;
@@ -704,13 +703,14 @@ detect_async_backend (T async)
           async->io_uring_fd = eventfd (0, EFD_NONBLOCK | EFD_CLOEXEC);
           if (async->io_uring_fd >= 0)
             {
-              if (io_uring_register_eventfd(async->ring, async->io_uring_fd) == 0)
+              if (io_uring_register_eventfd (async->ring, async->io_uring_fd)
+                  == 0)
                 {
                   async->available = 1;
                   async->backend_name = "io_uring";
                   return 1;
                 }
-              close(async->io_uring_fd);
+              close (async->io_uring_fd);
             }
           io_uring_queue_exit (async->ring);
           async->ring = NULL;
@@ -827,7 +827,7 @@ process_async_completions_internal (T async,
  *
  * Returns: Request ID on success, raises on failure
  * Thread-safe: Yes
- * 
+ *
  * Validates parameters, sets up request, tracks in hash, submits to backend.
  * Used by public SocketAsync_send/recv.
  */
@@ -844,7 +844,8 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
   if (!async || !socket || !cb || len == 0 || !SOCKET_VALID_BUFFER_SIZE (len))
     {
       errno = EINVAL;
-      SOCKET_ERROR_FMT ("Invalid parameters or buffer size %zu for async submit", len);
+      SOCKET_ERROR_FMT (
+          "Invalid parameters or buffer size %zu for async submit", len);
       RAISE_MODULE_ERROR (SocketAsync_Failed);
     }
   if (type == REQ_SEND && !send_buf)
@@ -861,18 +862,12 @@ socket_async_submit (T async, Socket_T socket, enum AsyncRequestType type,
     }
 
   /* Ensure socket is non-blocking */
-  TRY
-    {
-      Socket_setnonblocking (socket);
-    }
-  EXCEPT (Socket_Failed)
-    {
-      /* Ignore - may already be set or error */
-    }
+  TRY { Socket_setnonblocking (socket); }
+  EXCEPT (Socket_Failed) { /* Ignore - may already be set or error */ }
   END_TRY;
 
-  req = setup_async_request (async, socket, cb, user_data, type,
-                             send_buf, recv_buf, len, flags);
+  req = setup_async_request (async, socket, cb, user_data, type, send_buf,
+                             recv_buf, len, flags);
 
   request_id = submit_and_track_request (async, req);
   if (request_id == 0)
@@ -894,10 +889,7 @@ SocketAsync_new (Arena_T arena)
 
   assert (arena);
 
-  TRY
-  {
-    async = CALLOC (arena, 1, sizeof (*async));
-  }
+  TRY { async = CALLOC (arena, 1, sizeof (*async)); }
   EXCEPT (Arena_Failed)
   {
     /* LCOV_EXCL_START */
@@ -950,7 +942,7 @@ SocketAsync_free (T *async)
     {
       if ((*async)->io_uring_fd >= 0)
         {
-          io_uring_register_eventfd((*async)->ring, -1);
+          io_uring_register_eventfd ((*async)->ring, -1);
           close ((*async)->io_uring_fd);
         }
       io_uring_queue_exit ((*async)->ring);
@@ -996,16 +988,17 @@ SocketAsync_backend_name (const T async)
  * Returns: Unique request ID on success, raises SocketAsync_Failed on error
  * Thread-safe: Yes
  *
- * Submits non-blocking send operation to backend. Callback invoked on completion
- * with bytes sent (or negative error). Use SocketAsync_cancel to cancel pending.
- * Raises if no async backend available or submit fails.
+ * Submits non-blocking send operation to backend. Callback invoked on
+ * completion with bytes sent (or negative error). Use SocketAsync_cancel to
+ * cancel pending. Raises if no async backend available or submit fails.
  */
 unsigned
 SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
                   SocketAsync_Callback cb, void *user_data,
                   SocketAsync_Flags flags)
 {
-  return socket_async_submit (async, socket, REQ_SEND, buf, NULL, len, cb, user_data, flags);
+  return socket_async_submit (async, socket, REQ_SEND, buf, NULL, len, cb,
+                              user_data, flags);
 }
 
 /**
@@ -1021,17 +1014,18 @@ SocketAsync_send (T async, Socket_T socket, const void *buf, size_t len,
  * Returns: Unique request ID on success, raises SocketAsync_Failed on error
  * Thread-safe: Yes
  *
- * Submits non-blocking recv operation to backend. Callback invoked on completion
- * with bytes received (0 for EOF/would block, negative error). 
- * Use SocketAsync_cancel to cancel pending.
- * Raises if no async backend available or submit fails.
+ * Submits non-blocking recv operation to backend. Callback invoked on
+ * completion with bytes received (0 for EOF/would block, negative error). Use
+ * SocketAsync_cancel to cancel pending. Raises if no async backend available
+ * or submit fails.
  */
 unsigned
 SocketAsync_recv (T async, Socket_T socket, void *buf, size_t len,
                   SocketAsync_Callback cb, void *user_data,
                   SocketAsync_Flags flags)
 {
-  return socket_async_submit (async, socket, REQ_RECV, NULL, buf, len, cb, user_data, flags);
+  return socket_async_submit (async, socket, REQ_RECV, NULL, buf, len, cb,
+                              user_data, flags);
 }
 
 /**

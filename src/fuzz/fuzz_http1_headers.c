@@ -38,13 +38,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   size_t prefix_len = strlen (prefix);
   size_t suffix_len = strlen (suffix);
   size_t total_len;
-  if (!SocketSecurity_check_add (prefix_len, size, &total_len) ||
-      !SocketSecurity_check_add (total_len, suffix_len, &total_len) ||
-      !SocketSecurity_check_add (total_len, 1, &total_len) ||
-      !SocketSecurity_check_size (total_len)) {
-    return 0;  /* Fuzz input too large - skip */
-  }
-  request_len = total_len - 1;  /* Exclude the +1 for null */
+  if (!SocketSecurity_check_add (prefix_len, size, &total_len)
+      || !SocketSecurity_check_add (total_len, suffix_len, &total_len)
+      || !SocketSecurity_check_add (total_len, 1, &total_len)
+      || !SocketSecurity_check_size (total_len))
+    {
+      return 0; /* Fuzz input too large - skip */
+    }
+  request_len = total_len - 1; /* Exclude the +1 for null */
   request = Arena_alloc (arena, total_len, __FILE__, __LINE__);
   if (!request)
     {
@@ -108,4 +109,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

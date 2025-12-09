@@ -5,9 +5,10 @@
  * @defgroup core_io Core I/O Modules
  * @brief Fundamental socket operations for TCP, UDP, and Unix domain sockets.
  *
- * The Core I/O group provides the basic socket primitives used by all higher-level
- * networking modules. Key components include:
- * - Socket (tcp/unix): High-level TCP/Unix socket abstraction with I/O operations
+ * The Core I/O group provides the basic socket primitives used by all
+ * higher-level networking modules. Key components include:
+ * - Socket (tcp/unix): High-level TCP/Unix socket abstraction with I/O
+ * operations
  * - SocketBuf (buffers): Circular buffer for efficient socket I/O
  * - SocketDgram (udp): UDP datagram sockets with multicast/broadcast support
  * - SocketDNS (dns): Asynchronous DNS resolution with worker threads
@@ -69,7 +70,8 @@ typedef struct T *T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief General socket operation failure exception.
@@ -125,7 +127,8 @@ extern const Except_T SocketUnix_Failed;
 
 /* ============================================================================
  * Error Retryability Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * @brief Check if an errno indicates a retryable error.
@@ -174,7 +177,8 @@ extern int Socket_error_is_retryable (int err);
 
 /* ============================================================================
  * Socket Creation and Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_new - Create a new socket
@@ -221,7 +225,8 @@ extern int Socket_debug_live_count (void);
 
 /* ============================================================================
  * Connection Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_bind - Bind socket to address and port
@@ -261,7 +266,8 @@ extern void Socket_connect (T socket, const char *host, int port);
 
 /* ============================================================================
  * Basic I/O Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_send - Send data
@@ -305,7 +311,8 @@ extern ssize_t Socket_recvall (T socket, void *buf, size_t len);
 
 /* ============================================================================
  * Scatter/Gather I/O Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_sendv - Scatter/gather send (writev wrapper)
@@ -349,7 +356,8 @@ extern ssize_t Socket_recvvall (T socket, struct iovec *iov, int iovcnt);
 
 /* ============================================================================
  * Zero-Copy and Advanced I/O
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_sendfile - Zero-copy file-to-socket transfer
@@ -397,7 +405,8 @@ extern ssize_t Socket_recvmsg (T socket, struct msghdr *msg, int flags);
 
 /* ============================================================================
  * Socket State Query Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_isconnected - Check if socket is connected
@@ -462,7 +471,8 @@ extern int Socket_getlocalport (const T socket);
 
 /* ============================================================================
  * Socket Options Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_setnonblocking - Enable non-blocking mode
@@ -638,7 +648,8 @@ extern void Socket_setcloexec (T socket, int enable);
 
 /* ============================================================================
  * SYN Flood Protection Socket Options
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_setdeferaccept - Enable TCP_DEFER_ACCEPT
@@ -670,7 +681,8 @@ extern int Socket_getdeferaccept (T socket);
 
 /* ============================================================================
  * Timeout Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_timeouts_get - Retrieve per-socket timeout configuration
@@ -712,16 +724,19 @@ extern void Socket_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
  *
  * Thread-safe: No - caller must ensure exclusive access
  */
-extern void Socket_timeouts_set_extended (T socket,
-                                          const SocketTimeouts_Extended_T *extended);
+extern void
+Socket_timeouts_set_extended (T socket,
+                              const SocketTimeouts_Extended_T *extended);
 
 /**
- * Socket_timeouts_get_extended - Retrieve per-socket extended timeout configuration
+ * Socket_timeouts_get_extended - Retrieve per-socket extended timeout
+ * configuration
  * @socket: Socket to query
  * @extended: Output structure for extended timeouts
  *
  * Retrieves the current extended timeout configuration. If extended timeouts
- * haven't been set, returns the basic timeouts mapped to the extended structure.
+ * haven't been set, returns the basic timeouts mapped to the extended
+ * structure.
  *
  * Thread-safe: No - caller must ensure exclusive access
  */
@@ -730,7 +745,8 @@ extern void Socket_timeouts_get_extended (const T socket,
 
 /* ============================================================================
  * Bandwidth Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_setbandwidth - Set bandwidth limit for socket
@@ -765,10 +781,10 @@ extern size_t Socket_getbandwidth (T socket);
  * Raises: Socket_Closed on EPIPE/ECONNRESET, Socket_Failed on other errors
  * Thread-safe: Yes - uses socket's bandwidth limiter
  *
- * Like Socket_send() but respects bandwidth limit set by Socket_setbandwidth().
- * If bandwidth limiting is disabled (0), behaves like Socket_send().
- * If rate limited, returns 0 and caller should wait before retrying.
- * Use Socket_bandwidth_wait_ms() to get recommended wait time.
+ * Like Socket_send() but respects bandwidth limit set by
+ * Socket_setbandwidth(). If bandwidth limiting is disabled (0), behaves like
+ * Socket_send(). If rate limited, returns 0 and caller should wait before
+ * retrying. Use Socket_bandwidth_wait_ms() to get recommended wait time.
  */
 extern ssize_t Socket_send_limited (T socket, const void *buf, size_t len);
 
@@ -782,8 +798,9 @@ extern ssize_t Socket_send_limited (T socket, const void *buf, size_t len);
  * Raises: Socket_Closed on peer close, Socket_Failed on other errors
  * Thread-safe: Yes - uses socket's bandwidth limiter
  *
- * Like Socket_recv() but respects bandwidth limit set by Socket_setbandwidth().
- * If bandwidth limiting is disabled (0), behaves like Socket_recv().
+ * Like Socket_recv() but respects bandwidth limit set by
+ * Socket_setbandwidth(). If bandwidth limiting is disabled (0), behaves like
+ * Socket_recv().
  */
 extern ssize_t Socket_recv_limited (T socket, void *buf, size_t len);
 
@@ -801,7 +818,8 @@ extern int64_t Socket_bandwidth_wait_ms (T socket, size_t bytes);
 
 /* ============================================================================
  * Unix Domain Socket Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_bind_unix - Bind to Unix domain socket path
@@ -845,7 +863,8 @@ extern int Socket_getpeergid (const T socket);
 
 /* ============================================================================
  * File Descriptor Passing (SCM_RIGHTS)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_sendfd - Send a file descriptor over Unix domain socket
@@ -932,7 +951,8 @@ extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
 
 /* ============================================================================
  * Async DNS Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_bind_async - Start async DNS resolution for bind
@@ -943,16 +963,15 @@ extern int SocketUnix_validate_unix_path (const char *path, size_t path_len);
  * Returns: DNS request handle
  * Raises: Socket_Failed on error
  */
-extern SocketDNS_Request_T Socket_bind_async (SocketDNS_T dns, T socket,
-                                              const char *host, int port);
+extern Request_T Socket_bind_async (SocketDNS_T dns, T socket,
+                                     const char *host, int port);
 
 /**
  * Socket_bind_async_cancel - Cancel pending async bind resolution
  * @dns: DNS resolver instance
  * @req: Request handle returned by Socket_bind_async
  */
-extern void Socket_bind_async_cancel (SocketDNS_T dns,
-                                      SocketDNS_Request_T req);
+extern void Socket_bind_async_cancel (SocketDNS_T dns, Request_T req);
 
 /**
  * Socket_connect_async - Start async DNS resolution for connect
@@ -963,16 +982,15 @@ extern void Socket_bind_async_cancel (SocketDNS_T dns,
  * Returns: DNS request handle
  * Raises: Socket_Failed on error
  */
-extern SocketDNS_Request_T Socket_connect_async (SocketDNS_T dns, T socket,
-                                                 const char *host, int port);
+extern Request_T Socket_connect_async (SocketDNS_T dns, T socket,
+                                       const char *host, int port);
 
 /**
  * Socket_connect_async_cancel - Cancel pending async connect resolution
  * @dns: DNS resolver instance
  * @req: Request handle returned by Socket_connect_async
  */
-extern void Socket_connect_async_cancel (SocketDNS_T dns,
-                                         SocketDNS_Request_T req);
+extern void Socket_connect_async_cancel (SocketDNS_T dns, Request_T req);
 
 /**
  * Socket_bind_with_addrinfo - Bind socket using resolved address
@@ -992,7 +1010,8 @@ extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
 
 /* ============================================================================
  * Signal Handling Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Socket_ignore_sigpipe - Globally ignore SIGPIPE signal

@@ -5,31 +5,35 @@
  *
  * Implements HTTP authentication schemes:
  * - Basic Authentication (RFC 7617) - Uses SocketCrypto_base64_encode()
- * - Digest Authentication (RFC 7616) - Uses SocketCrypto_md5(), SocketCrypto_sha256()
+ * - Digest Authentication (RFC 7616) - Uses SocketCrypto_md5(),
+ * SocketCrypto_sha256()
  * - Bearer Token (RFC 6750) - Simple token header
  *
- * Leverages SocketCrypto for all cryptographic operations to avoid duplication.
+ * Leverages SocketCrypto for all cryptographic operations to avoid
+ * duplication.
  */
 
-#include "http/SocketHTTPClient.h"
-#include "http/SocketHTTPClient-private.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
+#include "http/SocketHTTPClient-private.h"
+#include "http/SocketHTTPClient.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <stdint.h>
 
 /* Constants moved to SocketHTTPClient-private.h */
 
 /** "Basic " prefix as byte array (not null-terminated - for wire format) */
-static const unsigned char BASIC_PREFIX_BYTES[6] = { 'B', 'a', 's', 'i', 'c', ' ' };
+static const unsigned char BASIC_PREFIX_BYTES[6]
+    = { 'B', 'a', 's', 'i', 'c', ' ' };
 
 /* ============================================================================
  * Digest Challenge Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Parsed Digest authentication challenge
@@ -45,24 +49,24 @@ typedef struct
 } DigestChallenge;
 
 /* Forward declarations for parsing helpers to allow re-use */
-static const char *
-parse_quoted_string (const char *p, char *out, size_t out_size);
+static const char *parse_quoted_string (const char *p, char *out,
+                                        size_t out_size);
 
-static const char *
-parse_token_value (const char *p, char *out, size_t out_size);
+static const char *parse_token_value (const char *p, char *out,
+                                      size_t out_size);
 
-static const char *
-skip_quoted_value (const char *p);
+static const char *skip_quoted_value (const char *p);
 
-static const char *
-parse_parameter_name (const char *p, char *name, size_t name_size);
+static const char *parse_parameter_name (const char *p, char *name,
+                                         size_t name_size);
 
-static void
-store_challenge_field (DigestChallenge *ch, const char *name, const char *value);
+static void store_challenge_field (DigestChallenge *ch, const char *name,
+                                   const char *value);
 
 /* ============================================================================
  * Helper Functions - String Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * safe_strcpy - Copy string with truncation
@@ -129,7 +133,8 @@ is_token_boundary (char c)
 
 /* ============================================================================
  * Helper Functions - Digest Parsing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * parse_param_value - Parse parameter value after '='
@@ -140,8 +145,8 @@ is_token_boundary (char c)
  * Handles both quoted strings (with escapes) and unquoted tokens.
  * Advances @p past the value.
  *
- * Returns: Pointer past value on success, NULL on parse error (unterminated quote)
- * Thread-safe: Yes
+ * Returns: Pointer past value on success, NULL on parse error (unterminated
+ * quote) Thread-safe: Yes
  */
 static const char *
 parse_param_value (const char *p, char *out, size_t out_size)
@@ -155,21 +160,24 @@ parse_param_value (const char *p, char *out, size_t out_size)
 }
 
 /**
- * advance_quoted_content - Shared logic to advance past the content of a quoted string
+ * advance_quoted_content - Shared logic to advance past the content of a
+ * quoted string
  * @p: Pointer to the start of the quoted content (after opening ")
  * @out: Output buffer for unescaped content (NULL to skip copying)
  * @out_size: Size of output buffer (ignored if @out is NULL)
  * @copy_count: If non-NULL, stores the number of characters copied (unescaped)
  *
- * Advances @p past quoted content, handling \" escapes. For copy mode (@out != NULL),
- * copies unescaped characters to @out up to @out_size-1 bytes, always null-terminates.
- * Stops early if buffer full. For skip mode (@out == NULL), advances @p fully.
+ * Advances @p past quoted content, handling \" escapes. For copy mode (@out !=
+ * NULL), copies unescaped characters to @out up to @out_size-1 bytes, always
+ * null-terminates. Stops early if buffer full. For skip mode (@out == NULL),
+ * advances @p fully.
  *
  * Returns: Pointer to position after content (at closing " or end-of-input)
  * Thread-safe: Yes
  */
 static const char *
-advance_quoted_content (const char *p, char *out, size_t out_size, size_t *copy_count)
+advance_quoted_content (const char *p, char *out, size_t out_size,
+                        size_t *copy_count)
 {
   size_t i = 0;
   size_t max_copy = out ? (out_size - 1) : SIZE_MAX;
@@ -179,7 +187,7 @@ advance_quoted_content (const char *p, char *out, size_t out_size, size_t *copy_
       char ch;
       if (*p == '\\' && *(p + 1) != '\0')
         {
-          p++;  /* skip backslash */
+          p++; /* skip backslash */
           ch = *p++;
         }
       else
@@ -221,12 +229,12 @@ parse_quoted_string (const char *p, char *out, size_t out_size)
   if (*p != '"')
     return NULL;
 
-  p++;  /* Skip opening quote */
+  p++; /* Skip opening quote */
 
   p = advance_quoted_content (p, out, out_size, NULL);
 
   if (*p != '"')
-    return NULL;  /* Unterminated quote */
+    return NULL; /* Unterminated quote */
 
   return p + 1;
 }
@@ -263,7 +271,7 @@ skip_quoted_value (const char *p)
   if (*p != '"')
     return p;
 
-  p++;  /* Skip opening quote */
+  p++; /* Skip opening quote */
 
   p = advance_quoted_content (p, NULL, 0, NULL);
 
@@ -289,7 +297,8 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
 {
   size_t i = 0;
 
-  while (*p && *p != '=' && *p != ',' && *p != ' ' && *p != '\t' && i < name_size - 1)
+  while (*p && *p != '=' && *p != ',' && *p != ' ' && *p != '\t'
+         && i < name_size - 1)
     name[i++] = *p++;
 
   name[i] = '\0';
@@ -310,7 +319,8 @@ parse_parameter_name (const char *p, char *name, size_t name_size)
  * @value: Field value
  */
 static void
-store_challenge_field (DigestChallenge *ch, const char *name, const char *value)
+store_challenge_field (DigestChallenge *ch, const char *name,
+                       const char *value)
 {
   if (strcasecmp (name, "realm") == 0)
     safe_strcpy (ch->realm, sizeof (ch->realm), value);
@@ -328,7 +338,8 @@ store_challenge_field (DigestChallenge *ch, const char *name, const char *value)
 
 /* ============================================================================
  * Helper Functions - Digest Hashing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * digest_hash - Compute hash and format as hex string
@@ -457,7 +468,8 @@ compute_response_hash (const char *ha1_hex, const char *nonce, const char *nc,
 
 /* ============================================================================
  * Basic Authentication (RFC 7617)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 httpclient_auth_basic_header (const char *username, const char *password,
@@ -478,8 +490,9 @@ httpclient_auth_basic_header (const char *username, const char *password,
                                username, password);
   if (cred_len >= sizeof (credentials))
     {
-      SOCKET_LOG_WARN_MSG ("Basic auth credentials too long: username='%.*s' password_len=%zu",
-                           (int)strnlen (username, 32), username, strlen (password));
+      SOCKET_LOG_WARN_MSG (
+          "Basic auth credentials too long: username='%.*s' password_len=%zu",
+          (int)strnlen (username, 32), username, strlen (password));
       return -1;
     }
 
@@ -489,13 +502,14 @@ httpclient_auth_basic_header (const char *username, const char *password,
   if (HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN + base64_size > output_size)
     return -1;
 
-  /* Write prefix (use byte array to avoid clang-tidy not-null-terminated warning) */
+  /* Write prefix (use byte array to avoid clang-tidy not-null-terminated
+   * warning) */
   memcpy (output, BASIC_PREFIX_BYTES, HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN);
 
   /* Encode credentials using SocketCrypto */
-  encoded_len = SocketCrypto_base64_encode (credentials, cred_len,
-                                            output + HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN,
-                                            output_size - HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN);
+  encoded_len = SocketCrypto_base64_encode (
+      credentials, cred_len, output + HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN,
+      output_size - HTTPCLIENT_DIGEST_BASIC_PREFIX_LEN);
   if (encoded_len < 0)
     {
       SocketCrypto_secure_clear (credentials, sizeof (credentials));
@@ -510,7 +524,8 @@ httpclient_auth_basic_header (const char *username, const char *password,
 
 /* ============================================================================
  * Bearer Authentication (RFC 6750)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * httpclient_auth_bearer_header - Generate Bearer token Authorization header
@@ -527,7 +542,8 @@ httpclient_auth_basic_header (const char *username, const char *password,
  * No sensitive data clearing (token already transmitted in header).
  */
 int
-httpclient_auth_bearer_header (const char *token, char *output, size_t output_size)
+httpclient_auth_bearer_header (const char *token, char *output,
+                               size_t output_size)
 {
   size_t token_len;
   size_t needed;
@@ -537,11 +553,12 @@ httpclient_auth_bearer_header (const char *token, char *output, size_t output_si
   assert (output_size > 0);
 
   token_len = strlen (token);
-  needed = 7 + token_len + 1;  /* "Bearer " + token + \0 */
+  needed = 7 + token_len + 1; /* "Bearer " + token + \0 */
 
   if (needed > output_size)
     {
-      SOCKET_LOG_WARN_MSG ("Bearer token too long for output buffer: token_len=%zu needed=%zu available=%zu",
+      SOCKET_LOG_WARN_MSG ("Bearer token too long for output buffer: "
+                           "token_len=%zu needed=%zu available=%zu",
                            token_len, needed, output_size);
       return -1;
     }
@@ -555,7 +572,8 @@ httpclient_auth_bearer_header (const char *token, char *output, size_t output_si
 
 /* ============================================================================
  * Digest Authentication Response Generation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 httpclient_auth_digest_response (const char *username, const char *password,
@@ -596,21 +614,22 @@ httpclient_auth_digest_response (const char *username, const char *password,
   /* Build Authorization header value */
   if (qop != NULL && strcmp (qop, HTTPCLIENT_DIGEST_TOKEN_AUTH) == 0)
     {
-      written = snprintf (output, output_size,
-                          "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
-                          "uri=\"%s\", algorithm=%s, qop=%s, nc=%s, "
-                          "cnonce=\"%s\", response=\"%s\"",
-                          username, realm, nonce, uri,
-                          use_sha256 ? "SHA-256" : "MD5", qop, nc, cnonce,
-                          response_hex);
+      written = snprintf (
+          output, output_size,
+          "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
+          "uri=\"%s\", algorithm=%s, qop=%s, nc=%s, "
+          "cnonce=\"%s\", response=\"%s\"",
+          username, realm, nonce, uri, use_sha256 ? "SHA-256" : "MD5", qop, nc,
+          cnonce, response_hex);
     }
   else
     {
-      written = snprintf (output, output_size,
-                          "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
-                          "uri=\"%s\", algorithm=%s, response=\"%s\"",
-                          username, realm, nonce, uri,
-                          use_sha256 ? "SHA-256" : "MD5", response_hex);
+      written
+          = snprintf (output, output_size,
+                      "Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", "
+                      "uri=\"%s\", algorithm=%s, response=\"%s\"",
+                      username, realm, nonce, uri,
+                      use_sha256 ? "SHA-256" : "MD5", response_hex);
     }
 
   if (written < 0 || (size_t)written >= output_size)
@@ -621,7 +640,8 @@ httpclient_auth_digest_response (const char *username, const char *password,
 
 /* ============================================================================
  * Digest Challenge Parsing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * skip_digest_prefix_optional - Skip optional "Digest " prefix
@@ -635,7 +655,9 @@ httpclient_auth_digest_response (const char *username, const char *password,
 static const char *
 skip_digest_prefix_optional (const char *header, int strict)
 {
-  if (strncasecmp (header, HTTPCLIENT_DIGEST_PREFIX, HTTPCLIENT_DIGEST_PREFIX_LEN) == 0)
+  if (strncasecmp (header, HTTPCLIENT_DIGEST_PREFIX,
+                   HTTPCLIENT_DIGEST_PREFIX_LEN)
+      == 0)
     return header + HTTPCLIENT_DIGEST_PREFIX_LEN;
 
   if (strict)
@@ -689,8 +711,9 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
   /* realm and nonce are required */
   if (ch->realm[0] == '\0' || ch->nonce[0] == '\0')
     {
-      SOCKET_LOG_WARN_MSG ("Digest challenge missing required field: realm='%s' nonce='%s'",
-                           ch->realm, ch->nonce);
+      SOCKET_LOG_WARN_MSG (
+          "Digest challenge missing required field: realm='%s' nonce='%s'",
+          ch->realm, ch->nonce);
       return -1;
     }
 
@@ -703,7 +726,8 @@ parse_digest_challenge (const char *header, DigestChallenge *ch)
 
 /* ============================================================================
  * Client Nonce Generation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * generate_cnonce - Generate client nonce for Digest auth
@@ -725,7 +749,8 @@ generate_cnonce (char *cnonce, size_t size)
       /* Fallback to time-based if random fails */
       uint64_t t = (uint64_t)time (NULL);
       memcpy (random_bytes, &t, sizeof (t));
-      memset (random_bytes + sizeof (t), 0, sizeof (random_bytes) - sizeof (t));
+      memset (random_bytes + sizeof (t), 0,
+              sizeof (random_bytes) - sizeof (t));
     }
 
   /* Convert to hex (SocketCrypto_hex_encode null-terminates) */
@@ -737,7 +762,8 @@ generate_cnonce (char *cnonce, size_t size)
 
 /* ============================================================================
  * QoP Selection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * find_auth_qop - Find "auth" token in qop list
@@ -761,7 +787,9 @@ find_auth_qop (const char *qop_list)
         break;
 
       /* Check if this token is exactly "auth" */
-      if (strncmp (p, HTTPCLIENT_DIGEST_TOKEN_AUTH, HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN) == 0
+      if (strncmp (p, HTTPCLIENT_DIGEST_TOKEN_AUTH,
+                   HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN)
+              == 0
           && is_token_boundary (p[HTTPCLIENT_DIGEST_TOKEN_AUTH_LEN]))
         return HTTPCLIENT_DIGEST_TOKEN_AUTH;
 
@@ -775,7 +803,8 @@ find_auth_qop (const char *qop_list)
 
 /* ============================================================================
  * Public Digest Auth Helper
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 httpclient_auth_digest_challenge (const char *www_authenticate,
@@ -812,15 +841,15 @@ httpclient_auth_digest_challenge (const char *www_authenticate,
     qop = find_auth_qop (ch.qop);
 
   /* Generate response */
-  return httpclient_auth_digest_response (username, password, ch.realm,
-                                          ch.nonce, uri, method, qop, nc_value,
-                                          cnonce, use_sha256, output,
-                                          output_size);
+  return httpclient_auth_digest_response (
+      username, password, ch.realm, ch.nonce, uri, method, qop, nc_value,
+      cnonce, use_sha256, output, output_size);
 }
 
 /* ============================================================================
  * Stale Nonce Detection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * find_stale_parameter - Search for stale=true in header
@@ -855,14 +884,16 @@ find_stale_parameter (const char *p)
         }
 
       /* eq_pos points to '=' character */
-      p = eq_pos + 1;  /* Skip past '=' to start of value */
+      p = eq_pos + 1; /* Skip past '=' to start of value */
 
       if (strcasecmp (name, HTTPCLIENT_DIGEST_TOKEN_STALE) == 0)
         {
           /* Found stale param, parse value */
           const char *val_start = skip_whitespace (p);
-          const char *after_val = parse_param_value (val_start, value, sizeof (value));
-          if (after_val != NULL && strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0)
+          const char *after_val
+              = parse_param_value (val_start, value, sizeof (value));
+          if (after_val != NULL
+              && strcasecmp (value, HTTPCLIENT_DIGEST_TOKEN_TRUE) == 0)
             return 1;
           /* Update p for continue */
           p = after_val ? after_val : val_start;
@@ -874,7 +905,7 @@ find_stale_parameter (const char *p)
           const char *val_start = skip_whitespace (p);
           p = parse_param_value (val_start, value, sizeof (value));
           if (p == NULL)
-            p = val_start;  /* On error, try to continue */
+            p = val_start; /* On error, try to continue */
         }
     }
 

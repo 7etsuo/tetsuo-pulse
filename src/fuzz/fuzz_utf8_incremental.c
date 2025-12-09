@@ -98,9 +98,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       size_t num_chunks = (data[0] % 16) + 1;
 
       /* Use subsequent bytes as chunk sizes */
-      chunked_result = validate_chunked (data + 1, size - 1, data + 1,
-                                         num_chunks < size - 1 ? num_chunks
-                                                               : size - 1);
+      chunked_result
+          = validate_chunked (data + 1, size - 1, data + 1,
+                              num_chunks < size - 1 ? num_chunks : size - 1);
 
       /* One-shot on same data (minus first byte) */
       SocketUTF8_Result ref_result = SocketUTF8_validate (data + 1, size - 1);
@@ -176,7 +176,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       /* Verify count matches */
       size_t expected_count;
-      if (SocketUTF8_count_codepoints (data, size, &expected_count) != UTF8_VALID)
+      if (SocketUTF8_count_codepoints (data, size, &expected_count)
+          != UTF8_VALID)
         __builtin_trap ();
 
       if (count != expected_count)
@@ -185,4 +186,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

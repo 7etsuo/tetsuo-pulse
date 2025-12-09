@@ -1,8 +1,8 @@
 #ifndef SOCKETCOMMON_INCLUDED
 #define SOCKETCOMMON_INCLUDED
 
-#include <stdbool.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 /**
  * @file SocketCommon.h
@@ -26,7 +26,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
-#include "core/SocketConfig.h"  /* Defines SocketTimeouts_T */
+#include "core/SocketConfig.h" /* Defines SocketTimeouts_T */
 
 /* Common exception types (Except_T is defined in Except.h) */
 extern const Except_T Socket_Failed;
@@ -191,7 +191,8 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
 /**
  * SocketBase_T - Opaque base structure for shared socket functionality
  *
- * Contains common fields shared across socket subtypes (Socket_T, SocketDgram_T, etc.):
+ * Contains common fields shared across socket subtypes (Socket_T,
+ * SocketDgram_T, etc.):
  * - File descriptor (fd)
  * - Memory arena for lifecycle management
  * - Local and remote endpoint information (addresses, ports)
@@ -202,10 +203,12 @@ int SocketCommon_cidr_match (const char *ip_str, const char *cidr_str);
  * Subtypes embed a pointer to SocketBase_T for shared resource management.
  * Allocation: Use SocketCommon_new_base() which creates arena and initializes.
  * Deallocation: Use SocketCommon_free_base() in reverse order.
- * Thread Safety: Individual fields not thread-safe; protect with external mutexes if shared.
- * 
- * Rationale: Reduces code duplication in creation, initialization, cleanup across modules.
- * Ensures consistent resource acquisition/cleanup order per layered architecture rules.
+ * Thread Safety: Individual fields not thread-safe; protect with external
+ * mutexes if shared.
+ *
+ * Rationale: Reduces code duplication in creation, initialization, cleanup
+ * across modules. Ensures consistent resource acquisition/cleanup order per
+ * layered architecture rules.
  */
 #define SocketBase_T SocketBase_T
 typedef struct SocketBase_T *SocketBase_T;
@@ -220,10 +223,12 @@ extern void SocketCommon_free_base (SocketBase_T *base_ptr);
  * @optname: Option name (SO_REUSEADDR, TCP_NODELAY, etc.)
  * @value: Value to set
  * @exc_type: Exception to raise on failure
- * Generic setter for standard socket options, unifies duplicated setsockopt calls
- * Thread-safe: Yes for own resources
+ * Generic setter for standard socket options, unifies duplicated setsockopt
+ * calls Thread-safe: Yes for own resources
  */
-extern void SocketCommon_set_option_int (SocketBase_T base, int level, int optname, int value, Except_T exc_type);
+extern void SocketCommon_set_option_int (SocketBase_T base, int level,
+                                         int optname, int value,
+                                         Except_T exc_type);
 
 /**
  * SocketCommon_set_ttl - Set TTL or hop limit based on family
@@ -233,7 +238,8 @@ extern void SocketCommon_set_option_int (SocketBase_T base, int level, int optna
  * @exc_type: Raise on fail
  * Unifies set_ipv4_ttl and set_ipv6_hop_limit
  */
-extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl, Except_T exc_type);
+extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl,
+                                  Except_T exc_type);
 
 /**
  * SocketCommon_join_multicast - Join multicast group
@@ -245,7 +251,9 @@ extern void SocketCommon_set_ttl (SocketBase_T base, int family, int ttl, Except
  * Handles resolution, interface setup, family-specific mreq
  * Thread-safe for own fd
  */
-extern void SocketCommon_join_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type);
+extern void SocketCommon_join_multicast (SocketBase_T base, const char *group,
+                                         const char *interface,
+                                         Except_T exc_type);
 
 /**
  * SocketCommon_leave_multicast - Leave multicast group
@@ -255,7 +263,9 @@ extern void SocketCommon_join_multicast (SocketBase_T base, const char *group, c
  * @exc_type: Exception to raise on failure
  * Symmetric to join; drops membership via setsockopt
  */
-extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group, const char *interface, Except_T exc_type);
+extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group,
+                                          const char *interface,
+                                          Except_T exc_type);
 
 /**
  * SocketCommon_set_nonblock - Set non-blocking mode
@@ -264,10 +274,12 @@ extern void SocketCommon_leave_multicast (SocketBase_T base, const char *group, 
  * @exc_type: Raise on fail
  * Unifies duplicated fcntl calls for O_NONBLOCK
  */
-extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable, Except_T exc_type);
+extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable,
+                                       Except_T exc_type);
 
 /**
- * SocketCommon_calculate_total_iov_len - Calculate total length of iovec array with overflow protection
+ * SocketCommon_calculate_total_iov_len - Calculate total length of iovec array
+ * with overflow protection
  * @iov: Array of iovec structures
  * @iovcnt: Number of iovec structures (>0, <=IOV_MAX)
  * @returns: Total bytes across all iov_len
@@ -275,19 +287,22 @@ extern void SocketCommon_set_nonblock (SocketBase_T base, bool enable, Except_T 
  * Thread-safe: Yes
  * Unifies duplicated calculation loops across modules
  */
-extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov, int iovcnt);
+extern size_t SocketCommon_calculate_total_iov_len (const struct iovec *iov,
+                                                    int iovcnt);
 
 /**
- * SocketCommon_advance_iov - Advance iovec array past sent/received bytes (modifies in place)
+ * SocketCommon_advance_iov - Advance iovec array past sent/received bytes
+ * (modifies in place)
  * @iov: Array of iovec structures to advance
  * @iovcnt: Number of iovec structures
  * @bytes: Bytes to advance (must <= total iov len)
- * Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len reduced
- * Raises: SocketCommon_Failed if bytes > total iov len or invalid params
- * Thread-safe: Yes (local ops)
- * Unifies duplicated advance logic for sendvall/recvvall
+ * Behavior: Sets advanced iovs to len=0/base=NULL, partial to offset/len
+ * reduced Raises: SocketCommon_Failed if bytes > total iov len or invalid
+ * params Thread-safe: Yes (local ops) Unifies duplicated advance logic for
+ * sendvall/recvvall
  */
-extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t bytes);
+extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt,
+                                      size_t bytes);
 
 /**
  * SocketCommon_find_active_iov - Find first non-empty iovec in array
@@ -301,11 +316,13 @@ extern void SocketCommon_advance_iov (struct iovec *iov, int iovcnt, size_t byte
  * Used by sendvall/recvvall to find the next active buffer segment
  * after partial I/O operations have consumed some of the iovec array.
  */
-extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov, int iovcnt,
+extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov,
+                                                   int iovcnt,
                                                    int *active_iovcnt);
 
 /**
- * SocketCommon_sync_iov_progress - Sync original iovec with working copy progress
+ * SocketCommon_sync_iov_progress - Sync original iovec with working copy
+ * progress
  * @original: Original iovec array to update
  * @copy: Working copy that has been advanced
  * @iovcnt: Number of iovec structures
@@ -315,7 +332,8 @@ extern struct iovec *SocketCommon_find_active_iov (struct iovec *iov, int iovcnt
  * Thread-safe: Yes (local ops)
  */
 extern void SocketCommon_sync_iov_progress (struct iovec *original,
-                                            const struct iovec *copy, int iovcnt);
+                                            const struct iovec *copy,
+                                            int iovcnt);
 
 /**
  * SocketCommon_alloc_iov_copy - Allocate and copy iovec array
@@ -341,10 +359,12 @@ extern struct iovec *SocketCommon_alloc_iov_copy (const struct iovec *iov,
  * @exc_type: Raise on fail
  * Uses fcntl F_SETFD; called after socket()/socketpair()/accept() fallback
  */
-extern void SocketCommon_set_cloexec_fd (int fd, bool enable, Except_T exc_type);
+extern void SocketCommon_set_cloexec_fd (int fd, bool enable,
+                                         Except_T exc_type);
 
 /**
- * SocketCommon_try_bind_address - Try bind fd to address (extracted from Socket.c)
+ * SocketCommon_try_bind_address - Try bind fd to address (extracted from
+ * Socket.c)
  * @base: Socket base with fd
  * @addr: Address to bind
  * @addrlen: Addr length
@@ -352,10 +372,14 @@ extern void SocketCommon_set_cloexec_fd (int fd, bool enable, Except_T exc_type)
  * Returns: 0 success, -1 fail (raises on error)
  * Integrates with base endpoints if success (caller handles)
  */
-extern int SocketCommon_try_bind_address (SocketBase_T base, const struct sockaddr *addr, socklen_t addrlen, Except_T exc_type);
+extern int SocketCommon_try_bind_address (SocketBase_T base,
+                                          const struct sockaddr *addr,
+                                          socklen_t addrlen,
+                                          Except_T exc_type);
 
 /**
- * SocketCommon_try_bind_resolved_addresses - Try bind to resolved addrinfo list
+ * SocketCommon_try_bind_resolved_addresses - Try bind to resolved addrinfo
+ * list
  * @base: Socket base with fd
  * @res: addrinfo list from resolve
  * @family: Preferred family (AF_INET etc)
@@ -364,7 +388,10 @@ extern int SocketCommon_try_bind_address (SocketBase_T base, const struct sockad
  * Loops addresses, calls try_bind_address, sets base local endpoint on success
  * Handles dual-stack, reuseaddr hints via set_option_int
  */
-extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base, struct addrinfo *res, int family, Except_T exc_type);
+extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base,
+                                                     struct addrinfo *res,
+                                                     int family,
+                                                     Except_T exc_type);
 
 /**
  * SocketCommon_handle_bind_error - Log and raise bind error
@@ -373,7 +400,8 @@ extern int SocketCommon_try_bind_resolved_addresses (SocketBase_T base, struct a
  * @exc_type: Type to raise
  * Graceful for non-fatal (e.g., EADDRINUSE log warn return -1), fatal raise
  */
-extern int SocketCommon_handle_bind_error (int err, const char *addr_str, Except_T exc_type);
+extern int SocketCommon_handle_bind_error (int err, const char *addr_str,
+                                           Except_T exc_type);
 
 /**
  * SocketCommon_format_bind_error - Format descriptive bind error message
@@ -386,7 +414,8 @@ extern int SocketCommon_handle_bind_error (int err, const char *addr_str, Except
  */
 extern void SocketCommon_format_bind_error (const char *host, int port);
 
-extern void SocketCommon_update_local_endpoint (SocketBase_T base); /* Common endpoint update, non-raising */
+extern void SocketCommon_update_local_endpoint (
+    SocketBase_T base); /* Common endpoint update, non-raising */
 
 /**
  * SocketCommon_get_socket_family - Get socket's address family
@@ -403,7 +432,8 @@ extern int SocketCommon_get_socket_family (SocketBase_T base);
  * Raises: Specified exception type if host is NULL
  * Thread-safe: Yes
  */
-extern void SocketCommon_validate_host_not_null (const char *host, Except_T exception_type);
+extern void SocketCommon_validate_host_not_null (const char *host,
+                                                 Except_T exception_type);
 
 /**
  * SocketCommon_copy_addrinfo - Deep copy of addrinfo linked list
@@ -416,19 +446,21 @@ extern void SocketCommon_validate_host_not_null (const char *host, Except_T exce
  * No exceptions raised; returns NULL on malloc failure or src==NULL.
  * Thread-safe: Yes
  */
-extern struct addrinfo *SocketCommon_copy_addrinfo (const struct addrinfo *src);
+extern struct addrinfo *
+SocketCommon_copy_addrinfo (const struct addrinfo *src);
 
 /**
  * SocketCommon_free_addrinfo - Free addrinfo chain created by copy_addrinfo
  * @ai: Chain to free (may be NULL, safe no-op)
  *
  * Frees all nodes in the chain including ai_addr and ai_canonname fields.
- * Use this instead of freeaddrinfo() for chains from SocketCommon_copy_addrinfo.
- * Thread-safe: Yes
+ * Use this instead of freeaddrinfo() for chains from
+ * SocketCommon_copy_addrinfo. Thread-safe: Yes
  */
 extern void SocketCommon_free_addrinfo (struct addrinfo *ai);
 
-/* Internal helpers defined in SocketCommon-private.h for module use (getters/setters for base fields) */
+/* Internal helpers defined in SocketCommon-private.h for module use
+ * (getters/setters for base fields) */
 
 /* Extern globals for shared defaults - defined in SocketCommon.c */
 extern SocketTimeouts_T socket_default_timeouts;
@@ -446,7 +478,8 @@ extern void SocketCommon_timeouts_getdefaults (SocketTimeouts_T *timeouts);
  * @timeouts: Timeout values to set as defaults
  * Thread-safe: Yes (uses mutex protection)
  */
-extern void SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
+extern void
+SocketCommon_timeouts_setdefaults (const SocketTimeouts_T *timeouts);
 
 /* ==================== Socket State Helpers ==================== */
 
@@ -487,7 +520,8 @@ SocketCommon_check_bound_unix (const struct sockaddr_storage *addr)
 }
 
 /**
- * SocketCommon_check_bound_by_family - Check if socket is bound based on family
+ * SocketCommon_check_bound_by_family - Check if socket is bound based on
+ * family
  * @addr: sockaddr_storage containing address
  * Returns: 1 if bound, 0 otherwise
  */
@@ -505,7 +539,8 @@ SocketCommon_check_bound_by_family (const struct sockaddr_storage *addr)
 
 /* ============================================================================
  * Live Socket Count Tracking
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketLiveCount - Thread-safe live count tracker for socket instances
@@ -521,8 +556,8 @@ struct SocketLiveCount
 };
 
 #define SOCKETLIVECOUNT_STATIC_INIT                                           \
-  {                                                                            \
-    0, PTHREAD_MUTEX_INITIALIZER                                               \
+  {                                                                           \
+    0, PTHREAD_MUTEX_INITIALIZER                                              \
   }
 
 /**

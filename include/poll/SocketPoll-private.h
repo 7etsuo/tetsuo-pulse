@@ -45,9 +45,9 @@ typedef struct SocketData
  */
 typedef struct FdSocketEntry
 {
-  int fd;                      /**< File descriptor */
-  Socket_T socket;             /**< Associated socket */
-  struct FdSocketEntry *next;  /**< Next entry in hash bucket */
+  int fd;                     /**< File descriptor */
+  Socket_T socket;            /**< Associated socket */
+  struct FdSocketEntry *next; /**< Next entry in hash bucket */
 } FdSocketEntry;
 
 /**
@@ -56,19 +56,21 @@ typedef struct FdSocketEntry
  */
 struct T
 {
-  PollBackend_T backend;                             /**< Platform-specific backend */
-  int maxevents;                                     /**< Maximum events per wait */
-  int default_timeout_ms;                            /**< Default timeout for wait */
-  int registered_count;                              /**< Current registered socket count */
-  int max_registered;                                /**< Max registered (0=unlimited) */
-  SocketEvent_T *socketevents;                       /**< Translated event array */
-  Arena_T arena;                                     /**< Memory arena */
-  SocketData *socket_data_map[SOCKET_DATA_HASH_SIZE];     /**< Socket->data hash table */
-  FdSocketEntry *fd_to_socket_map[SOCKET_DATA_HASH_SIZE]; /**< FD->socket hash table */
-  pthread_mutex_t mutex;                             /**< Thread-safety mutex */
-  SocketAsync_T async;                               /**< Optional async I/O context */
-  SocketTimer_heap_T *timer_heap;                    /**< Timer heap for integrated timers */
-  unsigned hash_seed;                                    /**< Random seed for FD hashing to mitigate collisions */
+  PollBackend_T backend;       /**< Platform-specific backend */
+  int maxevents;               /**< Maximum events per wait */
+  int default_timeout_ms;      /**< Default timeout for wait */
+  int registered_count;        /**< Current registered socket count */
+  int max_registered;          /**< Max registered (0=unlimited) */
+  SocketEvent_T *socketevents; /**< Translated event array */
+  Arena_T arena;               /**< Memory arena */
+  SocketData
+      *socket_data_map[SOCKET_DATA_HASH_SIZE]; /**< Socket->data hash table */
+  FdSocketEntry
+      *fd_to_socket_map[SOCKET_DATA_HASH_SIZE]; /**< FD->socket hash table */
+  pthread_mutex_t mutex;                        /**< Thread-safety mutex */
+  SocketAsync_T async;            /**< Optional async I/O context */
+  SocketTimer_heap_T *timer_heap; /**< Timer heap for integrated timers */
+  unsigned hash_seed; /**< Random seed for FD hashing to mitigate collisions */
 };
 
 /* ==================== Exception Handling ==================== */

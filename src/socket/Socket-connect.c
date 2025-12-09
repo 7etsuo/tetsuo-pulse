@@ -739,10 +739,10 @@ Socket_connect_with_addrinfo (T socket, struct addrinfo *res)
  *
  * Caller should wait for DNS completion then call Socket_connect_with_addrinfo
  */
-SocketDNS_Request_T
+Request_T
 Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)
 {
-  SocketDNS_Request_T req;
+  Request_T req;
 
   assert (dns);
   assert (socket);
@@ -764,7 +764,7 @@ Socket_connect_async (SocketDNS_T dns, T socket, const char *host, int port)
  * @req: Request to cancel
  */
 void
-Socket_connect_async_cancel (SocketDNS_T dns, SocketDNS_Request_T req)
+Socket_connect_async_cancel (SocketDNS_T dns, Request_T req)
 {
   assert (dns);
 

@@ -132,8 +132,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case IOV_ADVANCE:
         {
           /* Calculate total first to validate advance amount */
-          size_t total = SocketCommon_calculate_total_iov_len (iov_copy,
-                                                               iovcnt);
+          size_t total
+              = SocketCommon_calculate_total_iov_len (iov_copy, iovcnt);
           /* Limit advance to total length */
           size_t advance = advance_bytes % (total + 1);
           if (advance > 0)
@@ -147,8 +147,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Find first non-empty iovec */
           int active_count = 0;
-          struct iovec *active = SocketCommon_find_active_iov (iov, iovcnt,
-                                                               &active_count);
+          struct iovec *active
+              = SocketCommon_find_active_iov (iov, iovcnt, &active_count);
           (void)active;
           (void)active_count;
         }
@@ -157,8 +157,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case IOV_ALLOC_COPY:
         {
           /* Test iovec copy allocation */
-          struct iovec *copy = SocketCommon_alloc_iov_copy (iov, iovcnt,
-                                                            SocketCommon_Failed);
+          struct iovec *copy
+              = SocketCommon_alloc_iov_copy (iov, iovcnt, SocketCommon_Failed);
           if (copy)
             {
               /* Verify copy */
@@ -174,8 +174,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
       case IOV_SYNC_PROGRESS:
         {
           /* Test sync after advance */
-          size_t total = SocketCommon_calculate_total_iov_len (iov_copy,
-                                                               iovcnt);
+          size_t total
+              = SocketCommon_calculate_total_iov_len (iov_copy, iovcnt);
           size_t advance = advance_bytes % (total + 1);
           if (advance > 0)
             {
@@ -195,4 +195,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

@@ -19,26 +19,27 @@
  * for direct O(1) unlinking.
  */
 
-#include "core/SocketIPTracker.h"
 #include "core/SocketConfig.h"
+#include "core/SocketCrypto.h"
+#include "core/SocketIPTracker.h"
+#include "core/SocketSecurity.h"
 #include "core/SocketUtil.h"
+#include <arpa/inet.h>
 #include <assert.h>
+#include <netinet/in.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
 #include <time.h>
 #include <unistd.h>
-#include "core/SocketCrypto.h"
-#include "core/SocketSecurity.h"
 
 #define T SocketIPTracker_T
 
 /* ============================================================================
  * Exception Definitions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketIPTracker_Failed
     = { &SocketIPTracker_Failed, "IP tracker operation failed" };
@@ -48,7 +49,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketIPTracker);
 
 /* ============================================================================
  * Internal Structures
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * IPEntry - IP entry in hash table
@@ -106,7 +108,8 @@ validate_ip_format (const char *ip)
 
 /* ============================================================================
  * Internal Helper Functions - Hash Computation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * compute_bucket_index - Compute bucket index for IP address
@@ -118,8 +121,8 @@ validate_ip_format (const char *ip)
  *
  * Uses DJB2 hash algorithm via socket_util_hash_djb2.
  */
-static unsigned
-salted_djb2 (const char *str, unsigned seed, unsigned table_size);
+static unsigned salted_djb2 (const char *str, unsigned seed,
+                             unsigned table_size);
 
 static unsigned
 compute_bucket_index (const T tracker, const char *ip, size_t bucket_count)
@@ -127,7 +130,7 @@ compute_bucket_index (const T tracker, const char *ip, size_t bucket_count)
   assert (tracker != NULL);
   assert (ip != NULL);
   assert (bucket_count > 0);
-  return salted_djb2 (ip, tracker->hash_seed, (unsigned) bucket_count);
+  return salted_djb2 (ip, tracker->hash_seed, (unsigned)bucket_count);
 }
 
 static unsigned
@@ -137,14 +140,15 @@ salted_djb2 (const char *str, unsigned seed, unsigned table_size)
   int c;
 
   while ((c = *str++) != '\0')
-    hash = ((hash << 5) + hash) + (unsigned) c;
+    hash = ((hash << 5) + hash) + (unsigned)c;
 
   return table_size > 0 ? hash % table_size : hash;
 }
 
 /* ============================================================================
  * Internal Helper Functions - Entry Lookup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * search_chain - Search IP in linked list chain with prev tracking
@@ -185,7 +189,8 @@ search_chain (IPEntry *head, const char *ip, IPEntry **prev_out /* optional */)
  * @tracker: IP tracker instance (caller must hold mutex)
  * @ip: IP address string
  * @bucket_out: Output bucket index (optional, may be NULL)
- * @prev_out: Output previous entry pointer (optional, NULL if not needed or entry at head; pass NULL to skip tracking)
+ * @prev_out: Output previous entry pointer (optional, NULL if not needed or
+ * entry at head; pass NULL to skip tracking)
  *
  * Returns: Entry pointer or NULL if not found
  * Thread-safe: No (caller must hold mutex)
@@ -212,7 +217,8 @@ find_entry (const T tracker, const char *ip, unsigned *bucket_out,
 /* find_entry_simple removed - use find_entry(..., NULL) for prev_out */
 /* ============================================================================
  * Internal Helper Functions - Generic Allocation/Free
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * tracker_alloc_raw - Allocate memory from arena or heap
@@ -249,7 +255,8 @@ tracker_free_raw (const T tracker, void *ptr)
 
 /* ============================================================================
  * Internal Helper Functions - Entry Allocation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * allocate_entry - Allocate IPEntry from arena or heap
@@ -307,7 +314,8 @@ alloc_and_init_entry (const T tracker, const char *ip, int initial_count)
  * Returns: New entry or NULL on allocation failure
  * Thread-safe: No (caller must hold mutex)
  *
- * Allocates via alloc_and_init_entry, links into bucket, increments unique_ips.
+ * Allocates via alloc_and_init_entry, links into bucket, increments
+ * unique_ips.
  */
 static IPEntry *
 create_and_insert_entry (T tracker, const char *ip, unsigned bucket,
@@ -332,7 +340,8 @@ create_and_insert_entry (T tracker, const char *ip, unsigned bucket,
 
 /* ============================================================================
  * Internal Helper Functions - Entry Removal
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * unlink_entry - Remove entry from bucket chain (O(1) with prev pointer)
@@ -363,7 +372,8 @@ unlink_entry (T tracker, IPEntry *entry, IPEntry *prev, unsigned bucket)
 
 /* ============================================================================
  * Internal Helper Functions - Bucket Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * calculate_buckets_size - Calculate bucket array size with overflow check
@@ -396,7 +406,7 @@ calculate_buckets_size (size_t bucket_count, size_t *size_out)
 static IPEntry **
 allocate_buckets (const T tracker, size_t buckets_size)
 {
-  return (IPEntry **) tracker_alloc_raw (tracker, buckets_size);
+  return (IPEntry **)tracker_alloc_raw (tracker, buckets_size);
 }
 
 /**
@@ -437,7 +447,8 @@ free_all_buckets (T tracker)
 
 /* ============================================================================
  * Internal Helper Functions - Tracker Initialization
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * arena_or_malloc - Allocate from arena or standard malloc
@@ -466,7 +477,7 @@ arena_or_malloc (Arena_T arena, size_t size)
 static T
 allocate_tracker (Arena_T arena)
 {
-  return (T) arena_or_malloc (arena, sizeof (struct T));
+  return (T)arena_or_malloc (arena, sizeof (struct T));
 }
 
 /**
@@ -549,9 +560,9 @@ init_tracker_mutex (T tracker)
  *
  * Thread-safe: No (called only during failed new())
  *
- * Frees heap allocations (buckets array and tracker struct) if not arena-based.
- * Assumes mutex not yet initialized or already destroyed.
- * Does not touch arena-allocated memory (caller disposes arena).
+ * Frees heap allocations (buckets array and tracker struct) if not
+ * arena-based. Assumes mutex not yet initialized or already destroyed. Does
+ * not touch arena-allocated memory (caller disposes arena).
  */
 static void
 cleanup_failed_tracker (T tracker)
@@ -570,7 +581,8 @@ cleanup_failed_tracker (T tracker)
 
 /* ============================================================================
  * Internal Helper Functions - Track Operations
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_unlimited_mode - Check if tracker is in unlimited mode
@@ -600,9 +612,11 @@ is_unlimited_mode (const T tracker)
 static int
 create_new_entry_and_track (T tracker, const char *ip, unsigned bucket)
 {
-  if (tracker->max_unique_ips > 0 && tracker->unique_ips >= tracker->max_unique_ips)
+  if (tracker->max_unique_ips > 0
+      && tracker->unique_ips >= tracker->max_unique_ips)
     {
-      SOCKET_LOG_WARN_MSG ("IP tracker unique limit reached: skipping new IP %s", ip);
+      SOCKET_LOG_WARN_MSG (
+          "IP tracker unique limit reached: skipping new IP %s", ip);
       return 0;
     }
 
@@ -634,8 +648,8 @@ increment_existing_entry (T tracker, IPEntry *entry)
       return 0;
     }
 
-  size_t attempted = (size_t) entry->count + 1;
-  if (is_unlimited_mode (tracker) || attempted <= (size_t) tracker->max_per_ip)
+  size_t attempted = (size_t)entry->count + 1;
+  if (is_unlimited_mode (tracker) || attempted <= (size_t)tracker->max_per_ip)
     {
       entry->count++;
       tracker->total_conns++;
@@ -670,7 +684,8 @@ track_internal (T tracker, const char *ip)
 
 /* ============================================================================
  * Public API Implementation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketIPTracker_new - Create new IP tracker (implementation)
@@ -711,16 +726,19 @@ SocketIPTracker_new (Arena_T arena, int max_per_ip)
   /* Generate secure hash seed for collision resistance */
   {
     unsigned char seed_bytes[sizeof (unsigned)];
-    ssize_t got_bytes = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
-    if (got_bytes == (ssize_t) sizeof (seed_bytes))
+    ssize_t got_bytes
+        = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+    if (got_bytes == (ssize_t)sizeof (seed_bytes))
       {
         memcpy (&tracker->hash_seed, seed_bytes, sizeof (tracker->hash_seed));
       }
     else
       {
         /* Fallback: time + PID */
-        tracker->hash_seed = (unsigned) time (NULL) ^ (unsigned) getpid ();
-        SOCKET_LOG_WARN_MSG ("SocketIPTracker: fallback hash seed (crypto random failed: %zd)", got_bytes);
+        tracker->hash_seed = (unsigned)time (NULL) ^ (unsigned)getpid ();
+        SOCKET_LOG_WARN_MSG (
+            "SocketIPTracker: fallback hash seed (crypto random failed: %zd)",
+            got_bytes);
       }
   }
 
@@ -783,9 +801,10 @@ SocketIPTracker_track (T tracker, const char *ip)
     return 1;
 
   size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
     {
-      SOCKET_LOG_WARN_MSG ("Invalid IP for tracking: %s (len=%zu)", ip, ip_len);
+      SOCKET_LOG_WARN_MSG ("Invalid IP for tracking: %s (len=%zu)", ip,
+                           ip_len);
       return 0; /* Reject invalid IPs */
     }
 
@@ -821,7 +840,7 @@ SocketIPTracker_release (T tracker, const char *ip)
     return;
 
   size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
     {
       SOCKET_LOG_WARN_MSG ("Invalid IP for release: %s", ip);
       return;
@@ -866,7 +885,7 @@ SocketIPTracker_count (T tracker, const char *ip)
     return 0;
 
   size_t ip_len = strlen (ip);
-  if (ip_len >= (size_t) SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
+  if (ip_len >= (size_t)SOCKET_IP_MAX_LEN || !validate_ip_format (ip))
     return 0;
 
   pthread_mutex_lock (&tracker->mutex);
@@ -886,8 +905,8 @@ SocketIPTracker_count (T tracker, const char *ip)
  *
  * Thread-safe: Yes
  *
- * Clamps negative values to 0. Does not retroactively close excess connections.
- * Future track() calls will enforce the new limit.
+ * Clamps negative values to 0. Does not retroactively close excess
+ * connections. Future track() calls will enforce the new limit.
  */
 void
 SocketIPTracker_setmax (T tracker, int max_per_ip)
@@ -987,7 +1006,8 @@ SocketIPTracker_total (T tracker)
 }
 
 /**
- * SocketIPTracker_unique_ips - Get count of unique tracked IPs (implementation)
+ * SocketIPTracker_unique_ips - Get count of unique tracked IPs
+ * (implementation)
  * @tracker: IP tracker instance
  *
  * Returns: Number of IPs with count > 0
@@ -1028,8 +1048,7 @@ SocketIPTracker_clear (T tracker)
   if (tracker->arena == NULL)
     free_all_buckets (tracker);
   else
-    memset (tracker->buckets, 0,
-            tracker->bucket_count * sizeof (IPEntry *));
+    memset (tracker->buckets, 0, tracker->bucket_count * sizeof (IPEntry *));
 
   tracker->total_conns = 0;
   tracker->unique_ips = 0;

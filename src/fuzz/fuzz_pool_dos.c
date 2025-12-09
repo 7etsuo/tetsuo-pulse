@@ -1,8 +1,9 @@
 /**
  * fuzz_pool_dos.c - libFuzzer for SocketPool DoS Vectors
  *
- * Fuzzes pool ops for resource exhaustion (max conns, buf growth, IP limits, drain).
- * Inputs: Fuzzed conn add/remove rates, buf sizes, IP addrs for tracking.
+ * Fuzzes pool ops for resource exhaustion (max conns, buf growth, IP limits,
+ * drain). Inputs: Fuzzed conn add/remove rates, buf sizes, IP addrs for
+ * tracking.
  *
  * Targets:
  * - Conn slot exhaustion
@@ -23,53 +24,55 @@
 #include "core/Except.h"
 #include "pool/SocketPool.h"
 
-int LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
+int
+LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 {
   Arena_T arena_instance = Arena_new ();
-  if (!arena_instance) return 0;
+  if (!arena_instance)
+    return 0;
   volatile Arena_T arena = arena_instance;
-  (void)arena;  /* Used only for exception safety */
+  (void)arena; /* Used only for exception safety */
 
   TRY
-    {
-      SocketPool_T pool = SocketPool_new (arena_instance, 10, 1024); /* Small for fuzz exhaustion */
-      if (!pool) return 0;
+  {
+    SocketPool_T pool = SocketPool_new (arena_instance, 10,
+                                        1024); /* Small for fuzz exhaustion */
+    if (!pool)
+      return 0;
 
-      uint32_t seed = 0;
-      if (size >= 4) {
-        seed = *(uint32_t*)data;
+    uint32_t seed = 0;
+    if (size >= 4)
+      {
+        seed = *(uint32_t *)data;
         data += 4;
         size -= 4;
       }
 
-      /* Fuzz conn add (simulate flood) */
-      for (size_t i = 0; i < size / 8; i++) {
+    /* Fuzz conn add (simulate flood) */
+    for (size_t i = 0; i < size / 8; i++)
+      {
         /* Stub socket from fuzzed data */
         Socket_T stub_sock = Socket_new_from_fd (-1); /* Invalid for test */
-        if (stub_sock) {
-          SocketPool_add (pool, stub_sock);
-        }
+        if (stub_sock)
+          {
+            SocketPool_add (pool, stub_sock);
+          }
         SocketPool_cleanup (pool, 0); /* Force drain fuzz */
       }
 
-      /* Fuzz resize/limits */
-      if (seed % 2) {
+    /* Fuzz resize/limits */
+    if (seed % 2)
+      {
         SocketPool_resize (pool, (size % 100) + 1); /* Small resizes */
       }
 
-      /* Fuzz rate limits */
-      SocketPool_setconnrate (pool, (int)(seed % 1000), 10);
+    /* Fuzz rate limits */
+    SocketPool_setconnrate (pool, (int)(seed % 1000), 10);
 
-      SocketPool_free (&pool);
-    }
-  EXCEPT (SocketPool_Failed)
-    {
-      /* Expected on limits/exhaust */
-    }
-  EXCEPT (Arena_Failed)
-    {
-      /* Expected on limits/exhaust */
-    }
+    SocketPool_free (&pool);
+  }
+  EXCEPT (SocketPool_Failed) { /* Expected on limits/exhaust */ }
+  EXCEPT (Arena_Failed) { /* Expected on limits/exhaust */ }
   END_TRY;
 
   Arena_dispose (&arena_instance);

@@ -112,7 +112,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           else if (key_size > 0)
             {
               /* Test with wrong key size - should fail */
-              SocketTLSContext_enable_session_tickets (ctx, key_data, key_size);
+              SocketTLSContext_enable_session_tickets (ctx, key_data,
+                                                       key_size);
             }
         }
         break;
@@ -130,10 +131,7 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketTLS_Failed)
-  {
-    /* Expected for invalid parameters */
-  }
+  EXCEPT (SocketTLS_Failed) { /* Expected for invalid parameters */ }
   FINALLY
   {
     if (ctx)
@@ -156,4 +154,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

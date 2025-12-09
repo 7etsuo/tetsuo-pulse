@@ -16,22 +16,23 @@
 #include "core/SocketRetry.h"
 
 #include "core/Except.h"
-#include "core/SocketUtil.h"
-#include "core/SocketSecurity.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <float.h>
-#include <math.h>
 #include <limits.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
 /* ============================================================================
  * LCG Random Number Generator Constants (Numerical Recipes)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Linear Congruential Generator parameters from Numerical Recipes
  * Formula: next = (state * MULTIPLIER + INCREMENT) mod MODULUS
@@ -66,18 +67,20 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketRetry);
 
 /* ============================================================================
  * Internal Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 struct T
 {
-  SocketRetry_Policy policy;    /**< Current retry policy */
-  SocketRetry_Stats stats;      /**< Statistics from last execution */
-  unsigned int random_state;    /**< Random state for jitter */
+  SocketRetry_Policy policy; /**< Current retry policy */
+  SocketRetry_Stats stats;   /**< Statistics from last execution */
+  unsigned int random_state; /**< Random state for jitter */
 };
 
 /* ============================================================================
  * Random Number Generation (for jitter)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * retry_random_seed - Initialize random state
@@ -108,8 +111,8 @@ better_random_seed (void)
   unsigned int seed = retry_random_seed ();
 
   uint8_t bytes[sizeof (unsigned int)];
-  if (SocketSecurity_has_tls () &&
-      SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
+  if (SocketSecurity_has_tls ()
+      && SocketCrypto_random_bytes (bytes, sizeof (bytes)) == 0)
     {
       unsigned int crypto_seed;
       memcpy (&crypto_seed, bytes, sizeof (crypto_seed));
@@ -139,7 +142,8 @@ retry_random_double (unsigned int *state)
 
 /* ============================================================================
  * Policy Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_policy_defaults - Initialize policy with defaults
@@ -175,20 +179,24 @@ validate_policy (const SocketRetry_Policy *policy)
     return 0;
 
   /* Check for NaN/Inf in floating point fields */
-  if (isnan(policy->multiplier) || isinf(policy->multiplier) ||
-      isnan(policy->jitter) || isinf(policy->jitter))
+  if (isnan (policy->multiplier) || isinf (policy->multiplier)
+      || isnan (policy->jitter) || isinf (policy->jitter))
     return 0;
 
-  if (policy->max_attempts < 1 || policy->max_attempts > SOCKET_RETRY_MAX_ATTEMPTS)
+  if (policy->max_attempts < 1
+      || policy->max_attempts > SOCKET_RETRY_MAX_ATTEMPTS)
     return 0;
 
-  if (policy->initial_delay_ms < 1 || policy->initial_delay_ms > SOCKET_RETRY_MAX_DELAY_VALUE_MS)
+  if (policy->initial_delay_ms < 1
+      || policy->initial_delay_ms > SOCKET_RETRY_MAX_DELAY_VALUE_MS)
     return 0;
 
-  if (policy->max_delay_ms < policy->initial_delay_ms || policy->max_delay_ms > SOCKET_RETRY_MAX_DELAY_VALUE_MS)
+  if (policy->max_delay_ms < policy->initial_delay_ms
+      || policy->max_delay_ms > SOCKET_RETRY_MAX_DELAY_VALUE_MS)
     return 0;
 
-  if (policy->multiplier < 1.0 || policy->multiplier > SOCKET_RETRY_MAX_MULTIPLIER)
+  if (policy->multiplier < 1.0
+      || policy->multiplier > SOCKET_RETRY_MAX_MULTIPLIER)
     return 0;
 
   if (policy->jitter < 0.0 || policy->jitter > 1.0)
@@ -199,7 +207,8 @@ validate_policy (const SocketRetry_Policy *policy)
 
 /* ============================================================================
  * Backoff Calculation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * power_double - Compute base^exp for double (iterative to avoid pow overhead)
@@ -214,15 +223,20 @@ power_double (double base, int exp)
 {
   double result = 1.0;
 
-  if (exp <= 0) return 1.0;
-  if (base == 0.0) return 0.0;
+  if (exp <= 0)
+    return 1.0;
+  if (base == 0.0)
+    return 0.0;
 
   /* Cap exponent to prevent CPU DoS from excessive loop iterations */
-  if (exp > 1000) {
-    if (base > 1.0) return INFINITY;
-    if (base < 1.0) return 0.0;
-    return 1.0;
-  }
+  if (exp > 1000)
+    {
+      if (base > 1.0)
+        return INFINITY;
+      if (base < 1.0)
+        return 0.0;
+      return 1.0;
+    }
 
   for (int i = 0; i < exp; ++i)
     {
@@ -238,7 +252,8 @@ power_double (double base, int exp)
 }
 
 /**
- * exponential_backoff - Compute exponential backoff delay before capping and jitter
+ * exponential_backoff - Compute exponential backoff delay before capping and
+ * jitter
  * @policy: Policy containing backoff parameters
  * @attempt: Current attempt number (1-based)
  *
@@ -251,16 +266,18 @@ exponential_backoff (const SocketRetry_Policy *policy, int attempt)
   double base_delay;
   double multiplier_pow;
 
-  if (attempt < 1) return 0.0;
+  if (attempt < 1)
+    return 0.0;
 
-  /* Compute multiplier^(attempt-1) iteratively for performance and precision */
+  /* Compute multiplier^(attempt-1) iteratively for performance and precision
+   */
   multiplier_pow = power_double (policy->multiplier, attempt - 1);
 
   /* Exponential backoff: initial * multiplier^(attempt-1) */
   base_delay = (double)policy->initial_delay_ms * multiplier_pow;
 
   /* Handle FP overflow/NaN */
-  if (isinf(base_delay) || isnan(base_delay))
+  if (isinf (base_delay) || isnan (base_delay))
     base_delay = (double)policy->max_delay_ms;
 
   /* Cap at max delay */
@@ -295,7 +312,7 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
     }
 
   /* Handle FP overflow/NaN after jitter */
-  if (isinf(jittered_delay) || isnan(jittered_delay) || jittered_delay < 0.0)
+  if (isinf (jittered_delay) || isnan (jittered_delay) || jittered_delay < 0.0)
     jittered_delay = (double)policy->max_delay_ms;
 
   return jittered_delay;
@@ -304,7 +321,8 @@ apply_jitter_to_delay (double base_delay, const SocketRetry_Policy *policy,
 /**
  * clamp_final_delay - Clamp delay to valid range
  * @delay: Delay to clamp
- * @policy: Policy for max_delay reference (unused in clamp but for consistency)
+ * @policy: Policy for max_delay reference (unused in clamp but for
+ * consistency)
  *
  * Returns: Clamped delay in ms (double, safe for int cast)
  * Thread-safe: Yes
@@ -364,7 +382,8 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
 
   if (policy == NULL || attempt < 1 || !validate_policy (policy))
     {
-      SOCKET_LOG_WARN_MSG ("Invalid parameters for calculate_delay (policy=%p, attempt=%d), returning 0",
+      SOCKET_LOG_WARN_MSG ("Invalid parameters for calculate_delay "
+                           "(policy=%p, attempt=%d), returning 0",
                            policy, attempt);
       return 0;
     }
@@ -375,7 +394,8 @@ SocketRetry_calculate_delay (const SocketRetry_Policy *policy, int attempt)
 
 /* ============================================================================
  * Sleep Helper
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * retry_sleep_ms - Sleep for specified milliseconds
@@ -408,7 +428,8 @@ retry_sleep_ms (int ms)
 
 /* ============================================================================
  * Context Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * init_retry_policy - Initialize retry policy (internal helper)
@@ -428,7 +449,7 @@ init_retry_policy (T retry, const SocketRetry_Policy *provided_policy)
   if (provided_policy != NULL)
     {
       if (!validate_policy (provided_policy))
-        return 0;  /* Invalid policy */
+        return 0; /* Invalid policy */
 
       policy_copy = *provided_policy;
     }
@@ -488,7 +509,8 @@ SocketRetry_free (T *retry)
 
 /* ============================================================================
  * Retry Execution Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * should_continue_retry - Check if retry should continue after failure
@@ -532,8 +554,8 @@ apply_backoff_delay (T retry, int attempt)
 {
   int delay_ms;
 
-  delay_ms
-      = calculate_backoff_delay (&retry->policy, attempt, &retry->random_state);
+  delay_ms = calculate_backoff_delay (&retry->policy, attempt,
+                                      &retry->random_state);
   retry->stats.total_delay_ms += delay_ms;
 
   SOCKET_LOG_DEBUG_MSG ("Sleeping %d ms before attempt %d", delay_ms,
@@ -544,7 +566,8 @@ apply_backoff_delay (T retry, int attempt)
 
 /* ============================================================================
  * Retry Execution
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * reset_retry_stats - Reset statistics for new execution
@@ -571,7 +594,8 @@ reset_retry_stats (T retry)
  */
 static int
 perform_single_attempt (T retry, SocketRetry_Operation operation,
-                        void *context, int attempt_num, const int64_t start_time)
+                        void *context, int attempt_num,
+                        const int64_t start_time)
 {
   int result;
 
@@ -587,7 +611,8 @@ perform_single_attempt (T retry, SocketRetry_Operation operation,
 
   /* Operation failed */
   retry->stats.last_error = result;
-  SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt_num, result);
+  SOCKET_LOG_DEBUG_MSG ("Attempt %d failed with error %d", attempt_num,
+                        result);
 
   return result;
 }
@@ -618,12 +643,14 @@ SocketRetry_execute (T retry, SocketRetry_Operation operation,
 
   for (attempt = 1; attempt <= retry->policy.max_attempts; ++attempt)
     {
-      result = perform_single_attempt (retry, operation, context, attempt, start_time);
+      result = perform_single_attempt (retry, operation, context, attempt,
+                                       start_time);
 
       if (result == 0)
         return 0;
 
-      if (!should_continue_retry (retry, result, attempt, should_retry, context))
+      if (!should_continue_retry (retry, result, attempt, should_retry,
+                                  context))
         break;
 
       apply_backoff_delay (retry, attempt);
@@ -650,7 +677,8 @@ SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
 
 /* ============================================================================
  * Statistics and State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketRetry_get_stats - Get statistics from last execution
@@ -705,10 +733,12 @@ void
 SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy)
 {
   if (retry == NULL || policy == NULL)
-    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed, "Invalid arguments to set_policy");
+    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+                      "Invalid arguments to set_policy");
 
   if (!validate_policy (policy))
-    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed, "Invalid retry policy parameters");
+    SOCKET_RAISE_MSG (SocketRetry, SocketRetry_Failed,
+                      "Invalid retry policy parameters");
 
   retry->policy = *policy;
 }

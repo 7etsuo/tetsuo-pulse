@@ -137,15 +137,15 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketDTLS_Failed) { }
-  EXCEPT (SocketDTLS_HandshakeFailed) { }
-  EXCEPT (SocketDTLS_VerifyFailed) { }
-  EXCEPT (SocketDTLS_CookieFailed) { }
-  EXCEPT (SocketDTLS_TimeoutExpired) { }
-  EXCEPT (SocketDTLS_ShutdownFailed) { }
-  EXCEPT (SocketDgram_Failed) { }
-  EXCEPT (Socket_Closed) { }
-  ELSE { }
+  EXCEPT (SocketDTLS_Failed) {}
+  EXCEPT (SocketDTLS_HandshakeFailed) {}
+  EXCEPT (SocketDTLS_VerifyFailed) {}
+  EXCEPT (SocketDTLS_CookieFailed) {}
+  EXCEPT (SocketDTLS_TimeoutExpired) {}
+  EXCEPT (SocketDTLS_ShutdownFailed) {}
+  EXCEPT (SocketDgram_Failed) {}
+  EXCEPT (Socket_Closed) {}
+  ELSE {}
   END_TRY;
 
   /* Cleanup */
@@ -168,4 +168,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

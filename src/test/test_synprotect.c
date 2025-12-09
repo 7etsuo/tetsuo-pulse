@@ -14,11 +14,11 @@
  * - Thread safety
  */
 
-#include "test/Test.h"
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "core/SocketSYNProtect.h"
 #include "core/SocketUtil.h"
+#include "test/Test.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,27 +34,28 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define RUN_TEST(test_func)                                                    \
-  do                                                                           \
-    {                                                                          \
-      printf ("  Running: %s... ", #test_func);                                \
-      fflush (stdout);                                                         \
-      tests_run++;                                                             \
-      if (test_func ())                                                        \
-        {                                                                      \
-          printf ("PASSED\n");                                                 \
-          tests_passed++;                                                      \
-        }                                                                      \
-      else                                                                     \
-        {                                                                      \
-          printf ("FAILED\n");                                                 \
-        }                                                                      \
-    }                                                                          \
+#define RUN_TEST(test_func)                                                   \
+  do                                                                          \
+    {                                                                         \
+      printf ("  Running: %s... ", #test_func);                               \
+      fflush (stdout);                                                        \
+      tests_run++;                                                            \
+      if (test_func ())                                                       \
+        {                                                                     \
+          printf ("PASSED\n");                                                \
+          tests_passed++;                                                     \
+        }                                                                     \
+      else                                                                    \
+        {                                                                     \
+          printf ("FAILED\n");                                                \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 /* ============================================================================
  * Lifecycle Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_new_free_basic - Test basic lifecycle with defaults
@@ -152,7 +153,8 @@ test_free_null (void)
 
 /* ============================================================================
  * Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_config_defaults - Test config defaults are reasonable
@@ -211,7 +213,8 @@ test_configure_runtime (void)
 
 /* ============================================================================
  * Basic Check Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_check_null_ip - Test check with NULL IP
@@ -313,7 +316,8 @@ test_check_with_state (void)
 
 /* ============================================================================
  * Scoring Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_score_penalty - Test score penalty on repeated attempts
@@ -412,7 +416,8 @@ test_score_failure_penalty (void)
 
 /* ============================================================================
  * Whitelist Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_whitelist_add_single - Test adding single IP to whitelist
@@ -485,7 +490,8 @@ test_whitelist_cidr (void)
   {
     protect = SocketSYNProtect_new (NULL, NULL);
 
-    int result = SocketSYNProtect_whitelist_add_cidr (protect, "172.16.0.0/12");
+    int result
+        = SocketSYNProtect_whitelist_add_cidr (protect, "172.16.0.0/12");
     success = (result == 1);
 
     /* IP in range should be whitelisted */
@@ -507,7 +513,8 @@ test_whitelist_cidr (void)
 }
 
 /**
- * test_whitelist_cidr_invalid - Test rejection of invalid CIDR notations and no wildcard effect
+ * test_whitelist_cidr_invalid - Test rejection of invalid CIDR notations and
+ * no wildcard effect
  */
 static int
 test_whitelist_cidr_invalid (void)
@@ -520,31 +527,39 @@ test_whitelist_cidr_invalid (void)
     protect = SocketSYNProtect_new (NULL, NULL);
 
     /* Invalid prefix like /abc should fail add, not create /0 wildcard */
-    int result1 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/abc");
+    int result1
+        = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/abc");
     success = (result1 == 0);
 
     /* Failure should not whitelist arbitrary IPs */
-    int contains_arbitrary = SocketSYNProtect_whitelist_contains (protect, "8.8.8.8");
+    int contains_arbitrary
+        = SocketSYNProtect_whitelist_contains (protect, "8.8.8.8");
     success = success && (contains_arbitrary == 0);
 
     /* Invalid large prefix /999 should fail */
-    int result2 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/999");
+    int result2
+        = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/999");
     success = success && (result2 == 0);
 
     /* Negative prefix /-1 should fail */
-    int result3 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/-1");
+    int result3
+        = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1/-1");
     success = success && (result3 == 0);
 
     /* No / should fall back to single IP add (success) */
     int result4 = SocketSYNProtect_whitelist_add_cidr (protect, "192.168.1.1");
     success = success && (result4 == 1);
-    int contains_fallback = SocketSYNProtect_whitelist_contains (protect, "192.168.1.1");
+    int contains_fallback
+        = SocketSYNProtect_whitelist_contains (protect, "192.168.1.1");
     success = success && (contains_fallback == 1);
 
-    /* /0 should be accepted but match only exact (or disallow?) - test match */
+    /* /0 should be accepted but match only exact (or disallow?) - test match
+     */
     int result5 = SocketSYNProtect_whitelist_add_cidr (protect, "0.0.0.0/0");
-    success = success && (result5 == 1);  // Allowed, but verify behavior if needed
-    int contains_all = SocketSYNProtect_whitelist_contains (protect, "255.255.255.255");
+    success
+        = success && (result5 == 1); // Allowed, but verify behavior if needed
+    int contains_all
+        = SocketSYNProtect_whitelist_contains (protect, "255.255.255.255");
     // Note: /0 matches all IPv4; adjust policy if to disallow
 
     SocketSYNProtect_free (&protect);
@@ -600,7 +615,8 @@ test_whitelist_clear (void)
     SocketSYNProtect_whitelist_clear (protect);
 
     success = !SocketSYNProtect_whitelist_contains (protect, "2.2.2.2");
-    success = success && !SocketSYNProtect_whitelist_contains (protect, "3.3.3.3");
+    success
+        = success && !SocketSYNProtect_whitelist_contains (protect, "3.3.3.3");
 
     SocketSYNProtect_free (&protect);
   }
@@ -612,7 +628,8 @@ test_whitelist_clear (void)
 
 /* ============================================================================
  * Blacklist Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_blacklist_add - Test adding to blacklist
@@ -737,7 +754,8 @@ test_blacklist_remove (void)
 
 /* ============================================================================
  * Statistics Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_stats_basic - Test basic statistics collection
@@ -803,7 +821,8 @@ test_stats_reset (void)
 
 /* ============================================================================
  * Action Name Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_action_names - Test action name lookup
@@ -813,20 +832,22 @@ test_action_names (void)
 {
   int success = 1;
 
-  success = success && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_ALLOW),
-                                "ALLOW")
-                        == 0);
   success
-      = success && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_THROTTLE),
-                            "THROTTLE")
-                    == 0);
+      = success
+        && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_ALLOW), "ALLOW")
+            == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_THROTTLE),
+                        "THROTTLE")
+                == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_CHALLENGE),
+                        "CHALLENGE")
+                == 0);
   success
-      = success && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_CHALLENGE),
-                            "CHALLENGE")
-                    == 0);
-  success = success && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_BLOCK),
-                                "BLOCK")
-                        == 0);
+      = success
+        && (strcmp (SocketSYNProtect_action_name (SYN_ACTION_BLOCK), "BLOCK")
+            == 0);
 
   return success;
 }
@@ -839,29 +860,30 @@ test_reputation_names (void)
 {
   int success = 1;
 
-  success
-      = success
-        && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_TRUSTED), "TRUSTED")
-            == 0);
-  success
-      = success
-        && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_NEUTRAL), "NEUTRAL")
-            == 0);
-  success
-      = success
-        && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_SUSPECT), "SUSPECT")
-            == 0);
-  success
-      = success
-        && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_HOSTILE), "HOSTILE")
-            == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_TRUSTED),
+                        "TRUSTED")
+                == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_NEUTRAL),
+                        "NEUTRAL")
+                == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_SUSPECT),
+                        "SUSPECT")
+                == 0);
+  success = success
+            && (strcmp (SocketSYNProtect_reputation_name (SYN_REP_HOSTILE),
+                        "HOSTILE")
+                == 0);
 
   return success;
 }
 
 /* ============================================================================
  * Maintenance Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_cleanup - Test cleanup removes expired entries
@@ -916,8 +938,9 @@ test_clear_all (void)
 
     /* Tracked IPs should be cleared, but whitelist preserved */
     success = (stats.current_tracked_ips == 0);
-    success = success
-              && (SocketSYNProtect_whitelist_contains (protect, "60.0.0.3") == 1);
+    success
+        = success
+          && (SocketSYNProtect_whitelist_contains (protect, "60.0.0.3") == 1);
 
     SocketSYNProtect_free (&protect);
   }
@@ -949,10 +972,12 @@ test_reset (void)
     SocketSYNProtect_stats (protect, &stats);
 
     success = (stats.current_tracked_ips == 0);
-    success = success
-              && (SocketSYNProtect_whitelist_contains (protect, "70.0.0.2") == 0);
-    success = success
-              && (SocketSYNProtect_blacklist_contains (protect, "70.0.0.3") == 0);
+    success
+        = success
+          && (SocketSYNProtect_whitelist_contains (protect, "70.0.0.2") == 0);
+    success
+        = success
+          && (SocketSYNProtect_blacklist_contains (protect, "70.0.0.3") == 0);
 
     SocketSYNProtect_free (&protect);
   }
@@ -964,7 +989,8 @@ test_reset (void)
 
 /* ============================================================================
  * IP State Query Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_get_ip_state_found - Test getting state for tracked IP
@@ -1021,7 +1047,8 @@ test_get_ip_state_not_found (void)
 
 /* ============================================================================
  * IPv6 Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * test_ipv6_basic - Test basic IPv6 address handling
@@ -1109,7 +1136,8 @@ test_ipv6_cidr (void)
 
 /* ============================================================================
  * Thread Safety Test
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static SocketSYNProtect_T g_protect = NULL;
 static volatile int g_thread_errors = 0;
@@ -1173,7 +1201,8 @@ test_thread_safety (void)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -1240,8 +1269,8 @@ main (void)
   printf ("\nThread Safety Tests:\n");
   RUN_TEST (test_thread_safety);
 
-  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed, tests_run);
+  printf ("\n=== Results: %d/%d tests passed ===\n\n", tests_passed,
+          tests_run);
 
   return (tests_passed == tests_run) ? 0 : 1;
 }
-

@@ -1,7 +1,8 @@
 /**
  * @file SocketIO.h
  * @ingroup core_io
- * @brief Internal I/O abstraction layer for socket operations with TLS support.
+ * @brief Internal I/O abstraction layer for socket operations with TLS
+ * support.
  *
  * Provides internal I/O operations that automatically route through TLS
  * when enabled, or use raw socket operations otherwise. This abstraction

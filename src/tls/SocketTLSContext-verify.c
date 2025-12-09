@@ -12,18 +12,18 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketTLS-private.h"
 #include "core/SocketSecurity.h"
+#include "tls/SocketTLS-private.h"
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <openssl/ocsp.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <dirent.h>
 
 #define T SocketTLSContext_T
 
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* ============================================================================
  * Configuration Constants
@@ -186,7 +186,7 @@ check_current_cert_pin (T ctx, X509_STORE_CTX *x509_ctx)
 static int
 check_certificate_pins (T ctx, X509_STORE_CTX *x509_ctx)
 {
-  STACK_OF (X509) *chain;
+  STACK_OF (X509) * chain;
 
   assert (ctx);
 
@@ -290,7 +290,7 @@ get_verify_context (X509_STORE_CTX *x509_ctx, Socket_T *out_sock, T *out_ctx)
   if (!*out_sock)
     return 0;
 
-  *out_ctx = (T) (*out_sock)->tls_ctx;
+  *out_ctx = (T)(*out_sock)->tls_ctx;
   return *out_ctx != NULL;
 }
 
@@ -385,77 +385,79 @@ SocketTLSContext_load_crl (T ctx, const char *crl_path)
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Failed to get certificate store");
 
   TRY
-    {
-      CRL_LOCK(ctx);
+  {
+    CRL_LOCK (ctx);
 
-      if (stat (crl_path, &st) != 0)
-        RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
-                             crl_path, Socket_safe_strerror (errno));
+    if (stat (crl_path, &st) != 0)
+      RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Invalid CRL path '%s': %s",
+                           crl_path, Socket_safe_strerror (errno));
 
-      /* Security check: prevent DoS from oversized CRL files or directories */
-      if (!S_ISDIR (st.st_mode))
-        {
-          size_t file_size = (size_t)st.st_size;
-          if (st.st_size < 0 || file_size > SOCKET_TLS_MAX_CRL_SIZE
-              || !SocketSecurity_check_size (file_size))
-            RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                                 "CRL file '%s' too large or invalid size: %ld bytes (max %u)",
-                                 crl_path, (long)st.st_size, SOCKET_TLS_MAX_CRL_SIZE);
-        }
-      else /* Directory CRL load */
-        {
-          DIR *dirp = opendir (crl_path);
-          if (!dirp)
-            RAISE_CTX_ERROR_FMT (SocketTLS_Failed, "Cannot open CRL directory '%s': %s",
-                                 crl_path, Socket_safe_strerror (errno));
+    /* Security check: prevent DoS from oversized CRL files or directories */
+    if (!S_ISDIR (st.st_mode))
+      {
+        size_t file_size = (size_t)st.st_size;
+        if (st.st_size < 0 || file_size > SOCKET_TLS_MAX_CRL_SIZE
+            || !SocketSecurity_check_size (file_size))
+          RAISE_CTX_ERROR_FMT (
+              SocketTLS_Failed,
+              "CRL file '%s' too large or invalid size: %ld bytes (max %u)",
+              crl_path, (long)st.st_size, SOCKET_TLS_MAX_CRL_SIZE);
+      }
+    else /* Directory CRL load */
+      {
+        DIR *dirp = opendir (crl_path);
+        if (!dirp)
+          RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                               "Cannot open CRL directory '%s': %s", crl_path,
+                               Socket_safe_strerror (errno));
 
-          struct dirent *de;
-          int file_count = 0;
-          while ((de = readdir (dirp)) != NULL)
-            {
-              if (de->d_type == DT_REG) /* Count regular files (potential CRLs) */
-                {
-                  file_count++;
-                  if (file_count > SOCKET_TLS_MAX_CRL_FILES_IN_DIR)
-                    {
-                      closedir (dirp);
-                      RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
-                                           "CRL directory '%s' has too many files (%d > max %d): potential DoS",
-                                           crl_path, file_count, SOCKET_TLS_MAX_CRL_FILES_IN_DIR);
-                    }
-                }
-            }
-          closedir (dirp);
-          if (file_count == 0)
-            SOCKET_LOG_WARN_MSG ("CRL directory '%s' contains no regular files", crl_path);
-        }
+        struct dirent *de;
+        int file_count = 0;
+        while ((de = readdir (dirp)) != NULL)
+          {
+            if (de->d_type
+                == DT_REG) /* Count regular files (potential CRLs) */
+              {
+                file_count++;
+                if (file_count > SOCKET_TLS_MAX_CRL_FILES_IN_DIR)
+                  {
+                    closedir (dirp);
+                    RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
+                                         "CRL directory '%s' has too many "
+                                         "files (%d > max %d): potential DoS",
+                                         crl_path, file_count,
+                                         SOCKET_TLS_MAX_CRL_FILES_IN_DIR);
+                  }
+              }
+          }
+        closedir (dirp);
+        if (file_count == 0)
+          SOCKET_LOG_WARN_MSG ("CRL directory '%s' contains no regular files",
+                               crl_path);
+      }
 
-      ret = S_ISDIR (st.st_mode)
-                ? X509_STORE_load_locations (store, NULL, crl_path)
-                : X509_STORE_load_locations (store, crl_path, NULL);
+    ret = S_ISDIR (st.st_mode)
+              ? X509_STORE_load_locations (store, NULL, crl_path)
+              : X509_STORE_load_locations (store, crl_path, NULL);
 
-      if (ret != 1)
-        ctx_raise_openssl_error ("Failed to load CRL");
+    if (ret != 1)
+      ctx_raise_openssl_error ("Failed to load CRL");
 
-      X509_STORE_set_flags (store,
-                            X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
-    }
-  FINALLY
-    {
-      CRL_UNLOCK(ctx);
-    }
+    X509_STORE_set_flags (store,
+                          X509_V_FLAG_CRL_CHECK | X509_V_FLAG_CRL_CHECK_ALL);
+  }
+  FINALLY { CRL_UNLOCK (ctx); }
   END_TRY;
-
-
 }
 
 void
 SocketTLSContext_refresh_crl (T ctx, const char *crl_path)
 {
   /* Note: CRLs accumulate in store on refresh (no OpenSSL clear API).
-   * For memory management in long-running apps, recreate context periodically or
-   * implement custom CRL store management. Load/refresh appends only. */
-  SOCKET_LOG_INFO_MSG ("Refreshing CRL from path '%s' (accumulates in store)", crl_path);
+   * For memory management in long-running apps, recreate context periodically
+   * or implement custom CRL store management. Load/refresh appends only. */
+  SOCKET_LOG_INFO_MSG ("Refreshing CRL from path '%s' (accumulates in store)",
+                       crl_path);
 
   SocketTLSContext_load_crl (ctx, crl_path);
 }
@@ -780,9 +782,8 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
  */
 
 void
-SocketTLSContext_set_cert_lookup_callback (T ctx,
-                                           SocketTLSCertLookupCallback callback,
-                                           void *user_data)
+SocketTLSContext_set_cert_lookup_callback (
+    T ctx, SocketTLSCertLookupCallback callback, void *user_data)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);

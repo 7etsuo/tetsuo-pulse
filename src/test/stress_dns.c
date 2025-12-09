@@ -57,7 +57,7 @@ dns_stress_thread (void *arg)
          i++)
       {
         char hostname[256];
-        SocketDNS_Request_T req;
+        Request_T req;
 
         /* Generate random hostname for stress */
         snprintf (hostname, sizeof (hostname), "%s%d.%d.com",

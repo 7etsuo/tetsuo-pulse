@@ -132,9 +132,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         {
           /* Passive (server) address resolution */
           SocketCommon_setup_hints (&hints, SOCK_STREAM, AI_PASSIVE);
-          int result = SocketCommon_resolve_address (NULL, port, &hints, &res,
-                                                     SocketCommon_Failed,
-                                                     AF_UNSPEC, 0);
+          int result = SocketCommon_resolve_address (
+              NULL, port, &hints, &res, SocketCommon_Failed, AF_UNSPEC, 0);
           (void)result;
           if (res)
             SocketCommon_free_addrinfo (res);
@@ -187,14 +186,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         break;
       }
   }
-  EXCEPT (SocketCommon_Failed)
-  {
-    /* Expected for invalid addresses/ports */
-  }
-  EXCEPT (Socket_Failed)
-  {
-    /* Expected for resolution failures */
-  }
+  EXCEPT (SocketCommon_Failed) { /* Expected for invalid addresses/ports */ }
+  EXCEPT (Socket_Failed) { /* Expected for resolution failures */ }
   FINALLY
   {
     if (res)
@@ -204,4 +197,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

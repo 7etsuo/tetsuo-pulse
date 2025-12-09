@@ -6,17 +6,18 @@
  * Comprehensive tests for RFC 9112 HTTP/1.1 message parsing.
  */
 
-#include "test/Test.h"
 #include "core/Arena.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "test/Test.h"
 
 #include <stdio.h>
 #include <string.h>
 
 /* ============================================================================
  * Request Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_simple_get_request)
 {
@@ -232,7 +233,8 @@ TEST (http1_upgrade_websocket)
 
 /* ============================================================================
  * Response Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_simple_response)
 {
@@ -327,7 +329,8 @@ TEST (http1_chunked_response)
 
 /* ============================================================================
  * Security Tests - Request Smuggling Prevention
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_smuggling_cl_te)
 {
@@ -399,7 +402,8 @@ TEST (http1_negative_content_length)
 
 /* ============================================================================
  * Header Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_multiple_headers)
 {
@@ -466,7 +470,8 @@ TEST (http1_header_case_insensitive)
 
 /* ============================================================================
  * Incremental Parsing Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_incremental_parsing)
 {
@@ -481,16 +486,16 @@ TEST (http1_incremental_parsing)
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
 
-  result = SocketHTTP1_Parser_execute (parser, part1, strlen (part1),
-                                       &consumed);
+  result
+      = SocketHTTP1_Parser_execute (parser, part1, strlen (part1), &consumed);
   ASSERT_EQ (HTTP1_INCOMPLETE, result);
 
-  result = SocketHTTP1_Parser_execute (parser, part2, strlen (part2),
-                                       &consumed);
+  result
+      = SocketHTTP1_Parser_execute (parser, part2, strlen (part2), &consumed);
   ASSERT_EQ (HTTP1_INCOMPLETE, result);
 
-  result = SocketHTTP1_Parser_execute (parser, part3, strlen (part3),
-                                       &consumed);
+  result
+      = SocketHTTP1_Parser_execute (parser, part3, strlen (part3), &consumed);
   ASSERT_EQ (HTTP1_OK, result);
 
   ASSERT_NOT_NULL (SocketHTTP1_Parser_get_request (parser));
@@ -501,7 +506,8 @@ TEST (http1_incremental_parsing)
 
 /* ============================================================================
  * Body Reading Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_read_body_content_length)
 {
@@ -522,8 +528,9 @@ TEST (http1_read_body_content_length)
 
   SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
 
-  result = SocketHTTP1_Parser_read_body (parser, body, strlen (body), &consumed,
-                                         output, sizeof (output), &written);
+  result
+      = SocketHTTP1_Parser_read_body (parser, body, strlen (body), &consumed,
+                                      output, sizeof (output), &written);
   ASSERT_EQ (HTTP1_OK, result);
   ASSERT_EQ (11, written);
   ASSERT (memcmp (output, "Hello World", 11) == 0);
@@ -552,31 +559,38 @@ TEST (http1_read_body_chunked)
 
   SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
 
-  result = SocketHTTP1_Parser_read_body (parser, body, strlen (body), &consumed,
-                                         output, sizeof (output), &written);
+  result
+      = SocketHTTP1_Parser_read_body (parser, body, strlen (body), &consumed,
+                                      output, sizeof (output), &written);
   ASSERT_EQ (HTTP1_OK, result);
   ASSERT_EQ (11, written);
   ASSERT (memcmp (output, "Hello World", 11) == 0);
   ASSERT_EQ (1, SocketHTTP1_Parser_body_complete (parser));
 
   /* Security tests - require config for small limits */
-  SocketHTTP1_Config small_config = {0};
+  SocketHTTP1_Config small_config = { 0 };
   SocketHTTP1_config_defaults (&small_config);
   small_config.max_trailer_size = 50;
-  small_config.max_chunk_ext = 10;  /* Small for extension test */
-  SocketHTTP1_Parser_T sec_parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &small_config, arena);
-  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
+  small_config.max_chunk_ext = 10; /* Small for extension test */
+  SocketHTTP1_Parser_T sec_parser
+      = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &small_config, arena);
+  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request),
+                              &consumed);
 
-  /* Oversized trailer - parser is incremental, need to call until complete or error */
+  /* Oversized trailer - parser is incremental, need to call until complete or
+   * error */
   /* Note: "Trailer" is a forbidden name, use X-Custom instead */
-  const char *oversized = "0\r\nX-Custom: this is a long value exceeding small limit\r\n\r\n";
+  const char *oversized
+      = "0\r\nX-Custom: this is a long value exceeding small limit\r\n\r\n";
   size_t total_consumed = 0;
   result = HTTP1_OK;
-  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (oversized))
+  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser)
+         && total_consumed < strlen (oversized))
     {
-      result = SocketHTTP1_Parser_read_body (sec_parser, oversized + total_consumed, 
-                                             strlen (oversized) - total_consumed, &consumed, 
-                                             output, sizeof (output), &written);
+      result = SocketHTTP1_Parser_read_body (
+          sec_parser, oversized + total_consumed,
+          strlen (oversized) - total_consumed, &consumed, output,
+          sizeof (output), &written);
       total_consumed += consumed;
     }
   ASSERT (result == HTTP1_ERROR_HEADER_TOO_LARGE);
@@ -584,20 +598,24 @@ TEST (http1_read_body_chunked)
   /* Forbidden trailer - incremental processing */
   const char *forbidden = "0\r\nTransfer-Encoding: chunked\r\n\r\n";
   SocketHTTP1_Parser_reset (sec_parser);
-  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request), &consumed);
+  SocketHTTP1_Parser_execute (sec_parser, request, strlen (request),
+                              &consumed);
   total_consumed = 0;
   result = HTTP1_OK;
-  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser) && total_consumed < strlen (forbidden))
+  while (result == HTTP1_OK && !SocketHTTP1_Parser_body_complete (sec_parser)
+         && total_consumed < strlen (forbidden))
     {
-      result = SocketHTTP1_Parser_read_body (sec_parser, forbidden + total_consumed, 
-                                             strlen (forbidden) - total_consumed, &consumed, 
-                                             output, sizeof (output), &written);
+      result = SocketHTTP1_Parser_read_body (
+          sec_parser, forbidden + total_consumed,
+          strlen (forbidden) - total_consumed, &consumed, output,
+          sizeof (output), &written);
       total_consumed += consumed;
     }
   ASSERT_EQ (HTTP1_ERROR_INVALID_TRAILER, result);
 
-  /* Note: Long chunk extension test removed - requires generating >1024 byte string
-   * which is verbose for a unit test. The limit is enforced in the parser. */
+  /* Note: Long chunk extension test removed - requires generating >1024 byte
+   * string which is verbose for a unit test. The limit is enforced in the
+   * parser. */
 
   SocketHTTP1_Parser_free (&sec_parser);
   SocketHTTP1_Parser_free (&parser);
@@ -606,7 +624,8 @@ TEST (http1_read_body_chunked)
 
 /* ============================================================================
  * Serialization Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_serialize_request)
 {
@@ -668,7 +687,8 @@ TEST (http1_serialize_response)
 
 /* ============================================================================
  * Chunk Encoding Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_chunk_encode)
 {
@@ -695,7 +715,8 @@ TEST (http1_chunk_final)
 
 /* ============================================================================
  * Error Cases
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (http1_invalid_method)
 {
@@ -729,7 +750,8 @@ TEST (http1_result_strings)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -756,7 +778,8 @@ TEST (http1_multi_cl_same)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
-  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request),
+                                       &consumed);
   ASSERT_EQ (HTTP1_OK, result);
   ASSERT_EQ (strlen (request), consumed);
   req = SocketHTTP1_Parser_get_request (parser);
@@ -781,9 +804,11 @@ TEST (http1_multi_cl_differ_reject)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
-  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request),
+                                       &consumed);
   ASSERT (result != HTTP1_OK);
-  ASSERT_EQ (HTTP1_ERROR_INVALID_CONTENT_LENGTH, result); // mismatch validation
+  ASSERT_EQ (HTTP1_ERROR_INVALID_CONTENT_LENGTH,
+             result); // mismatch validation
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
@@ -801,15 +826,18 @@ TEST (http1_multi_te_chunked_hidden)
   Arena_T arena;
   SocketHTTP1_Parser_T parser;
 
-  /* Use non-strict mode to allow multiple TE headers for smuggling detection test */
+  /* Use non-strict mode to allow multiple TE headers for smuggling detection
+   * test */
   SocketHTTP1_config_defaults (&config);
   config.strict_mode = 0;
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
-  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request),
+                                       &consumed);
   ASSERT_EQ (HTTP1_OK, result);
-  ASSERT_EQ (HTTP1_BODY_CHUNKED, SocketHTTP1_Parser_body_mode (parser)); // detects in second TE
+  ASSERT_EQ (HTTP1_BODY_CHUNKED,
+             SocketHTTP1_Parser_body_mode (parser)); // detects in second TE
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
@@ -831,7 +859,8 @@ TEST (http1_te_unsupported_reject)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
-  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request),
+                                       &consumed);
   ASSERT (result != HTTP1_OK);
   ASSERT_EQ (HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, result);
   SocketHTTP1_Parser_free (&parser);
@@ -855,9 +884,11 @@ TEST (http1_te_chunked_with_extra_reject)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
-  result = SocketHTTP1_Parser_execute (parser, request, strlen (request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, request, strlen (request),
+                                       &consumed);
   ASSERT (result != HTTP1_OK);
-  ASSERT_EQ (HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING, result); // extra coding rejected
+  ASSERT_EQ (HTTP1_ERROR_UNSUPPORTED_TRANSFER_CODING,
+             result); // extra coding rejected
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
@@ -869,12 +900,16 @@ TEST (http1_long_header_line_reject)
   config.max_header_line = 50; // small for test
 
   char long_request[512];
-  strncpy (long_request, "GET / HTTP/1.1\r\nHost: test.com\r\nX-Long: ", sizeof(long_request) - 1);
-  long_request[sizeof(long_request) - 1] = '\0';
+  strncpy (long_request, "GET / HTTP/1.1\r\nHost: test.com\r\nX-Long: ",
+           sizeof (long_request) - 1);
+  long_request[sizeof (long_request) - 1] = '\0';
   // Fill with 100 'a' to exceed 50
   size_t curr_len = strlen (long_request);
-  memset (long_request + curr_len, 'a', (100 < (sizeof(long_request) - curr_len - 6) ? 100 : (sizeof(long_request) - curr_len - 6)));
-  strncat (long_request, "\r\n\r\n", sizeof(long_request) - curr_len - 1);
+  memset (long_request + curr_len, 'a',
+          (100 < (sizeof (long_request) - curr_len - 6)
+               ? 100
+               : (sizeof (long_request) - curr_len - 6)));
+  strncat (long_request, "\r\n\r\n", sizeof (long_request) - curr_len - 1);
 
   size_t consumed;
   SocketHTTP1_Result result;
@@ -883,7 +918,8 @@ TEST (http1_long_header_line_reject)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, &config, arena);
-  result = SocketHTTP1_Parser_execute (parser, long_request, strlen (long_request), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, long_request,
+                                       strlen (long_request), &consumed);
   ASSERT (result != HTTP1_OK);
   ASSERT_EQ (HTTP1_ERROR_HEADER_TOO_LARGE, result); // line too long
   SocketHTTP1_Parser_free (&parser);
@@ -892,7 +928,9 @@ TEST (http1_long_header_line_reject)
 
 TEST (http1_invalid_uri_reject)
 {
-  const char *invalid_uri = "GET /invalid%GG HTTP/1.1\r\nHost: test.com\r\n\r\n"; // invalid % encoding
+  const char *invalid_uri
+      = "GET /invalid%GG HTTP/1.1\r\nHost: test.com\r\n\r\n"; // invalid %
+                                                              // encoding
   size_t consumed;
   SocketHTTP1_Result result;
   Arena_T arena;
@@ -900,10 +938,11 @@ TEST (http1_invalid_uri_reject)
 
   arena = Arena_new ();
   parser = SocketHTTP1_Parser_new (HTTP1_PARSE_REQUEST, NULL, arena);
-  result = SocketHTTP1_Parser_execute (parser, invalid_uri, strlen (invalid_uri), &consumed);
+  result = SocketHTTP1_Parser_execute (parser, invalid_uri,
+                                       strlen (invalid_uri), &consumed);
   ASSERT (result != HTTP1_OK);
-  ASSERT_EQ (HTTP1_ERROR_INVALID_URI, result); // URI parse fails on invalid encoding
+  ASSERT_EQ (HTTP1_ERROR_INVALID_URI,
+             result); // URI parse fails on invalid encoding
   SocketHTTP1_Parser_free (&parser);
   Arena_dispose (&arena);
 }
-

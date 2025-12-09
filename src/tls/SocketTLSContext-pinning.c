@@ -14,10 +14,11 @@
  * - Chain verification (matches any cert in chain)
  * - Enforcement mode control (strict/warn)
  *
- * Security: Pin lookup uses constant-time comparison via SocketCrypto_secure_compare()
- * to prevent timing side-channel attacks that could leak information about configured
- * pins. With typical pin counts (1-5), O(n) scan is effectively O(1) and preferred
- * over binary search for security reasons.
+ * Security: Pin lookup uses constant-time comparison via
+ * SocketCrypto_secure_compare() to prevent timing side-channel attacks that
+ * could leak information about configured pins. With typical pin counts (1-5),
+ * O(n) scan is effectively O(1) and preferred over binary search for security
+ * reasons.
  *
  * Thread safety: Configuration is NOT thread-safe - perform before sharing.
  * Verification is read-only post-setup (thread-safe).
@@ -32,17 +33,17 @@
 
 #include "tls/SocketTLS-private.h"
 
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 #include "core/SocketCrypto.h"
 #include "core/SocketMetrics.h"
 #include <assert.h>
 
+#include <core/SocketSecurity.h> /* For SocketSecurity_check_size */
+#include <core/SocketUtil.h>     /* For SOCKET_LOG_WARN_MSG */
 #include <errno.h>
+#include <fcntl.h> /* For open() and O_NOFOLLOW */
 #include <openssl/pem.h>
 #include <stdio.h>
-#include <fcntl.h>  /* For open() and O_NOFOLLOW */
-#include <core/SocketSecurity.h>  /* For SocketSecurity_check_size */
-#include <core/SocketUtil.h>  /* For SOCKET_LOG_WARN_MSG */
 
 #include <string.h>
 
@@ -86,7 +87,8 @@ parse_hex_hash (const char *hex, unsigned char *out)
     return -1;
 
   /* Use SocketCrypto for hex decoding */
-  ssize_t decoded = SocketCrypto_hex_decode (hex, len, out, SOCKET_TLS_PIN_HASH_LEN);
+  ssize_t decoded
+      = SocketCrypto_hex_decode (hex, len, out, SOCKET_TLS_PIN_HASH_LEN);
   return (decoded == (ssize_t)SOCKET_TLS_PIN_HASH_LEN) ? 0 : -1;
 }
 
@@ -96,27 +98,27 @@ parse_hex_hash (const char *hex, unsigned char *out)
  *
  * Raises: SocketTLS_Failed on allocation failure or limit exceeded
  */
- /**
-  * ensure_pin_capacity - Ensure the pinning array has sufficient capacity
-  *
-  * @ctx: TLS context with pinning configuration
-  *
-  * Checks current count against max limit and reallocates array if needed.
-  * Doubles capacity on reallocation, caps at SOCKET_TLS_MAX_PINS.
-  *
-  * Raises: SocketTLS_Failed on limit exceed or alloc fail
-  * Thread-safe: Yes
-  */
- /**
-  * check_pin_limit - Ensure pin count does not exceed maximum
-  *
-  * @ctx: TLS context
-  *
-  * Raises exception if current count at or over limit.
-  *
-  * Raises: SocketTLS_Failed if limit exceeded
-  * Thread-safe: Yes
-  */
+/**
+ * ensure_pin_capacity - Ensure the pinning array has sufficient capacity
+ *
+ * @ctx: TLS context with pinning configuration
+ *
+ * Checks current count against max limit and reallocates array if needed.
+ * Doubles capacity on reallocation, caps at SOCKET_TLS_MAX_PINS.
+ *
+ * Raises: SocketTLS_Failed on limit exceed or alloc fail
+ * Thread-safe: Yes
+ */
+/**
+ * check_pin_limit - Ensure pin count does not exceed maximum
+ *
+ * @ctx: TLS context
+ *
+ * Raises exception if current count at or over limit.
+ *
+ * Raises: SocketTLS_Failed if limit exceeded
+ * Thread-safe: Yes
+ */
 static void
 check_pin_limit (T ctx)
 {
@@ -128,17 +130,17 @@ check_pin_limit (T ctx)
     }
 }
 
- /**
-  * calculate_pin_capacity - Determine next array capacity for growth
-  *
-  * @current_cap: Current capacity (0 for initial)
-  * @max_pins: Absolute maximum pins allowed
-  *
-  * Returns initial capacity if 0, else double current capped at max_pins.
-  *
-  * Returns: Suggested new capacity
-  * Thread-safe: Yes
-  */
+/**
+ * calculate_pin_capacity - Determine next array capacity for growth
+ *
+ * @current_cap: Current capacity (0 for initial)
+ * @max_pins: Absolute maximum pins allowed
+ *
+ * Returns initial capacity if 0, else double current capped at max_pins.
+ *
+ * Returns: Suggested new capacity
+ * Thread-safe: Yes
+ */
 static size_t
 calculate_pin_capacity (size_t current_cap, size_t max_pins)
 {
@@ -149,28 +151,29 @@ calculate_pin_capacity (size_t current_cap, size_t max_pins)
   return (new_cap > max_pins) ? max_pins : new_cap;
 }
 
- /**
-  * grow_pin_array - Expand pin storage capacity
-  *
-  * @ctx: TLS context
-  *
-  * Allocates larger array via arena, copies existing pins securely, updates state.
-  *
-  * Raises: SocketTLS_Failed on allocation failure
-  * Thread-safe: Yes
-  */
+/**
+ * grow_pin_array - Expand pin storage capacity
+ *
+ * @ctx: TLS context
+ *
+ * Allocates larger array via arena, copies existing pins securely, updates
+ * state.
+ *
+ * Raises: SocketTLS_Failed on allocation failure
+ * Thread-safe: Yes
+ */
 static void
 grow_pin_array (T ctx)
 {
-  size_t new_cap = calculate_pin_capacity (ctx->pinning.capacity, SOCKET_TLS_MAX_PINS);
+  size_t new_cap
+      = calculate_pin_capacity (ctx->pinning.capacity, SOCKET_TLS_MAX_PINS);
 
   TLSCertPin *new_pins = (TLSCertPin *)Arena_alloc (
       ctx->arena, new_cap * sizeof (TLSCertPin), __FILE__, __LINE__);
 
   if (!new_pins)
     {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Failed to allocate pin array");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Failed to allocate pin array");
     }
 
   if (ctx->pinning.pins && ctx->pinning.count > 0)
@@ -183,16 +186,16 @@ grow_pin_array (T ctx)
   ctx->pinning.capacity = new_cap;
 }
 
- /**
-  * ensure_pin_capacity - Prepare for adding a new pin
-  *
-  * @ctx: TLS context with pinning state
-  *
-  * Validates limit and grows array if full. Called before appending pins.
-  *
-  * Raises: SocketTLS_Failed on limit or alloc issues
-  * Thread-safe: Yes
-  */
+/**
+ * ensure_pin_capacity - Prepare for adding a new pin
+ *
+ * @ctx: TLS context with pinning state
+ *
+ * Validates limit and grows array if full. Called before appending pins.
+ *
+ * Raises: SocketTLS_Failed on limit or alloc issues
+ * Thread-safe: Yes
+ */
 static void
 ensure_pin_capacity (T ctx)
 {
@@ -213,18 +216,18 @@ ensure_pin_capacity (T ctx)
  * uses constant-time linear scan for security (prevents timing attacks).
  * Duplicates are detected using constant-time comparison and silently ignored.
  */
- /**
-  * insert_pin - Add pin hash to array if not already present
-  *
-  * @ctx: TLS context
-  * @hash: Pin hash (SOCKET_TLS_PIN_HASH_LEN bytes)
-  *
-  * Checks for duplicate using constant-time search, then ensures capacity
-  * and appends if unique. Order irrelevant due to linear constant-time lookup.
-  *
-  * Thread-safe: Yes
-  * Raises: SocketTLS_Failed via ensure_pin_capacity if limit reached
-  */
+/**
+ * insert_pin - Add pin hash to array if not already present
+ *
+ * @ctx: TLS context
+ * @hash: Pin hash (SOCKET_TLS_PIN_HASH_LEN bytes)
+ *
+ * Checks for duplicate using constant-time search, then ensures capacity
+ * and appends if unique. Order irrelevant due to linear constant-time lookup.
+ *
+ * Thread-safe: Yes
+ * Raises: SocketTLS_Failed via ensure_pin_capacity if limit reached
+ */
 static void
 insert_pin (T ctx, const unsigned char *hash)
 {
@@ -240,17 +243,17 @@ insert_pin (T ctx, const unsigned char *hash)
   ctx->pinning.count++;
 }
 
- /**
-  * invalid_pin_param - Raise error for invalid pinning input parameters
-  *
-  * @msg: Error message describing invalid input
-  *
-  * Common helper for input validation errors in pin APIs.
-  * Centralizes exception raising to reduce code duplication in error paths.
-  *
-  * Raises: SocketTLS_Failed with specified message
-  * Thread-safe: Yes (uses thread-local exception)
-  */
+/**
+ * invalid_pin_param - Raise error for invalid pinning input parameters
+ *
+ * @msg: Error message describing invalid input
+ *
+ * Common helper for input validation errors in pin APIs.
+ * Centralizes exception raising to reduce code duplication in error paths.
+ *
+ * Raises: SocketTLS_Failed with specified message
+ * Thread-safe: Yes (uses thread-local exception)
+ */
 static void
 invalid_pin_param (const char *msg)
 {
@@ -262,19 +265,21 @@ invalid_pin_param (const char *msg)
  * ============================================================================
  */
 
- /**
-  * tls_pinning_extract_spki_hash - Compute SPKI SHA256 hash from X509 certificate
-  *
-  * @cert: Certificate to extract public key info from (non-owning)
-  * @out_hash: Output buffer for 32-byte SHA256 hash
-  *
-  * Extracts SubjectPublicKeyInfo DER from cert, computes SHA256 using SocketCrypto,
-  * and stores in out_hash. Caller must provide SOCKET_TLS_PIN_HASH_LEN bytes buffer.
-  *
-  * Returns: 0 on success, -1 on failure (invalid cert or OpenSSL error)
-  * Thread-safe: Yes
-  * Raises: None (error code only)
-  */
+/**
+ * tls_pinning_extract_spki_hash - Compute SPKI SHA256 hash from X509
+ * certificate
+ *
+ * @cert: Certificate to extract public key info from (non-owning)
+ * @out_hash: Output buffer for 32-byte SHA256 hash
+ *
+ * Extracts SubjectPublicKeyInfo DER from cert, computes SHA256 using
+ * SocketCrypto, and stores in out_hash. Caller must provide
+ * SOCKET_TLS_PIN_HASH_LEN bytes buffer.
+ *
+ * Returns: 0 on success, -1 on failure (invalid cert or OpenSSL error)
+ * Thread-safe: Yes
+ * Raises: None (error code only)
+ */
 int
 tls_pinning_extract_spki_hash (const X509 *cert, unsigned char *out_hash)
 {
@@ -321,7 +326,8 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
     {
       /* SocketCrypto_secure_compare returns 0 on match (like memcmp) */
       if (SocketCrypto_secure_compare (hash, pins[i].hash,
-                                       SOCKET_TLS_PIN_HASH_LEN) == 0)
+                                       SOCKET_TLS_PIN_HASH_LEN)
+          == 0)
         {
           found = 1;
           /* Don't break - continue scanning for constant time */
@@ -336,19 +342,20 @@ tls_pinning_find (const TLSCertPin *pins, size_t count,
  * ============================================================================
  */
 
- /**
-  * tls_pinning_check_chain - Verify if any certificate in chain matches a configured pin
-  *
-  * @ctx: TLS context with configured pins
-  * @chain: Certificate chain to check (non-owning reference)
-  *
-  * Extracts SPKI SHA256 hash from each cert in chain and checks against
-  * configured pins using constant-time comparison. Returns true if any match.
-  *
-  * Returns: 1 if pin match found in chain, 0 otherwise (no error)
-  * Thread-safe: Yes (uses atomic pin snapshot to avoid races with config changes)
-  * Raises: None
-  */
+/**
+ * tls_pinning_check_chain - Verify if any certificate in chain matches a
+ * configured pin
+ *
+ * @ctx: TLS context with configured pins
+ * @chain: Certificate chain to check (non-owning reference)
+ *
+ * Extracts SPKI SHA256 hash from each cert in chain and checks against
+ * configured pins using constant-time comparison. Returns true if any match.
+ *
+ * Returns: 1 if pin match found in chain, 0 otherwise (no error)
+ * Thread-safe: Yes (uses atomic pin snapshot to avoid races with config
+ * changes) Raises: None
+ */
 int
 tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
 {
@@ -368,11 +375,13 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
   const int max_check = SOCKET_TLS_MAX_CERT_CHAIN_DEPTH;
   if (chain_len > max_check)
     {
-      SOCKET_LOG_WARN_MSG ("Pinning check truncated: chain_len=%d > max=%d", chain_len, max_check);
-      chain_len = max_check;  /* Limit processing to prevent DoS */
+      SOCKET_LOG_WARN_MSG ("Pinning check truncated: chain_len=%d > max=%d",
+                           chain_len, max_check);
+      chain_len = max_check; /* Limit processing to prevent DoS */
     }
 
-  /* Extract hashes without lock (chain is snapshot, extraction is read-only) */
+  /* Extract hashes without lock (chain is snapshot, extraction is read-only)
+   */
   unsigned char hashes[max_check][SOCKET_TLS_PIN_HASH_LEN];
   int num_hashes = 0;
   for (int i = 0; i < chain_len; i++)
@@ -394,7 +403,8 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
   local_count = ctx->pinning.count;
   if (local_count > 0)
     {
-      local_pins = ctx->pinning.pins;  /* Borrow pointer - const and short-lived */
+      local_pins
+          = ctx->pinning.pins; /* Borrow pointer - const and short-lived */
     }
   pthread_mutex_unlock (&ctx->pinning.lock);
 
@@ -415,17 +425,17 @@ tls_pinning_check_chain (T ctx, const STACK_OF (X509) * chain)
  * ============================================================================
  */
 
- /**
-  * SocketTLSContext_add_pin - Add binary SHA256 SPKI pin to context
-  *
-  * @ctx: TLS context
-  * @sha256_hash: 32-byte SHA256 hash of SubjectPublicKeyInfo DER
-  *
-  * Adds pin if not already present (deduped via constant-time check).
-  *
-  * Raises: SocketTLS_Failed if NULL input or max pins reached
-  * Thread-safe: Yes - config modification
-  */
+/**
+ * SocketTLSContext_add_pin - Add binary SHA256 SPKI pin to context
+ *
+ * @ctx: TLS context
+ * @sha256_hash: 32-byte SHA256 hash of SubjectPublicKeyInfo DER
+ *
+ * Adds pin if not already present (deduped via constant-time check).
+ *
+ * Raises: SocketTLS_Failed if NULL input or max pins reached
+ * Thread-safe: Yes - config modification
+ */
 void
 SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash)
 {
@@ -439,18 +449,18 @@ SocketTLSContext_add_pin (T ctx, const unsigned char *sha256_hash)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_add_pin_hex - Add pin from hex-encoded SHA256 hash string
-  *
-  * @ctx: TLS context
-  * @hex_hash: Hex string (64 chars) or "sha256//hex" (HPKP compat)
-  *
-  * Parses hex (optionally skipping "sha256//" prefix), decodes to binary,
-  * then adds as pin if unique.
-  *
-  * Raises: SocketTLS_Failed on invalid format or max reached
-  * Thread-safe: Yes
-  */
+/**
+ * SocketTLSContext_add_pin_hex - Add pin from hex-encoded SHA256 hash string
+ *
+ * @ctx: TLS context
+ * @hex_hash: Hex string (64 chars) or "sha256//hex" (HPKP compat)
+ *
+ * Parses hex (optionally skipping "sha256//" prefix), decodes to binary,
+ * then adds as pin if unique.
+ *
+ * Raises: SocketTLS_Failed on invalid format or max reached
+ * Thread-safe: Yes
+ */
 void
 SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash)
 {
@@ -473,17 +483,18 @@ SocketTLSContext_add_pin_hex (T ctx, const char *hex_hash)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_add_pin_from_cert - Add pin by loading certificate from file
-  *
-  * @ctx: TLS context
-  * @cert_file: Path to PEM-encoded X509 certificate file
-  *
-  * Loads cert from file, validates path, extracts SPKI hash, adds if unique.
-  *
-  * Raises: SocketTLS_Failed on file open/read/parse/extract fail or max reached
-  * Thread-safe: Yes
-  */
+/**
+ * SocketTLSContext_add_pin_from_cert - Add pin by loading certificate from
+ * file
+ *
+ * @ctx: TLS context
+ * @cert_file: Path to PEM-encoded X509 certificate file
+ *
+ * Loads cert from file, validates path, extracts SPKI hash, adds if unique.
+ *
+ * Raises: SocketTLS_Failed on file open/read/parse/extract fail or max reached
+ * Thread-safe: Yes
+ */
 void
 SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
 {
@@ -505,7 +516,9 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
     {
       if (errno == ELOOP)
         {
-          RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Symlinks not allowed for certificate files: %s", cert_file);
+          RAISE_CTX_ERROR_MSG (
+              SocketTLS_Failed,
+              "Symlinks not allowed for certificate files: %s", cert_file);
         }
       RAISE_CTX_ERROR_FMT (SocketTLS_Failed,
                            "Cannot open certificate file '%.200s': %s",
@@ -516,22 +529,25 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
   if (!fp)
     {
       close (fd);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Cannot fdopen certificate file descriptor");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Cannot fdopen certificate file descriptor");
     }
 
   /* Validate file size to prevent resource exhaustion */
   if (fseek (fp, 0, SEEK_END) != 0)
     {
       fclose (fp);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Cannot seek in certificate file");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Cannot seek in certificate file");
     }
   long fsize = ftell (fp);
   if (fsize < 0 || fseek (fp, 0, SEEK_SET) != 0)
     {
       fclose (fp);
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Cannot determine certificate file size");
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Cannot determine certificate file size");
     }
-  size_t usize = (size_t) fsize;
+  size_t usize = (size_t)fsize;
   const size_t MAX_CERT_SIZE = 1024 * 1024; /* 1MB limit */
   if (usize > MAX_CERT_SIZE || !SocketSecurity_check_size (usize))
     {
@@ -542,7 +558,7 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
     }
 
   X509 *cert = PEM_read_X509 (fp, NULL, NULL, NULL);
-  fclose (fp);  /* Closes underlying fd */
+  fclose (fp); /* Closes underlying fd */
 
   if (!cert)
     {
@@ -565,17 +581,17 @@ SocketTLSContext_add_pin_from_cert (T ctx, const char *cert_file)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_add_pin_from_x509 - Add pin from existing X509 certificate
-  *
-  * @ctx: TLS context to add pin to
-  * @cert: Certificate whose SPKI hash to pin (non-owning, copied)
-  *
-  * Extracts SPKI SHA256 hash and adds to pins if not duplicate.
-  *
-  * Raises: SocketTLS_Failed on invalid cert or extract fail
-  * Thread-safe: Yes
-  */
+/**
+ * SocketTLSContext_add_pin_from_x509 - Add pin from existing X509 certificate
+ *
+ * @ctx: TLS context to add pin to
+ * @cert: Certificate whose SPKI hash to pin (non-owning, copied)
+ *
+ * Extracts SPKI SHA256 hash and adds to pins if not duplicate.
+ *
+ * Raises: SocketTLS_Failed on invalid cert or extract fail
+ * Thread-safe: Yes
+ */
 void
 SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert)
 {
@@ -587,8 +603,9 @@ SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert)
   unsigned char hash[SOCKET_TLS_PIN_HASH_LEN];
   if (tls_pinning_extract_spki_hash (cert, hash) != 0)
     {
-      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
-                           "Failed to extract SPKI hash from X509 certificate");
+      RAISE_CTX_ERROR_MSG (
+          SocketTLS_Failed,
+          "Failed to extract SPKI hash from X509 certificate");
     }
 
   pthread_mutex_lock (&ctx->pinning.lock);
@@ -596,24 +613,25 @@ SocketTLSContext_add_pin_from_x509 (T ctx, const X509 *cert)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_clear_pins - Remove all configured pins
-  *
-  * @ctx: TLS context
-  *
-  * Clears all pins using secure_clear for security. Capacity preserved
-  * for future adds (freed on context disposal via arena).
-  *
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_clear_pins - Remove all configured pins
+ *
+ * @ctx: TLS context
+ *
+ * Clears all pins using secure_clear for security. Capacity preserved
+ * for future adds (freed on context disposal via arena).
+ *
+ * Thread-safe: Yes
+ * Raises: None
+ */
 void
 SocketTLSContext_clear_pins (T ctx)
 {
   assert (ctx);
 
   pthread_mutex_lock (&ctx->pinning.lock);
-  /* Zero out entire pin array for security (including unused capacity) using SocketCrypto */
+  /* Zero out entire pin array for security (including unused capacity) using
+   * SocketCrypto */
   if (ctx->pinning.pins && ctx->pinning.capacity > 0)
     {
       SocketCrypto_secure_clear (ctx->pinning.pins,
@@ -625,17 +643,17 @@ SocketTLSContext_clear_pins (T ctx)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_set_pin_enforcement - Set strict pin enforcement mode
-  *
-  * @ctx: TLS context
-  * @enforce: 1 for strict (fail on mismatch), 0 for warn/fallback
-  *
-  * Controls whether pin mismatch causes verification failure or just warning.
-  *
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_set_pin_enforcement - Set strict pin enforcement mode
+ *
+ * @ctx: TLS context
+ * @enforce: 1 for strict (fail on mismatch), 0 for warn/fallback
+ *
+ * Controls whether pin mismatch causes verification failure or just warning.
+ *
+ * Thread-safe: Yes
+ * Raises: None
+ */
 void
 SocketTLSContext_set_pin_enforcement (T ctx, int enforce)
 {
@@ -645,15 +663,15 @@ SocketTLSContext_set_pin_enforcement (T ctx, int enforce)
   pthread_mutex_unlock (&ctx->pinning.lock);
 }
 
- /**
-  * SocketTLSContext_get_pin_enforcement - Get current enforcement mode
-  *
-  * @ctx: TLS context
-  *
-  * Returns: 1 if strict enforcement enabled, 0 if warn mode
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_get_pin_enforcement - Get current enforcement mode
+ *
+ * @ctx: TLS context
+ *
+ * Returns: 1 if strict enforcement enabled, 0 if warn mode
+ * Thread-safe: Yes
+ * Raises: None
+ */
 int
 SocketTLSContext_get_pin_enforcement (T ctx)
 {
@@ -664,15 +682,15 @@ SocketTLSContext_get_pin_enforcement (T ctx)
   return res;
 }
 
- /**
-  * SocketTLSContext_get_pin_count - Get number of configured pins
-  *
-  * @ctx: TLS context
-  *
-  * Returns: Current number of pins (0 to SOCKET_TLS_MAX_PINS)
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_get_pin_count - Get number of configured pins
+ *
+ * @ctx: TLS context
+ *
+ * Returns: Current number of pins (0 to SOCKET_TLS_MAX_PINS)
+ * Thread-safe: Yes
+ * Raises: None
+ */
 size_t
 SocketTLSContext_get_pin_count (T ctx)
 {
@@ -683,17 +701,17 @@ SocketTLSContext_get_pin_count (T ctx)
   return res;
 }
 
- /**
-  * SocketTLSContext_has_pins - Check if any pins configured
-  *
-  * @ctx: TLS context
-  *
-  * Quick check if pinning is active (count > 0).
-  *
-  * Returns: 1 if pins configured, 0 otherwise
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_has_pins - Check if any pins configured
+ *
+ * @ctx: TLS context
+ *
+ * Quick check if pinning is active (count > 0).
+ *
+ * Returns: 1 if pins configured, 0 otherwise
+ * Thread-safe: Yes
+ * Raises: None
+ */
 int
 SocketTLSContext_has_pins (T ctx)
 {
@@ -704,18 +722,18 @@ SocketTLSContext_has_pins (T ctx)
   return res;
 }
 
- /**
-  * SocketTLSContext_verify_pin - Check if hash matches any configured pin
-  *
-  * @ctx: TLS context
-  * @sha256_hash: Hash to verify (SOCKET_TLS_PIN_HASH_LEN bytes)
-  *
-  * Performs constant-time search across all pins.
-  *
-  * Returns: 1 if matches, 0 otherwise
-  * Thread-safe: Yes
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_verify_pin - Check if hash matches any configured pin
+ *
+ * @ctx: TLS context
+ * @sha256_hash: Hash to verify (SOCKET_TLS_PIN_HASH_LEN bytes)
+ *
+ * Performs constant-time search across all pins.
+ *
+ * Returns: 1 if matches, 0 otherwise
+ * Thread-safe: Yes
+ * Raises: None
+ */
 int
 SocketTLSContext_verify_pin (T ctx, const unsigned char *sha256_hash)
 {
@@ -725,23 +743,25 @@ SocketTLSContext_verify_pin (T ctx, const unsigned char *sha256_hash)
     return 0;
 
   pthread_mutex_lock (&ctx->pinning.lock);
-  int res = tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, sha256_hash);
+  int res
+      = tls_pinning_find (ctx->pinning.pins, ctx->pinning.count, sha256_hash);
   pthread_mutex_unlock (&ctx->pinning.lock);
   return res;
 }
 
- /**
-  * SocketTLSContext_verify_cert_pin - Check if certificate matches configured pin
-  *
-  * @ctx: TLS context with pins configured
-  * @cert: Certificate to verify against pins (non-owning)
-  *
-  * Extracts SPKI hash from cert and checks against configured pins.
-  *
-  * Returns: 1 if matches any pin, 0 otherwise
-  * Thread-safe: Yes (after config)
-  * Raises: None
-  */
+/**
+ * SocketTLSContext_verify_cert_pin - Check if certificate matches configured
+ * pin
+ *
+ * @ctx: TLS context with pins configured
+ * @cert: Certificate to verify against pins (non-owning)
+ *
+ * Extracts SPKI hash from cert and checks against configured pins.
+ *
+ * Returns: 1 if matches any pin, 0 otherwise
+ * Thread-safe: Yes (after config)
+ * Raises: None
+ */
 int
 SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert)
 {
@@ -765,4 +785,3 @@ SocketTLSContext_verify_cert_pin (T ctx, const X509 *cert)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

@@ -452,7 +452,7 @@ thread_dns_resolve (void *arg)
     {
       TRY
       {
-        SocketDNS_Request_T req
+        Request_T req
             = SocketDNS_resolve (dns, "127.0.0.1", 80, NULL, NULL);
         (void)req;
         usleep (5000);
@@ -489,7 +489,7 @@ thread_dns_cancel (void *arg)
     {
       TRY
       {
-        SocketDNS_Request_T req
+        Request_T req
             = SocketDNS_resolve (dns, "localhost", 80, NULL, NULL);
         usleep (1000);
         SocketDNS_cancel (dns, req);

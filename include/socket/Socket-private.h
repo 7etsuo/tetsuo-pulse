@@ -3,30 +3,33 @@
 
 #include "core/Arena.h"
 #include "core/SocketConfig.h"
-#include "core/SocketRateLimit.h"  /* For bandwidth limiting */
-#include "socket/SocketCommon-private.h"  /* For SocketBase_T */
+#include "core/SocketRateLimit.h" /* For bandwidth limiting */
 #include "socket/Socket.h"
+#include "socket/SocketCommon-private.h" /* For SocketBase_T */
 #include <stdatomic.h>
 
 /* Socket live count management - shared across socket modules */
-extern void socket_live_increment(void);
-extern void socket_live_decrement(void);
-extern int socket_debug_live_count(void);
+extern void socket_live_increment (void);
+extern void socket_live_decrement (void);
+extern int socket_debug_live_count (void);
 
 #if SOCKET_HAS_TLS
 /* TLS field initialization - shared between Socket.c and Socket-accept.c */
-extern void socket_init_tls_fields(Socket_T sock);
+extern void socket_init_tls_fields (Socket_T sock);
 #endif
 
 /* Socket structure definition - embeds common base */
 struct Socket_T
 {
-  SocketBase_T base;  /**< Common base with fd, arena, endpoints, timeouts, metrics */
+  SocketBase_T
+      base; /**< Common base with fd, arena, endpoints, timeouts, metrics */
 
   /* Bandwidth limiting */
-  SocketRateLimit_T bandwidth_limiter;  /**< Rate limiter for bandwidth (NULL if unlimited) */
+  SocketRateLimit_T
+      bandwidth_limiter; /**< Rate limiter for bandwidth (NULL if unlimited) */
 
-  _Atomic int freed;                    /**< Atomic flag to prevent double-free (0=active, 1=being freed; use memory_order_acq_rel for exchange) */
+  _Atomic int freed; /**< Atomic flag to prevent double-free (0=active, 1=being
+                        freed; use memory_order_acq_rel for exchange) */
 
 #if SOCKET_HAS_TLS
   /* TLS-specific fields (retained as stream-only) */

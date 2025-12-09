@@ -17,43 +17,45 @@
 
 /* ============================================================================
  * Test Utilities
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int tests_run = 0;
 static int tests_passed = 0;
 
-#define TEST_ASSERT(cond, msg)                                                 \
-  do                                                                           \
-    {                                                                          \
-      if (!(cond))                                                             \
-        {                                                                      \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);   \
-          return 0;                                                            \
-        }                                                                      \
-    }                                                                          \
+#define TEST_ASSERT(cond, msg)                                                \
+  do                                                                          \
+    {                                                                         \
+      if (!(cond))                                                            \
+        {                                                                     \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
+          return 0;                                                           \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
-#define TEST_BEGIN(name)                                                       \
-  do                                                                           \
-    {                                                                          \
-      tests_run++;                                                             \
-      printf ("  Testing %s... ", #name);                                      \
-      fflush (stdout);                                                         \
-    }                                                                          \
+#define TEST_BEGIN(name)                                                      \
+  do                                                                          \
+    {                                                                         \
+      tests_run++;                                                            \
+      printf ("  Testing %s... ", #name);                                     \
+      fflush (stdout);                                                        \
+    }                                                                         \
   while (0)
 
-#define TEST_PASS()                                                            \
-  do                                                                           \
-    {                                                                          \
-      tests_passed++;                                                          \
-      printf ("PASSED\n");                                                     \
-      return 1;                                                                \
-    }                                                                          \
+#define TEST_PASS()                                                           \
+  do                                                                          \
+    {                                                                         \
+      tests_passed++;                                                         \
+      printf ("PASSED\n");                                                    \
+      return 1;                                                               \
+    }                                                                         \
   while (0)
 
 /* ============================================================================
  * Frame Header Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_frame_header_parse (void)
@@ -161,20 +163,19 @@ test_frame_header_roundtrip (void)
 
   /* Various frame types */
   SocketHTTP2_FrameType types[]
-      = { HTTP2_FRAME_DATA,     HTTP2_FRAME_HEADERS,
-          HTTP2_FRAME_SETTINGS, HTTP2_FRAME_PING,
-          HTTP2_FRAME_GOAWAY,   HTTP2_FRAME_WINDOW_UPDATE };
+      = { HTTP2_FRAME_DATA, HTTP2_FRAME_HEADERS, HTTP2_FRAME_SETTINGS,
+          HTTP2_FRAME_PING, HTTP2_FRAME_GOAWAY,  HTTP2_FRAME_WINDOW_UPDATE };
 
   for (size_t i = 0; i < sizeof (types) / sizeof (types[0]); i++)
     {
       original.length = 1000 + (uint32_t)i * 100;
       original.type = types[i];
       original.flags = (uint8_t)(i * 2);
-      original.stream_id = (types[i] == HTTP2_FRAME_SETTINGS
-                            || types[i] == HTTP2_FRAME_PING
-                            || types[i] == HTTP2_FRAME_GOAWAY)
-                               ? 0
-                               : (uint32_t)(i + 1);
+      original.stream_id
+          = (types[i] == HTTP2_FRAME_SETTINGS || types[i] == HTTP2_FRAME_PING
+             || types[i] == HTTP2_FRAME_GOAWAY)
+                ? 0
+                : (uint32_t)(i + 1);
 
       SocketHTTP2_frame_header_serialize (&original, data);
       SocketHTTP2_frame_header_parse ((const unsigned char *)data, 9, &parsed);
@@ -191,7 +192,8 @@ test_frame_header_roundtrip (void)
 
 /* ============================================================================
  * Error Code Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_error_strings (void)
@@ -225,14 +227,14 @@ test_frame_type_strings (void)
   TEST_ASSERT (
       strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_DATA), "DATA") == 0,
       "DATA string");
-  TEST_ASSERT (strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_HEADERS),
-                       "HEADERS")
-                   == 0,
-               "HEADERS string");
-  TEST_ASSERT (strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_SETTINGS),
-                       "SETTINGS")
-                   == 0,
-               "SETTINGS string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_HEADERS), "HEADERS")
+          == 0,
+      "HEADERS string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_SETTINGS), "SETTINGS")
+          == 0,
+      "SETTINGS string");
   TEST_ASSERT (
       strcmp (SocketHTTP2_frame_type_string (HTTP2_FRAME_GOAWAY), "GOAWAY")
           == 0,
@@ -247,24 +249,28 @@ test_stream_state_strings (void)
   TEST_BEGIN (stream_state_strings);
 
   TEST_ASSERT (
-      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_IDLE), "idle")
+      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_IDLE),
+              "idle")
           == 0,
       "idle string");
   TEST_ASSERT (
-      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_OPEN), "open")
+      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_OPEN),
+              "open")
           == 0,
       "open string");
-  TEST_ASSERT (strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_CLOSED),
-                       "closed")
-                   == 0,
-               "closed string");
+  TEST_ASSERT (
+      strcmp (SocketHTTP2_stream_state_string (HTTP2_STREAM_STATE_CLOSED),
+              "closed")
+          == 0,
+      "closed string");
 
   TEST_PASS ();
 }
 
 /* ============================================================================
  * Configuration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_config_defaults_client (void)
@@ -275,7 +281,8 @@ test_config_defaults_client (void)
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_CLIENT);
 
   TEST_ASSERT (config.role == HTTP2_ROLE_CLIENT, "Role should be client");
-  TEST_ASSERT (config.header_table_size == SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE,
+  TEST_ASSERT (config.header_table_size
+                   == SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE,
                "Default header table size");
   TEST_ASSERT (config.enable_push == 0,
                "Client should not enable push by default");
@@ -308,7 +315,8 @@ test_config_defaults_server (void)
 
 /* ============================================================================
  * Constants Validation Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_constants (void)
@@ -334,7 +342,8 @@ test_constants (void)
 
 /* ============================================================================
  * Frame Type Enumeration Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_frame_types (void)
@@ -358,7 +367,8 @@ test_frame_types (void)
 
 /* ============================================================================
  * Frame Flags Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_frame_flags (void)
@@ -381,7 +391,8 @@ test_frame_flags (void)
 
 /* ============================================================================
  * Error Code Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_error_codes (void)
@@ -409,7 +420,8 @@ test_error_codes (void)
 
 /* ============================================================================
  * Settings ID Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_settings_ids (void)
@@ -433,7 +445,8 @@ test_settings_ids (void)
 
 /* ============================================================================
  * Stream State Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_stream_states (void)
@@ -456,7 +469,8 @@ test_stream_states (void)
 
 /* ============================================================================
  * Event Type Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static int
 test_event_types (void)
@@ -484,7 +498,8 @@ test_event_types (void)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)

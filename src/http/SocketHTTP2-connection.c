@@ -14,31 +14,36 @@
 #include "http/SocketHTTP2-private.h"
 #include "http/SocketHTTP2.h"
 
+#include "core/SocketCrypto.h"
 #include "core/SocketUtil.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
-#include "core/SocketCrypto.h"
 
 #include <assert.h>
 #include <inttypes.h>
-#include <string.h>
 #include <limits.h>
+#include <string.h>
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 const Except_T SocketHTTP2 = { NULL, "HTTP/2" };
 
-const Except_T SocketHTTP2_Failed = { &SocketHTTP2, "HTTP/2 operation failed" };
+const Except_T SocketHTTP2_Failed
+    = { &SocketHTTP2, "HTTP/2 operation failed" };
 
-const Except_T SocketHTTP2_ProtocolError = { &SocketHTTP2, "HTTP/2 protocol error" };
+const Except_T SocketHTTP2_ProtocolError
+    = { &SocketHTTP2, "HTTP/2 protocol error" };
 
-const Except_T SocketHTTP2_StreamError = { &SocketHTTP2, "HTTP/2 stream error" };
+const Except_T SocketHTTP2_StreamError
+    = { &SocketHTTP2, "HTTP/2 stream error" };
 
-const Except_T SocketHTTP2_FlowControlError = { &SocketHTTP2, "HTTP/2 flow control error" };
+const Except_T SocketHTTP2_FlowControlError
+    = { &SocketHTTP2, "HTTP/2 flow control error" };
 
 /* ============================================================================
  * Module Exception Setup
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #undef SOCKET_LOG_COMPONENT
 #define SOCKET_LOG_COMPONENT "HTTP2"
@@ -49,25 +54,17 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 
 /* ============================================================================
  * Configuration Constants
- * ============================================================================ */
-
-
-
-
-
-
-
-
+ * ============================================================================
+ */
 
 /* I/O buffer size defined in SocketHTTP2.h */
-
-
 
 /* Timeouts and max window defined in SocketHTTP2.h */
 
 /* ============================================================================
  * Big-Endian Serialization Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * write_u16_be - Write 16-bit value in big-endian format
@@ -77,8 +74,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTP2);
 static inline void
 write_u16_be (unsigned char *buf, uint16_t value)
 {
-  buf[0] = (unsigned char) ((value >> 8) & 0xFF);
-  buf[1] = (unsigned char) (value & 0xFF);
+  buf[0] = (unsigned char)((value >> 8) & 0xFF);
+  buf[1] = (unsigned char)(value & 0xFF);
 }
 
 /**
@@ -89,10 +86,10 @@ write_u16_be (unsigned char *buf, uint16_t value)
 static inline void
 write_u32_be (unsigned char *buf, uint32_t value)
 {
-  buf[0] = (unsigned char) ((value >> 24) & 0xFF);
-  buf[1] = (unsigned char) ((value >> 16) & 0xFF);
-  buf[2] = (unsigned char) ((value >> 8) & 0xFF);
-  buf[3] = (unsigned char) (value & 0xFF);
+  buf[0] = (unsigned char)((value >> 24) & 0xFF);
+  buf[1] = (unsigned char)((value >> 16) & 0xFF);
+  buf[2] = (unsigned char)((value >> 8) & 0xFF);
+  buf[3] = (unsigned char)(value & 0xFF);
 }
 
 /**
@@ -103,10 +100,10 @@ write_u32_be (unsigned char *buf, uint32_t value)
 static inline void
 write_u31_be (unsigned char *buf, uint32_t value)
 {
-  buf[0] = (unsigned char) ((value >> 24) & 0x7F);
-  buf[1] = (unsigned char) ((value >> 16) & 0xFF);
-  buf[2] = (unsigned char) ((value >> 8) & 0xFF);
-  buf[3] = (unsigned char) (value & 0xFF);
+  buf[0] = (unsigned char)((value >> 24) & 0x7F);
+  buf[1] = (unsigned char)((value >> 16) & 0xFF);
+  buf[2] = (unsigned char)((value >> 8) & 0xFF);
+  buf[3] = (unsigned char)(value & 0xFF);
 }
 
 /**
@@ -118,7 +115,7 @@ write_u31_be (unsigned char *buf, uint32_t value)
 static inline uint16_t
 read_u16_be (const unsigned char *buf)
 {
-  return ((uint16_t) buf[0] << 8) | buf[1];
+  return ((uint16_t)buf[0] << 8) | buf[1];
 }
 
 /**
@@ -130,8 +127,8 @@ read_u16_be (const unsigned char *buf)
 static inline uint32_t
 read_u32_be (const unsigned char *buf)
 {
-  return ((uint32_t) buf[0] << 24) | ((uint32_t) buf[1] << 16)
-         | ((uint32_t) buf[2] << 8) | buf[3];
+  return ((uint32_t)buf[0] << 24) | ((uint32_t)buf[1] << 16)
+         | ((uint32_t)buf[2] << 8) | buf[3];
 }
 
 /**
@@ -143,13 +140,14 @@ read_u32_be (const unsigned char *buf)
 static inline uint32_t
 read_u31_be (const unsigned char *buf)
 {
-  return ((uint32_t) (buf[0] & 0x7F) << 24) | ((uint32_t) buf[1] << 16)
-         | ((uint32_t) buf[2] << 8) | buf[3];
+  return ((uint32_t)(buf[0] & 0x7F) << 24) | ((uint32_t)buf[1] << 16)
+         | ((uint32_t)buf[2] << 8) | buf[3];
 }
 
 /* ============================================================================
  * Default Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
@@ -170,9 +168,9 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
   config->max_header_list_size = SOCKETHTTP2_DEFAULT_MAX_HEADER_LIST_SIZE;
 
   /* Security defaults for rate limiting */
-  config->max_stream_open_rate = 100;        /* streams/sec */
+  config->max_stream_open_rate = 100; /* streams/sec */
   config->max_stream_open_burst = 10;
-  config->max_stream_close_rate = 200;       /* closes/sec, higher as natural */
+  config->max_stream_close_rate = 200; /* closes/sec, higher as natural */
   config->max_stream_close_burst = 20;
 
   config->connection_window_size = SOCKETHTTP2_CONNECTION_WINDOW_SIZE;
@@ -185,7 +183,8 @@ SocketHTTP2_config_defaults (SocketHTTP2_Config *config, SocketHTTP2_Role role)
 
 /* ============================================================================
  * Connection Creation Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * init_local_settings - Copy configuration settings to local settings array
@@ -214,12 +213,12 @@ init_local_settings (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 }
 
 static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
-    SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE,
-    SOCKETHTTP2_DEFAULT_ENABLE_PUSH,
-    UINT32_MAX,  /* SETTINGS_MAX_CONCURRENT_STREAMS: unbounded initially */
-    SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE,
-    SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE,
-    UINT32_MAX   /* SETTINGS_MAX_HEADER_LIST_SIZE: unbounded initially */
+  SOCKETHTTP2_DEFAULT_HEADER_TABLE_SIZE,
+  SOCKETHTTP2_DEFAULT_ENABLE_PUSH,
+  UINT32_MAX, /* SETTINGS_MAX_CONCURRENT_STREAMS: unbounded initially */
+  SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE,
+  SOCKETHTTP2_DEFAULT_MAX_FRAME_SIZE,
+  UINT32_MAX /* SETTINGS_MAX_HEADER_LIST_SIZE: unbounded initially */
 };
 
 /**
@@ -235,7 +234,8 @@ static const uint32_t peer_setting_defaults[HTTP2_SETTINGS_COUNT] = {
 static void
 init_peer_settings (SocketHTTP2_Conn_T conn)
 {
-  memcpy (conn->peer_settings, peer_setting_defaults, sizeof (peer_setting_defaults));
+  memcpy (conn->peer_settings, peer_setting_defaults,
+          sizeof (peer_setting_defaults));
 }
 
 /**
@@ -248,14 +248,14 @@ init_flow_control (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
 {
   /* Clamp windows to prevent signed overflow */
   uint32_t recv_win = config->connection_window_size;
-  if (recv_win > (uint32_t) INT32_MAX)
+  if (recv_win > (uint32_t)INT32_MAX)
     recv_win = INT32_MAX;
-  conn->recv_window = (int32_t) recv_win;
+  conn->recv_window = (int32_t)recv_win;
 
   uint32_t init_recv_win = config->initial_window_size;
-  if (init_recv_win > (uint32_t) INT32_MAX)
+  if (init_recv_win > (uint32_t)INT32_MAX)
     init_recv_win = INT32_MAX;
-  conn->initial_recv_window = (int32_t) init_recv_win;
+  conn->initial_recv_window = (int32_t)init_recv_win;
 
   conn->send_window = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
   conn->initial_send_window = SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
@@ -273,17 +273,19 @@ create_io_buffers (SocketHTTP2_Conn_T conn)
   size_t buf_size = SOCKETHTTP2_IO_BUFFER_SIZE;
 
   SocketBuf_T recv_temp = SocketBuf_new (conn->arena, buf_size);
-  if (!recv_temp) {
-    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to allocate HTTP/2 recv I/O buffer");
-  }
+  if (!recv_temp)
+    {
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to allocate HTTP/2 recv I/O buffer");
+    }
 
   SocketBuf_T send_temp = SocketBuf_new (conn->arena, buf_size);
-  if (!send_temp) {
-    SocketBuf_release (&recv_temp);
-    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to allocate HTTP/2 send I/O buffer");
-  }
+  if (!send_temp)
+    {
+      SocketBuf_release (&recv_temp);
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to allocate HTTP/2 send I/O buffer");
+    }
 
   conn->recv_buf = recv_temp;
   conn->send_buf = send_temp;
@@ -304,10 +306,11 @@ create_hpack_encoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size)
   SocketHPACK_encoder_config_defaults (&enc_config);
   enc_config.max_table_size = header_table_size;
   conn->encoder = SocketHPACK_Encoder_new (&enc_config, conn->arena);
-  if (!conn->encoder) {
-    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to create HPACK encoder");
-  }
+  if (!conn->encoder)
+    {
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to create HPACK encoder");
+    }
 }
 
 /**
@@ -328,10 +331,11 @@ create_hpack_decoder (SocketHTTP2_Conn_T conn, uint32_t header_table_size,
   dec_config.max_table_size = header_table_size;
   dec_config.max_header_list_size = max_header_list_size;
   conn->decoder = SocketHPACK_Decoder_new (&dec_config, conn->arena);
-  if (!conn->decoder) {
-    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to create HPACK decoder");
-  }
+  if (!conn->decoder)
+    {
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to create HPACK decoder");
+    }
 }
 
 /**
@@ -345,14 +349,16 @@ create_stream_hash_table (SocketHTTP2_Conn_T conn)
 {
   conn->streams = Arena_calloc (conn->arena, HTTP2_STREAM_HASH_SIZE,
                                 sizeof (*conn->streams), __FILE__, __LINE__);
-  if (!conn->streams) {
-    SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
-                      "Failed to allocate stream hash table");
-  }
+  if (!conn->streams)
+    {
+      SOCKET_RAISE_MSG (SocketHTTP2, SocketHTTP2_ProtocolError,
+                        "Failed to allocate stream hash table");
+    }
 }
 
 /**
- * init_connection_components - Initialize internal components (I/O buffers, HPACK encoder/decoder, stream hash table)
+ * init_connection_components - Initialize internal components (I/O buffers,
+ * HPACK encoder/decoder, stream hash table)
  * @conn: Connection to initialize
  * @config: Configuration source for HPACK settings
  *
@@ -381,21 +387,23 @@ alloc_conn (Arena_T arena)
 }
 
 static void
-init_connection_components (SocketHTTP2_Conn_T conn, const SocketHTTP2_Config *config)
+init_connection_components (SocketHTTP2_Conn_T conn,
+                            const SocketHTTP2_Config *config)
 {
   create_io_buffers (conn);
 
   create_hpack_encoder (conn, config->header_table_size);
 
   create_hpack_decoder (conn, config->header_table_size,
-                            config->max_header_list_size);
+                        config->max_header_list_size);
 
-  create_stream_hash_table (conn);  /* Now raises internally */
+  create_stream_hash_table (conn); /* Now raises internally */
 }
 
 /* ============================================================================
  * Connection Creation
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Suppress GCC-specific clobbered warning (doesn't exist in Clang) */
 #if defined(__GNUC__) && !defined(__clang__)
@@ -426,69 +434,78 @@ SocketHTTP2_Conn_new (Socket_T socket, const SocketHTTP2_Config *config,
     }
 
   TRY
+  {
+    /* Allocate and initialize connection structure */
+    conn = alloc_conn (arena);
+
+    conn->socket = socket;
+    conn->arena = arena;
+    conn->role = cfg->role;
+    conn->state = HTTP2_CONN_STATE_INIT;
+
+    /* Initialize settings and flow control */
+    init_local_settings (conn, cfg);
+    init_peer_settings (conn);
+    init_flow_control (conn, cfg);
+
+    /* Initialize security features */
+    uint32_t seed;
+    volatile uint32_t vseed = 0;
+    TRY
     {
-      /* Allocate and initialize connection structure */
-      conn = alloc_conn (arena);
-
-      conn->socket = socket;
-      conn->arena = arena;
-      conn->role = cfg->role;
-      conn->state = HTTP2_CONN_STATE_INIT;
-
-      /* Initialize settings and flow control */
-      init_local_settings (conn, cfg);
-      init_peer_settings (conn);
-      init_flow_control (conn, cfg);
-
-      /* Initialize security features */
-      uint32_t seed;
-      volatile uint32_t vseed = 0;
-      TRY {
-        unsigned char seed_bytes[sizeof(uint32_t)];
-        ssize_t rv = SocketCrypto_random_bytes(seed_bytes, sizeof(seed_bytes));
-        if (rv != (ssize_t)sizeof(seed_bytes)) {
-          RAISE(SocketHTTP2_Failed);
+      unsigned char seed_bytes[sizeof (uint32_t)];
+      ssize_t rv = SocketCrypto_random_bytes (seed_bytes, sizeof (seed_bytes));
+      if (rv != (ssize_t)sizeof (seed_bytes))
+        {
+          RAISE (SocketHTTP2_Failed);
         }
-        uint32_t temp;
-        memcpy(&temp, seed_bytes, sizeof(temp));
-        vseed = temp;
-      } EXCEPT (SocketHTTP2) {
-        SocketHTTP2_Conn_free(&conn);
-        RERAISE;
-      } END_TRY;
-      conn->hash_seed = vseed;
-
-      conn->client_initiated_count = 0;
-      conn->server_initiated_count = 0;
-
-      conn->stream_open_rate_limit = SocketRateLimit_new(conn->arena, cfg->max_stream_open_rate, cfg->max_stream_open_burst);
-      if (!conn->stream_open_rate_limit) {
-        SocketHTTP2_Conn_free(&conn);
-        RAISE(SocketHTTP2_Failed);
-      }
-      conn->stream_close_rate_limit = SocketRateLimit_new(conn->arena, cfg->max_stream_close_rate, cfg->max_stream_close_burst);
-      if (!conn->stream_close_rate_limit) {
-        SocketRateLimit_free(&conn->stream_open_rate_limit);
-        SocketHTTP2_Conn_free(&conn);
-        RAISE(SocketHTTP2_Failed);
-      }
-
-      /* Initialize internal components (buffers, HPACK, streams) */
-      init_connection_components (conn, cfg);
-
-      /* Initialize stream IDs based on role */
-      conn->next_stream_id = (cfg->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
-
-      /* Store timeouts */
-      conn->settings_timeout_ms = cfg->settings_timeout_ms;
-      conn->ping_timeout_ms = cfg->ping_timeout_ms;
-      conn->idle_timeout_ms = cfg->idle_timeout_ms;
+      uint32_t temp;
+      memcpy (&temp, seed_bytes, sizeof (temp));
+      vseed = temp;
     }
-  EXCEPT (SocketHTTP2_ProtocolError)
+    EXCEPT (SocketHTTP2)
     {
       SocketHTTP2_Conn_free (&conn);
       RERAISE;
     }
+    END_TRY;
+    conn->hash_seed = vseed;
+
+    conn->client_initiated_count = 0;
+    conn->server_initiated_count = 0;
+
+    conn->stream_open_rate_limit = SocketRateLimit_new (
+        conn->arena, cfg->max_stream_open_rate, cfg->max_stream_open_burst);
+    if (!conn->stream_open_rate_limit)
+      {
+        SocketHTTP2_Conn_free (&conn);
+        RAISE (SocketHTTP2_Failed);
+      }
+    conn->stream_close_rate_limit = SocketRateLimit_new (
+        conn->arena, cfg->max_stream_close_rate, cfg->max_stream_close_burst);
+    if (!conn->stream_close_rate_limit)
+      {
+        SocketRateLimit_free (&conn->stream_open_rate_limit);
+        SocketHTTP2_Conn_free (&conn);
+        RAISE (SocketHTTP2_Failed);
+      }
+
+    /* Initialize internal components (buffers, HPACK, streams) */
+    init_connection_components (conn, cfg);
+
+    /* Initialize stream IDs based on role */
+    conn->next_stream_id = (cfg->role == HTTP2_ROLE_CLIENT) ? 1 : 2;
+
+    /* Store timeouts */
+    conn->settings_timeout_ms = cfg->settings_timeout_ms;
+    conn->ping_timeout_ms = cfg->ping_timeout_ms;
+    conn->idle_timeout_ms = cfg->idle_timeout_ms;
+  }
+  EXCEPT (SocketHTTP2_ProtocolError)
+  {
+    SocketHTTP2_Conn_free (&conn);
+    RERAISE;
+  }
   END_TRY;
 
   return conn;
@@ -505,8 +522,6 @@ SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
     return;
 
   SocketHTTP2_Conn_T c = *conn;
-
-
 
   /* Free HPACK encoder/decoder */
   if (c->encoder)
@@ -530,7 +545,8 @@ SocketHTTP2_Conn_free (SocketHTTP2_Conn_T *conn)
 
 /* ============================================================================
  * Connection Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 Socket_T
 SocketHTTP2_Conn_socket (SocketHTTP2_Conn_T conn)
@@ -587,7 +603,8 @@ SocketHTTP2_Conn_last_stream_id (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * Flow Control Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int32_t
 SocketHTTP2_Conn_send_window (SocketHTTP2_Conn_T conn)
@@ -605,7 +622,8 @@ SocketHTTP2_Conn_recv_window (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * Callbacks
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTP2_Conn_set_stream_callback (SocketHTTP2_Conn_T conn,
@@ -629,7 +647,8 @@ SocketHTTP2_Conn_set_conn_callback (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * SETTINGS Frame Building
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * should_send_setting - Check if setting differs from default
@@ -675,7 +694,7 @@ build_settings_payload (SocketHTTP2_Conn_T conn, unsigned char *payload)
 
   for (int i = 0; i < HTTP2_SETTINGS_COUNT; i++)
     {
-      uint16_t id = (uint16_t) (i + 1);
+      uint16_t id = (uint16_t)(i + 1);
       uint32_t value = conn->local_settings[i];
 
       if (should_send_setting (id, value))
@@ -704,7 +723,7 @@ send_initial_settings (SocketHTTP2_Conn_T conn)
 
   payload_len = build_settings_payload (conn, payload);
 
-  header.length = (uint32_t) payload_len;
+  header.length = (uint32_t)payload_len;
   header.type = HTTP2_FRAME_SETTINGS;
   header.flags = 0;
   header.stream_id = 0;
@@ -714,7 +733,8 @@ send_initial_settings (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * Connection Preface and Handshake
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * handshake_send_client_preface - Send client connection preface
@@ -725,7 +745,8 @@ send_initial_settings (SocketHTTP2_Conn_T conn)
 static int
 handshake_send_client_preface (SocketHTTP2_Conn_T conn)
 {
-  if (SocketBuf_write (conn->send_buf, HTTP2_CLIENT_PREFACE, HTTP2_PREFACE_SIZE)
+  if (SocketBuf_write (conn->send_buf, HTTP2_CLIENT_PREFACE,
+                       HTTP2_PREFACE_SIZE)
       != HTTP2_PREFACE_SIZE)
     return -1;
 
@@ -751,8 +772,8 @@ handshake_send_settings (SocketHTTP2_Conn_T conn)
   /* If connection-level window is larger than default, send WINDOW_UPDATE */
   if (conn->recv_window > SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE)
     {
-      uint32_t increment
-          = (uint32_t) conn->recv_window - SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
+      uint32_t increment = (uint32_t)conn->recv_window
+                           - SOCKETHTTP2_DEFAULT_INITIAL_WINDOW_SIZE;
       SocketHTTP2_Conn_window_update (conn, increment);
     }
 
@@ -794,7 +815,8 @@ SocketHTTP2_Conn_handshake (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * SETTINGS Frame
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
@@ -827,7 +849,7 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
         SocketHPACK_Encoder_set_table_size (conn->encoder, settings[i].value);
     }
 
-  header.length = (uint32_t) payload_len;
+  header.length = (uint32_t)payload_len;
   header.type = HTTP2_FRAME_SETTINGS;
   header.flags = 0;
   header.stream_id = 0;
@@ -838,7 +860,8 @@ SocketHTTP2_Conn_settings (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * PING Frame
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
@@ -873,7 +896,8 @@ SocketHTTP2_Conn_ping (SocketHTTP2_Conn_T conn, const unsigned char opaque[8])
 
 /* ============================================================================
  * GOAWAY Frame
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
@@ -893,13 +917,13 @@ SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
 
   /* Last stream ID and error code */
   write_u31_be (payload, conn->last_peer_stream_id);
-  write_u32_be (payload + 4, (uint32_t) error_code);
+  write_u32_be (payload + 4, (uint32_t)error_code);
 
   /* Debug data */
   if (debug_len > 0 && debug_data)
     memcpy (payload + HTTP2_GOAWAY_HEADER_SIZE, debug_data, debug_len);
 
-  header.length = (uint32_t) payload_len;
+  header.length = (uint32_t)payload_len;
   header.type = HTTP2_FRAME_GOAWAY;
   header.flags = 0;
   header.stream_id = 0;
@@ -912,7 +936,8 @@ SocketHTTP2_Conn_goaway (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * WINDOW_UPDATE Frame
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
@@ -935,9 +960,11 @@ SocketHTTP2_Conn_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
 
 /* ============================================================================
  * Frame Processing Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
-/* Removed unused frame processing helpers: read_frame_header, has_complete_frame, validate_and_respond_to_invalid_frame */
+/* Removed unused frame processing helpers: read_frame_header,
+ * has_complete_frame, validate_and_respond_to_invalid_frame */
 /**
  * read_socket_to_buffer - Read data from socket into receive buffer
  * @conn: Connection
@@ -956,7 +983,7 @@ read_socket_to_buffer (SocketHTTP2_Conn_T conn)
 
   ssize_t n = Socket_recv (conn->socket, write_ptr, space);
   if (n > 0)
-    SocketBuf_written (conn->recv_buf, (size_t) n);
+    SocketBuf_written (conn->recv_buf, (size_t)n);
   else if (n < 0)
     return -1;
 
@@ -1010,7 +1037,7 @@ process_single_frame (SocketHTTP2_Conn_T conn)
 
   /* Peek at frame header */
   unsigned char *data
-      = (unsigned char *) SocketBuf_readptr (conn->recv_buf, &read_len);
+      = (unsigned char *)SocketBuf_readptr (conn->recv_buf, &read_len);
   if (!data || read_len < HTTP2_FRAME_HEADER_SIZE)
     return 0;
 
@@ -1047,7 +1074,8 @@ process_single_frame (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * Frame Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
@@ -1055,7 +1083,7 @@ SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
   int result;
 
   assert (conn);
-  (void) events; /* May use for POLL_READ/POLL_WRITE optimization later */
+  (void)events; /* May use for POLL_READ/POLL_WRITE optimization later */
 
   /* Read data from socket into receive buffer */
   if (read_socket_to_buffer (conn) < 0)
@@ -1084,7 +1112,8 @@ SocketHTTP2_Conn_process (SocketHTTP2_Conn_T conn, unsigned events)
 
 /* ============================================================================
  * Flush Output
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
@@ -1101,7 +1130,7 @@ SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
 
       ssize_t sent = Socket_send (conn->socket, data, available);
       if (sent > 0)
-        SocketBuf_consume (conn->send_buf, (size_t) sent);
+        SocketBuf_consume (conn->send_buf, (size_t)sent);
       else if (sent == 0)
         return 1; /* Would block */
       else
@@ -1113,7 +1142,8 @@ SocketHTTP2_Conn_flush (SocketHTTP2_Conn_T conn)
 
 /* ============================================================================
  * Frame Processing Dispatch
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 http2_process_frame (SocketHTTP2_Conn_T conn,
@@ -1150,7 +1180,8 @@ http2_process_frame (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * SETTINGS Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * send_settings_ack - Send SETTINGS acknowledgement frame
@@ -1218,8 +1249,8 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
       /* Adjust existing stream windows */
       {
         int32_t delta
-            = (int32_t) value
-              - (int32_t) conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE];
+            = (int32_t)value
+              - (int32_t)conn->peer_settings[SETTINGS_IDX_INITIAL_WINDOW_SIZE];
         for (size_t j = 0; j < HTTP2_STREAM_HASH_SIZE; j++)
           {
             SocketHTTP2_Stream_T s = conn->streams[j];
@@ -1227,13 +1258,14 @@ validate_and_apply_setting (SocketHTTP2_Conn_T conn, uint16_t id,
               {
                 if (http2_flow_adjust_window (&s->send_window, delta) < 0)
                   {
-                    http2_send_connection_error (conn, HTTP2_FLOW_CONTROL_ERROR);
+                    http2_send_connection_error (conn,
+                                                 HTTP2_FLOW_CONTROL_ERROR);
                     return -1;
                   }
                 s = s->hash_next;
               }
           }
-        conn->initial_send_window = (int32_t) value;
+        conn->initial_send_window = (int32_t)value;
       }
       break;
 
@@ -1284,7 +1316,8 @@ update_conn_state_after_settings (SocketHTTP2_Conn_T conn)
 }
 
 /**
- * parse_and_apply_all_settings - Parse SETTINGS frame payload and apply each setting
+ * parse_and_apply_all_settings - Parse SETTINGS frame payload and apply each
+ * setting
  * @conn: Connection
  * @payload: SETTINGS payload data
  * @length: Payload length
@@ -1298,7 +1331,8 @@ update_conn_state_after_settings (SocketHTTP2_Conn_T conn)
  * Thread-safe: No
  */
 static int
-parse_and_apply_all_settings (SocketHTTP2_Conn_T conn, const unsigned char *payload, size_t length)
+parse_and_apply_all_settings (SocketHTTP2_Conn_T conn,
+                              const unsigned char *payload, size_t length)
 {
   if (length % HTTP2_SETTING_ENTRY_SIZE != 0)
     {
@@ -1335,7 +1369,8 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
   int64_t now_ms = Socket_get_monotonic_ms ();
 
   /* Rate limit non-ACK SETTINGS frames to prevent flood attacks */
-  if (now_ms - conn->settings_window_start_ms > SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS)
+  if (now_ms - conn->settings_window_start_ms
+      > SOCKETHTTP2_SETTINGS_RATE_WINDOW_MS)
     {
       conn->settings_window_start_ms = now_ms;
       conn->settings_count_in_window = 0;
@@ -1368,7 +1403,8 @@ http2_process_settings (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * PING Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 http2_process_ping (SocketHTTP2_Conn_T conn,
@@ -1420,19 +1456,19 @@ http2_process_ping (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * GOAWAY Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 http2_process_goaway (SocketHTTP2_Conn_T conn,
                       const SocketHTTP2_FrameHeader *header,
                       const unsigned char *payload)
 {
-  (void) header;
+  (void)header;
 
   /* Parse last stream ID and error code */
   conn->max_peer_stream_id = read_u31_be (payload);
-  conn->goaway_error_code
-      = (SocketHTTP2_ErrorCode) read_u32_be (payload + 4);
+  conn->goaway_error_code = (SocketHTTP2_ErrorCode)read_u32_be (payload + 4);
   conn->goaway_received = 1;
 
   http2_emit_conn_event (conn, HTTP2_EVENT_GOAWAY_RECEIVED);
@@ -1441,7 +1477,8 @@ http2_process_goaway (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * WINDOW_UPDATE Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * process_connection_window_update - Handle connection-level WINDOW_UPDATE
@@ -1478,7 +1515,8 @@ process_connection_window_update (SocketHTTP2_Conn_T conn, uint32_t increment)
  * Thread-safe: No
  */
 static int
-process_stream_window_update (SocketHTTP2_Conn_T conn, uint32_t stream_id, uint32_t increment)
+process_stream_window_update (SocketHTTP2_Conn_T conn, uint32_t stream_id,
+                              uint32_t increment)
 {
   SocketHTTP2_Stream_T stream = http2_stream_lookup (conn, stream_id);
   if (stream)
@@ -1521,7 +1559,8 @@ http2_process_window_update (SocketHTTP2_Conn_T conn,
 
 /* ============================================================================
  * RST_STREAM Processing
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * http2_process_rst_stream - Process RST_STREAM frame with rate limiting
@@ -1574,14 +1613,14 @@ http2_process_rst_stream (SocketHTTP2_Conn_T conn,
       http2_emit_stream_event (conn, stream, HTTP2_EVENT_STREAM_RESET);
     }
 
-  (void) error_code; /* Could log or store for debugging */
+  (void)error_code; /* Could log or store for debugging */
   return 0;
 }
 
-
 /* ============================================================================
  * h2c Upgrade Support
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTP2_Conn_T
 SocketHTTP2_Conn_upgrade_client (Socket_T socket,
@@ -1591,8 +1630,8 @@ SocketHTTP2_Conn_upgrade_client (Socket_T socket,
   SocketHTTP2_Config config;
   SocketHTTP2_Conn_T conn;
 
-  (void) settings_payload;
-  (void) settings_len;
+  (void)settings_payload;
+  (void)settings_len;
 
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_CLIENT);
   conn = SocketHTTP2_Conn_new (socket, &config, arena);
@@ -1624,16 +1663,17 @@ SocketHTTP2_Conn_upgrade_server (Socket_T socket,
   SocketHTTP2_Conn_T conn;
   SocketHTTP2_Stream_T stream;
 
-  (void) settings_payload;
-  (void) settings_len;
-  (void) initial_request;
+  (void)settings_payload;
+  (void)settings_len;
+  (void)initial_request;
 
   SocketHTTP2_config_defaults (&config, HTTP2_ROLE_SERVER);
   conn = SocketHTTP2_Conn_new (socket, &config, arena);
   if (!conn)
     return NULL;
 
-  /* For h2c upgrade, skip the preface - client already sent HTTP/1.1 upgrade */
+  /* For h2c upgrade, skip the preface - client already sent HTTP/1.1 upgrade
+   */
   conn->state = HTTP2_CONN_STATE_PREFACE_RECV;
 
   /* Create stream 1 for the upgraded request */

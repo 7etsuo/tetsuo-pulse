@@ -241,10 +241,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             /* Force test with @ prefix */
             char abstract_path[256];
             abstract_path[0] = '@';
-            size_t copy_len
-                = path_len > sizeof (abstract_path) - 2
-                      ? sizeof (abstract_path) - 2
-                      : path_len;
+            size_t copy_len = path_len > sizeof (abstract_path) - 2
+                                  ? sizeof (abstract_path) - 2
+                                  : path_len;
             memcpy (abstract_path + 1, path, copy_len);
             abstract_path[copy_len + 1] = '\0';
             fuzz_setup_abstract_socket (&addr, abstract_path, copy_len + 1);
@@ -297,4 +296,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

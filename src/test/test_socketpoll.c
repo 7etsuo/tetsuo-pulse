@@ -1029,10 +1029,7 @@ TEST (sockettimer_add_oneshot)
     timer = SocketTimer_add (poll, 10, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* Wait for timer to fire */
@@ -1058,10 +1055,7 @@ TEST (sockettimer_add_repeating)
     timer = SocketTimer_add_repeating (poll, 5, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* Wait for multiple firings */
@@ -1091,10 +1085,7 @@ TEST (sockettimer_cancel)
     timer = SocketTimer_add (poll, 50, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* Cancel timer before it fires */
@@ -1104,7 +1095,7 @@ TEST (sockettimer_cancel)
   /* Wait and ensure timer doesn't fire */
   SocketEvent_T *events;
   int n = SocketPoll_wait (poll, &events, 100);
-  ASSERT (n == 0); /* No socket events */
+  ASSERT (n == 0);                     /* No socket events */
   ASSERT_EQ (timer_callback_count, 0); /* Timer was cancelled */
 
   SocketPoll_free (&poll);
@@ -1122,18 +1113,18 @@ TEST (sockettimer_multiple_timers_order)
   TRY
   {
     /* Add timers with different delays - should fire in order */
-    SocketTimer_T timer1 = SocketTimer_add (poll, 5, timer_callback, &userdata1);
-    SocketTimer_T timer2 = SocketTimer_add (poll, 10, timer_callback, &userdata2);
-    SocketTimer_T timer3 = SocketTimer_add (poll, 15, timer_callback, &userdata3);
+    SocketTimer_T timer1
+        = SocketTimer_add (poll, 5, timer_callback, &userdata1);
+    SocketTimer_T timer2
+        = SocketTimer_add (poll, 10, timer_callback, &userdata2);
+    SocketTimer_T timer3
+        = SocketTimer_add (poll, 15, timer_callback, &userdata3);
 
     ASSERT_NOT_NULL (timer1);
     ASSERT_NOT_NULL (timer2);
     ASSERT_NOT_NULL (timer3);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* Wait for all timers to fire - may take multiple poll calls */
@@ -1162,17 +1153,14 @@ TEST (sockettimer_zero_delay)
     SocketTimer_T timer = SocketTimer_add (poll, 0, timer_callback, &userdata);
     ASSERT_NOT_NULL (timer);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* Timer with 0 delay should fire immediately */
   SocketEvent_T *events;
   int n = SocketPoll_wait (poll, &events, 1); /* Very short timeout */
-  ASSERT (n == 0); /* No socket events */
-  ASSERT_EQ (timer_callback_count, 1); /* Timer fired immediately */
+  ASSERT (n == 0);                            /* No socket events */
+  ASSERT_EQ (timer_callback_count, 1);        /* Timer fired immediately */
   ASSERT_EQ (timer_callback_userdata, &userdata);
 
   SocketPoll_free (&poll);
@@ -1195,10 +1183,7 @@ TEST (sockettimer_remaining_time)
     ASSERT (remaining >= 0);
     ASSERT (remaining <= 100);
   }
-  EXCEPT (SocketTimer_Failed)
-  {
-    ASSERT (0);
-  }
+  EXCEPT (SocketTimer_Failed) { ASSERT (0); }
   END_TRY;
 
   /* After timer fires, remaining should be -1 */

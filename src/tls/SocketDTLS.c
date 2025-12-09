@@ -3,7 +3,8 @@
  *
  * Part of the Socket Library
  *
- * Implements DTLS/SSL integration for datagram sockets using OpenSSL. Provides:
+ * Implements DTLS/SSL integration for datagram sockets using OpenSSL.
+ * Provides:
  * - Transparent encryption/decryption via wrapper functions
  * - Non-blocking handshake management
  * - SNI support and hostname verification
@@ -20,8 +21,8 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <netdb.h> /* for struct addrinfo, freeaddrinfo */
 #include <poll.h>
-#include <netdb.h>  /* for struct addrinfo, freeaddrinfo */
 #include <string.h>
 
 /* ============================================================================
@@ -29,17 +30,18 @@
  * ============================================================================
  */
 
-#include "core/SocketUtil.h"
-#include "core/SocketMetrics.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketMetrics.h"
 #include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 #include "socket/SocketCommon.h"
 
 #ifndef SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS
-#define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS 5000  /* ms, configurable via compile-time override */
+#define SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS                               \
+  5000 /* ms, configurable via compile-time override */
 #endif
 
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketDTLS);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketDTLS);
 
 /* ============================================================================
  * Internal Helper Functions
@@ -63,7 +65,8 @@ allocate_dtls_buffers (SocketDgram_T socket)
     {
       socket->dtls_read_buf = ALLOC (arena, SOCKET_DTLS_MAX_RECORD_SIZE);
       if (!socket->dtls_read_buf)
-        SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to allocate DTLS read buffer");
+        SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                          "Failed to allocate DTLS read buffer");
       socket->dtls_read_buf_len = 0;
     }
 
@@ -71,7 +74,8 @@ allocate_dtls_buffers (SocketDgram_T socket)
     {
       socket->dtls_write_buf = ALLOC (arena, SOCKET_DTLS_MAX_RECORD_SIZE);
       if (!socket->dtls_write_buf)
-        SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to allocate DTLS write buffer");
+        SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                          "Failed to allocate DTLS write buffer");
       socket->dtls_write_buf_len = 0;
     }
 }
@@ -98,18 +102,22 @@ free_dtls_resources (SocketDgram_T socket)
   /* Securely clear DTLS buffers */
   if (socket->dtls_read_buf)
     {
-      SocketCrypto_secure_clear (socket->dtls_read_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      SocketCrypto_secure_clear (socket->dtls_read_buf,
+                                 SOCKET_DTLS_MAX_RECORD_SIZE);
     }
   if (socket->dtls_write_buf)
     {
-      SocketCrypto_secure_clear (socket->dtls_write_buf, SOCKET_DTLS_MAX_RECORD_SIZE);
+      SocketCrypto_secure_clear (socket->dtls_write_buf,
+                                 SOCKET_DTLS_MAX_RECORD_SIZE);
     }
 
   /* Clear SNI hostname */
   if (socket->dtls_sni_hostname)
     {
-      size_t hostname_len = strlen (socket->dtls_sni_hostname) + 1; /* include null terminator */
-      SocketCrypto_secure_clear ((void *)socket->dtls_sni_hostname, hostname_len);
+      size_t hostname_len = strlen (socket->dtls_sni_hostname)
+                            + 1; /* include null terminator */
+      SocketCrypto_secure_clear ((void *)socket->dtls_sni_hostname,
+                                 hostname_len);
     }
 
   /* Invalidate peer cache */
@@ -142,17 +150,21 @@ static void
 validate_dtls_enable_preconditions (SocketDgram_T socket)
 {
   if (socket->dtls_enabled)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "DTLS already enabled on socket");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "DTLS already enabled on socket");
 
   int fd = SocketBase_fd (socket->base);
   if (fd < 0)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Socket not valid (invalid fd)");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "Socket not valid (invalid fd)");
 
   /* Validate socket type is datagram */
   int type;
   socklen_t optlen = sizeof (type);
-  if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &type, &optlen) != 0 || type != SOCK_DGRAM)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "DTLS requires a datagram socket (SOCK_DGRAM)");
+  if (getsockopt (fd, SOL_SOCKET, SO_TYPE, &type, &optlen) != 0
+      || type != SOCK_DGRAM)
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "DTLS requires a datagram socket (SOCK_DGRAM)");
 }
 
 /**
@@ -169,7 +181,8 @@ create_dtls_ssl_object (SocketDTLSContext_T ctx)
   if (!ssl)
     {
       SocketMetrics_counter_inc (SOCKET_CTR_DTLS_HANDSHAKES_FAILED);
-      SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to create DTLS SSL object");
+      SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                        "Failed to create DTLS SSL object");
     }
 
   if (SocketDTLSContext_is_server (ctx))
@@ -192,7 +205,8 @@ create_dgram_bio (int fd)
 {
   BIO *bio = BIO_new_dgram (fd, BIO_NOCLOSE);
   if (!bio)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to create datagram BIO");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "Failed to create datagram BIO");
 
   return bio;
 }
@@ -240,12 +254,13 @@ finalize_dtls_state (SocketDgram_T socket, SSL *ssl, SocketDTLSContext_T ctx)
 static struct addrinfo *
 dtls_resolve_peer (const char *host, int port)
 {
-  struct addrinfo hints = {0};
+  struct addrinfo hints = { 0 };
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_DGRAM;
 
   struct addrinfo *result;
-  SocketCommon_resolve_address (host, port, &hints, &result, SocketDTLS_Failed, AF_UNSPEC, 1 /* use exceptions */);
+  SocketCommon_resolve_address (host, port, &hints, &result, SocketDTLS_Failed,
+                                AF_UNSPEC, 1 /* use exceptions */);
   return result;
 }
 
@@ -263,15 +278,18 @@ dtls_set_ssl_hostname (SocketDgram_T socket, const char *hostname)
 {
   SSL *ssl = dtls_socket_get_ssl (socket);
   if (!ssl)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "SSL object not available");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "SSL object not available");
 
   SSL_set_verify (ssl, SSL_VERIFY_PEER, NULL);
 
   if (SSL_set_tlsext_host_name (ssl, hostname) != 1)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to set SNI hostname");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "Failed to set SNI hostname");
 
   if (SSL_set1_host (ssl, hostname) != 1)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "Failed to enable hostname verification");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "Failed to enable hostname verification");
 }
 
 /* ============================================================================
@@ -299,15 +317,18 @@ SocketDTLS_enable (SocketDgram_T socket, SocketDTLSContext_T ctx)
 
   /* Set MTU hint */
   SSL_set_mtu (ssl, (long)SocketDTLSContext_get_mtu (ctx));
-  SSL_set_options (ssl, SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION | SSL_OP_NO_COMPRESSION);
+  SSL_set_options (ssl, SSL_OP_NO_QUERY_MTU | SSL_OP_NO_RENEGOTIATION
+                            | SSL_OP_NO_COMPRESSION);
   DTLS_set_link_mtu (ssl, (long)SocketDTLSContext_get_mtu (ctx));
 
   /* Enable read-ahead for efficient DTLS record reassembly */
   SSL_set_read_ahead (ssl, 1);
 
   /* Enable timer-based retransmission for DTLS */
-  const struct timeval DTLS_INITIAL_RETRANS_TIMEOUT = { .tv_sec = 1, .tv_usec = 0 };
-  BIO_ctrl (bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0, (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
+  const struct timeval DTLS_INITIAL_RETRANS_TIMEOUT
+      = { .tv_sec = 1, .tv_usec = 0 };
+  BIO_ctrl (bio, BIO_CTRL_DGRAM_SET_RECV_TIMEOUT, 0,
+            (void *)&DTLS_INITIAL_RETRANS_TIMEOUT);
 
   finalize_dtls_state (socket, ssl, ctx);
 }
@@ -322,7 +343,8 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
 
   SSL *ssl = dtls_socket_get_ssl (socket);
   if (!ssl)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "SSL object not available");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "SSL object not available");
 
   BIO *bio = SSL_get_rbio (ssl);
   if (!bio)
@@ -330,18 +352,19 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
 
   Arena_T arena = SocketBase_arena (socket->base);
   int64_t now_ms = Socket_get_monotonic_ms ();
-  static const int64_t PEER_CACHE_TTL_MS = 30000;  /* 30 seconds TTL for cached resolution */
+  static const int64_t PEER_CACHE_TTL_MS
+      = 30000; /* 30 seconds TTL for cached resolution */
 
   /* Check cache validity */
-  bool cache_valid = socket->dtls_peer_host != NULL &&
-                     socket->dtls_peer_port == port &&
-                     strcmp (socket->dtls_peer_host, host) == 0 &&
-                     (now_ms - socket->dtls_peer_cache_ts) < PEER_CACHE_TTL_MS;
+  bool cache_valid
+      = socket->dtls_peer_host != NULL && socket->dtls_peer_port == port
+        && strcmp (socket->dtls_peer_host, host) == 0
+        && (now_ms - socket->dtls_peer_cache_ts) < PEER_CACHE_TTL_MS;
 
   struct addrinfo *result;
   if (cache_valid)
     {
-      result = socket->dtls_peer_res;  /* Reuse cached */
+      result = socket->dtls_peer_res; /* Reuse cached */
       SOCKET_LOG_DEBUG_MSG ("DTLS: Using cached peer resolution");
     }
   else
@@ -354,7 +377,7 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
         }
       if (socket->dtls_peer_host)
         {
-          socket->dtls_peer_host = NULL;  /* Arena will free on dispose */
+          socket->dtls_peer_host = NULL; /* Arena will free on dispose */
         }
 
       /* Resolve fresh */
@@ -365,10 +388,11 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
       if (!socket->dtls_peer_host)
         {
           freeaddrinfo (result);
-          RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed, "Failed to cache peer hostname");
+          RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
+                                "Failed to cache peer hostname");
         }
       socket->dtls_peer_port = port;
-      socket->dtls_peer_res = result;  /* Transfer ownership to cache */
+      socket->dtls_peer_res = result; /* Transfer ownership to cache */
       socket->dtls_peer_cache_ts = now_ms;
       SOCKET_LOG_DEBUG_MSG ("DTLS: Cached new peer resolution");
     }
@@ -379,7 +403,7 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
     {
       if (!cache_valid)
         {
-          freeaddrinfo (result);  /* Only if not cached */
+          freeaddrinfo (result); /* Only if not cached */
         }
       RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
                             "Failed to allocate BIO address");
@@ -404,7 +428,8 @@ SocketDTLS_set_peer (SocketDgram_T socket, const char *host, int port)
         {
           freeaddrinfo (result);
         }
-      RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed, "Unsupported address family in resolution");
+      RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
+                            "Unsupported address family in resolution");
     }
 
   BIO_dgram_set_peer (bio, bio_addr);
@@ -425,18 +450,21 @@ SocketDTLS_set_hostname (SocketDgram_T socket, const char *hostname)
     RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed, "Hostname cannot be empty");
 
   if (hostname_len > SOCKET_DTLS_MAX_SNI_LEN)
-    SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_Failed, "Hostname too long for SNI (%zu > %d max)", hostname_len, SOCKET_DTLS_MAX_SNI_LEN);
+    SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_Failed,
+                      "Hostname too long for SNI (%zu > %d max)", hostname_len,
+                      SOCKET_DTLS_MAX_SNI_LEN);
 
   SocketCommon_validate_hostname (hostname, SocketDTLS_Failed);
 
   /* Copy hostname to arena with overflow protection */
   Arena_T arena = SocketBase_arena (socket->base);
   size_t total_size;
-  if (!SocketSecurity_check_add (hostname_len, 1, &total_size) ||
-      !SocketSecurity_check_size (total_size)) {
-    RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
-                          "Hostname too long for secure allocation");
-  }
+  if (!SocketSecurity_check_add (hostname_len, 1, &total_size)
+      || !SocketSecurity_check_size (total_size))
+    {
+      RAISE_DTLS_ERROR_MSG (SocketDTLS_Failed,
+                            "Hostname too long for secure allocation");
+    }
   socket->dtls_sni_hostname
       = Arena_alloc (arena, total_size, __FILE__, __LINE__);
   if (!socket->dtls_sni_hostname)
@@ -457,17 +485,21 @@ SocketDTLS_set_mtu (SocketDgram_T socket, size_t mtu)
 
   if (!SocketSecurity_check_size (mtu))
     {
-      SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "MTU exceeds security allocation limit");
+      SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                        "MTU exceeds security allocation limit");
     }
 
   if (!SOCKET_DTLS_VALID_MTU (mtu))
     {
-      SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_Failed, "Invalid MTU: %zu (must be %d-%d)", mtu, SOCKET_DTLS_MIN_MTU, SOCKET_DTLS_MAX_MTU);
+      SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_Failed,
+                        "Invalid MTU: %zu (must be %d-%d)", mtu,
+                        SOCKET_DTLS_MIN_MTU, SOCKET_DTLS_MAX_MTU);
     }
 
   SSL *ssl = dtls_socket_get_ssl (socket);
   if (!ssl)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "SSL object not available");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "SSL object not available");
 
   SSL_set_mtu (ssl, (long)mtu);
   DTLS_set_link_mtu (ssl, (long)mtu);
@@ -537,7 +569,8 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
   pfd.fd = fd;
   pfd.events = POLLIN | POLLOUT;
 
-  int64_t deadline_ms = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
+  int64_t deadline_ms
+      = (timeout_ms > 0) ? SocketTimeout_deadline_ms (timeout_ms) : 0LL;
 
   while (timeout_ms == 0 || !SocketTimeout_expired (deadline_ms))
     {
@@ -567,14 +600,16 @@ SocketDTLS_handshake_loop (SocketDgram_T socket, int timeout_ms)
       if (timeout_ms == 0)
         return state; /* Non-blocking, return current state */
 
-      int poll_tmo = SocketTimeout_poll_timeout (-1, deadline_ms); /* -1: compute from deadline */
+      int poll_tmo = SocketTimeout_poll_timeout (
+          -1, deadline_ms); /* -1: compute from deadline */
 
       int rc = poll (&pfd, 1, poll_tmo);
       if (rc < 0)
         {
           if (errno == EINTR)
             continue;
-          SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_HandshakeFailed, "poll failed: %s", Socket_safe_strerror (errno));
+          SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_HandshakeFailed,
+                            "poll failed: %s", Socket_safe_strerror (errno));
         }
     }
 
@@ -595,7 +630,8 @@ SocketDTLS_listen (SocketDgram_T socket)
 
   SSL *ssl = dtls_socket_get_ssl (socket);
   if (!ssl)
-    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed, "SSL object not available");
+    SOCKET_RAISE_MSG (SocketDTLS, SocketDTLS_Failed,
+                      "SSL object not available");
 
   /* For DTLS server, we need to call DTLSv1_listen first if cookie enabled */
   SocketDTLSContext_T ctx_local = (SocketDTLSContext_T)socket->dtls_ctx;
@@ -750,11 +786,15 @@ SocketDTLS_recvfrom (SocketDgram_T socket, void *buf, size_t len, char *host,
                       {
                         char *endptr;
                         long p = strtol (port_str, &endptr, 10);
-                        if (endptr > port_str && *endptr == '\0' && p >= 1 && p <= 65535) {
-                          *port = (int)p;
-                        } else {
-                          *port = 0;  /* Invalid - default */
-                        }
+                        if (endptr > port_str && *endptr == '\0' && p >= 1
+                            && p <= 65535)
+                          {
+                            *port = (int)p;
+                          }
+                        else
+                          {
+                            *port = 0; /* Invalid - default */
+                          }
                       }
                       OPENSSL_free (port_str);
                     }
@@ -765,7 +805,8 @@ SocketDTLS_recvfrom (SocketDgram_T socket, void *buf, size_t len, char *host,
         }
       if (!peer_set && (host || port))
         {
-          /* Failed to retrieve peer info (e.g., OOM or BIO error); clear outputs */
+          /* Failed to retrieve peer info (e.g., OOM or BIO error); clear
+           * outputs */
           if (host && host_len > 0)
             host[0] = '\0';
           if (port)
@@ -874,14 +915,18 @@ SocketDTLS_shutdown (SocketDgram_T socket)
 
   SSL *ssl = dtls_socket_get_ssl (socket);
   if (!ssl)
-    RAISE_DTLS_ERROR_MSG (SocketDTLS_ShutdownFailed, "SSL object not available");
+    RAISE_DTLS_ERROR_MSG (SocketDTLS_ShutdownFailed,
+                          "SSL object not available");
 
   int fd = SocketBase_fd (socket->base);
   if (fd < 0)
-    RAISE_DTLS_ERROR_MSG (SocketDTLS_ShutdownFailed, "Invalid socket fd during shutdown");
+    RAISE_DTLS_ERROR_MSG (SocketDTLS_ShutdownFailed,
+                          "Invalid socket fd during shutdown");
 
   struct pollfd pfd = { .fd = fd, .events = POLLIN | POLLOUT };
-  int64_t deadline_ms = SocketTimeout_deadline_ms (SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS);  /* Default 5s timeout for shutdown */
+  int64_t deadline_ms = SocketTimeout_deadline_ms (
+      SOCKET_DTLS_DEFAULT_SHUTDOWN_TIMEOUT_MS); /* Default 5s timeout for
+                                                   shutdown */
 
   while (!SocketTimeout_expired (deadline_ms))
     {
@@ -889,7 +934,7 @@ SocketDTLS_shutdown (SocketDgram_T socket)
       if (DTLSv1_handle_timeout (ssl) < 0)
         {
           dtls_format_openssl_error ("DTLS timeout handling during shutdown");
-          break;  /* Continue but log */
+          break; /* Continue but log */
         }
 
       int result = SSL_shutdown (ssl);
@@ -901,7 +946,8 @@ SocketDTLS_shutdown (SocketDgram_T socket)
         }
       else if (result < 0)
         {
-          DTLSHandshakeState state = dtls_handle_ssl_error (socket, ssl, result);
+          DTLSHandshakeState state
+              = dtls_handle_ssl_error (socket, ssl, result);
           if (state == DTLS_HANDSHAKE_ERROR)
             {
               dtls_format_openssl_error ("DTLS shutdown error");
@@ -911,16 +957,19 @@ SocketDTLS_shutdown (SocketDgram_T socket)
         }
 
       /* Poll for required I/O (read peer close_notify or write) */
-      int poll_tmo = SocketTimeout_poll_timeout (1000, deadline_ms);  /* Max 1s per iteration */
+      int poll_tmo = SocketTimeout_poll_timeout (
+          1000, deadline_ms); /* Max 1s per iteration */
       int pr = poll (&pfd, 1, poll_tmo);
       if (pr < 0)
         {
           if (errno == EINTR)
             continue;
           SOCKET_RAISE_FMT (SocketDTLS, SocketDTLS_ShutdownFailed,
-                            "poll failed during shutdown: %s", Socket_safe_strerror (errno));
+                            "poll failed during shutdown: %s",
+                            Socket_safe_strerror (errno));
         }
-      /* No adjustment to pfd.events; both IN/OUT sufficient for shutdown phase */
+      /* No adjustment to pfd.events; both IN/OUT sufficient for shutdown phase
+       */
     }
 
   /* Timeout or persistent error */
@@ -959,4 +1008,3 @@ SocketDTLS_get_last_state (SocketDgram_T socket)
 }
 
 #endif /* SOCKET_HAS_TLS */
-

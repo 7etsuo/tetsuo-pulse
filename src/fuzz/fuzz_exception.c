@@ -22,9 +22,12 @@
 #include "core/Except.h"
 
 /* Test exception types */
-static const Except_T Test_Exception1 = { &Test_Exception1, "Test exception 1" };
-static const Except_T Test_Exception2 = { &Test_Exception2, "Test exception 2" };
-static const Except_T Test_Exception3 = { &Test_Exception3, "Test exception 3" };
+static const Except_T Test_Exception1
+    = { &Test_Exception1, "Test exception 1" };
+static const Except_T Test_Exception2
+    = { &Test_Exception2, "Test exception 2" };
+static const Except_T Test_Exception3
+    = { &Test_Exception3, "Test exception 3" };
 
 /* Maximum nesting depth for safety */
 #define MAX_NESTING_DEPTH 16
@@ -84,10 +87,7 @@ test_try_finally (void)
   volatile int try_executed = 0;
   volatile int finally_executed = 0;
 
-  TRY
-  {
-    try_executed = 1;
-  }
+  TRY { try_executed = 1; }
   FINALLY { finally_executed = 1; }
   END_TRY;
 
@@ -354,12 +354,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Note: We can't directly assert Except_stack == NULL because
    * the fuzzer itself might have exception frames on the stack.
    * Instead, verify we can still use exception handling. */
-  TRY
-  {
-    /* Empty TRY - just verify stack integrity */
-  }
+  TRY { /* Empty TRY - just verify stack integrity */ }
   END_TRY;
 
   return 0;
 }
-

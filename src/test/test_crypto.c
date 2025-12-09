@@ -12,16 +12,17 @@
  * - WebSocket: RFC 6455 Section 4.2.2
  */
 
-#include "test/Test.h"
 #include "core/Except.h"
 #include "core/SocketCrypto.h"
+#include "test/Test.h"
 
 #include <stdio.h>
 #include <string.h>
 
 /* ============================================================================
  * Test Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * hex_to_bytes - Convert hex string to bytes for test vectors
@@ -65,7 +66,8 @@ hex_to_bytes (const char *hex, unsigned char *out, size_t max_len)
 
 /* ============================================================================
  * SHA-1 Tests (RFC 3174)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #if SOCKET_HAS_TLS
 
@@ -97,7 +99,8 @@ TEST (sha1_long)
 {
   /* SHA-1("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")
    * = 84983e441c3bd26ebaae4aa1f95129e5e54670f1 */
-  const char *input = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+  const char *input
+      = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
   unsigned char expected[20];
   unsigned char result[20];
 
@@ -109,7 +112,8 @@ TEST (sha1_long)
 
 /* ============================================================================
  * SHA-256 Tests (NIST FIPS 180-4)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (sha256_empty)
 {
@@ -117,8 +121,9 @@ TEST (sha256_empty)
   unsigned char expected[32];
   unsigned char result[32];
 
-  hex_to_bytes ("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                expected, 32);
+  hex_to_bytes (
+      "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      expected, 32);
 
   SocketCrypto_sha256 ("", 0, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -130,8 +135,9 @@ TEST (sha256_abc)
   unsigned char expected[32];
   unsigned char result[32];
 
-  hex_to_bytes ("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-                expected, 32);
+  hex_to_bytes (
+      "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      expected, 32);
 
   SocketCrypto_sha256 ("abc", 3, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -140,12 +146,14 @@ TEST (sha256_abc)
 TEST (sha256_long)
 {
   /* SHA-256 of longer message */
-  const char *input = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+  const char *input
+      = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
   unsigned char expected[32];
   unsigned char result[32];
 
-  hex_to_bytes ("248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
-                expected, 32);
+  hex_to_bytes (
+      "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1",
+      expected, 32);
 
   SocketCrypto_sha256 (input, strlen (input), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -153,7 +161,8 @@ TEST (sha256_long)
 
 /* ============================================================================
  * MD5 Tests (RFC 1321)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (md5_empty)
 {
@@ -194,7 +203,8 @@ TEST (md5_alphabet)
 
 /* ============================================================================
  * HMAC-SHA256 Tests (RFC 4231)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (hmac_sha256_test_case_1)
 {
@@ -209,8 +219,9 @@ TEST (hmac_sha256_test_case_1)
   /* Data = "Hi There" */
   const char *data = "Hi There";
 
-  hex_to_bytes ("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7",
-                expected, 32);
+  hex_to_bytes (
+      "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7",
+      expected, 32);
 
   SocketCrypto_hmac_sha256 (key, 20, data, strlen (data), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -224,8 +235,9 @@ TEST (hmac_sha256_test_case_2)
   unsigned char expected[32];
   unsigned char result[32];
 
-  hex_to_bytes ("5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
-                expected, 32);
+  hex_to_bytes (
+      "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
+      expected, 32);
 
   SocketCrypto_hmac_sha256 (key, strlen (key), data, strlen (data), result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -245,8 +257,9 @@ TEST (hmac_sha256_test_case_3)
   /* Data = 0xdd repeated 50 times */
   memset (data, 0xdd, 50);
 
-  hex_to_bytes ("773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe",
-                expected, 32);
+  hex_to_bytes (
+      "773ea91e36800e46854db8ebd09181a72959098b3ef8c122d9635514ced565fe",
+      expected, 32);
 
   SocketCrypto_hmac_sha256 (key, 20, data, 50, result);
   ASSERT (memcmp (result, expected, 32) == 0);
@@ -254,7 +267,8 @@ TEST (hmac_sha256_test_case_3)
 
 /* ============================================================================
  * WebSocket Tests (RFC 6455)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (websocket_accept)
 {
@@ -310,7 +324,8 @@ TEST (random_uint32)
 
 /* ============================================================================
  * Base64 Tests (RFC 4648)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (base64_encode_empty)
 {
@@ -351,7 +366,8 @@ TEST (base64_encode_foob)
 {
   /* RFC 4648: "foob" -> "Zm9vYg==" */
   char output[16];
-  ssize_t len = SocketCrypto_base64_encode ("foob", 4, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_encode ("foob", 4, output, sizeof (output));
   ASSERT (len == 8);
   ASSERT (strcmp (output, "Zm9vYg==") == 0);
 }
@@ -360,7 +376,8 @@ TEST (base64_encode_fooba)
 {
   /* RFC 4648: "fooba" -> "Zm9vYmE=" */
   char output[16];
-  ssize_t len = SocketCrypto_base64_encode ("fooba", 5, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_encode ("fooba", 5, output, sizeof (output));
   ASSERT (len == 8);
   ASSERT (strcmp (output, "Zm9vYmE=") == 0);
 }
@@ -369,7 +386,8 @@ TEST (base64_encode_foobar)
 {
   /* RFC 4648: "foobar" -> "Zm9vYmFy" */
   char output[16];
-  ssize_t len = SocketCrypto_base64_encode ("foobar", 6, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_encode ("foobar", 6, output, sizeof (output));
   ASSERT (len == 8);
   ASSERT (strcmp (output, "Zm9vYmFy") == 0);
 }
@@ -385,7 +403,8 @@ TEST (base64_decode_Zg)
 {
   /* "Zg==" -> "f" */
   unsigned char output[16];
-  ssize_t len = SocketCrypto_base64_decode ("Zg==", 4, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode ("Zg==", 4, output, sizeof (output));
   ASSERT (len == 1);
   ASSERT (output[0] == 'f');
 }
@@ -394,7 +413,8 @@ TEST (base64_decode_Zm8)
 {
   /* "Zm8=" -> "fo" */
   unsigned char output[16];
-  ssize_t len = SocketCrypto_base64_decode ("Zm8=", 4, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode ("Zm8=", 4, output, sizeof (output));
   ASSERT (len == 2);
   ASSERT (memcmp (output, "fo", 2) == 0);
 }
@@ -403,7 +423,8 @@ TEST (base64_decode_Zm9v)
 {
   /* "Zm9v" -> "foo" */
   unsigned char output[16];
-  ssize_t len = SocketCrypto_base64_decode ("Zm9v", 4, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode ("Zm9v", 4, output, sizeof (output));
   ASSERT (len == 3);
   ASSERT (memcmp (output, "foo", 3) == 0);
 }
@@ -412,7 +433,8 @@ TEST (base64_decode_foobar)
 {
   /* "Zm9vYmFy" -> "foobar" */
   unsigned char output[16];
-  ssize_t len = SocketCrypto_base64_decode ("Zm9vYmFy", 8, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode ("Zm9vYmFy", 8, output, sizeof (output));
   ASSERT (len == 6);
   ASSERT (memcmp (output, "foobar", 6) == 0);
 }
@@ -423,14 +445,12 @@ TEST (base64_roundtrip)
   char encoded[128];
   unsigned char decoded[128];
 
-  ssize_t enc_len
-      = SocketCrypto_base64_encode (original, strlen (original), encoded,
-                                    sizeof (encoded));
+  ssize_t enc_len = SocketCrypto_base64_encode (original, strlen (original),
+                                                encoded, sizeof (encoded));
   ASSERT (enc_len > 0);
 
-  ssize_t dec_len
-      = SocketCrypto_base64_decode (encoded, (size_t)enc_len, decoded,
-                                    sizeof (decoded));
+  ssize_t dec_len = SocketCrypto_base64_decode (encoded, (size_t)enc_len,
+                                                decoded, sizeof (decoded));
   ASSERT (dec_len == (ssize_t)strlen (original));
   ASSERT (memcmp (decoded, original, (size_t)dec_len) == 0);
 }
@@ -481,7 +501,8 @@ TEST (base64_invalid)
   unsigned char output[16];
 
   /* Invalid character */
-  ssize_t len = SocketCrypto_base64_decode ("Zm9v!", 5, output, sizeof (output));
+  ssize_t len
+      = SocketCrypto_base64_decode ("Zm9v!", 5, output, sizeof (output));
   ASSERT (len == -1);
 }
 
@@ -500,7 +521,8 @@ TEST (base64_buffer_size)
 
 /* ============================================================================
  * Hex Encoding Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (hex_encode_empty)
 {
@@ -526,11 +548,12 @@ TEST (hex_decode_valid)
   unsigned char output[16];
   unsigned char expected[] = { 0xde, 0xad, 0xbe, 0xef };
 
-  ssize_t len = SocketCrypto_hex_decode ("deadbeef", 8, output, sizeof(output));
+  ssize_t len
+      = SocketCrypto_hex_decode ("deadbeef", 8, output, sizeof (output));
   ASSERT (len == 4);
   ASSERT (memcmp (output, expected, 4) == 0);
 
-  len = SocketCrypto_hex_decode ("DEADBEEF", 8, output, sizeof(output));
+  len = SocketCrypto_hex_decode ("DEADBEEF", 8, output, sizeof (output));
   ASSERT (len == 4);
   ASSERT (memcmp (output, expected, 4) == 0);
 }
@@ -540,30 +563,33 @@ TEST (hex_decode_invalid)
   unsigned char output[16];
 
   /* Odd length */
-  ssize_t len = SocketCrypto_hex_decode ("abc", 3, output, sizeof(output));
+  ssize_t len = SocketCrypto_hex_decode ("abc", 3, output, sizeof (output));
   ASSERT (len == -1);
 
   /* Invalid character */
-  len = SocketCrypto_hex_decode ("ghij", 4, output, sizeof(output));
+  len = SocketCrypto_hex_decode ("ghij", 4, output, sizeof (output));
   ASSERT (len == -1);
 }
 
 TEST (hex_roundtrip)
 {
-  unsigned char original[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
-                               0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
+  unsigned char original[]
+      = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77,
+          0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff };
   char encoded[64];
   unsigned char decoded[16];
 
   SocketCrypto_hex_encode (original, 16, encoded, 1);
-  ssize_t len = SocketCrypto_hex_decode (encoded, 32, decoded, sizeof(decoded));
+  ssize_t len
+      = SocketCrypto_hex_decode (encoded, 32, decoded, sizeof (decoded));
   ASSERT (len == 16);
   ASSERT (memcmp (decoded, original, 16) == 0);
 }
 
 /* ============================================================================
  * Random Generation Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (random_bytes)
 {
@@ -592,7 +618,8 @@ TEST (random_bytes_empty)
 
 /* ============================================================================
  * Security Utilities Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 TEST (secure_compare_equal)
 {
@@ -636,7 +663,8 @@ TEST (secure_clear)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -645,7 +673,8 @@ main (void)
   printf ("=========================\n");
 
 #ifndef SOCKET_HAS_TLS
-  printf ("Note: TLS-dependent tests skipped (SOCKET_HAS_TLS not defined)\n\n");
+  printf (
+      "Note: TLS-dependent tests skipped (SOCKET_HAS_TLS not defined)\n\n");
 #endif
 
   Test_run_all ();

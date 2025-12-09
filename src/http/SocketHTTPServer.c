@@ -25,8 +25,6 @@
  * - Socket for networking
  */
 
-#include "http/SocketHTTPServer.h"
-#include "http/SocketHTTPServer-private.h"
 #include "core/Arena.h"
 #include "core/SocketIPTracker.h"
 #include "core/SocketMetrics.h"
@@ -34,10 +32,12 @@
 #include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTPServer-private.h"
+#include "http/SocketHTTPServer.h"
 #include "poll/SocketPoll.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
-#include "socket/SocketWS.h"  /* For WebSocket upgrade detection */
+#include "socket/SocketWS.h" /* For WebSocket upgrade detection */
 
 #include <arpa/inet.h>
 #include <assert.h>
@@ -45,7 +45,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
-
 
 /* ============================================================================
  * Server Configuration
@@ -80,7 +79,8 @@ SOCKET_DECLARE_MODULE_EXCEPTION (HTTPServer);
 
 /* ============================================================================
  * Exception Definitions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketHTTPServer_Failed
     = { &SocketHTTPServer_Failed, "HTTP server operation failed" };
@@ -108,13 +108,16 @@ const Except_T SocketHTTPServer_ProtocolError
  */
 #define RAISE_HTTPSERVER_ERROR(e) SOCKET_RAISE_MODULE_ERROR (HTTPServer, e)
 
-/* STATS macros moved to SocketHTTPServer-private.h for shared use in split files */
+/* STATS macros moved to SocketHTTPServer-private.h for shared use in split
+ * files */
 
 /* RateLimitEntry defined in SocketHTTPServer-private.h */
 
-/* ServerConnState and ServerConnection defined in SocketHTTPServer-private.h */
+/* ServerConnState and ServerConnection defined in SocketHTTPServer-private.h
+ */
 
-/* SocketHTTPServer_Request internal struct defined in SocketHTTPServer-private.h */
+/* SocketHTTPServer_Request internal struct defined in
+ * SocketHTTPServer-private.h */
 
 /* LatencyTracker defined in SocketHTTPServer-private.h */
 
@@ -122,16 +125,20 @@ const Except_T SocketHTTPServer_ProtocolError
 
 /* ============================================================================
  * Internal Helper Functions - Time
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * REFACTOR: Uses Socket_get_monotonic_ms() from SocketUtil.h instead of
  * direct clock_gettime() call. Centralizes monotonic time access.
  */
-/* server_time_ms removed - duplicate with SocketHTTPServer-connections.c; use Socket_get_monotonic_ms() directly */
+/* server_time_ms removed - duplicate with SocketHTTPServer-connections.c; use
+ * Socket_get_monotonic_ms() directly */
 
-/* Latency functions removed - use SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, ms) and queries instead
- * See cross-file notes for updates in connections.c and private.h */
+/* Latency functions removed - use
+ * SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+ * ms) and queries instead See cross-file notes for updates in connections.c
+ * and private.h */
 
 /**
  *  - Record request latency if timing available
@@ -142,10 +149,10 @@ const Except_T SocketHTTPServer_ProtocolError
  * SocketHTTPServer_Request_end_stream to eliminate duplication.
  */
 
-
 /* ============================================================================
  * Internal Helper Functions - Rate Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 static SocketRateLimit_T
 find_rate_limiter (SocketHTTPServer_T server, const char *path)
@@ -177,36 +184,23 @@ find_rate_limiter (SocketHTTPServer_T server, const char *path)
 
 /* ============================================================================
  * Internal Helper Functions - Connection
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /* Connection functions moved to SocketHTTPServer-connections.c */
 
-/* connection_set_client_addr removed - duplicate with SocketHTTPServer-connections.c */
+/* connection_set_client_addr removed - duplicate with
+ * SocketHTTPServer-connections.c */
 
-/* connection_create_parser removed - duplicate with SocketHTTPServer-connections.c; impl without TRY for simplicity */
-
-
-
-
-
-
-
-
-
-
+/* connection_create_parser removed - duplicate with
+ * SocketHTTPServer-connections.c; impl without TRY for simplicity */
 
 /* connection_finish_request implemented in SocketHTTPServer-connections.c */
 
-
-
-
-
-
-
-
 /* ============================================================================
  * Configuration Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
@@ -232,7 +226,8 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
   config->response_write_timeout_ms
       = HTTPSERVER_DEFAULT_RESPONSE_WRITE_TIMEOUT_MS;
   config->max_connections = HTTPSERVER_DEFAULT_MAX_CONNECTIONS;
-  config->max_requests_per_connection = HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN;
+  config->max_requests_per_connection
+      = HTTPSERVER_DEFAULT_MAX_REQUESTS_PER_CONN;
   config->max_connections_per_client
       = HTTPSERVER_DEFAULT_MAX_CONNECTIONS_PER_CLIENT;
   config->max_concurrent_requests = HTTPSERVER_DEFAULT_MAX_CONCURRENT_REQUESTS;
@@ -240,7 +235,8 @@ SocketHTTPServer_config_defaults (SocketHTTPServer_Config *config)
 
 /* ============================================================================
  * Server Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTPServer_T
 SocketHTTPServer_new (const SocketHTTPServer_Config *config)
@@ -276,10 +272,11 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
   server->state = HTTPSERVER_STATE_RUNNING;
 
   /* Initialize per-server stats mutex */
-  if (pthread_mutex_init(&server->stats_mutex, NULL) != 0) {
-    /* Log error but continue - fallback to no RPS calc */
-    SOCKET_LOG_WARN_MSG("Failed to init HTTPServer stats mutex");
-  }
+  if (pthread_mutex_init (&server->stats_mutex, NULL) != 0)
+    {
+      /* Log error but continue - fallback to no RPS calc */
+      SOCKET_LOG_WARN_MSG ("Failed to init HTTPServer stats mutex");
+    }
 
   /* Create poll instance */
   server->poll = SocketPoll_new ((int)config->max_connections + 1);
@@ -298,7 +295,9 @@ SocketHTTPServer_new (const SocketHTTPServer_Config *config)
           = SocketIPTracker_new (arena, config->max_connections_per_client);
     }
 
-  /* Latency tracking via SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, elapsed_ms) in request handling */
+  /* Latency tracking via
+   * SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+   * elapsed_ms) in request handling */
 
   /* Stats via SocketMetrics - no custom mutex needed */
 
@@ -351,7 +350,7 @@ SocketHTTPServer_free (SocketHTTPServer_T *server)
     }
 
   /* Destroy stats mutex */
-  pthread_mutex_destroy(&s->stats_mutex);
+  pthread_mutex_destroy (&s->stats_mutex);
 
   free (s);
   *server = NULL;
@@ -422,10 +421,12 @@ SocketHTTPServer_start (SocketHTTPServer_T server)
   if (socket_family == AF_INET6)
     {
       int v6only = 0;
-      if (setsockopt (Socket_fd (server->listen_socket), IPPROTO_IPV6, IPV6_V6ONLY,
-                      &v6only, sizeof (v6only)) < 0)
+      if (setsockopt (Socket_fd (server->listen_socket), IPPROTO_IPV6,
+                      IPV6_V6ONLY, &v6only, sizeof (v6only))
+          < 0)
         {
-          HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s", strerror (errno));
+          HTTPSERVER_ERROR_MSG ("Failed to disable IPv6-only mode: %s",
+                                strerror (errno));
           // Non-fatal: continue, but log warning
         }
     }
@@ -496,7 +497,8 @@ SocketHTTPServer_set_handler (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Event Loop - Helper Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * server_accept_clients - Accept new client connections
@@ -545,7 +547,8 @@ server_check_rate_limit (SocketHTTPServer_T server, ServerConnection *conn)
       = find_rate_limiter (server, conn->request ? conn->request->path : NULL);
   if (limiter != NULL && !SocketRateLimit_try_acquire (limiter, 1))
     {
-      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Rate limited -> failed */
+      SocketMetrics_counter_inc (
+          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Rate limited -> failed */
       connection_send_error (server, conn, 429, "Too Many Requests");
       return 0;
     }
@@ -573,7 +576,8 @@ server_run_validator (SocketHTTPServer_T server, ServerConnection *conn)
   req_ctx.arena = conn->arena;
   req_ctx.start_time_ms = conn->request_start_ms;
 
-  if (!server->validator (&req_ctx, &reject_status, server->validator_userdata))
+  if (!server->validator (&req_ctx, &reject_status,
+                          server->validator_userdata))
     {
       if (reject_status == 0)
         reject_status = 403;
@@ -624,17 +628,20 @@ server_invoke_handler (SocketHTTPServer_T server, ServerConnection *conn)
  * Orchestrates rate limiting, validation, handler invocation, and response.
  */
 static int
-server_handle_parsed_request (SocketHTTPServer_T server, ServerConnection *conn)
+server_handle_parsed_request (SocketHTTPServer_T server,
+                              ServerConnection *conn)
 {
   const SocketHTTP_Request *req = conn->request;
-  if (req == NULL) return 0;
+  if (req == NULL)
+    return 0;
 
   const char *path = req->path;
   /* Validate path to prevent malformed input in rate limit/validator */
-  if (path == NULL || strlen(path) > SOCKETHTTP_MAX_URI_LEN || path[0] != '/') {
-    connection_send_error (server, conn, 400, "Bad Request");
-    return 0;
-  }
+  if (path == NULL || strlen (path) > SOCKETHTTP_MAX_URI_LEN || path[0] != '/')
+    {
+      connection_send_error (server, conn, 400, "Bad Request");
+      return 0;
+    }
 
   if (!server_check_rate_limit (server, conn))
     return 0;
@@ -700,37 +707,44 @@ server_process_client_event (SocketHTTPServer_T server, ServerConnection *conn,
       size_t output_avail = conn->body_capacity - conn->body_len;
 
       input = SocketBuf_readptr (conn->inbuf, &input_len);
-      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input, input_len, &consumed,
-                                        output, output_avail, &written);
+      r = SocketHTTP1_Parser_read_body (conn->parser, (const char *)input,
+                                        input_len, &consumed, output,
+                                        output_avail, &written);
 
       SocketBuf_consume (conn->inbuf, consumed);
       conn->body_len += written;
 
       /* Reject oversized bodies early to prevent DoS */
-      if (conn->body_len > server->config.max_body_size &&
-          !SocketHTTP1_Parser_body_complete (conn->parser)) {
-        SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
-        connection_send_error (server, conn, 413, "Payload Too Large");
-        conn->state = CONN_STATE_CLOSED;
-        return requests_processed;
-      }
+      if (conn->body_len > server->config.max_body_size
+          && !SocketHTTP1_Parser_body_complete (conn->parser))
+        {
+          SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_BODY_SIZE_EXCEEDED);
+          connection_send_error (server, conn, 413, "Payload Too Large");
+          conn->state = CONN_STATE_CLOSED;
+          return requests_processed;
+        }
 
-      if (r == HTTP1_ERROR || r < 0) {
-        /* Error in body reading (e.g., invalid chunk) */
-        SocketMetrics_counter_inc(SOCKET_CTR_HTTP_RESPONSES_5XX);
-        conn->state = CONN_STATE_CLOSED;
-        return requests_processed;
-      }
+      if (r == HTTP1_ERROR || r < 0)
+        {
+          /* Error in body reading (e.g., invalid chunk) */
+          SocketMetrics_counter_inc (SOCKET_CTR_HTTP_RESPONSES_5XX);
+          conn->state = CONN_STATE_CLOSED;
+          return requests_processed;
+        }
 
-      if (SocketHTTP1_Parser_body_complete (conn->parser)) {
-        conn->state = CONN_STATE_HANDLING;
-        requests_processed = server_handle_parsed_request (server, conn);
-      } else {
-        /* Continue reading body */
-      }
+      if (SocketHTTP1_Parser_body_complete (conn->parser))
+        {
+          conn->state = CONN_STATE_HANDLING;
+          requests_processed = server_handle_parsed_request (server, conn);
+        }
+      else
+        {
+          /* Continue reading body */
+        }
 
       /* TODO: Handle body_streaming callback invocation on written data */
-      /* TODO: Support dynamic allocation for chunked bodies - but enforce max_size strictly */
+      /* TODO: Support dynamic allocation for chunked bodies - but enforce
+       * max_size strictly */
     }
 
   if (conn->state == CONN_STATE_CLOSED)
@@ -759,16 +773,21 @@ server_check_connection_timeout (SocketHTTPServer_T server,
   if (conn->state == CONN_STATE_READING_REQUEST
       && idle_ms > server->config.keepalive_timeout_ms)
     {
-      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
+      SocketMetrics_counter_inc (
+          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
+                                                    */
       connection_close (server, conn);
       return 1;
     }
 
   /* Check request read timeout */
   if (conn->state == CONN_STATE_READING_BODY && conn->request_start_ms > 0
-      && (now - conn->request_start_ms) > server->config.request_read_timeout_ms)
+      && (now - conn->request_start_ms)
+             > server->config.request_read_timeout_ms)
     {
-      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
+      SocketMetrics_counter_inc (
+          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
+                                                    */
       connection_close (server, conn);
       return 1;
     }
@@ -779,7 +798,9 @@ server_check_connection_timeout (SocketHTTPServer_T server,
       && (now - conn->response_start_ms)
              > server->config.response_write_timeout_ms)
     {
-      SocketMetrics_counter_inc(SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED);  /* Timeout -> failed request */
+      SocketMetrics_counter_inc (
+          SOCKET_CTR_HTTP_SERVER_REQUESTS_FAILED); /* Timeout -> failed request
+                                                    */
       connection_close (server, conn);
       return 1;
     }
@@ -809,7 +830,8 @@ server_cleanup_timed_out (SocketHTTPServer_T server)
 
 /* ============================================================================
  * Event Loop - Public API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTPServer_fd (SocketHTTPServer_T server)
@@ -878,7 +900,8 @@ SocketHTTPServer_process (SocketHTTPServer_T server, int timeout_ms)
 
 /* ============================================================================
  * Request Accessors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTP_Method
 SocketHTTPServer_Request_method (SocketHTTPServer_Request_T req)
@@ -972,7 +995,8 @@ SocketHTTPServer_Request_memory_used (SocketHTTPServer_Request_T req)
 
 /* ============================================================================
  * Response Building
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPServer_Request_status (SocketHTTPServer_Request_T req, int code)
@@ -1039,7 +1063,8 @@ SocketHTTPServer_Request_finish (SocketHTTPServer_Request_T req)
 
 /* ============================================================================
  * Request Body Streaming
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPServer_Request_body_stream (SocketHTTPServer_Request_T req,
@@ -1064,12 +1089,14 @@ int
 SocketHTTPServer_Request_is_chunked (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
-  return SocketHTTP1_Parser_body_mode (req->conn->parser) == HTTP1_BODY_CHUNKED;
+  return SocketHTTP1_Parser_body_mode (req->conn->parser)
+         == HTTP1_BODY_CHUNKED;
 }
 
 /* ============================================================================
  * Response Body Streaming
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTPServer_Request_begin_stream (SocketHTTPServer_Request_T req)
@@ -1119,8 +1146,8 @@ SocketHTTPServer_Request_send_chunk (SocketHTTPServer_Request_T req,
     return 0;
 
   char chunk_buf[HTTPSERVER_CHUNK_BUFFER_SIZE];
-  ssize_t chunk_len = SocketHTTP1_chunk_encode (data, len, chunk_buf,
-                                                sizeof (chunk_buf));
+  ssize_t chunk_len
+      = SocketHTTP1_chunk_encode (data, len, chunk_buf, sizeof (chunk_buf));
   if (chunk_len < 0)
     return -1;
 
@@ -1137,8 +1164,8 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
     return -1;
 
   char final_buf[HTTPSERVER_CHUNK_FINAL_BUF_SIZE];
-  ssize_t final_len = SocketHTTP1_chunk_final (final_buf, sizeof (final_buf),
-                                               NULL);
+  ssize_t final_len
+      = SocketHTTP1_chunk_final (final_buf, sizeof (final_buf), NULL);
   if (final_len < 0)
     return -1;
 
@@ -1153,11 +1180,12 @@ SocketHTTPServer_Request_end_stream (SocketHTTPServer_Request_T req)
 
 /* ============================================================================
  * HTTP/2 Server Push
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
-SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req, const char *path,
-                               SocketHTTP_Headers_T headers)
+SocketHTTPServer_Request_push (SocketHTTPServer_Request_T req,
+                               const char *path, SocketHTTP_Headers_T headers)
 {
   assert (req != NULL);
   assert (path != NULL);
@@ -1202,7 +1230,8 @@ SocketHTTPServer_Request_is_http2 (SocketHTTPServer_Request_T req)
 
 /* ============================================================================
  * WebSocket Upgrade
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
@@ -1214,7 +1243,7 @@ SocketHTTPServer_Request_is_websocket (SocketHTTPServer_Request_T req)
     return 0;
 
   /* Use centralized WebSocket upgrade detection from parsed request */
-  return SocketWS_is_upgrade(req->conn->request);
+  return SocketWS_is_upgrade (req->conn->request);
 }
 
 SocketWS_T
@@ -1222,52 +1251,59 @@ SocketHTTPServer_Request_upgrade_websocket (SocketHTTPServer_Request_T req)
 {
   assert (req != NULL);
 
-  if (req->conn->request == NULL || !SocketWS_is_upgrade(req->conn->request))
+  if (req->conn->request == NULL || !SocketWS_is_upgrade (req->conn->request))
     return NULL;
 
   SocketWS_Config config;
-  SocketWS_config_defaults(&config);
+  SocketWS_config_defaults (&config);
   /* TODO: Configure from server config (e.g., compression, subprotocols) */
 
   SocketWS_T ws = NULL;
   TRY
   {
-    ws = SocketWS_server_accept(req->conn->socket, req->conn->request, &config);
-    if (ws == NULL) {
-      RAISE_HTTPSERVER_ERROR(SocketHTTPServer_Failed);
-    }
+    ws = SocketWS_server_accept (req->conn->socket, req->conn->request,
+                                 &config);
+    if (ws == NULL)
+      {
+        RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
+      }
     /* Ownership of socket transferred to ws - prevent double-free */
 
     /* Remove from server poll before nulling socket */
-    SocketPoll_del(req->server->poll, req->conn->socket);
-    req->conn->socket = NULL;  /* Transfer ownership, skip free in connection_close */
+    SocketPoll_del (req->server->poll, req->conn->socket);
+    req->conn->socket
+        = NULL; /* Transfer ownership, skip free in connection_close */
 
     /* Close connection resources but skip socket free (now owned by ws) */
-    connection_close(req->server, req->conn);
+    connection_close (req->server, req->conn);
 
-    /* Note: Full integration requires managing ws in separate poll or wrapper */
-    /* For now, returns ws for manual management - user must poll/process ws events */
+    /* Note: Full integration requires managing ws in separate poll or wrapper
+     */
+    /* For now, returns ws for manual management - user must poll/process ws
+     * events */
 
     /* Start handshake - may require multiple calls in non-blocking mode */
-    SocketWS_handshake(ws);
+    SocketWS_handshake (ws);
 
     return ws;
   }
   EXCEPT (SocketWS_Failed)
   {
-    if (ws != NULL) {
-      SocketWS_free(&ws);
-    }
-    RAISE_HTTPSERVER_ERROR(SocketHTTPServer_Failed);
+    if (ws != NULL)
+      {
+        SocketWS_free (&ws);
+      }
+    RAISE_HTTPSERVER_ERROR (SocketHTTPServer_Failed);
   }
   END_TRY;
 
-  return NULL;  /* Only reached on alloc failures before accept */
+  return NULL; /* Only reached on alloc failures before accept */
 }
 
 /* ============================================================================
  * Rate Limiting
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
@@ -1314,7 +1350,8 @@ SocketHTTPServer_set_rate_limit (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Request Validation Middleware
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPServer_set_validator (SocketHTTPServer_T server,
@@ -1328,7 +1365,8 @@ SocketHTTPServer_set_validator (SocketHTTPServer_T server,
 
 /* ============================================================================
  * Graceful Shutdown
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTPServer_drain (SocketHTTPServer_T server, int timeout_ms)
@@ -1461,49 +1499,64 @@ SocketHTTPServer_state (SocketHTTPServer_T server)
 
 /* ============================================================================
  * Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
-SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats)
+SocketHTTPServer_stats (SocketHTTPServer_T server,
+                        SocketHTTPServer_Stats *stats)
 {
   assert (server != NULL);
   assert (stats != NULL);
-  (void)server;  /* Used only in assert; silence unused parameter warning */
+  (void)server; /* Used only in assert; silence unused parameter warning */
 
   memset (stats, 0, sizeof (*stats));
 
   /* Query centralized metrics - no lock needed, metrics thread-safe */
-  stats->active_connections = (size_t)SocketMetrics_gauge_get(SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
-  stats->total_connections = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
-  stats->total_requests = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
-  stats->total_bytes_sent = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_BYTES_SENT);
-  stats->total_bytes_received = SocketMetrics_counter_get(SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED);
-  stats->errors_4xx = SocketMetrics_counter_get(SOCKET_CTR_HTTP_RESPONSES_4XX);
-  stats->errors_5xx = SocketMetrics_counter_get(SOCKET_CTR_HTTP_RESPONSES_5XX);
-  stats->connections_rejected = SocketMetrics_counter_get(SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED);  /* Or custom if tracked */
+  stats->active_connections = (size_t)SocketMetrics_gauge_get (
+      SOCKET_GAU_HTTP_SERVER_ACTIVE_CONNECTIONS);
+  stats->total_connections
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_CONNECTIONS_TOTAL);
+  stats->total_requests
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_REQUESTS_TOTAL);
+  stats->total_bytes_sent
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_SENT);
+  stats->total_bytes_received
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_SERVER_BYTES_RECEIVED);
+  stats->errors_4xx
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_4XX);
+  stats->errors_5xx
+      = SocketMetrics_counter_get (SOCKET_CTR_HTTP_RESPONSES_5XX);
+  stats->connections_rejected = SocketMetrics_counter_get (
+      SOCKET_CTR_LIMIT_CONNECTIONS_EXCEEDED); /* Or custom if tracked */
   /* timeouts, rate_limited: use custom or map to failed counters */
 
-  /* RPS approximation: delta requests / delta time using per-server tracking */
+  /* RPS approximation: delta requests / delta time using per-server tracking
+   */
   /* Thread-safe via mutex */
   uint64_t prev_requests = server->stats_prev_requests;
   int64_t prev_time = server->stats_prev_time_ms;
-  int64_t now = Socket_get_monotonic_ms();
+  int64_t now = Socket_get_monotonic_ms ();
   uint64_t curr_requests = stats->total_requests;
 
-  pthread_mutex_lock(&server->stats_mutex);
-  if (prev_time > 0 && now > prev_time) {
-    double seconds = (double)(now - prev_time) / 1000.0;
-    if (seconds > 0.0) {
-      stats->requests_per_second = (size_t)((curr_requests - prev_requests) / seconds);
+  pthread_mutex_lock (&server->stats_mutex);
+  if (prev_time > 0 && now > prev_time)
+    {
+      double seconds = (double)(now - prev_time) / 1000.0;
+      if (seconds > 0.0)
+        {
+          stats->requests_per_second
+              = (size_t)((curr_requests - prev_requests) / seconds);
+        }
     }
-  }
   server->stats_prev_requests = curr_requests;
   server->stats_prev_time_ms = now;
-  pthread_mutex_unlock(&server->stats_mutex);
+  pthread_mutex_unlock (&server->stats_mutex);
 
   /* Latency from histogram snapshot (unit: ms in metric, convert to us) */
   SocketMetrics_HistogramSnapshot snap;
-  SocketMetrics_histogram_snapshot(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS, &snap);
+  SocketMetrics_histogram_snapshot (SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+                                    &snap);
   stats->avg_request_time_us = (int64_t)(snap.mean * 1000);
   stats->max_request_time_us = (int64_t)(snap.max * 1000);
   stats->p50_request_time_us = (int64_t)(snap.p50 * 1000);
@@ -1517,10 +1570,11 @@ SocketHTTPServer_stats (SocketHTTPServer_T server, SocketHTTPServer_Stats *stats
 void
 SocketHTTPServer_stats_reset (SocketHTTPServer_T server)
 {
-  (void)server;  /* Currently no server-specific reset; use global */
+  (void)server; /* Currently no server-specific reset; use global */
 
   /* Reset centralized metrics - affects all modules */
-  SocketMetrics_reset();
+  SocketMetrics_reset ();
 
-  /* TODO: If per-server metrics needed, add server param to metrics or per-instance tracking */
+  /* TODO: If per-server metrics needed, add server param to metrics or
+   * per-instance tracking */
 }

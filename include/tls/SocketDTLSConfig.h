@@ -4,18 +4,20 @@
 /**
  * SocketDTLSConfig.h - DTLS Configuration Constants
  *
- * Defines secure defaults for DTLS operations: protocol versions, MTU settings,
- * cookie protection parameters, timeouts, and limits. Provides stub typedefs
- * when TLS disabled for compilation without OpenSSL.
+ * Defines secure defaults for DTLS operations: protocol versions, MTU
+ * settings, cookie protection parameters, timeouts, and limits. Provides stub
+ * typedefs when TLS disabled for compilation without OpenSSL.
  *
  * All constants can be overridden before including this header.
- * Enforces DTLS 1.2 minimum for security (DTLS 1.3 when OpenSSL 3.2+ widely available).
+ * Enforces DTLS 1.2 minimum for security (DTLS 1.3 when OpenSSL 3.2+ widely
+ * available).
  *
  * Thread-safe: Yes - compile-time constants
  *
  * References:
  * - RFC 6347: Datagram Transport Layer Security Version 1.2
- * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol Version 1.3
+ * - RFC 9147: The Datagram Transport Layer Security (DTLS) Protocol
+ * Version 1.3
  */
 
 #if SOCKET_HAS_TLS
@@ -49,12 +51,12 @@
  */
 
 #ifndef SOCKET_DTLS_CIPHERSUITES
-#define SOCKET_DTLS_CIPHERSUITES                                               \
-  "ECDHE-ECDSA-AES256-GCM-SHA384:"                                             \
-  "ECDHE-RSA-AES256-GCM-SHA384:"                                               \
-  "ECDHE-ECDSA-CHACHA20-POLY1305:"                                             \
-  "ECDHE-RSA-CHACHA20-POLY1305:"                                               \
-  "ECDHE-ECDSA-AES128-GCM-SHA256:"                                             \
+#define SOCKET_DTLS_CIPHERSUITES                                              \
+  "ECDHE-ECDSA-AES256-GCM-SHA384:"                                            \
+  "ECDHE-RSA-AES256-GCM-SHA384:"                                              \
+  "ECDHE-ECDSA-CHACHA20-POLY1305:"                                            \
+  "ECDHE-RSA-CHACHA20-POLY1305:"                                              \
+  "ECDHE-ECDSA-AES128-GCM-SHA256:"                                            \
   "ECDHE-RSA-AES128-GCM-SHA256"
 #endif
 
@@ -95,7 +97,7 @@
 
 /* Maximum application data per record (MTU - overhead - IP/UDP headers) */
 #ifndef SOCKET_DTLS_MAX_PAYLOAD
-#define SOCKET_DTLS_MAX_PAYLOAD                                                \
+#define SOCKET_DTLS_MAX_PAYLOAD                                               \
   (SOCKET_DTLS_DEFAULT_MTU - SOCKET_DTLS_RECORD_OVERHEAD - 28)
 #endif
 
@@ -219,9 +221,10 @@
  * File Size Limits (DoS Protection)
  * ============================================================================
  */
-/* Maximum size for certificate/key/CA files (prevents memory exhaustion from oversized inputs) */
+/* Maximum size for certificate/key/CA files (prevents memory exhaustion from
+ * oversized inputs) */
 #ifndef SOCKET_DTLS_MAX_FILE_SIZE
-#define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL << 20))  /* 1MB */
+#define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL << 20)) /* 1MB */
 #endif
 
 /* ============================================================================
@@ -229,12 +232,12 @@
  * ============================================================================
  */
 
-#define SOCKET_DTLS_VALID_MTU(mtu)                                             \
-  ((size_t) (mtu) >= SOCKET_DTLS_MIN_MTU                                       \
-   && (size_t) (mtu) <= SOCKET_DTLS_MAX_MTU)
+#define SOCKET_DTLS_VALID_MTU(mtu)                                            \
+  ((size_t)(mtu) >= SOCKET_DTLS_MIN_MTU                                       \
+   && (size_t)(mtu) <= SOCKET_DTLS_MAX_MTU)
 
-#define SOCKET_DTLS_VALID_TIMEOUT(ms)                                          \
-  ((int) (ms) >= 0 && (int) (ms) <= SOCKET_DTLS_MAX_TIMEOUT_MS)
+#define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \
+  ((int)(ms) >= 0 && (int)(ms) <= SOCKET_DTLS_MAX_TIMEOUT_MS)
 
 #else /* SOCKET_HAS_TLS not defined */
 
@@ -248,4 +251,3 @@
 #endif /* SOCKET_HAS_TLS */
 
 #endif /* SOCKETDTLSCONFIG_INCLUDED */
-

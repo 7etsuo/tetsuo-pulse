@@ -20,8 +20,8 @@
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
-#include "pool/SocketPool.h"
 #include "pool/SocketPool-private.h"
+#include "pool/SocketPool.h"
 #include "socket/Socket.h"
 #include "socket/SocketBuf.h"
 #include "socket/SocketReconnect.h"
@@ -754,7 +754,8 @@ TEST (socketpool_batch_accept_single)
   Socket_listen (server, 10);
   Socket_setnonblocking (server);
 
-  int count = SocketPool_accept_batch (pool, server, 1, sizeof(accepted)/sizeof(accepted[0]), accepted);
+  int count = SocketPool_accept_batch (
+      pool, server, 1, sizeof (accepted) / sizeof (accepted[0]), accepted);
   /* No connections pending, should return 0 */
   ASSERT_EQ (count, 0);
   EXCEPT (Socket_Failed) ASSERT (0);
@@ -778,7 +779,7 @@ TEST (socketpool_batch_accept_multiple)
   Socket_listen (server, 10);
   Socket_setnonblocking (server);
 
-  size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
   int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
   /* No connections pending, should return 0 */
   ASSERT_EQ (count, 0);
@@ -809,7 +810,7 @@ TEST (socketpool_batch_accept_pool_full)
   SocketPool_add (pool, sock1);
   SocketPool_add (pool, sock2);
 
-  size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+  size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
   int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
   /* Pool is full, should return 0 */
   ASSERT_EQ (count, 0);
@@ -1015,7 +1016,7 @@ TEST (socketpool_prepare_connection_basic)
   SocketPool_T pool = SocketPool_new (arena, 100, 1024);
   SocketDNS_T dns = NULL;
   Socket_T out_socket = NULL;
-  SocketDNS_Request_T out_req = NULL;
+  Request_T out_req = NULL;
   Socket_T server = NULL;
   volatile int port = 0;
 
@@ -1095,7 +1096,7 @@ TEST (socketpool_prepare_connection_invalid_params)
   SocketPool_T pool = SocketPool_new (arena, 100, 1024);
   SocketDNS_T dns = NULL;
   Socket_T out_socket = NULL;
-  SocketDNS_Request_T out_req = NULL;
+  Request_T out_req = NULL;
   volatile int raised = 0;
 
   TRY { dns = SocketDNS_new (); }
@@ -1130,7 +1131,8 @@ TEST (socketpool_prepare_connection_invalid_params)
   Arena_dispose (&arena);
 }
 
-/* ==================== Resize with Active Connections Tests ==================== */
+/* ==================== Resize with Active Connections Tests
+ * ==================== */
 
 TEST (socketpool_resize_shrink_with_active)
 {
@@ -1570,7 +1572,8 @@ TEST (socketpool_free_with_reconnect_contexts)
   EXCEPT (SocketReconnect_Failed) { ASSERT (0); }
   END_TRY;
 
-  /* Free pool with active reconnect context - covers free_reconnect_contexts */
+  /* Free pool with active reconnect context - covers free_reconnect_contexts
+   */
   Socket_free (&socket);
   SocketPool_free (&pool);
   Arena_dispose (&arena);
@@ -1670,7 +1673,8 @@ TEST (socketpool_reconnect_with_backoff_timeout)
     policy.max_attempts = 1;
     SocketPool_set_reconnect_policy (pool, &policy);
 
-    /* Enable reconnect pointing to localhost (fast fail if nothing listening) */
+    /* Enable reconnect pointing to localhost (fast fail if nothing listening)
+     */
     SocketPool_enable_reconnect (pool, conn1, "127.0.0.1", 59999);
     SocketPool_enable_reconnect (pool, conn2, "127.0.0.1", 59998);
 
@@ -1734,7 +1738,8 @@ TEST (socketpool_hash_chain_removal_middle)
         SocketPool_remove (pool, sockets[i]);
       }
 
-    /* Verify remaining sockets can still be found - exercises find_slot chain */
+    /* Verify remaining sockets can still be found - exercises find_slot chain
+     */
     for (i = 0; i < 30; i++)
       {
         Connection_T found = SocketPool_get (pool, sockets[i]);
@@ -1784,7 +1789,8 @@ TEST (socketpool_find_slot_chain_traversal)
         SocketPool_add (pool, sockets[i]);
       }
 
-    /* Lookup each socket multiple times to exercise find_slot chain traversal */
+    /* Lookup each socket multiple times to exercise find_slot chain traversal
+     */
     for (i = 0; i < 30; i++)
       {
         Connection_T conn = SocketPool_get (pool, sockets[i]);
@@ -1897,7 +1903,7 @@ TEST (socketpool_batch_accept_with_pending_connection)
 
   TRY
   {
-    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should accept at least 1 connection */
     ASSERT (count >= 1);
@@ -1956,7 +1962,7 @@ TEST (socketpool_batch_accept_pool_add_fails)
     usleep (10000);
 
     /* Try to accept - pool is full, should return 0 */
-    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     ASSERT_EQ (count, 0);
   }
@@ -1991,18 +1997,19 @@ TEST (socketpool_batch_accept_invalid_max_accepts)
     Socket_setnonblocking (server);
 
     /* Test with max_accepts > SOCKET_POOL_MAX_BATCH_ACCEPTS (1000) */
-    size_t cap2000 = sizeof(accepted)/sizeof(accepted[0]);
-    int count = SocketPool_accept_batch (pool, server, 2000, cap2000, accepted);
+    size_t cap2000 = sizeof (accepted) / sizeof (accepted[0]);
+    int count
+        = SocketPool_accept_batch (pool, server, 2000, cap2000, accepted);
     /* Should return 0 due to invalid parameter */
     ASSERT_EQ (count, 0);
 
     /* Test with max_accepts = 0 */
-    size_t cap0 = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap0 = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, server, 0, cap0, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with max_accepts < 0 */
-    size_t cap_neg = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap_neg = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, server, -1, cap_neg, accepted);
     ASSERT_EQ (count, 0);
   }
@@ -2069,9 +2076,8 @@ TEST (socketpool_connect_async_success)
     snprintf (port_str, sizeof (port_str), "%d", port);
 
     /* Start async connect */
-    SocketDNS_Request_T req
-        = SocketPool_connect_async (pool, "127.0.0.1", port, async_test_callback,
-                                    NULL);
+    Request_T req = SocketPool_connect_async (
+        pool, "127.0.0.1", port, async_test_callback, NULL);
     ASSERT_NOT_NULL (req);
 
     /* Wait for callback - localhost should complete quickly */
@@ -2124,7 +2130,7 @@ TEST (socketpool_connect_async_dns_failure)
   TRY
   {
     /* Use invalid hostname that should fail DNS resolution */
-    SocketDNS_Request_T req = SocketPool_connect_async (
+    Request_T req = SocketPool_connect_async (
         pool, "this-host-does-not-exist.invalid", 80, async_test_callback,
         NULL);
 
@@ -2168,7 +2174,7 @@ TEST (socketpool_connect_async_connect_failure)
   {
     /* Connect to localhost on unlikely port - fails fast with ECONNREFUSED
      * instead of timing out like TEST-NET addresses do */
-    SocketDNS_Request_T req = SocketPool_connect_async (
+    Request_T req = SocketPool_connect_async (
         pool, "127.0.0.1", 59999, async_test_callback, NULL);
 
     if (req)
@@ -2230,7 +2236,7 @@ TEST (socketpool_connect_async_valid_params)
   TRY
   {
     /* Valid call - exercises the main async connect path */
-    SocketDNS_Request_T req = SocketPool_connect_async (
+    Request_T req = SocketPool_connect_async (
         pool, "127.0.0.1", port, async_test_callback, (void *)0x1234);
     /* Request should be returned */
     (void)req;
@@ -2288,7 +2294,7 @@ TEST (socketpool_prepare_connection_null_params)
   SocketPool_T pool = SocketPool_new (arena, 100, 1024);
   SocketDNS_T dns = NULL;
   Socket_T out_socket = NULL;
-  SocketDNS_Request_T out_req = NULL;
+  Request_T out_req = NULL;
   volatile int raised = 0;
 
   TRY { dns = SocketDNS_new (); }
@@ -2365,7 +2371,11 @@ TEST (socketpool_connect_async_null_params)
   volatile int raised = 0;
 
   /* Test with NULL pool */
-  TRY { SocketPool_connect_async (NULL, "localhost", 80, async_test_callback, NULL); }
+  TRY
+  {
+    SocketPool_connect_async (NULL, "localhost", 80, async_test_callback,
+                              NULL);
+  }
   EXCEPT (SocketPool_Failed) { raised = 1; }
   END_TRY;
   ASSERT_EQ (raised, 1);
@@ -2395,17 +2405,17 @@ TEST (socketpool_batch_accept_null_params)
     Socket_listen (server, 10);
 
     /* Test with NULL pool */
-    size_t cap_null = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap_null = sizeof (accepted) / sizeof (accepted[0]);
     int count = SocketPool_accept_batch (NULL, server, 10, cap_null, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with NULL server */
-    size_t cap_nullserver = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap_nullserver = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, NULL, 10, cap_nullserver, accepted);
     ASSERT_EQ (count, 0);
 
     /* Test with NULL accepted array */
-    size_t cap_nullarr = 0;  // Invalid capacity for NULL
+    size_t cap_nullarr = 0; // Invalid capacity for NULL
     count = SocketPool_accept_batch (pool, server, 10, cap_nullarr, NULL);
     ASSERT_EQ (count, 0);
   }
@@ -2433,8 +2443,8 @@ TEST (socketpool_accept_one_error_not_eagain)
     Socket_setnonblocking (server);
     /* Server not in listen state - accept will fail with error != EAGAIN */
 
-    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
-  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
+    size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
+    int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should return 0 due to accept error */
     ASSERT_EQ (count, 0);
   }
@@ -2539,8 +2549,9 @@ TEST (socketpool_connect_async_pool_full_callback)
 
   TRY
   {
-    /* Start async connect - when callback fires, pool is full, should get ENOSPC */
-    SocketDNS_Request_T req = SocketPool_connect_async (
+    /* Start async connect - when callback fires, pool is full, should get
+     * ENOSPC */
+    Request_T req = SocketPool_connect_async (
         pool, "127.0.0.1", port, pool_full_test_callback, NULL);
 
     if (req)
@@ -2571,7 +2582,8 @@ TEST (socketpool_connect_async_pool_full_callback)
   Arena_dispose (&arena);
 }
 
-/* ==================== Async Context List Traversal Test ==================== */
+/* ==================== Async Context List Traversal Test ====================
+ */
 
 /* Counter and storage for multiple async callbacks */
 static volatile int multi_async_callback_count = 0;
@@ -2624,12 +2636,13 @@ TEST (socketpool_connect_async_multiple_pending)
 
   TRY
   {
-    /* Start multiple async connects - exercises list traversal in remove_async_context */
-    SocketDNS_Request_T req1 = SocketPool_connect_async (
+    /* Start multiple async connects - exercises list traversal in
+     * remove_async_context */
+    Request_T req1 = SocketPool_connect_async (
         pool, "127.0.0.1", port, multi_async_test_callback, (void *)1);
-    SocketDNS_Request_T req2 = SocketPool_connect_async (
+    Request_T req2 = SocketPool_connect_async (
         pool, "127.0.0.1", port, multi_async_test_callback, (void *)2);
-    SocketDNS_Request_T req3 = SocketPool_connect_async (
+    Request_T req3 = SocketPool_connect_async (
         pool, "127.0.0.1", port, multi_async_test_callback, (void *)3);
 
     (void)req1;
@@ -2725,7 +2738,7 @@ TEST (socketpool_batch_accept_socket_add_fails)
     usleep (20000);
 
     /* Try to accept 2 - should accept 1 successfully, 2nd will fail to add */
-    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
+    size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
     count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
     /* Should have accepted at least 1 */
     ASSERT (count >= 0);
@@ -2784,8 +2797,8 @@ TEST (socketpool_batch_accept_wrap_fd_fails)
   TRY
   {
     /* Normal accept should work */
-    size_t cap10 = sizeof(accepted)/sizeof(accepted[0]);
-  int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
+    size_t cap10 = sizeof (accepted) / sizeof (accepted[0]);
+    int count = SocketPool_accept_batch (pool, server, 10, cap10, accepted);
 
     /* Cleanup any accepted */
     for (int i = 0; i < count; i++)
@@ -2892,7 +2905,7 @@ TEST (socketpool_drain_with_connections)
     ASSERT_EQ (POOL_STATE_STOPPED, SocketPool_state (pool));
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   Socket_free (&socket);
@@ -2919,7 +2932,7 @@ TEST (socketpool_drain_force)
     ASSERT_EQ ((size_t)0, SocketPool_count (pool));
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   /* Socket should have been freed by force close - don't double-free */
@@ -2957,7 +2970,7 @@ TEST (socketpool_drain_rejects_new_connections)
     SocketPool_drain_poll (pool);
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   Socket_free (&socket1);
@@ -2992,7 +3005,7 @@ TEST (socketpool_drain_remaining_ms)
     SocketPool_drain_poll (pool);
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   Socket_free (&socket);
@@ -3073,7 +3086,7 @@ TEST (socketpool_drain_callback_forced)
     ASSERT_EQ (1, drain_callback_timed_out); /* Forced */
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   SocketPool_free (&pool);
@@ -3113,7 +3126,7 @@ TEST (socketpool_drain_zero_timeout_forces)
     ASSERT_EQ ((size_t)0, SocketPool_count (pool));
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   SocketPool_free (&pool);
@@ -3148,7 +3161,7 @@ TEST (socketpool_health_status_mapping)
     ASSERT_EQ (POOL_HEALTH_STOPPED, SocketPool_health (pool));
   }
   EXCEPT (SocketPool_Failed)
-    ASSERT (0);
+  ASSERT (0);
   END_TRY;
 
   Socket_free (&socket);
@@ -3156,18 +3169,19 @@ TEST (socketpool_health_status_mapping)
   Arena_dispose (&arena);
 }
 
-  /* Validation cb that always returns invalid */
-  static int always_invalid_cb (Connection_T conn, void *data) {
-    (void)conn; (void)data;
-    return 0; /* Invalid */
-  }
+/* Validation cb that always returns invalid */
+static int
+always_invalid_cb (Connection_T conn, void *data)
+{
+  (void)conn;
+  (void)data;
+  return 0; /* Invalid */
+}
 
 TEST (socketpool_validation_callback)
 {
   Arena_T arena = Arena_new ();
   SocketPool_T pool = SocketPool_new (arena, 10, 1024);
-
-
 
   /* Set cb */
   SocketPool_set_validation_callback (pool, always_invalid_cb, NULL);
@@ -3193,9 +3207,9 @@ TEST (socketpool_validation_callback)
 /* Test for callback deadlock avoidance - multi-threaded */
 TEST (socketpool_validation_callback_threaded)
 {
-  /* TODO: More advanced test with threads simulating slow cb and concurrent ops.
-   * Verify no deadlock, proper removal under race.
-   * Use pthreads to add/remove while get calls cb.
+  /* TODO: More advanced test with threads simulating slow cb and concurrent
+   * ops. Verify no deadlock, proper removal under race. Use pthreads to
+   * add/remove while get calls cb.
    */
   ASSERT (1); /* Placeholder - implement full test */
 }

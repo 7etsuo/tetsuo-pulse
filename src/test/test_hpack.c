@@ -21,20 +21,21 @@
 #include <string.h>
 
 /* Simple test assertion macro */
-#define TEST_ASSERT(cond, msg)                                                 \
-  do                                                                           \
-    {                                                                          \
-      if (!(cond))                                                             \
-        {                                                                      \
-          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);   \
-          exit (1);                                                            \
-        }                                                                      \
-    }                                                                          \
+#define TEST_ASSERT(cond, msg)                                                \
+  do                                                                          \
+    {                                                                         \
+      if (!(cond))                                                            \
+        {                                                                     \
+          fprintf (stderr, "FAIL: %s (%s:%d)\n", (msg), __FILE__, __LINE__);  \
+          exit (1);                                                           \
+        }                                                                     \
+    }                                                                         \
   while (0)
 
 /* ============================================================================
  * Test Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Convert hex string to bytes
@@ -84,7 +85,8 @@ hex_to_bytes (const char *hex, unsigned char *out, size_t max_len)
 
 /* ============================================================================
  * Integer Encoding Tests (RFC 7541 Section 5.1, Appendix C.1)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test integer encoding with 5-bit prefix
@@ -208,7 +210,8 @@ test_int_decode_incomplete (void)
 
 /* ============================================================================
  * Static Table Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test static table lookup by index
@@ -278,8 +281,7 @@ test_static_table_find_name_only (void)
 
   idx = SocketHPACK_static_find (":method", 7, "PUT", 3);
   TEST_ASSERT (idx < 0, "Should return negative (name match only)");
-  TEST_ASSERT (-idx == 2 || -idx == 3,
-               "Should match :method index 2 or 3");
+  TEST_ASSERT (-idx == 2 || -idx == 3, "Should match :method index 2 or 3");
 
   printf ("PASS\n");
 }
@@ -306,7 +308,8 @@ test_static_table_invalid_index (void)
 
 /* ============================================================================
  * Dynamic Table Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test dynamic table creation
@@ -324,7 +327,8 @@ test_dynamic_table_new (void)
 
   table = SocketHPACK_Table_new (4096, arena);
   TEST_ASSERT (table != NULL, "Table should be created");
-  TEST_ASSERT (SocketHPACK_Table_size (table) == 0, "Initial size should be 0");
+  TEST_ASSERT (SocketHPACK_Table_size (table) == 0,
+               "Initial size should be 0");
   TEST_ASSERT (SocketHPACK_Table_count (table) == 0,
                "Initial count should be 0");
   TEST_ASSERT (SocketHPACK_Table_max_size (table) == 4096,
@@ -446,7 +450,8 @@ test_dynamic_table_size_update_zero (void)
 
 /* ============================================================================
  * Huffman Encoding/Decoding Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test Huffman encoded size calculation
@@ -502,8 +507,8 @@ test_huffman_round_trip (void)
   enc_len = SocketHPACK_huffman_encode (input, 5, encoded, sizeof (encoded));
   TEST_ASSERT (enc_len > 0, "Encode should succeed");
 
-  dec_len
-      = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded, sizeof (decoded));
+  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
+                                        sizeof (decoded));
   TEST_ASSERT (dec_len == 5, "Decoded length should be 5");
   TEST_ASSERT (memcmp (decoded, input, 5) == 0, "Decoded should match input");
 
@@ -511,13 +516,14 @@ test_huffman_round_trip (void)
 }
 
 /**
- * Test Huffman full round-trip for all bytes and edge cases (including long codes, empty, EOS validation)
+ * Test Huffman full round-trip for all bytes and edge cases (including long
+ * codes, empty, EOS validation)
  */
 static void
 test_huffman_full_roundtrip (void)
 {
   unsigned char input[1];
-  unsigned char encoded[64];  /* Ample for long code + EOS + pad */
+  unsigned char encoded[64]; /* Ample for long code + EOS + pad */
   unsigned char decoded[64];
   ssize_t enc_len, dec_len;
   size_t i, est_size;
@@ -527,27 +533,31 @@ test_huffman_full_roundtrip (void)
   /* Test empty string */
   enc_len = SocketHPACK_huffman_encode (input, 0, encoded, sizeof (encoded));
   TEST_ASSERT (enc_len == 4, "Empty encode: EOS (30 bits) + pad = 4 bytes");
-  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded, sizeof (decoded));
+  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
+                                        sizeof (decoded));
   TEST_ASSERT (dec_len == 0, "Empty decode: 0 bytes output");
   est_size = SocketHPACK_huffman_encoded_size (input, 0);
   TEST_ASSERT (est_size == 4, "Empty encoded_size: 4 bytes");
 
   /* Test basic invalid: truncated input (should fail decode) */
-  unsigned char trunc[1] = {0xFF};  /* Short invalid bitstream */
+  unsigned char trunc[1] = { 0xFF }; /* Short invalid bitstream */
   dec_len = SocketHPACK_huffman_decode (trunc, 1, decoded, sizeof (decoded));
   TEST_ASSERT (dec_len < 0, "Truncated input fails decode");
 
   /* Test all single bytes 0-255 (covers short/long codes, EOS handling) */
   for (i = 0; i < 256; i++)
     {
-      input[0] = (unsigned char) i;
-      enc_len = SocketHPACK_huffman_encode (input, 1, encoded, sizeof (encoded));
+      input[0] = (unsigned char)i;
+      enc_len
+          = SocketHPACK_huffman_encode (input, 1, encoded, sizeof (encoded));
       TEST_ASSERT (enc_len > 0, "Encode byte succeeds");
-      dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded, sizeof (decoded));
+      dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
+                                            sizeof (decoded));
       TEST_ASSERT (dec_len == 1, "Decode byte: 1 byte");
       TEST_ASSERT (decoded[0] == input[0], "Round-trip byte matches");
       est_size = SocketHPACK_huffman_encoded_size (input, 1);
-      TEST_ASSERT ((size_t)enc_len == est_size, "Size estimate matches for byte");
+      TEST_ASSERT ((size_t)enc_len == est_size,
+                   "Size estimate matches for byte");
     }
 
   printf ("PASS\n");
@@ -555,7 +565,8 @@ test_huffman_full_roundtrip (void)
 
 /* ============================================================================
  * Encoder Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test encoder creation
@@ -604,7 +615,8 @@ test_encoder_encode_indexed (void)
   headers[0].value_len = 3;
   headers[0].never_index = 0;
 
-  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output, sizeof (output));
+  len = SocketHPACK_Encoder_encode (encoder, headers, 1, output,
+                                    sizeof (output));
   TEST_ASSERT (len > 0, "Encode should succeed");
   /* Indexed header field: 1xxxxxxx with index 2 = 0x82 */
   TEST_ASSERT (output[0] == 0x82, "Should encode as indexed header 0x82");
@@ -618,7 +630,8 @@ test_encoder_encode_indexed (void)
 
 /* ============================================================================
  * Decoder Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test decoder creation
@@ -694,9 +707,8 @@ test_decoder_decode_literal_indexed (void)
   /* 0x40 = literal with indexing, index 0 (new name) */
   /* Then length + "custom-key" + length + "custom-value" */
   unsigned char input[]
-      = { 0x40, 0x0a, 'c', 'u', 's', 't', 'o', 'm', '-',  'k',
-          'e',  'y',  0x0c, 'c', 'u', 's', 't', 'o', 'm', '-',
-          'v',  'a',  'l',  'u', 'e' };
+      = { 0x40, 0x0a, 'c', 'u', 's', 't', 'o', 'm', '-', 'k', 'e', 'y', 0x0c,
+          'c',  'u',  's', 't', 'o', 'm', '-', 'v', 'a', 'l', 'u', 'e' };
 
   printf ("  Decoder decode literal indexed... ");
 
@@ -736,8 +748,8 @@ test_decoder_decode_literal_never (void)
   SocketHPACK_Result result;
 
   /* 0x10 = literal never indexed, index 0 (new name) */
-  unsigned char input[] = { 0x10, 0x06, 's', 'e', 'c', 'r', 'e', 't',
-                            0x05, 'v', 'a', 'l', 'u', 'e' };
+  unsigned char input[] = { 0x10, 0x06, 's', 'e', 'c', 'r', 'e',
+                            't',  0x05, 'v', 'a', 'l', 'u', 'e' };
 
   printf ("  Decoder decode literal never indexed... ");
 
@@ -832,7 +844,8 @@ test_decoder_invalid_table_size_update (void)
 
 /* ============================================================================
  * RFC 7541 Appendix C Test Vectors
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test C.2.1 - Literal Header Field with Indexing
@@ -848,9 +861,8 @@ test_rfc7541_c2_1 (void)
 
   /* custom-key: custom-header (from RFC 7541 C.2.1) */
   unsigned char input[]
-      = { 0x40, 0x0a, 'c', 'u', 's', 't', 'o', 'm', '-',  'k',  'e', 'y',
-          0x0d, 'c',  'u', 's', 't', 'o', 'm', '-', 'h',  'e',  'a', 'd',
-          'e',  'r' };
+      = { 0x40, 0x0a, 'c', 'u', 's', 't', 'o', 'm', '-', 'k', 'e', 'y', 0x0d,
+          'c',  'u',  's', 't', 'o', 'm', '-', 'h', 'e', 'a', 'd', 'e', 'r' };
 
   printf ("  RFC 7541 C.2.1 - Literal with indexing... ");
 
@@ -891,8 +903,10 @@ test_rfc7541_c3 (void)
     0x82, /* :method: GET (indexed 2) */
     0x86, /* :scheme: http (indexed 6) */
     0x84, /* :path: / (indexed 4) */
-    0x41, 0x0f, 'w', 'w', 'w', '.', 'e', 'x', 'a', 'm', 'p', 'l', 'e', '.', 'c',
-    'o', 'm' /* :authority: www.example.com (literal indexed, name idx 1) */
+    0x41, 0x0f, 'w', 'w', 'w', '.', 'e', 'x', 'a',
+    'm',  'p',  'l', 'e', '.', 'c', 'o', 'm' /* :authority: www.example.com
+                                                (literal indexed, name idx 1)
+                                              */
   };
 
   arena = Arena_new ();
@@ -921,7 +935,8 @@ test_rfc7541_c3 (void)
 
 /* ============================================================================
  * Security Tests
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Test header size limit
@@ -998,7 +1013,8 @@ test_invalid_index (void)
 
 /* ============================================================================
  * Main Test Runner
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 main (void)
@@ -1058,4 +1074,3 @@ main (void)
 
   return 0;
 }
-

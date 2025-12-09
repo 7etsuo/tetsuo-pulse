@@ -34,7 +34,8 @@
 #include "tls/SocketTLSContext.h"
 
 /* Helper to generate temporary self-signed certificate with CA extensions
- * Uses config file approach for LibreSSL/macOS compatibility (-addext not supported) */
+ * Uses config file approach for LibreSSL/macOS compatibility (-addext not
+ * supported) */
 static int
 generate_test_certs (const char *cert_file, const char *key_file)
 {
@@ -1173,8 +1174,9 @@ TEST (socketio_tls_scatter_gather_io)
     ssize_t total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n = SocketTLS_recv (server, recv_buf + total_recv,
-                                    sizeof (recv_buf) - 1 - (size_t)total_recv);
+        ssize_t n
+            = SocketTLS_recv (server, recv_buf + total_recv,
+                              sizeof (recv_buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -1443,9 +1445,8 @@ TEST (socketio_tls_send_recv_via_socket_api)
     ssize_t total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n
-            = Socket_recv (server, buf + total_recv,
-                           sizeof (buf) - 1 - (size_t)total_recv);
+        ssize_t n = Socket_recv (server, buf + total_recv,
+                                 sizeof (buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -1466,9 +1467,8 @@ TEST (socketio_tls_send_recv_via_socket_api)
     total_recv = 0;
     while (total_recv < sent && loops < 100)
       {
-        ssize_t n
-            = Socket_recv (client, buf + total_recv,
-                           sizeof (buf) - 1 - (size_t)total_recv);
+        ssize_t n = Socket_recv (client, buf + total_recv,
+                                 sizeof (buf) - 1 - (size_t)total_recv);
         if (n > 0)
           total_recv += n;
         else
@@ -2050,7 +2050,8 @@ TEST (socketio_tls_io_after_shutdown)
 #endif
 }
 
-/* ==================== Session Resumption Verification (5.8) ==================== */
+/* ==================== Session Resumption Verification (5.8)
+ * ==================== */
 
 TEST (tls_session_resumption_verification)
 {

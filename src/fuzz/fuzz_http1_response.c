@@ -50,9 +50,9 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       if (remaining > 0)
         {
-          SocketHTTP1_Parser_read_body (
-              parser, (const char *)data + consumed, remaining, &body_consumed,
-              body_buf, sizeof (body_buf), &body_written);
+          SocketHTTP1_Parser_read_body (parser, (const char *)data + consumed,
+                                        remaining, &body_consumed, body_buf,
+                                        sizeof (body_buf), &body_written);
         }
     }
 
@@ -62,4 +62,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

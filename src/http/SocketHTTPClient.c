@@ -17,14 +17,14 @@
 #include "core/Arena.h"
 #include "core/SocketCrypto.h"
 #include "core/SocketMetrics.h"
-#include "core/SocketUtil.h"
 #include "core/SocketSecurity.h"
+#include "core/SocketUtil.h"
 #include "http/SocketHTTP.h"
 #include "http/SocketHTTP1.h"
-#include "http/SocketHTTPClient.h"
 #include "http/SocketHTTPClient-private.h"
+#include "http/SocketHTTPClient.h"
 #include "socket/Socket.h"
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTPClient);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketHTTPClient);
 
 /* ============================================================================
  * Centralized Exception Infrastructure
@@ -35,10 +35,10 @@ SOCKET_DECLARE_MODULE_EXCEPTION(SocketHTTPClient);
  * shared socket_error_buf from SocketUtil.h.
  */
 
-
 /* ============================================================================
  * Exception Definitions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 const Except_T SocketHTTPClient_Failed
     = { &SocketHTTPClient_Failed, "HTTP client operation failed" };
@@ -61,26 +61,27 @@ const Except_T SocketHTTPClient_ResponseTooLarge
 
 /* ============================================================================
  * Error String Table
- * ============================================================================ */
+ * ============================================================================
+ */
 
-static const char *error_strings[] = {
-  [HTTPCLIENT_OK] = "Success",
-  [HTTPCLIENT_ERROR_DNS] = "DNS resolution failed",
-  [HTTPCLIENT_ERROR_CONNECT] = "Connection failed",
+static const char *error_strings[]
+    = { [HTTPCLIENT_OK] = "Success",
+        [HTTPCLIENT_ERROR_DNS] = "DNS resolution failed",
+        [HTTPCLIENT_ERROR_CONNECT] = "Connection failed",
 #if SOCKET_HAS_TLS
-  [HTTPCLIENT_ERROR_TLS] = "TLS handshake failed",
+        [HTTPCLIENT_ERROR_TLS] = "TLS handshake failed",
 #endif
-  [HTTPCLIENT_ERROR_TIMEOUT] = "Request timeout",
-  [HTTPCLIENT_ERROR_PROTOCOL] = "HTTP protocol error",
-  [HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS] = "Too many redirects",
-  [HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE] = "Response body too large",
-  [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
-  [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory"
-};
+        [HTTPCLIENT_ERROR_TIMEOUT] = "Request timeout",
+        [HTTPCLIENT_ERROR_PROTOCOL] = "HTTP protocol error",
+        [HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS] = "Too many redirects",
+        [HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE] = "Response body too large",
+        [HTTPCLIENT_ERROR_CANCELLED] = "Request cancelled",
+        [HTTPCLIENT_ERROR_OUT_OF_MEMORY] = "Out of memory" };
 
 /* ============================================================================
  * Error Retryability
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketHTTPClient_error_is_retryable - Check if error code is retryable
@@ -97,21 +98,21 @@ SocketHTTPClient_error_is_retryable (SocketHTTPClient_Error error)
   switch (error)
     {
     /* Retryable errors - transient conditions that may resolve */
-    case HTTPCLIENT_ERROR_DNS:       /* DNS server may recover */
-    case HTTPCLIENT_ERROR_CONNECT:   /* Server may restart */
-    case HTTPCLIENT_ERROR_TIMEOUT:   /* Network congestion may clear */
+    case HTTPCLIENT_ERROR_DNS:     /* DNS server may recover */
+    case HTTPCLIENT_ERROR_CONNECT: /* Server may restart */
+    case HTTPCLIENT_ERROR_TIMEOUT: /* Network congestion may clear */
       return 1;
 
     /* Non-retryable errors - permanent or configuration issues */
-    case HTTPCLIENT_OK:                      /* Not an error */
+    case HTTPCLIENT_OK: /* Not an error */
 #if SOCKET_HAS_TLS
-    case HTTPCLIENT_ERROR_TLS:               /* Config mismatch */
+    case HTTPCLIENT_ERROR_TLS: /* Config mismatch */
 #endif
-    case HTTPCLIENT_ERROR_PROTOCOL:          /* Server bug */
+    case HTTPCLIENT_ERROR_PROTOCOL:           /* Server bug */
     case HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS: /* Redirect loop */
     case HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE: /* Size limit */
-    case HTTPCLIENT_ERROR_CANCELLED:         /* User cancelled */
-    case HTTPCLIENT_ERROR_OUT_OF_MEMORY:     /* Resource exhaustion */
+    case HTTPCLIENT_ERROR_CANCELLED:          /* User cancelled */
+    case HTTPCLIENT_ERROR_OUT_OF_MEMORY:      /* Resource exhaustion */
     case HTTPCLIENT_ERROR_LIMIT_EXCEEDED:     /* Pool limits reached */
       return 0;
 
@@ -133,7 +134,8 @@ static int execute_request_internal (SocketHTTPClient_T client,
 
 /* ============================================================================
  * Configuration Defaults
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
@@ -194,7 +196,8 @@ SocketHTTPClient_config_defaults (SocketHTTPClient_Config *config)
 
 /* ============================================================================
  * Client Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTPClient_T
 SocketHTTPClient_new (const SocketHTTPClient_Config *config)
@@ -214,7 +217,8 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   arena = Arena_new ();
   if (arena == NULL)
     {
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to create client arena");
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                        "Failed to create client arena");
     }
 
   /* Allocate client structure */
@@ -222,16 +226,19 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
   if (client == NULL)
     {
       Arena_dispose (&arena);
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to allocate client structure");
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                        "Failed to allocate client structure");
     }
 
   client->arena = arena;
 
   /* Initialize mutex for thread safety */
-  if (pthread_mutex_init(&client->mutex, NULL) != 0) {
-    Arena_dispose(&arena);
-    SOCKET_RAISE_MSG(SocketHTTPClient, SocketHTTPClient_Failed, "Failed to initialize client mutex");
-  }
+  if (pthread_mutex_init (&client->mutex, NULL) != 0)
+    {
+      Arena_dispose (&arena);
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                        "Failed to initialize client mutex");
+    }
 
   /* Copy configuration */
   client->config = *config;
@@ -250,7 +257,8 @@ SocketHTTPClient_new (const SocketHTTPClient_Config *config)
       if (client->pool == NULL)
         {
           Arena_dispose (&arena);
-          SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed, "Failed to create connection pool");
+          SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_Failed,
+                            "Failed to create connection pool");
         }
     }
 
@@ -292,7 +300,7 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
   /* Note: TLS context cleanup would go here if we owned it */
 
   /* Destroy mutex before arena dispose */
-  pthread_mutex_destroy(&c->mutex);
+  pthread_mutex_destroy (&c->mutex);
 
   /* Dispose arena (frees everything including client structure itself) */
   if (arena != NULL)
@@ -305,10 +313,12 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
 
 /* ============================================================================
  * Safe Socket I/O Helpers - Common exception handling for send/recv
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
- * safe_socket_send - Send data with exception handling and connection state update
+ * safe_socket_send - Send data with exception handling and connection state
+ * update
  * @conn: Connection entry (updated on close/error)
  * @data: Data to send
  * @len: Length of data
@@ -322,26 +332,25 @@ SocketHTTPClient_free (SocketHTTPClient_T *client)
  * Uses Socket_send which routes through TLS if enabled.
  */
 static ssize_t
-safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len, const char *op_desc)
+safe_socket_send (HTTPPoolEntry *conn, const void *data, size_t len,
+                  const char *op_desc)
 {
   volatile ssize_t sent = 0;
 
-  TRY
-    {
-      sent = Socket_send (conn->proto.h1.socket, data, len);
-    }
+  TRY { sent = Socket_send (conn->proto.h1.socket, data, len); }
   EXCEPT (Socket_Closed)
-    {
-      conn->closed = 1;
-      HTTPCLIENT_ERROR_FMT ("Connection closed while %s", op_desc ? op_desc : "sending data");
-      return -1;
-    }
+  {
+    conn->closed = 1;
+    HTTPCLIENT_ERROR_FMT ("Connection closed while %s",
+                          op_desc ? op_desc : "sending data");
+    return -1;
+  }
   EXCEPT (Socket_Failed)
-    {
-      HTTPCLIENT_ERROR_FMT ("Failed to %s: %s", op_desc ? op_desc : "send data",
-                            Socket_safe_strerror (Socket_geterrno ()) );
-      return -1;
-    }
+  {
+    HTTPCLIENT_ERROR_FMT ("Failed to %s: %s", op_desc ? op_desc : "send data",
+                          Socket_safe_strerror (Socket_geterrno ()));
+    return -1;
+  }
   END_TRY;
 
   return sent;
@@ -362,15 +371,12 @@ safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
 {
   volatile int closed = 0;
 
-  TRY
-    {
-      *n = Socket_recv (conn->proto.h1.socket, buf, size);
-    }
+  TRY { *n = Socket_recv (conn->proto.h1.socket, buf, size); }
   EXCEPT (Socket_Closed)
-    {
-      closed = 1;
-      *n = 0;
-    }
+  {
+    closed = 1;
+    *n = 0;
+  }
   END_TRY;
 
   if (closed || *n <= 0)
@@ -384,7 +390,8 @@ safe_socket_recv (HTTPPoolEntry *conn, char *buf, size_t size, ssize_t *n)
 
 /* ============================================================================
  * Internal: HTTP/1.1 Request Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * build_http1_request - Build HTTP/1.1 request structure for serialization
@@ -441,7 +448,9 @@ send_http1_headers (HTTPPoolEntry *conn, const SocketHTTP_Request *http_req)
   sent = safe_socket_send (conn, buf, (size_t)n, "send request headers");
   if (sent < 0 || (size_t)sent != (size_t)n)
     {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request headers (partial write: %zd/%zu)", sent, (size_t)n);
+      HTTPCLIENT_ERROR_FMT (
+          "Failed to send request headers (partial write: %zd/%zu)", sent,
+          (size_t)n);
       return -1;
     }
 
@@ -470,7 +479,9 @@ send_http1_body (HTTPPoolEntry *conn, const void *body, size_t body_len)
   sent = safe_socket_send (conn, body, body_len, "send request body");
   if (sent < 0 || (size_t)sent != body_len)
     {
-      HTTPCLIENT_ERROR_FMT ("Failed to send request body (partial write: %zd/%zu)", sent, body_len);
+      HTTPCLIENT_ERROR_FMT (
+          "Failed to send request body (partial write: %zd/%zu)", sent,
+          body_len);
       return -1;
     }
 
@@ -495,7 +506,8 @@ typedef struct
  * @data: Data to accumulate
  * @len: Data length
  *
- * Returns: 0 on success, -1 on memory allocation failure, -2 on size limit exceeded
+ * Returns: 0 on success, -1 on memory allocation failure, -2 on size limit
+ * exceeded
  */
 static int
 accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
@@ -508,65 +520,77 @@ accumulate_body_chunk (HTTP1BodyAccumulator *acc, const char *data, size_t len)
   /* Check max response size limit with overflow protection */
   {
     size_t potential_size;
-    if (!SocketSecurity_check_add(acc->total_body, len, &potential_size) ||
-        (acc->max_size > 0 && potential_size > acc->max_size)) {
-      SocketMetrics_counter_inc(SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
-      return -2; /* Overflow or size limit exceeded */
-    }
+    if (!SocketSecurity_check_add (acc->total_body, len, &potential_size)
+        || (acc->max_size > 0 && potential_size > acc->max_size))
+      {
+        SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
+        return -2; /* Overflow or size limit exceeded */
+      }
   }
 
   /* Grow buffer if needed with overflow protection */
   {
     size_t needed_size;
-    if (!SocketSecurity_check_add(acc->total_body, len, &needed_size) ||
-        needed_size > acc->body_capacity) {
-      size_t base_cap = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE : acc->body_capacity;
-      size_t new_cap = SocketSecurity_safe_multiply(base_cap, 2);
-      if (new_cap == 0) {
-        return -1; /* Overflow in growth */
-      }
+    if (!SocketSecurity_check_add (acc->total_body, len, &needed_size)
+        || needed_size > acc->body_capacity)
+      {
+        size_t base_cap = acc->body_capacity == 0 ? HTTPCLIENT_BODY_CHUNK_SIZE
+                                                  : acc->body_capacity;
+        size_t new_cap = SocketSecurity_safe_multiply (base_cap, 2);
+        if (new_cap == 0)
+          {
+            return -1; /* Overflow in growth */
+          }
 
-      /* Exponential growth until sufficient (with safe checks) */
-      size_t iter_limit = 32; /* Prevent infinite loop on overflow */
-      while (iter_limit-- > 0) {
-        size_t cmp_size;
-        if (SocketSecurity_check_add(acc->total_body, len, &cmp_size) && new_cap >= cmp_size) {
-          break;
-        }
-        size_t temp_cap = SocketSecurity_safe_multiply(new_cap, 2);
-        if (temp_cap == 0) {
-          return -1; /* Cannot grow further safely */
-        }
-        new_cap = temp_cap;
-      }
+        /* Exponential growth until sufficient (with safe checks) */
+        size_t iter_limit = 32; /* Prevent infinite loop on overflow */
+        while (iter_limit-- > 0)
+          {
+            size_t cmp_size;
+            if (SocketSecurity_check_add (acc->total_body, len, &cmp_size)
+                && new_cap >= cmp_size)
+              {
+                break;
+              }
+            size_t temp_cap = SocketSecurity_safe_multiply (new_cap, 2);
+            if (temp_cap == 0)
+              {
+                return -1; /* Cannot grow further safely */
+              }
+            new_cap = temp_cap;
+          }
 
-      /* Clamp to max_size to avoid over-allocation */
-      if (acc->max_size > 0 && new_cap > acc->max_size) {
-        new_cap = acc->max_size;
-      }
+        /* Clamp to max_size to avoid over-allocation */
+        if (acc->max_size > 0 && new_cap > acc->max_size)
+          {
+            new_cap = acc->max_size;
+          }
 
-      char *new_buf = Arena_alloc(acc->arena, new_cap, __FILE__, __LINE__);
-      if (new_buf == NULL) {
-        return -1;
-      }
+        char *new_buf = Arena_alloc (acc->arena, new_cap, __FILE__, __LINE__);
+        if (new_buf == NULL)
+          {
+            return -1;
+          }
 
-      if (acc->body_buf != NULL) {
-        memcpy(new_buf, acc->body_buf, acc->total_body);
-      }
+        if (acc->body_buf != NULL)
+          {
+            memcpy (new_buf, acc->body_buf, acc->total_body);
+          }
 
-      acc->body_buf = new_buf;
-      acc->body_capacity = new_cap;
-    }
+        acc->body_buf = new_buf;
+        acc->body_capacity = new_cap;
+      }
   }
 
   {
     size_t old_total = acc->total_body;
     memcpy (acc->body_buf + old_total, data, len);
     size_t new_total;
-    if (!SocketSecurity_check_add(old_total, len, &new_total)) {
-      /* Should not happen after earlier checks, but defensive */
-      return -1;
-    }
+    if (!SocketSecurity_check_add (old_total, len, &new_total))
+      {
+        /* Should not happen after earlier checks, but defensive */
+        return -1;
+      }
     acc->total_body = new_total;
   }
 
@@ -614,7 +638,8 @@ read_http1_body_data (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
         {
           acc_result = accumulate_body_chunk (acc, body_chunk, body_written);
           if (acc_result < 0)
-            return acc_result; /* -1 = memory error, -2 = size limit exceeded */
+            return acc_result; /* -1 = memory error, -2 = size limit exceeded
+                                */
         }
 
       *consumed += body_consumed;
@@ -669,7 +694,7 @@ parse_http1_chunk (HTTPPoolEntry *conn, const char *buf, size_t buf_len,
   if (result == HTTP1_ERROR || result >= HTTP1_ERROR_LINE_TOO_LONG)
     {
       HTTPCLIENT_ERROR_MSG ("HTTP parse error: %s",
-                           SocketHTTP1_result_string (result));
+                            SocketHTTP1_result_string (result));
       return -1;
     }
 
@@ -785,7 +810,8 @@ receive_http1_response (HTTPPoolEntry *conn,
 
 /* ============================================================================
  * Internal: Execute HTTP Request
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * execute_http1_request - Execute complete HTTP/1.1 request-response cycle
@@ -831,7 +857,8 @@ execute_http1_request (HTTPPoolEntry *conn,
 
 /* ============================================================================
  * Internal: Request Header Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * add_host_header - Add Host header if not present
@@ -846,13 +873,18 @@ add_host_header (SocketHTTPClient_Request_T req)
     return;
 
   /* Validate host length before formatting */
-  size_t host_len = strlen(req->uri.host);
-  size_t needed_len = host_len + (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443 ? 1 : 10); /* +1 NUL, +port digits */
-  if (needed_len > sizeof(host_header) - 1) {
-    /* Truncate or raise error; here log and skip */
-    HTTPCLIENT_ERROR_MSG("Host header too long, skipping");
-    return;
-  }
+  size_t host_len = strlen (req->uri.host);
+  size_t needed_len
+      = host_len
+        + (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443
+               ? 1
+               : 10); /* +1 NUL, +port digits */
+  if (needed_len > sizeof (host_header) - 1)
+    {
+      /* Truncate or raise error; here log and skip */
+      HTTPCLIENT_ERROR_MSG ("Host header too long, skipping");
+      return;
+    }
 
   if (req->uri.port == -1 || req->uri.port == 80 || req->uri.port == 443)
     {
@@ -1011,8 +1043,9 @@ store_response_cookies (SocketHTTPClient_T client,
   if (client->cookie_jar == NULL)
     return;
 
-  cookie_count = SocketHTTP_Headers_get_all (
-      response->headers, "Set-Cookie", set_cookies, HTTPCLIENT_MAX_SET_COOKIES);
+  cookie_count
+      = SocketHTTP_Headers_get_all (response->headers, "Set-Cookie",
+                                    set_cookies, HTTPCLIENT_MAX_SET_COOKIES);
 
   for (i = 0; i < cookie_count; i++)
     {
@@ -1028,7 +1061,8 @@ store_response_cookies (SocketHTTPClient_T client,
 
 /* ============================================================================
  * Internal: 401 Authentication Retry Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * build_digest_auth_uri - Build URI string for digest auth
@@ -1084,9 +1118,9 @@ try_digest_auth_retry (SocketHTTPClient_Request_T req,
   snprintf (nc_value, sizeof (nc_value), "%08x", auth_retry_count + 1);
   build_digest_auth_uri (req, uri_str, sizeof (uri_str));
 
-  if (httpclient_auth_digest_challenge (www_auth, auth->username,
-                                        auth->password, method_str, uri_str,
-                                        nc_value, auth_header, auth_header_size)
+  if (httpclient_auth_digest_challenge (
+          www_auth, auth->username, auth->password, method_str, uri_str,
+          nc_value, auth_header, auth_header_size)
       == 0)
     {
       return 1;
@@ -1131,8 +1165,8 @@ try_basic_auth_retry (SocketHTTPClient_Request_T req,
   if (already_sent)
     return 0;
 
-  if (httpclient_auth_basic_header (auth->username, auth->password, auth_header,
-                                    auth_header_size)
+  if (httpclient_auth_basic_header (auth->username, auth->password,
+                                    auth_header, auth_header_size)
       == 0)
     {
       return 1;
@@ -1180,8 +1214,9 @@ handle_401_auth_retry (SocketHTTPClient_T client,
     return 1; /* No challenge */
 
   /* Try digest auth first, then basic */
-  should_retry = try_digest_auth_retry (req, client, www_auth, auth_retry_count,
-                                        auth_header, sizeof (auth_header));
+  should_retry
+      = try_digest_auth_retry (req, client, www_auth, auth_retry_count,
+                               auth_header, sizeof (auth_header));
   if (!should_retry)
     {
       should_retry
@@ -1204,7 +1239,8 @@ handle_401_auth_retry (SocketHTTPClient_T client,
 
 /* ============================================================================
  * Internal: Redirect Handling Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * is_redirect_status - Check if status code is a redirect
@@ -1301,7 +1337,8 @@ handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
 
 /* ============================================================================
  * Internal: Connection Management Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * release_connection - Release connection back to pool or close
@@ -1310,7 +1347,8 @@ handle_redirect (SocketHTTPClient_T client, SocketHTTPClient_Request_T req,
  * @success: 1 if request succeeded, 0 on failure
  */
 static void
-release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn, int success)
+release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn,
+                    int success)
 {
   if (client->pool != NULL)
     {
@@ -1335,7 +1373,8 @@ release_connection (SocketHTTPClient_T client, HTTPPoolEntry *conn, int success)
 
 /* ============================================================================
  * Internal: Execute Request Helpers
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * check_request_limits - Check redirect and auth retry limits
@@ -1353,7 +1392,8 @@ check_request_limits (SocketHTTPClient_T client, int redirect_count,
   if (redirect_count > client->config.follow_redirects)
     {
       client->last_error = HTTPCLIENT_ERROR_TOO_MANY_REDIRECTS;
-      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_TooManyRedirects, "Too many redirects (%d)", redirect_count);
+      SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_TooManyRedirects,
+                        "Too many redirects (%d)", redirect_count);
     }
 
   /* Auth retry limit reached - return current response as-is */
@@ -1412,12 +1452,15 @@ handle_size_limit_error (SocketHTTPClient_T client)
 {
   SocketMetrics_counter_inc (SOCKET_CTR_LIMIT_RESPONSE_SIZE_EXCEEDED);
   client->last_error = HTTPCLIENT_ERROR_RESPONSE_TOO_LARGE;
-  SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_ResponseTooLarge, "Response body exceeds max_response_size (%zu)", client->config.max_response_size);
+  SOCKET_RAISE_MSG (SocketHTTPClient, SocketHTTPClient_ResponseTooLarge,
+                    "Response body exceeds max_response_size (%zu)",
+                    client->config.max_response_size);
 }
 
 /* ============================================================================
  * Internal: Execute Request
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * execute_request_internal - Internal request execution with retry handling
@@ -1435,8 +1478,8 @@ handle_size_limit_error (SocketHTTPClient_T client)
 static int
 execute_request_internal (SocketHTTPClient_T client,
                           SocketHTTPClient_Request_T req,
-                          SocketHTTPClient_Response *response, int redirect_count,
-                          int auth_retry_count)
+                          SocketHTTPClient_Response *response,
+                          int redirect_count, int auth_retry_count)
 {
   HTTPPoolEntry *conn;
   int result;
@@ -1491,7 +1534,8 @@ execute_request_internal (SocketHTTPClient_T client,
 
 /* ============================================================================
  * Simple Synchronous API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 int
 SocketHTTPClient_get (SocketHTTPClient_T client, const char *url,
@@ -1628,7 +1672,8 @@ SocketHTTPClient_Response_free (SocketHTTPClient_Response *response)
 
 /* ============================================================================
  * Request Builder API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTPClient_Request_T
 SocketHTTPClient_Request_new (SocketHTTPClient_T client,
@@ -1668,7 +1713,7 @@ SocketHTTPClient_Request_new (SocketHTTPClient_T client,
       Arena_dispose (&arena);
       client->last_error = HTTPCLIENT_ERROR_PROTOCOL;
       HTTPCLIENT_ERROR_MSG ("Invalid URL: %s (%s)", url,
-                           SocketHTTP_URI_result_string (uri_result));
+                            SocketHTTP_URI_result_string (uri_result));
       return NULL;
     }
 
@@ -1712,8 +1757,8 @@ SocketHTTPClient_Request_header (SocketHTTPClient_Request_T req,
 }
 
 int
-SocketHTTPClient_Request_body (SocketHTTPClient_Request_T req, const void *data,
-                               size_t len)
+SocketHTTPClient_Request_body (SocketHTTPClient_Request_T req,
+                               const void *data, size_t len)
 {
   assert (req != NULL);
 
@@ -1795,19 +1840,23 @@ SocketHTTPClient_Request_auth (SocketHTTPClient_Request_T req,
  * Thread-safe: Yes
  */
 /* calculate_retry_delay moved to SocketHTTPClient-retry.c */
-extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client, int attempt);
+extern int httpclient_calculate_retry_delay (const SocketHTTPClient_T client,
+                                             int attempt);
 
 /* retry_sleep_ms moved to SocketHTTPClient-retry.c */
 extern void httpclient_retry_sleep_ms (int ms);
 
 /* httpclient_should_retry_error moved to SocketHTTPClient-retry.c */
-extern int httpclient_should_retry_error (const SocketHTTPClient_T client, SocketHTTPClient_Error error);
+extern int httpclient_should_retry_error (const SocketHTTPClient_T client,
+                                          SocketHTTPClient_Error error);
 
 /* should_retry_status moved to SocketHTTPClient-retry.c */
-extern int httpclient_should_retry_status (const SocketHTTPClient_T client, int status);
+extern int httpclient_should_retry_status (const SocketHTTPClient_T client,
+                                           int status);
 
 /* clear_response_for_retry moved to SocketHTTPClient-retry.c */
-extern void httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
+extern void
+httpclient_clear_response_for_retry (SocketHTTPClient_Response *response);
 
 /**
  * execute_single_attempt - Execute one request attempt with exception handling
@@ -1824,31 +1873,28 @@ execute_single_attempt (SocketHTTPClient_T client,
 {
   volatile int result = -1;
 
-  TRY
-    {
-      result = execute_request_internal (client, req, response, 0, 0);
-    }
+  TRY { result = execute_request_internal (client, req, response, 0, 0); }
   EXCEPT (SocketHTTPClient_DNSFailed)
-    {
-      client->last_error = HTTPCLIENT_ERROR_DNS;
-      result = -1;
-    }
+  {
+    client->last_error = HTTPCLIENT_ERROR_DNS;
+    result = -1;
+  }
   EXCEPT (SocketHTTPClient_ConnectFailed)
-    {
-      client->last_error = HTTPCLIENT_ERROR_CONNECT;
-      result = -1;
-    }
+  {
+    client->last_error = HTTPCLIENT_ERROR_CONNECT;
+    result = -1;
+  }
   EXCEPT (SocketHTTPClient_Timeout)
-    {
-      client->last_error = HTTPCLIENT_ERROR_TIMEOUT;
-      result = -1;
-    }
+  {
+    client->last_error = HTTPCLIENT_ERROR_TIMEOUT;
+    result = -1;
+  }
   EXCEPT (Socket_Failed)
-    {
-      /* Map socket errors to connect errors for retry purposes */
-      client->last_error = HTTPCLIENT_ERROR_CONNECT;
-      result = -1;
-    }
+  {
+    /* Map socket errors to connect errors for retry purposes */
+    client->last_error = HTTPCLIENT_ERROR_CONNECT;
+    result = -1;
+  }
   END_TRY;
 
   return result;
@@ -1990,7 +2036,8 @@ SocketHTTPClient_Request_execute (SocketHTTPClient_Request_T req,
 
 /* ============================================================================
  * Authentication Management
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * Securely clear auth credentials stored in arena
@@ -2023,7 +2070,7 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
 {
   assert (client != NULL);
 
-  pthread_mutex_lock(&client->mutex);
+  pthread_mutex_lock (&client->mutex);
 
   /* Securely clear old credentials before setting new ones */
   if (client->default_auth != NULL)
@@ -2034,33 +2081,37 @@ SocketHTTPClient_set_auth (SocketHTTPClient_T client,
   if (auth == NULL)
     {
       client->default_auth = NULL;
-      pthread_mutex_unlock(&client->mutex);
+      pthread_mutex_unlock (&client->mutex);
       return;
     }
 
   /* Allocate in client arena */
   SocketHTTPClient_Auth *auth_copy
       = Arena_alloc (client->arena, sizeof (*auth_copy), __FILE__, __LINE__);
-  if (auth_copy == NULL) {
-    pthread_mutex_unlock(&client->mutex);
-    return;
-  }
+  if (auth_copy == NULL)
+    {
+      pthread_mutex_unlock (&client->mutex);
+      return;
+    }
 
   *auth_copy = *auth;
 
   /* Copy strings using centralized utility */
-  auth_copy->username = socket_util_arena_strdup (client->arena, auth->username);
-  auth_copy->password = socket_util_arena_strdup (client->arena, auth->password);
+  auth_copy->username
+      = socket_util_arena_strdup (client->arena, auth->username);
+  auth_copy->password
+      = socket_util_arena_strdup (client->arena, auth->password);
   auth_copy->token = socket_util_arena_strdup (client->arena, auth->token);
 
   client->default_auth = auth_copy;
 
-  pthread_mutex_unlock(&client->mutex);
+  pthread_mutex_unlock (&client->mutex);
 }
 
 /* ============================================================================
  * Cookie Jar Association
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
@@ -2068,9 +2119,9 @@ SocketHTTPClient_set_cookie_jar (SocketHTTPClient_T client,
 {
   assert (client != NULL);
 
-  pthread_mutex_lock(&client->mutex);
+  pthread_mutex_lock (&client->mutex);
   client->cookie_jar = jar;
-  pthread_mutex_unlock(&client->mutex);
+  pthread_mutex_unlock (&client->mutex);
 }
 
 SocketHTTPClient_CookieJar_T
@@ -2078,15 +2129,16 @@ SocketHTTPClient_get_cookie_jar (SocketHTTPClient_T client)
 {
   assert (client != NULL);
 
-  pthread_mutex_lock(&client->mutex);
+  pthread_mutex_lock (&client->mutex);
   SocketHTTPClient_CookieJar_T jar = client->cookie_jar;
-  pthread_mutex_unlock(&client->mutex);
+  pthread_mutex_unlock (&client->mutex);
   return jar;
 }
 
 /* ============================================================================
  * Pool Statistics
- * ============================================================================ */
+ * ============================================================================
+ */
 
 void
 SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
@@ -2095,13 +2147,14 @@ SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
   assert (client != NULL);
   assert (stats != NULL);
 
-  pthread_mutex_lock(&client->mutex);
+  pthread_mutex_lock (&client->mutex);
   memset (stats, 0, sizeof (*stats));
 
-  if (client->pool == NULL) {
-    pthread_mutex_unlock(&client->mutex);
-    return;
-  }
+  if (client->pool == NULL)
+    {
+      pthread_mutex_unlock (&client->mutex);
+      return;
+    }
 
   pthread_mutex_lock (&client->pool->mutex);
 
@@ -2120,7 +2173,7 @@ SocketHTTPClient_pool_stats (SocketHTTPClient_T client,
   stats->reused_connections = client->pool->reused_connections;
 
   pthread_mutex_unlock (&client->pool->mutex);
-  pthread_mutex_unlock(&client->mutex);
+  pthread_mutex_unlock (&client->mutex);
 }
 
 void
@@ -2128,11 +2181,12 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
 {
   assert (client != NULL);
 
-  pthread_mutex_lock(&client->mutex);
-  if (client->pool == NULL) {
-    pthread_mutex_unlock(&client->mutex);
-    return;
-  }
+  pthread_mutex_lock (&client->mutex);
+  if (client->pool == NULL)
+    {
+      pthread_mutex_unlock (&client->mutex);
+      return;
+    }
 
   pthread_mutex_lock (&client->pool->mutex);
 
@@ -2170,12 +2224,13 @@ SocketHTTPClient_pool_clear (SocketHTTPClient_T client)
           client->pool->hash_size * sizeof (HTTPPoolEntry *));
 
   pthread_mutex_unlock (&client->pool->mutex);
-  pthread_mutex_unlock(&client->mutex);
+  pthread_mutex_unlock (&client->mutex);
 }
 
 /* ============================================================================
  * Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 SocketHTTPClient_Error
 SocketHTTPClient_last_error (SocketHTTPClient_T client)
@@ -2228,7 +2283,8 @@ SocketHTTPClient_get_async (SocketHTTPClient_T client, const char *url,
 SocketHTTPClient_AsyncRequest_T
 SocketHTTPClient_post_async (SocketHTTPClient_T client, const char *url,
                              const char *content_type, const void *body,
-                             size_t body_len, SocketHTTPClient_Callback callback,
+                             size_t body_len,
+                             SocketHTTPClient_Callback callback,
                              void *userdata)
 {
   SocketHTTPClient_Request_T req;
@@ -2332,4 +2388,3 @@ SocketHTTPClient_process (SocketHTTPClient_T client, int timeout_ms)
 
   return completed;
 }
-

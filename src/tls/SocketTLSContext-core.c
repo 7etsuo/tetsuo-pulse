@@ -13,13 +13,13 @@
 
 #if SOCKET_HAS_TLS
 
-#include "tls/SocketTLS-private.h"
-#include "core/SocketUtil.h"
 #include "core/SocketCrypto.h"
+#include "core/SocketUtil.h"
+#include "tls/SocketTLS-private.h"
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
 #define T SocketTLSContext_T
 
@@ -27,7 +27,7 @@
  * Thread-Local Error Buffers
  * ============================================================================
  */
-SOCKET_DECLARE_MODULE_EXCEPTION(SocketTLSContext);
+SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
 /* Global ex_data index for context lookup (thread-safe initialization) */
 int tls_context_exdata_idx = -1;
@@ -60,7 +60,8 @@ init_exdata_idx (void)
 static void
 raise_system_error (const char *context)
 {
-  SOCKET_ERROR_MSG("%s: %s (errno=%d)", context, Socket_safe_strerror(errno), errno);
+  SOCKET_ERROR_MSG ("%s: %s (errno=%d)", context, Socket_safe_strerror (errno),
+                    errno);
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
 
@@ -82,11 +83,12 @@ ctx_raise_openssl_error (const char *context)
   if (err != 0)
     {
       ERR_error_string_n (err, err_str, sizeof (err_str));
-      SOCKET_ERROR_MSG("%s: %s", context, err_str);
+      SOCKET_ERROR_MSG ("%s: %s", context, err_str);
     }
   else
     {
-      SOCKET_ERROR_MSG("%s: Unknown TLS error (no OpenSSL error code)", context);
+      SOCKET_ERROR_MSG ("%s: Unknown TLS error (no OpenSSL error code)",
+                        context);
     }
 
   /* Clear remaining errors to prevent stale error information from
@@ -213,10 +215,11 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
 
   /* Additional security options:
    * - Prefer server cipher order (for servers; ignored on clients)
-   * - Disable compression (defensive against CRIME-like attacks, redundant for TLS1.3) */
-  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION |
-                               SSL_OP_CIPHER_SERVER_PREFERENCE |
-                               SSL_OP_NO_COMPRESSION);
+   * - Disable compression (defensive against CRIME-like attacks, redundant for
+   * TLS1.3) */
+  SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION
+                                    | SSL_OP_CIPHER_SERVER_PREFERENCE
+                                    | SSL_OP_NO_COMPRESSION);
 }
 
 /**
@@ -378,8 +381,7 @@ SocketTLSContext_new_server (const char *cert_file, const char *key_file,
 
   ctx = ctx_alloc_and_init (TLS_server_method (), 1);
 
-  TRY
-  SocketTLSContext_load_certificate (ctx, cert_file, key_file);
+  TRY SocketTLSContext_load_certificate (ctx, cert_file, key_file);
   if (ca_file)
     {
       SocketTLSContext_load_ca (ctx, ca_file);
@@ -397,32 +399,39 @@ SocketTLSContext_new_client (const char *ca_file)
 {
   T ctx = ctx_alloc_and_init (TLS_client_method (), 0);
 
-  /* Default to peer verification for security; attempt user CA then fallback to system defaults if possible */
+  /* Default to peer verification for security; attempt user CA then fallback
+   * to system defaults if possible */
   SocketTLSContext_set_verify_mode (ctx, TLS_VERIFY_PEER);
 
   bool has_trusted_ca = false;
   if (ca_file)
     {
       TRY
-        {
-          SocketTLSContext_load_ca (ctx, ca_file);
-          has_trusted_ca = true;
-          SOCKET_LOG_INFO_MSG("Loaded user-provided CA '%s' for client context %p", ca_file, (void*)ctx);
-        }
+      {
+        SocketTLSContext_load_ca (ctx, ca_file);
+        has_trusted_ca = true;
+        SOCKET_LOG_INFO_MSG (
+            "Loaded user-provided CA '%s' for client context %p", ca_file,
+            (void *)ctx);
+      }
       EXCEPT (SocketTLS_Failed)
-        {
-          SOCKET_LOG_WARN_MSG("Failed to load user-provided CA '%s' for client context %p - attempting system CA fallback", ca_file, (void*)ctx);
-        }
+      {
+        SOCKET_LOG_WARN_MSG ("Failed to load user-provided CA '%s' for client "
+                             "context %p - attempting system CA fallback",
+                             ca_file, (void *)ctx);
+      }
       END_TRY;
     }
 
   /* Fallback to system default CAs if no user CA successfully loaded */
   if (!has_trusted_ca)
     {
-      if (SSL_CTX_set_default_verify_paths(ctx->ssl_ctx) == 1)
+      if (SSL_CTX_set_default_verify_paths (ctx->ssl_ctx) == 1)
         {
           has_trusted_ca = true;
-          SOCKET_LOG_INFO_MSG("Loaded system default CAs as fallback for client context %p", (void*)ctx);
+          SOCKET_LOG_INFO_MSG (
+              "Loaded system default CAs as fallback for client context %p",
+              (void *)ctx);
         }
       else
         {
@@ -430,12 +439,19 @@ SocketTLSContext_new_client (const char *ca_file)
             {
               /* User provided CA but both failed - treat as config error */
               SocketTLSContext_free (&ctx);
-              ctx_raise_openssl_error("Both user CA and system fallback failed - cannot establish trusted verification");
+              ctx_raise_openssl_error (
+                  "Both user CA and system fallback failed - cannot establish "
+                  "trusted verification");
             }
           else
             {
-              /* No user CA and no system - warn but proceed (app responsibility) */
-              SOCKET_LOG_WARN_MSG("Client context %p created with no trusted CAs (user CA absent and system unavailable) - peer verification enabled but handshakes will likely fail (high MITM risk!)", (void*)ctx);
+              /* No user CA and no system - warn but proceed (app
+               * responsibility) */
+              SOCKET_LOG_WARN_MSG (
+                  "Client context %p created with no trusted CAs (user CA "
+                  "absent and system unavailable) - peer verification enabled "
+                  "but handshakes will likely fail (high MITM risk!)",
+                  (void *)ctx);
             }
         }
     }
@@ -459,7 +475,8 @@ SocketTLSContext_free (T *ctx)
         }
 
       /* Securely clear session ticket key material before freeing.
-       * Always clear regardless of tickets_enabled flag for defense in depth. */
+       * Always clear regardless of tickets_enabled flag for defense in depth.
+       */
       OPENSSL_cleanse (c->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
       c->tickets_enabled = 0;
 
@@ -467,7 +484,7 @@ SocketTLSContext_free (T *ctx)
       if (c->pinning.pins && c->pinning.count > 0)
         {
           SocketCrypto_secure_clear (c->pinning.pins,
-                           c->pinning.count * sizeof (TLSCertPin));
+                                     c->pinning.count * sizeof (TLSCertPin));
         }
       pthread_mutex_destroy (&c->pinning.lock);
 
@@ -503,4 +520,3 @@ SocketTLSContext_is_server (T ctx)
 #undef T
 
 #endif /* SOCKET_HAS_TLS */
-

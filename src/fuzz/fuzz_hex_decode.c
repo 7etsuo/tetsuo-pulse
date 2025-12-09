@@ -79,8 +79,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           unsigned char *redecoded = malloc ((size_t)result);
           if (redecoded)
             {
-              ssize_t result2
-                  = SocketCrypto_hex_decode (reencoded, (size_t)result * 2, redecoded, (size_t)result);
+              ssize_t result2 = SocketCrypto_hex_decode (
+                  reencoded, (size_t)result * 2, redecoded, (size_t)result);
               if (result2 != result)
                 __builtin_trap (); /* Roundtrip should produce same length */
 
@@ -108,4 +108,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

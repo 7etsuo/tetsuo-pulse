@@ -228,14 +228,8 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     (void)SocketIPTracker_total (tracker);
     (void)SocketIPTracker_unique_ips (tracker);
   }
-  EXCEPT (Arena_Failed)
-  {
-    /* Memory allocation failure */
-  }
-  EXCEPT (SocketIPTracker_Failed)
-  {
-    /* IP tracker operation failure */
-  }
+  EXCEPT (Arena_Failed) { /* Memory allocation failure */ }
+  EXCEPT (SocketIPTracker_Failed) { /* IP tracker operation failure */ }
   FINALLY
   {
     if (tracker)
@@ -247,4 +241,3 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
   return 0;
 }
-

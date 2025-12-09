@@ -543,7 +543,8 @@ TEST (except_stack_integrity)
  */
 TEST (except_raise_in_finally)
 {
-  static const Except_T FinallyException = { &FinallyException, "From finally" };
+  static const Except_T FinallyException
+      = { &FinallyException, "From finally" };
 
   volatile int outer_caught = 0;
   volatile int finally_executed = 0;
@@ -573,8 +574,7 @@ TEST (except_raise_in_finally)
 /* Test ELSE catches any unhandled exception */
 TEST (except_else_catches_any)
 {
-  static const Except_T SpecificException
-      = { &SpecificException, "Specific" };
+  static const Except_T SpecificException = { &SpecificException, "Specific" };
   static const Except_T OtherException = { &OtherException, "Other" };
 
   volatile int else_caught = 0;
@@ -642,7 +642,8 @@ TEST (except_volatile_preservation)
  * Fork-based tests for abort() paths (100% coverage)
  * These tests exercise code paths that call abort() by forking the process
  * and verifying the child receives SIGABRT.
- * ========================================================================== */
+ * ==========================================================================
+ */
 
 /* Coverage support for child processes that call abort().
  *
@@ -835,7 +836,8 @@ TEST (except_uncaught_no_location_aborts)
 
 /* ==========================================================================
  * Tests for caught exceptions with edge case parameters
- * ========================================================================== */
+ * ==========================================================================
+ */
 
 /* Test NULL file parameter in caught exception (covers "unknown" branch) */
 TEST (except_null_file_handled)

@@ -1,7 +1,8 @@
 /**
  * @file SocketWS.h
  * @ingroup core_io
- * @brief WebSocket Protocol (RFC 6455) implementation with compression support.
+ * @brief WebSocket Protocol (RFC 6455) implementation with compression
+ * support.
  *
  * Complete WebSocket implementation with compression extension support.
  *
@@ -63,14 +64,16 @@ typedef struct SocketPoll_T *SocketPoll_T;
 
 /* ============================================================================
  * Opaque Type
- * ============================================================================ */
+ * ============================================================================
+ */
 
 #define T SocketWS_T
 typedef struct SocketWS *T;
 
 /* ============================================================================
  * Exception Types
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_Failed - General WebSocket operation failure
@@ -89,7 +92,8 @@ extern const Except_T SocketWS_Closed;
 
 /* ============================================================================
  * WebSocket Opcodes (RFC 6455 Section 5.2)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
@@ -103,30 +107,33 @@ typedef enum
 
 /* ============================================================================
  * Close Status Codes (RFC 6455 Section 7.4.1)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
-  WS_CLOSE_NORMAL = 1000,         /**< Normal closure */
-  WS_CLOSE_GOING_AWAY = 1001,     /**< Endpoint going away */
-  WS_CLOSE_PROTOCOL_ERROR = 1002, /**< Protocol error */
+  WS_CLOSE_NORMAL = 1000,           /**< Normal closure */
+  WS_CLOSE_GOING_AWAY = 1001,       /**< Endpoint going away */
+  WS_CLOSE_PROTOCOL_ERROR = 1002,   /**< Protocol error */
   WS_CLOSE_UNSUPPORTED_DATA = 1003, /**< Unsupported data type */
-  WS_CLOSE_NO_STATUS = 1005,      /**< No status received (internal) */
-  WS_CLOSE_ABNORMAL = 1006,       /**< Abnormal closure (internal) */
-  WS_CLOSE_INVALID_PAYLOAD = 1007, /**< Invalid frame payload (e.g., bad UTF-8) */
+  WS_CLOSE_NO_STATUS = 1005,        /**< No status received (internal) */
+  WS_CLOSE_ABNORMAL = 1006,         /**< Abnormal closure (internal) */
+  WS_CLOSE_INVALID_PAYLOAD
+  = 1007, /**< Invalid frame payload (e.g., bad UTF-8) */
   WS_CLOSE_POLICY_VIOLATION = 1008, /**< Policy violation */
-  WS_CLOSE_MESSAGE_TOO_BIG = 1009, /**< Message too big */
-  WS_CLOSE_MANDATORY_EXT = 1010,  /**< Mandatory extension missing */
-  WS_CLOSE_INTERNAL_ERROR = 1011, /**< Internal server error */
-  WS_CLOSE_SERVICE_RESTART = 1012, /**< Service restart */
-  WS_CLOSE_TRY_AGAIN_LATER = 1013, /**< Try again later */
-  WS_CLOSE_BAD_GATEWAY = 1014,    /**< Bad gateway */
-  WS_CLOSE_TLS_HANDSHAKE = 1015   /**< TLS handshake failure (internal) */
+  WS_CLOSE_MESSAGE_TOO_BIG = 1009,  /**< Message too big */
+  WS_CLOSE_MANDATORY_EXT = 1010,    /**< Mandatory extension missing */
+  WS_CLOSE_INTERNAL_ERROR = 1011,   /**< Internal server error */
+  WS_CLOSE_SERVICE_RESTART = 1012,  /**< Service restart */
+  WS_CLOSE_TRY_AGAIN_LATER = 1013,  /**< Try again later */
+  WS_CLOSE_BAD_GATEWAY = 1014,      /**< Bad gateway */
+  WS_CLOSE_TLS_HANDSHAKE = 1015     /**< TLS handshake failure (internal) */
 } SocketWS_CloseCode;
 
 /* ============================================================================
  * Connection State
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
@@ -144,26 +151,28 @@ typedef enum
 
 /* ============================================================================
  * Error Codes
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef enum
 {
-  WS_OK = 0,                 /**< Success */
-  WS_ERROR,                  /**< General error */
-  WS_ERROR_HANDSHAKE,        /**< Handshake failed */
-  WS_ERROR_PROTOCOL,         /**< Protocol violation */
-  WS_ERROR_FRAME_TOO_LARGE,  /**< Frame exceeds limit */
-  WS_ERROR_MESSAGE_TOO_LARGE,/**< Message exceeds limit */
-  WS_ERROR_INVALID_UTF8,     /**< Invalid UTF-8 in text */
-  WS_ERROR_COMPRESSION,      /**< Compression error */
-  WS_ERROR_CLOSED,           /**< Connection closed */
-  WS_ERROR_WOULD_BLOCK,      /**< Would block (non-blocking) */
-  WS_ERROR_TIMEOUT           /**< Operation timed out */
+  WS_OK = 0,                  /**< Success */
+  WS_ERROR,                   /**< General error */
+  WS_ERROR_HANDSHAKE,         /**< Handshake failed */
+  WS_ERROR_PROTOCOL,          /**< Protocol violation */
+  WS_ERROR_FRAME_TOO_LARGE,   /**< Frame exceeds limit */
+  WS_ERROR_MESSAGE_TOO_LARGE, /**< Message exceeds limit */
+  WS_ERROR_INVALID_UTF8,      /**< Invalid UTF-8 in text */
+  WS_ERROR_COMPRESSION,       /**< Compression error */
+  WS_ERROR_CLOSED,            /**< Connection closed */
+  WS_ERROR_WOULD_BLOCK,       /**< Would block (non-blocking) */
+  WS_ERROR_TIMEOUT            /**< Operation timed out */
 } SocketWS_Error;
 
 /* ============================================================================
  * Configuration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
@@ -192,31 +201,34 @@ typedef struct
 
 /* ============================================================================
  * Received Frame Structure
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
-  SocketWS_Opcode opcode; /**< Frame opcode */
-  int fin;                /**< Final fragment flag */
-  int rsv1;               /**< Reserved bit 1 (compression) */
+  SocketWS_Opcode opcode;       /**< Frame opcode */
+  int fin;                      /**< Final fragment flag */
+  int rsv1;                     /**< Reserved bit 1 (compression) */
   const unsigned char *payload; /**< Payload data */
-  size_t payload_len;     /**< Payload length */
+  size_t payload_len;           /**< Payload length */
 } SocketWS_Frame;
 
 /* ============================================================================
  * Received Message Structure (reassembled)
- * ============================================================================ */
+ * ============================================================================
+ */
 
 typedef struct
 {
-  SocketWS_Opcode type;   /**< TEXT or BINARY */
-  unsigned char *data;    /**< Message data (caller must free) */
-  size_t len;             /**< Message length */
+  SocketWS_Opcode type; /**< TEXT or BINARY */
+  unsigned char *data;  /**< Message data (caller must free) */
+  size_t len;           /**< Message length */
 } SocketWS_Message;
 
 /* ============================================================================
  * Configuration Functions
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_config_defaults - Initialize configuration with defaults
@@ -228,7 +240,8 @@ extern void SocketWS_config_defaults (SocketWS_Config *config);
 
 /* ============================================================================
  * Client API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_client_new - Create client WebSocket from connected socket
@@ -249,7 +262,8 @@ extern T SocketWS_client_new (Socket_T socket, const char *host,
 
 /* ============================================================================
  * Server API
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_is_upgrade - Check if HTTP request is WebSocket upgrade
@@ -290,7 +304,8 @@ extern void SocketWS_server_reject (Socket_T socket, int status_code,
 
 /* ============================================================================
  * Connection Lifecycle
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_free - Free WebSocket connection
@@ -350,7 +365,8 @@ extern int SocketWS_compression_enabled (T ws);
 
 /* ============================================================================
  * Sending
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_send_text - Send text message
@@ -414,15 +430,17 @@ extern int SocketWS_close (T ws, int code, const char *reason);
 
 /* ============================================================================
  * Receiving
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_recv_message - Receive complete message
  * @ws: WebSocket instance
  * @msg: Output message structure
  *
- * Blocks until a complete message is received. Control frames (PING/PONG/CLOSE)
- * are handled automatically. Fragmented messages are reassembled.
+ * Blocks until a complete message is received. Control frames
+ * (PING/PONG/CLOSE) are handled automatically. Fragmented messages are
+ * reassembled.
  *
  * Caller must free msg->data when done.
  *
@@ -442,7 +460,8 @@ extern int SocketWS_recv_available (T ws);
 
 /* ============================================================================
  * Event Loop Integration
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_pollfd - Get file descriptor for polling
@@ -498,7 +517,8 @@ extern void SocketWS_disable_auto_ping (T ws);
 
 /* ============================================================================
  * Close Status
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_close_code - Get peer's close code
@@ -520,7 +540,8 @@ extern const char *SocketWS_close_reason (T ws);
 
 /* ============================================================================
  * Error Handling
- * ============================================================================ */
+ * ============================================================================
+ */
 
 /**
  * SocketWS_last_error - Get last error code
@@ -542,4 +563,3 @@ extern const char *SocketWS_error_string (SocketWS_Error error);
 
 #undef T
 #endif /* SOCKETWS_INCLUDED */
-
