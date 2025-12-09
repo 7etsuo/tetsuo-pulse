@@ -1,10 +1,7 @@
-#ifndef SOCKETUTIL_INCLUDED
-#define SOCKETUTIL_INCLUDED
-
 /**
- * SocketUtil.h - Consolidated utility header (Logging, Metrics, Events, Error)
- *
- * Part of the Socket Library
+ * @file SocketUtil.h
+ * @ingroup foundation
+ * @brief Consolidated utility header for logging, metrics, events, and error handling.
  *
  * This header consolidates the observability, instrumentation, and error
  * handling utilities into a single include for cleaner dependencies.
@@ -14,6 +11,10 @@
  * - Metrics collection (thread-safe counters, atomic snapshots)
  * - Event dispatching (connection events, DNS timeouts, poll wakeups)
  * - Error handling (thread-local buffers, errno mapping, exception macros)
+ *
+ * @see SocketLogLevel for logging API.
+ * @see SocketMetrics for metrics collection.
+ * @see SocketError for error handling utilities.
  */
 
 #include <errno.h>
@@ -34,7 +35,8 @@
  * ============================================================================ */
 
 /**
- * SocketLogLevel - Log severity levels
+ * @brief Log severity levels.
+ * @ingroup foundation
  */
 typedef enum SocketLogLevel
 {
@@ -47,36 +49,45 @@ typedef enum SocketLogLevel
 } SocketLogLevel;
 
 /**
- * SocketLogCallback - Custom logging callback function type
- * @userdata: User-provided context
- * @level: Log severity level
- * @component: Module/component name
- * @message: Log message
+ * @brief Custom logging callback function type.
+ * @ingroup foundation
+ * @param userdata User-provided context.
+ * @param level Log severity level.
+ * @param component Module/component name.
+ * @param message Log message.
+ * @see SocketLog_setcallback() for registration.
  */
 typedef void (*SocketLogCallback) (void *userdata, SocketLogLevel level,
                                    const char *component, const char *message);
 
 /**
- * SocketLog_setcallback - Set custom logging callback
- * @callback: Callback function or NULL for default logger
- * @userdata: User data passed to callback
- * Thread-safe: Yes
+ * @brief Set custom logging callback.
+ * @ingroup foundation
+ * @param callback Callback function or NULL for default logger.
+ * @param userdata User data passed to callback.
+ * @threadsafe Yes
+ * @see SocketLogCallback for callback signature.
+ * @see SocketLog_getcallback() for retrieval.
  */
 void SocketLog_setcallback (SocketLogCallback callback, void *userdata);
 
 /**
- * SocketLog_getcallback - Get current logging callback
- * @userdata: Output pointer for user data (may be NULL)
- * Returns: Current callback, or default_logger if none set
- * Thread-safe: Yes
+ * @brief Get current logging callback.
+ * @ingroup foundation
+ * @param[out] userdata Output pointer for user data (may be NULL).
+ * @return Current callback, or default_logger if none set.
+ * @threadsafe Yes
+ * @see SocketLog_setcallback() for setting.
  */
 SocketLogCallback SocketLog_getcallback (void **userdata);
 
 /**
- * SocketLog_levelname - Get string name for log level
- * @level: Log level
- * Returns: Static string with level name
- * Thread-safe: Yes
+ * @brief Get string name for log level.
+ * @ingroup foundation
+ * @param level Log level.
+ * @return Static string with level name.
+ * @threadsafe Yes
+ * @see SocketLogLevel for available levels.
  */
 const char *SocketLog_levelname (SocketLogLevel level);
 

@@ -1,6 +1,9 @@
 # Timeout Configuration Guide
+**Brief**: Comprehensive timeout configuration for all network operations | **Tags**: `timeouts`, `configuration`, `networking`, `reliability`
 
 This document describes the timeout architecture, configuration APIs, and best practices for the Socket Library.
+
+**Module Group**: Core I/O | **Related Modules**: Socket, SocketHTTPClient, SocketDNS
 
 ## Overview
 

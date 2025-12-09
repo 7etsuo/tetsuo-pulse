@@ -1,8 +1,12 @@
 # Logging Infrastructure
+**Brief**: Production-grade logging with structured output and correlation IDs | **Tags**: `logging`, `structured`, `correlation`, `thread-safe`, `backends`
 
 The socket library includes a production-grade logging subsystem with pluggable backends, log level filtering, structured logging, and correlation ID support.
 
+**Module Group**: Utilities | **Related Modules**: SocketUtil (logging macros)
+
 ## Features
+**Brief**: Comprehensive logging capabilities for production use | **Tags**: `features`, `levels`, `filtering`, `structured`, `correlation`
 
 - **Six log levels**: TRACE, DEBUG, INFO, WARN, ERROR, FATAL
 - **Level filtering**: Suppress messages below configured threshold
@@ -10,6 +14,10 @@ The socket library includes a production-grade logging subsystem with pluggable 
 - **Structured logging**: Key-value pairs for machine-parseable output
 - **Correlation IDs**: Thread-local context for distributed tracing
 - **Thread-safe**: All operations are safe for concurrent use
+
+**Cross-References**:
+- [Logging API](../rules/module-patterns.mdc) - Implementation details
+- [Thread safety patterns](../rules/memory-management.mdc) - Thread-local correlation IDs
 
 ---
 

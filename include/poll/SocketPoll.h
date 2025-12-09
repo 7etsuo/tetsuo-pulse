@@ -10,25 +10,51 @@ struct SocketAsync_T;
 typedef struct SocketAsync_T *SocketAsync_T;
 
 /**
- * Socket Event Polling
+ * @defgroup event_system Event System Modules
+ * @brief High-performance I/O multiplexing with cross-platform backends.
+ *
+ * The Event System group provides scalable event notification for network
+ * applications. Key components include:
+ * - SocketPoll (epoll/kqueue/poll): Cross-platform event multiplexing
+ * - SocketTimer (timers): High-precision timer management
+ * - SocketAsync (async): Advanced asynchronous I/O patterns
+ *
+ * @see core_io for socket primitives.
+ * @see connection_mgmt for connection pooling built on events.
+ * @see SocketPoll_T for event polling.
+ * @see SocketTimer_T for timer management.
+ * @{
+ */
+
+/**
+ * @file SocketPoll.h
+ * @ingroup event_system
+ * @brief High-level interface for monitoring multiple sockets for I/O events.
  *
  * High-level interface for monitoring multiple sockets for I/O events.
  * Uses epoll on Linux for scalable event notification. Supports both
  * edge-triggered and level-triggered modes.
+ *
  * PLATFORM REQUIREMENTS:
  * - Linux kernel 2.6.8+ (epoll with EPOLLET support)
  * - POSIX threads (pthread) for mutex synchronization
  * - NOT portable to BSD/macOS (would require kqueue backend)
  * - NOT portable to Windows (would require IOCP backend)
  * - For portable code, consider falling back to poll(2)
+ *
  * Features:
  * - O(1) event delivery regardless of total sockets
  * - Edge-triggered mode for efficiency
  * - User data association with sockets
  * - Configurable default timeout applied when requested
  * - Thread-safe implementation
+ *
  * The poll maintains a mapping of sockets to user data, allowing
  * efficient context retrieval when events occur.
+ *
+ * @see SocketPoll_new() for poll creation.
+ * @see SocketPoll_add() for socket registration.
+ * @see SocketPoll_wait() for event waiting.
  */
 
 #define T SocketPoll_T
@@ -202,4 +228,7 @@ extern void SocketPoll_setmaxregistered (T poll, int max);
 extern int SocketPoll_getregisteredcount (T poll);
 
 #undef T
+
+/** @} */ /* end of event_system group */
+
 #endif

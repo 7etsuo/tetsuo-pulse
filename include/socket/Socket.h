@@ -2,9 +2,28 @@
 #define SOCKET_INCLUDED
 
 /**
- * Socket.h - Socket Abstraction Layer
+ * @defgroup core_io Core I/O Modules
+ * @brief Fundamental socket operations for TCP, UDP, and Unix domain sockets.
  *
- * Part of the Socket Library
+ * The Core I/O group provides the basic socket primitives used by all higher-level
+ * networking modules. Key components include:
+ * - Socket (tcp/unix): High-level TCP/Unix socket abstraction with I/O operations
+ * - SocketBuf (buffers): Circular buffer for efficient socket I/O
+ * - SocketDgram (udp): UDP datagram sockets with multicast/broadcast support
+ * - SocketDNS (dns): Asynchronous DNS resolution with worker threads
+ * - SocketIO (io): Low-level socket I/O primitives
+ *
+ * @see foundation for base infrastructure.
+ * @see event_system for multiplexing built on core I/O.
+ * @see Socket_T for TCP socket operations.
+ * @see SocketDgram_T for UDP operations.
+ * @{
+ */
+
+/**
+ * @file Socket.h
+ * @ingroup core_io
+ * @brief High-level TCP/IP and Unix domain socket interface.
  *
  * High-level, exception-based TCP/IP/Unix domain socket interface.
  * This header consolidates all socket operations including:
@@ -34,6 +53,10 @@
  * - Global defaults configurable via Socket_timeouts_setdefaults()
  * - Per-socket overrides via Socket_timeouts_set()
  * - Applied to DNS resolution and blocking connect() paths
+ *
+ * @see Socket_new() for socket creation.
+ * @see Socket_connect() for connection establishment.
+ * @see Socket_send() and Socket_recv() for I/O operations.
  */
 
 #include "core/Except.h"
@@ -49,7 +72,8 @@ typedef struct T *T;
  * ============================================================================ */
 
 /**
- * Socket_Failed - General socket operation failure
+ * @brief General socket operation failure exception.
+ * @ingroup core_io
  *
  * Category: NETWORK (usually) or PROTOCOL (configuration errors)
  * Retryable: Depends on errno - use Socket_error_is_retryable() to check
@@ -61,11 +85,15 @@ typedef struct T *T;
  * - Option setting failures (setsockopt())
  *
  * Check errno via Socket_geterrno() for specific error code.
+ *
+ * @see Socket_error_is_retryable() for retryability checking.
+ * @see Socket_geterrno() for errno access.
  */
 extern const Except_T Socket_Failed;
 
 /**
- * Socket_Closed - Connection closed by peer
+ * @brief Connection closed by peer exception.
+ * @ingroup core_io
  *
  * Category: NETWORK
  * Retryable: Yes - indicates graceful close or reset, reconnect may succeed
@@ -76,6 +104,9 @@ extern const Except_T Socket_Failed;
  * - EPIPE during send (broken pipe)
  *
  * This is a normal condition for connection-oriented sockets.
+ *
+ * @see Socket_recv() for read operations that may raise this.
+ * @see Socket_send() for write operations that may raise this.
  */
 extern const Except_T Socket_Closed;
 
@@ -97,7 +128,13 @@ extern const Except_T SocketUnix_Failed;
  * ============================================================================ */
 
 /**
- * Socket_error_is_retryable - Check if an errno indicates a retryable error
+ * @brief Check if an errno indicates a retryable error.
+ * @ingroup core_io
+ * @param err errno value to check.
+ * @return 1 if retryable, 0 if not.
+ * @threadsafe Yes
+ * @see Socket_geterrno() for getting current errno.
+ * @see Socket_Failed exception for when this is used.
  * @err: errno value to check
  *
  * Returns: 1 if error is typically retryable, 0 if fatal
@@ -983,4 +1020,7 @@ extern void Socket_connect_with_addrinfo (T socket, struct addrinfo *res);
 extern int Socket_ignore_sigpipe (void);
 
 #undef T
+
+/** @} */ /* end of core_io group */
+
 #endif /* SOCKET_INCLUDED */

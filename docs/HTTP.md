@@ -1,6 +1,9 @@
 # HTTP Guide {#http_guide}
+**Brief**: Complete HTTP/1.1 and HTTP/2 client/server implementation | **Tags**: `http`, `http1`, `http2`, `client`, `server`, `parsing`
 
 Complete guide to HTTP/1.1 and HTTP/2 support in the Socket Library.
+
+**Module Group**: HTTP | **Related Modules**: SocketHTTP, SocketHTTP1, SocketHTTP2, SocketHTTPClient, SocketHTTPServer
 
 ---
 

@@ -1,7 +1,29 @@
 /**
- * SocketHTTPClient.h - HTTP Client API
+ * @defgroup http HTTP Modules
+ * @brief Complete HTTP/1.1 and HTTP/2 protocol implementation with client and server support.
  *
- * Part of the Socket Library
+ * The HTTP group provides comprehensive HTTP protocol support including
+ * parsing, serialization, client/server implementations, and advanced features.
+ * Key components include:
+ * - SocketHTTP (core): HTTP types, headers, URI parsing, status codes
+ * - SocketHTTP1 (http1): HTTP/1.1 parsing and serialization
+ * - SocketHTTP2 (http2): HTTP/2 protocol implementation
+ * - SocketHTTPClient (client): High-level HTTP client with pooling
+ * - SocketHTTPServer (server): HTTP server implementation
+ * - SocketHPACK (hpack): HTTP/2 header compression
+ *
+ * @see foundation for base infrastructure.
+ * @see core_io for socket primitives.
+ * @see security for TLS integration.
+ * @see SocketHTTPClient_T for HTTP client usage.
+ * @see SocketHTTPServer_T for HTTP server implementation.
+ * @{
+ */
+
+/**
+ * @file SocketHTTPClient.h
+ * @ingroup http
+ * @brief High-level HTTP client with connection pooling and protocol negotiation.
  *
  * High-level HTTP client abstracting HTTP/1.1 and HTTP/2 with:
  * - Connection pooling with per-host limits
@@ -26,6 +48,10 @@
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - pthread for mutex synchronization
  * - OpenSSL for TLS (optional, via SOCKET_HAS_TLS)
+ *
+ * @see SocketHTTPClient_new() for client creation.
+ * @see SocketHTTPClient_get() for synchronous requests.
+ * @see SocketHTTPClient_get_async() for asynchronous requests.
  */
 
 #ifndef SOCKETHTTPCLIENT_INCLUDED
@@ -814,6 +840,8 @@ SocketHTTPClient_last_error (SocketHTTPClient_T client);
  * Thread-safe: Yes
  */
 extern const char *SocketHTTPClient_error_string (SocketHTTPClient_Error error);
+
+/** @} */ /* end of http group */
 
 #endif /* SOCKETHTTPCLIENT_INCLUDED */
 

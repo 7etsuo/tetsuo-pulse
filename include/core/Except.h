@@ -4,7 +4,9 @@
 #include <setjmp.h>
 
 /**
- * Exception Handling for C
+ * @file Except.h
+ * @ingroup foundation
+ * @brief Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.
  *
  * IMPORTANT: Do NOT compile with -DNDEBUG in production code. The exception
  * system relies on runtime checks that are critical for safety. While assert()
@@ -12,11 +14,13 @@
  *
  * This module provides structured exception handling similar to try/catch
  * in other languages. It uses setjmp/longjmp for non-local control flow.
+ *
  * Features:
  * - TRY/EXCEPT/FINALLY blocks
  * - Thread-safe implementation (thread-local exception stack)
  * - Named exceptions with reason strings
  * - Exception propagation with RERAISE
+ *
  * Usage:
  *   TRY
  *     // Code that might raise an exception
@@ -27,6 +31,10 @@
  *   FINALLY
  *     // Cleanup code (always executed)
  *   END_TRY;
+ *
+ * @see Except_T for exception type definition.
+ * @see RAISE() macro for raising exceptions.
+ * @see TRY/EXCEPT/FINALLY macros for exception handling.
  */
 
 typedef struct Except_T {

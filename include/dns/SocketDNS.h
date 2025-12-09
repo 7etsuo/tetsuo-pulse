@@ -7,7 +7,9 @@
 #include <sys/socket.h>
 
 /**
- * Async DNS Resolution
+ * @file SocketDNS.h
+ * @ingroup core_io
+ * @brief Asynchronous DNS resolution with thread pool.
  *
  * Provides asynchronous DNS resolution using a thread pool to eliminate
  * blocking getaddrinfo() calls that can take 30+ seconds during DNS failures.
@@ -28,19 +30,27 @@
  * - Configurable per-resolver and per-request timeouts
  * - Thread-safe implementation
  * - Automatic request lifecycle management
+ *
  * Usage Pattern (Callback-based):
  *   SocketDNS_T dns = SocketDNS_new();
  *   SocketDNS_resolve(dns, "example.com", 80, callback, user_data);
  *   // callback invoked when resolution completes
+ *
  * Usage Pattern (SocketPoll integration):
  *   SocketDNS_T dns = SocketDNS_new();
  *   SocketPoll_T poll = SocketPoll_new(100);
  *   int dns_fd = SocketDNS_pollfd(dns);
  *   SocketPoll_add(poll, dns_fd, POLL_READ, dns);
  *   // In event loop: SocketDNS_check(dns) processes completed requests
+ *
  * Error Handling:
  * - SocketDNS_Failed: DNS resolution errors
  * - Request handles remain valid until result retrieved or cancelled
+ *
+ * @see SocketDNS_new() for resolver creation.
+ * @see SocketDNS_resolve() for async resolution.
+ * @see SocketDNS_pollfd() for event loop integration.
+ * @warning Callbacks execute in worker threads, not main thread!
  */
 
 #define T SocketDNS_T

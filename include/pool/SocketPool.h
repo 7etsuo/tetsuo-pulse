@@ -13,10 +13,32 @@
 #include "dns/SocketDNS.h"
 
 /**
- * Socket Connection Pool
+ * @defgroup connection_mgmt Connection Management Modules
+ * @brief Connection lifecycle management with pooling and rate limiting.
+ *
+ * The Connection Management group handles connection lifecycle, pooling,
+ * and resilience patterns. Key components include:
+ * - SocketPool (pooling): Connection pooling with automatic lifecycle management
+ * - SocketReconnect (reconnection): Auto-reconnection with circuit breaker
+ * - SocketRateLimit (rate-limit): Token bucket rate limiting
+ * - SocketSYNProtect (syn-flood): SYN flood protection
+ *
+ * @see core_io for socket primitives.
+ * @see event_system for event notification.
+ * @see SocketPool_T for connection pooling.
+ * @see SocketReconnect_T for auto-reconnection.
+ * @{
+ */
+
+/**
+ * @file SocketPool.h
+ * @ingroup connection_mgmt
+ * @brief Connection pooling with automatic lifecycle management.
+ *
  * Manages a pool of socket connections with associated buffers and
  * metadata. Provides O(1) connection lookup using hash tables and
  * automatic cleanup of idle connections.
+ *
  * Features:
  * - Pre-allocated connection slots for predictable memory usage
  * - Hash table for O(1) socket lookup
@@ -24,14 +46,21 @@
  * - Per-connection input/output buffers
  * - User data storage per connection
  * - Dynamic resize and pre-warming for performance
+ *
  * The Connection_T type is opaque - use accessor functions to
  * access connection properties.
+ *
  * Thread Safety: All operations are thread-safe via internal mutex.
  * The pool can be used from multiple threads simultaneously.
+ *
  * PLATFORM REQUIREMENTS:
  * - POSIX-compliant system (Linux, BSD, macOS)
  * - POSIX threads (pthread) for mutex synchronization
  * - NOT portable to Windows without pthreads adaptation
+ *
+ * @see SocketPool_new() for pool creation.
+ * @see SocketPool_add() for connection registration.
+ * @see Connection_T for connection accessors.
  */
 
 #define T SocketPool_T
@@ -1026,4 +1055,7 @@ extern void SocketPool_reset_stats (T pool);
 extern time_t Connection_created_at (const Connection_T conn);
 
 #undef T
+
+/** @} */ /* end of connection_mgmt group */
+
 #endif

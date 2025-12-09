@@ -1,5 +1,26 @@
 /**
- * SocketTLS.h - TLS/SSL Socket Integration (TLS1.3-Only by Default)
+ * @defgroup security Security Modules
+ * @brief TLS encryption and security protection mechanisms.
+ *
+ * The Security group provides comprehensive security features including
+ * TLS encryption, certificate validation, SYN flood protection, and
+ * IP filtering. Key components include:
+ * - SocketTLS (tls): TLS/SSL socket integration with TLS 1.3 support
+ * - SocketTLSContext (tls-context): TLS context management and certificates
+ * - SocketSYNProtect (syn-protect): SYN flood protection
+ * - SocketIPTracker (ip-tracker): IP-based rate limiting and filtering
+ *
+ * @see core_io for socket primitives that can be secured.
+ * @see http for TLS integration in HTTP clients/servers.
+ * @see SocketTLS_enable() for enabling TLS on sockets.
+ * @see SocketSYNProtect_T for SYN flood protection.
+ * @{
+ */
+
+/**
+ * @file SocketTLS.h
+ * @ingroup security
+ * @brief TLS/SSL socket integration with TLS 1.3 support.
  *
  * Features:
  * - TLS1.3-only (strict PFS, no legacy vulns)
@@ -7,6 +28,9 @@
  * - Non-blocking handshake with poll
  * - SNI + hostname verification
  * - ALPN support
+ *
+ * @see SocketTLS_enable() for enabling TLS on existing sockets.
+ * @see SocketTLSContext_T for TLS context management.
  */
 
 #ifndef SOCKETTLS_INCLUDED
@@ -339,6 +363,8 @@ extern int SocketTLS_is_session_reused (Socket_T socket);
 extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
 
 #undef T
+
+/** @} */ /* end of security group */
 
 #endif /* SOCKET_HAS_TLS */
 

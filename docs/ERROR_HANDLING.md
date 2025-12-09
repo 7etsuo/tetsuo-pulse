@@ -1,12 +1,21 @@
 # Error Handling and Recovery Guide
+**Brief**: Comprehensive error handling, categorization, and recovery patterns | **Tags**: `errors`, `exceptions`, `retry`, `categorization`, `recovery`
 
 This guide documents error handling patterns, error categorization, retry strategies, and best practices for the socket library.
 
+**Module Group**: Utilities | **Related Modules**: SocketRetry, SocketReconnect, SocketUtil
+
 ## Overview
+**Brief**: Exception-based error handling with categorized recovery strategies | **Tags**: `overview`, `exceptions`, `categorization`
 
 The socket library uses exception-based error handling. Errors are categorized to help determine appropriate recovery strategies.
 
+**Cross-References**:
+- [Exception system implementation](../rules/error-handling.mdc) - Core exception patterns
+- [Retry implementation](../rules/error-handling.mdc) - Retry mechanisms
+
 ## Error Categories
+**Brief**: Six-category error classification system | **Tags**: `categories`, `classification`, `recovery`, `errno`
 
 Errors are classified into six categories:
 
@@ -99,10 +108,15 @@ void handle_error(int err)
 | `SocketPool_Failed` | RESOURCE | Depends | Pool exhaustion may clear |
 
 ## Retry Patterns
+**Brief**: Exponential backoff and circuit breaker retry strategies | **Tags**: `retry`, `backoff`, `circuit-breaker`, `exponential`
 
 ### Using SocketRetry_T
+**Brief**: Generic retry module with configurable backoff | **Tags**: `SocketRetry`, `backoff`, `generic`
 
 The `SocketRetry_T` module provides generic retry with exponential backoff:
+
+**Cross-References**:
+- [Retry implementation details](../rules/error-handling.mdc) - Internal retry patterns
 
 ```c
 #include "core/SocketRetry.h"
@@ -231,8 +245,12 @@ if (Socket_error_is_retryable(errno)) {
 ```
 
 ## Circuit Breaker Pattern
+**Brief**: Auto-reconnection with circuit breaker protection | **Tags**: `circuit-breaker`, `reconnection`, `fault-tolerance`
 
 For persistent connections, use `SocketReconnect` which implements the circuit breaker pattern:
+
+**Cross-References**:
+- [Reconnection patterns](../rules/reconnection.mdc) - Detailed reconnection implementation
 
 ```c
 #include "socket/SocketReconnect.h"

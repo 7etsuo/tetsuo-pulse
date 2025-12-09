@@ -1,6 +1,9 @@
 # Security Guide {#security_guide}
+**Brief**: Security best practices and TLS 1.3 hardening | **Tags**: `security`, `tls`, `hardening`, `certificates`, `syn-flood`
 
 Security best practices for applications using the Socket Library.
+
+**Module Group**: Security | **Related Modules**: SocketTLS, SocketTLSContext, SocketSYNProtect
 
 ---
 

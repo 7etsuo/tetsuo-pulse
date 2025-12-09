@@ -6,17 +6,25 @@
 #include <stdbool.h>
 
 /**
- * Circular Buffer for Socket I/O
+ * @file SocketBuf.h
+ * @ingroup core_io
+ * @brief Circular buffer for efficient socket I/O operations.
+ *
  * Provides efficient buffering for network I/O operations using a
  * circular buffer implementation. This minimizes memory copies and
  * provides O(1) operations for all buffer operations.
+ *
  * Features:
  * - Zero-copy read/write operations where possible
  * - Thread-safe design (when used with proper synchronization)
  * - Automatic wraparound handling
  * - Memory managed by Arena allocator
+ *
  * The buffer automatically handles wraparound, so users don't need
  * to worry about circular buffer complexities.
+ *
+ * @see SocketBuf_new() for buffer creation.
+ * @see SocketBuf_write() and SocketBuf_read() for I/O operations.
  */
 
 #include "core/Except.h"
@@ -25,15 +33,21 @@
 typedef struct T *T;
 
 /**
- * Exception thrown on buffer operation failure
+ * @brief Exception thrown on buffer operation failure.
+ * @ingroup core_io
+ * @see SocketBuf_new() for operations that may raise this.
  */
 extern const Except_T SocketBuf_Failed;
 
 /**
- * SocketBuf_new - Create a new circular buffer
- * @arena: Arena for memory allocation
- * @capacity: Buffer capacity in bytes
- * Returns: New buffer instance
+ * @brief Create a new circular buffer.
+ * @ingroup core_io
+ * @param arena Arena for memory allocation.
+ * @param capacity Buffer capacity in bytes.
+ * @return New buffer instance.
+ * @throws SocketBuf_Failed if allocation fails.
+ * @see Arena_T for arena-based memory management.
+ * @see SocketBuf_release() for cleanup.
  */
 extern T SocketBuf_new (Arena_T arena, size_t capacity);
 

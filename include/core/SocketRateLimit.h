@@ -2,9 +2,28 @@
 #define SOCKETRATELIMIT_INCLUDED
 
 /**
- * SocketRateLimit.h - Token Bucket Rate Limiter
+ * @defgroup utilities Utility Modules
+ * @brief Helper modules for rate limiting, retry logic, and metrics.
  *
- * Part of the Socket Library
+ * The Utilities group provides supporting functionality used across
+ * the socket library. Key components include:
+ * - SocketRateLimit (rate-limit): Token bucket rate limiting
+ * - SocketRetry (retry): Exponential backoff retry logic
+ * - SocketMetrics (metrics): Performance metrics collection
+ * - SocketSYNProtect (syn-protect): SYN flood protection
+ * - SocketIPTracker (ip-tracker): IP-based filtering
+ *
+ * @see foundation for core utilities.
+ * @see connection_mgmt for connection-level rate limiting.
+ * @see SocketRateLimit_T for token bucket implementation.
+ * @see SocketRetry_T for retry logic.
+ * @{
+ */
+
+/**
+ * @file SocketRateLimit.h
+ * @ingroup utilities
+ * @brief Token bucket rate limiter for controlling operation rates.
  *
  * Implements a token bucket rate limiter for controlling connection rates
  * and bandwidth throttling. The token bucket algorithm allows bursting
@@ -28,6 +47,7 @@
  * Debugging:
  * - Live instance count tracking for leak detection
  *   Use SocketRateLimit_debug_live_count() == 0 after cleanup
+ *
  * Usage:
  *   Arena_T arena = Arena_new();
  *   SocketRateLimit_T limiter = SocketRateLimit_new(arena, 100, 50);
@@ -39,6 +59,9 @@
  *       // Rate limited - wait or reject
  *       int64_t wait_ms = SocketRateLimit_wait_time_ms(limiter, 1);
  *   }
+ *
+ * @see SocketRateLimit_new() for limiter creation.
+ * @see SocketRateLimit_try_acquire() for rate checking.
  */
 
 #include "core/Arena.h"
@@ -173,4 +196,7 @@ extern size_t SocketRateLimit_get_bucket_size (T limiter);
 extern int SocketRateLimit_debug_live_count (void);
 
 #undef T
+
+/** @} */ /* end of utilities group */
+
 #endif /* SOCKETRATELIMIT_INCLUDED */
