@@ -594,6 +594,43 @@ extern const char *Socket_safe_strerror (int errnum);
 #define SOCKET_DNS_THREAD_NAME_SIZE 16
 #endif
 
+/**
+ * @brief Default DNS cache TTL in seconds.
+ *
+ * Controls how long DNS resolution results are cached before being
+ * considered stale. Default 5 minutes balances freshness with performance.
+ *
+ * @ingroup core_io
+ * @see SocketDNS_cache_set_ttl() to configure at runtime.
+ */
+#ifndef SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS
+#define SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS 300
+#endif
+
+/**
+ * @brief Default maximum DNS cache entries.
+ *
+ * Limits memory usage by capping cached DNS results.
+ * When exceeded, oldest entries are evicted (LRU).
+ *
+ * @ingroup core_io
+ * @see SocketDNS_cache_set_max_entries() to configure at runtime.
+ */
+#ifndef SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES
+#define SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES 1000
+#endif
+
+/**
+ * @brief DNS cache hash table size.
+ *
+ * Prime number for optimal hash distribution in cache lookups.
+ *
+ * @ingroup core_io
+ */
+#ifndef SOCKET_DNS_CACHE_HASH_SIZE
+#define SOCKET_DNS_CACHE_HASH_SIZE 1021
+#endif
+
 /* ============================================================================
  * Poll Backend Configuration
  * ============================================================================

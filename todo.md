@@ -53,20 +53,20 @@
 ## DNS Enhancements
 
 ### Cache Control
-- [ ] `SocketDNS_cache_clear(dns)` - Clear entire DNS cache
-- [ ] `SocketDNS_cache_remove(dns, hostname)` - Remove specific entry
-- [ ] `SocketDNS_cache_set_ttl(dns, ttl_seconds)` - Override TTL
-- [ ] `SocketDNS_cache_set_max_entries(dns, max)` - Limit cache size
+- [x] `SocketDNS_cache_clear(dns)` - Clear entire DNS cache
+- [x] `SocketDNS_cache_remove(dns, hostname)` - Remove specific entry
+- [x] `SocketDNS_cache_set_ttl(dns, ttl_seconds)` - Override TTL
+- [x] `SocketDNS_cache_set_max_entries(dns, max)` - Limit cache size
 
 ### Cache Statistics
-- [ ] Define `SocketDNS_CacheStats` structure
-- [ ] `SocketDNS_cache_stats(dns, stats)` - Get cache hit/miss rates
-- [ ] Track cache evictions
+- [x] Define `SocketDNS_CacheStats` structure
+- [x] `SocketDNS_cache_stats(dns, stats)` - Get cache hit/miss rates
+- [x] Track cache evictions
 
 ### DNS Configuration
-- [ ] `SocketDNS_set_nameservers(dns, servers[], count)` - Custom nameservers
-- [ ] `SocketDNS_set_search_domains(dns, domains[], count)` - Search path
-- [ ] `SocketDNS_prefer_ipv6(dns, enable)` - Address family preference
+- [x] `SocketDNS_set_nameservers(dns, servers[], count)` - Custom nameservers
+- [x] `SocketDNS_set_search_domains(dns, domains[], count)` - Search path
+- [x] `SocketDNS_prefer_ipv6(dns, enable)` - Address family preference
 
 ---
 

@@ -784,6 +784,11 @@ SocketPoll_T poll = SocketPoll_new(100);
 /* Configure DNS timeouts */
 SocketDNS_settimeout(dns, 5000);  /* 5 second default timeout */
 
+/* Configure DNS cache */
+SocketDNS_cache_set_ttl(dns, 300);           /* 5 minute TTL */
+SocketDNS_cache_set_max_entries(dns, 1000);  /* Max 1000 entries */
+SocketDNS_prefer_ipv6(dns, 1);               /* Prefer IPv6 */
+
 /* Start async resolution */
 SocketDNS_Request_T req = SocketDNS_resolve(dns, "example.com", 80, NULL, NULL);
 
@@ -802,6 +807,18 @@ if (result) {
     int error = SocketDNS_geterror(dns, req);
     fprintf(stderr, "DNS failed: %s\n", gai_strerror(error));
 }
+
+/* Monitor cache performance */
+SocketDNS_CacheStats stats;
+SocketDNS_cache_stats(dns, &stats);
+printf("DNS cache hit rate: %.1f%% (%zu entries)\n",
+       stats.hit_rate * 100.0, stats.current_size);
+
+/* Clear cache when DNS records change */
+SocketDNS_cache_clear(dns);
+
+/* Remove specific entry */
+SocketDNS_cache_remove(dns, "example.com");
 
 SocketDNS_free(&dns);
 SocketPoll_free(&poll);

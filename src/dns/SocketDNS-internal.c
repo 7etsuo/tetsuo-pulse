@@ -226,6 +226,25 @@ initialize_dns_fields (struct SocketDNS_T *dns)
   dns->max_pending = SOCKET_DNS_MAX_PENDING;
   dns->request_timeout_ms = SOCKET_DEFAULT_DNS_TIMEOUT_MS;
   /* shutdown, queue_head/tail/size already 0/NULL from calloc */
+
+  /* Cache configuration defaults */
+  dns->cache_max_entries = SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES;
+  dns->cache_ttl_seconds = SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS;
+  dns->cache_size = 0;
+  dns->cache_hits = 0;
+  dns->cache_misses = 0;
+  dns->cache_evictions = 0;
+  dns->cache_insertions = 0;
+  dns->cache_lru_head = NULL;
+  dns->cache_lru_tail = NULL;
+  /* cache_hash[] already zeroed from calloc */
+
+  /* DNS configuration defaults */
+  dns->prefer_ipv6 = 1; /* Default: prefer IPv6 per RFC 6724 */
+  dns->custom_nameservers = NULL;
+  dns->nameserver_count = 0;
+  dns->search_domains = NULL;
+  dns->search_domain_count = 0;
 }
 
 /**

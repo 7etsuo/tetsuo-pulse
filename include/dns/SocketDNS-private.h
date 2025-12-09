@@ -50,6 +50,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <time.h>
@@ -225,6 +226,23 @@ struct SocketDNS_Request_T
 };
 
 /**
+ * @brief DNS cache entry structure.
+ * @ingroup dns
+ *
+ * Stores a cached DNS resolution result with TTL and LRU tracking.
+ */
+struct SocketDNS_CacheEntry
+{
+  char *hostname;          /**< Cached hostname key */
+  struct addrinfo *result; /**< Cached addrinfo result (owned) */
+  int64_t insert_time_ms;  /**< Monotonic time of insertion */
+  int64_t last_access_ms;  /**< Monotonic time of last access (LRU) */
+  struct SocketDNS_CacheEntry *hash_next; /**< Hash collision chain */
+  struct SocketDNS_CacheEntry *lru_prev;  /**< LRU list prev pointer */
+  struct SocketDNS_CacheEntry *lru_next;  /**< LRU list next pointer */
+};
+
+/**
  * @brief Async DNS resolver structure.
  * @ingroup dns
  *
@@ -256,6 +274,27 @@ struct SocketDNS_T
   int shutdown;               /**< Shutdown flag (1 = shutting down) */
   int pipefd[2];              /**< Completion pipe [0]=read, [1]=write */
   int request_timeout_ms;     /**< Default timeout (0 = no timeout) */
+
+  /* DNS Cache */
+  struct SocketDNS_CacheEntry *cache_hash[SOCKET_DNS_CACHE_HASH_SIZE];
+  /**< Cache hash table for O(1) lookup */
+  struct SocketDNS_CacheEntry *cache_lru_head; /**< LRU list head (most recent)
+                                                */
+  struct SocketDNS_CacheEntry *cache_lru_tail; /**< LRU list tail (oldest) */
+  size_t cache_size;       /**< Current number of cached entries */
+  size_t cache_max_entries; /**< Maximum cache entries (0 = disabled) */
+  int cache_ttl_seconds;   /**< TTL for cached entries (0 = disabled) */
+  uint64_t cache_hits;     /**< Cache hit counter */
+  uint64_t cache_misses;   /**< Cache miss counter */
+  uint64_t cache_evictions; /**< Eviction counter */
+  uint64_t cache_insertions; /**< Insertion counter */
+
+  /* DNS Configuration */
+  int prefer_ipv6;         /**< 1 = prefer IPv6, 0 = prefer IPv4 */
+  char **custom_nameservers; /**< Custom nameserver list (NULL = use system) */
+  size_t nameserver_count;  /**< Number of custom nameservers */
+  char **search_domains;   /**< Custom search domains (NULL = use system) */
+  size_t search_domain_count; /**< Number of search domains */
 };
 
 /* Internal macros - use centralized constant */

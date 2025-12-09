@@ -4,6 +4,7 @@
 #include "core/Except.h"
 #include <netdb.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/socket.h>
 
 /**
@@ -844,6 +845,306 @@ extern struct addrinfo *SocketDNS_resolve_sync (T dns, const char *host,
                                                 int port,
                                                 const struct addrinfo *hints,
                                                 int timeout_ms);
+
+/* ============================================================================
+ * DNS Cache Control
+ * ============================================================================
+ */
+
+/**
+ * @brief Cache statistics structure.
+ * @ingroup dns
+ *
+ * Statistics about DNS resolution cache performance. Used to monitor
+ * cache efficiency and tune TTL/size parameters.
+ *
+ * @see SocketDNS_cache_stats() to retrieve statistics.
+ * @see SocketDNS_cache_clear() to reset cache.
+ */
+typedef struct SocketDNS_CacheStats
+{
+  uint64_t hits;        /**< Cache hits (result found in cache) */
+  uint64_t misses;      /**< Cache misses (resolution required) */
+  uint64_t evictions;   /**< Entries evicted due to TTL or size limits */
+  uint64_t insertions;  /**< Total entries inserted into cache */
+  size_t current_size;  /**< Current number of cached entries */
+  size_t max_entries;   /**< Maximum cache capacity */
+  int ttl_seconds;      /**< Current TTL setting */
+  double hit_rate;      /**< Calculated hit rate (hits / (hits + misses)) */
+} SocketDNS_CacheStats;
+
+/**
+ * @brief Clear the entire DNS result cache.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Removes all cached DNS resolution results, forcing fresh lookups
+ * for subsequent requests. Useful when DNS records are known to have
+ * changed or when troubleshooting resolution issues.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // DNS records changed, force fresh lookups
+ * SocketDNS_cache_clear(dns);
+ *
+ * // Now all resolutions will query DNS servers
+ * SocketDNS_resolve(dns, "example.com", 443, callback, data);
+ * @endcode
+ *
+ * @complexity O(n) where n is number of cached entries.
+ *
+ * @see SocketDNS_cache_remove() to remove specific entries.
+ * @see SocketDNS_cache_stats() to check cache state.
+ */
+extern void SocketDNS_cache_clear (T dns);
+
+/**
+ * @brief Remove a specific hostname from the DNS cache.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] hostname Hostname to remove from cache.
+ * @return 1 if entry was found and removed, 0 if not found.
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Removes a specific hostname's cached result, forcing a fresh DNS lookup
+ * on the next resolution request for that hostname.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Known DNS change for specific host
+ * if (SocketDNS_cache_remove(dns, "api.example.com")) {
+ *     printf("Removed stale cache entry\n");
+ * }
+ * @endcode
+ *
+ * @complexity O(1) average - hash table lookup.
+ *
+ * @see SocketDNS_cache_clear() to clear entire cache.
+ */
+extern int SocketDNS_cache_remove (T dns, const char *hostname);
+
+/**
+ * @brief Set the TTL (time-to-live) for cached DNS results.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] ttl_seconds TTL in seconds (0 disables caching).
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Controls how long resolved DNS results are cached before being considered
+ * stale and requiring re-resolution. Setting to 0 effectively disables
+ * caching (all requests go to DNS servers).
+ *
+ * ## Default
+ *
+ * Default TTL is SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS (300 = 5 minutes).
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Short TTL for frequently changing DNS
+ * SocketDNS_cache_set_ttl(dns, 60);  // 1 minute
+ *
+ * // Disable caching entirely
+ * SocketDNS_cache_set_ttl(dns, 0);
+ *
+ * // Long TTL for stable DNS
+ * SocketDNS_cache_set_ttl(dns, 3600);  // 1 hour
+ * @endcode
+ *
+ * @note Does not affect existing cached entries; only new insertions.
+ *
+ * @see SocketDNS_cache_stats() to check current TTL.
+ */
+extern void SocketDNS_cache_set_ttl (T dns, int ttl_seconds);
+
+/**
+ * @brief Set the maximum number of entries in the DNS cache.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] max_entries Maximum cache entries (0 disables caching).
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Limits memory usage by capping the number of cached DNS results.
+ * When the limit is reached, oldest entries are evicted (LRU).
+ *
+ * ## Default
+ *
+ * Default max is SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES (1000).
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Limit cache for memory-constrained environments
+ * SocketDNS_cache_set_max_entries(dns, 100);
+ *
+ * // Large cache for high-traffic servers
+ * SocketDNS_cache_set_max_entries(dns, 10000);
+ * @endcode
+ *
+ * @note If new limit is less than current size, excess entries are evicted.
+ *
+ * @see SocketDNS_cache_stats() to check current size.
+ */
+extern void SocketDNS_cache_set_max_entries (T dns, size_t max_entries);
+
+/**
+ * @brief Get DNS cache statistics.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[out] stats Output statistics structure.
+ * @threadsafe Yes - atomic snapshot.
+ *
+ * Retrieves current cache statistics including hit/miss rates, size,
+ * and configuration. Useful for monitoring and tuning cache parameters.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketDNS_CacheStats stats;
+ * SocketDNS_cache_stats(dns, &stats);
+ *
+ * printf("Cache hit rate: %.1f%% (%lu hits, %lu misses)\n",
+ *        stats.hit_rate * 100.0,
+ *        (unsigned long)stats.hits,
+ *        (unsigned long)stats.misses);
+ * printf("Cache size: %zu / %zu entries\n",
+ *        stats.current_size, stats.max_entries);
+ * printf("Evictions: %lu\n", (unsigned long)stats.evictions);
+ * @endcode
+ *
+ * @complexity O(1).
+ *
+ * @see SocketDNS_CacheStats for field descriptions.
+ * @see SocketDNS_cache_clear() to reset cache.
+ */
+extern void SocketDNS_cache_stats (T dns, SocketDNS_CacheStats *stats);
+
+/* ============================================================================
+ * DNS Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Set IPv6 preference for DNS resolution.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] prefer_ipv6 1 to prefer IPv6, 0 to prefer IPv4.
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Controls whether IPv6 (AAAA records) or IPv4 (A records) addresses
+ * are preferred when both are available. Affects the ordering of
+ * addresses in resolution results.
+ *
+ * ## Default
+ *
+ * Default is 1 (prefer IPv6) per RFC 6724 recommendations.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Prefer IPv4 (legacy compatibility)
+ * SocketDNS_prefer_ipv6(dns, 0);
+ *
+ * // Prefer IPv6 (modern default)
+ * SocketDNS_prefer_ipv6(dns, 1);
+ * @endcode
+ *
+ * @note This sets AI_ADDRCONFIG hints appropriately. System resolver
+ *       may still return both address families.
+ *
+ * @see SocketHappyEyeballs for RFC 8305 dual-stack connection racing.
+ */
+extern void SocketDNS_prefer_ipv6 (T dns, int prefer_ipv6);
+
+/**
+ * @brief Get current IPv6 preference setting.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @return 1 if IPv6 preferred, 0 if IPv4 preferred.
+ * @threadsafe Yes.
+ *
+ * @see SocketDNS_prefer_ipv6() to set preference.
+ */
+extern int SocketDNS_get_prefer_ipv6 (T dns);
+
+/**
+ * @brief Set custom nameservers for DNS resolution.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] servers Array of nameserver IP addresses (NULL-terminated).
+ * @param[in] count Number of servers in array.
+ * @return 0 on success, -1 if custom nameservers not supported.
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Configures custom DNS nameservers instead of using system resolv.conf.
+ * This is useful for applications that need to use specific DNS servers
+ * (e.g., DNS-over-HTTPS, private DNS, or fallback servers).
+ *
+ * ## Platform Support
+ *
+ * This function requires platform-specific resolver configuration:
+ * - **Linux**: Uses res_init() with modified _res structure
+ * - **macOS/BSD**: Limited support via dns_open()/dns_search()
+ * - **Windows**: Requires different API (not supported)
+ *
+ * If custom nameservers are not supported on the platform, this function
+ * returns -1 and the system resolver continues to be used.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * const char *servers[] = {"8.8.8.8", "8.8.4.4", NULL};
+ * if (SocketDNS_set_nameservers(dns, servers, 2) < 0) {
+ *     printf("Custom nameservers not supported, using system resolver\n");
+ * }
+ * @endcode
+ *
+ * @note Changes affect only this resolver instance, not system-wide.
+ * @note Pass NULL and count=0 to revert to system nameservers.
+ *
+ * @see SocketDNS_set_search_domains() for search path configuration.
+ */
+extern int SocketDNS_set_nameservers (T dns, const char **servers,
+                                      size_t count);
+
+/**
+ * @brief Set DNS search domains for hostname resolution.
+ * @ingroup dns
+ * @param[in] dns DNS resolver instance.
+ * @param[in] domains Array of search domain strings (NULL-terminated).
+ * @param[in] count Number of domains in array.
+ * @return 0 on success, -1 if custom search domains not supported.
+ * @threadsafe Yes - protected by internal mutex.
+ *
+ * Configures DNS search domains for resolving unqualified hostnames.
+ * When resolving a name like "myserver", the resolver will try
+ * "myserver.domain1", "myserver.domain2", etc.
+ *
+ * ## Platform Support
+ *
+ * Similar to SocketDNS_set_nameservers(), this requires platform support.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * const char *domains[] = {"internal.company.com", "company.com", NULL};
+ * if (SocketDNS_set_search_domains(dns, domains, 2) < 0) {
+ *     printf("Custom search domains not supported\n");
+ * }
+ *
+ * // Now "myserver" resolves as "myserver.internal.company.com" first
+ * SocketDNS_resolve(dns, "myserver", 80, callback, data);
+ * @endcode
+ *
+ * @note Pass NULL and count=0 to revert to system search domains.
+ *
+ * @see SocketDNS_set_nameservers() for nameserver configuration.
+ */
+extern int SocketDNS_set_search_domains (T dns, const char **domains,
+                                         size_t count);
 
 #undef T
 #undef Request_T

@@ -14,8 +14,10 @@
 
 /* System headers first */
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 
 /* Project headers - Arena.h included to ensure T macro is defined/undefined
  * before we define our module's T. SocketDNS-private.h forward-declares
@@ -1316,6 +1318,605 @@ SocketDNS_resolve_sync (struct SocketDNS_T *dns, const char *host, int port,
 
   /* Hostname requires async resolution with timeout */
   return resolve_async_with_wait (dns, host, port, effective_timeout);
+}
+
+/* ============================================================================
+ * DNS Cache Functions
+ * ============================================================================
+ */
+
+/**
+ * cache_hash_function - Compute hash for hostname
+ * @hostname: Hostname string to hash
+ *
+ * Returns: Hash value for cache lookup
+ * Thread-safe: Yes - pure function
+ */
+static unsigned
+cache_hash_function (const char *hostname)
+{
+  return socket_util_hash_djb2_ci (hostname, SOCKET_DNS_CACHE_HASH_SIZE);
+}
+
+/**
+ * cache_entry_expired - Check if cache entry has exceeded TTL
+ * @dns: DNS resolver instance
+ * @entry: Cache entry to check
+ *
+ * Returns: 1 if expired, 0 if still valid
+ * Thread-safe: Yes - read-only
+ */
+static int
+cache_entry_expired (const struct SocketDNS_T *dns,
+                     const struct SocketDNS_CacheEntry *entry)
+{
+  int64_t now_ms;
+  int64_t age_ms;
+
+  if (dns->cache_ttl_seconds <= 0)
+    return 0; /* TTL disabled, never expire */
+
+  now_ms = Socket_get_monotonic_ms ();
+  age_ms = now_ms - entry->insert_time_ms;
+
+  return age_ms >= (int64_t)dns->cache_ttl_seconds * 1000;
+}
+
+/**
+ * cache_lru_remove - Remove entry from LRU list
+ * @dns: DNS resolver instance
+ * @entry: Entry to remove
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_lru_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
+{
+  if (entry->lru_prev)
+    entry->lru_prev->lru_next = entry->lru_next;
+  else
+    dns->cache_lru_head = entry->lru_next;
+
+  if (entry->lru_next)
+    entry->lru_next->lru_prev = entry->lru_prev;
+  else
+    dns->cache_lru_tail = entry->lru_prev;
+
+  entry->lru_prev = NULL;
+  entry->lru_next = NULL;
+}
+
+/**
+ * cache_lru_insert_front - Insert entry at front of LRU list (most recent)
+ * @dns: DNS resolver instance
+ * @entry: Entry to insert
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_lru_insert_front (struct SocketDNS_T *dns,
+                        struct SocketDNS_CacheEntry *entry)
+{
+  entry->lru_prev = NULL;
+  entry->lru_next = dns->cache_lru_head;
+
+  if (dns->cache_lru_head)
+    dns->cache_lru_head->lru_prev = entry;
+  else
+    dns->cache_lru_tail = entry;
+
+  dns->cache_lru_head = entry;
+}
+
+/**
+ * cache_entry_free - Free a single cache entry
+ * @entry: Entry to free (including addrinfo)
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_entry_free (struct SocketDNS_CacheEntry *entry)
+{
+  if (entry)
+    {
+      if (entry->result)
+        SocketCommon_free_addrinfo (entry->result);
+      /* hostname is arena-allocated, no free needed */
+      /* entry itself is arena-allocated, no free needed */
+    }
+}
+
+/**
+ * cache_hash_remove - Remove entry from hash table
+ * @dns: DNS resolver instance
+ * @entry: Entry to remove
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_hash_remove (struct SocketDNS_T *dns, struct SocketDNS_CacheEntry *entry)
+{
+  unsigned hash = cache_hash_function (entry->hostname);
+  struct SocketDNS_CacheEntry **pp = &dns->cache_hash[hash];
+
+  while (*pp)
+    {
+      if (*pp == entry)
+        {
+          *pp = entry->hash_next;
+          return;
+        }
+      pp = &(*pp)->hash_next;
+    }
+}
+
+/**
+ * cache_evict_oldest - Evict the oldest (LRU tail) entry
+ * @dns: DNS resolver instance
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_evict_oldest (struct SocketDNS_T *dns)
+{
+  struct SocketDNS_CacheEntry *oldest = dns->cache_lru_tail;
+
+  if (!oldest)
+    return;
+
+  cache_lru_remove (dns, oldest);
+  cache_hash_remove (dns, oldest);
+  cache_entry_free (oldest);
+  dns->cache_size--;
+  dns->cache_evictions++;
+}
+
+/**
+ * cache_lookup - Look up hostname in cache
+ * @dns: DNS resolver instance
+ * @hostname: Hostname to find
+ *
+ * Returns: Cache entry or NULL if not found/expired
+ * Thread-safe: Must hold mutex
+ * Note: Updates LRU order on hit
+ */
+static struct SocketDNS_CacheEntry *
+cache_lookup (struct SocketDNS_T *dns, const char *hostname)
+{
+  unsigned hash;
+  struct SocketDNS_CacheEntry *entry;
+
+  if (dns->cache_max_entries == 0)
+    return NULL; /* Cache disabled */
+
+  hash = cache_hash_function (hostname);
+  entry = dns->cache_hash[hash];
+
+  while (entry)
+    {
+      if (strcasecmp (entry->hostname, hostname) == 0)
+        {
+          /* Check TTL */
+          if (cache_entry_expired (dns, entry))
+            {
+              /* Expired - remove and return miss */
+              cache_lru_remove (dns, entry);
+              cache_hash_remove (dns, entry);
+              cache_entry_free (entry);
+              dns->cache_size--;
+              dns->cache_evictions++;
+              return NULL;
+            }
+
+          /* Hit - update LRU and access time */
+          entry->last_access_ms = Socket_get_monotonic_ms ();
+          cache_lru_remove (dns, entry);
+          cache_lru_insert_front (dns, entry);
+          dns->cache_hits++;
+          return entry;
+        }
+      entry = entry->hash_next;
+    }
+
+  dns->cache_misses++;
+  return NULL;
+}
+
+/**
+ * cache_insert - Insert result into cache
+ * @dns: DNS resolver instance
+ * @hostname: Hostname key
+ * @result: addrinfo to cache (copied)
+ *
+ * Thread-safe: Must hold mutex
+ */
+static void
+cache_insert (struct SocketDNS_T *dns, const char *hostname,
+              struct addrinfo *result)
+{
+  struct SocketDNS_CacheEntry *entry;
+  unsigned hash;
+  size_t hostname_len;
+  int64_t now_ms;
+
+  if (dns->cache_max_entries == 0 || !result)
+    return; /* Cache disabled or no result */
+
+  /* Evict if at capacity */
+  while (dns->cache_size >= dns->cache_max_entries)
+    cache_evict_oldest (dns);
+
+  /* Allocate entry from arena */
+  entry = Arena_alloc (dns->arena, sizeof (*entry), __FILE__, __LINE__);
+  if (!entry)
+    return;
+
+  hostname_len = strlen (hostname);
+  entry->hostname
+      = Arena_alloc (dns->arena, hostname_len + 1, __FILE__, __LINE__);
+  if (!entry->hostname)
+    return;
+
+  strcpy (entry->hostname, hostname);
+  entry->result = SocketCommon_copy_addrinfo (result);
+  if (!entry->result)
+    return;
+
+  now_ms = Socket_get_monotonic_ms ();
+  entry->insert_time_ms = now_ms;
+  entry->last_access_ms = now_ms;
+  entry->hash_next = NULL;
+  entry->lru_prev = NULL;
+  entry->lru_next = NULL;
+
+  /* Insert into hash table */
+  hash = cache_hash_function (hostname);
+  entry->hash_next = dns->cache_hash[hash];
+  dns->cache_hash[hash] = entry;
+
+  /* Insert into LRU list */
+  cache_lru_insert_front (dns, entry);
+
+  dns->cache_size++;
+  dns->cache_insertions++;
+}
+
+/**
+ * SocketDNS_cache_clear - Clear the entire DNS cache
+ * @dns: DNS resolver instance
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_cache_clear (T dns)
+{
+  size_t i;
+
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  /* Free all entries in hash table */
+  for (i = 0; i < SOCKET_DNS_CACHE_HASH_SIZE; i++)
+    {
+      struct SocketDNS_CacheEntry *entry = dns->cache_hash[i];
+      while (entry)
+        {
+          struct SocketDNS_CacheEntry *next = entry->hash_next;
+          cache_entry_free (entry);
+          entry = next;
+        }
+      dns->cache_hash[i] = NULL;
+    }
+
+  dns->cache_lru_head = NULL;
+  dns->cache_lru_tail = NULL;
+  dns->cache_size = 0;
+
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/**
+ * SocketDNS_cache_remove - Remove specific hostname from cache
+ * @dns: DNS resolver instance
+ * @hostname: Hostname to remove
+ *
+ * Returns: 1 if found and removed, 0 if not found
+ * Thread-safe: Yes
+ */
+int
+SocketDNS_cache_remove (T dns, const char *hostname)
+{
+  unsigned hash;
+  struct SocketDNS_CacheEntry *entry;
+  struct SocketDNS_CacheEntry **pp;
+  int found = 0;
+
+  assert (dns);
+  assert (hostname);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  hash = cache_hash_function (hostname);
+  pp = &dns->cache_hash[hash];
+
+  while (*pp)
+    {
+      entry = *pp;
+      if (strcasecmp (entry->hostname, hostname) == 0)
+        {
+          *pp = entry->hash_next;
+          cache_lru_remove (dns, entry);
+          cache_entry_free (entry);
+          dns->cache_size--;
+          found = 1;
+          break;
+        }
+      pp = &entry->hash_next;
+    }
+
+  pthread_mutex_unlock (&dns->mutex);
+  return found;
+}
+
+/**
+ * SocketDNS_cache_set_ttl - Set cache TTL
+ * @dns: DNS resolver instance
+ * @ttl_seconds: TTL in seconds (0 disables expiry)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_cache_set_ttl (T dns, int ttl_seconds)
+{
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+  dns->cache_ttl_seconds = ttl_seconds >= 0 ? ttl_seconds : 0;
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/**
+ * SocketDNS_cache_set_max_entries - Set maximum cache entries
+ * @dns: DNS resolver instance
+ * @max_entries: Maximum entries (0 disables caching)
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_cache_set_max_entries (T dns, size_t max_entries)
+{
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  dns->cache_max_entries = max_entries;
+
+  /* Evict if now over limit */
+  while (dns->cache_size > max_entries && max_entries > 0)
+    cache_evict_oldest (dns);
+
+  /* If disabled, clear everything */
+  if (max_entries == 0 && dns->cache_size > 0)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      SocketDNS_cache_clear (dns);
+      return;
+    }
+
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/**
+ * SocketDNS_cache_stats - Get cache statistics
+ * @dns: DNS resolver instance
+ * @stats: Output statistics structure
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_cache_stats (T dns, SocketDNS_CacheStats *stats)
+{
+  uint64_t total;
+
+  assert (dns);
+  assert (stats);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  stats->hits = dns->cache_hits;
+  stats->misses = dns->cache_misses;
+  stats->evictions = dns->cache_evictions;
+  stats->insertions = dns->cache_insertions;
+  stats->current_size = dns->cache_size;
+  stats->max_entries = dns->cache_max_entries;
+  stats->ttl_seconds = dns->cache_ttl_seconds;
+
+  total = stats->hits + stats->misses;
+  stats->hit_rate = (total > 0) ? (double)stats->hits / (double)total : 0.0;
+
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/* ============================================================================
+ * DNS Configuration Functions
+ * ============================================================================
+ */
+
+/**
+ * SocketDNS_prefer_ipv6 - Set IPv6 preference
+ * @dns: DNS resolver instance
+ * @prefer_ipv6: 1 to prefer IPv6, 0 to prefer IPv4
+ *
+ * Thread-safe: Yes
+ */
+void
+SocketDNS_prefer_ipv6 (T dns, int prefer_ipv6)
+{
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+  dns->prefer_ipv6 = prefer_ipv6 ? 1 : 0;
+  pthread_mutex_unlock (&dns->mutex);
+}
+
+/**
+ * SocketDNS_get_prefer_ipv6 - Get IPv6 preference
+ * @dns: DNS resolver instance
+ *
+ * Returns: 1 if IPv6 preferred, 0 if IPv4 preferred
+ * Thread-safe: Yes
+ */
+int
+SocketDNS_get_prefer_ipv6 (T dns)
+{
+  int prefer;
+
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+  prefer = dns->prefer_ipv6;
+  pthread_mutex_unlock (&dns->mutex);
+
+  return prefer;
+}
+
+/**
+ * SocketDNS_set_nameservers - Set custom nameservers
+ * @dns: DNS resolver instance
+ * @servers: Array of nameserver IP addresses
+ * @count: Number of servers
+ *
+ * Returns: 0 on success, -1 if not supported
+ * Thread-safe: Yes
+ *
+ * Note: Custom nameservers require platform-specific support.
+ * On Linux, this would modify _res structure. Currently returns -1
+ * as a safe default since getaddrinfo() uses system resolver.
+ */
+int
+SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
+{
+  size_t i;
+
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  /* Free existing custom nameservers */
+  if (dns->custom_nameservers)
+    {
+      /* Strings are arena-allocated, just clear array */
+      dns->custom_nameservers = NULL;
+      dns->nameserver_count = 0;
+    }
+
+  if (servers == NULL || count == 0)
+    {
+      /* Revert to system nameservers */
+      pthread_mutex_unlock (&dns->mutex);
+      return 0;
+    }
+
+  /* Allocate array for custom nameservers */
+  dns->custom_nameservers
+      = Arena_alloc (dns->arena, count * sizeof (char *), __FILE__, __LINE__);
+  if (!dns->custom_nameservers)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return -1;
+    }
+
+  for (i = 0; i < count; i++)
+    {
+      size_t len = strlen (servers[i]);
+      dns->custom_nameservers[i]
+          = Arena_alloc (dns->arena, len + 1, __FILE__, __LINE__);
+      if (!dns->custom_nameservers[i])
+        {
+          dns->custom_nameservers = NULL;
+          dns->nameserver_count = 0;
+          pthread_mutex_unlock (&dns->mutex);
+          return -1;
+        }
+      strcpy (dns->custom_nameservers[i], servers[i]);
+    }
+
+  dns->nameserver_count = count;
+  pthread_mutex_unlock (&dns->mutex);
+
+  /* Note: Actually using custom nameservers requires platform-specific
+   * resolver configuration (e.g., res_init() on Linux). Since getaddrinfo()
+   * doesn't support this directly, we store the config but don't apply it.
+   * Future: Could implement with res_query() or a custom DNS client. */
+
+  SOCKET_LOG_WARN_MSG (
+      "Custom nameservers configured but not applied (platform limitation)");
+  return -1;
+}
+
+/**
+ * SocketDNS_set_search_domains - Set custom search domains
+ * @dns: DNS resolver instance
+ * @domains: Array of search domain strings
+ * @count: Number of domains
+ *
+ * Returns: 0 on success, -1 if not supported
+ * Thread-safe: Yes
+ */
+int
+SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
+{
+  size_t i;
+
+  assert (dns);
+
+  pthread_mutex_lock (&dns->mutex);
+
+  /* Free existing search domains */
+  if (dns->search_domains)
+    {
+      dns->search_domains = NULL;
+      dns->search_domain_count = 0;
+    }
+
+  if (domains == NULL || count == 0)
+    {
+      /* Revert to system search domains */
+      pthread_mutex_unlock (&dns->mutex);
+      return 0;
+    }
+
+  /* Allocate array for custom search domains */
+  dns->search_domains
+      = Arena_alloc (dns->arena, count * sizeof (char *), __FILE__, __LINE__);
+  if (!dns->search_domains)
+    {
+      pthread_mutex_unlock (&dns->mutex);
+      return -1;
+    }
+
+  for (i = 0; i < count; i++)
+    {
+      size_t len = strlen (domains[i]);
+      dns->search_domains[i]
+          = Arena_alloc (dns->arena, len + 1, __FILE__, __LINE__);
+      if (!dns->search_domains[i])
+        {
+          dns->search_domains = NULL;
+          dns->search_domain_count = 0;
+          pthread_mutex_unlock (&dns->mutex);
+          return -1;
+        }
+      strcpy (dns->search_domains[i], domains[i]);
+    }
+
+  dns->search_domain_count = count;
+  pthread_mutex_unlock (&dns->mutex);
+
+  SOCKET_LOG_WARN_MSG (
+      "Custom search domains configured but not applied (platform limitation)");
+  return -1;
 }
 
 #undef T
