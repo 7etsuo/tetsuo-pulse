@@ -88,19 +88,19 @@
 ## I/O Enhancements
 
 ### Timeout Variants
-- [ ] `Socket_sendv_timeout(socket, iov, iovcnt, timeout_ms)` - Scatter with timeout
-- [ ] `Socket_recvv_timeout(socket, iov, iovcnt, timeout_ms)` - Gather with timeout
-- [ ] `Socket_sendall_timeout(socket, buf, len, timeout_ms)` - Complete send with timeout
-- [ ] `Socket_recvall_timeout(socket, buf, len, timeout_ms)` - Complete recv with timeout
+- [x] `Socket_sendv_timeout(socket, iov, iovcnt, timeout_ms)` - Scatter with timeout
+- [x] `Socket_recvv_timeout(socket, iov, iovcnt, timeout_ms)` - Gather with timeout
+- [x] `Socket_sendall_timeout(socket, buf, len, timeout_ms)` - Complete send with timeout
+- [x] `Socket_recvall_timeout(socket, buf, len, timeout_ms)` - Complete recv with timeout
 
 ### Advanced I/O
-- [ ] `Socket_splice(socket_in, socket_out, len)` - Zero-copy transfer (Linux)
-- [ ] `Socket_cork(socket, enable)` - TCP_CORK control
-- [ ] `Socket_peek(socket, buf, len)` - Peek without consuming (MSG_PEEK wrapper)
+- [x] `Socket_splice(socket_in, socket_out, len)` - Zero-copy transfer (Linux)
+- [x] `Socket_cork(socket, enable)` - TCP_CORK control
+- [x] `Socket_peek(socket, buf, len)` - Peek without consuming (MSG_PEEK wrapper)
 
 ### Socket Duplication
-- [ ] `Socket_dup(socket)` - Duplicate socket (shares fd via dup())
-- [ ] `Socket_dup2(socket, target_fd)` - Duplicate to specific fd
+- [x] `Socket_dup(socket)` - Duplicate socket (shares fd via dup())
+- [x] `Socket_dup2(socket, target_fd)` - Duplicate to specific fd
 
 ---
 

@@ -1477,6 +1477,357 @@ extern ssize_t Socket_sendfile (T socket, int file_fd, off_t *offset,
 extern ssize_t Socket_sendfileall (T socket, int file_fd, off_t *offset,
                                    size_t count);
 
+/* ============================================================================
+ * I/O Operations with Timeout
+ * ============================================================================
+ */
+
+/**
+ * @brief Send all data with timeout.
+ * @ingroup core_io
+ *
+ * Like Socket_sendall() but with a timeout. Ensures all data is sent
+ * or times out. Partial sends are possible on timeout.
+ *
+ * @param[in] socket Connected socket
+ * @param[in] buf Data to send
+ * @param[in] len Length of data (> 0)
+ * @param[in] timeout_ms Timeout in milliseconds (0 = no timeout, -1 = block)
+ *
+ * @return Total bytes sent on success (may be < len on timeout)
+ *
+ * @throws Socket_Closed on EPIPE/ECONNRESET
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for same socket with proper synchronization
+ *
+ * ## Return Values
+ *
+ * | Return | Meaning |
+ * |--------|---------|
+ * | len | All data sent successfully |
+ * | 0 < n < len | Partial send (timeout expired) |
+ * | -1 | Error (exception raised) |
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Send with 5 second timeout
+ * ssize_t sent = Socket_sendall_timeout(sock, data, len, 5000);
+ * if (sent < (ssize_t)len) {
+ *     printf("Only sent %zd of %zu bytes (timeout)\n", sent, len);
+ * }
+ * @endcode
+ *
+ * @see Socket_sendall() for blocking send
+ * @see Socket_send() for single send operation
+ */
+extern ssize_t Socket_sendall_timeout (T socket, const void *buf, size_t len,
+                                       int timeout_ms);
+
+/**
+ * @brief Receive all requested data with timeout.
+ * @ingroup core_io
+ *
+ * Like Socket_recvall() but with a timeout. Ensures all requested data
+ * is received or times out. Partial receives are possible on timeout.
+ *
+ * @param[in] socket Connected socket
+ * @param[out] buf Buffer for received data
+ * @param[in] len Number of bytes to receive
+ * @param[in] timeout_ms Timeout in milliseconds (0 = no timeout, -1 = block)
+ *
+ * @return Total bytes received on success (may be < len on timeout)
+ *
+ * @throws Socket_Closed on peer close or ECONNRESET
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for same socket with proper synchronization
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * char buf[1024];
+ * ssize_t n = Socket_recvall_timeout(sock, buf, sizeof(buf), 5000);
+ * if (n < (ssize_t)sizeof(buf)) {
+ *     printf("Only received %zd bytes (timeout or EOF)\n", n);
+ * }
+ * @endcode
+ *
+ * @see Socket_recvall() for blocking receive
+ * @see Socket_recv() for single receive operation
+ */
+extern ssize_t Socket_recvall_timeout (T socket, void *buf, size_t len,
+                                       int timeout_ms);
+
+/**
+ * @brief Scatter/gather send with timeout.
+ * @ingroup core_io
+ *
+ * Like Socket_sendv() but with a timeout. May perform partial sends.
+ *
+ * @param[in] socket Connected socket
+ * @param[in] iov Array of iovec structures
+ * @param[in] iovcnt Number of iovec structures
+ * @param[in] timeout_ms Timeout in milliseconds (0 = no timeout, -1 = block)
+ *
+ * @return Total bytes sent (> 0), 0 if would block/timeout, or raises
+ *
+ * @throws Socket_Closed on EPIPE/ECONNRESET
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for same socket with proper synchronization
+ *
+ * @see Socket_sendvall() for guaranteed complete send (no timeout)
+ * @see Socket_recvv_timeout() for scatter/gather receive with timeout
+ */
+extern ssize_t Socket_sendv_timeout (T socket, const struct iovec *iov,
+                                     int iovcnt, int timeout_ms);
+
+/**
+ * @brief Scatter/gather receive with timeout.
+ * @ingroup core_io
+ *
+ * Like Socket_recvv() but with a timeout. May perform partial receives.
+ *
+ * @param[in] socket Connected socket
+ * @param[in,out] iov Array of iovec structures
+ * @param[in] iovcnt Number of iovec structures
+ * @param[in] timeout_ms Timeout in milliseconds (0 = no timeout, -1 = block)
+ *
+ * @return Total bytes received (> 0), 0 if would block/timeout, or raises
+ *
+ * @throws Socket_Closed on peer close or ECONNRESET
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for same socket with proper synchronization
+ *
+ * @see Socket_recvvall() for guaranteed complete receive (no timeout)
+ * @see Socket_sendv_timeout() for scatter/gather send with timeout
+ */
+extern ssize_t Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt,
+                                     int timeout_ms);
+
+/* ============================================================================
+ * Advanced I/O Operations
+ * ============================================================================
+ */
+
+/**
+ * @brief Zero-copy socket-to-socket transfer (Linux splice).
+ * @ingroup core_io
+ *
+ * Transfers data between two sockets using the kernel's splice() system call,
+ * avoiding copies between kernel and user space. Significantly more efficient
+ * for proxying and data forwarding.
+ *
+ * @param[in] socket_in Source socket to read from
+ * @param[in] socket_out Destination socket to write to
+ * @param[in] len Maximum bytes to transfer (0 for default chunk size)
+ *
+ * @return Bytes transferred (> 0), 0 if would block, -1 if not supported
+ *
+ * @throws Socket_Closed on connection closed
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for distinct socket pairs
+ *
+ * ## Platform Support
+ *
+ * | Platform | Support |
+ * |----------|---------|
+ * | Linux 2.6.17+ | Full (via splice()) |
+ * | Other | Returns -1 (use Socket_recv/Socket_send fallback) |
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Proxy data from client to upstream
+ * while ((n = Socket_splice(client, upstream, 0)) > 0) {
+ *     total += n;
+ * }
+ * if (n == 0) {
+ *     // Would block - use poll
+ * } else if (n < 0) {
+ *     // Not supported - fallback to recv/send
+ *     char buf[4096];
+ *     while ((n = Socket_recv(client, buf, sizeof(buf))) > 0) {
+ *         Socket_sendall(upstream, buf, n);
+ *     }
+ * }
+ * @endcode
+ *
+ * @note Requires both sockets to be in compatible state
+ * @note For file-to-socket, use Socket_sendfile() instead
+ *
+ * @see Socket_sendfile() for file-to-socket zero-copy
+ */
+extern ssize_t Socket_splice (T socket_in, T socket_out, size_t len);
+
+/**
+ * @brief Control TCP_CORK option (Nagle corking).
+ * @ingroup core_io
+ *
+ * When corking is enabled, TCP accumulates small writes into larger
+ * segments before sending. Useful for building complete messages before
+ * transmission (e.g., HTTP headers + body).
+ *
+ * @param[in] socket TCP socket
+ * @param[in] enable 1 to enable corking, 0 to disable (flush)
+ *
+ * @return 0 on success, -1 if not supported
+ *
+ * @threadsafe Yes
+ *
+ * ## Platform Support
+ *
+ * | Platform | Support |
+ * |----------|---------|
+ * | Linux | Full (TCP_CORK) |
+ * | FreeBSD/macOS | Partial (TCP_NOPUSH) |
+ * | Other | Returns -1 |
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Cork while building response
+ * Socket_cork(sock, 1);
+ * Socket_send(sock, headers, header_len);
+ * Socket_send(sock, body, body_len);
+ * Socket_cork(sock, 0);  // Flush all data
+ * @endcode
+ *
+ * @note Corking is automatically released when socket buffer is full
+ * @note Different from TCP_NODELAY which disables Nagle algorithm entirely
+ *
+ * @see Socket_setnodelay() for disabling Nagle algorithm
+ */
+extern int Socket_cork (T socket, int enable);
+
+/**
+ * @brief Peek at incoming data without consuming it.
+ * @ingroup core_io
+ *
+ * Reads data from the socket receive buffer without removing it.
+ * Subsequent recv() calls will return the same data.
+ *
+ * @param[in] socket Connected socket
+ * @param[out] buf Buffer for peeked data
+ * @param[in] len Maximum bytes to peek
+ *
+ * @return Bytes peeked (> 0), 0 if no data available, or raises
+ *
+ * @throws Socket_Closed on peer close
+ * @throws Socket_Failed on other errors
+ *
+ * @threadsafe Yes - for same socket with proper synchronization
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Peek at protocol header to determine message type
+ * char header[4];
+ * if (Socket_peek(sock, header, sizeof(header)) >= 4) {
+ *     int msg_type = header[0];
+ *     int msg_len = (header[1] << 16) | (header[2] << 8) | header[3];
+ *     // Now read full message
+ *     Socket_recvall(sock, buffer, msg_len);
+ * }
+ * @endcode
+ *
+ * @note Useful for protocol detection and message framing
+ * @note Non-blocking sockets return 0 if no data available
+ *
+ * @see Socket_recv() for consuming data
+ * @see Socket_is_readable() for checking data availability
+ */
+extern ssize_t Socket_peek (T socket, void *buf, size_t len);
+
+/* ============================================================================
+ * Socket Duplication
+ * ============================================================================
+ */
+
+/**
+ * @brief Duplicate a socket (creates new Socket_T sharing same fd).
+ * @ingroup core_io
+ *
+ * Creates a new Socket_T instance with a duplicated file descriptor
+ * (via dup()). Both sockets share the same underlying connection but
+ * have independent Socket_T state (buffers, settings, etc.).
+ *
+ * @param[in] socket Socket to duplicate
+ *
+ * @return New Socket_T with duplicated fd, or NULL on error
+ *
+ * @throws Socket_Failed on dup() or allocation failure
+ *
+ * @threadsafe Yes
+ *
+ * ## Use Cases
+ *
+ * - Separate reader/writer for same connection
+ * - Passing socket to child process (fork safety)
+ * - Multiple references to same connection
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T reader = socket;
+ * Socket_T writer = Socket_dup(socket);
+ *
+ * // Now can use in separate threads
+ * // reader thread: Socket_recv(reader, ...)
+ * // writer thread: Socket_send(writer, ...)
+ *
+ * Socket_free(&writer);  // Closes duplicated fd
+ * Socket_free(&reader);  // Closes original fd
+ * @endcode
+ *
+ * @note Both sockets must be freed separately
+ * @note Closing one does not affect the other's fd
+ * @note Socket options are shared (both see setsockopt changes)
+ *
+ * @see Socket_dup2() for duplicating to specific fd
+ */
+extern T Socket_dup (T socket);
+
+/**
+ * @brief Duplicate socket fd to a specific file descriptor number.
+ * @ingroup core_io
+ *
+ * Creates a new Socket_T instance with the file descriptor duplicated
+ * to a specific number (via dup2()). If target_fd is already open,
+ * it is closed first.
+ *
+ * @param[in] socket Socket to duplicate
+ * @param[in] target_fd Target file descriptor number
+ *
+ * @return New Socket_T with fd = target_fd, or NULL on error
+ *
+ * @throws Socket_Failed on dup2() or allocation failure
+ *
+ * @threadsafe Yes
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Duplicate socket to specific fd for exec()
+ * Socket_T sock_on_fd3 = Socket_dup2(socket, 3);
+ * if (fork() == 0) {
+ *     // Child: fd 3 is the socket
+ *     execl("/usr/bin/handler", "handler", NULL);
+ * }
+ * Socket_free(&sock_on_fd3);
+ * @endcode
+ *
+ * @note target_fd is closed if already open (like dup2 behavior)
+ * @note Original socket is unchanged
+ *
+ * @see Socket_dup() for simple duplication
+ */
+extern T Socket_dup2 (T socket, int target_fd);
+
 /**
  * @brief Send message with ancillary data (sendmsg wrapper).
  * @ingroup core_io

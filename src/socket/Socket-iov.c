@@ -544,4 +544,514 @@ Socket_recvvall (T socket, struct iovec *iov, int iovcnt)
   return (ssize_t)total_received;
 }
 
+/* ==================== I/O Operations with Timeout ==================== */
+
+#include <poll.h>
+
+/**
+ * wait_for_socket - Wait for socket to be ready with timeout
+ * @fd: File descriptor
+ * @events: POLLIN or POLLOUT
+ * @timeout_ms: Timeout in ms (0 = no wait, -1 = block)
+ *
+ * Returns: 1 if ready, 0 if timeout, -1 on error
+ */
+static int
+wait_for_socket (int fd, short events, int timeout_ms)
+{
+  struct pollfd pfd;
+  int ret;
+
+  if (timeout_ms == 0)
+    return 1; /* No timeout, proceed immediately */
+
+  pfd.fd = fd;
+  pfd.events = events;
+  pfd.revents = 0;
+
+  do
+    {
+      ret = poll (&pfd, 1, timeout_ms);
+    }
+  while (ret < 0 && errno == EINTR);
+
+  if (ret < 0)
+    return -1;
+  if (ret == 0)
+    return 0; /* Timeout */
+  if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+    return -1;
+
+  return 1;
+}
+
+/**
+ * Socket_sendall_timeout - Send all data with timeout
+ * @socket: Connected socket
+ * @buf: Data to send
+ * @len: Length of data
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: Total bytes sent (may be < len on timeout)
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_sendall_timeout (T socket, const void *buf, size_t len, int timeout_ms)
+{
+  volatile size_t total_sent = 0;
+  const char *ptr;
+  int fd;
+  volatile int64_t deadline_ms = 0;
+  int64_t remaining_ms;
+  ssize_t sent;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+  ptr = (const char *)buf;
+
+  /* Calculate deadline if timeout specified */
+  if (timeout_ms > 0)
+    deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
+
+  TRY
+  {
+    while (total_sent < len)
+      {
+        /* Check remaining time */
+        if (timeout_ms > 0)
+          {
+            remaining_ms = deadline_ms - Socket_get_monotonic_ms ();
+            if (remaining_ms <= 0)
+              break; /* Timeout */
+
+            if (wait_for_socket (fd, POLLOUT, (int)remaining_ms) <= 0)
+              break; /* Timeout or error */
+          }
+        else if (timeout_ms == -1)
+          {
+            /* Block indefinitely */
+            if (wait_for_socket (fd, POLLOUT, -1) < 0)
+              {
+                SOCKET_ERROR_FMT ("poll() failed during send");
+                RAISE_MODULE_ERROR (Socket_Failed);
+              }
+          }
+
+        sent = Socket_send (socket, ptr + total_sent, len - total_sent);
+        if (sent > 0)
+          total_sent += (size_t)sent;
+        else if (sent == 0)
+          break; /* Would block */
+      }
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_sent;
+}
+
+/**
+ * Socket_recvall_timeout - Receive all data with timeout
+ * @socket: Connected socket
+ * @buf: Buffer for received data
+ * @len: Number of bytes to receive
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: Total bytes received (may be < len on timeout or EOF)
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_recvall_timeout (T socket, void *buf, size_t len, int timeout_ms)
+{
+  volatile size_t total_received = 0;
+  char *ptr;
+  int fd;
+  volatile int64_t deadline_ms = 0;
+  int64_t remaining_ms;
+  ssize_t received;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+  ptr = (char *)buf;
+
+  /* Calculate deadline if timeout specified */
+  if (timeout_ms > 0)
+    deadline_ms = Socket_get_monotonic_ms () + timeout_ms;
+
+  TRY
+  {
+    while (total_received < len)
+      {
+        /* Check remaining time */
+        if (timeout_ms > 0)
+          {
+            remaining_ms = deadline_ms - Socket_get_monotonic_ms ();
+            if (remaining_ms <= 0)
+              break; /* Timeout */
+
+            if (wait_for_socket (fd, POLLIN, (int)remaining_ms) <= 0)
+              break; /* Timeout or error */
+          }
+        else if (timeout_ms == -1)
+          {
+            /* Block indefinitely */
+            if (wait_for_socket (fd, POLLIN, -1) < 0)
+              {
+                SOCKET_ERROR_FMT ("poll() failed during recv");
+                RAISE_MODULE_ERROR (Socket_Failed);
+              }
+          }
+
+        received = Socket_recv (socket, ptr + total_received,
+                                len - total_received);
+        if (received > 0)
+          total_received += (size_t)received;
+        else if (received == 0)
+          break; /* EOF or would block */
+      }
+  }
+  EXCEPT (Socket_Closed)
+  RERAISE;
+  EXCEPT (Socket_Failed)
+  RERAISE;
+  END_TRY;
+
+  return (ssize_t)total_received;
+}
+
+/**
+ * Socket_sendv_timeout - Scatter/gather send with timeout
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: Total bytes sent
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_sendv_timeout (T socket, const struct iovec *iov, int iovcnt,
+                      int timeout_ms)
+{
+  int fd;
+
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+  fd = SocketBase_fd (socket->base);
+
+  /* Wait for socket to be writable */
+  if (timeout_ms != 0)
+    {
+      int ready = wait_for_socket (fd, POLLOUT, timeout_ms);
+      if (ready == 0)
+        return 0; /* Timeout */
+      if (ready < 0)
+        {
+          SOCKET_ERROR_FMT ("poll() failed during sendv");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+    }
+
+  return socket_sendv_internal (socket, iov, iovcnt, 0);
+}
+
+/**
+ * Socket_recvv_timeout - Scatter/gather receive with timeout
+ * @socket: Connected socket
+ * @iov: Array of iovec structures
+ * @iovcnt: Number of iovec structures
+ * @timeout_ms: Timeout in milliseconds
+ *
+ * Returns: Total bytes received
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_recvv_timeout (T socket, struct iovec *iov, int iovcnt, int timeout_ms)
+{
+  int fd;
+
+  assert (socket);
+  assert (iov);
+  assert (iovcnt > 0);
+  assert (iovcnt <= IOV_MAX);
+
+  fd = SocketBase_fd (socket->base);
+
+  /* Wait for socket to be readable */
+  if (timeout_ms != 0)
+    {
+      int ready = wait_for_socket (fd, POLLIN, timeout_ms);
+      if (ready == 0)
+        return 0; /* Timeout */
+      if (ready < 0)
+        {
+          SOCKET_ERROR_FMT ("poll() failed during recvv");
+          RAISE_MODULE_ERROR (Socket_Failed);
+        }
+    }
+
+  return socket_recvv_internal (socket, iov, iovcnt, 0);
+}
+
+/* ==================== Advanced I/O Operations ==================== */
+
+#ifdef __linux__
+#include <fcntl.h>
+
+/**
+ * Socket_splice - Zero-copy socket-to-socket transfer (Linux)
+ * @socket_in: Source socket
+ * @socket_out: Destination socket
+ * @len: Maximum bytes to transfer (0 for default)
+ *
+ * Returns: Bytes transferred, 0 if would block, -1 if not supported
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_splice (T socket_in, T socket_out, size_t len)
+{
+  int fd_in, fd_out;
+  int pipe_fds[2];
+  ssize_t spliced_in, spliced_out;
+  size_t chunk_size;
+
+  assert (socket_in);
+  assert (socket_out);
+
+  fd_in = SocketBase_fd (socket_in->base);
+  fd_out = SocketBase_fd (socket_out->base);
+
+  chunk_size = (len > 0) ? len : 65536;
+
+  /* Create pipe for intermediate buffer */
+  if (pipe (pipe_fds) < 0)
+    {
+      SOCKET_ERROR_FMT ("pipe() failed for splice");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  /* Splice from socket to pipe */
+  spliced_in = splice (fd_in, NULL, pipe_fds[1], NULL, chunk_size,
+                       SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+
+  if (spliced_in < 0)
+    {
+      int saved_errno = errno;
+      close (pipe_fds[0]);
+      close (pipe_fds[1]);
+      if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK)
+        return 0;
+      if (saved_errno == EPIPE || saved_errno == ECONNRESET)
+        {
+          SOCKET_ERROR_MSG ("Connection closed during splice");
+          RAISE_MODULE_ERROR (Socket_Closed);
+        }
+      SOCKET_ERROR_FMT ("splice() from socket failed");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  if (spliced_in == 0)
+    {
+      close (pipe_fds[0]);
+      close (pipe_fds[1]);
+      return 0;
+    }
+
+  /* Splice from pipe to socket */
+  spliced_out = splice (pipe_fds[0], NULL, fd_out, NULL, (size_t)spliced_in,
+                        SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+
+  close (pipe_fds[0]);
+  close (pipe_fds[1]);
+
+  if (spliced_out < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      if (errno == EPIPE || errno == ECONNRESET)
+        {
+          SOCKET_ERROR_MSG ("Connection closed during splice");
+          RAISE_MODULE_ERROR (Socket_Closed);
+        }
+      SOCKET_ERROR_FMT ("splice() to socket failed");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  return spliced_out;
+}
+#else
+/* Non-Linux: splice not supported */
+ssize_t
+Socket_splice (T socket_in, T socket_out, size_t len)
+{
+  (void)socket_in;
+  (void)socket_out;
+  (void)len;
+  return -1; /* Not supported */
+}
+#endif /* __linux__ */
+
+/**
+ * Socket_cork - Control TCP_CORK option
+ * @socket: TCP socket
+ * @enable: 1 to enable, 0 to disable
+ *
+ * Returns: 0 on success, -1 if not supported
+ */
+int
+Socket_cork (T socket, int enable)
+{
+  int fd;
+  int flag = enable ? 1 : 0;
+
+  assert (socket);
+
+  fd = SocketBase_fd (socket->base);
+
+#if defined(__linux__) && defined(TCP_CORK)
+  if (setsockopt (fd, IPPROTO_TCP, TCP_CORK, &flag, sizeof (flag)) < 0)
+    return -1;
+  return 0;
+#elif (defined(__FreeBSD__) || defined(__APPLE__)) && defined(TCP_NOPUSH)
+  if (setsockopt (fd, IPPROTO_TCP, TCP_NOPUSH, &flag, sizeof (flag)) < 0)
+    return -1;
+  return 0;
+#else
+  (void)fd;
+  (void)flag;
+  return -1; /* Not supported */
+#endif
+}
+
+/**
+ * Socket_peek - Peek at incoming data without consuming
+ * @socket: Connected socket
+ * @buf: Buffer for peeked data
+ * @len: Maximum bytes to peek
+ *
+ * Returns: Bytes peeked, 0 if no data, or raises
+ * Raises: Socket_Closed, Socket_Failed
+ */
+ssize_t
+Socket_peek (T socket, void *buf, size_t len)
+{
+  int fd;
+  ssize_t result;
+
+  assert (socket);
+  assert (buf || len == 0);
+
+  if (len == 0)
+    return 0;
+
+  fd = SocketBase_fd (socket->base);
+
+  do
+    {
+      result = recv (fd, buf, len, MSG_PEEK | MSG_DONTWAIT);
+    }
+  while (result < 0 && errno == EINTR);
+
+  if (result < 0)
+    {
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0;
+      if (errno == ECONNRESET || errno == EPIPE)
+        {
+          SOCKET_ERROR_MSG ("Connection closed during peek");
+          RAISE_MODULE_ERROR (Socket_Closed);
+        }
+      SOCKET_ERROR_FMT ("recv(MSG_PEEK) failed");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  return result;
+}
+
+/* ==================== Socket Duplication ==================== */
+
+/**
+ * Socket_dup - Duplicate a socket
+ * @socket: Socket to duplicate
+ *
+ * Returns: New Socket_T with duplicated fd
+ * Raises: Socket_Failed on error
+ */
+T
+Socket_dup (T socket)
+{
+  int new_fd;
+  T new_socket;
+
+  assert (socket);
+
+  new_fd = dup (SocketBase_fd (socket->base));
+  if (new_fd < 0)
+    {
+      SOCKET_ERROR_FMT ("dup() failed");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  new_socket = Socket_new_from_fd (new_fd);
+  if (!new_socket)
+    {
+      close (new_fd);
+      SOCKET_ERROR_MSG ("Failed to create socket from duplicated fd");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  return new_socket;
+}
+
+/**
+ * Socket_dup2 - Duplicate socket to specific fd
+ * @socket: Socket to duplicate
+ * @target_fd: Target file descriptor
+ *
+ * Returns: New Socket_T with fd = target_fd
+ * Raises: Socket_Failed on error
+ */
+T
+Socket_dup2 (T socket, int target_fd)
+{
+  int new_fd;
+  T new_socket;
+
+  assert (socket);
+  assert (target_fd >= 0);
+
+  new_fd = dup2 (SocketBase_fd (socket->base), target_fd);
+  if (new_fd < 0)
+    {
+      SOCKET_ERROR_FMT ("dup2() failed");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  new_socket = Socket_new_from_fd (new_fd);
+  if (!new_socket)
+    {
+      close (new_fd);
+      SOCKET_ERROR_MSG ("Failed to create socket from dup2'd fd");
+      RAISE_MODULE_ERROR (Socket_Failed);
+    }
+
+  return new_socket;
+}
+
 #undef T

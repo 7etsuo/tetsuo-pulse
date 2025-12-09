@@ -911,6 +911,98 @@ if (cwnd >= 0) {
 Socket_free(&sock);
 ```
 
+### I/O with Timeouts
+
+```c
+#include "socket/Socket.h"
+
+Socket_T sock = Socket_connect_tcp("example.com", 80, 5000);
+
+/* Send all data with timeout (returns bytes actually sent) */
+ssize_t sent = Socket_sendall_timeout(sock, request, len, 10000);
+if (sent < (ssize_t)len) {
+    printf("Only sent %zd bytes before timeout\n", sent);
+}
+
+/* Receive with timeout (returns bytes received) */
+char response[4096];
+ssize_t n = Socket_recvall_timeout(sock, response, sizeof(response), 5000);
+if (n > 0) {
+    printf("Received %zd bytes\n", n);
+}
+
+/* Scatter/gather I/O with timeout */
+struct iovec iov[2] = {
+    {.iov_base = header, .iov_len = header_len},
+    {.iov_base = body, .iov_len = body_len}
+};
+ssize_t sent_v = Socket_sendv_timeout(sock, iov, 2, 5000);
+
+Socket_free(&sock);
+```
+
+### Advanced I/O Operations
+
+```c
+#include "socket/Socket.h"
+
+/* Peek at data without consuming */
+char peek_buf[16];
+ssize_t peeked = Socket_peek(sock, peek_buf, sizeof(peek_buf));
+if (peeked > 0) {
+    printf("Peeked %zd bytes: protocol=%d\n", peeked, peek_buf[0]);
+}
+
+/* TCP cork for efficient message assembly */
+Socket_cork(sock, 1);  /* Enable corking */
+Socket_send(sock, headers, header_len);
+Socket_send(sock, body, body_len);
+Socket_cork(sock, 0);  /* Disable cork, flush all data */
+
+#ifdef __linux__
+/* Zero-copy socket-to-socket transfer (Linux only) */
+ssize_t spliced = Socket_splice(client, upstream, 65536);
+if (spliced > 0) {
+    printf("Spliced %zd bytes\n", spliced);
+} else if (spliced == 0) {
+    /* Would block - poll for readiness */
+} else {
+    /* Not supported on this platform */
+    char buf[4096];
+    while ((n = Socket_recv(client, buf, sizeof(buf))) > 0) {
+        Socket_sendall(upstream, buf, n);
+    }
+}
+#endif
+```
+
+### Socket Duplication
+
+```c
+#include "socket/Socket.h"
+
+Socket_T socket = Socket_connect_tcp("example.com", 80, 5000);
+
+/* Duplicate socket for separate reader/writer threads */
+Socket_T reader = socket;
+Socket_T writer = Socket_dup(socket);
+
+/* Now can be used in separate threads safely */
+/* reader thread: Socket_recv(reader, ...) */
+/* writer thread: Socket_send(writer, ...) */
+
+/* Duplicate to specific fd (useful for exec) */
+Socket_T sock_fd3 = Socket_dup2(socket, 3);
+if (fork() == 0) {
+    /* Child process can access socket on fd 3 */
+    execl("/usr/bin/handler", "handler", NULL);
+}
+
+Socket_free(&writer);
+Socket_free(&reader);
+Socket_free(&sock_fd3);
+```
+
 ### Timers
 
 ```c
