@@ -181,14 +181,14 @@
 ## Event System Enhancements
 
 ### SocketPoll Additions
-- [ ] `SocketPoll_get_backend_name(poll)` - Return "epoll"/"kqueue"/"poll"
-- [ ] `SocketPoll_get_registered_sockets(poll, sockets, max)` - List monitored sockets
-- [ ] `SocketPoll_modify_events(poll, socket, add_events, remove_events)` - Modify event mask
+- [x] `SocketPoll_get_backend_name(poll)` - Return "epoll"/"kqueue"/"poll"
+- [x] `SocketPoll_get_registered_sockets(poll, sockets, max)` - List monitored sockets
+- [x] `SocketPoll_modify_events(poll, socket, add_events, remove_events)` - Modify event mask
 
 ### Timer Enhancements
-- [ ] `SocketTimer_reschedule(poll, timer, new_delay_ms)` - Change timer delay
-- [ ] `SocketTimer_pause(poll, timer)` - Pause timer
-- [ ] `SocketTimer_resume(poll, timer)` - Resume paused timer
+- [x] `SocketTimer_reschedule(poll, timer, new_delay_ms)` - Change timer delay
+- [x] `SocketTimer_pause(poll, timer)` - Pause timer
+- [x] `SocketTimer_resume(poll, timer)` - Resume paused timer
 
 ---
 

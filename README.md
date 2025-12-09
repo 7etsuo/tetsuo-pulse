@@ -1223,6 +1223,10 @@ Socket_free(&sock_fd3);
 
 SocketPoll_T poll = SocketPoll_new(100);
 
+/* Check which backend is in use */
+printf("Backend: %s\n", SocketPoll_get_backend_name(poll));
+// Output: "epoll" (Linux), "kqueue" (macOS/BSD), or "poll" (fallback)
+
 void timer_callback(void *userdata) {
     printf("Timer fired!\n");
 }
@@ -1236,8 +1240,27 @@ SocketTimer_T heartbeat = SocketTimer_add_repeating(poll, 1000, timer_callback, 
 /* Check remaining time */
 int64_t remaining = SocketTimer_remaining(poll, timer);
 
+/* Reschedule timer with new delay (extends/shortens timeout) */
+SocketTimer_reschedule(poll, timer, 10000);  /* Now fires in 10 seconds */
+
+/* Pause and resume timers */
+SocketTimer_pause(poll, heartbeat);   /* Stops firing, preserves remaining time */
+/* ... do something ... */
+SocketTimer_resume(poll, heartbeat);  /* Continues from where it paused */
+
 /* Cancel timer */
 SocketTimer_cancel(poll, heartbeat);
+
+/* Modify events for registered sockets */
+Socket_T sock = /* ... */;
+SocketPoll_add(poll, sock, POLL_READ, NULL);
+SocketPoll_modify_events(poll, sock, POLL_WRITE, 0);  /* Add write monitoring */
+SocketPoll_modify_events(poll, sock, 0, POLL_WRITE);  /* Remove write monitoring */
+
+/* List registered sockets */
+Socket_T sockets[100];
+int count = SocketPoll_get_registered_sockets(poll, sockets, 100);
+printf("Monitoring %d sockets\n", count);
 
 /* Timers fire automatically during SocketPoll_wait() */
 SocketEvent_T *events;

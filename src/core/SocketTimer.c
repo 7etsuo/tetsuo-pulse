@@ -1118,3 +1118,169 @@ SocketTimer_remaining (SocketPoll_T poll, SocketTimer_T timer)
 
   return SocketTimer_heap_remaining (heap, timer);
 }
+
+/**
+ * SocketTimer_reschedule - Reschedule a timer with a new delay
+ * @poll: Event poll instance timer is associated with
+ * @timer: Timer handle to reschedule
+ * @new_delay_ms: New delay from now in milliseconds
+ *
+ * Returns: 0 on success, -1 if timer invalid or cancelled
+ * Thread-safe: Yes
+ */
+int
+SocketTimer_reschedule (SocketPoll_T poll, SocketTimer_T timer,
+                        int64_t new_delay_ms)
+{
+  SocketTimer_heap_T *heap;
+  int64_t now_ms;
+  int64_t new_expiry;
+
+  assert (poll);
+  assert (timer);
+
+  heap = sockettimer_get_heap_from_poll (poll);
+  if (!heap)
+    return -1;
+
+  pthread_mutex_lock (&heap->mutex);
+
+  /* Check if timer is valid and not cancelled */
+  if (timer->cancelled || timer->heap_index == SOCKET_TIMER_INVALID_HEAP_INDEX)
+    {
+      pthread_mutex_unlock (&heap->mutex);
+      return -1;
+    }
+
+  /* Calculate new expiry time */
+  now_ms = Socket_get_monotonic_ms ();
+  new_expiry = now_ms + new_delay_ms;
+
+  /* Clamp to max */
+  if (new_delay_ms > SOCKET_MAX_TIMER_DELAY_MS)
+    new_expiry = now_ms + SOCKET_MAX_TIMER_DELAY_MS;
+
+  /* Update expiry */
+  timer->expiry_ms = new_expiry;
+
+  /* Also update interval for repeating timers */
+  if (timer->interval_ms > 0)
+    timer->interval_ms = new_delay_ms;
+
+  /* Reheapify - we may need to move up or down */
+  /* For simplicity, we remove and re-insert */
+  size_t old_index = timer->heap_index;
+  size_t parent = old_index / 2;
+
+  if (parent > 0 && timer->expiry_ms < heap->timers[parent]->expiry_ms)
+    {
+      /* Need to move up (sift up) */
+      sockettimer_heap_sift_up (heap->timers, old_index);
+    }
+  else
+    {
+      /* May need to move down (sift down) */
+      sockettimer_heap_sift_down (heap->timers, heap->count, old_index);
+    }
+
+  pthread_mutex_unlock (&heap->mutex);
+
+  return 0;
+}
+
+/**
+ * SocketTimer_pause - Pause a timer, preserving remaining time
+ * @poll: Event poll instance timer is associated with
+ * @timer: Timer handle to pause
+ *
+ * Returns: 0 on success, -1 if timer invalid, cancelled, or already paused
+ * Thread-safe: Yes
+ */
+int
+SocketTimer_pause (SocketPoll_T poll, SocketTimer_T timer)
+{
+  SocketTimer_heap_T *heap;
+  int64_t now_ms;
+  int64_t remaining;
+
+  assert (poll);
+  assert (timer);
+
+  heap = sockettimer_get_heap_from_poll (poll);
+  if (!heap)
+    return -1;
+
+  pthread_mutex_lock (&heap->mutex);
+
+  /* Check if timer is valid, not cancelled, and not already paused */
+  if (timer->cancelled || timer->paused
+      || timer->heap_index == SOCKET_TIMER_INVALID_HEAP_INDEX)
+    {
+      pthread_mutex_unlock (&heap->mutex);
+      return -1;
+    }
+
+  /* Calculate and store remaining time */
+  now_ms = Socket_get_monotonic_ms ();
+  remaining = timer->expiry_ms - now_ms;
+  if (remaining < 0)
+    remaining = 0;
+
+  timer->paused_remaining_ms = remaining;
+  timer->paused = 1;
+
+  /* Set expiry to far future so it won't fire while paused */
+  timer->expiry_ms = INT64_MAX;
+
+  /* Reheapify (move to end since expiry is now maximum) */
+  sockettimer_heap_sift_down (heap->timers, heap->count, timer->heap_index);
+
+  pthread_mutex_unlock (&heap->mutex);
+
+  return 0;
+}
+
+/**
+ * SocketTimer_resume - Resume a paused timer
+ * @poll: Event poll instance timer is associated with
+ * @timer: Timer handle to resume
+ *
+ * Returns: 0 on success, -1 if timer invalid, cancelled, or not paused
+ * Thread-safe: Yes
+ */
+int
+SocketTimer_resume (SocketPoll_T poll, SocketTimer_T timer)
+{
+  SocketTimer_heap_T *heap;
+  int64_t now_ms;
+
+  assert (poll);
+  assert (timer);
+
+  heap = sockettimer_get_heap_from_poll (poll);
+  if (!heap)
+    return -1;
+
+  pthread_mutex_lock (&heap->mutex);
+
+  /* Check if timer is valid, not cancelled, and paused */
+  if (timer->cancelled || !timer->paused
+      || timer->heap_index == SOCKET_TIMER_INVALID_HEAP_INDEX)
+    {
+      pthread_mutex_unlock (&heap->mutex);
+      return -1;
+    }
+
+  /* Restore expiry from paused remaining time */
+  now_ms = Socket_get_monotonic_ms ();
+  timer->expiry_ms = now_ms + timer->paused_remaining_ms;
+  timer->paused = 0;
+  timer->paused_remaining_ms = 0;
+
+  /* Reheapify (move toward front since expiry is now smaller) */
+  sockettimer_heap_sift_up (heap->timers, timer->heap_index);
+
+  pthread_mutex_unlock (&heap->mutex);
+
+  return 0;
+}

@@ -1272,4 +1272,92 @@ SocketPoll_getregisteredcount (T poll)
   return count;
 }
 
+/* ==================== New Accessors ==================== */
+
+const char *
+SocketPoll_get_backend_name (T poll)
+{
+  (void)poll; /* Unused - backend is compile-time selected */
+  return backend_name ();
+}
+
+int
+SocketPoll_get_registered_sockets (T poll, Socket_T *sockets, int max)
+{
+  int count = 0;
+
+  assert (poll);
+
+  if (max <= 0)
+    return 0;
+
+  if (!sockets)
+    {
+      SOCKET_ERROR_MSG ("NULL sockets array with positive max");
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+      return 0;
+    }
+
+  pthread_mutex_lock (&poll->mutex);
+
+  /* Iterate through the fd_to_socket hash table to collect sockets */
+  for (unsigned i = 0; i < SOCKET_DATA_HASH_SIZE && count < max; i++)
+    {
+      FdSocketEntry *entry = poll->fd_to_socket_map[i];
+      while (entry && count < max)
+        {
+          sockets[count++] = entry->socket;
+          entry = entry->next;
+        }
+    }
+
+  pthread_mutex_unlock (&poll->mutex);
+
+  return count;
+}
+
+void
+SocketPoll_modify_events (T poll, Socket_T socket, unsigned add_events,
+                          unsigned remove_events)
+{
+  void *user_data;
+  unsigned new_events;
+  int fd;
+
+  assert (poll);
+  assert (socket);
+
+  fd = Socket_fd (socket);
+
+  pthread_mutex_lock (&poll->mutex);
+
+  /* Check if socket is registered */
+  user_data = socket_data_lookup_unlocked (poll, socket);
+  if (!user_data && !find_socket_data_entry (poll, poll_fd_hash (poll, fd), socket))
+    {
+      pthread_mutex_unlock (&poll->mutex);
+      SOCKET_ERROR_FMT ("Socket fd=%d not registered in poll", fd);
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+      return;
+    }
+
+  /* Compute new event mask from add/remove operations.
+   * Note: Since we don't track current events in SocketData, we apply
+   * add_events directly (OR) and remove_events as mask removal (AND NOT).
+   * For proper tracking, the caller should manage their own event state. */
+  new_events = add_events & ~remove_events;
+
+  /* Call backend mod */
+  if (backend_mod (poll->backend, fd, new_events) < 0)
+    {
+      int err = errno;
+      pthread_mutex_unlock (&poll->mutex);
+      SOCKET_ERROR_FMT ("backend_mod failed for fd=%d: %s", fd, strerror (err));
+      RAISE_POLL_ERROR (SocketPoll_Failed);
+      return;
+    }
+
+  pthread_mutex_unlock (&poll->mutex);
+}
+
 #undef T

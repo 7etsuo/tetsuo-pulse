@@ -148,6 +148,8 @@ struct SocketTimer_T
                      lifetime. */
   int cancelled;  /**< Lazy cancel flag: 1=skip firing/remove on pop, 0=active.
                      Atomic set under mutex. */
+  int paused;     /**< Pause flag: 1=timer paused and won't fire, 0=active. */
+  int64_t paused_remaining_ms; /**< Time remaining when paused (for resume). */
   uint64_t id;    /**< Unique monotonic ID for debugging/uniqueness. 64-bit
                      prevents wrap in practice. */
 

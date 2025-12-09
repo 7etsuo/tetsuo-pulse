@@ -771,6 +771,102 @@ extern void SocketPoll_setmaxregistered (T poll, int max);
  */
 extern int SocketPoll_getregisteredcount (T poll);
 
+/**
+ * @brief Get the name of the polling backend in use.
+ * @ingroup event_system
+ * @param poll Poll instance (may be NULL).
+ * @return Static string: "epoll", "kqueue", or "poll".
+ *
+ * Returns the name of the platform-specific backend used for I/O multiplexing.
+ * Useful for logging, debugging, and runtime platform detection.
+ *
+ * @threadsafe Yes - returns static string.
+ * @complexity O(1)
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketPoll_T poll = SocketPoll_new(1024);
+ * printf("Using backend: %s\n", SocketPoll_get_backend_name(poll));
+ * // Output on Linux: "Using backend: epoll"
+ * // Output on macOS: "Using backend: kqueue"
+ * @endcode
+ *
+ * @note poll parameter is for API consistency but currently unused;
+ *       backend is determined at compile time.
+ * @see SocketPoll_new() which selects backend automatically.
+ */
+extern const char *SocketPoll_get_backend_name (T poll);
+
+/**
+ * @brief Get list of currently registered sockets.
+ * @ingroup event_system
+ * @param[in] poll Poll instance.
+ * @param[out] sockets Array to populate with registered Socket_T handles.
+ * @param[in] max Maximum number of sockets to return.
+ * @return Number of sockets copied to array (may be < registered_count if max
+ * too small).
+ *
+ * Retrieves up to `max` sockets currently registered with the poll instance.
+ * Useful for debugging, cleanup operations, or iterating over monitored
+ * connections.
+ *
+ * @throws SocketPoll_Failed if poll NULL or sockets NULL with max > 0.
+ * @threadsafe Yes - acquires internal mutex.
+ * @complexity O(n) where n = number of registered sockets.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * Socket_T sockets[100];
+ * int count = SocketPoll_get_registered_sockets(poll, sockets, 100);
+ * for (int i = 0; i < count; i++) {
+ *     printf("Registered: fd=%d\n", Socket_fd(sockets[i]));
+ * }
+ * @endcode
+ *
+ * @see SocketPoll_getregisteredcount() for just the count.
+ * @see SocketPoll_del() to remove specific sockets.
+ */
+extern int SocketPoll_get_registered_sockets (T poll, Socket_T *sockets,
+                                              int max);
+
+/**
+ * @brief Modify event mask for a registered socket (add or remove flags).
+ * @ingroup event_system
+ * @param[in] poll Poll instance.
+ * @param[in] socket Registered socket to modify.
+ * @param[in] add_events Event flags to add (OR'ed with current).
+ * @param[in] remove_events Event flags to remove (AND NOT with current).
+ *
+ * Provides fine-grained control over monitored events without needing to
+ * track the current event mask. Internally computes:
+ *   new_events = (current_events | add_events) & ~remove_events
+ *
+ * @throws SocketPoll_Failed if socket not registered or backend fails.
+ * @threadsafe Yes - acquires internal mutex.
+ * @complexity O(1) - hash lookup + backend mod.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Add write monitoring when we have data to send
+ * SocketPoll_modify_events(poll, socket, POLL_WRITE, 0);
+ *
+ * // Remove write monitoring when send buffer empty
+ * SocketPoll_modify_events(poll, socket, 0, POLL_WRITE);
+ *
+ * // Switch from read to write only
+ * SocketPoll_modify_events(poll, socket, POLL_WRITE, POLL_READ);
+ * @endcode
+ *
+ * @see SocketPoll_mod() for setting exact event mask with data.
+ * @see SocketPoll_Events for available event flags.
+ */
+extern void SocketPoll_modify_events (T poll, Socket_T socket,
+                                      unsigned add_events,
+                                      unsigned remove_events);
+
 #undef T
 
 #endif

@@ -559,6 +559,91 @@ extern int SocketTimer_cancel (SocketPoll_T poll, T timer);
  */
 extern int64_t SocketTimer_remaining (SocketPoll_T poll, T timer);
 
+/**
+ * @brief Reschedule a timer with a new delay.
+ * @ingroup event_system
+ * @param[in] poll Poll instance owning the timer heap.
+ * @param[in] timer Timer handle to reschedule.
+ * @param[in] new_delay_ms New delay from now in milliseconds.
+ * @return 0 on success, -1 if timer invalid or cancelled.
+ *
+ * Changes the expiry time of an existing timer without creating a new one.
+ * For repeating timers, this also updates the interval.
+ *
+ * @threadsafe Yes - acquires heap mutex.
+ * @complexity O(log n) - may need to reheapify.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Extend timeout on activity
+ * SocketTimer_reschedule(poll, idle_timer, 30000);  // Reset to 30 seconds
+ * @endcode
+ *
+ * @note More efficient than cancel + add for timer renewal.
+ * @see SocketTimer_add() for creating new timers.
+ * @see SocketTimer_cancel() to stop a timer.
+ */
+extern int SocketTimer_reschedule (SocketPoll_T poll, T timer,
+                                   int64_t new_delay_ms);
+
+/**
+ * @brief Pause a timer, preserving remaining time.
+ * @ingroup event_system
+ * @param[in] poll Poll instance owning the timer heap.
+ * @param[in] timer Timer handle to pause.
+ * @return 0 on success, -1 if timer invalid, cancelled, or already paused.
+ *
+ * Temporarily stops a timer from firing. The remaining time is preserved
+ * and restored when SocketTimer_resume() is called. Paused timers do not
+ * fire during poll waits.
+ *
+ * @threadsafe Yes - acquires heap mutex.
+ * @complexity O(1) - sets flag and stores remaining time.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Pause during long operation
+ * SocketTimer_pause(poll, watchdog);
+ * perform_long_operation();
+ * SocketTimer_resume(poll, watchdog);
+ * @endcode
+ *
+ * @see SocketTimer_resume() to resume paused timer.
+ * @see SocketTimer_remaining() to check time before pause.
+ */
+extern int SocketTimer_pause (SocketPoll_T poll, T timer);
+
+/**
+ * @brief Resume a paused timer.
+ * @ingroup event_system
+ * @param[in] poll Poll instance owning the timer heap.
+ * @param[in] timer Timer handle to resume.
+ * @return 0 on success, -1 if timer invalid, cancelled, or not paused.
+ *
+ * Resumes a previously paused timer. The timer's expiry is set to
+ * now + remaining_time_at_pause, preserving the original deadline relative
+ * to when it was paused.
+ *
+ * @threadsafe Yes - acquires heap mutex.
+ * @complexity O(log n) - may need to reheapify.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Resume after user interaction pause
+ * if (SocketTimer_resume(poll, idle_timer) < 0) {
+ *     // Timer was not paused or is invalid
+ *     idle_timer = SocketTimer_add(poll, 30000, idle_cb, ctx);
+ * }
+ * @endcode
+ *
+ * @see SocketTimer_pause() to pause timer.
+ * @see SocketTimer_reschedule() for different timing control.
+ */
+extern int SocketTimer_resume (SocketPoll_T poll, T timer);
+
 #undef T
 
 /** @} */ /* end of group event_system */
