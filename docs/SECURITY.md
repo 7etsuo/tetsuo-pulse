@@ -345,7 +345,7 @@ Error messages use thread-local storage:
 
 ```c
 /* Safe - each thread has own buffer */
-const char *error = Socket_error();
+const char *error = Socket_GetLastError();
 ```
 
 ### Exception Thread Safety

@@ -25,7 +25,7 @@ TRY {
     Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
 }
 EXCEPT(Socket_Failed) {
-    fprintf(stderr, "Error: %s\n", Socket_error());
+    fprintf(stderr, "Error: %s\n", Socket_GetLastError());
 }
 END_TRY;
 ```
@@ -410,7 +410,7 @@ EXCEPT(Socket_Timeout) {
     /* timeout */
 }
 EXCEPT(Socket_Failed) {
-    /* error - Socket_error() for details */
+    /* error - Socket_GetLastError() for details */
 }
 END_TRY;
 ```

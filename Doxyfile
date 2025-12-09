@@ -10,7 +10,7 @@
 #---------------------------------------------------------------------------
 
 PROJECT_NAME           = "Socket Library"
-PROJECT_NUMBER         = "1.1.0"
+PROJECT_NUMBER         = "1.0.0"
 PROJECT_BRIEF          = "High-performance, exception-driven socket toolkit for POSIX systems"
 PROJECT_LOGO           = 
 OUTPUT_DIRECTORY       = docs

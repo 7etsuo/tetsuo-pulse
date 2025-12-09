@@ -2,7 +2,7 @@
 
 A modern C library for building high-performance networked applications. Production-ready with comprehensive support for TCP, UDP, Unix domain sockets, and TLS 1.3 security.
 
-**Version:** 1.1.0
+**Version:** 1.0.0
 **Last Updated:** December 9, 2025
 
 ---
@@ -79,7 +79,7 @@ int main(void)
             }
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     Socket_free(&server);
@@ -120,7 +120,7 @@ int main(void)
             printf("Server response: %s\n", buf);
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Connection error: %s\n", Socket_error());
+        fprintf(stderr, "Connection error: %s\n", Socket_GetLastError());
     EXCEPT(Socket_Closed)
         fprintf(stderr, "Server closed connection\n");
     END_TRY;
@@ -228,7 +228,7 @@ int main(void)
             }
         }
     EXCEPT(SocketDgram_Failed)
-        fprintf(stderr, "UDP error: %s\n", Socket_error());
+        fprintf(stderr, "UDP error: %s\n", Socket_GetLastError());
     END_TRY;
     
     SocketDgram_free(&server);
@@ -269,7 +269,7 @@ int main(void)
             printf("Response from %s:%d: %s\n", from_host, from_port, buf);
         }
     EXCEPT(SocketDgram_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     SocketDgram_free(&client);
@@ -332,11 +332,11 @@ int main(void)
         
         SocketTLS_shutdown(sock);
     EXCEPT(SocketTLS_HandshakeFailed)
-        fprintf(stderr, "TLS handshake failed: %s\n", Socket_error());
+        fprintf(stderr, "TLS handshake failed: %s\n", Socket_GetLastError());
     EXCEPT(SocketTLS_VerifyFailed)
         fprintf(stderr, "Certificate verification failed\n");
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Connection error: %s\n", Socket_error());
+        fprintf(stderr, "Connection error: %s\n", Socket_GetLastError());
     END_TRY;
     
     Socket_free(&sock);
@@ -388,7 +388,7 @@ int main(void)
             }
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     Socket_free(&server);
@@ -433,7 +433,7 @@ int main(void)
         
         Socket_free(&sock);
     EXCEPT(SocketHE_Failed)
-        fprintf(stderr, "Connection failed: %s\n", Socket_error());
+        fprintf(stderr, "Connection failed: %s\n", Socket_GetLastError());
     END_TRY;
     
     return 0;
@@ -566,7 +566,7 @@ int main(void)
             Socket_free(&client);
         }
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     /* Cleanup idle connections older than 300 seconds */
@@ -674,7 +674,7 @@ int main(int argc, char *argv[])
         
         printf("Sent %zd bytes (file size: %ld)\n", sent, st.st_size);
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     close(file_fd);
@@ -724,7 +724,7 @@ int main(void)
         printf("Sent %zd bytes across 3 buffers\n", sent);
         
     EXCEPT(Socket_Failed)
-        fprintf(stderr, "Error: %s\n", Socket_error());
+        fprintf(stderr, "Error: %s\n", Socket_GetLastError());
     END_TRY;
     
     Socket_free(&sock);
@@ -810,7 +810,7 @@ TRY
     Socket_connect(socket, "example.com", 443);
     Socket_sendall(socket, data, len);
 EXCEPT(Socket_Failed)
-    fprintf(stderr, "Error: %s\n", Socket_error());
+    fprintf(stderr, "Error: %s\n", Socket_GetLastError());
 FINALLY
     Socket_free(&socket);
 END_TRY;
