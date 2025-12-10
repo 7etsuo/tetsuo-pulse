@@ -2030,6 +2030,216 @@ TEST (session_cache_zero_max_sessions)
 #endif
 }
 
+/* ==================== Session ID Context Tests ==================== */
+
+TEST (session_id_context_valid)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_sid_ctx.crt";
+  const char *key_file = "test_sid_ctx.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Test setting a simple application identifier */
+    const char *app_id = "myapp-production-v1";
+    SocketTLSContext_set_session_id_context (
+        ctx, (const unsigned char *)app_id, strlen (app_id));
+
+    /* Test setting maximum length (32 bytes per SSL_MAX_SID_CTX_LENGTH) */
+    unsigned char max_ctx[32];
+    memset (max_ctx, 'X', 32);
+    SocketTLSContext_set_session_id_context (ctx, max_ctx, 32);
+
+    /* Test setting minimum length (1 byte) */
+    unsigned char one_byte = 'A';
+    SocketTLSContext_set_session_id_context (ctx, &one_byte, 1);
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not raise */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (session_id_context_null_pointer)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_sid_ctx_null.crt";
+  const char *key_file = "test_sid_ctx_null.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* NULL context pointer should raise exception */
+    SocketTLSContext_set_session_id_context (ctx, NULL, 10);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+#else
+  (void)0;
+#endif
+}
+
+TEST (session_id_context_zero_length)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_sid_ctx_zero.crt";
+  const char *key_file = "test_sid_ctx_zero.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Zero length should raise exception */
+    unsigned char data[4] = { 1, 2, 3, 4 };
+    SocketTLSContext_set_session_id_context (ctx, data, 0);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+#else
+  (void)0;
+#endif
+}
+
+TEST (session_id_context_too_long)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_sid_ctx_long.crt";
+  const char *key_file = "test_sid_ctx_long.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Length > 32 should raise exception */
+    unsigned char data[64];
+    memset (data, 'Y', 64);
+    SocketTLSContext_set_session_id_context (ctx, data, 33);
+    ASSERT (0); /* Should not reach here */
+  }
+  EXCEPT (SocketTLS_Failed) { raised = 1; }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+
+  ASSERT_EQ (raised, 1);
+#else
+  (void)0;
+#endif
+}
+
+TEST (session_id_context_with_cache)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_sid_ctx_cache.crt";
+  const char *key_file = "test_sid_ctx_cache.key";
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    ASSERT_NOT_NULL (ctx);
+
+    /* Set session ID context before enabling cache (recommended order) */
+    const char *app_id = "integration-test-app";
+    SocketTLSContext_set_session_id_context (
+        ctx, (const unsigned char *)app_id, strlen (app_id));
+
+    /* Enable session cache */
+    SocketTLSContext_enable_session_cache (ctx, 100, 300);
+
+    /* Verify cache stats are accessible */
+    size_t hits = 0, misses = 0, stores = 0;
+    SocketTLSContext_get_cache_stats (ctx, &hits, &misses, &stores);
+    ASSERT_EQ (hits, 0);
+    ASSERT_EQ (misses, 0);
+    ASSERT_EQ (stores, 0);
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not raise */ }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 /* ==================== Session Resumption Integration Test
  * ==================== */
 

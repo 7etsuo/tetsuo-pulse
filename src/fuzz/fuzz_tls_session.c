@@ -33,6 +33,7 @@ enum SessionOp
   SESSION_SET_SIZE,
   SESSION_ENABLE_TICKETS,
   SESSION_GET_STATS,
+  SESSION_SET_ID_CONTEXT,
   SESSION_OP_COUNT
 };
 
@@ -127,6 +128,28 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
           (void)hits;
           (void)misses;
           (void)stores;
+        }
+        break;
+
+      case SESSION_SET_ID_CONTEXT:
+        {
+          /* Test session ID context with fuzzed data */
+          /* Use key_data as context bytes (max 32 bytes per OpenSSL) */
+          if (key_size > 0)
+            {
+              size_t ctx_len = key_size > 32 ? 32 : key_size;
+              SocketTLSContext_set_session_id_context (ctx, key_data, ctx_len);
+            }
+          /* Also test with zero length (should fail) */
+          if (key_size == 0 && size > 10)
+            {
+              SocketTLSContext_set_session_id_context (ctx, key_data, 0);
+            }
+          /* Test with length > 32 (should fail) */
+          if (key_size >= 64)
+            {
+              SocketTLSContext_set_session_id_context (ctx, key_data, 64);
+            }
         }
         break;
       }

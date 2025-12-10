@@ -145,6 +145,65 @@ set_cache_size (T ctx, size_t size)
 }
 
 /* ============================================================================
+ * Session ID Context
+ * ============================================================================
+ */
+
+/**
+ * SocketTLSContext_set_session_id_context - Set session ID context for servers
+ * @ctx: TLS context (must not be NULL)
+ * @context: Session ID context bytes (must not be NULL)
+ * @context_len: Length of context (1-32 bytes, per OpenSSL limit)
+ *
+ * Raises: SocketTLS_Failed on invalid parameters or OpenSSL error
+ *
+ * Sets the session ID context used to differentiate sessions between different
+ * server applications or virtual hosts. Sessions created with one context will
+ * not be reused when a client connects to a server with a different context.
+ *
+ * This is critical for:
+ * - Multi-tenant servers with different security requirements per tenant
+ * - Virtual hosting with separate session caches per hostname
+ * - Load-balanced clusters that need consistent session behavior
+ * - Applications sharing an SSL_CTX but needing session isolation
+ *
+ * For simple single-application servers, a fixed string like "myapp" works.
+ * For virtual hosting, use the hostname or a hash of server configuration.
+ * For enhanced security, include a unique server identifier.
+ *
+ * Thread-safe: No - call before sharing context across threads.
+ */
+void
+SocketTLSContext_set_session_id_context (T ctx, const unsigned char *context,
+                                         size_t context_len)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (context == NULL)
+    {
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Session ID context cannot be NULL");
+    }
+
+  /* OpenSSL enforces maximum 32 bytes (SSL_MAX_SID_CTX_LENGTH) */
+  if (context_len == 0 || context_len > SSL_MAX_SID_CTX_LENGTH)
+    {
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session ID context length must be 1-%d bytes, got %zu",
+          SSL_MAX_SID_CTX_LENGTH, context_len);
+    }
+
+  if (SSL_CTX_set_session_id_context (ctx->ssl_ctx, context,
+                                      (unsigned int)context_len)
+      != 1)
+    {
+      ctx_raise_openssl_error ("Failed to set session ID context");
+    }
+}
+
+/* ============================================================================
  * Public Session Cache API
  * ============================================================================
  */
