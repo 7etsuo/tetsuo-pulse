@@ -5,13 +5,14 @@
 # Part of the Socket Library Fuzzing Suite
 #
 # Optimized for 64-core / 1TB RAM systems. Runs multiple fuzzer targets
-# simultaneously with aggressive parallelism.
+# simultaneously with aggressive parallelism. Default: 2 jobs per target
+# (32 targets * 2 jobs = 64 cores total).
 #
 # Usage:
 #   ./scripts/run_fuzz_parallel.sh [OPTIONS]
 #
 # Options:
-#   -j JOBS     Jobs per target (default: 16, total = JOBS * targets)
+#   -j JOBS     Jobs per target (default: 2, total = JOBS * targets)
 #   -t TIME     Total time in seconds (default: 3600 = 1 hour)
 #   -m MAXLEN   Maximum input length (default: 4096)
 #   -g GROUPS   Fuzzer groups to run (comma-separated, default: all)
@@ -19,13 +20,13 @@
 #                       http, http1, hpack, http2
 #   -r          Use ramdisk corpus (/mnt/fuzz_corpus)
 #   -c          Continue from existing corpus (don't reset)
-#   -q          Quick mode: 5 minutes, 8 jobs per target
+#   -q          Quick mode: 5 minutes, 4 jobs per target
 #   -h          Show help
 
 set -e
 
 # Default configuration
-JOBS_PER_TARGET=16
+JOBS_PER_TARGET=2  # Optimized for 64 cores: 32 targets * 2 jobs = 64 cores
 TOTAL_TIME=3600
 MAX_LEN=4096
 USE_RAMDISK=0
@@ -42,6 +43,7 @@ TARGETS_CORE=(
     fuzz_ratelimit
     fuzz_iptracker
     fuzz_synprotect
+    fuzz_new_features
 )
 
 TARGETS_CRYPTO=(
@@ -182,10 +184,10 @@ log_section() { echo -e "\n${BLUE}=== $1 ===${NC}"; }
 show_usage() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
-    echo "Launch all fuzzers with parallel execution."
+    echo "Launch all fuzzers with parallel execution optimized for 64 cores."
     echo ""
     echo "Options:"
-    echo "  -j JOBS     Jobs per target (default: $JOBS_PER_TARGET)"
+    echo "  -j JOBS     Jobs per target (default: $JOBS_PER_TARGET, optimized for 64 cores)"
     echo "  -t TIME     Total time in seconds (default: $TOTAL_TIME)"
     echo "  -m MAXLEN   Maximum input length (default: $MAX_LEN)"
     echo "  -g GROUPS   Fuzzer groups to run, comma-separated (default: all)"
@@ -193,11 +195,11 @@ show_usage() {
     echo "                      http, http1, hpack, http2"
     echo "  -r          Use ramdisk corpus (/mnt/fuzz_corpus)"
     echo "  -c          Continue from existing corpus"
-    echo "  -q          Quick mode: 5 min, 8 jobs/target"
+    echo "  -q          Quick mode: 5 min, 4 jobs/target"
     echo "  -h          Show this help"
     echo ""
     echo "Fuzzer Groups:"
-    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect"
+    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect, new features"
     echo "  crypto - Base64, hex encoding/decoding"
     echo "  utf8   - UTF-8 validation (one-shot and incremental)"
     echo "  socket - Socket buffer, I/O, poll, pool, dgram, Unix path"
@@ -210,7 +212,7 @@ show_usage() {
     echo "  http2  - HTTP/2 frames, headers, settings"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Default: all groups, 16 jobs/target, 1 hour"
+    echo "  $0                    # Default: all groups, 2 jobs/target (64 cores total)"
     echo "  $0 -g http2           # Only HTTP/2 fuzzers (3 targets)"
     echo "  $0 -g http,http1,http2 # All HTTP fuzzers (9 targets)"
     echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (6 targets)"
@@ -230,7 +232,7 @@ while getopts "j:t:m:g:rcqh" opt; do
         g) FUZZ_GROUPS=$OPTARG ;;
         r) USE_RAMDISK=1 ;;
         c) CONTINUE=1 ;;
-        q) JOBS_PER_TARGET=8; TOTAL_TIME=300 ;;
+        q) JOBS_PER_TARGET=4; TOTAL_TIME=300 ;;
         h) show_usage; exit 0 ;;
         *) show_usage; exit 1 ;;
     esac

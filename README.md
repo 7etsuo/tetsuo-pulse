@@ -2035,7 +2035,8 @@ The library includes comprehensive tests in `src/test/`:
 
 ### Fuzz Testing
 
-24+ fuzz harnesses in `src/fuzz/` covering:
+25+ fuzz harnesses in `src/fuzz/` covering:
+- New features comprehensive testing
 - HTTP/1.1 parser
 - HTTP/2 frame parsing
 - HPACK encoder/decoder
@@ -2049,7 +2050,7 @@ The library includes comprehensive tests in `src/test/`:
 cmake -S . -B build -DENABLE_FUZZING=ON -DCMAKE_C_COMPILER=clang
 cmake --build build
 
-# Run parallel fuzzing
+# Run parallel fuzzing (optimized for 64 cores)
 ./scripts/run_fuzz_parallel.sh
 ```
 

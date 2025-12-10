@@ -406,6 +406,197 @@ TEST (integration_udp_echo_server)
   END_TRY;
 }
 
+/* ==================== Convenience Functions Integration Tests ==================== */
+
+TEST (integration_convenience_tcp_server)
+{
+  setup_signals ();
+  reset_tracked_sockets ();
+
+  /* Test Socket_listen_tcp convenience function */
+  Socket_T server = Socket_listen_tcp ("127.0.0.1", 0, 10);
+  ASSERT_NOT_NULL (server);
+  track_socket (server);
+
+  /* Verify it's a listening TCP socket */
+  ASSERT_EQ (Socket_islistening (server), 1);
+  ASSERT_EQ (Socket_isbound (server), 1);
+
+  /* Get the assigned port */
+  int port = Socket_getlocalport (server);
+  ASSERT_GT (port, 0);
+
+  /* Test Socket_connect_tcp convenience function */
+  Socket_T client = Socket_connect_tcp ("127.0.0.1", port, 1000);
+  ASSERT_NOT_NULL (client);
+  track_socket (client);
+
+  /* Verify client is connected */
+  ASSERT_EQ (Socket_isconnected (client), 1);
+
+  /* Test Socket_accept_timeout */
+  Socket_T accepted = Socket_accept_timeout (server, 500);
+  ASSERT_NOT_NULL (accepted);
+  track_socket (accepted);
+
+  /* Verify accepted socket is connected */
+  ASSERT_EQ (Socket_isconnected (accepted), 1);
+
+  /* Send test data */
+  const char *msg = "Convenience function test";
+  ssize_t sent = Socket_send (client, msg, strlen (msg));
+  ASSERT_EQ (sent, (ssize_t)strlen (msg));
+
+  /* Receive on accepted socket */
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received = Socket_recv (accepted, buf, sizeof (buf) - 1);
+  ASSERT_EQ (received, sent);
+  ASSERT_EQ (strcmp (buf, msg), 0);
+
+  Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+  assert_no_tracked_sockets ();
+  assert_no_socket_leaks ();
+}
+
+TEST (integration_convenience_udp_bind)
+{
+  setup_signals ();
+  reset_tracked_sockets ();
+
+  /* Test SocketDgram_bind_udp convenience function */
+  SocketDgram_T server = SocketDgram_bind_udp ("127.0.0.1", 0);
+  ASSERT_NOT_NULL (server);
+
+  /* Get the assigned port */
+  int port = SocketDgram_getlocalport (server);
+  ASSERT_GT (port, 0);
+
+  /* Test with a client socket */
+  SocketDgram_T client = SocketDgram_new (AF_INET, 0);
+  ASSERT_NOT_NULL (client);
+
+  const char *msg = "UDP convenience test";
+  SocketDgram_sendto (client, msg, strlen (msg), "127.0.0.1", port);
+  usleep (50000);
+
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received = SocketDgram_recv (server, buf, sizeof (buf) - 1);
+  ASSERT_EQ (received, (ssize_t)strlen (msg));
+  ASSERT_EQ (strcmp (buf, msg), 0);
+
+  SocketDgram_free (&client);
+  SocketDgram_free (&server);
+  assert_no_socket_leaks ();
+}
+
+TEST (integration_convenience_nonblocking_connect)
+{
+  setup_signals ();
+  reset_tracked_sockets ();
+
+  /* Create a listening server */
+  Socket_T server = Socket_listen_tcp ("127.0.0.1", 0, 5);
+  ASSERT_NOT_NULL (server);
+  track_socket (server);
+
+  int port = Socket_getlocalport (server);
+
+  /* Create client socket manually */
+  Socket_T client = Socket_new (AF_INET, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (client);
+  track_socket (client);
+
+  /* Set non-blocking before connect */
+  Socket_setnonblocking (client);
+
+  /* Test non-blocking connect */
+  int connect_result = Socket_connect_nonblocking (client, "127.0.0.1", port);
+  ASSERT_EQ (connect_result, 0); /* Should return 0 for non-blocking */
+
+  /* Wait a bit for connection to complete */
+  usleep (100000);
+
+  /* Should now be connected */
+  ASSERT_EQ (Socket_isconnected (client), 1);
+
+  /* Accept the connection */
+  Socket_T accepted = Socket_accept_timeout (server, 500);
+  ASSERT_NOT_NULL (accepted);
+  track_socket (accepted);
+
+  /* Test communication */
+  const char *msg = "Non-blocking connect test";
+  ssize_t sent = Socket_send (client, msg, strlen (msg));
+  ASSERT_EQ (sent, (ssize_t)strlen (msg));
+
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received = Socket_recv (accepted, buf, sizeof (buf) - 1);
+  ASSERT_EQ (received, sent);
+  ASSERT_EQ (strcmp (buf, msg), 0);
+
+  Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+  assert_no_tracked_sockets ();
+  assert_no_socket_leaks ();
+}
+
+TEST (integration_convenience_unix_domain)
+{
+  setup_signals ();
+  reset_tracked_sockets ();
+
+  const char *socket_path = "/tmp/test_unix.sock";
+
+  /* Clean up any existing socket file */
+  unlink (socket_path);
+
+  /* Test Socket_listen_unix convenience function */
+  Socket_T server = Socket_listen_unix (socket_path, 5);
+  ASSERT_NOT_NULL (server);
+  track_socket (server);
+
+  /* Verify it's listening */
+  ASSERT_EQ (Socket_islistening (server), 1);
+
+  /* Test Socket_connect_unix_timeout */
+  Socket_T client = Socket_new (AF_UNIX, SOCK_STREAM, 0);
+  ASSERT_NOT_NULL (client);
+  track_socket (client);
+
+  Socket_connect_unix_timeout (client, socket_path, 1000);
+
+  /* Should be connected */
+  ASSERT_EQ (Socket_isconnected (client), 1);
+
+  /* Accept connection */
+  Socket_T accepted = Socket_accept_timeout (server, 500);
+  ASSERT_NOT_NULL (accepted);
+  track_socket (accepted);
+
+  /* Test communication */
+  const char *msg = "Unix domain convenience test";
+  ssize_t sent = Socket_send (client, msg, strlen (msg));
+  ASSERT_EQ (sent, (ssize_t)strlen (msg));
+
+  char buf[TEST_BUFFER_SIZE] = { 0 };
+  ssize_t received = Socket_recv (accepted, buf, sizeof (buf) - 1);
+  ASSERT_EQ (received, sent);
+  ASSERT_EQ (strcmp (buf, msg), 0);
+
+  Socket_free (&accepted);
+  Socket_free (&client);
+  Socket_free (&server);
+
+  /* Clean up socket file */
+  unlink (socket_path);
+
+  assert_no_tracked_sockets ();
+  assert_no_socket_leaks ();
+}
+
 /* ==================== Pool Integration Tests ==================== */
 
 TEST (integration_pool_with_buffers)
