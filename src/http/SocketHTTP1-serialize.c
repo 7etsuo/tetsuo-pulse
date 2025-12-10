@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "http/SocketHTTP1.h"
+#include "http/SocketHTTP1-private.h"
 
 #include "core/SocketUtil.h"
 
@@ -27,16 +28,19 @@ const Except_T SocketHTTP1_SerializeError
  * ============================================================================
  */
 
-#define HTTP_SP " "
-#define HTTP_SP_LEN 1
-#define HTTP_CRLF "\r\n"
-#define HTTP_CRLF_LEN 2
+/* Use shared constants from SocketHTTP1-private.h */
+#define HTTP_SP HTTP1_SP_STR
+#define HTTP_SP_LEN HTTP1_SP_LEN
+#define HTTP_CRLF HTTP1_CRLF_STR
+#define HTTP_CRLF_LEN HTTP1_CRLF_LEN
+#define HTTP_HEADER_SEP HTTP1_HEADER_SEP_STR
+#define HTTP_HEADER_SEP_LEN HTTP1_HEADER_SEP_LEN
+
+/* Serialize-specific constants */
 #define HTTP_HOST_PREFIX "Host: "
 #define HTTP_HOST_PREFIX_LEN 6
 #define HTTP_CONTENT_LENGTH_PREFIX "Content-Length: "
 #define HTTP_CONTENT_LENGTH_PREFIX_LEN 16
-#define HTTP_HEADER_SEP ": "
-#define HTTP_HEADER_SEP_LEN 2
 
 /* ============================================================================
  * Buffer Append Helpers

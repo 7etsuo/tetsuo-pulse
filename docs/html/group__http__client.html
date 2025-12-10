@@ -629,6 +629,18 @@ Variables</h2></td></tr>
 <tr class="memitem:ga859120de13b0764564f3c1ce111b3379" id="r_ga859120de13b0764564f3c1ce111b3379"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a> (<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient_Error</a> error)</td></tr>
 <tr class="memdesc:ga859120de13b0764564f3c1ce111b3379"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
 <tr class="separator:ga859120de13b0764564f3c1ce111b3379"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga64bc4c1b75476e2a14943c266ea003a5" id="r_ga64bc4c1b75476e2a14943c266ea003a5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga64bc4c1b75476e2a14943c266ea003a5">SocketHTTPClient_download</a> (SocketHTTPClient_T client, const char *url, const char *filepath)</td></tr>
+<tr class="memdesc:ga64bc4c1b75476e2a14943c266ea003a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Download URL content to a file.  <br /></td></tr>
+<tr class="separator:ga64bc4c1b75476e2a14943c266ea003a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9da5a8ded3a0f92ef57dc546dc0d33b2" id="r_ga9da5a8ded3a0f92ef57dc546dc0d33b2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#ga9da5a8ded3a0f92ef57dc546dc0d33b2">SocketHTTPClient_upload</a> (SocketHTTPClient_T client, const char *url, const char *filepath)</td></tr>
+<tr class="memdesc:ga9da5a8ded3a0f92ef57dc546dc0d33b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Upload a file to URL.  <br /></td></tr>
+<tr class="separator:ga9da5a8ded3a0f92ef57dc546dc0d33b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad7ef646194fff0c4a78d1ab5574b99f9" id="r_gad7ef646194fff0c4a78d1ab5574b99f9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gad7ef646194fff0c4a78d1ab5574b99f9">SocketHTTPClient_json_get</a> (SocketHTTPClient_T client, const char *url, char **json_out, size_t *json_len)</td></tr>
+<tr class="memdesc:gad7ef646194fff0c4a78d1ab5574b99f9"><td class="mdescLeft">&#160;</td><td class="mdescRight">GET request with JSON response parsing.  <br /></td></tr>
+<tr class="separator:gad7ef646194fff0c4a78d1ab5574b99f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf04f866a5685f7f367989e2daf7e029d" id="r_gaf04f866a5685f7f367989e2daf7e029d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http__client.html#gaf04f866a5685f7f367989e2daf7e029d">SocketHTTPClient_json_post</a> (SocketHTTPClient_T client, const char *url, const char *json_body, char **json_out, size_t *json_len)</td></tr>
+<tr class="memdesc:gaf04f866a5685f7f367989e2daf7e029d"><td class="mdescLeft">&#160;</td><td class="mdescRight">POST JSON and receive JSON response.  <br /></td></tr>
+<tr class="separator:gaf04f866a5685f7f367989e2daf7e029d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>High-level HTTP client library supporting HTTP/1.1, HTTP/2, connection pooling, async I/O, authentication, cookies, redirects, compression, and proxy support. </p>
@@ -2430,7 +2442,7 @@ RFC 7616 section 3.4.2 digest-uri definition. </dd></dl>
 </dl>
 <p>This function modifies the structure in place, setting all fields to defaults. No allocation performed; pure data initialization.</p>
 <dl class="section user"><dt>Thread Safety\n Yes - pure function with no side effects or shared state access.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md310"></a>
+<h2><a class="anchor" id="autotoc_md331"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a> config;</div>
 <div class="line"><a class="code hl_function" href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a>(&amp;config);</div>
@@ -2452,7 +2464,7 @@ Usage Example</h2>
 <div class="ttc" id="agroup__http__client_html_gaad5ad81c60bb230588b5f660a834f40e"><div class="ttname"><a href="group__http__client.html#gaad5ad81c60bb230588b5f660a834f40e">SocketHTTPClient_config_defaults</a></div><div class="ttdeci">void SocketHTTPClient_config_defaults(SocketHTTPClient_Config *config)</div><div class="ttdoc">Initialize SocketHTTPClient_Config structure with production-safe defaults.</div></div>
 <div class="ttc" id="agroup__http__client_html_gad0964ac6e0738a3c4914054529bb51a7"><div class="ttname"><a href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config::connect_timeout_ms</a></div><div class="ttdeci">int connect_timeout_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00501">SocketHTTPClient.h:501</a></div></div>
 <div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Config"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Config">SocketHTTPClient_Config</a></div><div class="ttdoc">HTTP client configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00486">SocketHTTPClient.h:487</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md311"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md332"></a>
 Advanced Usage with TLS</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a> tls_ctx = <a class="code hl_function" href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a>(); <span class="comment">// Custom TLS</span></div>
@@ -2475,7 +2487,7 @@ Advanced Usage with TLS</h2>
 <div class="ttc" id="agroup__http__client_html_ga5dc1b9ac7f30436bc422f312cd6db709"><div class="ttname"><a href="group__http__client.html#ga5dc1b9ac7f30436bc422f312cd6db709">SocketHTTPClient_Failed</a></div><div class="ttdeci">const Except_T SocketHTTPClient_Failed</div><div class="ttdoc">General client failure.</div></div>
 <div class="ttc" id="agroup__http__client_html_gaa5c6daa6286ff5a701a804da14108a4c"><div class="ttname"><a href="group__http__client.html#gaa5c6daa6286ff5a701a804da14108a4c">SocketHTTPClient_Config::verify_ssl</a></div><div class="ttdeci">int verify_ssl</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00515">SocketHTTPClient.h:515</a></div></div>
 <div class="ttc" id="agroup__security_html_ga69b7880fa99df9a39b4db5259a9e1234"><div class="ttname"><a href="group__security.html#ga69b7880fa99df9a39b4db5259a9e1234">SocketTLSContext_new</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new(const SocketTLSConfig_T *config)</div><div class="ttdoc">Create client TLS context with custom config.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00619">SocketTLS-private.h:620</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Defaults assume SOCKET_HAS_TLS=1 for HTTPS; disable via config.verify_ssl=0 for testing (insecure!). </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Unlimited max_response_size can lead to memory exhaustion on large responses; set limit for untrusted servers. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - constant time structure initialization, no loops or</dt><dd>allocations.</dd></dl>
@@ -2886,6 +2898,89 @@ docs/HTTP_CLIENT_GUIDE.md#configuration for tuning guide. </dd>
 
 </div>
 </div>
+<a id="ga64bc4c1b75476e2a14943c266ea003a5" name="ga64bc4c1b75476e2a14943c266ea003a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga64bc4c1b75476e2a14943c266ea003a5">&#9670;&#160;</a></span>SocketHTTPClient_download()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_download </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPClient_T&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>url</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>filepath</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Download URL content to a file. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">client</td><td>HTTP client instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">url</td><td>URL to download from </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">filepath</td><td>Path to destination file</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Downloads the response body to the specified file. Uses streaming to efficiently handle large files without loading entire content into memory. Creates the file if it doesn't exist, overwrites if it does.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on HTTP error, -2 on file error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPClient_DNSFailed,SocketHTTPClient_ConnectFailed,SocketHTTPClient_Timeout,SocketHTTPClient_ProtocolError</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md333"></a>
+Example</h2>
+<div class="fragment"><div class="line">SocketHTTPClient_T client = <a class="code hl_function" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(NULL);</div>
+<div class="line"><span class="keywordtype">int</span> ret = <a class="code hl_function" href="group__http__client.html#ga64bc4c1b75476e2a14943c266ea003a5">SocketHTTPClient_download</a>(client, <span class="stringliteral">&quot;https://example.com/file.zip&quot;</span>,</div>
+<div class="line">                                    <span class="stringliteral">&quot;/tmp/file.zip&quot;</span>);</div>
+<div class="line"><span class="keywordflow">if</span> (ret == 0) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Download complete\n&quot;</span>);</div>
+<div class="line">} <span class="keywordflow">else</span> <span class="keywordflow">if</span> (ret == -1) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;HTTP error: %s\n&quot;</span>,</div>
+<div class="line">           <a class="code hl_function" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a>(<a class="code hl_function" href="group__http__client.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a>(client)));</div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;File error: %s\n&quot;</span>, strerror(errno));</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="group__http__client.html#ga01d6c9bebdcda63949ba9af698f8e7e5">SocketHTTPClient_free</a>(&amp;client);</div>
+<div class="ttc" id="agroup__http__client_html_ga64bc4c1b75476e2a14943c266ea003a5"><div class="ttname"><a href="group__http__client.html#ga64bc4c1b75476e2a14943c266ea003a5">SocketHTTPClient_download</a></div><div class="ttdeci">int SocketHTTPClient_download(SocketHTTPClient_T client, const char *url, const char *filepath)</div><div class="ttdoc">Download URL content to a file.</div></div>
+<div class="ttc" id="agroup__http__client_html_ga859120de13b0764564f3c1ce111b3379"><div class="ttname"><a href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient_error_string</a></div><div class="ttdeci">const char * SocketHTTPClient_error_string(SocketHTTPClient_Error error)</div><div class="ttdoc">Get error description.</div></div>
+<div class="ttc" id="agroup__http__client_html_gac8680d78a9d70c7662d39466c63aab72"><div class="ttname"><a href="group__http__client.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient_last_error</a></div><div class="ttdeci">SocketHTTPClient_Error SocketHTTPClient_last_error(SocketHTTPClient_T client)</div><div class="ttdoc">Get last error code.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga9da5a8ded3a0f92ef57dc546dc0d33b2" title="Upload a file to URL.">SocketHTTPClient_upload()</a> for uploading files </dd>
+<dd>
+<a class="el" href="group__http__client.html#gafef425814e66932f7cf1f36e9356b70e" title="Perform synchronous GET request.">SocketHTTPClient_get()</a> for in-memory downloads </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="http__get_8c_source.html#l00027">main()</a>.</p>
+
+</div>
+</div>
 <a id="gaf69fc4efa6d5b4df9cdf207cfa05b6b9" name="gaf69fc4efa6d5b4df9cdf207cfa05b6b9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">&#9670;&#160;</a></span>SocketHTTPClient_error_is_retryable()</h2>
 
@@ -3250,6 +3345,181 @@ docs/HTTP_CLIENT_GUIDE.md#configuration for tuning guide. </dd>
 
 </div>
 </div>
+<a id="gad7ef646194fff0c4a78d1ab5574b99f9" name="gad7ef646194fff0c4a78d1ab5574b99f9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad7ef646194fff0c4a78d1ab5574b99f9">&#9670;&#160;</a></span>SocketHTTPClient_json_get()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_json_get </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPClient_T&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>url</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>json_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>json_len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>GET request with JSON response parsing. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">client</td><td>HTTP client instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">url</td><td>URL to fetch </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_out</td><td>Output: JSON string (caller must free) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_len</td><td>Output: JSON string length</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Performs GET request with Accept: application/json header. Validates that response Content-Type is application/json. Returns the raw JSON string which can be parsed by your preferred JSON library.</p>
+<dl class="section return"><dt>Returns</dt><dd>HTTP status code on success, -1 on HTTP error, -2 on content-type mismatch</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPClient_DNSFailed,SocketHTTPClient_ConnectFailed,SocketHTTPClient_Timeout,SocketHTTPClient_ProtocolError</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md335"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">char</span> *json = NULL;</div>
+<div class="line"><span class="keywordtype">size_t</span> len;</div>
+<div class="line"><span class="keywordtype">int</span> status = <a class="code hl_function" href="group__http__client.html#gad7ef646194fff0c4a78d1ab5574b99f9">SocketHTTPClient_json_get</a>(client,</div>
+<div class="line">    <span class="stringliteral">&quot;https://api.example.com/data&quot;</span>, &amp;json, &amp;len);</div>
+<div class="line"><span class="keywordflow">if</span> (status == 200 &amp;&amp; json) {</div>
+<div class="line">    <span class="comment">// Parse with your JSON library (cJSON, json-c, etc.)</span></div>
+<div class="line">    printf(<span class="stringliteral">&quot;Got JSON (%zu bytes): %.100s...\n&quot;</span>, len, json);</div>
+<div class="line">    free(json);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__http__client_html_gad7ef646194fff0c4a78d1ab5574b99f9"><div class="ttname"><a href="group__http__client.html#gad7ef646194fff0c4a78d1ab5574b99f9">SocketHTTPClient_json_get</a></div><div class="ttdeci">int SocketHTTPClient_json_get(SocketHTTPClient_T client, const char *url, char **json_out, size_t *json_len)</div><div class="ttdoc">GET request with JSON response parsing.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Caller must free(json_out) on success </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gaf04f866a5685f7f367989e2daf7e029d" title="POST JSON and receive JSON response.">SocketHTTPClient_json_post()</a> for POST with JSON </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="http__get_8c_source.html#l00027">main()</a>.</p>
+
+</div>
+</div>
+<a id="gaf04f866a5685f7f367989e2daf7e029d" name="gaf04f866a5685f7f367989e2daf7e029d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf04f866a5685f7f367989e2daf7e029d">&#9670;&#160;</a></span>SocketHTTPClient_json_post()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_json_post </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPClient_T&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>url</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>json_body</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>json_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>json_len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>POST JSON and receive JSON response. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">client</td><td>HTTP client instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">url</td><td>URL to POST to </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">json_body</td><td>JSON string to send </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_out</td><td>Output: JSON response (caller must free, may be NULL) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_len</td><td>Output: JSON response length</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Performs POST request with Content-Type: application/json and Accept: application/json. Validates response content type if body returned.</p>
+<dl class="section return"><dt>Returns</dt><dd>HTTP status code on success, -1 on HTTP error, -2 on content-type mismatch</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPClient_DNSFailed,SocketHTTPClient_ConnectFailed,SocketHTTPClient_Timeout,SocketHTTPClient_ProtocolError</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md336"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *request = <span class="stringliteral">&quot;{\&quot;name\&quot;: \&quot;test\&quot;, \&quot;value\&quot;: 42}&quot;</span>;</div>
+<div class="line"><span class="keywordtype">char</span> *response = NULL;</div>
+<div class="line"><span class="keywordtype">size_t</span> len;</div>
+<div class="line"><span class="keywordtype">int</span> status = <a class="code hl_function" href="group__http__client.html#gaf04f866a5685f7f367989e2daf7e029d">SocketHTTPClient_json_post</a>(client,</div>
+<div class="line">    <span class="stringliteral">&quot;https://api.example.com/create&quot;</span>, request, &amp;response, &amp;len);</div>
+<div class="line"><span class="keywordflow">if</span> (status == 201 &amp;&amp; response) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Created: %s\n&quot;</span>, response);</div>
+<div class="line">    free(response);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__http__client_html_gaf04f866a5685f7f367989e2daf7e029d"><div class="ttname"><a href="group__http__client.html#gaf04f866a5685f7f367989e2daf7e029d">SocketHTTPClient_json_post</a></div><div class="ttdeci">int SocketHTTPClient_json_post(SocketHTTPClient_T client, const char *url, const char *json_body, char **json_out, size_t *json_len)</div><div class="ttdoc">POST JSON and receive JSON response.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Caller must free(json_out) on success </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#gad7ef646194fff0c4a78d1ab5574b99f9" title="GET request with JSON response parsing.">SocketHTTPClient_json_get()</a> for GET with JSON </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
+
+</div>
+</div>
 <a id="gac8680d78a9d70c7662d39466c63aab72" name="gac8680d78a9d70c7662d39466c63aab72"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gac8680d78a9d70c7662d39466c63aab72">&#9670;&#160;</a></span>SocketHTTPClient_last_error()</h2>
 
@@ -3511,7 +3781,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 <dd>
 <a class="el" href="group__http__client.html#gaddf401e4175374852073d0de27407fef" title="Start async POST.">SocketHTTPClient_post_async()</a> for asynchronous version. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -3856,7 +4126,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -3958,7 +4228,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 <dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -3997,7 +4267,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 <dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga46c9c2ab8d3334dd0ad1359d2bb93102" title="Create request builder.">SocketHTTPClient_Request_new()</a> for creation. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -4052,7 +4322,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -4108,7 +4378,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
 <dl class="section return"><dt>Returns</dt><dd>Request builder </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -4155,7 +4425,7 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
   </dd>
 </dl>
 
-<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00033">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="http__post_8c_source.html#l00035">main()</a>.</p>
 
 </div>
 </div>
@@ -4289,6 +4559,79 @@ Default config enables pooling, HTTP/2, compression, and certificate verificatio
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="ga9da5a8ded3a0f92ef57dc546dc0d33b2" name="ga9da5a8ded3a0f92ef57dc546dc0d33b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9da5a8ded3a0f92ef57dc546dc0d33b2">&#9670;&#160;</a></span>SocketHTTPClient_upload()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPClient_upload </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPClient_T&#160;</td>
+          <td class="paramname"><em>client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>url</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>filepath</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Upload a file to URL. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">client</td><td>HTTP client instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">url</td><td>URL to upload to </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">filepath</td><td>Path to source file</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Uploads the specified file using PUT request with streaming. The Content-Type is set to application/octet-stream unless overridden. Efficiently handles large files without loading entire content into memory.</p>
+<dl class="section return"><dt>Returns</dt><dd>HTTP status code on success (2xx), -1 on HTTP error, -2 on file error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPClient_DNSFailed,SocketHTTPClient_ConnectFailed,SocketHTTPClient_Timeout,SocketHTTPClient_ProtocolError</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md334"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> status = <a class="code hl_function" href="group__http__client.html#ga9da5a8ded3a0f92ef57dc546dc0d33b2">SocketHTTPClient_upload</a>(client,</div>
+<div class="line">    <span class="stringliteral">&quot;https://storage.example.com/files/myfile.dat&quot;</span>,</div>
+<div class="line">    <span class="stringliteral">&quot;/path/to/local/file.dat&quot;</span>);</div>
+<div class="line"><span class="keywordflow">if</span> (status &gt;= 200 &amp;&amp; status &lt; 300) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Upload successful (HTTP %d)\n&quot;</span>, status);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__http__client_html_ga9da5a8ded3a0f92ef57dc546dc0d33b2"><div class="ttname"><a href="group__http__client.html#ga9da5a8ded3a0f92ef57dc546dc0d33b2">SocketHTTPClient_upload</a></div><div class="ttdeci">int SocketHTTPClient_upload(SocketHTTPClient_T client, const char *url, const char *filepath)</div><div class="ttdoc">Upload a file to URL.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http__client.html#ga64bc4c1b75476e2a14943c266ea003a5" title="Download URL content to a file.">SocketHTTPClient_download()</a> for downloading files </dd>
+<dd>
+<a class="el" href="group__http__client.html#ga9b47bc2dd38d4a6700af79ced0acecb2" title="Perform synchronous POST request.">SocketHTTPClient_post()</a> for custom uploads </dd></dl>
 
 </div>
 </div>

@@ -49,52 +49,6 @@
 #ifndef SOCKETTLS_PRIVATE_INCLUDED
 #define SOCKETTLS_PRIVATE_INCLUDED
 
-/**
- * @file SocketTLS-private.h
- * @ingroup security
- * @brief Internal TLS module shared definitions, macros, and helper functions.
- *
- * Private header included by TLS .c files. Provides:
- * - Thread-local error handling and exception macros
- * - Security validation for files, hostnames, keys
- * - Internal structures for pinning, SNI, ALPN, CRL auto-refresh
- * - OpenSSL error formatting and SSL access utilities
- * - Ex_data index management for context association
- *
- * NOT part of public API - applications must not include this header.
- *
- *  Features
- * - RAISE_TLS_ERROR* macros with thread-local detailed exceptions
- * - tls_validate_file_path() for secure credential loading
- * - tls_secure_free_pkey() for zeroized key cleanup
- * - tls_validate_hostname() for RFC-compliant SNI
- * - Certificate pinning with SPKI SHA256 and constant-time lookup
- * - ALPN temp buffer management to prevent UAF in callbacks
- * - CRL mutex-protected auto-refresh scheduling
- *
- *  Platform Requirements
- * - OpenSSL/LibreSSL with TLS 1.2+ (1.3 recommended)
- * - POSIX pthreads for mutexes and thread-local storage (__thread)
- * - Unix stat/lstat for symlink detection in validation
- * - CLOCK_MONOTONIC for timing (CRL refresh, timeouts)
- * - _GNU_SOURCE enabled for extensions
- *
- *  Thread Safety
- * - Macros: Thread-safe via thread-local storage
- * - Inline functions: Yes where noted (read-only or pure)
- * - Structs: Conditional; use mutexes for shared access
- *
- * @internal
- *
- * @warning Misuse can lead to security vulnerabilities (e.g., symlink attacks,
- * timing leaks)
- *
- * @see SocketTLS.h for public Socket TLS operations
- * @see SocketTLSContext.h for public context API
- * @see docs/SECURITY.md for TLS hardening guide
- * @see docs/ERROR_HANDLING.md for exception usage
- */
-
 #if SOCKET_HAS_TLS
 
 #include <ctype.h>
@@ -108,6 +62,7 @@
 #include "core/SocketCrypto.h" /* For SocketCrypto_secure_clear */
 #include "core/SocketUtil.h"
 #include "socket/Socket-private.h"
+#include "tls/SocketSSL-internal.h" /* Shared TLS/DTLS utilities */
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
@@ -360,34 +315,20 @@ tls_handle_ssl_error (Socket_T socket, SSL *ssl, int ssl_result)
  * @ingroup security
  * @param context Context string for the error message.
  *
- * Formats the current OpenSSL error queue into tls_error_buf prefixed with the
- * given context. Clears the error queue after formatting to prevent
+ * Formats the current OpenSSL error queue into socket_error_buf prefixed with
+ * the given context. Clears the error queue after formatting to prevent
  * interference with subsequent operations. Used internally for consistent
  * error reporting in TLS functions.
  *
  * @threadsafe Yes - operates on thread-local error buffer.
  * @see tls_handle_ssl_error() for SSL error state mapping.
- * @see ERR_clear_error() OpenSSL error queue management.
+ * @see ssl_format_openssl_error_to_buf() shared implementation.
  */
 static inline void
 tls_format_openssl_error (const char *context)
 {
-  unsigned long err = ERR_get_error ();
-  char err_str[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
-
-  if (err != 0)
-    {
-      ERR_error_string_n (err, err_str, sizeof (err_str));
-      SOCKET_ERROR_MSG ("%s: %s", context, err_str);
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("%s: Unknown error", context);
-    }
-
-  /* Clear remaining errors to prevent stale error information from
-   * affecting subsequent operations or leaking to callers */
-  ERR_clear_error ();
+  ssl_format_openssl_error_to_buf (context, socket_error_buf,
+                                   SOCKET_ERROR_BUFSIZE);
 }
 
 /* ============================================================================
@@ -402,23 +343,17 @@ tls_format_openssl_error (const char *context)
  * @param path Null-terminated file path string to validate.
  * @return 1 if path passes all security checks, 0 otherwise.
  *
- * Comprehensive validation to mitigate path traversal, symlink following, and
- * injection attacks:
- * - Length limits and non-empty check
- * - Blocks traversal patterns like "/../", "\\..\\", etc.
- * - Rejects control characters and embedded nulls
- * - Detects and rejects symlinks via lstat (if accessible)
- * - Case-insensitive on Windows patterns if needed (platform-specific)
- *
- * Essential for secure loading of TLS credentials from potentially untrusted
- * sources.
+ * Thin wrapper around ssl_validate_file_path() using TLS-specific max length.
  *
  * @threadsafe Yes - pure string and stat operations, no shared state.
+ * @see ssl_validate_file_path() for implementation details.
  * @see tls_validate_hostname() for SNI name validation.
- * @see tls_secure_free_pkey() for secure key handling post-load.
- * @note lstat failure (e.g., no permission) allows validation to proceed
- * conservatively.
  */
+static inline int
+tls_validate_file_path (const char *path)
+{
+  return ssl_validate_file_path (path, SOCKET_TLS_MAX_PATH_LEN);
+}
 
 /* ============================================================================
  * ALPN Temp Buffer Management (for UAF fix in selection callback)
@@ -466,60 +401,6 @@ extern int tls_get_alpn_ex_idx (void);
  * @threadsafe Conditional - safe if no concurrent access to SSL ex_data.
  */
 extern void tls_cleanup_alpn_temp (SSL *ssl);
-static inline int
-tls_validate_file_path (const char *path)
-{
-  if (!path || !*path)
-    return 0;
-
-  size_t len = strlen (path);
-  if (len == 0 || len > SOCKET_TLS_MAX_PATH_LEN)
-    return 0;
-
-  /* Check for specific path traversal sequences (avoid false positives on
-   * filenames like "cert..pem") */
-  const char *traversal_patterns[]
-      = { "/../",  "\\..\\", "/..\\",
-          "\\../", "/.../",  "\\../", /* Added context-aware */
-          NULL };
-  for (const char **pat = traversal_patterns; *pat != NULL; ++pat)
-    {
-      if (strstr (path, *pat) != NULL)
-        return 0;
-    }
-
-  /* Reject paths starting with relative traversal */
-  if (strncmp (path, "../", 3) == 0 || strncmp (path, "..\\", 3) == 0)
-    return 0;
-
-  /* Additional symlink detection (optional, conservative: reject if detectable
-   * symlink) */
-  struct stat sb;
-  if (lstat (path, &sb) == 0)
-    {
-      if (S_ISLNK (sb.st_mode))
-        return 0; /* Reject symlinks to prevent attacks */
-    }
-  /* If lstat fails (e.g., no perm), continue validation (false negative ok for
-   * usability) */
-
-  /* Reject embedded null bytes (paranoia check).
-     Note: memchr is intentional - we're checking WITHIN the valid strlen,
-     not including the terminator. This detects strings with embedded nulls. */
-  // NOLINTNEXTLINE(bugprone-not-null-terminated-result)
-  if (memchr (path, '\0', len) != NULL)
-    return 0;
-
-  /* Check for control characters (ASCII 0-31 and 127) */
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)path[i];
-      if (c < 32 || c == 127)
-        return 0;
-    }
-
-  return 1;
-}
 
 /**
  * @brief Securely free EVP_PKEY with key material zeroization.
@@ -931,16 +812,12 @@ struct T
 /**
  * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
- * @param x Parameter or variable that is intentionally unused (e.g., in
- * asserts only).
+ * @param x Parameter or variable that is intentionally unused.
  *
- * Casts the parameter to void to inform the compiler it is deliberately
- * unused. Common in callback functions or when params are used conditionally.
- *
- * @note Use (void)param; style for single use; macro for readability.
- * @see socket_util_unused() if available in core utils.
+ * Alias for SOCKET_SSL_UNUSED for TLS module compatibility.
+ * @see SOCKET_SSL_UNUSED in SocketSSL-internal.h
  */
-#define TLS_UNUSED(x) (void)(x)
+#define TLS_UNUSED(x) SOCKET_SSL_UNUSED (x)
 
 /* ============================================================================
  * Internal Helper Functions

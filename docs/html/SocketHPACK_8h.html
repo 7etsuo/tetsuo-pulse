@@ -303,7 +303,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>HPACK header compression/decompression module for HTTP/2 (RFC 7541). </p>
 <p>This module implements the full HPACK algorithm for efficient HTTP/2 header field representation and transmission. It handles header compression to reduce bandwidth and decompression with security safeguards.</p>
-<h2><a class="anchor" id="autotoc_md259"></a>
+<h2><a class="anchor" id="autotoc_md278"></a>
 Key Components</h2>
 <ul>
 <li><b>Static Table</b>: Fixed 61 entries of common headers (Appendix A).</li>
@@ -311,7 +311,7 @@ Key Components</h2>
 <li><b>Encoding Primitives</b>: Integer, string (literal/Huffman), indexing modes.</li>
 <li><b>Encoder/Decoder</b>: Stateful instances for block-level operations.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md260"></a>
+<h2><a class="anchor" id="autotoc_md279"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">+-------------------+     +-------------------+</div>
 <div class="line">|   HTTP/2 Layer    |     |   Application     |</div>
@@ -340,14 +340,14 @@ Architecture Overview</h2>
 <div class="line">| (61 Fixed Entries)|</div>
 <div class="line">+-------------------+</div>
 <div class="ttc" id="agroup__http2__private_html_ga1c39c708707a15d109d6cbbd7e3ebe67"><div class="ttname"><a href="group__http2__private.html#ga1c39c708707a15d109d6cbbd7e3ebe67">SocketHTTP2</a></div><div class="ttdeci">const Except_T SocketHTTP2</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md261"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md280"></a>
 Module Dependencies</h2>
 <ul>
 <li><b>Foundation</b>: Arena_T for memory, <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> for errors.</li>
 <li><b>HTTP Core</b>: SocketHTTP_Headers_T compatibility (optional integration).</li>
 <li><b>Used By</b>: SocketHTTP2_Conn_T for frame processing.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md262"></a>
+<h2><a class="anchor" id="autotoc_md281"></a>
 Thread Safety</h2>
 <ul>
 <li>Individual encoder/decoder instances: NOT thread-safe (internal state mutation).</li>
@@ -355,7 +355,7 @@ Thread Safety</h2>
 <li>Dynamic table: NOT thread-safe; synchronize adds/gets.</li>
 <li>Recommendation: One encoder/decoder per connection/thread.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md263"></a>
+<h2><a class="anchor" id="autotoc_md282"></a>
 Security Features</h2>
 <ul>
 <li>Configurable limits on table size, header sizes, list size.</li>
@@ -364,14 +364,14 @@ Security Features</h2>
 <li>Automatic never-indexing for sensitive headers (e.g., authorization, cookie).</li>
 <li>Limits on table size updates per block to prevent DoS.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md264"></a>
+<h2><a class="anchor" id="autotoc_md283"></a>
 Performance Characteristics</h2>
 <ul>
 <li>Encoding/Decoding: O(n) linear in header block size.</li>
 <li>Table operations: O(1) add/get/evict via circular buffer.</li>
 <li>Huffman: DFA-based decoding for speed, optional encoding.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md265"></a>
+<h2><a class="anchor" id="autotoc_md284"></a>
 Configuration Limits</h2>
 <p>See defined constants:</p><ul>
 <li>SOCKETHPACK_DEFAULT_TABLE_SIZE (4096 bytes)</li>
@@ -379,7 +379,7 @@ Configuration Limits</h2>
 <li>SOCKETHPACK_MAX_HEADER_SIZE (8KB)</li>
 <li>SOCKETHPACK_MAX_HEADER_LIST_SIZE (64KB)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md266"></a>
+<h2><a class="anchor" id="autotoc_md285"></a>
 Integration Notes</h2>
 <ul>
 <li>Use with <a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c" title="Create a new HTTP/2 connection instance.">SocketHTTP2_Conn_new()</a> for automatic setup.</li>

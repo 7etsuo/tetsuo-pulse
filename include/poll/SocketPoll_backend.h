@@ -283,6 +283,33 @@ typedef struct PollBackend_T *PollBackend_T;
 /* ==================== Common Backend Macros ==================== */
 
 /**
+ * @brief Convert milliseconds to timespec for kqueue/poll backends.
+ * @ingroup event_system_backend
+ *
+ * Common helper to avoid code duplication between kqueue and poll backends
+ * which both need to convert millisecond timeouts to timespec structures.
+ * Uses constants from SocketConfig.h for the conversion.
+ *
+ * @param[in] timeout_ms Timeout in milliseconds (must be >= 0).
+ * @param[out] ts Pointer to timespec structure to populate.
+ *
+ * @note Only call when timeout_ms >= 0; infinite wait (-1) should bypass.
+ * @note Uses SOCKET_MS_PER_SECOND and SOCKET_NS_PER_MS from SocketConfig.h.
+ *
+ * @see backend_wait() in kqueue and poll backends.
+ * @see SOCKET_MS_PER_SECOND time conversion constant.
+ * @see SOCKET_NS_PER_MS nanosecond conversion constant.
+ */
+#define TIMEOUT_MS_TO_TIMESPEC(timeout_ms, ts)                                \
+  do                                                                          \
+    {                                                                         \
+      (ts)->tv_sec = (timeout_ms) / SOCKET_MS_PER_SECOND;                     \
+      (ts)->tv_nsec                                                           \
+          = ((timeout_ms) % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;         \
+    }                                                                         \
+  while (0)
+
+/**
  * @brief Essential macro to validate file descriptors before backend system
  * calls.
  * @ingroup event_system_backend

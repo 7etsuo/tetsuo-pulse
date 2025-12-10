@@ -591,14 +591,19 @@ backend_del (PollBackend_T backend, const int fd)
 /* ==================== Wait Implementation ==================== */
 
 /**
- * clear_all_revents - Clear revents for all pollfds
+ * reset_backend_wait_state - Reset backend state after wait completes
  * @backend: Backend instance
+ * @nev: Number of valid events (0 on timeout/error/EINTR)
+ *
+ * Consolidates post-wait state management: sets last_nev and last_wait_count.
+ * Note: revents are NOT cleared here - poll() overwrites them on next call,
+ * and backend_get_event bounds-checks via last_nev to prevent stale access.
  */
 static void
-clear_all_revents (PollBackend_T backend)
+reset_backend_wait_state (PollBackend_T backend, int nev)
 {
-  for (int i = 0; i < backend->nfds; i++)
-    backend->fds[i].revents = 0;
+  backend->last_nev = nev;
+  backend->last_wait_count = nev;
 }
 
 /**
@@ -610,8 +615,7 @@ clear_all_revents (PollBackend_T backend)
 static int
 handle_poll_error (PollBackend_T backend)
 {
-  backend->last_nev = 0;
-  clear_all_revents (backend);
+  reset_backend_wait_state (backend, 0);
 
   if (errno == EINTR)
     return 0;
@@ -629,12 +633,7 @@ handle_poll_error (PollBackend_T backend)
 static int
 handle_poll_success (PollBackend_T backend, int result)
 {
-  backend->last_nev = result;
-
-  if (result == 0)
-    clear_all_revents (backend);
-
-  backend->last_wait_count = result;
+  reset_backend_wait_state (backend, result);
   return result;
 }
 
@@ -649,8 +648,7 @@ do_sleep_timeout (int timeout_ms)
 
   if (timeout_ms > 0)
     {
-      ts.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
-      ts.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+      TIMEOUT_MS_TO_TIMESPEC (timeout_ms, &ts);
       nanosleep (&ts, NULL);
     }
 }

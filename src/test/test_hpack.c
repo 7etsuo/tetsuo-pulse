@@ -530,14 +530,14 @@ test_huffman_full_roundtrip (void)
 
   printf ("  Huffman full round-trip (all bytes + edges)... ");
 
-  /* Test empty string */
+  /* Test empty string - per RFC 7541, empty input produces empty output.
+   * EOS symbol is never explicitly transmitted, only used for padding. */
   enc_len = SocketHPACK_huffman_encode (input, 0, encoded, sizeof (encoded));
-  TEST_ASSERT (enc_len == 4, "Empty encode: EOS (30 bits) + pad = 4 bytes");
-  dec_len = SocketHPACK_huffman_decode (encoded, (size_t)enc_len, decoded,
-                                        sizeof (decoded));
+  TEST_ASSERT (enc_len == 0, "Empty encode: 0 bytes output");
+  dec_len = SocketHPACK_huffman_decode (encoded, 0, decoded, sizeof (decoded));
   TEST_ASSERT (dec_len == 0, "Empty decode: 0 bytes output");
   est_size = SocketHPACK_huffman_encoded_size (input, 0);
-  TEST_ASSERT (est_size == 4, "Empty encoded_size: 4 bytes");
+  TEST_ASSERT (est_size == 0, "Empty encoded_size: 0 bytes");
 
   /* Test basic invalid: truncated input (should fail decode) */
   unsigned char trunc[1] = { 0xFF }; /* Short invalid bitstream */

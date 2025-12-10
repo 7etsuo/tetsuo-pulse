@@ -1015,16 +1015,6 @@ export_gauge_prometheus (char *buffer, size_t buffer_size, size_t *pos,
 }
 
 /**
- * export_histogram_prometheus - Export single histogram in Prometheus format
- * @buffer: Output buffer
- * @buffer_size: Buffer size
- * @pos: Current position pointer
- * @idx: Histogram index
- * @h: Histogram snapshot
- *
- * Thread-safe: No (operates on caller's buffer)
- */
-/**
  * export_prometheus_quantiles - Export histogram quantiles in Prometheus
  * format
  * @buffer: Output buffer
@@ -1081,6 +1071,16 @@ export_prometheus_histogram_summary (char *buffer, size_t buffer_size,
                  (unsigned long long)h->count);
 }
 
+/**
+ * export_histogram_prometheus - Export single histogram in Prometheus format
+ * @buffer: Output buffer
+ * @buffer_size: Buffer size
+ * @pos: Current position pointer
+ * @idx: Histogram index
+ * @h: Histogram snapshot
+ *
+ * Thread-safe: No (operates on caller's buffer)
+ */
 static void
 export_histogram_prometheus (char *buffer, size_t buffer_size, size_t *pos,
                              int idx, const SocketMetrics_HistogramSnapshot *h)

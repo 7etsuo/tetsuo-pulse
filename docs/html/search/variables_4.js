@@ -17,13 +17,14 @@ var searchData=
   ['errors_5f4xx_14',['errors_4xx',['../group__http.html#a6657c81bdeca35c6831ad8fec96db1b9',1,'SocketHTTPServer_Stats']]],
   ['errors_5f5xx_15',['errors_5xx',['../group__http.html#a48b3d62e701b7e53a064ffc5a9b7c8ed',1,'SocketHTTPServer_Stats']]],
   ['events_16',['events',['../group__event__system.html#ac526bc7e51851919ae7b0f3cec5934bc',1,'SocketEvent_T']]],
-  ['except_5fstack_17',['Except_stack',['../group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874',1,'Except.h']]],
-  ['exception_18',['exception',['../Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8',1,'Except_Frame']]],
-  ['expected_5faccept_19',['expected_accept',['../group__websocket.html#a4b9c590c3f4c1e8b511f804b9438612d',1,'SocketWS_Handshake']]],
-  ['expecting_5fcontinuation_20',['expecting_continuation',['../group__http2__private.html#a28b3277203f8fdfe14c1890ae74a3200',1,'SocketHTTP2_Conn']]],
-  ['expects_5fcontinue_21',['expects_continue',['../group__http1__private.html#a1222b1fbaf91f5c88598905f5fee27d9',1,'SocketHTTP1_Parser']]],
-  ['expires_22',['expires',['../group__http__client.html#ga76752117eaf672a88292a3c7c250b52d',1,'SocketHTTPClient_Cookie']]],
-  ['expires_5fms_23',['expires_ms',['../group__security.html#afb1b74a668b1f3010740c2aa4275b161',1,'SocketSYN_BlacklistEntry']]],
-  ['expiry_5fms_24',['expiry_ms',['../group__event__system.html#af4c657d2a6dced76ca87a3214878a8de',1,'SocketTimer_T']]],
-  ['extra_5fheaders_25',['extra_headers',['../group__proxy__private.html#a2224b074511d1fe06fdcae44d6953dc5',1,'SocketProxy_Conn_T::extra_headers'],['../group__proxy.html#a1a667bd87d678a4e0cb64c14aa0ffd3d',1,'SocketProxy_Config::extra_headers']]]
+  ['evictions_17',['evictions',['../group__dns.html#ab0a332ac89fb52b9f3d4bbe8d53e5c97',1,'SocketDNS_CacheStats']]],
+  ['except_5fstack_18',['Except_stack',['../group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874',1,'Except.h']]],
+  ['exception_19',['exception',['../Except_8h.html#a41f49d856fa1e252bc5f7439f6feeaf8',1,'Except_Frame']]],
+  ['expected_5faccept_20',['expected_accept',['../group__websocket.html#a4b9c590c3f4c1e8b511f804b9438612d',1,'SocketWS_Handshake']]],
+  ['expecting_5fcontinuation_21',['expecting_continuation',['../group__http2__private.html#a28b3277203f8fdfe14c1890ae74a3200',1,'SocketHTTP2_Conn']]],
+  ['expects_5fcontinue_22',['expects_continue',['../group__http1__private.html#a1222b1fbaf91f5c88598905f5fee27d9',1,'SocketHTTP1_Parser']]],
+  ['expires_23',['expires',['../group__http__client.html#ga76752117eaf672a88292a3c7c250b52d',1,'SocketHTTPClient_Cookie']]],
+  ['expires_5fms_24',['expires_ms',['../group__security.html#afb1b74a668b1f3010740c2aa4275b161',1,'SocketSYN_BlacklistEntry']]],
+  ['expiry_5fms_25',['expiry_ms',['../group__event__system.html#af4c657d2a6dced76ca87a3214878a8de',1,'SocketTimer_T']]],
+  ['extra_5fheaders_26',['extra_headers',['../group__proxy__private.html#a2224b074511d1fe06fdcae44d6953dc5',1,'SocketProxy_Conn_T::extra_headers'],['../group__proxy.html#a1a667bd87d678a4e0cb64c14aa0ffd3d',1,'SocketProxy_Config::extra_headers']]]
 ];

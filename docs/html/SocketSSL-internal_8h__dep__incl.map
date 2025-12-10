@@ -1,0 +1,7 @@
+<map id="SocketSSL&#45;internal.h" name="SocketSSL&#45;internal.h">
+<area shape="rect" id="Node000001" title="Shared internal utilities for TLS and DTLS modules." alt="" coords="93,5,239,31"/>
+<area shape="rect" id="Node000002" href="$SocketDTLS-private_8h.html" title="DTLS internal shared definitions and helper functions." alt="" coords="5,79,156,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="144,41,96,80,93,76,140,37"/>
+<area shape="rect" id="Node000003" href="$SocketTLS-private_8h.html" title="Internal TLS module shared definitions, macros, and helper functions." alt="" coords="181,79,322,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="192,37,239,76,236,80,188,41"/>
+</map>

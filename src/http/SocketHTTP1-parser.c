@@ -1079,13 +1079,22 @@ finalize_request (SocketHTTP1_Parser_T parser)
   version = map_http_version (parser->version_major, parser->version_minor);
   req->version = version;
 
-  /* Set request target (path) - already null-terminated */
+  /*
+   * Null-terminate URI buffer if not already done.
+   * This handles HTTP/0.9 simple requests where bare LF transitions
+   * directly from URI state to HEADER_START without URI_END action.
+   */
+  if (!http1_tokenbuf_terminate (&parser->uri_buf, parser->arena,
+                                 parser->config.max_request_line))
+    return HTTP1_ERROR_LINE_TOO_LONG;
+
+  /* Set request target (path) - now null-terminated */
   req->path = parser->uri_buf.data;
 
   /* Validate URI syntax for security (basic format, encoding) */
   SocketHTTP_URI uri_temp;
   SocketHTTP_URIResult uri_res = SocketHTTP_URI_parse (
-      req->path, strlen (req->path), &uri_temp, parser->arena);
+      req->path, parser->uri_buf.len, &uri_temp, parser->arena);
   if (uri_res != URI_PARSE_OK)
     return HTTP1_ERROR_INVALID_URI;
 
@@ -1125,6 +1134,16 @@ finalize_response (SocketHTTP1_Parser_T parser)
   /* Set version */
   version = map_http_version (parser->version_major, parser->version_minor);
   resp->version = version;
+
+  /*
+   * Null-terminate reason buffer if not already done.
+   * This handles bare LF line endings where REASON state transitions
+   * directly to HEADER_START without REASON_END action.
+   * Note: reason phrase is optional and may be empty.
+   */
+  if (!http1_tokenbuf_terminate (&parser->reason_buf, parser->arena,
+                                 parser->config.max_request_line))
+    return HTTP1_ERROR_LINE_TOO_LONG;
 
   /* Set status code and reason */
   resp->status_code = parser->status_code;

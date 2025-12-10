@@ -188,7 +188,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00046">46</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00047">47</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
 </div>
 </div>
@@ -204,10 +204,11 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <p><a class="el" href="graceful__shutdown_8c.html">graceful_shutdown.c</a> - Production-grade signal handling example</p>
-<p>Demonstrates async-signal-safe shutdown patterns:</p><ul>
+<p>Demonstrates async-signal-safe shutdown patterns using high-level APIs:</p><ul>
 <li>Self-pipe trick for signal notification</li>
 <li>Integration with SocketPoll event loop (using poll timeout)</li>
 <li>Graceful connection draining with timeout</li>
+<li>SocketPool for connection management</li>
 <li>Clean resource cleanup</li>
 </ul>
 <p>Build: cmake -DBUILD_EXAMPLES=ON .. make example_graceful_shutdown</p>
@@ -219,7 +220,7 @@ Variables</h2></td></tr>
 <li>Observe connections draining before exit </li>
 </ol>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00044">44</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00045">45</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
 </div>
 </div>
@@ -235,7 +236,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00047">47</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00048">48</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
 </div>
 </div>
@@ -251,7 +252,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00045">45</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00046">46</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
 </div>
 </div>
@@ -267,7 +268,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00048">48</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00049">49</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
 </div>
 </div>
@@ -298,11 +299,11 @@ Variables</h2></td></tr>
 <p>check_signal_pipe - Check if signal pipe has data (non-blocking)</p>
 <p>Returns: 1 if signal received, 0 otherwise </p>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00165">165</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00166">166</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00056">g_signal_pipe</a>.</p>
+<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00057">g_signal_pipe</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -331,11 +332,11 @@ Variables</h2></td></tr>
 </div><div class="memdoc">
 <p>cleanup_signal_handling - Clean up signal infrastructure </p>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00176">176</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00177">177</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00056">g_signal_pipe</a>.</p>
+<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00057">g_signal_pipe</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -381,11 +382,11 @@ Variables</h2></td></tr>
 <p>handle_client_data - Process data from a client connection</p>
 <p>Simple echo server: reads data and echoes it back. Returns: 1 to keep connection, 0 to close </p>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00198">198</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00199">199</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00046">BUFFER_SIZE</a>, <a class="el" href="Except_8h_source.html#l01439">END_TRY</a>, <a class="el" href="Except_8h_source.html#l01105">EXCEPT</a>, <a class="el" href="group__core__io.html#ga2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a>, <a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>, <a class="el" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError()</a>, <a class="el" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr()</a>, <a class="el" href="group__core__io.html#ga38d7e5845519867261a9f24dfe0e03db">Socket_getpeerport()</a>, <a class="el" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv()</a>, <a class="el" href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall()</a>, and <a class="el" href="Except_8h_source.html#l00991">TRY</a>.</p>
+<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00047">BUFFER_SIZE</a>, <a class="el" href="Except_8h_source.html#l01439">END_TRY</a>, <a class="el" href="Except_8h_source.html#l01105">EXCEPT</a>, <a class="el" href="group__core__io.html#ga2db3d742dcea3f39ad2eb37d4fb1e453">Socket_Closed</a>, <a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>, <a class="el" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr()</a>, <a class="el" href="group__core__io.html#ga38d7e5845519867261a9f24dfe0e03db">Socket_getpeerport()</a>, <a class="el" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv()</a>, <a class="el" href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall()</a>, and <a class="el" href="Except_8h_source.html#l00991">TRY</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -415,9 +416,9 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00241">241</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00242">242</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose()</a>, <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00046">BUFFER_SIZE</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00165">check_signal_pipe()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00176">cleanup_signal_handling()</a>, <a class="el" href="group__connection__mgmt.html#ga24170577512ce3a19fe195ab9c3576bf">Connection_inbuf()</a>, <a class="el" href="group__connection__mgmt.html#ga6d7573f71d8853943029cfd55fa3fb3a">Connection_outbuf()</a>, <a class="el" href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket()</a>, <a class="el" href="SocketPoll_8h_source.html#l00208">SocketEvent_T::data</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00044">DEFAULT_PORT</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00047">DRAIN_TIMEOUT_MS</a>, <a class="el" href="Except_8h_source.html#l01439">END_TRY</a>, <a class="el" href="Except_8h_source.html#l01105">EXCEPT</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00059">g_last_signal</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00198">handle_client_data()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00045">MAX_CONNECTIONS</a>, <a class="el" href="SocketPoll_8h_source.html#l00181">POLL_READ</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00048">POLL_TIMEOUT_MS</a>, <a class="el" href="http__server_8c_source.html#l00032">running</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00108">setup_signal_handling()</a>, <a class="el" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept()</a>, <a class="el" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind()</a>, <a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>, <a class="el" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free()</a>, <a class="el" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError()</a>, <a class="el" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr()</a>, <a class="el" href="group__core__io.html#ga38d7e5845519867261a9f24dfe0e03db">Socket_getpeerport()</a>, <a class="el" href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen()</a>, <a class="el" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new()</a>, <a class="el" href="group__core__io.html#ga35309677a1760480783d5f0c294d0db4">Socket_setnonblocking()</a>, <a class="el" href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr()</a>, <a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add()</a>, <a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f">SocketPoll_del()</a>, <a class="el" href="group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a>, <a class="el" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free()</a>, <a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new()</a>, <a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a>, <a class="el" href="group__connection__mgmt.html#gac7720c7b7d679624fa95bdefe9a38494">SocketPool_add()</a>, <a class="el" href="group__connection__mgmt.html#ga618413d296dac8730047cf248273461e">SocketPool_count()</a>, <a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068">SocketPool_drain()</a>, <a class="el" href="group__connection__mgmt.html#ga0cbc1088d796c166f582de4d17e5d968">SocketPool_drain_force()</a>, <a class="el" href="group__connection__mgmt.html#ga2cbe6c95119cbb4b30f981b9d07f3e9b">SocketPool_drain_poll()</a>, <a class="el" href="group__connection__mgmt.html#gae14b85a2cd7a0a4302f84478840cfb23">SocketPool_drain_remaining_ms()</a>, <a class="el" href="group__connection__mgmt.html#gadba094d10381f1646de6a3e1e2bd0c36">SocketPool_Failed</a>, <a class="el" href="group__connection__mgmt.html#gafb57544a14c977302953fd36634bd004">SocketPool_free()</a>, <a class="el" href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18">SocketPool_new()</a>, <a class="el" href="group__connection__mgmt.html#gacdffcf1802367df60db15c649fc7072d">SocketPool_remove()</a>, and <a class="el" href="Except_8h_source.html#l00991">TRY</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose()</a>, <a class="el" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00047">BUFFER_SIZE</a>, <a class="el" href="Socket_8h_source.html#l00670">SocketStats_T::bytes_received</a>, <a class="el" href="Socket_8h_source.html#l00669">SocketStats_T::bytes_sent</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00166">check_signal_pipe()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00177">cleanup_signal_handling()</a>, <a class="el" href="group__connection__mgmt.html#ga24170577512ce3a19fe195ab9c3576bf">Connection_inbuf()</a>, <a class="el" href="group__connection__mgmt.html#ga6d7573f71d8853943029cfd55fa3fb3a">Connection_outbuf()</a>, <a class="el" href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket()</a>, <a class="el" href="Socket_8h_source.html#l00681">SocketStats_T::create_time_ms</a>, <a class="el" href="SocketPoll_8h_source.html#l00208">SocketEvent_T::data</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00045">DEFAULT_PORT</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00048">DRAIN_TIMEOUT_MS</a>, <a class="el" href="Except_8h_source.html#l01439">END_TRY</a>, <a class="el" href="Except_8h_source.html#l01105">EXCEPT</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00060">g_last_signal</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00199">handle_client_data()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00046">MAX_CONNECTIONS</a>, <a class="el" href="SocketPoll_8h_source.html#l00181">POLL_READ</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00049">POLL_TIMEOUT_MS</a>, <a class="el" href="connection__pool_8c_source.html#l00029">running</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00109">setup_signal_handling()</a>, <a class="el" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept()</a>, <a class="el" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind()</a>, <a class="el" href="group__core__io.html#ga225f4a8fd657fd52a05146c6fc4f58b0">Socket_Failed</a>, <a class="el" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free()</a>, <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms()</a>, <a class="el" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr()</a>, <a class="el" href="group__core__io.html#ga38d7e5845519867261a9f24dfe0e03db">Socket_getpeerport()</a>, <a class="el" href="group__core__io.html#gafdfd3666a5d9779023f527c3afddf164">Socket_getstats()</a>, <a class="el" href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen()</a>, <a class="el" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new()</a>, <a class="el" href="group__core__io.html#ga35309677a1760480783d5f0c294d0db4">Socket_setnonblocking()</a>, <a class="el" href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr()</a>, <a class="el" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics_get_peak_connections()</a>, <a class="el" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count()</a>, <a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add()</a>, <a class="el" href="group__event__system.html#ga3074c5a225a7c49880951ecfb984498f">SocketPoll_del()</a>, <a class="el" href="group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0">SocketPoll_Failed</a>, <a class="el" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free()</a>, <a class="el" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new()</a>, <a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait()</a>, <a class="el" href="group__connection__mgmt.html#gac7720c7b7d679624fa95bdefe9a38494">SocketPool_add()</a>, <a class="el" href="group__connection__mgmt.html#ga618413d296dac8730047cf248273461e">SocketPool_count()</a>, <a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068">SocketPool_drain()</a>, <a class="el" href="group__connection__mgmt.html#ga0cbc1088d796c166f582de4d17e5d968">SocketPool_drain_force()</a>, <a class="el" href="group__connection__mgmt.html#ga2cbe6c95119cbb4b30f981b9d07f3e9b">SocketPool_drain_poll()</a>, <a class="el" href="group__connection__mgmt.html#gae14b85a2cd7a0a4302f84478840cfb23">SocketPool_drain_remaining_ms()</a>, <a class="el" href="group__connection__mgmt.html#gadba094d10381f1646de6a3e1e2bd0c36">SocketPool_Failed</a>, <a class="el" href="group__connection__mgmt.html#gafb57544a14c977302953fd36634bd004">SocketPool_free()</a>, <a class="el" href="group__connection__mgmt.html#ga996b6e1e70230dec597386572109b873">SocketPool_get_active_count()</a>, <a class="el" href="group__connection__mgmt.html#ga86d406e9dc8b20a64731630a38b5f027">SocketPool_get_hit_rate()</a>, <a class="el" href="group__connection__mgmt.html#ga19433078a67ca838968245b41644fe7c">SocketPool_get_idle_count()</a>, <a class="el" href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18">SocketPool_new()</a>, <a class="el" href="group__connection__mgmt.html#gacdffcf1802367df60db15c649fc7072d">SocketPool_remove()</a>, and <a class="el" href="Except_8h_source.html#l00991">TRY</a>.</p>
 
 </div>
 </div>
@@ -452,11 +453,11 @@ Variables</h2></td></tr>
 </ul>
 <p>Returns: 0 on success, -1 on error </p>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00108">108</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00109">109</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00056">g_signal_pipe</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00078">signal_handler()</a>.</p>
+<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00057">g_signal_pipe</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00079">signal_handler()</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -491,11 +492,11 @@ Variables</h2></td></tr>
 </ul>
 <p>The signal number is written to the pipe so the main loop can determine which signal was received. </p>
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00078">78</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00079">79</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00059">g_last_signal</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00056">g_signal_pipe</a>.</p>
+<p class="reference">References <a class="el" href="graceful__shutdown_8c_source.html#l00060">g_last_signal</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00057">g_signal_pipe</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00108">setup_signal_handling()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00109">setup_signal_handling()</a>.</p>
 
 </div>
 </div>
@@ -520,9 +521,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00059">59</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00060">60</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00078">signal_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00079">signal_handler()</a>.</p>
 
 </div>
 </div>
@@ -546,9 +547,9 @@ Variables</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00056">56</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
+<p class="definition">Definition at line <a class="el" href="graceful__shutdown_8c_source.html#l00057">57</a> of file <a class="el" href="graceful__shutdown_8c_source.html">graceful_shutdown.c</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00165">check_signal_pipe()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00176">cleanup_signal_handling()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00108">setup_signal_handling()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00078">signal_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00166">check_signal_pipe()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00177">cleanup_signal_handling()</a>, <a class="el" href="graceful__shutdown_8c_source.html#l00109">setup_signal_handling()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00079">signal_handler()</a>.</p>
 
 </div>
 </div>

@@ -293,14 +293,14 @@ Data Structures</h2></td></tr>
 <div class="ttc" id="agroup__reconnect__private_html_a31140778b660ef58bf93500821501979"><div class="ttname"><a href="group__reconnect__private.html#a31140778b660ef58bf93500821501979">SocketReconnect_T::userdata</a></div><div class="ttdeci">void * userdata</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00328">SocketReconnect-private.h:328</a></div></div>
 <div class="ttc" id="agroup__reconnect__private_html_a84b94071188ac92ecae8453cdbe0a604"><div class="ttname"><a href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">SocketReconnect_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00304">SocketReconnect-private.h:304</a></div></div>
 <div class="ttc" id="agroup__reconnect__private_html_a9e409328803ca46c73908e0f6b35b275"><div class="ttname"><a href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">SocketReconnect_T::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00307">SocketReconnect-private.h:307</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md461"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md539"></a>
 Thread Safety Characteristics</h2>
 <ul>
 <li>Not thread-safe: All operations must occur from the same thread</li>
 <li>Callbacks execute in the caller's thread context</li>
 <li>Internal state protected by non-reentrant design</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md462"></a>
+<h2><a class="anchor" id="autotoc_md540"></a>
 Integration Notes</h2>
 <ul>
 <li>For event-driven apps: Use <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">pollfd()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">process()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">tick()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">next_timeout_ms()</a></li>
@@ -319,7 +319,7 @@ Integration Notes</h2>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5" title="Get the underlying Socket_T when connected.">SocketReconnect_socket()</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Underlying</a> <a class="el" href="group__reconnect__private.html#a8a5a023250774eb20e665286b9f1126c">socket</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">access</a> </dd>
 <dd>
-<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...">SocketReconnect_Policy_T</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Configuration</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">options</a> </dd></dl>
+<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...">SocketReconnect_Policy_T</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Configuration</a> options </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00296">296</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">

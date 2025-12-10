@@ -22,47 +22,18 @@
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
-/* Override default log component (SocketUtil.h sets "Socket") */
-#undef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "SocketPool"
+/* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
 #define T SocketPool_T
 
-/* ============================================================================
- * Common Mutex Operations
- * ============================================================================
+/* POOL_LOCK/POOL_UNLOCK defined in SocketPool-private.h */
+
+/* Rate limit constants from SocketConfig.h:
+ * - SOCKET_POOL_MAX_RATE_PER_SEC
+ * - SOCKET_POOL_MAX_BURST_MULTIPLIER
+ * - SOCKET_POOL_MAX_CONNECTIONS_PER_IP
+ * - SOCKET_POOL_TOKENS_PER_ACCEPT
  */
-
-#define POOL_LOCK(p)                                                          \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_lock (&(p)->mutex);                                       \
-    }                                                                         \
-  while (0)
-
-#define POOL_UNLOCK(p)                                                        \
-  do                                                                          \
-    {                                                                         \
-      pthread_mutex_unlock (&(p)->mutex);                                     \
-    }                                                                         \
-  while (0)
-
-/* ============================================================================
- * Configuration Constants
- * ============================================================================
- */
-
-/** Tokens consumed per connection attempt for rate limiting */
-#define RATELIMIT_TOKENS_PER_ACCEPT 1
-
-/** Maximum rate limit value (connections per second) */
-#define MAX_RATE_LIMIT_PER_SEC 1000000
-
-/** Maximum allowed burst multiplier relative to rate */
-#define MAX_BURST_MULTIPLIER 100
-
-/** Maximum connections per IP allowed (security limit) */
-#define MAX_CONNECTIONS_PER_IP 10000
 
 /* ============================================================================
  * Static Helper Functions - IP Address Validation
@@ -312,16 +283,17 @@ SocketPool_setconnrate (T pool, int conns_per_sec, int burst)
   safe_burst = (burst <= 0) ? conns_per_sec : burst;
 
   /* Validate parameters to prevent resource exhaustion */
-  if (conns_per_sec > MAX_RATE_LIMIT_PER_SEC
+  if (conns_per_sec > SOCKET_POOL_MAX_RATE_PER_SEC
       || !SocketSecurity_check_multiply ((size_t)conns_per_sec,
-                                         MAX_BURST_MULTIPLIER, &max_burst_check)
+                                         SOCKET_POOL_MAX_BURST_MULTIPLIER,
+                                         &max_burst_check)
       || (size_t)safe_burst > max_burst_check || safe_burst <= 0)
     {
       RAISE_POOL_MSG (SocketPool_Failed,
                       "Invalid connection rate: rate=%d burst=%d (max %d/sec, "
                       "burst <=%dx rate)",
-                      conns_per_sec, safe_burst, MAX_RATE_LIMIT_PER_SEC,
-                      MAX_BURST_MULTIPLIER);
+                      conns_per_sec, safe_burst, SOCKET_POOL_MAX_RATE_PER_SEC,
+                      SOCKET_POOL_MAX_BURST_MULTIPLIER);
     }
 
   POOL_LOCK (pool);
@@ -388,11 +360,11 @@ SocketPool_setmaxperip (T pool, int max_conns)
     }
 
   /* Validate parameters to prevent resource exhaustion */
-  if (max_conns > MAX_CONNECTIONS_PER_IP)
+  if (max_conns > SOCKET_POOL_MAX_CONNECTIONS_PER_IP)
     {
       RAISE_POOL_MSG (SocketPool_Failed,
                       "Invalid max per IP: %d (range 1-%d)", max_conns,
-                      MAX_CONNECTIONS_PER_IP);
+                      SOCKET_POOL_MAX_CONNECTIONS_PER_IP);
     }
 
   POOL_LOCK (pool);
@@ -510,7 +482,7 @@ SocketPool_accept_limited (T pool, Socket_T server)
   POOL_LOCK (pool);
   rate_ok = !pool->conn_limiter
             || SocketRateLimit_try_acquire (pool->conn_limiter,
-                                            RATELIMIT_TOKENS_PER_ACCEPT);
+                                            SOCKET_POOL_TOKENS_PER_ACCEPT);
   POOL_UNLOCK (pool);
 
   if (!rate_ok)

@@ -1659,6 +1659,60 @@ typedef struct SocketTimeouts_Extended
 #define SOCKET_POOL_STATS_WINDOW_SEC 60
 #endif
 
+/**
+ * @brief Maximum rate limit value (connections per second).
+ * @ingroup connection_mgmt
+ *
+ * Security limit to prevent resource exhaustion from overly permissive
+ * rate configurations. Practical upper bound for most servers.
+ *
+ * @see SocketPool_setconnrate() for rate limiting.
+ * @see SocketRateLimit_T for token bucket implementation.
+ */
+#ifndef SOCKET_POOL_MAX_RATE_PER_SEC
+#define SOCKET_POOL_MAX_RATE_PER_SEC 1000000
+#endif
+
+/**
+ * @brief Maximum burst multiplier relative to rate.
+ * @ingroup connection_mgmt
+ *
+ * Limits burst size to prevent memory exhaustion in rate limiter.
+ * Burst capacity = rate * multiplier.
+ *
+ * @see SocketPool_setconnrate() for rate limiting.
+ */
+#ifndef SOCKET_POOL_MAX_BURST_MULTIPLIER
+#define SOCKET_POOL_MAX_BURST_MULTIPLIER 100
+#endif
+
+/**
+ * @brief Maximum connections allowed per IP address.
+ * @ingroup connection_mgmt
+ *
+ * Security limit to prevent single-source attacks via per-IP limiting.
+ * Generous default allows legitimate load balancers while limiting abuse.
+ *
+ * @see SocketPool_setmaxperip() for per-IP limiting.
+ * @see SocketIPTracker_T for IP tracking implementation.
+ */
+#ifndef SOCKET_POOL_MAX_CONNECTIONS_PER_IP
+#define SOCKET_POOL_MAX_CONNECTIONS_PER_IP 10000
+#endif
+
+/**
+ * @brief Tokens consumed per connection accept.
+ * @ingroup connection_mgmt
+ *
+ * Number of rate limit tokens consumed per successful connection accept.
+ * Typically 1 for simple connection counting.
+ *
+ * @see SocketPool_accept_limited() for rate-limited accepting.
+ */
+#ifndef SOCKET_POOL_TOKENS_PER_ACCEPT
+#define SOCKET_POOL_TOKENS_PER_ACCEPT 1
+#endif
+
 /* ============================================================================
  * Hash and Algorithm Constants
  * ============================================================================
@@ -2465,6 +2519,56 @@ union align
  * @ingroup core_io
  */
 #define SOCKET_DEFAULT_KEEPALIVE_COUNT 3
+
+/**
+ * @brief Maximum TCP keep-alive idle time (seconds).
+ *
+ * Limits the idle time before first probe to 1 year.
+ * @ingroup core_io
+ */
+#ifndef SOCKET_KEEPALIVE_MAX_IDLE
+#define SOCKET_KEEPALIVE_MAX_IDLE (86400 * 365) /* 1 year in seconds */
+#endif
+
+/**
+ * @brief Maximum TCP keep-alive interval (seconds).
+ *
+ * Limits the interval between probes to 1 hour.
+ * @ingroup core_io
+ */
+#ifndef SOCKET_KEEPALIVE_MAX_INTERVAL
+#define SOCKET_KEEPALIVE_MAX_INTERVAL 3600 /* 1 hour */
+#endif
+
+/**
+ * @brief Maximum TCP keep-alive probe count.
+ *
+ * Limits the number of failed probes before disconnect.
+ * @ingroup core_io
+ */
+#ifndef SOCKET_KEEPALIVE_MAX_COUNT
+#define SOCKET_KEEPALIVE_MAX_COUNT 32
+#endif
+
+/**
+ * @brief Maximum TCP defer accept timeout (seconds).
+ *
+ * Limits TCP_DEFER_ACCEPT/SO_ACCEPTFILTER timeout to 1 hour.
+ * @ingroup core_io
+ */
+#ifndef SOCKET_MAX_DEFER_ACCEPT_SEC
+#define SOCKET_MAX_DEFER_ACCEPT_SEC 3600 /* 1 hour */
+#endif
+
+/**
+ * @brief Maximum congestion control algorithm name length.
+ *
+ * Maximum length of TCP_CONGESTION algorithm name string (excluding null).
+ * @ingroup core_io
+ */
+#ifndef SOCKET_MAX_CONGESTION_ALGO_LEN
+#define SOCKET_MAX_CONGESTION_ALGO_LEN 63
+#endif
 
 /**
  * @brief Default datagram TTL value.

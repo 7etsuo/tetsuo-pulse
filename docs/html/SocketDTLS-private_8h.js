@@ -9,6 +9,7 @@ var SocketDTLS_private_8h =
     [ "RAISE_DTLS_ERROR", "group__security.html#ga1cfa464ec20b460ebee063b82b6100bf", null ],
     [ "RAISE_DTLS_ERROR_MSG", "group__security.html#gaafbc899f00128359bdc6d2f9d02e8944", null ],
     [ "REQUIRE_DTLS_ENABLED", "group__security.html#ga04c1b681fb568ffc8c89a37bcdcbcf80", null ],
+    [ "REQUIRE_DTLS_SSL", "group__security.html#ga09565043d337e07469365e63b55ea2ab", null ],
     [ "T", "SocketDTLS-private_8h.html#a0acb682b8260ab1c60b918599864e2e5", null ],
     [ "VALIDATE_DTLS_IO_READY", "group__security.html#ga223a7b4bdc35b2cd8c8828e3fd709414", null ],
     [ "dtls_context_get_from_ssl", "group__security.html#gae23a324083d5bf71680d6fc525477a7a", null ],

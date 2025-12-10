@@ -331,11 +331,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     /* Test frame size limits and edge cases */
     for (size_t i = 0; i < size && i < 20; i++)
       {
-        /* Test various frame sizes */
+        /* Test various frame sizes - must not exceed actual input size */
         size_t test_sizes[] = {0, 1, 8, 16384, 16777215}; /* Max frame size */
         for (size_t sz_idx = 0; sz_idx < sizeof (test_sizes) / sizeof (test_sizes[0]); sz_idx++)
           {
+            /* Clamp test_size to available input data */
             size_t test_size = test_sizes[sz_idx];
+            if (test_size > size)
+              test_size = size;
             if (test_size <= MAX_FRAME_PAYLOAD)
               {
                 frame_size = build_frame (frame_buffer, sizeof (frame_buffer),

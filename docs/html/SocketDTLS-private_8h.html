@@ -121,8 +121,7 @@ $(document).ready(function(){initNavTree('SocketDTLS-private_8h.html',''); initR
 
 <p>DTLS internal shared definitions and helper functions.  
 <a href="#details">More...</a></p>
-<div class="textblock"><code>#include &lt;ctype.h&gt;</code><br />
-<code>#include &lt;pthread.h&gt;</code><br />
+<div class="textblock"><code>#include &lt;pthread.h&gt;</code><br />
 <code>#include &lt;string.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
@@ -131,6 +130,7 @@ $(document).ready(function(){initNavTree('SocketDTLS-private_8h.html',''); initR
 <code>#include &quot;<a class="el" href="SocketDTLS_8h_source.html">tls/SocketDTLS.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketDTLSConfig_8h_source.html">tls/SocketDTLSConfig.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketDTLSContext_8h_source.html">tls/SocketDTLSContext.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketSSL-internal_8h_source.html">tls/SocketSSL-internal.h</a>&quot;</code><br />
 <code>#include &lt;openssl/err.h&gt;</code><br />
 <code>#include &lt;openssl/evp.h&gt;</code><br />
 <code>#include &lt;openssl/hmac.h&gt;</code><br />
@@ -189,9 +189,12 @@ Macros</h2></td></tr>
 <tr class="separator:gac6bd008a794ad4ea28353a67d189fd7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad718ae67d2e6b5e48460d1f627d06275" id="r_ad718ae67d2e6b5e48460d1f627d06275"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketDTLS-private_8h.html#ad718ae67d2e6b5e48460d1f627d06275">RAISE_DTLS_CTX_ERROR_FMT</a>(exception,  fmt, ...)</td></tr>
 <tr class="separator:ad718ae67d2e6b5e48460d1f627d06275"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:gad7d623f22e9e764aba13c6b053c1506f" id="r_gad7d623f22e9e764aba13c6b053c1506f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad7d623f22e9e764aba13c6b053c1506f">DTLS_UNUSED</a>(x)&#160;&#160;&#160;(void)(x)</td></tr>
-<tr class="memdesc:gad7d623f22e9e764aba13c6b053c1506f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suppress unused parameter compiler warnings.  <br /></td></tr>
+<tr class="memitem:gad7d623f22e9e764aba13c6b053c1506f" id="r_gad7d623f22e9e764aba13c6b053c1506f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gad7d623f22e9e764aba13c6b053c1506f">DTLS_UNUSED</a>(x)&#160;&#160;&#160;<a class="el" href="group__security.html#ga05467aa5ac0a7b753f98efb02eeeb8a3">SOCKET_SSL_UNUSED</a> (x)</td></tr>
+<tr class="memdesc:gad7d623f22e9e764aba13c6b053c1506f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suppress compiler warnings for intentionally unused parameters.  <br /></td></tr>
 <tr class="separator:gad7d623f22e9e764aba13c6b053c1506f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga09565043d337e07469365e63b55ea2ab" id="r_ga09565043d337e07469365e63b55ea2ab"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga09565043d337e07469365e63b55ea2ab">REQUIRE_DTLS_SSL</a>(socket,  exception)</td></tr>
+<tr class="memdesc:ga09565043d337e07469365e63b55ea2ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate DTLS enabled and retrieve SSL object, raising on failure.  <br /></td></tr>
+<tr class="separator:ga09565043d337e07469365e63b55ea2ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -202,10 +205,10 @@ Functions</h2></td></tr>
 <tr class="memdesc:gaff7268760d38bc90af34fdbf313ecbb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map OpenSSL error codes to DTLS handshake states for non-blocking I/O.  <br /></td></tr>
 <tr class="separator:gaff7268760d38bc90af34fdbf313ecbb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga52868028efe42ac286ffdcad2e5f8a51" id="r_ga52868028efe42ac286ffdcad2e5f8a51"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga52868028efe42ac286ffdcad2e5f8a51">dtls_format_openssl_error</a> (const char *context)</td></tr>
-<tr class="memdesc:ga52868028efe42ac286ffdcad2e5f8a51"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format and log the current OpenSSL error queue into thread-local error buffer.  <br /></td></tr>
+<tr class="memdesc:ga52868028efe42ac286ffdcad2e5f8a51"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format OpenSSL error into the thread-local error buffer.  <br /></td></tr>
 <tr class="separator:ga52868028efe42ac286ffdcad2e5f8a51"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga43a9d75df4015935d50b33c528342d80" id="r_ga43a9d75df4015935d50b33c528342d80"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga43a9d75df4015935d50b33c528342d80">dtls_validate_file_path</a> (const char *path)</td></tr>
-<tr class="memdesc:ga43a9d75df4015935d50b33c528342d80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform security validation on file path strings for cert/key/CA loading.  <br /></td></tr>
+<tr class="memdesc:ga43a9d75df4015935d50b33c528342d80"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate file path for certificates, keys, or CAs against security threats.  <br /></td></tr>
 <tr class="separator:ga43a9d75df4015935d50b33c528342d80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae37473787004b0ea65d2ee0b51702f44" id="r_gae37473787004b0ea65d2ee0b51702f44"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gae37473787004b0ea65d2ee0b51702f44">dtls_cookie_generate_cb</a> (SSL *ssl, unsigned char *cookie, unsigned int *cookie_len)</td></tr>
 <tr class="memdesc:gae37473787004b0ea65d2ee0b51702f44"><td class="mdescLeft">&#160;</td><td class="mdescRight">OpenSSL callback for generating DTLS anti-DoS cookies during server handshake.  <br /></td></tr>
@@ -272,7 +275,7 @@ Variables</h2></td></tr>
 <div class="line">    }                                                                         \</div>
 <div class="line">  while (0)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l01087">1087</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00900">900</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
 
 </div>
 </div>
@@ -288,7 +291,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00925">925</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDTLS-private_8h_source.html#l00738">738</a> of file <a class="el" href="SocketDTLS-private_8h_source.html">SocketDTLS-private.h</a>.</p>
 
 </div>
 </div>

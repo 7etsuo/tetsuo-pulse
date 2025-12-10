@@ -209,13 +209,27 @@ Test_run_all (void)
 
       /* Run test function with exception handling.
        * Test_Failed is caught to allow FINALLY blocks to execute in tests,
-       * ensuring proper cleanup of resources even when assertions fail. */
+       * ensuring proper cleanup of resources even when assertions fail.
+       * ELSE catches any other uncaught exceptions to prevent crashes. */
       TRY { current_test->func (); }
       EXCEPT (Test_Failed)
       {
         /* Test_Failed was raised by ASSERT macro - failure already recorded
          * via test_failure_flag. This catch allows FINALLY blocks in the
          * test to execute before we get here. */
+      }
+      ELSE
+      {
+        /* Catch any other unhandled exceptions to prevent test framework crash.
+         * Mark the test as failed with the exception reason. */
+        if (!test_failure_flag)
+          {
+            test_failure_flag = 1;
+            const Except_T *exc = Except_stack ? Except_stack->exception : NULL;
+            snprintf (test_failure_message, sizeof (test_failure_message),
+                      "Unhandled exception: %s",
+                      exc && exc->reason ? exc->reason : "Unknown");
+          }
       }
       END_TRY;
 

@@ -29,6 +29,7 @@
 #include "tls/SocketDTLS.h"
 #include "tls/SocketDTLSConfig.h"
 #include "tls/SocketDTLSContext.h"
+#include "tls/SocketSSL-internal.h" /* Shared TLS/DTLS utilities */
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -686,103 +687,24 @@ dtls_handle_ssl_error (SocketDgram_T socket, SSL *ssl, int ssl_result)
 }
 
 /**
- * @brief Format and log the current OpenSSL error queue into thread-local
- * error buffer.
+ * @brief Format OpenSSL error into the thread-local error buffer.
  * @ingroup security
+ * @param context Context string for the error message.
  *
- * Retrieves the top error from OpenSSL's error stack (ERR_get_error()),
- * formats it into a human-readable string using ERR_error_string_n(), and
- * stores it in the thread-local socket_error_buf with contextual information.
- * Automatically clears the entire OpenSSL error queue via ERR_clear_error() to
- * prevent error persistence across operations, which could lead to incorrect
- * diagnostics or security leaks.
+ * Formats the current OpenSSL error queue into socket_error_buf prefixed with
+ * the given context. Clears the error queue after formatting to prevent
+ * interference with subsequent operations. Used internally for consistent
+ * error reporting in DTLS functions.
  *
- * This helper is critical for consistent error reporting in DTLS operations,
- * ensuring errors are captured immediately after failing SSL calls and
- * integrated with the library's exception mechanism.
- *
- * @param[in] context Descriptive string providing operation context (e.g.,
- * "handshake failed") Prepended to the formatted error for better
- * traceability. May be NULL, in which case a default message is used.
- *
- * @note
- * - Uses thread-local socket_error_buf, making it safe for concurrent use
- * across threads.
- * - Clears ALL errors in the OpenSSL queue, not just the top one. This
- * prevents error queue overflow and ensures fresh error reporting on next
- * failure.
- * - If no errors present (ERR_get_error() == 0), formats a generic "Unknown
- * error" message.
- * - Integrates with RAISE_DTLS_ERROR() macros; call before raising exceptions
- * for details.
- * - Does not log or output; just formats into buffer for later use (e.g., in
- * exception .reason).
- *
- * @threadsafe Yes - Uses thread-local storage for buffer and operates on
- * OpenSSL's per-thread error queue (if compiled with thread support). No
- * shared state modified.
- *
- *  Usage Example
- *
- * @code{.c}
- * // After a failing SSL operation
- * int ret = SSL_connect(ssl);
- * if (ret <= 0) {
- *     dtls_format_openssl_error("DTLS client connect failed");
- *     RAISE_DTLS_ERROR(SocketDTLS_HandshakeFailed);
- *     // Exception now includes formatted OpenSSL error in .reason
- * }
- *
- * // In error handling after dtls_handle_ssl_error()
- * if (state == DTLS_HANDSHAKE_ERROR) {
- *     dtls_format_openssl_error("Handshake error in do_handshake");
- *     // Log or raise with details
- *     SOCKET_LOG_ERROR("DTLS error: %s", Socket_GetLastError());
- * }
- * @endcode
- *
- *  Error Queue Management
- *
- * - **Before call**: OpenSSL error queue may contain multiple stacked errors
- * from SSL ops.
- * - **During call**: Peeks top error, formats it, clears entire queue.
- * - **After call**: Queue empty, socket_error_buf populated with context +
- * error string.
- *
- * @warning Always call immediately after failing SSL calls to capture accurate
- * errors, as subsequent SSL operations may overwrite or clear the queue.
- * Failure to clear can lead to stale errors confusing diagnostics in
- * multi-threaded or long-running apps.
- *
- * @complexity O(1) amortized - ERR_get_error() and formatting are constant
- * time; queue clear is O(queue depth) but depth bounded by OpenSSL limits (~16
- * errors).
- *
- * @see ERR_get_error() - Underlying OpenSSL function for error retrieval
- * @see ERR_error_string_n() - Formats error code to string
- * @see ERR_clear_error() - Clears the error queue
- * @see Socket_GetLastError() - Retrieves formatted error from thread-local
- * buffer
- * @see RAISE_DTLS_ERROR() - Use after formatting to raise detailed exception
- * @see docs/ERROR_HANDLING.md for library-wide error patterns
- * @see OpenSSL ERR documentation for error stack details
+ * @threadsafe Yes - operates on thread-local error buffer.
+ * @see dtls_handle_ssl_error() for SSL error state mapping.
+ * @see ssl_format_openssl_error_to_buf() shared implementation.
  */
 static inline void
 dtls_format_openssl_error (const char *context)
 {
-  unsigned long err = ERR_get_error ();
-  char err_str[SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE];
-
-  if (err != 0)
-    {
-      ERR_error_string_n (err, err_str, sizeof (err_str));
-      SOCKET_ERROR_MSG ("%s: %s", context, err_str);
-    }
-  else
-    {
-      SOCKET_ERROR_MSG ("%s: Unknown error", context);
-    }
-  ERR_clear_error (); /* Clear remaining OpenSSL error queue */
+  ssl_format_openssl_error_to_buf (context, socket_error_buf,
+                                   SOCKET_ERROR_BUFSIZE);
 }
 
 /* ============================================================================
@@ -791,129 +713,21 @@ dtls_format_openssl_error (const char *context)
  */
 
 /**
- * @brief Perform security validation on file path strings for cert/key/CA
- * loading.
+ * @brief Validate file path for certificates, keys, or CAs against security
+ * threats.
  * @ingroup security
+ * @param path Null-terminated file path string to validate.
+ * @return 1 if path passes all security checks, 0 otherwise.
  *
- * String-based validation of file paths used in DTLS context configuration
- * (certificates, keys, CA bundles). Designed to mitigate common path
- * manipulation attacks like directory traversal, injection of control
- * characters, and truncation exploits. Rejects obviously malicious or
- * malformed paths before they reach OpenSSL file loading APIs, which may be
- * vulnerable to such inputs.
+ * Thin wrapper around ssl_validate_file_path() using DTLS-specific max length.
  *
- * Validation criteria (all must pass):
- * - Path non-NULL and non-empty
- * - Length <= SOCKET_DTLS_MAX_PATH_LEN (typically 4096)
- * - No path traversal sequences: "../", "..\\", "/..", "\\..", standalone ".."
- * - No control characters (ASCII <32 or ==127, except '/' for paths)
- * - Implicitly rejects embedded NUL via strlen() limit
- *
- * Note: This is syntactic validation only; does not access filesystem.
- * For full security, pair with OS-level checks (e.g., realpath(), access())
- * and run as low-privilege user. Relative paths accepted but prefer absolute
- * for predictability.
- *
- * @param[in] path Null-terminated C string containing the file path to
- * validate
- *
- * @return 1 if path passes all security checks (safe to use); 0 if rejected
- * (invalid/malicious)
- *
- * @note
- * - Rejects relative paths with traversal but accepts clean relative paths
- * (e.g., "cert.pem").
- * - Case-sensitive matching for traversal sequences.
- * - Does not validate actual file existence, type, or permissions; use
- * stat()/access() separately.
- * - Configurable via SOCKET_DTLS_MAX_PATH_LEN; adjust for platform limits.
- * - In code, uses strstr() for traversal detection (simple but effective for
- * common attacks).
- *
- * @threadsafe Yes - Pure string operations, no shared state or allocations.
- * Reentrant and safe from signal handlers.
- *
- *  Usage Example
- *
- * @code{.c}
- * // In config loading
- * if (!dtls_validate_file_path(cert_path)) {
- *     RAISE_DTLS_ERROR_MSG(SocketDTLSConfig_InvalidCert, "Invalid cert path:
- * %s", cert_path);
- * }
- * // Safe to pass to SSL_CTX_use_certificate_file()
- * if (SSL_CTX_use_certificate_file(ctx, cert_path, SSL_FILETYPE_PEM) <= 0) {
- *     dtls_format_openssl_error("Cert load failed");
- *     RAISE_DTLS_ERROR(SocketDTLSConfig_InvalidCert);
- * }
- *
- * // Batch validation
- * const char *files[] = {cert_path, key_path, ca_path};
- * for (int i = 0; i < 3; i++) {
- *     if (!dtls_validate_file_path(files[i])) {
- *         RAISE_DTLS_ERROR_MSG(SocketDTLSConfig_InvalidPath, "Invalid file
- * path[%d]: %s", i, files[i]);
- *     }
- * }
- * @endcode
- *
- *  Rejection Reasons Table
- *
- * | Condition | Reason | Example Rejected Paths |
- * |-----------|--------|------------------------|
- * | Empty/NULL | Invalid length | "", NULL, "" |
- * | Too long | Exceeds max | String >4096 chars |
- * | Traversal | Path escape attempt | "../etc/passwd", "/../../",
- * "..\..\windows" | | Control chars | Injection attempt | "cert\0malicious",
- * paths with \n or \0 |
- *
- * @warning String validation alone insufficient against all attacks; combine
- * with:
- * - Sandboxing/chroot for file access
- * - Absolute paths from trusted sources
- * - File permissions (644 for certs, 600 for keys)
- * - Avoid user-controlled paths in production
- *
- * @complexity O(n) where n=path length - strstr() and loop scans, linear time.
- *
- * @see SocketDTLSContext_set_cert_file() public API using this validation
- * @see dtls_format_openssl_error() for handling OpenSSL load failures
- * post-validation
- * @see realpath(3) for canonicalizing paths (additional defense)
- * @see docs/SECURITY.md#file-path-validation for rationale and extensions
- * @see OpenSSL SSL_CTX_use_certificate_file() consumer of validated paths
+ * @threadsafe Yes - pure string and stat operations, no shared state.
+ * @see ssl_validate_file_path() for implementation details.
  */
 static inline int
 dtls_validate_file_path (const char *path)
 {
-  if (!path || !*path)
-    return 0;
-
-  size_t len = strlen (path);
-  if (len == 0 || len > SOCKET_DTLS_MAX_PATH_LEN)
-    return 0;
-
-  /* Check for path traversal sequences (prefer absolute paths) */
-  if (path[0] != '/')
-    { /* Optional: warn or reject relative; preference for absolute */
-      /* Relative paths accepted but may be insecure if cwd untrusted */
-    }
-  if (strstr (path, "../") != NULL || strstr (path, "..\\") != NULL
-      || strstr (path, "/..") != NULL || strstr (path, "\\..") != NULL
-      || strstr (path, "..") != NULL)
-    {
-      return 0;
-    }
-
-  /* Check for control characters */
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)path[i];
-      if (c < 32 || c == 127)
-        return 0;
-    }
-
-  return 1;
+  return ssl_validate_file_path (path, SOCKET_DTLS_MAX_PATH_LEN);
 }
 
 /* ============================================================================
@@ -1096,20 +910,14 @@ extern __thread Except_T SocketDTLSContext_DetailedException;
  */
 
 /**
- * @brief Suppress unused parameter compiler warnings.
+ * @brief Suppress compiler warnings for intentionally unused parameters.
  * @ingroup security
- * @param x Variable or parameter marked as intentionally unused.
+ * @param x Parameter or variable that is intentionally unused.
  *
- * Casts the parameter to void to inform the compiler that the variable is
- * intentionally unused, suppressing -Wunused-parameter warnings. Commonly used
- * in callback functions with fixed signatures or debug-only code paths.
- *
- * @note Prefer removing unused parameters when possible; use this only when
- * necessary due to API constraints.
- * @threadsafe Yes - no side effects or shared state.
- * @see SocketUtil.h for general utility macros.
+ * Alias for SOCKET_SSL_UNUSED for DTLS module compatibility.
+ * @see SOCKET_SSL_UNUSED in SocketSSL-internal.h
  */
-#define DTLS_UNUSED(x) (void)(x)
+#define DTLS_UNUSED(x) SOCKET_SSL_UNUSED (x)
 
 /**
  * @brief Validate DTLS enabled and retrieve SSL object, raising on failure.

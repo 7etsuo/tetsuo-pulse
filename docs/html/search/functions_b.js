@@ -11,5 +11,6 @@ var searchData=
   ['request_5fhash_5ffunction_8',['request_hash_function',['../group__dns.html#gae79ec1f8c6638d30d082e8af45420837',1,'SocketDNS-private.h']]],
   ['request_5ftimed_5fout_9',['request_timed_out',['../group__dns.html#ga535554eb81b22d80ff8e72060293345b',1,'SocketDNS-private.h']]],
   ['reset_5fdns_5fstate_10',['reset_dns_state',['../group__dns.html#ga1fab8535e6f7b9cd7213be1f35babf70',1,'SocketDNS-private.h']]],
-  ['return_5fto_5ffree_5flist_11',['return_to_free_list',['../group__connection__mgmt.html#ga7024a2a77a04587e061d67a1172cdbfc',1,'SocketPool-private.h']]]
+  ['return_5fto_5ffree_5flist_11',['return_to_free_list',['../group__connection__mgmt.html#ga7024a2a77a04587e061d67a1172cdbfc',1,'SocketPool-private.h']]],
+  ['rrtype_5fstring_12',['rrtype_string',['../dns__lookup_8c.html#a4ba6b5f3c35bd4b4dc4aa96831205f2e',1,'dns_lookup.c']]]
 ];

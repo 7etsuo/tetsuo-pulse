@@ -111,6 +111,7 @@ $(document).ready(function(){initNavTree('SocketDNS_8h.html',''); initResizable(
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#func-members">Functions</a> &#124;
@@ -124,13 +125,14 @@ $(document).ready(function(){initNavTree('SocketDNS_8h.html',''); initResizable(
 <div class="textblock"><code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
 <code>#include &lt;netdb.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
+<code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/socket.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketDNS.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketDNS_8h__incl.svg" width="419" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketDNS_8h__incl.svg" width="508" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
@@ -142,6 +144,12 @@ $(document).ready(function(){initNavTree('SocketDNS_8h.html',''); initResizable(
 </div>
 <p><a href="SocketDNS_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketDNS__CacheStats" id="r_structSocketDNS__CacheStats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a></td></tr>
+<tr class="memdesc:structSocketDNS__CacheStats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache statistics structure.  <a href="group__dns.html#structSocketDNS__CacheStats">More...</a><br /></td></tr>
+<tr class="separator:structSocketDNS__CacheStats"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></td></tr>
@@ -203,6 +211,33 @@ Functions</h2></td></tr>
 <tr class="memitem:gab988727825887d34e87d144d30c30c2f" id="r_gab988727825887d34e87d144d30c30c2f"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *host, int port, const struct addrinfo *hints, int timeout_ms)</td></tr>
 <tr class="memdesc:gab988727825887d34e87d144d30c30c2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronous DNS resolution with optional timeout guarantee.  <br /></td></tr>
 <tr class="separator:gab988727825887d34e87d144d30c30c2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac8642d0527ed406099dd2ca81cbcbc53" id="r_gac8642d0527ed406099dd2ca81cbcbc53"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53">SocketDNS_cache_clear</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
+<tr class="memdesc:gac8642d0527ed406099dd2ca81cbcbc53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear the entire DNS result cache.  <br /></td></tr>
+<tr class="separator:gac8642d0527ed406099dd2ca81cbcbc53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8d75a5fca44d0543bcc7fccab2f3ebc0" id="r_ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga8d75a5fca44d0543bcc7fccab2f3ebc0">SocketDNS_cache_remove</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *hostname)</td></tr>
+<tr class="memdesc:ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a specific hostname from the DNS cache.  <br /></td></tr>
+<tr class="separator:ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaf578d18322c0da146bfc52e236ae91d" id="r_gaaf578d18322c0da146bfc52e236ae91d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, int ttl_seconds)</td></tr>
+<tr class="memdesc:gaaf578d18322c0da146bfc52e236ae91d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the TTL (time-to-live) for cached DNS results.  <br /></td></tr>
+<tr class="separator:gaaf578d18322c0da146bfc52e236ae91d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga358ec74cbdfba760e98798bb0269ec70" id="r_ga358ec74cbdfba760e98798bb0269ec70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga358ec74cbdfba760e98798bb0269ec70">SocketDNS_cache_set_max_entries</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, size_t max_entries)</td></tr>
+<tr class="memdesc:ga358ec74cbdfba760e98798bb0269ec70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the maximum number of entries in the DNS cache.  <br /></td></tr>
+<tr class="separator:ga358ec74cbdfba760e98798bb0269ec70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga552e6fce7e0aabe57e4bdaa18bbc4dcd" id="r_ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd">SocketDNS_cache_stats</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, <a class="el" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a> *stats)</td></tr>
+<tr class="memdesc:ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get DNS cache statistics.  <br /></td></tr>
+<tr class="separator:ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd162147cc335b1d66ea31a6e70dba91" id="r_gafd162147cc335b1d66ea31a6e70dba91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91">SocketDNS_prefer_ipv6</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, int prefer_ipv6)</td></tr>
+<tr class="memdesc:gafd162147cc335b1d66ea31a6e70dba91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set IPv6 preference for DNS resolution.  <br /></td></tr>
+<tr class="separator:gafd162147cc335b1d66ea31a6e70dba91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13ffd5fe0baab4e755abb0c45bc78410" id="r_ga13ffd5fe0baab4e755abb0c45bc78410"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga13ffd5fe0baab4e755abb0c45bc78410">SocketDNS_get_prefer_ipv6</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
+<tr class="memdesc:ga13ffd5fe0baab4e755abb0c45bc78410"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current IPv6 preference setting.  <br /></td></tr>
+<tr class="separator:ga13ffd5fe0baab4e755abb0c45bc78410"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga686f6e19ce68debbdbb9638b1a60b573" id="r_ga686f6e19ce68debbdbb9638b1a60b573"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573">SocketDNS_set_nameservers</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char **servers, size_t count)</td></tr>
+<tr class="memdesc:ga686f6e19ce68debbdbb9638b1a60b573"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom nameservers for DNS resolution.  <br /></td></tr>
+<tr class="separator:ga686f6e19ce68debbdbb9638b1a60b573"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae01bb71c26d598319a2fdfe043bf455e" id="r_gae01bb71c26d598319a2fdfe043bf455e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e">SocketDNS_set_search_domains</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char **domains, size_t count)</td></tr>
+<tr class="memdesc:gae01bb71c26d598319a2fdfe043bf455e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set DNS search domains for hostname resolution.  <br /></td></tr>
+<tr class="separator:gae01bb71c26d598319a2fdfe043bf455e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -213,7 +248,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Asynchronous DNS resolution API for non-blocking network applications. </p>
 <p>Header for the SocketDNS module providing thread-pool based async getaddrinfo() replacement. Eliminates blocking DNS lookups that can hang applications for 30+ seconds, with built-in DoS protection, timeout guarantees, and SocketPoll integration.</p>
-<h2><a class="anchor" id="autotoc_md240"></a>
+<h2><a class="anchor" id="autotoc_md246"></a>
 Features</h2>
 <ul>
 <li>Async resolution via worker threads (no main thread block)</li>
@@ -223,18 +258,18 @@ Features</h2>
 <li>Sync wrapper with guaranteed timeout</li>
 <li>Thread-safe; integrates with event loops</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md241"></a>
+<h2><a class="anchor" id="autotoc_md247"></a>
 Typical Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md242"></a>
+<h3><a class="anchor" id="autotoc_md248"></a>
 Async with Callback</h3>
 <p>Submit requests; callback handles result in worker thread (thread-safe impl required).</p>
-<h3><a class="anchor" id="autotoc_md243"></a>
+<h3><a class="anchor" id="autotoc_md249"></a>
 Async Polling</h3>
 <p>Submit, monitor pollfd, drain check(), fetch results.</p>
-<h3><a class="anchor" id="autotoc_md244"></a>
+<h3><a class="anchor" id="autotoc_md250"></a>
 Sync with Timeout</h3>
 <p>Use resolve_sync for blocking but protected calls.</p>
-<h2><a class="anchor" id="autotoc_md245"></a>
+<h2><a class="anchor" id="autotoc_md251"></a>
 Platform Requirements</h2>
 <ul>
 <li>POSIX threads (pthreads)</li>
@@ -242,7 +277,7 @@ Platform Requirements</h2>
 <li>CLOCK_MONOTONIC for timeouts</li>
 <li>Unix-like pipe for signaling</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md246"></a>
+<h2><a class="anchor" id="autotoc_md252"></a>
 Related Headers</h2>
 <ul>
 <li><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">core/Except.h</a>: Exception handling</li>

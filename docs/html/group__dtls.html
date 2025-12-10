@@ -135,7 +135,7 @@ Files</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Secure datagram communication using DTLS over UDP sockets. </p>
 <p>Provides DTLS 1.2+ protocol implementation paralleling SocketTLS but optimized for unreliable datagram transport (<a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a>). Enables encrypted, authenticated UDP with forward secrecy, cookie anti-DoS, and full async I/O support via <a class="el" href="group__event__system.html">Event System Modules</a>.</p>
-<h2><a class="anchor" id="autotoc_md497"></a>
+<h2><a class="anchor" id="autotoc_md581"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌───────────────────────────────────────────────────────────┐</div>
 <div class="line">│              Application Layer (e.g., CoAP, QUIC)          │</div>
@@ -152,7 +152,7 @@ Architecture Overview</h2>
 <div class="line">┌─────────▼────────────────────────────────────────────────┐</div>
 <div class="line">│        Foundation (@ref foundation: Arena, Except)        │</div>
 <div class="line">└───────────────────────────────────────────────────────────┘</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md498"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md582"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__core__io.html">Core I/O Modules</a> (SocketDgram), <a class="el" href="group__foundation.html">Core Foundation Modules</a> (memory/error), <a class="el" href="group__event__system.html">Event System Modules</a> (async)</li>
@@ -160,7 +160,7 @@ Module Relationships</h2>
 <li><b>Used by</b>: Applications needing secure UDP (IoT, gaming, media streaming)</li>
 <li><b>TLS Integration</b>: Shares contexts/certs with SocketTLS where possible</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md499"></a>
+<h2><a class="anchor" id="autotoc_md583"></a>
 Key Features</h2>
 <ul>
 <li>Non-blocking handshake with poll integration and cookie DoS protection</li>

@@ -29,7 +29,7 @@ var SocketTLS_private_8h =
     [ "tls_pinning_init", "group__security.html#ga726c939b0e3e55893537751d2ea87dd8", null ],
     [ "tls_secure_free_pkey", "group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0", null ],
     [ "tls_socket_get_ssl", "group__security.html#gac08c4201eb8ac29014cead5bf4a17adb", null ],
-    [ "tls_validate_file_path", "SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59", null ],
+    [ "tls_validate_file_path", "group__security.html#ga7c1796c12a4cab58c4bc3eba891efc59", null ],
     [ "tls_validate_hostname", "group__security.html#gaebeabc646fbd6961894512930a822ca9", null ],
     [ "tls_context_exdata_idx", "group__security.html#gaf6dd40cb19f09e9fffb7f30594372db2", null ]
 ];

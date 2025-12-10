@@ -148,6 +148,9 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketAsync__T" id="r_structSocketAsync__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a></td></tr>
 <tr class="memdesc:structSocketAsync__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Core structure for asynchronous I/O context management.  <a href="group__async__io.html#structSocketAsync__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketAsync__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketAsync__Op" id="r_structSocketAsync__Op"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a></td></tr>
+<tr class="memdesc:structSocketAsync__Op"><td class="mdescLeft">&#160;</td><td class="mdescRight">Async operation descriptor for batch submission.  <a href="group__async__io.html#structSocketAsync__Op">More...</a><br /></td></tr>
+<tr class="separator:structSocketAsync__Op"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketHE__AddressEntry__T" id="r_structSocketHE__AddressEntry__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketHE__AddressEntry__T">SocketHE_AddressEntry_T</a></td></tr>
 <tr class="memdesc:structSocketHE__AddressEntry__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Single connection attempt structure in Happy Eyeballs racing.  <a href="group__async__io.html#structSocketHE__AddressEntry__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketHE__AddressEntry__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -200,6 +203,20 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:gae66259c675b6f9658c95d34e1fbfefdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags to control behavior of asynchronous I/O operations.  <a href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">More...</a><br /></td></tr>
 <tr class="separator:gae66259c675b6f9658c95d34e1fbfefdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24d405b3be635f02866bbde768cd25d2" id="r_ga24d405b3be635f02866bbde768cd25d2"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> { <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a859cc2d974e5262e4a5d57271365b89c">ASYNC_BACKEND_AUTO</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d">ASYNC_BACKEND_IO_URING</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200">ASYNC_BACKEND_KQUEUE</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a90e2a0cec9e33dd5fba8e51b87605067">ASYNC_BACKEND_POLL</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a271e5a811d8915068dea53264a8695d8">ASYNC_BACKEND_NONE</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:ga24d405b3be635f02866bbde768cd25d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backend type identifiers for runtime selection.  <a href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">More...</a><br /></td></tr>
+<tr class="separator:ga24d405b3be635f02866bbde768cd25d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga9ceb0606fea5b72366bbd21ff047c84f" id="r_ga9ceb0606fea5b72366bbd21ff047c84f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga9ceb0606fea5b72366bbd21ff047c84f">SocketHE_AttemptState</a> { <br />
 &#160;&#160;<a class="el" href="group__async__io.html#gga9ceb0606fea5b72366bbd21ff047c84fae389b7235795d6a11ee400bbd9eb6ce7">HE_ATTEMPT_IDLE</a> = 0
 , <br />
@@ -255,6 +272,18 @@ Functions</h2></td></tr>
 <tr class="memitem:gafae22c23e82d55f6fa3eaf74c0c37f5d" id="r_gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a> (const <a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
 <tr class="memdesc:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the name of the active asynchronous backend.  <br /></td></tr>
 <tr class="separator:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae43318fc62792b6730cd3966912ded85" id="r_gae43318fc62792b6730cd3966912ded85"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae43318fc62792b6730cd3966912ded85">SocketAsync_submit_batch</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, <a class="el" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a> *ops, size_t count)</td></tr>
+<tr class="memdesc:gae43318fc62792b6730cd3966912ded85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit multiple async operations in a single call.  <br /></td></tr>
+<tr class="separator:gae43318fc62792b6730cd3966912ded85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga534a39bfb57ab257465c0dbdb5e52fd2" id="r_ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2">SocketAsync_cancel_all</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
+<tr class="memdesc:ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel all pending async operations.  <br /></td></tr>
+<tr class="separator:ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae2b2e59aaa4d0620c5c064447a2d1fd8" id="r_gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync_backend_available</a> (<a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> backend)</td></tr>
+<tr class="memdesc:gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a specific backend is available at runtime.  <br /></td></tr>
+<tr class="separator:gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga909ff893fe99d63d68c29102f3f90600" id="r_ga909ff893fe99d63d68c29102f3f90600"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600">SocketAsync_set_backend</a> (<a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> backend)</td></tr>
+<tr class="memdesc:ga909ff893fe99d63d68c29102f3f90600"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request a specific async backend for new contexts.  <br /></td></tr>
+<tr class="separator:ga909ff893fe99d63d68c29102f3f90600"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3" id="r_ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga5ef2e9ba01aa72f8a3ae864a1ba58bc3">SocketHappyEyeballs_connect</a> (const char *host, int port, const <a class="el" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> *config)</td></tr>
 <tr class="memdesc:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform synchronous Happy Eyeballs connection to host (RFC 8305 compliant).  <br /></td></tr>
 <tr class="separator:ga5ef2e9ba01aa72f8a3ae864a1ba58bc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -322,13 +351,13 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Asynchronous I/O and dual-stack connection racing for scalable, performant networking. </p>
 <p>Enables high-concurrency servers and clients with non-blocking I/O and fast connection establishment. Core focus on platform-optimized async primitives and RFC-compliant dual-stack resolution (Happy Eyeballs).</p>
-<h2><a class="anchor" id="autotoc_md389"></a>
+<h2><a class="anchor" id="autotoc_md456"></a>
 Key Components</h2>
 <ul>
 <li><b>SocketAsync</b>: Async send/recv with callbacks, zero-copy, backend-agnostic</li>
 <li><b>SocketHappyEyeballs</b>: Parallel IPv6/IPv4 connection attempts per RFC 8305</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md390"></a>
+<h2><a class="anchor" id="autotoc_md457"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌─────────────────────────────────────┐</div>
 <div class="line">│         Application Layer           │</div>
@@ -351,7 +380,7 @@ Architecture Overview</h2>
 <div class="line">│     Socket_T, DNS, Buffers          │</div>
 <div class="line">└─────────────────────────────────────┘</div>
 <div class="ttc" id="agroup__async__io_html_structSocketAsync__T"><div class="ttname"><a href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a></div><div class="ttdoc">Core structure for asynchronous I/O context management.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00361">SocketAsync-private.h:362</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md391"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md458"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__core__io.html">Core I/O Modules</a> (sockets), <a class="el" href="group__event__system.html">Event System Modules</a> (polling/timers), <a class="el" href="group__foundation.html">Core Foundation Modules</a> (arena/except)</li>
@@ -402,14 +431,14 @@ docs/cross-platform-backends.md - Backend details. </dd></dl>
 </li>
 </ul>
 </dd></dl>
-<h1><a class="anchor" id="autotoc_md382"></a>
+<h1><a class="anchor" id="autotoc_md449"></a>
 Request Management</h1>
 <ul>
 <li>requests[]: Fixed-size hash table (SOCKET_HASH_TABLE_SIZE buckets)</li>
 <li>next_request_id: Atomic counter for uniqueness (skips 0)</li>
 <li>mutex: pthread_mutex_t protecting table and ID gen</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md383"></a>
+<h1><a class="anchor" id="autotoc_md450"></a>
 Backend Integration</h1>
 <ul>
 <li>Conditional fields based on platform:<ul>
@@ -423,7 +452,7 @@ Backend Integration</h1>
 <p class="startli">Integration Patterns</p>
 </li>
 </ul>
-<h1><a class="anchor" id="autotoc_md384"></a>
+<h1><a class="anchor" id="autotoc_md451"></a>
 With SocketPoll (Recommended)</h1>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(max_events);</div>
 <div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll); <span class="comment">// Shared context</span></div>
@@ -438,13 +467,13 @@ With SocketPoll (Recommended)</h1>
 <div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
 <div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
 <div class="ttc" id="agroup__poll__private_html_structSocketPoll__T"><div class="ttname"><a href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></div><div class="ttdoc">Opaque internal state structure for SocketPoll instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00404">SocketPoll-private.h:405</a></div></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md385"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md452"></a>
 Standalone Usage</h1>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> <a class="code hl_variable" href="group__async__io.html#a6650d0b3116c588b4413290a8c033fd2">arena</a> = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <a class="code hl_function" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a>(<a class="code hl_variable" href="group__async__io.html#a6650d0b3116c588b4413290a8c033fd2">arena</a>);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Manual completion processing</span></div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">  <span class="keywordtype">int</span> completed = <a class="code hl_function" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync_process_completions</a>(async, 10); <span class="comment">// 10ms</span></div>
 <div class="line">timeout</div>
 <div class="line">  <span class="comment">// Handle other logic</span></div>
@@ -452,6 +481,7 @@ Standalone Usage</h1>
 <div class="line"> </div>
 <div class="line"><a class="code hl_function" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a>(&amp;async);</div>
 <div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;<a class="code hl_variable" href="group__async__io.html#a6650d0b3116c588b4413290a8c033fd2">arena</a>);</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__async__io_html_a6650d0b3116c588b4413290a8c033fd2"><div class="ttname"><a href="group__async__io.html#a6650d0b3116c588b4413290a8c033fd2">SocketAsync_T::arena</a></div><div class="ttdeci">Arena_T arena</div><div class="ttdoc">Memory arena for internal allocations.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync-private_8h_source.html#l00370">SocketAsync-private.h:370</a></div></div>
 <div class="ttc" id="agroup__async__io_html_ga0d3a7b456b962c6abf4dfd91859492e0"><div class="ttname"><a href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a></div><div class="ttdeci">void SocketAsync_free(SocketAsync_T *async)</div><div class="ttdoc">Destroy an asynchronous I/O context and release associated resources.</div></div>
 <div class="ttc" id="agroup__async__io_html_ga1c4916e173cffa9153c983a4fd0d0d56"><div class="ttname"><a href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a></div><div class="ttdeci">SocketAsync_T SocketAsync_new(Arena_T arena)</div><div class="ttdoc">Create a new standalone asynchronous I/O context.</div></div>
@@ -459,22 +489,21 @@ Standalone Usage</h1>
 <div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
 <div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
 </div><!-- fragment --><p>Backend-Specific Notes</p>
-<h1><a class="anchor" id="autotoc_md386"></a>
+<h1><a class="anchor" id="autotoc_md453"></a>
 io_uring (Linux)</h1>
 <ul>
 <li>High performance, zero-copy support via flags</li>
 <li>Batch submission/completion for throughput</li>
 <li>Eventfd polled internally or via SocketPoll integration</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md387"></a>
+<h1><a class="anchor" id="autotoc_md454"></a>
 kqueue AIO (BSD/macOS)</h1>
 <ul>
 <li>Uses kevent with EVFILT_AIO for completion events</li>
 <li>Limited zero-copy; synchronous I/O on event trigger</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md388"></a>
+<h1><a class="anchor" id="autotoc_md455"></a>
 Fallback Mode</h1>
 <ul>
 <li>Tracks requests but performs I/O synchronously in process_completions()</li>
@@ -513,7 +542,7 @@ src/socket/SocketAsync.c implementation details</dd></dl>
 <li>Deliver completions via callbacks (serialized)</li>
 <li>Handle fallback to manual I/O when native async unavailable</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md394"></a>
+<h2><a class="anchor" id="autotoc_md461"></a>
 Lifecycle Management</h2>
 <ol type="1">
 <li><b>Creation</b>: Via SocketAsync_new(arena) for standalone or SocketPoll_get_async(poll) for integrated</li>
@@ -608,6 +637,97 @@ request_hash() </dd></dl>
 
 </div>
 </div>
+<a name="structSocketAsync__Op" id="structSocketAsync__Op"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketAsync__Op">&#9670;&#160;</a></span>SocketAsync_Op</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketAsync_Op</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>Async operation descriptor for batch submission. </p>
+<p>Describes a single async operation for use with <a class="el" href="group__async__io.html#gae43318fc62792b6730cd3966912ded85" title="Submit multiple async operations in a single call.">SocketAsync_submit_batch()</a>. Enables efficient submission of multiple operations in a single call, reducing syscall overhead for high-throughput applications. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l00979">979</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
+</div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketAsync_Op:</div>
+<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketAsync__Op__coll__graph.svg" width="135" height="139"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a91a78d77da2e9afd14eb14cb652e132f" name="a91a78d77da2e9afd14eb14cb652e132f"></a><a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync_Callback</a></td>
+<td class="fieldname">
+cb</td>
+<td class="fielddoc">
+<p>Completion callback </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6602e4aede11da621134dd522a4ee955" name="a6602e4aede11da621134dd522a4ee955"></a><a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync_Flags</a></td>
+<td class="fieldname">
+flags</td>
+<td class="fielddoc">
+<p>Operation flags </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a2e62f7bc12b87adf5571844fa4ec2019" name="a2e62f7bc12b87adf5571844fa4ec2019"></a>int</td>
+<td class="fieldname">
+is_send</td>
+<td class="fielddoc">
+<p>1 = send operation, 0 = recv operation </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a8a52478c57448fcdf643deaf134d91d0" name="a8a52478c57448fcdf643deaf134d91d0"></a>size_t</td>
+<td class="fieldname">
+len</td>
+<td class="fielddoc">
+<p>Buffer length </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ab878c872e64b599a35265c3002a27552" name="ab878c872e64b599a35265c3002a27552"></a>void *</td>
+<td class="fieldname">
+recv_buf</td>
+<td class="fielddoc">
+<p>Buffer for recv (NULL if send) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ad579de4b7ad174fa004d00057058fcc3" name="ad579de4b7ad174fa004d00057058fcc3"></a>unsigned</td>
+<td class="fieldname">
+request_id</td>
+<td class="fielddoc">
+<p>[OUT] Assigned request ID on success </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="abcee00e417379ca79c8446f4abbc2ff6" name="abcee00e417379ca79c8446f4abbc2ff6"></a>const void *</td>
+<td class="fieldname">
+send_buf</td>
+<td class="fielddoc">
+<p>Buffer for send (NULL if recv) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a96ba5e2a3b0eff9c0031cd707cb1b61e" name="a96ba5e2a3b0eff9c0031cd707cb1b61e"></a>Socket_T</td>
+<td class="fieldname">
+socket</td>
+<td class="fielddoc">
+<p>Target socket for operation </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a85d2dd00a5118ba4f612db5ed61c5e0b" name="a85d2dd00a5118ba4f612db5ed61c5e0b"></a>void *</td>
+<td class="fieldname">
+user_data</td>
+<td class="fielddoc">
+<p>User data for callback </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <a name="structSocketHE__AddressEntry__T" id="structSocketHE__AddressEntry__T"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structSocketHE__AddressEntry__T">&#9670;&#160;</a></span>SocketHE_AddressEntry_T</h2>
 
@@ -661,11 +781,11 @@ Socket_T for underlying <a class="el" href="group__async__io.html#a94ef82d024230
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a>#happy-eyeballs-connection-racing for algorithm context. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00176">176</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-</div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHE_AddressEntry_T:</div>
-<div id="dynsection-1-summary" class="dynsummary" style="display:block;">
+</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHE_AddressEntry_T:</div>
+<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
 </div>
-<div id="dynsection-1-content" class="dyncontent" style="display:none;">
+<div id="dynsection-2-content" class="dyncontent" style="display:none;">
 <div class="center"><iframe scrolling="no" frameborder="0" src="structSocketHE__AddressEntry__T__coll__graph.svg" width="194" height="124"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
@@ -862,7 +982,7 @@ In sync mode, blocks up to total_timeout_ms; use async for responsive apps.</dd>
 <div class="ttc" id="agroup__async__io_html_ada23c08d9d2867a7f02b9e7f03697fae"><div class="ttname"><a href="group__async__io.html#ada23c08d9d2867a7f02b9e7f03697fae">SocketHE_T::attempts</a></div><div class="ttdeci">SocketHE_Attempt_T * attempts</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00417">SocketHappyEyeballs-private.h:417</a></div></div>
 <div class="ttc" id="agroup__async__io_html_ae6f8a859a6a5107e05abf0eeb36389e6"><div class="ttname"><a href="group__async__io.html#ae6f8a859a6a5107e05abf0eeb36389e6">SocketHE_T::poll</a></div><div class="ttdeci">SocketPoll_T poll</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00390">SocketHappyEyeballs-private.h:390</a></div></div>
 <div class="ttc" id="agroup__async__io_html_structSocketHE__T"><div class="ttname"><a href="group__async__io.html#structSocketHE__T">SocketHE_T</a></div><div class="ttdoc">Wrapper structure for resolved addresses in Happy Eyeballs address preference ordering.</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs-private_8h_source.html#l00378">SocketHappyEyeballs-private.h:379</a></div></div>
-<div class="ttc" id="agroup__dns_html_structSocketDNS__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></div><div class="ttdoc">Async DNS resolver structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00242">SocketDNS-private.h:243</a></div></div>
+<div class="ttc" id="agroup__dns_html_structSocketDNS__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></div><div class="ttdoc">Async DNS resolver structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00260">SocketDNS-private.h:261</a></div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gaac613520b1e674db06e60155150fef63" title="Start asynchronous Happy Eyeballs connection.">SocketHappyEyeballs_start()</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">and</a> <a class="el" href="group__async__io.html#ga5ef2e9ba01aa72f8a3ae864a1ba58bc3" title="Perform synchronous Happy Eyeballs connection to host (RFC 8305 compliant).">SocketHappyEyeballs_connect()</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">for</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">public</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">creation</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">APIs</a>. </dd>
 <dd>
 <a class="el" href="SocketHappyEyeballs-private_8h.html#structSocketHE__Attempt__T">SocketHE_Attempt_T</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">for</a> per-attempt <a class="el" href="group__async__io.html#aaeda5383f3e0ac7f6576f7a5a613ff72">state</a> <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">tracking</a>. </dd>
@@ -882,11 +1002,11 @@ In sync mode, blocks up to total_timeout_ms; use async for responsive apps.</dd>
 docs/ERROR_HANDLING.md <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">for</a> exception <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">and</a> error <a class="el" href="group__async__io.html#aa253b4703dce01e6869ca27208dd624a">handling</a>. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHappyEyeballs-private_8h_source.html#l00378">378</a> of file <a class="el" href="SocketHappyEyeballs-private_8h_source.html">SocketHappyEyeballs-private.h</a>.</p>
-</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHE_T:</div>
-<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+</div><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHE_T:</div>
+<div id="dynsection-3-summary" class="dynsummary" style="display:block;">
 </div>
-<div id="dynsection-2-content" class="dyncontent" style="display:none;">
+<div id="dynsection-3-content" class="dyncontent" style="display:none;">
 <div class="center"><div class="zoom"><iframe scrolling="no" frameborder="0" src="structSocketHE__T__coll__graph.svg" width="100%" height="600"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
@@ -1207,7 +1327,7 @@ total_timeout_ms</td>
 
 <p>Default number of io_uring entries. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01797">1797</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01888">1888</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1390,7 +1510,7 @@ total_timeout_ms</td>
 
 <p>Maximum number of events per batch. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01804">1804</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01895">1895</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1473,7 +1593,7 @@ total_timeout_ms</td>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - Invoked serially from the thread calling</dt><dd><a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Block and wait for I/O events or timeout on registered sockets.">SocketPoll_wait()</a> or process_completions(). No concurrent invocations for same req, but multiple callbacks may interleave for different ops. Socket access in callback requires care if multi-threaded.</dd></dl>
-<h2><a class="anchor" id="autotoc_md395"></a>
+<h2><a class="anchor" id="autotoc_md462"></a>
 Example Implementation</h2>
 <div class="fragment"><div class="line"><span class="comment">// Generic callback for send or recv</span></div>
 <div class="line"><span class="keywordtype">void</span> async_io_complete(Socket_T socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span></div>
@@ -1519,7 +1639,7 @@ Example Implementation</h2>
 <div class="ttc" id="aSocketUtil_8h_html_a9fe70c7ab8b971af2971f3a102b82819"><div class="ttname"><a href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_INFO_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00540">SocketUtil.h:540</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga4d727948c677509eec04746585819877"><div class="ttname"><a href="group__core__io.html#ga4d727948c677509eec04746585819877">Socket_fd</a></div><div class="ttdeci">int Socket_fd(const Socket_T socket)</div><div class="ttdoc">Get underlying file descriptor.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md396"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md463"></a>
 Common Error Codes</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -1552,6 +1672,37 @@ Common Error Codes</h2>
 </div>
 </div>
 <h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="ga24d405b3be635f02866bbde768cd25d2" name="ga24d405b3be635f02866bbde768cd25d2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga24d405b3be635f02866bbde768cd25d2">&#9670;&#160;</a></span>SocketAsync_Backend</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Backend type identifiers for runtime selection. </p>
+<p>Identifies available async I/O backends. Used with <a class="el" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8" title="Check if a specific backend is available at runtime.">SocketAsync_backend_available()</a> for runtime capability checking. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga24d405b3be635f02866bbde768cd25d2a859cc2d974e5262e4a5d57271365b89c" name="gga24d405b3be635f02866bbde768cd25d2a859cc2d974e5262e4a5d57271365b89c"></a>ASYNC_BACKEND_AUTO&#160;</td><td class="fielddoc"><p>Automatic best-available selection (default) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d" name="gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d"></a>ASYNC_BACKEND_IO_URING&#160;</td><td class="fielddoc"><p>Linux io_uring (kernel 5.1+) </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200" name="gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200"></a>ASYNC_BACKEND_KQUEUE&#160;</td><td class="fielddoc"><p>BSD/macOS kqueue </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga24d405b3be635f02866bbde768cd25d2a90e2a0cec9e33dd5fba8e51b87605067" name="gga24d405b3be635f02866bbde768cd25d2a90e2a0cec9e33dd5fba8e51b87605067"></a>ASYNC_BACKEND_POLL&#160;</td><td class="fielddoc"><p>POSIX poll fallback </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga24d405b3be635f02866bbde768cd25d2a271e5a811d8915068dea53264a8695d8" name="gga24d405b3be635f02866bbde768cd25d2a271e5a811d8915068dea53264a8695d8"></a>ASYNC_BACKEND_NONE&#160;</td><td class="fielddoc"><p>Explicitly disable async (sync mode) </p>
+</td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="SocketAsync_8h_source.html#l01066">1066</a> of file <a class="el" href="SocketAsync_8h_source.html">SocketAsync.h</a>.</p>
+
+</div>
+</div>
 <a id="gae66259c675b6f9658c95d34e1fbfefdf" name="gae66259c675b6f9658c95d34e1fbfefdf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gae66259c675b6f9658c95d34e1fbfefdf">&#9670;&#160;</a></span>SocketAsync_Flags</h2>
 
@@ -1567,7 +1718,7 @@ Common Error Codes</h2>
 <p>Bit flags to control behavior of asynchronous I/O operations. </p>
 <p>Optional modifiers passed to <a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b" title="Submit an asynchronous send operation on a socket.">SocketAsync_send()</a> and <a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64" title="Submit an asynchronous receive operation on a socket.">SocketAsync_recv()</a> to enable performance optimizations or specific semantics. Flags are combined with bitwise OR. Unsupported flags on a given backend are silently ignored, falling back to default behavior without error.</p>
 <p>Selection of flags should consider backend capabilities (query via <a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d" title="Retrieve the name of the active asynchronous backend.">SocketAsync_backend_name()</a> and <a class="el" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665" title="Query if native asynchronous I/O backend is operational.">SocketAsync_is_available()</a>). For example, zero-copy requires native async support and compatible socket types (typically TCP).</p>
-<h2><a class="anchor" id="autotoc_md397"></a>
+<h2><a class="anchor" id="autotoc_md464"></a>
 Flag Support Matrix</h2>
 <p>| Flag | io_uring (Linux 5.1+) | kqueue (macOS/BSD) | Edge-Triggered Fallback | Notes | |------------&mdash;|--------------------&mdash;|-----------------&mdash;|----------------------&mdash;|----&mdash;| | ASYNC_FLAG_NONE | Yes | Yes | Yes | Default | | ASYNC_FLAG_ZERO_COPY | Yes (SEND_ZC/RECV_ZC) | No | No | Large payloads; TCP only | | ASYNC_FLAG_URGENT | Yes (IOSQE_URGENT/IOLINK) | Partial (priority queue) | No | Low-latency small ops |</p>
 <dl class="section warning"><dt>Warning</dt><dd>Combining incompatible flags may degrade performance or fail silently. Always test with target backend.</dd></dl>
@@ -1698,6 +1849,60 @@ No "PARTIAL" or TLS-specific states; focused on TCP connect phase only. </dd></d
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="gae2b2e59aaa4d0620c5c064447a2d1fd8" name="gae2b2e59aaa4d0620c5c064447a2d1fd8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae2b2e59aaa4d0620c5c064447a2d1fd8">&#9670;&#160;</a></span>SocketAsync_backend_available()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketAsync_backend_available </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a>&#160;</td>
+          <td class="paramname"><em>backend</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Check if a specific backend is available at runtime. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">backend</td><td>Backend type to check. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>1 if backend available and usable, 0 otherwise.</dd></dl>
+<p>Tests runtime availability of a specific async backend. Useful for applications that need to verify platform capabilities before configuring async I/O behavior.</p>
+<dl class="section user"><dt>Thread Safety\n Yes - Read-only capability check.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) for most backends; io_uring may probe kernel.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md484"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync_backend_available</a>(<a class="code hl_enumvalue" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d">ASYNC_BACKEND_IO_URING</a>)) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;io_uring available - optimal async I/O\n&quot;</span>);</div>
+<div class="line">} <span class="keywordflow">else</span> <span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync_backend_available</a>(<a class="code hl_enumvalue" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200">ASYNC_BACKEND_KQUEUE</a>)) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;kqueue available - good async I/O\n&quot;</span>);</div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Fallback to poll-based async\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__async__io_html_gae2b2e59aaa4d0620c5c064447a2d1fd8"><div class="ttname"><a href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync_backend_available</a></div><div class="ttdeci">int SocketAsync_backend_available(SocketAsync_Backend backend)</div><div class="ttdoc">Check if a specific backend is available at runtime.</div></div>
+<div class="ttc" id="agroup__async__io_html_gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d"><div class="ttname"><a href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d">ASYNC_BACKEND_IO_URING</a></div><div class="ttdeci">@ ASYNC_BACKEND_IO_URING</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l01069">SocketAsync.h:1069</a></div></div>
+<div class="ttc" id="agroup__async__io_html_gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200"><div class="ttname"><a href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200">ASYNC_BACKEND_KQUEUE</a></div><div class="ttdeci">@ ASYNC_BACKEND_KQUEUE</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l01070">SocketAsync.h:1070</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Compile-time support required; checks runtime kernel/library availability. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d" title="Retrieve the name of the active asynchronous backend.">SocketAsync_backend_name()</a> for current backend in use. </dd>
+<dd>
+<a class="el" href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600" title="Request a specific async backend for new contexts.">SocketAsync_set_backend()</a> to request specific backend. </dd></dl>
+
+</div>
+</div>
 <a id="gafae22c23e82d55f6fa3eaf74c0c37f5d" name="gafae22c23e82d55f6fa3eaf74c0c37f5d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gafae22c23e82d55f6fa3eaf74c0c37f5d">&#9670;&#160;</a></span>SocketAsync_backend_name()</h2>
 
@@ -1745,7 +1950,7 @@ No "PARTIAL" or TLS-specific states; focused on TCP connect phase only. </dd></d
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Returns static string, safe concurrent reads.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md414"></a>
+<h2><a class="anchor" id="autotoc_md481"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <span class="comment">// created via SocketAsync_new()</span></div>
 <div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *backend = <a class="code hl_function" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a>(async);</div>
@@ -1813,7 +2018,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if cancel request accepted (may still complete), -1 if invalid ID or already done.</dd></dl>
-<h2><a class="anchor" id="autotoc_md408"></a>
+<h2><a class="anchor" id="autotoc_md475"></a>
 Return Values</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -1830,7 +2035,7 @@ Return Values</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Atomic operation with internal locking.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md409"></a>
+<h2><a class="anchor" id="autotoc_md476"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Cancel a pending request (e.g., on timeout)</span></div>
 <div class="line"><span class="keywordtype">unsigned</span> req_id = <span class="comment">// from send/recv call</span></div>
@@ -1854,6 +2059,60 @@ Usage Example</h2>
 <a class="el" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0" title="Destroy an asynchronous I/O context and release associated resources.">SocketAsync_free()</a> - Cancels all pending on context destruction. </dd>
 <dd>
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a>#cancellation - Best practices and race conditions. </dd></dl>
+
+</div>
+</div>
+<a id="ga534a39bfb57ab257465c0dbdb5e52fd2" name="ga534a39bfb57ab257465c0dbdb5e52fd2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga534a39bfb57ab257465c0dbdb5e52fd2">&#9670;&#160;</a></span>SocketAsync_cancel_all()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketAsync_cancel_all </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a>&#160;</td>
+          <td class="paramname"><em>async</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Cancel all pending async operations. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">async</td><td>Async context. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of operations cancelled.</dd></dl>
+<p>Cancels all pending async operations in the context. Callbacks are NOT invoked for cancelled operations. Useful for cleanup during shutdown or connection reset.</p>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">None</td><td>- Non-throwing cleanup operation. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - Internal mutex protects cancellation.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n = pending operations.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md483"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// During shutdown</span></div>
+<div class="line"><span class="keywordtype">int</span> cancelled = <a class="code hl_function" href="group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2">SocketAsync_cancel_all</a>(async);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Cancelled %d pending operations\n&quot;</span>, cancelled);</div>
+<div class="line"><a class="code hl_function" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync_free</a>(&amp;async);</div>
+<div class="ttc" id="agroup__async__io_html_ga534a39bfb57ab257465c0dbdb5e52fd2"><div class="ttname"><a href="group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2">SocketAsync_cancel_all</a></div><div class="ttdeci">int SocketAsync_cancel_all(SocketAsync_T async)</div><div class="ttdoc">Cancel all pending async operations.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c" title="Cancel a pending asynchronous I/O operation by request ID.">SocketAsync_cancel()</a> to cancel specific operation by ID. </dd>
+<dd>
+<a class="el" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0" title="Destroy an asynchronous I/O context and release associated resources.">SocketAsync_free()</a> which implicitly cancels all pending. </dd></dl>
 
 </div>
 </div>
@@ -1897,7 +2156,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Can be called concurrently from any thread. Cancels</dt><dd>pending operations atomically and waits for in-flight operations where necessary. However, avoid concurrent calls with active submissions for best performance.</dd></dl>
-<h2><a class="anchor" id="autotoc_md400"></a>
+<h2><a class="anchor" id="autotoc_md467"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Paired with SocketAsync_new() for standalone context</span></div>
 <div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
@@ -1968,7 +2227,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Read-only query.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md413"></a>
+<h2><a class="anchor" id="autotoc_md480"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <a class="code hl_function" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a>(arena);</div>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {</div>
@@ -2041,7 +2300,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - creation is thread-safe; resulting context supports</dt><dd>concurrent submission and processing from multiple threads via internal synchronization.</dd></dl>
-<h2><a class="anchor" id="autotoc_md398"></a>
+<h2><a class="anchor" id="autotoc_md465"></a>
 Usage Example: Standalone Context</h2>
 <div class="fragment"><div class="line"><span class="comment">// Standalone usage - requires manual completion processing</span></div>
 <div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
@@ -2064,7 +2323,7 @@ Usage Example: Standalone Context</h2>
 <div class="ttc" id="agroup__async__io_html_ga55b9b96eff9c17f45ff5bfb37f431075"><div class="ttname"><a href="group__async__io.html#ga55b9b96eff9c17f45ff5bfb37f431075">SocketAsync_Failed</a></div><div class="ttdeci">const Except_T SocketAsync_Failed</div><div class="ttdoc">Module-specific exception for fatal async I/O errors.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
 <div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md399"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md466"></a>
 Recommended: Integrated with SocketPoll</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1024); <span class="comment">// Create event poll</span></div>
 <div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <a class="code hl_function" href="group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0">SocketPoll_get_async</a>(poll); <span class="comment">// Get integrated async</span></div>
@@ -2138,7 +2397,7 @@ Recommended: Integrated with SocketPoll</h2>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Number of completions processed (&gt;=0), or -1 on error (check errno).</dd></dl>
-<h2><a class="anchor" id="autotoc_md410"></a>
+<h2><a class="anchor" id="autotoc_md477"></a>
 Return Values</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -2157,10 +2416,10 @@ Return Values</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Internal mutex serializes access; safe concurrent calls</dt><dd>(but inefficient).</dd></dl>
-<h2><a class="anchor" id="autotoc_md411"></a>
+<h2><a class="anchor" id="autotoc_md478"></a>
 Usage Example: Standalone Mode</h2>
 <div class="fragment"><div class="line"><span class="comment">// In main loop for standalone async context</span></div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <span class="comment">// Submit new operations as needed...</span></div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// Process completions non-blocking</span></div>
@@ -2176,7 +2435,7 @@ Usage Example: Standalone Mode</h2>
 <div class="line">    <span class="comment">// Other loop work (e.g., poll other fds)</span></div>
 <div class="line">    usleep(1000);  <span class="comment">// Yield CPU if no events</span></div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md412"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md479"></a>
 Integrated Mode (Automatic)</h2>
 <p>No manual call needed: </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;events, timeout);  <span class="comment">// Auto-processes async</span></div>
 <div class="line">completions</div>
@@ -2274,7 +2533,7 @@ Integrated Mode (Automatic)</h2>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Request ID (&gt;0 success, 0 failure). See return table below.</dd></dl>
-<h2><a class="anchor" id="autotoc_md405"></a>
+<h2><a class="anchor" id="autotoc_md472"></a>
 Return Values</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -2291,7 +2550,7 @@ Return Values</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Safe for concurrent submissions; internal locking used.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md406"></a>
+<h2><a class="anchor" id="autotoc_md473"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><span class="comment">// Receive callback</span></div>
 <div class="line"><span class="keywordtype">void</span> recv_complete(Socket_T socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data)</div>
@@ -2323,7 +2582,7 @@ Basic Usage</h2>
 <div class="line">}</div>
 <div class="ttc" id="agroup__async__io_html_ga46adb5a1db31901afa5d1d6514e41b64"><div class="ttname"><a href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync_recv</a></div><div class="ttdeci">unsigned SocketAsync_recv(SocketAsync_T async, Socket_T socket, void *buf, size_t len, SocketAsync_Callback cb, void *user_data, SocketAsync_Flags flags)</div><div class="ttdoc">Submit an asynchronous receive operation on a socket.</div></div>
 <div class="ttc" id="agroup__async__io_html_ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c"><div class="ttname"><a href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a></div><div class="ttdeci">@ ASYNC_FLAG_NONE</div><div class="ttdoc">Default operation with no special features enabled.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00323">SocketAsync.h:323</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md407"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md474"></a>
 Handling Partial Receives and EOF</h2>
 <p>In the callback:</p><ul>
 <li>bytes &gt; 0: Partial or full data received; process and resubmit if more expected</li>
@@ -2426,7 +2685,7 @@ Handling Partial Receives and EOF</h2>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Request identifier (&gt;0) on successful queuing/submission, 0 on failure.</dd></dl>
-<h2><a class="anchor" id="autotoc_md401"></a>
+<h2><a class="anchor" id="autotoc_md468"></a>
 Return Values</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -2444,7 +2703,7 @@ Return Values</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Internal mutex protects request queue and submission.</dt><dd>Concurrent submissions from multiple threads are serialized safely.</dd></dl>
-<h2><a class="anchor" id="autotoc_md402"></a>
+<h2><a class="anchor" id="autotoc_md469"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><span class="comment">// Define completion callback</span></div>
 <div class="line"><span class="keywordtype">void</span> send_complete(Socket_T socket, ssize_t bytes, <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *user_data)</div>
@@ -2467,7 +2726,7 @@ Basic Usage</h2>
 <div class="line">    <span class="comment">// Handle submission failure</span></div>
 <div class="line">    perror(<span class="stringliteral">&quot;SocketAsync_send failed&quot;</span>);</div>
 <div class="line">}</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md403"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md470"></a>
 Advanced: Zero-Copy for Large Data</h2>
 <div class="fragment"><div class="line"><span class="comment">// For large payloads, enable zero-copy if backend supports it</span></div>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665">SocketAsync_is_available</a>(async)) {  <span class="comment">// Ensure native async</span></div>
@@ -2476,7 +2735,7 @@ Advanced: Zero-Copy for Large Data</h2>
 <div class="line">    <span class="comment">// Zero-copy reduces CPU overhead for bulk transfers</span></div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__async__io_html_ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d"><div class="ttname"><a href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d">ASYNC_FLAG_ZERO_COPY</a></div><div class="ttdeci">@ ASYNC_FLAG_ZERO_COPY</div><div class="ttdoc">Request zero-copy I/O to minimize data copying.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00337">SocketAsync.h:337</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md404"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md471"></a>
 Error Handling in Callback</h2>
 <p>Common errors in callback (err parameter):</p><ul>
 <li>EAGAIN/EWOULDBLOCK: Temporary, retry possible in fallback mode</li>
@@ -2498,6 +2757,141 @@ Partial sends (bytes &lt; len) require application logic to resubmit the remaind
 <a class="el" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738" title="Block and wait for I/O events or timeout on registered sockets.">SocketPoll_wait()</a> - Processes completions automatically in event loop. </dd>
 <dd>
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a>#async-send - Examples and fallback handling. </dd></dl>
+
+</div>
+</div>
+<a id="ga909ff893fe99d63d68c29102f3f90600" name="ga909ff893fe99d63d68c29102f3f90600"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga909ff893fe99d63d68c29102f3f90600">&#9670;&#160;</a></span>SocketAsync_set_backend()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketAsync_set_backend </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a>&#160;</td>
+          <td class="paramname"><em>backend</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Request a specific async backend for new contexts. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">backend</td><td>Desired backend type. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success (preference set), -1 if backend unavailable.</dd></dl>
+<p>Sets a preference for the async backend used by subsequent <a class="el" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56" title="Create a new standalone asynchronous I/O context.">SocketAsync_new()</a> calls. If the requested backend is unavailable, returns -1 and keeps the current preference unchanged.</p>
+<p><b>Note</b>: Backend selection is primarily determined at compile-time. This function allows runtime override within available compiled backends.</p>
+<dl class="section user"><dt>Thread Safety\n Yes - Thread-safe preference update.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1)</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md485"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Prefer io_uring if available</span></div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600">SocketAsync_set_backend</a>(<a class="code hl_enumvalue" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d">ASYNC_BACKEND_IO_URING</a>) == 0) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Will use io_uring for new async contexts\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async = <a class="code hl_function" href="group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56">SocketAsync_new</a>(arena);  <span class="comment">// Uses preferred backend</span></div>
+<div class="ttc" id="agroup__async__io_html_ga909ff893fe99d63d68c29102f3f90600"><div class="ttname"><a href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600">SocketAsync_set_backend</a></div><div class="ttdeci">int SocketAsync_set_backend(SocketAsync_Backend backend)</div><div class="ttdoc">Request a specific async backend for new contexts.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Use ASYNC_BACKEND_AUTO to restore automatic selection. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8" title="Check if a specific backend is available at runtime.">SocketAsync_backend_available()</a> to check availability first. </dd>
+<dd>
+<a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d" title="Retrieve the name of the active asynchronous backend.">SocketAsync_backend_name()</a> to verify actual backend after creation. </dd></dl>
+
+</div>
+</div>
+<a id="gae43318fc62792b6730cd3966912ded85" name="gae43318fc62792b6730cd3966912ded85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae43318fc62792b6730cd3966912ded85">&#9670;&#160;</a></span>SocketAsync_submit_batch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketAsync_submit_batch </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a>&#160;</td>
+          <td class="paramname"><em>async</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a> *&#160;</td>
+          <td class="paramname"><em>ops</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Submit multiple async operations in a single call. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">async</td><td>Async context. </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">ops</td><td>Array of operation descriptors. request_id field is populated on success. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">count</td><td>Number of operations to submit. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of operations successfully submitted (0 to count).</dd></dl>
+<p>Enables efficient batch submission of multiple async operations, reducing syscall overhead. Each operation in the array is submitted in order. Successfully submitted operations have their request_id field populated.</p>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">None</td><td>- Returns count of successful submissions. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - Internal mutex protects submission.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n = count.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md482"></a>
+Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a> ops[3] = {</div>
+<div class="line">    {sock1, 1, send_buf, NULL, len1, cb, ud1, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>, 0},</div>
+<div class="line">    {sock2, 0, NULL, recv_buf, len2, cb, ud2, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c">ASYNC_FLAG_NONE</a>, 0},</div>
+<div class="line">    {sock3, 1, send_buf2, NULL, len3, cb, ud3, <a class="code hl_enumvalue" href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8">ASYNC_FLAG_URGENT</a>, 0}</div>
+<div class="line">};</div>
+<div class="line"><span class="keywordtype">int</span> submitted = <a class="code hl_function" href="group__async__io.html#gae43318fc62792b6730cd3966912ded85">SocketAsync_submit_batch</a>(async, ops, 3);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Submitted %d of 3 operations\n&quot;</span>, submitted);</div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; submitted; i++) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Op %d request_id: %u\n&quot;</span>, i, ops[i].request_id);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__async__io_html_gae43318fc62792b6730cd3966912ded85"><div class="ttname"><a href="group__async__io.html#gae43318fc62792b6730cd3966912ded85">SocketAsync_submit_batch</a></div><div class="ttdeci">int SocketAsync_submit_batch(SocketAsync_T async, SocketAsync_Op *ops, size_t count)</div><div class="ttdoc">Submit multiple async operations in a single call.</div></div>
+<div class="ttc" id="agroup__async__io_html_ggae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8"><div class="ttname"><a href="group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfaf08a13c5b932be67e3f0ed7de0499ef8">ASYNC_FLAG_URGENT</a></div><div class="ttdeci">@ ASYNC_FLAG_URGENT</div><div class="ttdoc">Mark operation for urgent or linked processing.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00351">SocketAsync.h:350</a></div></div>
+<div class="ttc" id="agroup__async__io_html_structSocketAsync__Op"><div class="ttname"><a href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a></div><div class="ttdoc">Async operation descriptor for batch submission.</div><div class="ttdef"><b>Definition</b> <a href="SocketAsync_8h_source.html#l00979">SocketAsync.h:980</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>io_uring backend benefits most from batching (ring submission). </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b" title="Submit an asynchronous send operation on a socket.">SocketAsync_send()</a> for single send operation. </dd>
+<dd>
+<a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64" title="Submit an asynchronous receive operation on a socket.">SocketAsync_recv()</a> for single recv operation. </dd>
+<dd>
+<a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c" title="Cancel a pending asynchronous I/O operation by request ID.">SocketAsync_cancel()</a> to cancel by request_id. </dd></dl>
 
 </div>
 </div>
@@ -2572,7 +2966,7 @@ Partial sends (bytes &lt; len) require application logic to resubmit the remaind
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md450"></a>
+<h2><a class="anchor" id="autotoc_md528"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> config;</div>
 <div class="line"><a class="code hl_function" href="group__async__io.html#ga3a5b3e45e53cfda16c76fec1cd4fd637">SocketHappyEyeballs_config_defaults</a>(&amp;config);</div>
@@ -2592,7 +2986,7 @@ Usage Example</h2>
 <div class="ttc" id="agroup__async__io_html_ga3a5b3e45e53cfda16c76fec1cd4fd637"><div class="ttname"><a href="group__async__io.html#ga3a5b3e45e53cfda16c76fec1cd4fd637">SocketHappyEyeballs_config_defaults</a></div><div class="ttdeci">void SocketHappyEyeballs_config_defaults(SocketHE_Config_T *config)</div><div class="ttdoc">Initialize Happy Eyeballs configuration with default values.</div></div>
 <div class="ttc" id="agroup__async__io_html_structSocketHE__Config__T"><div class="ttname"><a href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a></div><div class="ttdoc">Happy Eyeballs configuration structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketHappyEyeballs_8h_source.html#l00145">SocketHappyEyeballs.h:146</a></div></div>
 </div><!-- fragment --><p>Sets all fields to their default values as per RFC 8305 recommendations.</p>
-<h2><a class="anchor" id="autotoc_md451"></a>
+<h2><a class="anchor" id="autotoc_md529"></a>
 Default Values Table</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -2667,7 +3061,7 @@ Default Values Table</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - creates internal resources, safe from any thread.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md446"></a>
+<h2><a class="anchor" id="autotoc_md524"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__async__io.html#structSocketHE__Config__T">SocketHE_Config_T</a> config;</div>
 <div class="line"><a class="code hl_function" href="group__async__io.html#ga3a5b3e45e53cfda16c76fec1cd4fd637">SocketHappyEyeballs_config_defaults</a>(&amp;config);</div>
@@ -2857,7 +3251,7 @@ Usage Example</h2>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>1 if complete (success, failure, or cancelled), 0 if in progress. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md448"></a>
+<h2><a class="anchor" id="autotoc_md526"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Check completion status in event loop</span></div>
 <div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__async__io.html#ga0a9452621088791eecef4112e36e4176">SocketHappyEyeballs_poll</a>(he)) {</div>
@@ -2935,7 +3329,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md449"></a>
+<h2><a class="anchor" id="autotoc_md527"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Typical integration in event loop after SocketPoll_wait()</span></div>
 <div class="line"><a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *events = NULL;</div>
@@ -3091,7 +3485,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - operate from single thread.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md447"></a>
+<h2><a class="anchor" id="autotoc_md525"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Assume dns and poll are initialized elsewhere</span></div>
 <div class="line"><span class="comment">// SocketDNS_T dns = SocketDNS_new();</span></div>

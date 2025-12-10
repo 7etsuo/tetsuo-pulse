@@ -64,50 +64,30 @@ static void cleanup_poll_partial (T poll);
 /* ==================== Allocation Helpers ==================== */
 
 /**
- * allocate_socket_data_entry - Allocate socket data entry from arena
+ * ALLOCATE_HASH_ENTRY - Generic macro for allocating hash table entries
  * @poll: Poll instance
- * Returns: Allocated entry
- * Raises: SocketPoll_Failed on allocation failure
+ * @type: Type of entry to allocate (SocketData or FdSocketEntry)
+ * @desc: Description for error message
+ *
+ * Returns: Allocated entry or raises SocketPoll_Failed on failure.
+ * Thread-safe: Caller must hold mutex.
+ *
+ * Reduces code duplication between allocate_socket_data_entry and
+ * allocate_fd_socket_entry which had identical logic except for type.
  */
-static SocketData *
-allocate_socket_data_entry (T poll)
-{
-  SocketData *volatile entry = NULL;
-
-  TRY
-  entry = CALLOC (poll->arena, 1, sizeof (SocketData));
-  EXCEPT (Arena_Failed)
-  {
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate socket data mapping");
-    RAISE_POLL_ERROR (SocketPoll_Failed);
-  }
-  END_TRY;
-
-  return (SocketData *)entry;
-}
-
-/**
- * allocate_fd_socket_entry - Allocate FD to socket entry from arena
- * @poll: Poll instance
- * Returns: Allocated entry
- * Raises: SocketPoll_Failed on allocation failure
- */
-static FdSocketEntry *
-allocate_fd_socket_entry (T poll)
-{
-  FdSocketEntry *volatile entry = NULL;
-
-  TRY
-  entry = CALLOC (poll->arena, 1, sizeof (FdSocketEntry));
-  EXCEPT (Arena_Failed)
-  {
-    SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate fd to socket mapping");
-    RAISE_POLL_ERROR (SocketPoll_Failed);
-  }
-  END_TRY;
-
-  return (FdSocketEntry *)entry;
-}
+#define ALLOCATE_HASH_ENTRY(poll, type, desc)                                 \
+  ({                                                                          \
+    type *volatile _entry = NULL;                                             \
+    TRY                                                                       \
+    _entry = CALLOC ((poll)->arena, 1, sizeof (type));                        \
+    EXCEPT (Arena_Failed)                                                     \
+    {                                                                         \
+      SOCKET_ERROR_MSG (SOCKET_ENOMEM ": Cannot allocate " desc);             \
+      RAISE_POLL_ERROR (SocketPoll_Failed);                                   \
+    }                                                                         \
+    END_TRY;                                                                  \
+    (type *)_entry;                                                           \
+  })
 
 /**
  * poll_fd_hash - Seeded hash for FD to mitigate collisions
@@ -275,8 +255,10 @@ socket_data_add_unlocked (T poll, Socket_T socket, void *data)
 {
   int fd = Socket_fd (socket);
   unsigned hash = poll_fd_hash (poll, fd);  /* Use seeded hash consistently */
-  SocketData *data_entry = allocate_socket_data_entry (poll);
-  FdSocketEntry *fd_entry = allocate_fd_socket_entry (poll);
+  SocketData *data_entry
+      = ALLOCATE_HASH_ENTRY (poll, SocketData, "socket data mapping");
+  FdSocketEntry *fd_entry
+      = ALLOCATE_HASH_ENTRY (poll, FdSocketEntry, "fd to socket mapping");
 
   data_entry->socket = socket;
   data_entry->data = data;

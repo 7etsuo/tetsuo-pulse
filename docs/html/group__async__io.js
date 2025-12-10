@@ -31,6 +31,17 @@ var group__async__io =
       [ "next_request_id", "group__async__io.html#a0c707446c2cede8cd7bee21a22592815", null ],
       [ "requests", "group__async__io.html#aac8070e36e54bb9ad8147e45d8b75575", null ]
     ] ],
+    [ "SocketAsync_Op", "group__async__io.html#structSocketAsync__Op", [
+      [ "cb", "group__async__io.html#a91a78d77da2e9afd14eb14cb652e132f", null ],
+      [ "flags", "group__async__io.html#a6602e4aede11da621134dd522a4ee955", null ],
+      [ "is_send", "group__async__io.html#a2e62f7bc12b87adf5571844fa4ec2019", null ],
+      [ "len", "group__async__io.html#a8a52478c57448fcdf643deaf134d91d0", null ],
+      [ "recv_buf", "group__async__io.html#ab878c872e64b599a35265c3002a27552", null ],
+      [ "request_id", "group__async__io.html#ad579de4b7ad174fa004d00057058fcc3", null ],
+      [ "send_buf", "group__async__io.html#abcee00e417379ca79c8446f4abbc2ff6", null ],
+      [ "socket", "group__async__io.html#a96ba5e2a3b0eff9c0031cd707cb1b61e", null ],
+      [ "user_data", "group__async__io.html#a85d2dd00a5118ba4f612db5ed61c5e0b", null ]
+    ] ],
     [ "SocketHE_AddressEntry_T", "group__async__io.html#structSocketHE__AddressEntry__T", [
       [ "addr", "group__async__io.html#a27515d0d3a60d3d5790e582ce1b6432d", null ],
       [ "error", "group__async__io.html#af9fe36a24c3b96572be7aac044ad8936", null ],
@@ -90,6 +101,13 @@ var group__async__io =
     [ "T", "group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "T", "group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketAsync_Callback", "group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9", null ],
+    [ "SocketAsync_Backend", "group__async__io.html#ga24d405b3be635f02866bbde768cd25d2", [
+      [ "ASYNC_BACKEND_AUTO", "group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a859cc2d974e5262e4a5d57271365b89c", null ],
+      [ "ASYNC_BACKEND_IO_URING", "group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d", null ],
+      [ "ASYNC_BACKEND_KQUEUE", "group__async__io.html#gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200", null ],
+      [ "ASYNC_BACKEND_POLL", "group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a90e2a0cec9e33dd5fba8e51b87605067", null ],
+      [ "ASYNC_BACKEND_NONE", "group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a271e5a811d8915068dea53264a8695d8", null ]
+    ] ],
     [ "SocketAsync_Flags", "group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf", [
       [ "ASYNC_FLAG_NONE", "group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa3b607e56f470ff08783c2f3385c1041c", null ],
       [ "ASYNC_FLAG_ZERO_COPY", "group__async__io.html#ggae66259c675b6f9658c95d34e1fbfefdfa5b1a5dc7d9ed8ace5643e4cef11cb50d", null ],
@@ -109,14 +127,18 @@ var group__async__io =
       [ "HE_STATE_FAILED", "group__async__io.html#ggac1b193256ec44f27e6f0f307b0c2e524a4c6d8bc45fa1b7e19329162553fa9519", null ],
       [ "HE_STATE_CANCELLED", "group__async__io.html#ggac1b193256ec44f27e6f0f307b0c2e524a888ca7f61cc029908d4ef63b7ca96bd8", null ]
     ] ],
+    [ "SocketAsync_backend_available", "group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8", null ],
     [ "SocketAsync_backend_name", "group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d", null ],
     [ "SocketAsync_cancel", "group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c", null ],
+    [ "SocketAsync_cancel_all", "group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2", null ],
     [ "SocketAsync_free", "group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0", null ],
     [ "SocketAsync_is_available", "group__async__io.html#ga0f304bcb93351c8555f9afa74fa9e665", null ],
     [ "SocketAsync_new", "group__async__io.html#ga1c4916e173cffa9153c983a4fd0d0d56", null ],
     [ "SocketAsync_process_completions", "group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7", null ],
     [ "SocketAsync_recv", "group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64", null ],
     [ "SocketAsync_send", "group__async__io.html#gae0ecf4f023555d16b855d39841521f2b", null ],
+    [ "SocketAsync_set_backend", "group__async__io.html#ga909ff893fe99d63d68c29102f3f90600", null ],
+    [ "SocketAsync_submit_batch", "group__async__io.html#gae43318fc62792b6730cd3966912ded85", null ],
     [ "SocketHappyEyeballs_cancel", "group__async__io.html#gae3383dd7df82083ec8d7f72fbae76cb5", null ],
     [ "SocketHappyEyeballs_config_defaults", "group__async__io.html#ga3a5b3e45e53cfda16c76fec1cd4fd637", null ],
     [ "SocketHappyEyeballs_connect", "group__async__io.html#ga5ef2e9ba01aa72f8a3ae864a1ba58bc3", null ],

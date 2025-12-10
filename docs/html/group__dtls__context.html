@@ -281,7 +281,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Installs OpenSSL callbacks and generates/stores secret key,</dt><dd>modifying shared context state. Synchronize access if shared across threads.</dd></dl>
-<h2><a class="anchor" id="autotoc_md530"></a>
+<h2><a class="anchor" id="autotoc_md614"></a>
 Enabling DoS Protection in Server Setup</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a>(<span class="stringliteral">&quot;server.crt&quot;</span>,</div>
@@ -301,7 +301,7 @@ Enabling DoS Protection in Server Setup</h2>
 <div class="line">    <a class="code hl_function" href="group__security.html#gad2f26460b23a711e0fa74605371cf127">SocketDTLS_enable</a>(listener, ctx);</div>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// In event loop: accept with cookie validation handled internally by</span></div>
-<div class="line">OpenSSL <span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) { <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> client_sock =</div>
+<div class="line">OpenSSL <span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) { <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> client_sock =</div>
 <div class="line">SocketDTLS_accept(listener);  <span class="comment">// Blocks until valid handshake if</span></div>
 <div class="line">(client_sock) { handle_secure_client(client_sock);</div>
 <div class="line">            <a class="code hl_function" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a>(&amp;client_sock);</div>
@@ -314,6 +314,7 @@ Enabling DoS Protection in Server Setup</h2>
 <div class="line">    <a class="code hl_function" href="group__dtls__context.html#gaf05f6e0175668dd52a2d68af50f67983">SocketDTLSContext_free</a>(&amp;ctx);</div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00043">SocketDgram-private.h:44</a></div></div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__dtls__context_html_ga0e99fc1644e610eb26324fb12cb96a57"><div class="ttname"><a href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a></div><div class="ttdeci">SocketDTLSContext_T SocketDTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div><div class="ttdoc">Create a server-side DTLS context with certificate and key loading.</div></div>
 <div class="ttc" id="agroup__dtls__context_html_ga19b67aa468ee1ad317683b1839b26e7b"><div class="ttname"><a href="group__dtls__context.html#ga19b67aa468ee1ad317683b1839b26e7b">SocketDTLSContext_set_cookie_secret</a></div><div class="ttdeci">void SocketDTLSContext_set_cookie_secret(SocketDTLSContext_T ctx, const unsigned char *secret, size_t len)</div><div class="ttdoc">Configure the HMAC secret key for DTLS cookie generation.</div></div>
 <div class="ttc" id="agroup__dtls__context_html_gabbffd63c9a5c7551ecaf8f89a4034eb4"><div class="ttname"><a href="group__dtls__context.html#gabbffd63c9a5c7551ecaf8f89a4034eb4">SocketDTLSContext_enable_cookie_exchange</a></div><div class="ttdeci">void SocketDTLSContext_enable_cookie_exchange(SocketDTLSContext_T ctx)</div><div class="ttdoc">Enable cookie exchange mechanism for stateless DoS protection in DTLS servers.</div></div>
@@ -324,12 +325,11 @@ Enabling DoS Protection in Server Setup</h2>
 <div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
 <div class="ttc" id="agroup__security_html_ga083605c4d8e6ea5658b72883f8e41be9"><div class="ttname"><a href="group__security.html#ga083605c4d8e6ea5658b72883f8e41be9">SocketDTLS_Failed</a></div><div class="ttdeci">const Except_T SocketDTLS_Failed</div><div class="ttdoc">General DTLS operation failure.</div></div>
 <div class="ttc" id="agroup__security_html_gad2f26460b23a711e0fa74605371cf127"><div class="ttname"><a href="group__security.html#gad2f26460b23a711e0fa74605371cf127">SocketDTLS_enable</a></div><div class="ttdeci">void SocketDTLS_enable(SocketDgram_T socket, SocketDTLSContext_T ctx)</div><div class="ttdoc">Enable DTLS encryption on a datagram socket.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketDTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a></div><div class="ttdoc">SocketDTLSContext_T - DTLS Context Structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLS-private_8h_source.html#l00984">SocketDTLS-private.h:985</a></div></div>
+<div class="ttc" id="agroup__security_html_structSocketDTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a></div><div class="ttdoc">SocketDTLSContext_T - DTLS Context Structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDTLS-private_8h_source.html#l00797">SocketDTLS-private.h:798</a></div></div>
 <div class="ttc" id="agroup__socket__dgram_html_ga020169c79640786afa4c36fd1dc965e4"><div class="ttname"><a href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a></div><div class="ttdeci">void SocketDgram_free(SocketDgram_T *socket)</div><div class="ttdoc">Dispose of a datagram socket, closing the underlying file descriptor and freeing resources.</div></div>
 <div class="ttc" id="agroup__socket__dgram_html_ga0c81d9ef1d90e7ab34dd7286f13878ee"><div class="ttname"><a href="group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee">SocketDgram_bind</a></div><div class="ttdeci">void SocketDgram_bind(SocketDgram_T socket, const char *host, int port)</div><div class="ttdoc">Bind a datagram socket to a local IP address and port.</div></div>
 <div class="ttc" id="agroup__socket__dgram_html_gad6902c87ab5883f155dab2adfa950c52"><div class="ttname"><a href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a></div><div class="ttdeci">SocketDgram_T SocketDgram_new(int domain, int protocol)</div><div class="ttdoc">Create a new UDP/datagram socket with specified domain and protocol.</div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md531"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md615"></a>
 Periodic Secret Rotation</h2>
 <div class="fragment"><div class="line"><span class="comment">// In timer callback or cron job</span></div>
 <div class="line"><a class="code hl_function" href="group__dtls__context.html#ga488bdfe1b7d278bbcb2d2f80a9540df5">SocketDTLSContext_rotate_cookie_secret</a>(ctx);  <span class="comment">// Generates new secret,</span></div>
@@ -462,7 +462,7 @@ docs/SYN-PROTECT.md for complementary TCP SYN protection strategies. </dd>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - But avoid concurrent calls on the same context pointer</dt><dd>without external synchronization. Read-only after full setup; disposal is atomic but may block briefly during resource release.</dd></dl>
-<h2><a class="anchor" id="autotoc_md527"></a>
+<h2><a class="anchor" id="autotoc_md611"></a>
 Basic Cleanup Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// In normal operation</span></div>
 <div class="line"><a class="code hl_function" href="group__dtls__context.html#gaf05f6e0175668dd52a2d68af50f67983">SocketDTLSContext_free</a>(&amp;ctx);  <span class="comment">// Sets ctx to NULL</span></div>
@@ -880,7 +880,7 @@ SocketDTLS_is_server() for per-socket role query. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies shared SSL_CTX and internal state. Caller must</dt><dd>synchronize if context is shared across threads. Prefer per-thread contexts for high-contention scenarios.</dd></dl>
-<h2><a class="anchor" id="autotoc_md528"></a>
+<h2><a class="anchor" id="autotoc_md612"></a>
 Dynamic Certificate Reload</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <span class="comment">// Existing context from new_server() or new_client()</span></div>
@@ -898,7 +898,7 @@ Dynamic Certificate Reload</h2>
 <div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00548">SocketUtil.h:548</a></div></div>
 <div class="ttc" id="agroup__dtls__context_html_ga52fb3ca5d16466a21ac871ad2217904c"><div class="ttname"><a href="group__dtls__context.html#ga52fb3ca5d16466a21ac871ad2217904c">SocketDTLSContext_load_certificate</a></div><div class="ttdeci">void SocketDTLSContext_load_certificate(SocketDTLSContext_T ctx, const char *cert_file, const char *key_file)</div><div class="ttdoc">Load and configure server certificate and private key into the DTLS context.</div></div>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md529"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md613"></a>
 Client Certificate for Mutual TLS</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> client_ctx = <a class="code hl_function" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a">SocketDTLSContext_new_client</a>(<span class="stringliteral">&quot;ca.pem&quot;</span>);</div>
 <div class="line"><a class="code hl_function" href="group__dtls__context.html#ga52fb3ca5d16466a21ac871ad2217904c">SocketDTLSContext_load_certificate</a>(client_ctx, <span class="stringliteral">&quot;client.crt&quot;</span>, <span class="stringliteral">&quot;client.key&quot;</span>);</div>
@@ -969,7 +969,7 @@ SSL_CTX_use_certificate_chain_file() and SSL_CTX_use_PrivateKey_file() for OpenS
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Creates an independent context with private state.</dt><dd>Concurrent calls from multiple threads are safe and produce isolated contexts.</dd></dl>
-<h2><a class="anchor" id="autotoc_md525"></a>
+<h2><a class="anchor" id="autotoc_md609"></a>
 Basic Client Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a">SocketDTLSContext_new_client</a>(<span class="stringliteral">&quot;ca-bundle.pem&quot;</span>);</div>
@@ -1017,7 +1017,7 @@ Basic Client Usage</h2>
 <div class="ttc" id="agroup__security_html_ggad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce"><div class="ttname"><a href="group__security.html#ggad092160c037d01929df1bb8d5b75b43cac9d764c27bc5b541bd5e7a4c42eddfce">TLS_HANDSHAKE_COMPLETE</a></div><div class="ttdeci">@ TLS_HANDSHAKE_COMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00551">SocketTLS.h:551</a></div></div>
 <div class="ttc" id="agroup__security_html_ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac"><div class="ttname"><a href="group__security.html#ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac">TLS_HANDSHAKE_WANT_WRITE</a></div><div class="ttdeci">@ TLS_HANDSHAKE_WANT_WRITE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00550">SocketTLS.h:550</a></div></div>
 <div class="ttc" id="agroup__socket__dgram_html_gabcb18c16142d3b5ef49bee08a96e15fa"><div class="ttname"><a href="group__socket__dgram.html#gabcb18c16142d3b5ef49bee08a96e15fa">SocketDgram_connect</a></div><div class="ttdeci">void SocketDgram_connect(SocketDgram_T socket, const char *host, int port)</div><div class="ttdoc">Set default destination for socket.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md526"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md610"></a>
 Without Server Verification (Development Only)</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#gafa2f96caa6d90a1fae0ce4f8fb52970a">SocketDTLSContext_new_client</a>(NULL);  <span class="comment">// No</span></div>
 <div class="line">verification</div>
@@ -1117,7 +1117,7 @@ Ensure the CA bundle includes all necessary root and intermediate certificates t
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Each call creates an independent context instance with its</dt><dd>own internal arena and SSL_CTX. Safe to call concurrently from multiple threads.</dd></dl>
-<h2><a class="anchor" id="autotoc_md523"></a>
+<h2><a class="anchor" id="autotoc_md607"></a>
 Basic Server Setup</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a>(<span class="stringliteral">&quot;server.crt&quot;</span>,</div>
@@ -1139,7 +1139,7 @@ Basic Server Setup</h2>
 <div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;Failed to create DTLS context: %s&quot;</span>,</div>
 <div class="line"><a class="code hl_function" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a>()); } <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> { <a class="code hl_function" href="group__dtls__context.html#gaf05f6e0175668dd52a2d68af50f67983">SocketDTLSContext_free</a>(&amp;ctx); } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="agroup__dtls__context_html_ga473e4425731c220ae48a1bfec9ba279d"><div class="ttname"><a href="group__dtls__context.html#ga473e4425731c220ae48a1bfec9ba279d">SocketDTLSContext_set_mtu</a></div><div class="ttdeci">void SocketDTLSContext_set_mtu(SocketDTLSContext_T ctx, size_t mtu)</div><div class="ttdoc">Configure the path MTU for DTLS record fragmentation and padding.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md524"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md608"></a>
 With Session Caching</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a>(<span class="stringliteral">&quot;cert.pem&quot;</span>,</div>
 <div class="line"><span class="stringliteral">&quot;key.pem&quot;</span>, NULL); <a class="code hl_function" href="group__dtls__context.html#ga880ec894956f1a3a9029c512259df71b">SocketDTLSContext_enable_session_cache</a>(ctx, 1000, 3600);</div>
@@ -1214,7 +1214,7 @@ Client authentication (non-NULL ca_file) increases handshake latency; use only w
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Generates and stores new secret, updates shared OpenSSL</dt><dd>state. Lock if context shared; call during low-traffic periods.</dd></dl>
-<h2><a class="anchor" id="autotoc_md534"></a>
+<h2><a class="anchor" id="autotoc_md618"></a>
 Periodic Rotation Setup</h2>
 <div class="fragment"><div class="line"><span class="comment">// Using SocketTimer for hourly rotation</span></div>
 <div class="line"><span class="keywordtype">void</span> rotation_cb(<span class="keywordtype">void</span> *userdata) {</div>
@@ -1233,7 +1233,7 @@ Periodic Rotation Setup</h2>
 <div class="ttc" id="aSocketUtil_8h_html_a9fe70c7ab8b971af2971f3a102b82819"><div class="ttname"><a href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_INFO_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00540">SocketUtil.h:540</a></div></div>
 <div class="ttc" id="agroup__event__system_html_ga6961bde0e491d732450b66577294d097"><div class="ttname"><a href="group__event__system.html#ga6961bde0e491d732450b66577294d097">SocketTimer_add_repeating</a></div><div class="ttdeci">SocketTimer_T SocketTimer_add_repeating(SocketPoll_T poll, int64_t interval_ms, SocketTimerCallback callback, void *userdata)</div><div class="ttdoc">Add a repeating (periodic) timer to the event poll.</div></div>
 <div class="ttc" id="agroup__event__system_html_structSocketTimer__T"><div class="ttname"><a href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a></div><div class="ttdoc">Internal representation of a single scheduled timer event.</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer-private_8h_source.html#l00140">SocketTimer-private.h:141</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md535"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md619"></a>
 Manual Rotation on Signal</h2>
 <div class="fragment"><div class="line"><span class="comment">// In signal handler or admin command</span></div>
 <div class="line"><a class="code hl_function" href="group__dtls__context.html#ga488bdfe1b7d278bbcb2d2f80a9540df5">SocketDTLSContext_rotate_cookie_secret</a>(ctx);</div>
@@ -1444,7 +1444,7 @@ RFC 6347 Section 4.2.1 for cookie <a class="el" href="group__security.html" titl
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Modifies shared secret and OpenSSL context state. External</dt><dd>locking required if context shared. Best called during setup before sharing.</dd></dl>
-<h2><a class="anchor" id="autotoc_md532"></a>
+<h2><a class="anchor" id="autotoc_md616"></a>
 Cluster Secret Configuration</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a>(<span class="stringliteral">&quot;cert.pem&quot;</span>,</div>
@@ -1461,7 +1461,7 @@ Cluster Secret Configuration</h2>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__security.html#ga083605c4d8e6ea5658b72883f8e41be9">SocketDTLS_Failed</a>) {</div>
 <div class="line">    <span class="comment">// Log and handle</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md533"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md617"></a>
 Rotation with Shared Secret</h2>
 <div class="fragment"><div class="line"><span class="comment">// After enable and set, rotate periodically</span></div>
 <div class="line"><a class="code hl_function" href="group__dtls__context.html#ga488bdfe1b7d278bbcb2d2f80a9540df5">SocketDTLSContext_rotate_cookie_secret</a>(ctx);  <span class="comment">// Generates new random,</span></div>
@@ -1647,7 +1647,7 @@ RFC 6347 for cookie format and <a class="el" href="group__security.html" title="
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - Updates shared SSL_CTX MTU configuration. Synchronize if</dt><dd>shared.</dd></dl>
-<h2><a class="anchor" id="autotoc_md536"></a>
+<h2><a class="anchor" id="autotoc_md620"></a>
 MTU Setup for Different Networks</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__security.html#structSocketDTLSContext__T">SocketDTLSContext_T</a> ctx = <a class="code hl_function" href="group__dtls__context.html#ga0e99fc1644e610eb26324fb12cb96a57">SocketDTLSContext_new_server</a>(...);</div>

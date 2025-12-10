@@ -224,6 +224,23 @@ TEST(socket_metrics_basic)
  * CONNECTION POOL ENHANCEMENTS TESTS
  * ============================================================================ */
 
+/* Helper function: match connection by socket */
+static int
+match_socket(Connection_T c, void *data)
+{
+  Socket_T target = (Socket_T)data;
+  return Connection_socket(c) == target;
+}
+
+/* Helper function: filter predicate that includes all connections */
+static int
+filter_include_all(Connection_T conn, void *arg)
+{
+  (void)conn;
+  (void)arg;
+  return 1; /* Include all */
+}
+
 /* Test SocketPool_find function */
 TEST(socketpool_find_basic)
 {
@@ -240,10 +257,6 @@ TEST(socketpool_find_basic)
   ASSERT_NOT_NULL(conn);
 
   /* Find the connection using predicate */
-  int match_socket(Connection_T c, void *data) {
-    Socket_T target = (Socket_T)data;
-    return Connection_socket(c) == target;
-  }
   Connection_T found = SocketPool_find(pool, match_socket, sock);
   ASSERT_EQ(found, conn);
 
@@ -253,6 +266,8 @@ TEST(socketpool_find_basic)
   ASSERT_NULL(not_found);
 
   Socket_free(&fake_sock);
+  SocketPool_remove(pool, sock);
+  Socket_free(&sock);
   SocketPool_free(&pool);
   Arena_dispose(&arena);
 }
@@ -262,23 +277,23 @@ TEST(socketpool_filter_basic)
 {
   Arena_T arena = Arena_new();
   SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+  Socket_T sockets[5];
 
   /* Add some connections */
   for (int i = 0; i < 5; i++) {
-    Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
-    SocketPool_add(pool, sock);
-  }
-
-  /* Filter function - count connections */
-  int count_connections(Connection_T conn, void *arg) {
-    (void)conn;
-    (*(int*)arg)++;
-    return 1; /* Include all */
+    sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketPool_add(pool, sockets[i]);
   }
 
   Connection_T results[10];
-  size_t count = SocketPool_filter(pool, count_connections, &count, results, 10);
+  size_t count = SocketPool_filter(pool, filter_include_all, NULL, results, 10);
   ASSERT_EQ(count, 5);
+
+  /* Clean up sockets */
+  for (int i = 0; i < 5; i++) {
+    SocketPool_remove(pool, sockets[i]);
+    Socket_free(&sockets[i]);
+  }
 
   SocketPool_free(&pool);
   Arena_dispose(&arena);
@@ -289,11 +304,12 @@ TEST(socketpool_stats_basic)
 {
   Arena_T arena = Arena_new();
   SocketPool_T pool = SocketPool_new(arena, 100, 1024);
+  Socket_T sockets[10];
 
   /* Add some connections */
   for (int i = 0; i < 10; i++) {
-    Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
-    SocketPool_add(pool, sock);
+    sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketPool_add(pool, sockets[i]);
   }
 
   /* Check statistics */
@@ -307,6 +323,12 @@ TEST(socketpool_stats_basic)
   /* Hit rate should be 0 initially */
   double hit_rate = SocketPool_get_hit_rate(pool);
   ASSERT_EQ(hit_rate, 0.0);
+
+  /* Clean up sockets */
+  for (int i = 0; i < 10; i++) {
+    SocketPool_remove(pool, sockets[i]);
+    Socket_free(&sockets[i]);
+  }
 
   SocketPool_free(&pool);
   Arena_dispose(&arena);
@@ -765,13 +787,12 @@ TEST(socketpoll_get_backend_name_basic)
 TEST(socketpoll_get_registered_sockets_basic)
 {
   SocketPoll_T poll = SocketPoll_new(1024);
-  Socket_T sockets[10];
+  Socket_T sockets[5];
 
   /* Register some sockets */
   for (int i = 0; i < 5; i++) {
-    Socket_T sock = Socket_new(AF_INET, SOCK_STREAM, 0);
-    SocketPoll_add(poll, sock, POLL_READ, NULL);
-    sockets[i] = sock;
+    sockets[i] = Socket_new(AF_INET, SOCK_STREAM, 0);
+    SocketPoll_add(poll, sockets[i], POLL_READ, NULL);
   }
 
   /* Get registered sockets */
@@ -779,8 +800,9 @@ TEST(socketpoll_get_registered_sockets_basic)
   int count = SocketPoll_get_registered_sockets(poll, registered, 10);
   ASSERT_EQ(count, 5);
 
-  /* Cleanup */
+  /* Cleanup - remove from poll first, then free sockets */
   for (int i = 0; i < 5; i++) {
+    SocketPoll_del(poll, sockets[i]);
     Socket_free(&sockets[i]);
   }
   SocketPoll_free(&poll);
@@ -800,8 +822,18 @@ TEST(socketpoll_modify_events_basic)
   /* Should succeed without error */
   ASSERT(1); /* If we get here, no exception was raised */
 
+  /* Cleanup - remove from poll first, then free socket */
+  SocketPoll_del(poll, sock);
   Socket_free(&sock);
   SocketPoll_free(&poll);
+}
+
+/* Helper function: timer callback that increments counter */
+static void
+test_timer_callback(void *arg)
+{
+  int *called = (int *)arg;
+  (*called)++;
 }
 
 /* Test SocketTimer_reschedule */
@@ -809,13 +841,8 @@ TEST(sockettimer_reschedule_basic)
 {
   SocketPoll_T poll = SocketPoll_new(1024);
 
-  void timer_callback(void *arg) {
-    int *called = (int*)arg;
-    (*called)++;
-  }
-
   int called = 0;
-  SocketTimer_T timer = SocketTimer_add(poll, 1000, timer_callback, &called);
+  SocketTimer_T timer = SocketTimer_add(poll, 1000, test_timer_callback, &called);
 
   /* Reschedule to shorter delay */
   int result = SocketTimer_reschedule(poll, timer, 100);
@@ -830,13 +857,8 @@ TEST(sockettimer_pause_resume_basic)
 {
   SocketPoll_T poll = SocketPoll_new(1024);
 
-  void timer_callback(void *arg) {
-    int *called = (int*)arg;
-    (*called)++;
-  }
-
   int called = 0;
-  SocketTimer_T timer = SocketTimer_add(poll, 1000, timer_callback, &called);
+  SocketTimer_T timer = SocketTimer_add(poll, 1000, test_timer_callback, &called);
 
   /* Pause timer */
   int result = SocketTimer_pause(poll, timer);

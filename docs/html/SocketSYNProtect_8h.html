@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('SocketSYNProtect_8h.html',''); initRes
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketSYNProtect_8h__dep__incl.svg" width="427" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketSYNProtect_8h__dep__incl.svg" width="503" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketSYNProtect_8h_source.html">Go to the source code of this file.</a></p>
@@ -272,23 +272,23 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>SYN flood protection using IP reputation and adaptive rate limiting. </p>
 <p>This header provides comprehensive defense against SYN flood DDoS attacks through intelligent IP reputation management and multi-layered protection strategies.</p>
-<h2><a class="anchor" id="autotoc_md157"></a>
+<h2><a class="anchor" id="autotoc_md160"></a>
 Protection Mechanisms</h2>
-<h3><a class="anchor" id="autotoc_md158"></a>
+<h3><a class="anchor" id="autotoc_md161"></a>
 1. Rate Limiting</h3>
 <ul>
 <li>Sliding window counters per IP address</li>
 <li>Configurable thresholds with burst allowances</li>
 <li>Global rate limiting across all IPs</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md159"></a>
+<h3><a class="anchor" id="autotoc_md162"></a>
 2. Reputation Scoring</h3>
 <ul>
 <li>Dynamic scoring based on connection success/failure ratios</li>
 <li>Time-decayed reputation with configurable half-life</li>
 <li>Multi-level reputation tiers (Trusted → Neutral → Suspect → Hostile)</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md160"></a>
+<h3><a class="anchor" id="autotoc_md163"></a>
 3. Response Actions</h3>
 <ul>
 <li><b>ALLOW</b>: Normal connection processing</li>
@@ -296,30 +296,30 @@ Protection Mechanisms</h2>
 <li><b>CHALLENGE</b>: Require immediate data payload (TCP_DEFER_ACCEPT)</li>
 <li><b>BLOCK</b>: Immediate connection rejection</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md161"></a>
+<h3><a class="anchor" id="autotoc_md164"></a>
 4. List Management</h3>
 <ul>
 <li>CIDR-aware whitelist for trusted networks</li>
 <li>Temporary/permanent blacklist for malicious IPs</li>
 <li>Automatic expiration of temporary blocks</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md162"></a>
+<h2><a class="anchor" id="autotoc_md165"></a>
 Platform Requirements</h2>
 <ul>
 <li>POSIX-compliant system with CLOCK_MONOTONIC support</li>
 <li>pthreads for thread-safe operations</li>
 <li>Optional: TCP_DEFER_ACCEPT kernel support for challenge mode</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md163"></a>
+<h2><a class="anchor" id="autotoc_md166"></a>
 Thread Safety</h2>
 <p>All APIs are fully thread-safe with internal mutex protection:</p><ul>
 <li>Share protection instances across multiple threads</li>
 <li>Concurrent operations from different threads safe</li>
 <li>All state modifications atomic and consistent</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md164"></a>
+<h2><a class="anchor" id="autotoc_md167"></a>
 Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md165"></a>
+<h3><a class="anchor" id="autotoc_md168"></a>
 Basic Integration</h3>
 <div class="fragment"><div class="line"><span class="comment">// Initialize protection</span></div>
 <div class="line"><a class="code hl_struct" href="group__security.html#structSocketSYNProtect__T">SocketSYNProtect_T</a> protect = <a class="code hl_function" href="group__security.html#ga5f5d6f2ac8cbd366d57c1e8e55983143">SocketSYNProtect_new</a>(NULL, NULL);</div>
@@ -350,12 +350,12 @@ Basic Integration</h3>
 <div class="ttc" id="agroup__security_html_ggaca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8"><div class="ttname"><a href="group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9ab7af7c3605f188d109f9528dd72a7af8">SYN_ACTION_ALLOW</a></div><div class="ttdeci">@ SYN_ACTION_ALLOW</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00196">SocketSYNProtect.h:196</a></div></div>
 <div class="ttc" id="agroup__security_html_ggaca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa"><div class="ttname"><a href="group__security.html#ggaca8f2a71ab649ccd408fd3fdb3b693b9aefd772a5165c7769765f8008396893fa">SYN_ACTION_BLOCK</a></div><div class="ttdeci">@ SYN_ACTION_BLOCK</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect_8h_source.html#l00202">SocketSYNProtect.h:201</a></div></div>
 <div class="ttc" id="agroup__security_html_structSocketSYNProtect__T"><div class="ttname"><a href="group__security.html#structSocketSYNProtect__T">SocketSYNProtect_T</a></div><div class="ttdoc">Core internal structure for the SYN protection module.</div><div class="ttdef"><b>Definition</b> <a href="SocketSYNProtect-private_8h_source.html#l00224">SocketSYNProtect-private.h:225</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md166"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md169"></a>
 SocketPool Integration</h3>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool = <a class="code hl_function" href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18">SocketPool_new</a>(arena, max_conns, bufsize);</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga847e3ae8d165d8a999ef76a68d21ffa5">SocketPool_set_syn_protection</a>(pool, protect);</div>
 <div class="line"><span class="comment">// Protection now automatic on all SocketPool_accept_limited() calls</span></div>
-<div class="ttc" id="aSocketPool-private_8h_html_structSocketPool__T"><div class="ttname"><a href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00469">SocketPool-private.h:470</a></div></div>
+<div class="ttc" id="aSocketPool-private_8h_html_structSocketPool__T"><div class="ttname"><a href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00525">SocketPool-private.h:526</a></div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga2774ba952af4a9a218e33b492aed1a18"><div class="ttname"><a href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18">SocketPool_new</a></div><div class="ttdeci">SocketPool_T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize)</div><div class="ttdoc">Create a new connection pool.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga847e3ae8d165d8a999ef76a68d21ffa5"><div class="ttname"><a href="group__connection__mgmt.html#ga847e3ae8d165d8a999ef76a68d21ffa5">SocketPool_set_syn_protection</a></div><div class="ttdeci">void SocketPool_set_syn_protection(SocketPool_T pool, SocketSYNProtect_T protect)</div><div class="ttdoc">Enable SYN flood protection for pool.</div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__security.html#ga5f5d6f2ac8cbd366d57c1e8e55983143" title="Create a new instance of SYN protection.">SocketSYNProtect_new()</a> for initialization </dd>

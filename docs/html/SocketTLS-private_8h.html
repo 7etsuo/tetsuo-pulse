@@ -131,6 +131,7 @@ $(document).ready(function(){initNavTree('SocketTLS-private_8h.html',''); initRe
 <code>#include &quot;<a class="el" href="SocketCrypto_8h_source.html">core/SocketCrypto.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketUtil_8h_source.html">core/SocketUtil.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="Socket-private_8h_source.html">socket/Socket-private.h</a>&quot;</code><br />
+<code>#include &quot;<a class="el" href="SocketSSL-internal_8h_source.html">tls/SocketSSL-internal.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTLS_8h_source.html">tls/SocketTLS.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTLSConfig_8h_source.html">tls/SocketTLSConfig.h</a>&quot;</code><br />
 <code>#include &quot;<a class="el" href="SocketTLSContext_8h_source.html">tls/SocketTLSContext.h</a>&quot;</code><br />
@@ -203,7 +204,7 @@ Macros</h2></td></tr>
 <tr class="memitem:ga20e5da948c90e67bb0a186f7a58416fc" id="r_ga20e5da948c90e67bb0a186f7a58416fc"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga20e5da948c90e67bb0a186f7a58416fc">RAISE_CTX_ERROR_FMT</a>(exception,  fmt, ...)&#160;&#160;&#160;  <a class="el" href="SocketUtil_8h.html#aa7d4ca3a984cb2df9849f6b501d65cc3">SOCKET_RAISE_MSG</a> (SocketTLSContext, exception, fmt, __VA_ARGS__)</td></tr>
 <tr class="memdesc:ga20e5da948c90e67bb0a186f7a58416fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Raise SocketTLSContext exception with variadic formatted message.  <br /></td></tr>
 <tr class="separator:ga20e5da948c90e67bb0a186f7a58416fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga7ff1ea56cca8070de8806165d1b107ea" id="r_ga7ff1ea56cca8070de8806165d1b107ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga7ff1ea56cca8070de8806165d1b107ea">TLS_UNUSED</a>(x)&#160;&#160;&#160;(void)(x)</td></tr>
+<tr class="memitem:ga7ff1ea56cca8070de8806165d1b107ea" id="r_ga7ff1ea56cca8070de8806165d1b107ea"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga7ff1ea56cca8070de8806165d1b107ea">TLS_UNUSED</a>(x)&#160;&#160;&#160;<a class="el" href="group__security.html#ga05467aa5ac0a7b753f98efb02eeeb8a3">SOCKET_SSL_UNUSED</a> (x)</td></tr>
 <tr class="memdesc:ga7ff1ea56cca8070de8806165d1b107ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Suppress compiler warnings for intentionally unused parameters.  <br /></td></tr>
 <tr class="separator:ga7ff1ea56cca8070de8806165d1b107ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -218,14 +219,15 @@ Functions</h2></td></tr>
 <tr class="memitem:ga603f6b5acb264e31bf6a0f71d5b48be5" id="r_ga603f6b5acb264e31bf6a0f71d5b48be5"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga603f6b5acb264e31bf6a0f71d5b48be5">tls_format_openssl_error</a> (const char *context)</td></tr>
 <tr class="memdesc:ga603f6b5acb264e31bf6a0f71d5b48be5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format OpenSSL error into the thread-local error buffer.  <br /></td></tr>
 <tr class="separator:ga603f6b5acb264e31bf6a0f71d5b48be5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7c1796c12a4cab58c4bc3eba891efc59" id="r_ga7c1796c12a4cab58c4bc3eba891efc59"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga7c1796c12a4cab58c4bc3eba891efc59">tls_validate_file_path</a> (const char *path)</td></tr>
+<tr class="memdesc:ga7c1796c12a4cab58c4bc3eba891efc59"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate file path for certificates, keys, or CAs against security threats.  <br /></td></tr>
+<tr class="separator:ga7c1796c12a4cab58c4bc3eba891efc59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gab904e51ebbeabc985c3988fc0980776e" id="r_gab904e51ebbeabc985c3988fc0980776e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab904e51ebbeabc985c3988fc0980776e">tls_get_alpn_ex_idx</a> (void)</td></tr>
-<tr class="memdesc:gab904e51ebbeabc985c3988fc0980776e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate file path for certificates, keys, or CAs against security threats.  <br /></td></tr>
+<tr class="memdesc:gab904e51ebbeabc985c3988fc0980776e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get global ex_data index for ALPN temporary protocol buffers.  <br /></td></tr>
 <tr class="separator:gab904e51ebbeabc985c3988fc0980776e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5521981e692a3cdd4176000e2282398f" id="r_ga5521981e692a3cdd4176000e2282398f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga5521981e692a3cdd4176000e2282398f">tls_cleanup_alpn_temp</a> (SSL *ssl)</td></tr>
 <tr class="memdesc:ga5521981e692a3cdd4176000e2282398f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clean up temporary ALPN protocol buffer from SSL ex_data.  <br /></td></tr>
 <tr class="separator:ga5521981e692a3cdd4176000e2282398f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c1796c12a4cab58c4bc3eba891efc59" id="r_a7c1796c12a4cab58c4bc3eba891efc59"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59">tls_validate_file_path</a> (const char *path)</td></tr>
-<tr class="separator:a7c1796c12a4cab58c4bc3eba891efc59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gabf9cbcc9cfbd30df1d1252ccaf34b8d0" id="r_gabf9cbcc9cfbd30df1d1252ccaf34b8d0"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0">tls_secure_free_pkey</a> (EVP_PKEY *pkey)</td></tr>
 <tr class="memdesc:gabf9cbcc9cfbd30df1d1252ccaf34b8d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Securely free EVP_PKEY with key material zeroization.  <br /></td></tr>
 <tr class="separator:gabf9cbcc9cfbd30df1d1252ccaf34b8d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -282,7 +284,7 @@ Variables</h2></td></tr>
 <p>Features</p>
 <ul>
 <li>RAISE_TLS_ERROR* macros with thread-local detailed exceptions</li>
-<li><a class="el" href="SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59">tls_validate_file_path()</a> for secure credential loading</li>
+<li><a class="el" href="group__security.html#ga7c1796c12a4cab58c4bc3eba891efc59" title="Validate file path for certificates, keys, or CAs against security threats.">tls_validate_file_path()</a> for secure credential loading</li>
 <li><a class="el" href="group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0" title="Securely free EVP_PKEY with key material zeroization.">tls_secure_free_pkey()</a> for zeroized key cleanup</li>
 <li><a class="el" href="group__security.html#gaebeabc646fbd6961894512930a822ca9" title="Validate SNI hostname against RFC-compliant format rules.">tls_validate_hostname()</a> for RFC-compliant SNI</li>
 <li>Certificate pinning with SPKI SHA256 and constant-time lookup</li>
@@ -306,44 +308,7 @@ Variables</h2></td></tr>
 <dd>
 <a class="el" href="SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling.">SocketTLSContext.h</a> for public context API </dd>
 <dd>
-<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for TLS hardening guide</dd></dl>
-<p>Private header included by TLS .c files. Provides:</p><ul>
-<li>Thread-local error handling and exception macros</li>
-<li>Security validation for files, hostnames, keys</li>
-<li>Internal structures for pinning, SNI, ALPN, CRL auto-refresh</li>
-<li>OpenSSL error formatting and SSL access utilities</li>
-<li>Ex_data index management for context association</li>
-</ul>
-<p>NOT part of public API - applications must not include this header.</p>
-<p>Features</p><ul>
-<li>RAISE_TLS_ERROR* macros with thread-local detailed exceptions</li>
-<li><a class="el" href="SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59">tls_validate_file_path()</a> for secure credential loading</li>
-<li><a class="el" href="group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0" title="Securely free EVP_PKEY with key material zeroization.">tls_secure_free_pkey()</a> for zeroized key cleanup</li>
-<li><a class="el" href="group__security.html#gaebeabc646fbd6961894512930a822ca9" title="Validate SNI hostname against RFC-compliant format rules.">tls_validate_hostname()</a> for RFC-compliant SNI</li>
-<li>Certificate pinning with SPKI SHA256 and constant-time lookup</li>
-<li>ALPN temp buffer management to prevent UAF in callbacks</li>
-<li><p class="startli">CRL mutex-protected auto-refresh scheduling</p>
-<p class="startli">Platform Requirements</p>
-</li>
-<li>OpenSSL/LibreSSL with TLS 1.2+ (1.3 recommended)</li>
-<li>POSIX pthreads for mutexes and thread-local storage (__thread)</li>
-<li>Unix stat/lstat for symlink detection in validation</li>
-<li>CLOCK_MONOTONIC for timing (CRL refresh, timeouts)</li>
-<li><p class="startli">_GNU_SOURCE enabled for extensions</p>
-<p class="startli">Thread Safety</p>
-</li>
-<li>Macros: Thread-safe via thread-local storage</li>
-<li>Inline functions: Yes where noted (read-only or pure)</li>
-<li>Structs: Conditional; use mutexes for shared access</li>
-</ul>
-<dl class="section warning"><dt>Warning</dt><dd>Misuse can lead to security vulnerabilities (e.g., symlink attacks, timing leaks)</dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketTLS_8h.html" title="High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement.">SocketTLS.h</a> for public Socket TLS operations </dd>
-<dd>
-<a class="el" href="SocketTLSContext_8h.html" title="TLS context management with secure defaults and certificate handling.">SocketTLSContext.h</a> for public context API </dd>
-<dd>
-<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for TLS hardening guide </dd>
-<dd>
-docs/ERROR_HANDLING.md for exception usage </dd></dl>
+<a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for TLS hardening guide </dd></dl>
 
 <p class="definition">Definition in file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
@@ -359,38 +324,7 @@ docs/ERROR_HANDLING.md for exception usage </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00630">630</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
-
-</div>
-</div>
-<h2 class="groupheader">Function Documentation</h2>
-<a id="a7c1796c12a4cab58c4bc3eba891efc59" name="a7c1796c12a4cab58c4bc3eba891efc59"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c1796c12a4cab58c4bc3eba891efc59">&#9670;&#160;</a></span>tls_validate_file_path()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static int tls_validate_file_path </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>path</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00470">470</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
-
-<p class="reference">References <a class="el" href="SocketTLSConfig_8h_source.html#l00611">SOCKET_TLS_MAX_PATH_LEN</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketTLS-private_8h_source.html#l00511">511</a> of file <a class="el" href="SocketTLS-private_8h_source.html">SocketTLS-private.h</a>.</p>
 
 </div>
 </div>

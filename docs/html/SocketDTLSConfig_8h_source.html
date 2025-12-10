@@ -319,43 +319,48 @@ $(document).ready(function(){initNavTree('SocketDTLSConfig_8h_source.html',''); 
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno"><a class="line" href="group__dtls__config.html#ga8c4f3d639af33633c811568f89124e6d">  333</a></span><span class="preprocessor">#define SOCKET_DTLS_MAX_PATH_LEN 4096</span></div>
 <div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span> </div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="comment"> * File Size Limits (DoS Protection)</span></div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span><span class="comment"> * ============================================================================</span></div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span><span class="comment">/* Maximum size for certificate/key/CA files (prevents memory exhaustion from</span></div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span><span class="comment"> * oversized inputs) */</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span><span class="preprocessor">#ifndef SOCKET_DTLS_MAX_FILE_SIZE</span></div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno"><a class="line" href="group__dtls__config.html#gab42fd5a40a391bb5d2e3c5f44a1b24fa">  343</a></span><span class="preprocessor">#define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL &lt;&lt; 20)) </span><span class="comment">/* 1MB */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="comment">/* ============================================================================</span></div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span><span class="comment"> * Validation Macros</span></div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span><span class="comment"> * ============================================================================</span></div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="comment">/* Peer resolution cache TTL in milliseconds */</span></div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span><span class="preprocessor">#ifndef SOCKET_DTLS_PEER_CACHE_TTL_MS</span></div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno"><a class="line" href="group__dtls__config.html#gac0ca0fd6096fc77e81ca4848dc02b37a">  338</a></span><span class="preprocessor">#define SOCKET_DTLS_PEER_CACHE_TTL_MS 30000</span></div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span> </div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span><span class="comment"> * File Size Limits (DoS Protection)</span></div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span><span class="comment"> * ============================================================================</span></div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span><span class="comment">/* Maximum size for certificate/key/CA files (prevents memory exhaustion from</span></div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span><span class="comment"> * oversized inputs) */</span></div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span><span class="preprocessor">#ifndef SOCKET_DTLS_MAX_FILE_SIZE</span></div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno"><a class="line" href="group__dtls__config.html#gab42fd5a40a391bb5d2e3c5f44a1b24fa">  348</a></span><span class="preprocessor">#define SOCKET_DTLS_MAX_FILE_SIZE ((size_t)(1ULL &lt;&lt; 20)) </span><span class="comment">/* 1MB */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span><span class="preprocessor">#endif</span></div>
 <div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
-<div class="foldopen" id="foldopen00360" data-start="" data-end="">
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno"><a class="line" href="group__dtls__config.html#ga187a9aeb5d1836c6756595bde48e659e">  360</a></span><span class="preprocessor">#define SOCKET_DTLS_VALID_MTU(mtu)                                            \</span></div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span><span class="preprocessor">  ((size_t)(mtu) &gt;= SOCKET_DTLS_MIN_MTU                                       \</span></div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span><span class="preprocessor">   &amp;&amp; (size_t)(mtu) &lt;= SOCKET_DTLS_MAX_MTU)</span></div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span><span class="comment">/* ============================================================================</span></div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span><span class="comment"> * Validation Macros</span></div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span><span class="comment"> * ============================================================================</span></div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span> </div>
+<div class="foldopen" id="foldopen00365" data-start="" data-end="">
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno"><a class="line" href="group__dtls__config.html#ga187a9aeb5d1836c6756595bde48e659e">  365</a></span><span class="preprocessor">#define SOCKET_DTLS_VALID_MTU(mtu)                                            \</span></div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span><span class="preprocessor">  ((size_t)(mtu) &gt;= SOCKET_DTLS_MIN_MTU                                       \</span></div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span><span class="preprocessor">   &amp;&amp; (size_t)(mtu) &lt;= SOCKET_DTLS_MAX_MTU)</span></div>
 </div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span> </div>
-<div class="foldopen" id="foldopen00371" data-start="" data-end="">
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno"><a class="line" href="group__dtls__config.html#gaac963ab68af70b569e6ee98ae7062887">  371</a></span><span class="preprocessor">#define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \</span></div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span><span class="preprocessor">  ((int)(ms) &gt;= 0 &amp;&amp; (int)(ms) &lt;= SOCKET_DTLS_MAX_TIMEOUT_MS)</span></div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span> </div>
+<div class="foldopen" id="foldopen00376" data-start="" data-end="">
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno"><a class="line" href="group__dtls__config.html#gaac963ab68af70b569e6ee98ae7062887">  376</a></span><span class="preprocessor">#define SOCKET_DTLS_VALID_TIMEOUT(ms)                                         \</span></div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span><span class="preprocessor">  ((int)(ms) &gt;= 0 &amp;&amp; (int)(ms) &lt;= SOCKET_DTLS_MAX_TIMEOUT_MS)</span></div>
 </div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span> </div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span><span class="preprocessor">#else </span><span class="comment">/* SOCKET_HAS_TLS not defined */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span> </div>
-<div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span><span class="preprocessor">#define SOCKET_DTLS_MIN_VERSION 0</span></div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span><span class="preprocessor">#define SOCKET_DTLS_MAX_VERSION 0</span></div>
-<div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span><span class="preprocessor">#define SOCKET_DTLS_DEFAULT_MTU 1400</span></div>
-<div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span><span class="preprocessor">#define SOCKET_DTLS_COOKIE_LEN 32</span></div>
-<div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span><span class="preprocessor">#define SOCKET_DTLS_ERROR_BUFSIZE 512</span></div>
-<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span> </div>
-<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKET_HAS_TLS */</span><span class="preprocessor"></span></div>
- <span class="comment">/* dtls_config */</span><span class="preprocessor"></span><div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span> </div>
-<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span> </div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span><span class="preprocessor">#else </span><span class="comment">/* SOCKET_HAS_TLS not defined */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span> </div>
+<div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span><span class="preprocessor">#define SOCKET_DTLS_MIN_VERSION 0</span></div>
+<div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span><span class="preprocessor">#define SOCKET_DTLS_MAX_VERSION 0</span></div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span><span class="preprocessor">#define SOCKET_DTLS_DEFAULT_MTU 1400</span></div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span><span class="preprocessor">#define SOCKET_DTLS_COOKIE_LEN 32</span></div>
+<div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span><span class="preprocessor">#define SOCKET_DTLS_ERROR_BUFSIZE 512</span></div>
+<div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span> </div>
+<div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span><span class="preprocessor">#endif </span><span class="comment">/* SOCKET_HAS_TLS */</span><span class="preprocessor"></span></div>
+ <span class="comment">/* dtls_config */</span><span class="preprocessor"></span><div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span> </div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span><span class="preprocessor">#endif</span></div>
 </div><!-- fragment --></div><!-- contents -->
 </div><!-- doc-content -->
 <hr class="footer"/>

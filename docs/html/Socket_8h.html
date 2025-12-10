@@ -111,6 +111,7 @@ $(document).ready(function(){initNavTree('Socket_8h.html',''); initResizable(); 
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
@@ -141,6 +142,15 @@ $(document).ready(function(){initNavTree('Socket_8h.html',''); initResizable(); 
 </div>
 <p><a href="Socket_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketStats__T" id="r_structSocketStats__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#structSocketStats__T">SocketStats_T</a></td></tr>
+<tr class="memdesc:structSocketStats__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Per-socket I/O statistics structure.  <a href="group__core__io.html#structSocketStats__T">More...</a><br /></td></tr>
+<tr class="separator:structSocketStats__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketTCPInfo" id="r_structSocketTCPInfo"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#structSocketTCPInfo">SocketTCPInfo</a></td></tr>
+<tr class="memdesc:structSocketTCPInfo"><td class="mdescLeft">&#160;</td><td class="mdescRight">TCP connection information structure (Linux-specific).  <a href="group__core__io.html#structSocketTCPInfo">More...</a><br /></td></tr>
+<tr class="separator:structSocketTCPInfo"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;Socket_T</td></tr>
@@ -167,6 +177,33 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa8cacd863c275e6e12f7c63b65708e1b" id="r_gaa8cacd863c275e6e12f7c63b65708e1b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa8cacd863c275e6e12f7c63b65708e1b">Socket_debug_live_count</a> (void)</td></tr>
 <tr class="memdesc:gaa8cacd863c275e6e12f7c63b65708e1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of live socket instances (test-only).  <br /></td></tr>
 <tr class="separator:gaa8cacd863c275e6e12f7c63b65708e1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafdfd3666a5d9779023f527c3afddf164" id="r_gafdfd3666a5d9779023f527c3afddf164"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafdfd3666a5d9779023f527c3afddf164">Socket_getstats</a> (const Socket_T socket, <a class="el" href="group__core__io.html#structSocketStats__T">SocketStats_T</a> *stats)</td></tr>
+<tr class="memdesc:gafdfd3666a5d9779023f527c3afddf164"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve current statistics for a socket.  <br /></td></tr>
+<tr class="separator:gafdfd3666a5d9779023f527c3afddf164"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga79e5b410845cb71d636f9fbf34771e9c" id="r_ga79e5b410845cb71d636f9fbf34771e9c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga79e5b410845cb71d636f9fbf34771e9c">Socket_resetstats</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga79e5b410845cb71d636f9fbf34771e9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset statistics counters for a socket.  <br /></td></tr>
+<tr class="separator:ga79e5b410845cb71d636f9fbf34771e9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafefcba126efabd940ff1e7e3259ee7d8" id="r_gafefcba126efabd940ff1e7e3259ee7d8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafefcba126efabd940ff1e7e3259ee7d8">Socket_probe</a> (Socket_T socket, int timeout_ms)</td></tr>
+<tr class="memdesc:gafefcba126efabd940ff1e7e3259ee7d8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Probe if a connection is still alive.  <br /></td></tr>
+<tr class="separator:gafefcba126efabd940ff1e7e3259ee7d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaead54f56807d61df1827a49d94870490" id="r_gaead54f56807d61df1827a49d94870490"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaead54f56807d61df1827a49d94870490">Socket_get_error</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:gaead54f56807d61df1827a49d94870490"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get pending socket error (SO_ERROR).  <br /></td></tr>
+<tr class="separator:gaead54f56807d61df1827a49d94870490"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3796b46a9d07c1be492e027eb9dfdee5" id="r_ga3796b46a9d07c1be492e027eb9dfdee5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga3796b46a9d07c1be492e027eb9dfdee5">Socket_is_readable</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga3796b46a9d07c1be492e027eb9dfdee5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if socket has data available to read without blocking.  <br /></td></tr>
+<tr class="separator:ga3796b46a9d07c1be492e027eb9dfdee5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8acb19502c6d3adce7652e61070eee3c" id="r_ga8acb19502c6d3adce7652e61070eee3c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga8acb19502c6d3adce7652e61070eee3c">Socket_is_writable</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga8acb19502c6d3adce7652e61070eee3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if socket can accept writes without blocking.  <br /></td></tr>
+<tr class="separator:ga8acb19502c6d3adce7652e61070eee3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf553d73a7db296859dc7a1a92c0f6b12" id="r_gaf553d73a7db296859dc7a1a92c0f6b12"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaf553d73a7db296859dc7a1a92c0f6b12">Socket_get_tcp_info</a> (Socket_T socket, <a class="el" href="group__core__io.html#structSocketTCPInfo">SocketTCPInfo</a> *info)</td></tr>
+<tr class="memdesc:gaf553d73a7db296859dc7a1a92c0f6b12"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve TCP connection statistics (Linux-specific).  <br /></td></tr>
+<tr class="separator:gaf553d73a7db296859dc7a1a92c0f6b12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaddc4637d1e6e996b0f52d553ec884098" id="r_gaddc4637d1e6e996b0f52d553ec884098"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaddc4637d1e6e996b0f52d553ec884098">Socket_get_rtt</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:gaddc4637d1e6e996b0f52d553ec884098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current RTT (round-trip time) estimate.  <br /></td></tr>
+<tr class="separator:gaddc4637d1e6e996b0f52d553ec884098"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga76b91bb032c977bc19df4dc0f3e4cff7" id="r_ga76b91bb032c977bc19df4dc0f3e4cff7"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga76b91bb032c977bc19df4dc0f3e4cff7">Socket_get_cwnd</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga76b91bb032c977bc19df4dc0f3e4cff7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current congestion window size.  <br /></td></tr>
+<tr class="separator:ga76b91bb032c977bc19df4dc0f3e4cff7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gacb65d693d8c93e2a1fe6411dd0d0af98" id="r_gacb65d693d8c93e2a1fe6411dd0d0af98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a> (Socket_T socket, const char *host, int port)</td></tr>
 <tr class="memdesc:gacb65d693d8c93e2a1fe6411dd0d0af98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bind a socket to a local IP address and port.  <br /></td></tr>
 <tr class="separator:gacb65d693d8c93e2a1fe6411dd0d0af98"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -209,6 +246,33 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6262f6ab4c927347abc0fb3c105a0575" id="r_ga6262f6ab4c927347abc0fb3c105a0575"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga6262f6ab4c927347abc0fb3c105a0575">Socket_sendfileall</a> (Socket_T socket, int file_fd, off_t *offset, size_t count)</td></tr>
 <tr class="memdesc:ga6262f6ab4c927347abc0fb3c105a0575"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero-copy file-to-socket transfer (handles partial transfers).  <br /></td></tr>
 <tr class="separator:ga6262f6ab4c927347abc0fb3c105a0575"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaea9384979b83066a7a6fa1418a5862d2" id="r_gaea9384979b83066a7a6fa1418a5862d2"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaea9384979b83066a7a6fa1418a5862d2">Socket_sendall_timeout</a> (Socket_T socket, const void *buf, size_t len, int timeout_ms)</td></tr>
+<tr class="memdesc:gaea9384979b83066a7a6fa1418a5862d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send all data with timeout.  <br /></td></tr>
+<tr class="separator:gaea9384979b83066a7a6fa1418a5862d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga61028bd16150564ea59c7f4c350ca9d4" id="r_ga61028bd16150564ea59c7f4c350ca9d4"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga61028bd16150564ea59c7f4c350ca9d4">Socket_recvall_timeout</a> (Socket_T socket, void *buf, size_t len, int timeout_ms)</td></tr>
+<tr class="memdesc:ga61028bd16150564ea59c7f4c350ca9d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive all requested data with timeout.  <br /></td></tr>
+<tr class="separator:ga61028bd16150564ea59c7f4c350ca9d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7224aed85b1b920cc62fea881ae6f056" id="r_ga7224aed85b1b920cc62fea881ae6f056"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7224aed85b1b920cc62fea881ae6f056">Socket_sendv_timeout</a> (Socket_T socket, const struct iovec *iov, int iovcnt, int timeout_ms)</td></tr>
+<tr class="memdesc:ga7224aed85b1b920cc62fea881ae6f056"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather send with timeout.  <br /></td></tr>
+<tr class="separator:ga7224aed85b1b920cc62fea881ae6f056"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gace4c3a8cc81d7b66ebc2cc84bce51e8e" id="r_gace4c3a8cc81d7b66ebc2cc84bce51e8e"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gace4c3a8cc81d7b66ebc2cc84bce51e8e">Socket_recvv_timeout</a> (Socket_T socket, struct iovec *iov, int iovcnt, int timeout_ms)</td></tr>
+<tr class="memdesc:gace4c3a8cc81d7b66ebc2cc84bce51e8e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter/gather receive with timeout.  <br /></td></tr>
+<tr class="separator:gace4c3a8cc81d7b66ebc2cc84bce51e8e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga06c26a5a5989a15050513a8a3721f7ea" id="r_ga06c26a5a5989a15050513a8a3721f7ea"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga06c26a5a5989a15050513a8a3721f7ea">Socket_splice</a> (Socket_T socket_in, Socket_T socket_out, size_t len)</td></tr>
+<tr class="memdesc:ga06c26a5a5989a15050513a8a3721f7ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Zero-copy socket-to-socket transfer (Linux splice).  <br /></td></tr>
+<tr class="separator:ga06c26a5a5989a15050513a8a3721f7ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga650eaa359c457e6118eab764ab7c1512" id="r_ga650eaa359c457e6118eab764ab7c1512"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga650eaa359c457e6118eab764ab7c1512">Socket_cork</a> (Socket_T socket, int enable)</td></tr>
+<tr class="memdesc:ga650eaa359c457e6118eab764ab7c1512"><td class="mdescLeft">&#160;</td><td class="mdescRight">Control TCP_CORK option (Nagle corking).  <br /></td></tr>
+<tr class="separator:ga650eaa359c457e6118eab764ab7c1512"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa999775c5490710cbb8b455060bc1145" id="r_gaa999775c5490710cbb8b455060bc1145"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa999775c5490710cbb8b455060bc1145">Socket_peek</a> (Socket_T socket, void *buf, size_t len)</td></tr>
+<tr class="memdesc:gaa999775c5490710cbb8b455060bc1145"><td class="mdescLeft">&#160;</td><td class="mdescRight">Peek at incoming data without consuming it.  <br /></td></tr>
+<tr class="separator:gaa999775c5490710cbb8b455060bc1145"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa1bcd57fc9784fa9863a2fc659df0de1" id="r_gaa1bcd57fc9784fa9863a2fc659df0de1"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa1bcd57fc9784fa9863a2fc659df0de1">Socket_dup</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:gaa1bcd57fc9784fa9863a2fc659df0de1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duplicate a socket (creates new Socket_T sharing same fd).  <br /></td></tr>
+<tr class="separator:gaa1bcd57fc9784fa9863a2fc659df0de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4a0e5436dae38def5b10b26c9d4b6512" id="r_ga4a0e5436dae38def5b10b26c9d4b6512"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4a0e5436dae38def5b10b26c9d4b6512">Socket_dup2</a> (Socket_T socket, int target_fd)</td></tr>
+<tr class="memdesc:ga4a0e5436dae38def5b10b26c9d4b6512"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duplicate socket fd to a specific file descriptor number.  <br /></td></tr>
+<tr class="separator:ga4a0e5436dae38def5b10b26c9d4b6512"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaeb12f81392f3c1fb21255bf44521e20c" id="r_gaeb12f81392f3c1fb21255bf44521e20c"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaeb12f81392f3c1fb21255bf44521e20c">Socket_sendmsg</a> (Socket_T socket, const struct msghdr *msg, int flags)</td></tr>
 <tr class="memdesc:gaeb12f81392f3c1fb21255bf44521e20c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send message with ancillary data (sendmsg wrapper).  <br /></td></tr>
 <tr class="separator:gaeb12f81392f3c1fb21255bf44521e20c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -398,6 +462,24 @@ Functions</h2></td></tr>
 <tr class="memitem:ga410b67062c053c3af7e86531acc1620c" id="r_ga410b67062c053c3af7e86531acc1620c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga410b67062c053c3af7e86531acc1620c">Socket_ignore_sigpipe</a> (void)</td></tr>
 <tr class="memdesc:ga410b67062c053c3af7e86531acc1620c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Globally ignore SIGPIPE signal.  <br /></td></tr>
 <tr class="separator:ga410b67062c053c3af7e86531acc1620c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabf72952b9d7d0e4fc8255de6c92fbe11" id="r_gabf72952b9d7d0e4fc8255de6c92fbe11"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gabf72952b9d7d0e4fc8255de6c92fbe11">Socket_listen_tcp</a> (const char *host, int port, int backlog)</td></tr>
+<tr class="memdesc:gabf72952b9d7d0e4fc8255de6c92fbe11"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a listening TCP server socket in one call.  <br /></td></tr>
+<tr class="separator:gabf72952b9d7d0e4fc8255de6c92fbe11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2f7e9cc726b2eeabb19787f27e931fd7" id="r_ga2f7e9cc726b2eeabb19787f27e931fd7"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2f7e9cc726b2eeabb19787f27e931fd7">Socket_connect_tcp</a> (const char *host, int port, int timeout_ms)</td></tr>
+<tr class="memdesc:ga2f7e9cc726b2eeabb19787f27e931fd7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a connected TCP client socket in one call.  <br /></td></tr>
+<tr class="separator:ga2f7e9cc726b2eeabb19787f27e931fd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga63fc7b454ab8202278b1e3073ec961a0" id="r_ga63fc7b454ab8202278b1e3073ec961a0"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga63fc7b454ab8202278b1e3073ec961a0">Socket_accept_timeout</a> (Socket_T socket, int timeout_ms)</td></tr>
+<tr class="memdesc:ga63fc7b454ab8202278b1e3073ec961a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Accept incoming connection with explicit timeout.  <br /></td></tr>
+<tr class="separator:ga63fc7b454ab8202278b1e3073ec961a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab85e4ae7965fc1334bbc547642dcdd42" id="r_gab85e4ae7965fc1334bbc547642dcdd42"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab85e4ae7965fc1334bbc547642dcdd42">Socket_connect_nonblocking</a> (Socket_T socket, const char *ip_address, int port)</td></tr>
+<tr class="memdesc:gab85e4ae7965fc1334bbc547642dcdd42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate non-blocking connect (no DNS, IP address only).  <br /></td></tr>
+<tr class="separator:gab85e4ae7965fc1334bbc547642dcdd42"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga295887e87b95de840e1a5c5ad4d7f530" id="r_ga295887e87b95de840e1a5c5ad4d7f530"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga295887e87b95de840e1a5c5ad4d7f530">Socket_listen_unix</a> (const char *path, int backlog)</td></tr>
+<tr class="memdesc:ga295887e87b95de840e1a5c5ad4d7f530"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a listening Unix domain socket in one call.  <br /></td></tr>
+<tr class="separator:ga295887e87b95de840e1a5c5ad4d7f530"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1e27e618c92028d428e4d58aec6818c8" id="r_ga1e27e618c92028d428e4d58aec6818c8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga1e27e618c92028d428e4d58aec6818c8">Socket_connect_unix_timeout</a> (Socket_T socket, const char *path, int timeout_ms)</td></tr>
+<tr class="memdesc:ga1e27e618c92028d428e4d58aec6818c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Connect to Unix domain socket with timeout.  <br /></td></tr>
+<tr class="separator:ga1e27e618c92028d428e4d58aec6818c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -414,7 +496,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>High-level TCP/IP and Unix domain socket interface. </p>
 <p>This header provides a comprehensive, exception-safe API for creating, configuring, and using TCP/IP and Unix domain sockets. It abstracts low-level POSIX socket operations while adding production features like automatic SIGPIPE handling, bandwidth limiting, timeouts, and async DNS integration.</p>
-<h2><a class="anchor" id="autotoc_md360"></a>
+<h2><a class="anchor" id="autotoc_md398"></a>
 Key Features</h2>
 <ul>
 <li><b>Core Operations</b>: Creation, bind, connect, listen, accept, send/recv with partial handling</li>
@@ -425,7 +507,7 @@ Key Features</h2>
 <li><b>Integration</b>: Async DNS, event loop compatibility, connection pooling ready</li>
 <li><b>Error Handling</b>: Detailed exceptions with retryability checks, thread-local errno</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md361"></a>
+<h2><a class="anchor" id="autotoc_md399"></a>
 Platform Requirements</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -441,7 +523,7 @@ Platform Requirements</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">Portability   </td><td class="markdownTableBodyNone">Not Windows-native; requires Winsock porting   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md362"></a>
+<h2><a class="anchor" id="autotoc_md400"></a>
 SIGPIPE Handling</h2>
 <p>Automatic and transparent:</p><ul>
 <li>Linux/FreeBSD: All sends use MSG_NOSIGNAL</li>
@@ -449,7 +531,7 @@ SIGPIPE Handling</h2>
 <li>No application signal handlers needed</li>
 </ul>
 <p>Optional: <a class="el" href="group__core__io.html#ga410b67062c053c3af7e86531acc1620c" title="Globally ignore SIGPIPE signal.">Socket_ignore_sigpipe()</a> for raw socket compatibility</p>
-<h2><a class="anchor" id="autotoc_md363"></a>
+<h2><a class="anchor" id="autotoc_md401"></a>
 Error Model</h2>
 <ul>
 <li><b>Exceptions</b>: Socket_Failed (general), Socket_Closed (peer disconnect), SocketUnix_Failed (Unix errors)</li>
@@ -457,16 +539,16 @@ Error Model</h2>
 <li><b>Retryability</b>: <a class="el" href="group__core__io.html#ga8517adf0df2e5331a952fb713ec314f9" title="Check if an errno indicates a retryable error.">Socket_error_is_retryable()</a> classifies errors for backoff logic</li>
 <li><b>Diagnostics</b>: <a class="el" href="group__foundation.html#gaacd3ef2f86186c451f2eb90cd490eae5" title="Socket_geterrno - Retrieve the raw POSIX errno from the last system call error.Returns the errno valu...">Socket_geterrno()</a>, <a class="el" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db" title="Socket_GetLastError - Retrieve the most recent formatted error message.">Socket_GetLastError()</a>, <a class="el" href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9" title="Provides a thread-safe and bounds-checked implementation of strerror().">Socket_safe_strerror()</a></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md364"></a>
+<h2><a class="anchor" id="autotoc_md402"></a>
 Timeout Configuration</h2>
 <p>Granular control via <a class="el" href="group__foundation.html#structSocketTimeouts__T" title="Basic timeout configuration structure for socket operations.">SocketTimeouts_T</a>:</p><ul>
 <li>Global defaults: <a class="el" href="group__core__io.html#ga0385e87c51740c37c9d90ff5bba1eced" title="Set global default timeouts.">Socket_timeouts_setdefaults()</a></li>
 <li>Per-socket: <a class="el" href="group__core__io.html#ga3e3b95a49618f5a56869606adeeda58f" title="Set per-socket timeout configuration.">Socket_timeouts_set()</a>, <a class="el" href="group__core__io.html#gad663873fbc8f0846c092a380f64b1f52" title="Set per-socket extended timeout configuration.">Socket_timeouts_set_extended()</a></li>
 <li>Phases: DNS, connect, TLS handshake, I/O operations</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md365"></a>
+<h2><a class="anchor" id="autotoc_md403"></a>
 Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md366"></a>
+<h3><a class="anchor" id="autotoc_md404"></a>
 Simple Client</h3>
 <div class="fragment"><div class="line">Socket_T sock = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line"><a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, <span class="stringliteral">&quot;api.example.com&quot;</span>, 443);</div>
@@ -476,12 +558,12 @@ Simple Client</h3>
 <div class="ttc" id="agroup__core__io_html_ga6ea9ad33d78c50d327c9677b52849bcb"><div class="ttname"><a href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a></div><div class="ttdeci">ssize_t Socket_sendall(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send all data (handles partial sends).</div></div>
 <div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
 <div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md367"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md405"></a>
 Echo Server</h3>
 <div class="fragment"><div class="line">Socket_T server = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line"><a class="code hl_function" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a>(server, <span class="stringliteral">&quot;0.0.0.0&quot;</span>, 8080);</div>
 <div class="line"><a class="code hl_function" href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen</a>(server, 128);</div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    Socket_T client = <a class="code hl_function" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a>(server);</div>
 <div class="line">    <span class="keywordflow">if</span> (client) {</div>
 <div class="line">        <span class="comment">// Handle client...</span></div>
@@ -489,11 +571,11 @@ Echo Server</h3>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="line"><a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;server);</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Accept incoming connection.</div></div>
 <div class="ttc" id="agroup__core__io_html_gab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div><div class="ttdoc">Listen for incoming connections.</div></div>
 <div class="ttc" id="agroup__core__io_html_gacb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Bind a socket to a local IP address and port.</div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md368"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md406"></a>
 Related Headers and Modules</h2>
 <ul>
 <li><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">core/Except.h</a>: Exception framework (TRY/EXCEPT)</li>

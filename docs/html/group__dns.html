@@ -146,9 +146,15 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketDNS__Request__T" id="r_structSocketDNS__Request__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a></td></tr>
 <tr class="memdesc:structSocketDNS__Request__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS resolution request structure.  <a href="group__dns.html#structSocketDNS__Request__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketDNS__Request__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketDNS__CacheEntry" id="r_structSocketDNS__CacheEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a></td></tr>
+<tr class="memdesc:structSocketDNS__CacheEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS cache entry structure.  <a href="group__dns.html#structSocketDNS__CacheEntry">More...</a><br /></td></tr>
+<tr class="separator:structSocketDNS__CacheEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketDNS__T" id="r_structSocketDNS__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></td></tr>
 <tr class="memdesc:structSocketDNS__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Async DNS resolver structure.  <a href="group__dns.html#structSocketDNS__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketDNS__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketDNS__CacheStats" id="r_structSocketDNS__CacheStats"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a></td></tr>
+<tr class="memdesc:structSocketDNS__CacheStats"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cache statistics structure.  <a href="group__dns.html#structSocketDNS__CacheStats">More...</a><br /></td></tr>
+<tr class="separator:structSocketDNS__CacheStats"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
@@ -402,6 +408,33 @@ Functions</h2></td></tr>
 <tr class="memitem:gab988727825887d34e87d144d30c30c2f" id="r_gab988727825887d34e87d144d30c30c2f"><td class="memItemLeft" align="right" valign="top">struct addrinfo *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *host, int port, const struct addrinfo *hints, int timeout_ms)</td></tr>
 <tr class="memdesc:gab988727825887d34e87d144d30c30c2f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Synchronous DNS resolution with optional timeout guarantee.  <br /></td></tr>
 <tr class="separator:gab988727825887d34e87d144d30c30c2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gac8642d0527ed406099dd2ca81cbcbc53" id="r_gac8642d0527ed406099dd2ca81cbcbc53"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53">SocketDNS_cache_clear</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
+<tr class="memdesc:gac8642d0527ed406099dd2ca81cbcbc53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear the entire DNS result cache.  <br /></td></tr>
+<tr class="separator:gac8642d0527ed406099dd2ca81cbcbc53"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga8d75a5fca44d0543bcc7fccab2f3ebc0" id="r_ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga8d75a5fca44d0543bcc7fccab2f3ebc0">SocketDNS_cache_remove</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char *hostname)</td></tr>
+<tr class="memdesc:ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a specific hostname from the DNS cache.  <br /></td></tr>
+<tr class="separator:ga8d75a5fca44d0543bcc7fccab2f3ebc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaf578d18322c0da146bfc52e236ae91d" id="r_gaaf578d18322c0da146bfc52e236ae91d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, int ttl_seconds)</td></tr>
+<tr class="memdesc:gaaf578d18322c0da146bfc52e236ae91d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the TTL (time-to-live) for cached DNS results.  <br /></td></tr>
+<tr class="separator:gaaf578d18322c0da146bfc52e236ae91d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga358ec74cbdfba760e98798bb0269ec70" id="r_ga358ec74cbdfba760e98798bb0269ec70"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga358ec74cbdfba760e98798bb0269ec70">SocketDNS_cache_set_max_entries</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, size_t max_entries)</td></tr>
+<tr class="memdesc:ga358ec74cbdfba760e98798bb0269ec70"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the maximum number of entries in the DNS cache.  <br /></td></tr>
+<tr class="separator:ga358ec74cbdfba760e98798bb0269ec70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga552e6fce7e0aabe57e4bdaa18bbc4dcd" id="r_ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd">SocketDNS_cache_stats</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, <a class="el" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a> *stats)</td></tr>
+<tr class="memdesc:ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get DNS cache statistics.  <br /></td></tr>
+<tr class="separator:ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gafd162147cc335b1d66ea31a6e70dba91" id="r_gafd162147cc335b1d66ea31a6e70dba91"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91">SocketDNS_prefer_ipv6</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, int prefer_ipv6)</td></tr>
+<tr class="memdesc:gafd162147cc335b1d66ea31a6e70dba91"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set IPv6 preference for DNS resolution.  <br /></td></tr>
+<tr class="separator:gafd162147cc335b1d66ea31a6e70dba91"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga13ffd5fe0baab4e755abb0c45bc78410" id="r_ga13ffd5fe0baab4e755abb0c45bc78410"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga13ffd5fe0baab4e755abb0c45bc78410">SocketDNS_get_prefer_ipv6</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns)</td></tr>
+<tr class="memdesc:ga13ffd5fe0baab4e755abb0c45bc78410"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current IPv6 preference setting.  <br /></td></tr>
+<tr class="separator:ga13ffd5fe0baab4e755abb0c45bc78410"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga686f6e19ce68debbdbb9638b1a60b573" id="r_ga686f6e19ce68debbdbb9638b1a60b573"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573">SocketDNS_set_nameservers</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char **servers, size_t count)</td></tr>
+<tr class="memdesc:ga686f6e19ce68debbdbb9638b1a60b573"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom nameservers for DNS resolution.  <br /></td></tr>
+<tr class="separator:ga686f6e19ce68debbdbb9638b1a60b573"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae01bb71c26d598319a2fdfe043bf455e" id="r_gae01bb71c26d598319a2fdfe043bf455e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e">SocketDNS_set_search_domains</a> (<a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns, const char **domains, size_t count)</td></tr>
+<tr class="memdesc:gae01bb71c26d598319a2fdfe043bf455e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set DNS search domains for hostname resolution.  <br /></td></tr>
+<tr class="separator:gae01bb71c26d598319a2fdfe043bf455e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -412,7 +445,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Thread pool-based DNS resolution with guaranteed timeouts and SocketPoll integration. </p>
 <p>Provides asynchronous DNS resolution using a thread pool to eliminate blocking getaddrinfo() calls that can take 30+ seconds during DNS failures. This addresses DoS vulnerabilities and enables truly non-blocking socket operations.</p>
-<h2><a class="anchor" id="autotoc_md235"></a>
+<h2><a class="anchor" id="autotoc_md241"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌─────────────────────────────┐</div>
 <div class="line">│     Application Thread      │</div>
@@ -438,8 +471,8 @@ Architecture Overview</h2>
 <div class="line">│ Completion Pipe (pollfd)    │ ──▶ SocketPoll integration</div>
 <div class="line">└─────────────────────────────┘</div>
 <div class="ttc" id="agroup__dns_html_ga380629d9c1650963341d1fe1dacd3253"><div class="ttname"><a href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253">SocketDNS_resolve</a></div><div class="ttdeci">Request_T SocketDNS_resolve(SocketDNS_T dns, const char *host, int port, SocketDNS_Callback callback, void *data)</div><div class="ttdoc">Start asynchronous DNS resolution.</div></div>
-<div class="ttc" id="agroup__dns_html_structSocketDNS__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></div><div class="ttdoc">Async DNS resolver structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00242">SocketDNS-private.h:243</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md236"></a>
+<div class="ttc" id="agroup__dns_html_structSocketDNS__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></div><div class="ttdoc">Async DNS resolver structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00260">SocketDNS-private.h:261</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md242"></a>
 Key Features</h2>
 <ul>
 <li><b>Non-blocking</b>: No main-thread blocking; workers handle slow DNS.</li>
@@ -448,14 +481,14 @@ Key Features</h2>
 <li><b>Flexible</b>: Callback or poll mode for completion handling.</li>
 <li><b>Sync Wrapper</b>: <a class="el" href="group__dns.html#gab988727825887d34e87d144d30c30c2f" title="Synchronous DNS resolution with optional timeout guarantee.">SocketDNS_resolve_sync()</a> with guaranteed timeout.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md237"></a>
+<h2><a class="anchor" id="autotoc_md243"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__foundation.html">Core Foundation Modules</a> (Arena_T, <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a>), core/SocketUtil (logging/metrics), socket/SocketCommon (address resolution utils).</li>
 <li><b>Used by</b>: <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> (SocketPool::prepare_connection, SocketReconnect), <a class="el" href="group__core__io.html">Core I/O Modules</a> (Socket::connect helpers).</li>
 <li><b>Integrates with</b>: <a class="el" href="group__event__system.html">Event System Modules</a> (SocketPoll via completion pipe FD).</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md238"></a>
+<h2><a class="anchor" id="autotoc_md244"></a>
 Configuration Parameters</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -464,7 +497,7 @@ Configuration Parameters</h2>
 <td class="markdownTableBodyNone">num_workers   </td><td class="markdownTableBodyNone">CPU cores   </td><td class="markdownTableBodyNone">Thread pool size   </td></tr>
 </table>
 <p>(SOCKET_DNS_DEFAULT_NUM_WORKERS) | | max_pending | 1000 | Queue capacity (SOCKET_DNS_MAX_PENDING) | | timeout_ms | 5000 | Default request timeout (SOCKET_DNS_DEFAULT_TIMEOUT_MS) |</p>
-<h2><a class="anchor" id="autotoc_md239"></a>
+<h2><a class="anchor" id="autotoc_md245"></a>
 Error Handling</h2>
 <ul>
 <li><b>Exceptions</b>: SocketDNS_Failed for init, queue full, invalid params.</li>
@@ -517,13 +550,13 @@ docs/ERROR_HANDLING.md error codes. </dd></dl>
 <dd>
 <a class="el" href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5" title="Retrieve completed DNS resolution result, transferring ownership to caller.">SocketDNS_getresult()</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00210">210</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00211">211</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketDNS_Request_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketDNS__Request__T__coll__graph.svg" width="266" height="172"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketDNS__Request__T__coll__graph.svg" width="547" height="172"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -622,6 +655,83 @@ timeout_override_ms</td>
 
 </div>
 </div>
+<a name="structSocketDNS__CacheEntry" id="structSocketDNS__CacheEntry"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketDNS__CacheEntry">&#9670;&#160;</a></span>SocketDNS_CacheEntry</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketDNS_CacheEntry</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>DNS cache entry structure. </p>
+<p>Stores a cached DNS resolution result with TTL and LRU tracking. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00234">234</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketDNS_CacheEntry:</div>
+<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-2-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketDNS__CacheEntry__coll__graph.svg" width="268" height="55"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
+<table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a70aac2d4922733ec0d8695da28b3b576" name="a70aac2d4922733ec0d8695da28b3b576"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+hash_next</td>
+<td class="fielddoc">
+<p>Hash collision chain </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a255928a9675d7cf10546db358803aff9" name="a255928a9675d7cf10546db358803aff9"></a>char *</td>
+<td class="fieldname">
+hostname</td>
+<td class="fielddoc">
+<p>Cached hostname key </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="acdc4f7c7982f99ed429b960d0136ef03" name="acdc4f7c7982f99ed429b960d0136ef03"></a>int64_t</td>
+<td class="fieldname">
+insert_time_ms</td>
+<td class="fielddoc">
+<p>Monotonic time of insertion </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a532f8a6cec51029299694060cc3e601f" name="a532f8a6cec51029299694060cc3e601f"></a>int64_t</td>
+<td class="fieldname">
+last_access_ms</td>
+<td class="fielddoc">
+<p>Monotonic time of last access (LRU) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="afd50b3f49a48cb75f1701e077dbb6ba5" name="afd50b3f49a48cb75f1701e077dbb6ba5"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+lru_next</td>
+<td class="fielddoc">
+<p>LRU list next pointer </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a3fa811806204bac45715df62674e5058" name="a3fa811806204bac45715df62674e5058"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+lru_prev</td>
+<td class="fielddoc">
+<p>LRU list prev pointer </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6a48c1dab59a852e8ff31dd5706171ad" name="a6a48c1dab59a852e8ff31dd5706171ad"></a>struct addrinfo *</td>
+<td class="fieldname">
+result</td>
+<td class="fielddoc">
+<p>Cached addrinfo result (owned) </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <a name="structSocketDNS__T" id="structSocketDNS__T"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#structSocketDNS__T">&#9670;&#160;</a></span>SocketDNS_T</h2>
 
@@ -648,13 +758,13 @@ timeout_override_ms</td>
 <dd>
 <a class="el" href="group__core__io.html#ga70954c6e125769d15ffd6c3e31c89b75" title="Get global DNS resolver instance.">SocketCommon_get_dns_resolver()</a> for accessing the global instance. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00242">242</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
-</div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
-  <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketDNS_T:</div>
-<div id="dynsection-2-summary" class="dynsummary" style="display:block;">
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00260">260</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+</div><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
+  <img id="dynsection-3-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketDNS_T:</div>
+<div id="dynsection-3-summary" class="dynsummary" style="display:block;">
 </div>
-<div id="dynsection-2-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketDNS__T__coll__graph.svg" width="266" height="172"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div id="dynsection-3-content" class="dyncontent" style="display:none;">
+<div class="center"><iframe scrolling="no" frameborder="0" src="structSocketDNS__T__coll__graph.svg" width="268" height="308"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 <center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
@@ -664,6 +774,83 @@ timeout_override_ms</td>
 arena</td>
 <td class="fielddoc">
 <p>Arena for request/hostname allocation </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ac0fa7dd0cc498c23a31a6f098b5722c3" name="ac0fa7dd0cc498c23a31a6f098b5722c3"></a>uint64_t</td>
+<td class="fieldname">
+cache_evictions</td>
+<td class="fielddoc">
+<p>Eviction counter </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a16f569bb317093051b79b32c1849e986" name="a16f569bb317093051b79b32c1849e986"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+cache_hash[1021]</td>
+<td class="fielddoc">
+<p>Cache hash table for O(1) lookup </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a95afde895cf101a50cb4a7d117272409" name="a95afde895cf101a50cb4a7d117272409"></a>uint64_t</td>
+<td class="fieldname">
+cache_hits</td>
+<td class="fielddoc">
+<p>Cache hit counter </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a93e8ba3f5a4605e1011252a7bd6fda05" name="a93e8ba3f5a4605e1011252a7bd6fda05"></a>uint64_t</td>
+<td class="fieldname">
+cache_insertions</td>
+<td class="fielddoc">
+<p>Insertion counter </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ab293feab42fe174da5f435f83b674df5" name="ab293feab42fe174da5f435f83b674df5"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+cache_lru_head</td>
+<td class="fielddoc">
+<p>LRU list head (most recent) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a07d905f3bad8fcf64ca67c8403df16e0" name="a07d905f3bad8fcf64ca67c8403df16e0"></a>struct <a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a> *</td>
+<td class="fieldname">
+cache_lru_tail</td>
+<td class="fielddoc">
+<p>LRU list tail (oldest) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a145218b12162a09a737407e6aacc63f5" name="a145218b12162a09a737407e6aacc63f5"></a>size_t</td>
+<td class="fieldname">
+cache_max_entries</td>
+<td class="fielddoc">
+<p>Maximum cache entries (0 = disabled) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ae0a2004f91a93f8b0dc545f9218f1442" name="ae0a2004f91a93f8b0dc545f9218f1442"></a>uint64_t</td>
+<td class="fieldname">
+cache_misses</td>
+<td class="fielddoc">
+<p>Cache miss counter </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a48de60e4f89fdf4028b311c74af29dc5" name="a48de60e4f89fdf4028b311c74af29dc5"></a>size_t</td>
+<td class="fieldname">
+cache_size</td>
+<td class="fielddoc">
+<p>Current number of cached entries </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ac7e264776c53a4d8d430e8904586540e" name="ac7e264776c53a4d8d430e8904586540e"></a>int</td>
+<td class="fieldname">
+cache_ttl_seconds</td>
+<td class="fielddoc">
+<p>TTL for cached entries (0 = disabled) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="affc9bb7fb07c068e65155ad2107ee947" name="affc9bb7fb07c068e65155ad2107ee947"></a>char **</td>
+<td class="fieldname">
+custom_nameservers</td>
+<td class="fielddoc">
+<p>Custom nameserver list (NULL = use system) </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="a1bc6ad584684b38b8e086a9f41aa9f66" name="a1bc6ad584684b38b8e086a9f41aa9f66"></a>size_t</td>
@@ -680,6 +867,13 @@ mutex</td>
 <p>Protects all mutable state </p>
 </td></tr>
 <tr><td class="fieldtype">
+<a id="a8c87e44fe98cb210e51d659ff95d1155" name="a8c87e44fe98cb210e51d659ff95d1155"></a>size_t</td>
+<td class="fieldname">
+nameserver_count</td>
+<td class="fielddoc">
+<p>Number of custom nameservers </p>
+</td></tr>
+<tr><td class="fieldtype">
 <a id="ae5aa58d8c9a029fff13619993cdb8c3e" name="ae5aa58d8c9a029fff13619993cdb8c3e"></a>int</td>
 <td class="fieldname">
 num_workers</td>
@@ -692,6 +886,13 @@ num_workers</td>
 pipefd[2]</td>
 <td class="fielddoc">
 <p>Completion pipe [0]=read, [1]=write </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a0b2b173de8cf17b724c383f24193ce1e" name="a0b2b173de8cf17b724c383f24193ce1e"></a>int</td>
+<td class="fieldname">
+prefer_ipv6</td>
+<td class="fielddoc">
+<p>1 = prefer IPv6, 0 = prefer IPv4 </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="ad13012e13d0e2f6a9a2a18917249f45c" name="ad13012e13d0e2f6a9a2a18917249f45c"></a>pthread_cond_t</td>
@@ -743,6 +944,20 @@ result_cond</td>
 <p>Signals waiters when result ready </p>
 </td></tr>
 <tr><td class="fieldtype">
+<a id="a3ee59a2c0215806ac3af7cabeb61e7c3" name="a3ee59a2c0215806ac3af7cabeb61e7c3"></a>size_t</td>
+<td class="fieldname">
+search_domain_count</td>
+<td class="fielddoc">
+<p>Number of search domains </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6797750b5414b4ff70ae740e07d6dd1a" name="a6797750b5414b4ff70ae740e07d6dd1a"></a>char **</td>
+<td class="fieldname">
+search_domains</td>
+<td class="fielddoc">
+<p>Custom search domains (NULL = use system) </p>
+</td></tr>
+<tr><td class="fieldtype">
 <a id="a026541a405efc2f27fff1a59e8d29add" name="a026541a405efc2f27fff1a59e8d29add"></a>int</td>
 <td class="fieldname">
 shutdown</td>
@@ -755,6 +970,86 @@ shutdown</td>
 workers</td>
 <td class="fielddoc">
 <p>Worker thread array (arena-allocated) </p>
+</td></tr>
+</table>
+
+</div>
+</div>
+<a name="structSocketDNS__CacheStats" id="structSocketDNS__CacheStats"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketDNS__CacheStats">&#9670;&#160;</a></span>SocketDNS_CacheStats</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketDNS_CacheStats</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>Cache statistics structure. </p>
+<p>Statistics about DNS resolution cache performance. Used to monitor cache efficiency and tune TTL/size parameters.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd" title="Get DNS cache statistics.">SocketDNS_cache_stats()</a> to retrieve statistics. </dd>
+<dd>
+<a class="el" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53" title="Clear the entire DNS result cache.">SocketDNS_cache_clear()</a> to reset cache. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00864">864</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="ae7b6f98198e752cc02f4e2bc650b5305" name="ae7b6f98198e752cc02f4e2bc650b5305"></a>size_t</td>
+<td class="fieldname">
+current_size</td>
+<td class="fielddoc">
+<p>Current number of cached entries </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ab0a332ac89fb52b9f3d4bbe8d53e5c97" name="ab0a332ac89fb52b9f3d4bbe8d53e5c97"></a>uint64_t</td>
+<td class="fieldname">
+evictions</td>
+<td class="fielddoc">
+<p>Entries evicted due to TTL or size limits </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a40fdfc4bf0eaf4823e0fdb63ca381450" name="a40fdfc4bf0eaf4823e0fdb63ca381450"></a>double</td>
+<td class="fieldname">
+hit_rate</td>
+<td class="fielddoc">
+<p>Calculated hit rate (hits / (hits + misses)) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="aa2e8e3582926075d0695528e38ccad83" name="aa2e8e3582926075d0695528e38ccad83"></a>uint64_t</td>
+<td class="fieldname">
+hits</td>
+<td class="fielddoc">
+<p>Cache hits (result found in cache) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a908dc782db301d455dac01655b23df71" name="a908dc782db301d455dac01655b23df71"></a>uint64_t</td>
+<td class="fieldname">
+insertions</td>
+<td class="fielddoc">
+<p>Total entries inserted into cache </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a6cb49fe4982b48272102d78ddf0b6846" name="a6cb49fe4982b48272102d78ddf0b6846"></a>size_t</td>
+<td class="fieldname">
+max_entries</td>
+<td class="fielddoc">
+<p>Maximum cache capacity </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="acb32258f717bdb3a45390d2cced85bba" name="acb32258f717bdb3a45390d2cced85bba"></a>uint64_t</td>
+<td class="fieldname">
+misses</td>
+<td class="fielddoc">
+<p>Cache misses (resolution required) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a8efca55d6c0863dd9c0067d7b89237ec" name="a8efca55d6c0863dd9c0067d7b89237ec"></a>int</td>
+<td class="fieldname">
+ttl_seconds</td>
+<td class="fielddoc">
+<p>Current TTL setting </p>
 </td></tr>
 </table>
 
@@ -786,7 +1081,7 @@ workers</td>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 if negative, otherwise original value. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00285">285</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00324">324</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -821,7 +1116,7 @@ workers</td>
 </dl>
 <p>Consolidates repeated signal_completion + pthread_cond_broadcast pattern. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00271">271</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00310">310</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -837,7 +1132,7 @@ workers</td>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00148">148</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00149">149</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
 
 </div>
 </div>
@@ -856,7 +1151,7 @@ workers</td>
 
 <p>Pointer to DNS resolution request structure. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00164">164</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00165">165</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
 
 </div>
 </div>
@@ -894,7 +1189,7 @@ Do NOT call SocketDNS_free(dns) from callback (deadlock risk). </dd></dl>
 <dd>
 <a class="el" href="group__dns.html#ga47df31a4c5b1861e6bc33bf91effa388" title="Completion callback type invoked when DNS resolution finishes.">SocketDNS_Callback</a> safety notes in <a class="el" href="SocketDNS_8h.html" title="Asynchronous DNS resolution API for non-blocking network applications.">SocketDNS.h</a> documentation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00107">107</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00108">108</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -933,7 +1228,7 @@ Do NOT call SocketDNS_free(dns) from callback (deadlock risk). </dd></dl>
 For applications that cannot safely handle worker-thread callbacks, use the SocketPoll integration pattern instead (pass NULL callback to SocketDNS_resolve and use SocketDNS_check/SocketDNS_getresult). </li>
 </ul>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00224">224</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS_8h_source.html#l00225">225</a> of file <a class="el" href="SocketDNS_8h_source.html">SocketDNS.h</a>.</p>
 
 </div>
 </div>
@@ -978,7 +1273,7 @@ initialize_dns_components() for init sequence. </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00187">187</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00188">188</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -1025,7 +1320,7 @@ initialize_dns_components() for init sequence. </dd></dl>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00150">150</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00151">151</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -1502,7 +1797,7 @@ initialize_dns_components() for init sequence. </dd></dl>
 <div class="ttc" id="aSocketDNS-private_8h_html_a0c5a84436f8b4c2c2159a9ae95ec6e6f"><div class="ttname"><a href="SocketDNS-private_8h.html#a0c5a84436f8b4c2c2159a9ae95ec6e6f">allocate_dns_resolver</a></div><div class="ttdeci">struct SocketDNS_T * allocate_dns_resolver(void)</div></div>
 <div class="ttc" id="aSocketDNS-private_8h_html_a329324a0e4a1450a6b968b375bb9b333"><div class="ttname"><a href="SocketDNS-private_8h.html#a329324a0e4a1450a6b968b375bb9b333">SocketDNS_Failed</a></div><div class="ttdeci">const Except_T SocketDNS_Failed</div></div>
 <div class="ttc" id="agroup__dns_html_ga7611dac05257caaebe03fad6b799a65e"><div class="ttname"><a href="group__dns.html#ga7611dac05257caaebe03fad6b799a65e">cleanup_on_init_failure</a></div><div class="ttdeci">void cleanup_on_init_failure(struct SocketDNS_T *dns, enum DnsCleanupLevel cleanup_level)</div><div class="ttdoc">Clean up resources based on initialization failure level.</div></div>
-<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941">DNS_CLEAN_NONE</a></div><div class="ttdeci">@ DNS_CLEAN_NONE</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00189">SocketDNS-private.h:189</a></div></div>
+<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99aae3ddf1daeda71dca3b2cb763696b941">DNS_CLEAN_NONE</a></div><div class="ttdeci">@ DNS_CLEAN_NONE</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00190">SocketDNS-private.h:190</a></div></div>
 <div class="ttc" id="agroup__foundation_html_ga45e87c4d7dee50346b15c7761b0b340a"><div class="ttname"><a href="group__foundation.html#ga45e87c4d7dee50346b15c7761b0b340a">RAISE</a></div><div class="ttdeci">#define RAISE(e)</div><div class="ttdoc">Raise an exception with current file and line information.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00636">Except.h:636</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
@@ -1598,11 +1893,11 @@ initialize_dns_components() next step after fields init. </dd>
 <div class="ttc" id="agroup__dns_html_ga4e5821b121187c8fe5bdf8e5af7b76d7"><div class="ttname"><a href="group__dns.html#ga4e5821b121187c8fe5bdf8e5af7b76d7">initialize_pipe</a></div><div class="ttdeci">void initialize_pipe(struct SocketDNS_T *dns)</div><div class="ttdoc">Initialize completion pipe (create + configure).</div></div>
 <div class="ttc" id="agroup__dns_html_ga966920bebbea908c25400af44930fe59"><div class="ttname"><a href="group__dns.html#ga966920bebbea908c25400af44930fe59">start_dns_workers</a></div><div class="ttdeci">void start_dns_workers(struct SocketDNS_T *dns)</div><div class="ttdoc">Start DNS worker threads (transition from initialization to running).</div></div>
 <div class="ttc" id="agroup__dns_html_gaa9424b326264ca67ebcd3b425836fd3e"><div class="ttname"><a href="group__dns.html#gaa9424b326264ca67ebcd3b425836fd3e">create_worker_threads</a></div><div class="ttdeci">void create_worker_threads(struct SocketDNS_T *dns)</div><div class="ttdoc">Spawn the configured number of DNS worker threads.</div></div>
-<div class="ttc" id="agroup__dns_html_gaba752f803497a475aa1b96ed2351dd99"><div class="ttname"><a href="group__dns.html#gaba752f803497a475aa1b96ed2351dd99">DnsCleanupLevel</a></div><div class="ttdeci">DnsCleanupLevel</div><div class="ttdoc">Levels for partial cleanup during initialization failures.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00187">SocketDNS-private.h:188</a></div></div>
+<div class="ttc" id="agroup__dns_html_gaba752f803497a475aa1b96ed2351dd99"><div class="ttname"><a href="group__dns.html#gaba752f803497a475aa1b96ed2351dd99">DnsCleanupLevel</a></div><div class="ttdeci">DnsCleanupLevel</div><div class="ttdoc">Levels for partial cleanup during initialization failures.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00188">SocketDNS-private.h:189</a></div></div>
 <div class="ttc" id="agroup__dns_html_gaf875bcba3b535a0981600de2c0aa5720"><div class="ttname"><a href="group__dns.html#gaf875bcba3b535a0981600de2c0aa5720">initialize_synchronization</a></div><div class="ttdeci">void initialize_synchronization(struct SocketDNS_T *dns)</div><div class="ttdoc">Initialize all synchronization primitives (mutex + conditions).</div></div>
-<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99a080e8c4f0bc500d949f6210704a156ca"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a080e8c4f0bc500d949f6210704a156ca">DNS_CLEAN_PIPE</a></div><div class="ttdeci">@ DNS_CLEAN_PIPE</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00192">SocketDNS-private.h:192</a></div></div>
-<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99a615acce89a6c289fce7fd44bd35b0d25"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a615acce89a6c289fce7fd44bd35b0d25">DNS_CLEAN_MUTEX</a></div><div class="ttdeci">@ DNS_CLEAN_MUTEX</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00190">SocketDNS-private.h:190</a></div></div>
-<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb">DNS_CLEAN_ARENA</a></div><div class="ttdeci">@ DNS_CLEAN_ARENA</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00194">SocketDNS-private.h:193</a></div></div>
+<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99a080e8c4f0bc500d949f6210704a156ca"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a080e8c4f0bc500d949f6210704a156ca">DNS_CLEAN_PIPE</a></div><div class="ttdeci">@ DNS_CLEAN_PIPE</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00193">SocketDNS-private.h:193</a></div></div>
+<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99a615acce89a6c289fce7fd44bd35b0d25"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99a615acce89a6c289fce7fd44bd35b0d25">DNS_CLEAN_MUTEX</a></div><div class="ttdeci">@ DNS_CLEAN_MUTEX</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00191">SocketDNS-private.h:191</a></div></div>
+<div class="ttc" id="agroup__dns_html_ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb"><div class="ttname"><a href="group__dns.html#ggaba752f803497a475aa1b96ed2351dd99afbae8735e6a307a7f4eea386f3d5afbb">DNS_CLEAN_ARENA</a></div><div class="ttdeci">@ DNS_CLEAN_ARENA</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00195">SocketDNS-private.h:194</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Recursive mutex allows nested locking during init/cleanup. </dd>
 <dd>
 Pipe FD [0] is pollfd for reading completions; [1] for writing signals. </dd>
@@ -3190,6 +3485,305 @@ req must not already be in queue or hash table.</dd></dl>
 
 </div>
 </div>
+<a id="gac8642d0527ed406099dd2ca81cbcbc53" name="gac8642d0527ed406099dd2ca81cbcbc53"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gac8642d0527ed406099dd2ca81cbcbc53">&#9670;&#160;</a></span>SocketDNS_cache_clear()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketDNS_cache_clear </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Clear the entire DNS result cache. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Removes all cached DNS resolution results, forcing fresh lookups for subsequent requests. Useful when DNS records are known to have changed or when troubleshooting resolution issues.</p>
+<h2><a class="anchor" id="autotoc_md265"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// DNS records changed, force fresh lookups</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53">SocketDNS_cache_clear</a>(dns);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Now all resolutions will query DNS servers</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253">SocketDNS_resolve</a>(dns, <span class="stringliteral">&quot;example.com&quot;</span>, 443, callback, data);</div>
+<div class="ttc" id="agroup__dns_html_gac8642d0527ed406099dd2ca81cbcbc53"><div class="ttname"><a href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53">SocketDNS_cache_clear</a></div><div class="ttdeci">void SocketDNS_cache_clear(SocketDNS_T dns)</div><div class="ttdoc">Clear the entire DNS result cache.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) where n is number of cached entries.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga8d75a5fca44d0543bcc7fccab2f3ebc0" title="Remove a specific hostname from the DNS cache.">SocketDNS_cache_remove()</a> to remove specific entries. </dd>
+<dd>
+<a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd" title="Get DNS cache statistics.">SocketDNS_cache_stats()</a> to check cache state. </dd></dl>
+
+</div>
+</div>
+<a id="ga8d75a5fca44d0543bcc7fccab2f3ebc0" name="ga8d75a5fca44d0543bcc7fccab2f3ebc0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga8d75a5fca44d0543bcc7fccab2f3ebc0">&#9670;&#160;</a></span>SocketDNS_cache_remove()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketDNS_cache_remove </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>hostname</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Remove a specific hostname from the DNS cache. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">hostname</td><td>Hostname to remove from cache. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>1 if entry was found and removed, 0 if not found. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Removes a specific hostname's cached result, forcing a fresh DNS lookup on the next resolution request for that hostname.</p>
+<h2><a class="anchor" id="autotoc_md266"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Known DNS change for specific host</span></div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__dns.html#ga8d75a5fca44d0543bcc7fccab2f3ebc0">SocketDNS_cache_remove</a>(dns, <span class="stringliteral">&quot;api.example.com&quot;</span>)) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Removed stale cache entry\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__dns_html_ga8d75a5fca44d0543bcc7fccab2f3ebc0"><div class="ttname"><a href="group__dns.html#ga8d75a5fca44d0543bcc7fccab2f3ebc0">SocketDNS_cache_remove</a></div><div class="ttdeci">int SocketDNS_cache_remove(SocketDNS_T dns, const char *hostname)</div><div class="ttdoc">Remove a specific hostname from the DNS cache.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) average - hash table lookup.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53" title="Clear the entire DNS result cache.">SocketDNS_cache_clear()</a> to clear entire cache. </dd></dl>
+
+</div>
+</div>
+<a id="ga358ec74cbdfba760e98798bb0269ec70" name="ga358ec74cbdfba760e98798bb0269ec70"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga358ec74cbdfba760e98798bb0269ec70">&#9670;&#160;</a></span>SocketDNS_cache_set_max_entries()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketDNS_cache_set_max_entries </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>max_entries</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the maximum number of entries in the DNS cache. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">max_entries</td><td>Maximum cache entries (0 disables caching). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Limits memory usage by capping the number of cached DNS results. When the limit is reached, oldest entries are evicted (LRU).</p>
+<h2><a class="anchor" id="autotoc_md269"></a>
+Default</h2>
+<p>Default max is SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES (1000).</p>
+<h2><a class="anchor" id="autotoc_md270"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Limit cache for memory-constrained environments</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#ga358ec74cbdfba760e98798bb0269ec70">SocketDNS_cache_set_max_entries</a>(dns, 100);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Large cache for high-traffic servers</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#ga358ec74cbdfba760e98798bb0269ec70">SocketDNS_cache_set_max_entries</a>(dns, 10000);</div>
+<div class="ttc" id="agroup__dns_html_ga358ec74cbdfba760e98798bb0269ec70"><div class="ttname"><a href="group__dns.html#ga358ec74cbdfba760e98798bb0269ec70">SocketDNS_cache_set_max_entries</a></div><div class="ttdeci">void SocketDNS_cache_set_max_entries(SocketDNS_T dns, size_t max_entries)</div><div class="ttdoc">Set the maximum number of entries in the DNS cache.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>If new limit is less than current size, excess entries are evicted.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd" title="Get DNS cache statistics.">SocketDNS_cache_stats()</a> to check current size. </dd></dl>
+
+</div>
+</div>
+<a id="gaaf578d18322c0da146bfc52e236ae91d" name="gaaf578d18322c0da146bfc52e236ae91d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaaf578d18322c0da146bfc52e236ae91d">&#9670;&#160;</a></span>SocketDNS_cache_set_ttl()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketDNS_cache_set_ttl </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>ttl_seconds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set the TTL (time-to-live) for cached DNS results. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">ttl_seconds</td><td>TTL in seconds (0 disables caching). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Controls how long resolved DNS results are cached before being considered stale and requiring re-resolution. Setting to 0 effectively disables caching (all requests go to DNS servers).</p>
+<h2><a class="anchor" id="autotoc_md267"></a>
+Default</h2>
+<p>Default TTL is SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS (300 = 5 minutes).</p>
+<h2><a class="anchor" id="autotoc_md268"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Short TTL for frequently changing DNS</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a>(dns, 60);  <span class="comment">// 1 minute</span></div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Disable caching entirely</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a>(dns, 0);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Long TTL for stable DNS</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a>(dns, 3600);  <span class="comment">// 1 hour</span></div>
+<div class="ttc" id="agroup__dns_html_gaaf578d18322c0da146bfc52e236ae91d"><div class="ttname"><a href="group__dns.html#gaaf578d18322c0da146bfc52e236ae91d">SocketDNS_cache_set_ttl</a></div><div class="ttdeci">void SocketDNS_cache_set_ttl(SocketDNS_T dns, int ttl_seconds)</div><div class="ttdoc">Set the TTL (time-to-live) for cached DNS results.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Does not affect existing cached entries; only new insertions.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd" title="Get DNS cache statistics.">SocketDNS_cache_stats()</a> to check current TTL. </dd></dl>
+
+</div>
+</div>
+<a id="ga552e6fce7e0aabe57e4bdaa18bbc4dcd" name="ga552e6fce7e0aabe57e4bdaa18bbc4dcd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga552e6fce7e0aabe57e4bdaa18bbc4dcd">&#9670;&#160;</a></span>SocketDNS_cache_stats()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketDNS_cache_stats </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a> *&#160;</td>
+          <td class="paramname"><em>stats</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get DNS cache statistics. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">stats</td><td>Output statistics structure. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic snapshot.</dt><dd></dd></dl>
+<p>Retrieves current cache statistics including hit/miss rates, size, and configuration. Useful for monitoring and tuning cache parameters.</p>
+<h2><a class="anchor" id="autotoc_md271"></a>
+Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a> stats;</div>
+<div class="line"><a class="code hl_function" href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd">SocketDNS_cache_stats</a>(dns, &amp;stats);</div>
+<div class="line"> </div>
+<div class="line">printf(<span class="stringliteral">&quot;Cache hit rate: %.1f%% (%lu hits, %lu misses)\n&quot;</span>,</div>
+<div class="line">       stats.<a class="code hl_variable" href="group__dns.html#a40fdfc4bf0eaf4823e0fdb63ca381450">hit_rate</a> * 100.0,</div>
+<div class="line">       (<span class="keywordtype">unsigned</span> <span class="keywordtype">long</span>)stats.<a class="code hl_variable" href="group__dns.html#aa2e8e3582926075d0695528e38ccad83">hits</a>,</div>
+<div class="line">       (<span class="keywordtype">unsigned</span> <span class="keywordtype">long</span>)stats.<a class="code hl_variable" href="group__dns.html#acb32258f717bdb3a45390d2cced85bba">misses</a>);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Cache size: %zu / %zu entries\n&quot;</span>,</div>
+<div class="line">       stats.<a class="code hl_variable" href="group__dns.html#ae7b6f98198e752cc02f4e2bc650b5305">current_size</a>, stats.<a class="code hl_variable" href="group__dns.html#a6cb49fe4982b48272102d78ddf0b6846">max_entries</a>);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Evictions: %lu\n&quot;</span>, (<span class="keywordtype">unsigned</span> <span class="keywordtype">long</span>)stats.<a class="code hl_variable" href="group__dns.html#ab0a332ac89fb52b9f3d4bbe8d53e5c97">evictions</a>);</div>
+<div class="ttc" id="agroup__dns_html_a40fdfc4bf0eaf4823e0fdb63ca381450"><div class="ttname"><a href="group__dns.html#a40fdfc4bf0eaf4823e0fdb63ca381450">SocketDNS_CacheStats::hit_rate</a></div><div class="ttdeci">double hit_rate</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00873">SocketDNS.h:873</a></div></div>
+<div class="ttc" id="agroup__dns_html_a6cb49fe4982b48272102d78ddf0b6846"><div class="ttname"><a href="group__dns.html#a6cb49fe4982b48272102d78ddf0b6846">SocketDNS_CacheStats::max_entries</a></div><div class="ttdeci">size_t max_entries</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00871">SocketDNS.h:871</a></div></div>
+<div class="ttc" id="agroup__dns_html_aa2e8e3582926075d0695528e38ccad83"><div class="ttname"><a href="group__dns.html#aa2e8e3582926075d0695528e38ccad83">SocketDNS_CacheStats::hits</a></div><div class="ttdeci">uint64_t hits</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00866">SocketDNS.h:866</a></div></div>
+<div class="ttc" id="agroup__dns_html_ab0a332ac89fb52b9f3d4bbe8d53e5c97"><div class="ttname"><a href="group__dns.html#ab0a332ac89fb52b9f3d4bbe8d53e5c97">SocketDNS_CacheStats::evictions</a></div><div class="ttdeci">uint64_t evictions</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00868">SocketDNS.h:868</a></div></div>
+<div class="ttc" id="agroup__dns_html_acb32258f717bdb3a45390d2cced85bba"><div class="ttname"><a href="group__dns.html#acb32258f717bdb3a45390d2cced85bba">SocketDNS_CacheStats::misses</a></div><div class="ttdeci">uint64_t misses</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00867">SocketDNS.h:867</a></div></div>
+<div class="ttc" id="agroup__dns_html_ae7b6f98198e752cc02f4e2bc650b5305"><div class="ttname"><a href="group__dns.html#ae7b6f98198e752cc02f4e2bc650b5305">SocketDNS_CacheStats::current_size</a></div><div class="ttdeci">size_t current_size</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00870">SocketDNS.h:870</a></div></div>
+<div class="ttc" id="agroup__dns_html_ga552e6fce7e0aabe57e4bdaa18bbc4dcd"><div class="ttname"><a href="group__dns.html#ga552e6fce7e0aabe57e4bdaa18bbc4dcd">SocketDNS_cache_stats</a></div><div class="ttdeci">void SocketDNS_cache_stats(SocketDNS_T dns, SocketDNS_CacheStats *stats)</div><div class="ttdoc">Get DNS cache statistics.</div></div>
+<div class="ttc" id="agroup__dns_html_structSocketDNS__CacheStats"><div class="ttname"><a href="group__dns.html#structSocketDNS__CacheStats">SocketDNS_CacheStats</a></div><div class="ttdoc">Cache statistics structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS_8h_source.html#l00864">SocketDNS.h:865</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1).</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#structSocketDNS__CacheStats" title="Cache statistics structure.">SocketDNS_CacheStats</a> for field descriptions. </dd>
+<dd>
+<a class="el" href="group__dns.html#gac8642d0527ed406099dd2ca81cbcbc53" title="Clear the entire DNS result cache.">SocketDNS_cache_clear()</a> to reset cache. </dd></dl>
+
+</div>
+</div>
 <a id="ga7ca6cf65c0823f0a23aa2c0c5cbe2223" name="ga7ca6cf65c0823f0a23aa2c0c5cbe2223"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga7ca6cf65c0823f0a23aa2c0c5cbe2223">&#9670;&#160;</a></span>SocketDNS_cancel()</h2>
 
@@ -3277,6 +3871,8 @@ req must not already be in queue or hash table.</dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga9228880ada42145db04298282b5f0c80" title="Get file descriptor for integration with SocketPoll (completion notifications).">SocketDNS_pollfd()</a> for the file descriptor to monitor. </dd>
 <dd>
 <a class="el" href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5" title="Retrieve completed DNS resolution result, transferring ownership to caller.">SocketDNS_getresult()</a> for retrieving completed results. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -3386,7 +3982,7 @@ req must not already be in queue or hash table.</dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - safe if no concurrent</dt><dd><a class="el" href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253" title="Start asynchronous DNS resolution.">SocketDNS_resolve()</a>/getresult() calls; may leak unretrieved results under race conditions. Recommend drain pending before free.</dd></dl>
-<h2><a class="anchor" id="autotoc_md250"></a>
+<h2><a class="anchor" id="autotoc_md256"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Basic cleanup</span></div>
 <div class="line"><a class="code hl_function" href="group__dns.html#gabdc83f21f67b5b8557f35d7ffa4c839c">SocketDNS_free</a>(&amp;dns);</div>
@@ -3398,7 +3994,7 @@ Usage Example</h2>
 <div class="line"><a class="code hl_function" href="group__dns.html#gabdc83f21f67b5b8557f35d7ffa4c839c">SocketDNS_free</a>(&amp;dns);</div>
 <div class="ttc" id="agroup__dns_html_gabdc83f21f67b5b8557f35d7ffa4c839c"><div class="ttname"><a href="group__dns.html#gabdc83f21f67b5b8557f35d7ffa4c839c">SocketDNS_free</a></div><div class="ttdeci">void SocketDNS_free(SocketDNS_T *dns)</div><div class="ttdoc">Dispose of DNS resolver and release all resources.</div></div>
 <div class="ttc" id="agroup__dns_html_gad8f2fa5ee464e84f44b4b6059b4813e5"><div class="ttname"><a href="group__dns.html#gad8f2fa5ee464e84f44b4b6059b4813e5">SocketDNS_check</a></div><div class="ttdeci">int SocketDNS_check(SocketDNS_T dns)</div><div class="ttdoc">Check for completed requests (non-blocking).</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md251"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md257"></a>
 Safe Shutdown Pattern</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <span class="comment">// ... use dns ...</span></div>
@@ -3425,6 +4021,45 @@ Safe Shutdown Pattern</h2>
 docs/MEMORY_MANAGEMENT.md for resource lifecycle. </dd>
 <dd>
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for shutdown in event loops. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga13ffd5fe0baab4e755abb0c45bc78410" name="ga13ffd5fe0baab4e755abb0c45bc78410"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga13ffd5fe0baab4e755abb0c45bc78410">&#9670;&#160;</a></span>SocketDNS_get_prefer_ipv6()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketDNS_get_prefer_ipv6 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get current IPv6 preference setting. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>1 if IPv6 preferred, 0 if IPv4 preferred. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91" title="Set IPv6 preference for DNS resolution.">SocketDNS_prefer_ipv6()</a> to set preference. </dd></dl>
 
 </div>
 </div>
@@ -3575,7 +4210,7 @@ docs/MEMORY_MANAGEMENT.md for resource lifecycle. </dd>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - acquires mutex for hash lookup and transfer.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md257"></a>
+<h2><a class="anchor" id="autotoc_md263"></a>
 Polling Completion Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// After SocketDNS_check(dns) &gt; 0</span></div>
 <div class="line"><span class="keyword">struct </span>addrinfo *res = <a class="code hl_function" href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5">SocketDNS_getresult</a>(dns, tracked_req);</div>
@@ -3595,7 +4230,7 @@ Polling Completion Pattern</h2>
 <div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00548">SocketUtil.h:548</a></div></div>
 <div class="ttc" id="agroup__dns_html_ga69d8d4c9f020bf781d541df7ecaf5acf"><div class="ttname"><a href="group__dns.html#ga69d8d4c9f020bf781d541df7ecaf5acf">SocketDNS_geterror</a></div><div class="ttdeci">int SocketDNS_geterror(SocketDNS_T dns, const struct SocketDNS_Request_T *req)</div><div class="ttdoc">Get error code for completed request.</div></div>
 <div class="ttc" id="agroup__dns_html_ga8f7c4c4455c9158ccd272fe8c15235b5"><div class="ttname"><a href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5">SocketDNS_getresult</a></div><div class="ttdeci">struct addrinfo * SocketDNS_getresult(SocketDNS_T dns, Request_T req)</div><div class="ttdoc">Retrieve completed DNS resolution result, transferring ownership to caller.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md258"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md264"></a>
 Error Check Always</h2>
 <p>Always pair with <a class="el" href="group__dns.html#ga69d8d4c9f020bf781d541df7ecaf5acf" title="Get error code for completed request.">SocketDNS_geterror()</a> even on non-NULL res (paranoia):</p>
 <div class="fragment"><div class="line"><span class="keyword">struct </span>addrinfo *res = <a class="code hl_function" href="group__dns.html#ga8f7c4c4455c9158ccd272fe8c15235b5">SocketDNS_getresult</a>(dns, req);</div>
@@ -3622,6 +4257,8 @@ Callback mode: Always NULL; use callback for result.</dd></dl>
 docs/MEMORY_MANAGEMENT.md addrinfo ownership. </dd>
 <dd>
 docs/ERROR_HANDLING.md getaddrinfo codes. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -3689,7 +4326,7 @@ docs/ERROR_HANDLING.md getaddrinfo codes. </dd></dl>
 <p>Create a new asynchronous DNS resolver. </p>
 <p>Initializes a thread pool-based DNS resolver that offloads getaddrinfo() calls to worker threads, preventing blocking in the main application thread. Supports both callback and polling modes for completion notification, with built-in DoS protection via queue limits and timeouts.</p>
 <p>The resolver allocates an internal Arena for memory management, creates synchronization primitives (mutex, condition variables, completion pipe), and spawns worker threads. Default configuration:</p>
-<h2><a class="anchor" id="autotoc_md247"></a>
+<h2><a class="anchor" id="autotoc_md253"></a>
 Default Configuration</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -3714,7 +4351,7 @@ Default Configuration</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - creates independent instance; safe from any thread.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md248"></a>
+<h2><a class="anchor" id="autotoc_md254"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns = <a class="code hl_function" href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>();</div>
 <div class="line"><span class="keywordflow">if</span> (!dns) {</div>
@@ -3733,7 +4370,7 @@ Basic Usage</h2>
 <div class="ttc" id="agroup__dns_html_ga390b733f1a522dcaccede3adf56fece0"><div class="ttname"><a href="group__dns.html#ga390b733f1a522dcaccede3adf56fece0">SocketDNS_settimeout</a></div><div class="ttdeci">void SocketDNS_settimeout(SocketDNS_T dns, int timeout_ms)</div><div class="ttdoc">Set resolver request timeout in milliseconds.</div></div>
 <div class="ttc" id="agroup__dns_html_ga55b33b7c9a44dc087be0f74b259d54f7"><div class="ttname"><a href="group__dns.html#ga55b33b7c9a44dc087be0f74b259d54f7">SocketDNS_setmaxpending</a></div><div class="ttdeci">void SocketDNS_setmaxpending(SocketDNS_T dns, size_t max_pending)</div><div class="ttdoc">Set maximum pending request capacity.</div></div>
 <div class="ttc" id="agroup__dns_html_ga799f4d96c77eef54ecb9be5523b591fd"><div class="ttname"><a href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a></div><div class="ttdeci">SocketDNS_T SocketDNS_new(void)</div><div class="ttdoc">Create a new asynchronous DNS resolver.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md249"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md255"></a>
 With Exception Handling</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a> dns = <a class="code hl_function" href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd">SocketDNS_new</a>();</div>
@@ -3745,7 +4382,7 @@ With Exception Handling</h2>
 <div class="line"><a class="code hl_function" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a>());</div>
 <div class="line">    <span class="comment">// Cleanup resources...</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__dns_html_structSocketDNS__Request__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a></div><div class="ttdoc">DNS resolution request structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00210">SocketDNS-private.h:211</a></div></div>
+<div class="ttc" id="agroup__dns_html_structSocketDNS__Request__T"><div class="ttname"><a href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a></div><div class="ttdoc">DNS resolution request structure.</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00211">SocketDNS-private.h:212</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Worker threads are created immediately and run indefinitely until <a class="el" href="group__dns.html#gabdc83f21f67b5b8557f35d7ffa4c839c" title="Dispose of DNS resolver and release all resources.">SocketDNS_free()</a>. Use <a class="el" href="group__dns.html#ga55b33b7c9a44dc087be0f74b259d54f7" title="Set maximum pending request capacity.">SocketDNS_setmaxpending()</a> to limit memory usage under high load. </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Do not call <a class="el" href="group__dns.html#ga799f4d96c77eef54ecb9be5523b591fd" title="Create a new asynchronous DNS resolver.">SocketDNS_new()</a> from signal handlers or non-async-signal-safe contexts.</dd></dl>
@@ -3765,6 +4402,8 @@ With Exception Handling</h2>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for DoS protection via limits. </dd>
 <dd>
 docs/ERROR_HANDLING.md for failure diagnosis. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -3809,7 +4448,7 @@ docs/ERROR_HANDLING.md for failure diagnosis. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - atomic read of stable FD value; no mutex needed.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md255"></a>
+<h2><a class="anchor" id="autotoc_md261"></a>
 Event Loop Integration</h2>
 <div class="fragment"><div class="line"><span class="comment">// Setup</span></div>
 <div class="line"><span class="keywordtype">int</span> dns_fd = <a class="code hl_function" href="group__dns.html#ga9228880ada42145db04298282b5f0c80">SocketDNS_pollfd</a>(dns);</div>
@@ -3832,7 +4471,7 @@ Event Loop Integration</h2>
 <div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for I/O event monitoring within the poll instance.</div></div>
 <div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00181">SocketPoll.h:181</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md256"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md262"></a>
 Best Practices</h2>
 <ul>
 <li><b>Drain Fully</b>: Call <a class="el" href="group__dns.html#gad8f2fa5ee464e84f44b4b6059b4813e5" title="Check for completed requests (non-blocking).">SocketDNS_check()</a> in loop until EAGAIN to handle coalesced signals.</li>
@@ -3853,6 +4492,66 @@ Best Practices</h2>
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> event loop patterns with pipes. </dd>
 <dd>
 docs/POLL.md cross-platform polling notes. </dd></dl>
+
+</div>
+</div>
+<a id="gafd162147cc335b1d66ea31a6e70dba91" name="gafd162147cc335b1d66ea31a6e70dba91"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gafd162147cc335b1d66ea31a6e70dba91">&#9670;&#160;</a></span>SocketDNS_prefer_ipv6()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketDNS_prefer_ipv6 </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>prefer_ipv6</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set IPv6 preference for DNS resolution. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">prefer_ipv6</td><td>1 to prefer IPv6, 0 to prefer IPv4. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Controls whether IPv6 (AAAA records) or IPv4 (A records) addresses are preferred when both are available. Affects the ordering of addresses in resolution results.</p>
+<h2><a class="anchor" id="autotoc_md272"></a>
+Default</h2>
+<p>Default is 1 (prefer IPv6) per RFC 6724 recommendations.</p>
+<h2><a class="anchor" id="autotoc_md273"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Prefer IPv4 (legacy compatibility)</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91">SocketDNS_prefer_ipv6</a>(dns, 0);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Prefer IPv6 (modern default)</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91">SocketDNS_prefer_ipv6</a>(dns, 1);</div>
+<div class="ttc" id="agroup__dns_html_gafd162147cc335b1d66ea31a6e70dba91"><div class="ttname"><a href="group__dns.html#gafd162147cc335b1d66ea31a6e70dba91">SocketDNS_prefer_ipv6</a></div><div class="ttdeci">void SocketDNS_prefer_ipv6(SocketDNS_T dns, int prefer_ipv6)</div><div class="ttdoc">Set IPv6 preference for DNS resolution.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>This sets AI_ADDRCONFIG hints appropriately. System resolver may still return both address families.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>SocketHappyEyeballs for RFC 8305 dual-stack connection racing. </dd></dl>
 
 </div>
 </div>
@@ -3990,7 +4689,7 @@ docs/POLL.md cross-platform polling notes. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - internal mutex serializes queue/hash operations.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md252"></a>
+<h2><a class="anchor" id="autotoc_md258"></a>
 Error Codes from getaddrinfo()</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -4008,7 +4707,7 @@ Error Codes from getaddrinfo()</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">EAI_CANCELED   </td><td class="markdownTableBodyNone">User cancelled   </td><td class="markdownTableBodyNone">No (retry new request)   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md253"></a>
+<h2><a class="anchor" id="autotoc_md259"></a>
 Callback Mode Usage</h2>
 <div class="fragment"><div class="line"><span class="keyword">static</span> <span class="keywordtype">void</span> my_dns_callback(<a class="code hl_struct" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req, <span class="keyword">struct</span> addrinfo *res,</div>
 <div class="line">                            <span class="keywordtype">int</span> err, <span class="keywordtype">void</span> *data) {</div>
@@ -4028,8 +4727,8 @@ Callback Mode Usage</h2>
 <div class="line"><a class="code hl_struct" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req = <a class="code hl_function" href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253">SocketDNS_resolve</a>(dns, <span class="stringliteral">&quot;api.example.com&quot;</span>, 443,</div>
 <div class="line">                                             my_dns_callback, ctx);</div>
 <div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00544">SocketUtil.h:544</a></div></div>
-<div class="ttc" id="agroup__dns_html_ac9f3fa1aca3eb39a39d6e3777fc49273"><div class="ttname"><a href="group__dns.html#ac9f3fa1aca3eb39a39d6e3777fc49273">SocketDNS_Request_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00212">SocketDNS-private.h:212</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md254"></a>
+<div class="ttc" id="agroup__dns_html_ac9f3fa1aca3eb39a39d6e3777fc49273"><div class="ttname"><a href="group__dns.html#ac9f3fa1aca3eb39a39d6e3777fc49273">SocketDNS_Request_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketDNS-private_8h_source.html#l00213">SocketDNS-private.h:213</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md260"></a>
 Polling Mode Usage (Event Loop)</h2>
 <div class="fragment"><div class="line"><span class="comment">// Track requests in application state</span></div>
 <div class="line"><span class="keyword">struct </span>PendingDNS { <a class="code hl_struct" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a> *req; <span class="keywordtype">void</span> *userdata; };</div>
@@ -4078,6 +4777,8 @@ Polling Mode Usage (Event Loop)</h2>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> queue limits for DoS mitigation. </dd>
 <dd>
 docs/ERROR_HANDLING.md getaddrinfo error categorization. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -4164,6 +4865,152 @@ docs/ERROR_HANDLING.md getaddrinfo error categorization. </dd></dl>
 <a class="el" href="group__foundation.html">Core Foundation Modules</a> for arena allocation patterns. </dd>
 <dd>
 <a class="el" href="group__dns.html">Asynchronous DNS Resolution</a> for asynchronous DNS resolution overview. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga686f6e19ce68debbdbb9638b1a60b573" name="ga686f6e19ce68debbdbb9638b1a60b573"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga686f6e19ce68debbdbb9638b1a60b573">&#9670;&#160;</a></span>SocketDNS_set_nameservers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketDNS_set_nameservers </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char **&#160;</td>
+          <td class="paramname"><em>servers</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set custom nameservers for DNS resolution. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">servers</td><td>Array of nameserver IP addresses (NULL-terminated). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">count</td><td>Number of servers in array. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 if custom nameservers not supported. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Configures custom DNS nameservers instead of using system resolv.conf. This is useful for applications that need to use specific DNS servers (e.g., DNS-over-HTTPS, private DNS, or fallback servers).</p>
+<h2><a class="anchor" id="autotoc_md274"></a>
+Platform Support</h2>
+<p>This function requires platform-specific resolver configuration:</p><ul>
+<li><b>Linux</b>: Uses res_init() with modified _res structure</li>
+<li><b>macOS/BSD</b>: Limited support via dns_open()/dns_search()</li>
+<li><b>Windows</b>: Requires different API (not supported)</li>
+</ul>
+<p>If custom nameservers are not supported on the platform, this function returns -1 and the system resolver continues to be used.</p>
+<h2><a class="anchor" id="autotoc_md275"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *servers[] = {<span class="stringliteral">&quot;8.8.8.8&quot;</span>, <span class="stringliteral">&quot;8.8.4.4&quot;</span>, NULL};</div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573">SocketDNS_set_nameservers</a>(dns, servers, 2) &lt; 0) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Custom nameservers not supported, using system resolver\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__dns_html_ga686f6e19ce68debbdbb9638b1a60b573"><div class="ttname"><a href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573">SocketDNS_set_nameservers</a></div><div class="ttdeci">int SocketDNS_set_nameservers(SocketDNS_T dns, const char **servers, size_t count)</div><div class="ttdoc">Set custom nameservers for DNS resolution.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Changes affect only this resolver instance, not system-wide. </dd>
+<dd>
+Pass NULL and count=0 to revert to system nameservers.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e" title="Set DNS search domains for hostname resolution.">SocketDNS_set_search_domains()</a> for search path configuration. </dd></dl>
+
+</div>
+</div>
+<a id="gae01bb71c26d598319a2fdfe043bf455e" name="gae01bb71c26d598319a2fdfe043bf455e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae01bb71c26d598319a2fdfe043bf455e">&#9670;&#160;</a></span>SocketDNS_set_search_domains()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketDNS_set_search_domains </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a>&#160;</td>
+          <td class="paramname"><em>dns</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char **&#160;</td>
+          <td class="paramname"><em>domains</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>count</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set DNS search domains for hostname resolution. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">dns</td><td>DNS resolver instance. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">domains</td><td>Array of search domain strings (NULL-terminated). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">count</td><td>Number of domains in array. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 if custom search domains not supported. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - protected by internal mutex.</dt><dd></dd></dl>
+<p>Configures DNS search domains for resolving unqualified hostnames. When resolving a name like "myserver", the resolver will try "myserver.domain1", "myserver.domain2", etc.</p>
+<h2><a class="anchor" id="autotoc_md276"></a>
+Platform Support</h2>
+<p>Similar to <a class="el" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573" title="Set custom nameservers for DNS resolution.">SocketDNS_set_nameservers()</a>, this requires platform support.</p>
+<h2><a class="anchor" id="autotoc_md277"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *domains[] = {<span class="stringliteral">&quot;internal.company.com&quot;</span>, <span class="stringliteral">&quot;company.com&quot;</span>, NULL};</div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e">SocketDNS_set_search_domains</a>(dns, domains, 2) &lt; 0) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Custom search domains not supported\n&quot;</span>);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Now &quot;myserver&quot; resolves as &quot;myserver.internal.company.com&quot; first</span></div>
+<div class="line"><a class="code hl_function" href="group__dns.html#ga380629d9c1650963341d1fe1dacd3253">SocketDNS_resolve</a>(dns, <span class="stringliteral">&quot;myserver&quot;</span>, 80, callback, data);</div>
+<div class="ttc" id="agroup__dns_html_gae01bb71c26d598319a2fdfe043bf455e"><div class="ttname"><a href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e">SocketDNS_set_search_domains</a></div><div class="ttdeci">int SocketDNS_set_search_domains(SocketDNS_T dns, const char **domains, size_t count)</div><div class="ttdoc">Set DNS search domains for hostname resolution.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Pass NULL and count=0 to revert to system search domains.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573" title="Set custom nameservers for DNS resolution.">SocketDNS_set_nameservers()</a> for nameserver configuration. </dd></dl>
 
 </div>
 </div>

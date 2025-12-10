@@ -198,6 +198,27 @@ Macros</h2></td></tr>
 <tr class="memitem:gaa6d9e9b8f4116f114766da91e8dd0744" id="r_gaa6d9e9b8f4116f114766da91e8dd0744"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa6d9e9b8f4116f114766da91e8dd0744">SOCKET_POOL_STATS_WINDOW_SEC</a>&#160;&#160;&#160;60</td></tr>
 <tr class="memdesc:gaa6d9e9b8f4116f114766da91e8dd0744"><td class="mdescLeft">&#160;</td><td class="mdescRight">Time window for pool statistics calculation.  <br /></td></tr>
 <tr class="separator:gaa6d9e9b8f4116f114766da91e8dd0744"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa74a3828cb86356140cb80cd1d0e688e" id="r_gaa74a3828cb86356140cb80cd1d0e688e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa74a3828cb86356140cb80cd1d0e688e">SOCKET_POOL_MAX_RATE_PER_SEC</a>&#160;&#160;&#160;1000000</td></tr>
+<tr class="memdesc:gaa74a3828cb86356140cb80cd1d0e688e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum rate limit value (connections per second).  <br /></td></tr>
+<tr class="separator:gaa74a3828cb86356140cb80cd1d0e688e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7ea8374cf5055b8fe5b30a0f57b4405e" id="r_ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga7ea8374cf5055b8fe5b30a0f57b4405e">SOCKET_POOL_MAX_BURST_MULTIPLIER</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum burst multiplier relative to rate.  <br /></td></tr>
+<tr class="separator:ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91891177acf4458552ad96ff6e2ae29e" id="r_ga91891177acf4458552ad96ff6e2ae29e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga91891177acf4458552ad96ff6e2ae29e">SOCKET_POOL_MAX_CONNECTIONS_PER_IP</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:ga91891177acf4458552ad96ff6e2ae29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum connections allowed per IP address.  <br /></td></tr>
+<tr class="separator:ga91891177acf4458552ad96ff6e2ae29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa73d5adbdff8bd8738401ab2b2a7a9a3" id="r_gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa73d5adbdff8bd8738401ab2b2a7a9a3">SOCKET_POOL_TOKENS_PER_ACCEPT</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tokens consumed per connection accept.  <br /></td></tr>
+<tr class="separator:gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae461bf5ddae6eda683926a6303af87f6" id="r_gae461bf5ddae6eda683926a6303af87f6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>&#160;&#160;&#160;&quot;SocketPool&quot;</td></tr>
+<tr class="memdesc:gae461bf5ddae6eda683926a6303af87f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default log component for all SocketPool implementation files.  <br /></td></tr>
+<tr class="separator:gae461bf5ddae6eda683926a6303af87f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga019e030e52afae45ed11af4470267f3d" id="r_ga019e030e52afae45ed11af4470267f3d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga019e030e52afae45ed11af4470267f3d">POOL_LOCK</a>(p)</td></tr>
+<tr class="memdesc:ga019e030e52afae45ed11af4470267f3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire pool mutex.  <br /></td></tr>
+<tr class="separator:ga019e030e52afae45ed11af4470267f3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab23175b8e98780e2f7f52a917e7d0862" id="r_gab23175b8e98780e2f7f52a917e7d0862"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gab23175b8e98780e2f7f52a917e7d0862">POOL_UNLOCK</a>(p)</td></tr>
+<tr class="memdesc:gab23175b8e98780e2f7f52a917e7d0862"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release pool mutex.  <br /></td></tr>
+<tr class="separator:gab23175b8e98780e2f7f52a917e7d0862"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a354a257cb7d9a1f7cd2befa6d72d0f" id="r_ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4a354a257cb7d9a1f7cd2befa6d72d0f">SOCKET_HASH_SIZE</a>&#160;&#160;&#160;<a class="el" href="group__foundation.html#ga9aab9f1282519c6c66aca1271deffe84">SOCKET_HASH_TABLE_SIZE</a></td></tr>
 <tr class="memdesc:ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Alias for the library's central hash table size configuration.  <br /></td></tr>
 <tr class="separator:ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,6 +252,12 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga6ec7b7f0dae3b1366f32f93294dc8b4a" id="r_ga6ec7b7f0dae3b1366f32f93294dc8b4a"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga6ec7b7f0dae3b1366f32f93294dc8b4a">SocketPool_ResizeCallback</a>) (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, size_t old_size, size_t new_size, void *data)</td></tr>
 <tr class="memdesc:ga6ec7b7f0dae3b1366f32f93294dc8b4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback invoked after pool resize.  <br /></td></tr>
 <tr class="separator:ga6ec7b7f0dae3b1366f32f93294dc8b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga18f3ff7614b9968e5cc27f2017a0f058" id="r_ga18f3ff7614b9968e5cc27f2017a0f058"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga18f3ff7614b9968e5cc27f2017a0f058">SocketPool_IdleCallback</a>) (Connection_T conn, void *data)</td></tr>
+<tr class="memdesc:ga18f3ff7614b9968e5cc27f2017a0f058"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback invoked when a connection becomes idle.  <br /></td></tr>
+<tr class="separator:ga18f3ff7614b9968e5cc27f2017a0f058"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga1277558455541e0ec64e20bf8d21b71c" id="r_ga1277558455541e0ec64e20bf8d21b71c"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c">SocketPool_Predicate</a>) (Connection_T conn, void *data)</td></tr>
+<tr class="memdesc:ga1277558455541e0ec64e20bf8d21b71c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Predicate callback for filtering connections.  <br /></td></tr>
+<tr class="separator:ga1277558455541e0ec64e20bf8d21b71c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga5441c8cf779cd74fbb9f39bd322c33bd" id="r_ga5441c8cf779cd74fbb9f39bd322c33bd"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga5441c8cf779cd74fbb9f39bd322c33bd">SocketPool_ConnectCallback</a>) (Connection_T conn, int error, void *data)</td></tr>
 <tr class="memdesc:ga5441c8cf779cd74fbb9f39bd322c33bd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Completion callback for async connections.  <br /></td></tr>
 <tr class="separator:ga5441c8cf779cd74fbb9f39bd322c33bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -413,6 +440,12 @@ Functions</h2></td></tr>
 <tr class="memitem:gab6ffb3b44d5214daeed16af0c4cae08c" id="r_gab6ffb3b44d5214daeed16af0c4cae08c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gab6ffb3b44d5214daeed16af0c4cae08c">SocketPool_foreach</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, void(*func)(Connection_T, void *), void *arg)</td></tr>
 <tr class="memdesc:gab6ffb3b44d5214daeed16af0c4cae08c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterate over active connections.  <br /></td></tr>
 <tr class="separator:gab6ffb3b44d5214daeed16af0c4cae08c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3180e20634cf447edc962d5cdbf7253f" id="r_ga3180e20634cf447edc962d5cdbf7253f"><td class="memItemLeft" align="right" valign="top">Connection_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f">SocketPool_find</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, <a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c">SocketPool_Predicate</a> predicate, void *userdata)</td></tr>
+<tr class="memdesc:ga3180e20634cf447edc962d5cdbf7253f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find first connection matching a predicate.  <br /></td></tr>
+<tr class="separator:ga3180e20634cf447edc962d5cdbf7253f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga90825b0b38b8aa9afef5fc1d63458dac" id="r_ga90825b0b38b8aa9afef5fc1d63458dac"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac">SocketPool_filter</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, <a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c">SocketPool_Predicate</a> predicate, void *userdata, Connection_T *results, size_t max_results)</td></tr>
+<tr class="memdesc:ga90825b0b38b8aa9afef5fc1d63458dac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Find all connections matching a predicate.  <br /></td></tr>
+<tr class="separator:ga90825b0b38b8aa9afef5fc1d63458dac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gaaeff7efb1109a312f56e35689b67c652" id="r_gaaeff7efb1109a312f56e35689b67c652"><td class="memItemLeft" align="right" valign="top">Socket_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket</a> (const Connection_T conn)</td></tr>
 <tr class="memdesc:gaaeff7efb1109a312f56e35689b67c652"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get connection's socket.  <br /></td></tr>
 <tr class="separator:gaaeff7efb1109a312f56e35689b67c652"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -548,6 +581,21 @@ Functions</h2></td></tr>
 <tr class="memitem:ga2f8bfb464d9ab7068fefa9c0ba57c436" id="r_ga2f8bfb464d9ab7068fefa9c0ba57c436"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga2f8bfb464d9ab7068fefa9c0ba57c436">SocketPool_reset_stats</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
 <tr class="memdesc:ga2f8bfb464d9ab7068fefa9c0ba57c436"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset pool statistics counters.  <br /></td></tr>
 <tr class="separator:ga2f8bfb464d9ab7068fefa9c0ba57c436"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga19433078a67ca838968245b41644fe7c" id="r_ga19433078a67ca838968245b41644fe7c"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga19433078a67ca838968245b41644fe7c">SocketPool_get_idle_count</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ga19433078a67ca838968245b41644fe7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get count of currently idle connections.  <br /></td></tr>
+<tr class="separator:ga19433078a67ca838968245b41644fe7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga996b6e1e70230dec597386572109b873" id="r_ga996b6e1e70230dec597386572109b873"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga996b6e1e70230dec597386572109b873">SocketPool_get_active_count</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ga996b6e1e70230dec597386572109b873"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get count of currently active connections.  <br /></td></tr>
+<tr class="separator:ga996b6e1e70230dec597386572109b873"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga86d406e9dc8b20a64731630a38b5f027" id="r_ga86d406e9dc8b20a64731630a38b5f027"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga86d406e9dc8b20a64731630a38b5f027">SocketPool_get_hit_rate</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ga86d406e9dc8b20a64731630a38b5f027"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get connection reuse rate (hit rate).  <br /></td></tr>
+<tr class="separator:ga86d406e9dc8b20a64731630a38b5f027"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4cef8507b62e5092e9064800c84f296f" id="r_ga4cef8507b62e5092e9064800c84f296f"><td class="memItemLeft" align="right" valign="top">size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4cef8507b62e5092e9064800c84f296f">SocketPool_shrink</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool)</td></tr>
+<tr class="memdesc:ga4cef8507b62e5092e9064800c84f296f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release unused pool capacity.  <br /></td></tr>
+<tr class="separator:ga4cef8507b62e5092e9064800c84f296f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa0f0813679f7ffbff6ff75adb3678c8c" id="r_gaa0f0813679f7ffbff6ff75adb3678c8c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c">SocketPool_set_idle_callback</a> (<a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> pool, <a class="el" href="group__connection__mgmt.html#ga18f3ff7614b9968e5cc27f2017a0f058">SocketPool_IdleCallback</a> cb, void *data)</td></tr>
+<tr class="memdesc:gaa0f0813679f7ffbff6ff75adb3678c8c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register callback for when connections become idle.  <br /></td></tr>
+<tr class="separator:gaa0f0813679f7ffbff6ff75adb3678c8c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gadeb31a2cef7f4d6b590baf9c3e4fd048" id="r_gadeb31a2cef7f4d6b590baf9c3e4fd048"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gadeb31a2cef7f4d6b590baf9c3e4fd048">Connection_created_at</a> (const Connection_T conn)</td></tr>
 <tr class="memdesc:gadeb31a2cef7f4d6b590baf9c3e4fd048"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get connection creation timestamp.  <br /></td></tr>
 <tr class="separator:gadeb31a2cef7f4d6b590baf9c3e4fd048"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -738,7 +786,7 @@ Connection_* accessor functions in <a class="el" href="SocketPool_8h.html" title
 <dd>
 <a class="el" href="group__connection__mgmt.html#gacdffcf1802367df60db15c649fc7072d" title="Remove socket from pool.">SocketPool_remove()</a> for connection removal. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00268">268</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00324">324</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for Connection_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -906,7 +954,7 @@ AsyncConnectContext_T for opaque typedef. </dd>
 <dd>
 <a class="el" href="SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module.">SocketPool-private.h</a> for internal async connect details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00352">352</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00408">408</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-2-trigger" src="closed.png" alt="+"/> Collaboration diagram for AsyncConnectContext_T:</div>
 <div id="dynsection-2-summary" class="dynsummary" style="display:block;">
@@ -981,7 +1029,7 @@ user_data</td>
 <dd>
 <a class="el" href="group__connection__mgmt.html#structSocketPool__Stats" title="Pool statistics snapshot structure.">SocketPool_Stats</a> for field descriptions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01375">1375</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01492">1492</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -1182,14 +1230,14 @@ total_validation_failures</td>
 <div class="ttc" id="agroup__reconnect__private_html_a84b94071188ac92ecae8453cdbe0a604"><div class="ttname"><a href="group__reconnect__private.html#a84b94071188ac92ecae8453cdbe0a604">SocketReconnect_T::host</a></div><div class="ttdeci">char * host</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00304">SocketReconnect-private.h:304</a></div></div>
 <div class="ttc" id="agroup__reconnect__private_html_a9e409328803ca46c73908e0f6b35b275"><div class="ttname"><a href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">SocketReconnect_T::port</a></div><div class="ttdeci">int port</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00307">SocketReconnect-private.h:307</a></div></div>
 <div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00296">SocketReconnect-private.h:297</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md461"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md539"></a>
 Thread Safety Characteristics</h2>
 <ul>
 <li>Not thread-safe: All operations must occur from the same thread</li>
 <li>Callbacks execute in the caller's thread context</li>
 <li>Internal state protected by non-reentrant design</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md462"></a>
+<h2><a class="anchor" id="autotoc_md540"></a>
 Integration Notes</h2>
 <ul>
 <li>For event-driven apps: Use <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">pollfd()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">process()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">tick()</a>, <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">next_timeout_ms()</a></li>
@@ -1208,7 +1256,7 @@ Integration Notes</h2>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5" title="Get the underlying Socket_T when connected.">SocketReconnect_socket()</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Underlying</a> <a class="el" href="group__reconnect__private.html#a8a5a023250774eb20e665286b9f1126c">socket</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">access</a> </dd>
 <dd>
-<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...">SocketReconnect_Policy_T</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Configuration</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">options</a> </dd></dl>
+<a class="el" href="group__connection__mgmt.html#structSocketReconnect__Policy__T" title="Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...">SocketReconnect_Policy_T</a> <a class="el" href="group__reconnect__private.html#a9e409328803ca46c73908e0f6b35b275">Configuration</a> options </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketReconnect-private_8h_source.html#l00296">296</a> of file <a class="el" href="SocketReconnect-private_8h_source.html">SocketReconnect-private.h</a>.</p>
 </div><div id="dynsection-3" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -1411,10 +1459,10 @@ userdata</td>
 <li><b>Health Monitoring</b>: Periodic checks to detect connection degradation early</li>
 </ul>
 <p>All fields are optional if using defaults via <a class="el" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212" title="Populate a SocketReconnect_Policy_T with safe, production-recommended default values.">SocketReconnect_policy_defaults()</a>. Invalid values (e.g., negative delays, multiplier &lt;= 1.0) may raise SocketReconnect_Failed.</p>
-<h2><a class="anchor" id="autotoc_md466"></a>
+<h2><a class="anchor" id="autotoc_md544"></a>
 Field Documentation</h2>
 <p>See individual field comments for details. Recommended to start with defaults and tune based on application needs.</p>
-<h2><a class="anchor" id="autotoc_md467"></a>
+<h2><a class="anchor" id="autotoc_md545"></a>
 Default Values Table</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -1438,7 +1486,7 @@ Default Values Table</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">health_check_timeout_ms   </td><td class="markdownTableBodyNone">5000   </td><td class="markdownTableBodyNone">&gt;0, max block time for check   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md468"></a>
+<h2><a class="anchor" id="autotoc_md546"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> policy;</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a>(&amp;policy);</div>
@@ -1535,6 +1583,80 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 </div>
 </div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="ga019e030e52afae45ed11af4470267f3d" name="ga019e030e52afae45ed11af4470267f3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga019e030e52afae45ed11af4470267f3d">&#9670;&#160;</a></span>POOL_LOCK</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define POOL_LOCK</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">p</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                          \</div>
+<div class="line">    {                                                                         \</div>
+<div class="line">      pthread_mutex_lock (&amp;(p)-&gt;mutex);                                       \</div>
+<div class="line">    }                                                                         \</div>
+<div class="line">  while (0)</div>
+</div><!-- fragment -->
+<p>Acquire pool mutex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">p</td><td>Pool instance.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Convenience macro for consistent mutex locking across implementation files.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gab23175b8e98780e2f7f52a917e7d0862" title="Release pool mutex.">POOL_UNLOCK</a> for releasing the mutex. </dd>
+<dd>
+pthread_mutex_lock() for underlying operation. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00116">116</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+
+</div>
+</div>
+<a id="gab23175b8e98780e2f7f52a917e7d0862" name="gab23175b8e98780e2f7f52a917e7d0862"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gab23175b8e98780e2f7f52a917e7d0862">&#9670;&#160;</a></span>POOL_UNLOCK</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define POOL_UNLOCK</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">p</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                          \</div>
+<div class="line">    {                                                                         \</div>
+<div class="line">      pthread_mutex_unlock (&amp;(p)-&gt;mutex);                                     \</div>
+<div class="line">    }                                                                         \</div>
+<div class="line">  while (0)</div>
+</div><!-- fragment -->
+<p>Release pool mutex. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">p</td><td>Pool instance.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Convenience macro for consistent mutex unlocking across implementation files.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga019e030e52afae45ed11af4470267f3d" title="Acquire pool mutex.">POOL_LOCK</a> for acquiring the mutex. </dd>
+<dd>
+pthread_mutex_unlock() for underlying operation. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00133">133</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+
+</div>
+</div>
 <a id="gaf1430b907c84491b37ab7b18f7fd75a4" name="gaf1430b907c84491b37ab7b18f7fd75a4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gaf1430b907c84491b37ab7b18f7fd75a4">&#9670;&#160;</a></span>RAISE_POOL_ERROR</h2>
 
@@ -1569,7 +1691,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <dd>
 <a class="el" href="group__connection__mgmt.html#gadba094d10381f1646de6a3e1e2bd0c36" title="Pool operation failure.">SocketPool_Failed</a> exception type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00164">164</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00220">220</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
 </div>
 </div>
@@ -1617,7 +1739,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <dd>
 <a class="el" href="group__connection__mgmt.html#gaf1430b907c84491b37ab7b18f7fd75a4" title="Raise exception with detailed error message.">RAISE_POOL_ERROR</a> for direct exception raising. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00201">201</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00257">257</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
 </div>
 </div>
@@ -1665,7 +1787,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <dd>
 <a class="el" href="group__connection__mgmt.html#gaf1430b907c84491b37ab7b18f7fd75a4" title="Raise exception with detailed error message.">RAISE_POOL_ERROR</a> for direct exception raising. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00183">183</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00239">239</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
 </div>
 </div>
@@ -1684,7 +1806,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Default idle timeout. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pool timeouts. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01396">1396</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01433">1433</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1703,7 +1825,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Default pool buffer size. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01559">1559</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01596">1596</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1722,7 +1844,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Default connection pool size. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01549">1549</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01586">1586</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1754,7 +1876,26 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <dd>
 <a class="el" href="group__foundation.html#gae5597cbeaa3012e797eb99aaf9570030" title="Golden ratio constant for multiplicative hashing.">HASH_GOLDEN_RATIO</a> constant in <a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for hash multiplier. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00111">111</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00167">167</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+
+</div>
+</div>
+<a id="gae461bf5ddae6eda683926a6303af87f6" name="gae461bf5ddae6eda683926a6303af87f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae461bf5ddae6eda683926a6303af87f6">&#9670;&#160;</a></span>SOCKET_LOG_COMPONENT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_LOG_COMPONENT&#160;&#160;&#160;&quot;SocketPool&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Default log component for all SocketPool implementation files. </p>
+<p>Overrides SOCKET_LOG_COMPONENT from <a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for consistent logging. Each implementation file (.c) should not need to redefine this. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00099">99</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
 </div>
 </div>
@@ -1772,7 +1913,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 
 <p>Percentage divisor for calculations. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01601">1601</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01638">1638</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1791,7 +1932,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Default pool prewarm percentage. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01569">1569</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01606">1606</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1811,7 +1952,7 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Prevents resource exhaustion from excessive concurrent connect attempts. Security: Limits memory consumption from async context allocations.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01592">1592</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01629">1629</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1830,7 +1971,71 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Maximum batch accepts per iteration. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01579">1579</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01616">1616</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ga7ea8374cf5055b8fe5b30a0f57b4405e" name="ga7ea8374cf5055b8fe5b30a0f57b4405e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga7ea8374cf5055b8fe5b30a0f57b4405e">&#9670;&#160;</a></span>SOCKET_POOL_MAX_BURST_MULTIPLIER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_POOL_MAX_BURST_MULTIPLIER&#160;&#160;&#160;100</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum burst multiplier relative to rate. </p>
+<p>Limits burst size to prevent memory exhaustion in rate limiter. Burst capacity = rate * multiplier.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga204d43047f820499ae59b7984f00b148" title="Set connection rate limit.">SocketPool_setconnrate()</a> for rate limiting. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01685">1685</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="ga91891177acf4458552ad96ff6e2ae29e" name="ga91891177acf4458552ad96ff6e2ae29e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga91891177acf4458552ad96ff6e2ae29e">&#9670;&#160;</a></span>SOCKET_POOL_MAX_CONNECTIONS_PER_IP</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_POOL_MAX_CONNECTIONS_PER_IP&#160;&#160;&#160;10000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum connections allowed per IP address. </p>
+<p>Security limit to prevent single-source attacks via per-IP limiting. Generous default allows legitimate load balancers while limiting abuse.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gaf8991c65cdec81d2a8db01a2f820a42b" title="Set maximum connections per IP.">SocketPool_setmaxperip()</a> for per-IP limiting. </dd>
+<dd>
+<a class="el" href="group__ip__tracker.html#ga763b573474982e2761d5b7fbdf9155fc">SocketIPTracker_T</a> for IP tracking implementation. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01699">1699</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="gaa74a3828cb86356140cb80cd1d0e688e" name="gaa74a3828cb86356140cb80cd1d0e688e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa74a3828cb86356140cb80cd1d0e688e">&#9670;&#160;</a></span>SOCKET_POOL_MAX_RATE_PER_SEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_POOL_MAX_RATE_PER_SEC&#160;&#160;&#160;1000000</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Maximum rate limit value (connections per second). </p>
+<p>Security limit to prevent resource exhaustion from overly permissive rate configurations. Practical upper bound for most servers.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga204d43047f820499ae59b7984f00b148" title="Set connection rate limit.">SocketPool_setconnrate()</a> for rate limiting. </dd>
+<dd>
+<a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for token bucket implementation. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01672">1672</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1849,7 +2054,27 @@ Multiplier for exponential backoff (default: 2.0). New delay = previous * multip
 <p>Time window for pool statistics calculation. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pooling. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01621">1621</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01658">1658</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+
+</div>
+</div>
+<a id="gaa73d5adbdff8bd8738401ab2b2a7a9a3" name="gaa73d5adbdff8bd8738401ab2b2a7a9a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa73d5adbdff8bd8738401ab2b2a7a9a3">&#9670;&#160;</a></span>SOCKET_POOL_TOKENS_PER_ACCEPT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define SOCKET_POOL_TOKENS_PER_ACCEPT&#160;&#160;&#160;1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Tokens consumed per connection accept. </p>
+<p>Number of rate limit tokens consumed per successful connection accept. Typically 1 for simple connection counting.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gabd8219ceff615ad4a4064cf389f137a6" title="Accept connection with rate limiting.">SocketPool_accept_limited()</a> for rate-limited accepting. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01712">1712</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -2008,7 +2233,7 @@ utilities::SocketRateLimit_T for rate limiting details.</dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga847e3ae8d165d8a999ef76a68d21ffa5" title="Enable SYN flood protection for pool.">SocketPool_set_syn_protection()</a> for SYN flood protection. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00468">468</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00524">524</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
 </div>
 </div>
@@ -2079,7 +2304,7 @@ async_dns for async DNS patterns. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga5441c8cf779cd74fbb9f39bd322c33bd" title="Completion callback for async connections.">SocketPool_ConnectCallback</a> for callback requirements. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00195">195</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00236">236</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -2111,7 +2336,77 @@ async_dns for async DNS patterns. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga2cbe6c95119cbb4b30f981b9d07f3e9b" title="Poll drain progress (non-blocking).">SocketPool_drain_poll()</a> for non-blocking drain monitoring. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01053">1053</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01170">1170</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+
+</div>
+</div>
+<a id="ga18f3ff7614b9968e5cc27f2017a0f058" name="ga18f3ff7614b9968e5cc27f2017a0f058"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga18f3ff7614b9968e5cc27f2017a0f058">&#9670;&#160;</a></span>SocketPool_IdleCallback</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* SocketPool_IdleCallback) (Connection_T conn, void *data)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Callback invoked when a connection becomes idle. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> that became idle. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>User data from <a class="el" href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c" title="Register callback for when connections become idle.">SocketPool_set_idle_callback()</a>.</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Called when a connection transitions to idle state (e.g., after being returned to the pool or after activity timeout). Useful for connection monitoring, logging, or cleanup of per-connection state.</p>
+<p>THREAD SAFETY REQUIREMENTS:</p><ul>
+<li>MAY be called from pool operations with pool mutex held</li>
+<li>MUST NOT call SocketPool_add/remove/get (will deadlock)</li>
+<li>SHOULD complete quickly (&lt;1ms) to avoid blocking pool ops</li>
+<li>MAY use Connection_* accessors safely</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c" title="Register callback for when connections become idle.">SocketPool_set_idle_callback()</a> for registration. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga76151bb579f44bdf79aeca57dbd8122e" title="Set idle connection timeout.">SocketPool_set_idle_timeout()</a> for automatic idle cleanup. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00187">187</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+
+</div>
+</div>
+<a id="ga1277558455541e0ec64e20bf8d21b71c" name="ga1277558455541e0ec64e20bf8d21b71c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga1277558455541e0ec64e20bf8d21b71c">&#9670;&#160;</a></span>SocketPool_Predicate</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int(* SocketPool_Predicate) (Connection_T conn, void *data)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Predicate callback for filtering connections. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir"></td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to test. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>User data from SocketPool_find/filter(). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Non-zero if connection matches criteria, 0 otherwise.</dd></dl>
+<p>Used with <a class="el" href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f" title="Find first connection matching a predicate.">SocketPool_find()</a> and <a class="el" href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac" title="Find all connections matching a predicate.">SocketPool_filter()</a> to select connections based on custom criteria. Called with pool mutex held.</p>
+<p>THREAD SAFETY REQUIREMENTS:</p><ul>
+<li>Called with pool mutex held - keep operations quick</li>
+<li>MUST NOT call SocketPool_add/remove (will deadlock)</li>
+<li>MAY use Connection_* accessors safely</li>
+</ul>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f" title="Find first connection matching a predicate.">SocketPool_find()</a> for finding first matching connection. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac" title="Find all connections matching a predicate.">SocketPool_filter()</a> for finding all matching connections. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l00207">207</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -2223,14 +2518,14 @@ async_dns for async DNS patterns. </dd>
 <li>Triggering application-level actions (e.g., alert on CIRCUIT_OPEN)</li>
 <li>Custom backoff adjustments (but avoid blocking)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md469"></a>
+<h2><a class="anchor" id="autotoc_md547"></a>
 Invocation Guarantees</h2>
 <ul>
 <li>Called exactly once per state transition</li>
 <li>Non-reentrant: No nested calls from within callback</li>
 <li>Short-lived: Should complete quickly to avoid delaying I/O processing</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md470"></a>
+<h2><a class="anchor" id="autotoc_md548"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="keyword">static</span> <span class="keywordtype">void</span></div>
 <div class="line">state_change_cb(<a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn, <a class="code hl_enumeration" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> old,</div>
@@ -2292,7 +2587,7 @@ Usage Example</h2>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>1 if healthy (connection responsive), 0 if unhealthy (triggers BACKOFF transition)</dd></dl>
 <p>Invoked periodically (per policy.health_check_interval_ms) during CONNECTED state to proactively detect issues like high latency or partial failures. The check should verify application-level health if possible (e.g., ping endpoint, read heartbeat).</p>
-<h2><a class="anchor" id="autotoc_md471"></a>
+<h2><a class="anchor" id="autotoc_md549"></a>
 Requirements</h2>
 <ul>
 <li>Must complete within timeout_ms or risk blocking the event loop</li>
@@ -2300,14 +2595,14 @@ Requirements</h2>
 <li>Return 0 on any failure to err on side of caution</li>
 <li>Default: Polls socket for readability (detects dead peers)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md472"></a>
+<h2><a class="anchor" id="autotoc_md550"></a>
 Security Considerations</h2>
 <ul>
 <li>Respect timeout to prevent DoS from slow/malicious health checks</li>
 <li>Avoid external calls (DNS, HTTP) that could be exploited</li>
 <li>Use Socket_set_timeout() on socket if needed for check operations</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md473"></a>
+<h2><a class="anchor" id="autotoc_md551"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="keyword">static</span> <span class="keywordtype">int</span></div>
 <div class="line">my_health_check(<a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn, Socket_T sock, <span class="keywordtype">int</span> timeout_ms, <span class="keywordtype">void</span></div>
@@ -2371,7 +2666,7 @@ Usage Example</h2>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01280">1280</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01397">1397</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -2397,7 +2692,7 @@ Usage Example</h2>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01031">1031</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01148">1148</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -2423,7 +2718,7 @@ Usage Example</h2>
 </td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01020">1020</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool_8h_source.html#l01137">1137</a> of file <a class="el" href="SocketPool_8h_source.html">SocketPool.h</a>.</p>
 
 </div>
 </div>
@@ -2503,7 +2798,7 @@ Usage Example</h2>
 <li>CIRCUIT_OPEN: Circuit breaker tripped, blocking attempts until reset timeout</li>
 </ul>
 <p>Transitions are triggered by connect(), process(), tick(), send/recv errors, health checks, and timeouts.</p>
-<h2><a class="anchor" id="autotoc_md464"></a>
+<h2><a class="anchor" id="autotoc_md542"></a>
 State Transition Diagram</h2>
 <div class="fragment"><div class="line">+-------------+     connect()     +-------------+</div>
 <div class="line">| DISCONNECTED| ----------------&gt; | CONNECTING  |</div>
@@ -2531,7 +2826,7 @@ State Transition Diagram</h2>
 <div class="line">                                                             v</div>
 <div class="line">                                                      DISCONNECTED</div>
 <div class="ttc" id="agroup__connection__mgmt_html_ggad94358cbf0bb7d00f70705a6c5245433a2a8a3b681ff1a0abc1cf43de46db913e"><div class="ttname"><a href="group__connection__mgmt.html#ggad94358cbf0bb7d00f70705a6c5245433a2a8a3b681ff1a0abc1cf43de46db913e">CIRCUIT_OPEN</a></div><div class="ttdeci">@ CIRCUIT_OPEN</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00217">SocketReconnect-private.h:217</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md465"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md543"></a>
 State Properties Table</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -2754,7 +3049,7 @@ State Properties Table</h2>
 <dd>
 <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c" title="Opaque handle to a circular buffer instance.">SocketBuf_T</a> for buffer operations. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -2794,6 +3089,8 @@ State Properties Table</h2>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga21b17f01e3036b53fed194c6b3c0b95f" title="Retrieve Connection_T wrapper for a socket in the pool.">SocketPool_get()</a> for automatic activity timestamp updates. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gab2a7df0479b8f9ac899672afdb488b94" title="Remove idle connections.">SocketPool_cleanup()</a> for inactive connection removal. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00058">is_idle_connection()</a>.</p>
 
 </div>
 </div>
@@ -2873,7 +3170,7 @@ State Properties Table</h2>
 <dd>
 <a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c" title="Opaque handle to a circular buffer instance.">SocketBuf_T</a> for buffer operations. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -3011,7 +3308,7 @@ Socket_T for socket operations. </dd>
 <dd>
 <a class="el" href="group__core__io.html#ga4d727948c677509eec04746585819877" title="Get underlying file descriptor.">Socket_fd()</a> for getting file descriptor. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>, and <a class="el" href="connection__pool_8c_source.html#l00040">simulate_work_wrapper()</a>.</p>
 
 </div>
 </div>
@@ -3972,7 +4269,7 @@ utilities::SocketRateLimit_T for token bucket implementation. </dd></dl>
 <li>Allocation failure: Raises SocketPool_Failed</li>
 <li>Mutex deadlock (rare): Raises SocketPool_Failed</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md356"></a>
+<h2><a class="anchor" id="autotoc_md389"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">Socket_T client_sock = <a class="code hl_function" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a>(server_sock);</div>
 <div class="line"><span class="keywordflow">if</span> (client_sock != NULL) {</div>
@@ -4014,7 +4311,7 @@ Buffers are allocated from pool's arena - share lifecycle with pool. </dd></dl>
 <dd>
 Connection_T for connection wrapper details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4120,6 +4417,8 @@ Connection_T for connection wrapper details. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga618413d296dac8730047cf248273461e" title="Get active connection count.">SocketPool_count()</a> for counting connections. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga76151bb579f44bdf79aeca57dbd8122e" title="Set idle connection timeout.">SocketPool_set_idle_timeout()</a> for configuring timeout. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>.</p>
 
 </div>
 </div>
@@ -4519,7 +4818,7 @@ core_io::SocketBuf_T for buffer lifecycle management.</dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gab2a7df0479b8f9ac899672afdb488b94" title="Remove idle connections.">SocketPool_cleanup()</a> for removing idle connections. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4638,7 +4937,7 @@ Multiple calls are idempotent - extends timeout if already draining.</dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gad7679db7b1be62e465d9896944f3ad20" title="Notification callback when drain completes.">SocketPool_DrainCallback</a> for completion notifications. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4679,7 +4978,7 @@ Multiple calls are idempotent - extends timeout if already draining.</dd></dl>
 <p>Logs: "Pool drain forced" at WARN level.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068" title="Initiate graceful shutdown.">SocketPool_drain()</a> for graceful shutdown. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4723,7 +5022,7 @@ Multiple calls are idempotent - extends timeout if already draining.</dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gae14b85a2cd7a0a4302f84478840cfb23" title="Get time until forced shutdown.">SocketPool_drain_remaining_ms()</a> for timeout info. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4765,7 +5064,7 @@ Multiple calls are idempotent - extends timeout if already draining.</dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga2cbe6c95119cbb4b30f981b9d07f3e9b" title="Poll drain progress (non-blocking).">SocketPool_drain_poll()</a> for progress monitoring. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -4924,9 +5223,9 @@ reconnection for reconnection patterns. </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga8ae494bcc57f791a1f8cbcf48b96b9a8" title="Minimum buffer size per connection.">SOCKET_MIN_BUFFER_SIZE</a> and <a class="el" href="group__foundation.html#ga72443e4b95fbd8ef4d191b754b4324dc" title="Maximum buffer size per connection.">SOCKET_MAX_BUFFER_SIZE</a>. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01093">1093</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01154">1154</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00266">SOCKET_MAX_BUFFER_SIZE</a>, <a class="el" href="SocketConfig_8h_source.html#l00276">SOCKET_MIN_BUFFER_SIZE</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01061">socketpool_enforce_range()</a>.</p>
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00266">SOCKET_MAX_BUFFER_SIZE</a>, <a class="el" href="SocketConfig_8h_source.html#l00276">SOCKET_MIN_BUFFER_SIZE</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01122">socketpool_enforce_range()</a>.</p>
 
 </div>
 </div>
@@ -4967,9 +5266,9 @@ reconnection for reconnection patterns. </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga72f1e9bc10cc82fb4ee1915335d60152" title="Maximum number of connections in pool.">SOCKET_MAX_CONNECTIONS</a> for global limit. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01077">1077</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01138">1138</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00254">SOCKET_MAX_CONNECTIONS</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01061">socketpool_enforce_range()</a>.</p>
+<p class="reference">References <a class="el" href="SocketConfig_8h_source.html#l00254">SOCKET_MAX_CONNECTIONS</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01122">socketpool_enforce_range()</a>.</p>
 
 </div>
 </div>
@@ -5031,9 +5330,177 @@ reconnection for reconnection patterns. </dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18" title="Create a new connection pool.">SocketPool_new()</a> for parameter validation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01061">1061</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l01122">1122</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 
-<p class="reference">Referenced by <a class="el" href="SocketPool-private_8h_source.html#l01093">socketpool_enforce_buffer_size()</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01077">socketpool_enforce_max_connections()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="SocketPool-private_8h_source.html#l01154">socketpool_enforce_buffer_size()</a>, and <a class="el" href="SocketPool-private_8h_source.html#l01138">socketpool_enforce_max_connections()</a>.</p>
+
+</div>
+</div>
+<a id="ga90825b0b38b8aa9afef5fc1d63458dac" name="ga90825b0b38b8aa9afef5fc1d63458dac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga90825b0b38b8aa9afef5fc1d63458dac">&#9670;&#160;</a></span>SocketPool_filter()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketPool_filter </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c">SocketPool_Predicate</a>&#160;</td>
+          <td class="paramname"><em>predicate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>userdata</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Connection_T *&#160;</td>
+          <td class="paramname"><em>results</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t&#160;</td>
+          <td class="paramname"><em>max_results</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Find all connections matching a predicate. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">predicate</td><td>Callback that returns non-zero for matching connections. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">userdata</td><td>User data passed to predicate. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">results</td><td>Array to receive matching connections. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">max_results</td><td>Maximum number of results to return. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of matching connections found (may be less than max_results). </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - holds mutex during search.</dt><dd></dd></dl>
+<p>Iterates through active connections and returns all that match the predicate, up to max_results. Results array must be pre-allocated by caller.</p>
+<h2><a class="anchor" id="autotoc_md391"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> is_idle(Connection_T conn, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    time_t threshold = *(time_t *)data;</div>
+<div class="line">    <span class="keywordflow">return</span> time(NULL) - <a class="code hl_function" href="group__connection__mgmt.html#ga68397aca39e8902ee26108dcb86b5db1">Connection_lastactivity</a>(conn) &gt; threshold;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">Connection_T idle_conns[100];</div>
+<div class="line">time_t threshold = 300;  <span class="comment">// 5 minutes</span></div>
+<div class="line"><span class="keywordtype">size_t</span> count = <a class="code hl_function" href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac">SocketPool_filter</a>(pool, is_idle, &amp;threshold, idle_conns, 100);</div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">size_t</span> i = 0; i &lt; count; i++) {</div>
+<div class="line">    <span class="comment">// Process idle connection</span></div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__connection__mgmt_html_ga68397aca39e8902ee26108dcb86b5db1"><div class="ttname"><a href="group__connection__mgmt.html#ga68397aca39e8902ee26108dcb86b5db1">Connection_lastactivity</a></div><div class="ttdeci">time_t Connection_lastactivity(const Connection_T conn)</div><div class="ttdoc">Get connection's last activity timestamp.</div></div>
+<div class="ttc" id="agroup__connection__mgmt_html_ga90825b0b38b8aa9afef5fc1d63458dac"><div class="ttname"><a href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac">SocketPool_filter</a></div><div class="ttdeci">size_t SocketPool_filter(SocketPool_T pool, SocketPool_Predicate predicate, void *userdata, Connection_T *results, size_t max_results)</div><div class="ttdoc">Find all connections matching a predicate.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) - scans all active connections</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c" title="Predicate callback for filtering connections.">SocketPool_Predicate</a> for predicate requirements. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f" title="Find first connection matching a predicate.">SocketPool_find()</a> for finding first matching connection. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#gab6ffb3b44d5214daeed16af0c4cae08c" title="Iterate over active connections.">SocketPool_foreach()</a> for iterating all connections. </dd></dl>
+
+</div>
+</div>
+<a id="ga3180e20634cf447edc962d5cdbf7253f" name="ga3180e20634cf447edc962d5cdbf7253f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3180e20634cf447edc962d5cdbf7253f">&#9670;&#160;</a></span>SocketPool_find()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Connection_T SocketPool_find </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c">SocketPool_Predicate</a>&#160;</td>
+          <td class="paramname"><em>predicate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>userdata</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Find first connection matching a predicate. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">predicate</td><td>Callback that returns non-zero for matching connections. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">userdata</td><td>User data passed to predicate. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>First matching Connection_T or NULL if none found. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - holds mutex during search.</dt><dd></dd></dl>
+<p>Iterates through active connections and returns the first one for which predicate returns non-zero. Stops immediately on first match.</p>
+<h2><a class="anchor" id="autotoc_md390"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> is_client_ip(Connection_T conn, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *target_ip = (<span class="keyword">const</span> <span class="keywordtype">char</span> *)data;</div>
+<div class="line">    Socket_T sock = <a class="code hl_function" href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket</a>(conn);</div>
+<div class="line">    <span class="keywordflow">return</span> strcmp(<a class="code hl_function" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr</a>(sock), target_ip) == 0;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line">Connection_T conn = <a class="code hl_function" href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f">SocketPool_find</a>(pool, is_client_ip, <span class="stringliteral">&quot;192.168.1.100&quot;</span>);</div>
+<div class="line"><span class="keywordflow">if</span> (conn) {</div>
+<div class="line">    <span class="comment">// Found connection from that IP</span></div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__connection__mgmt_html_ga3180e20634cf447edc962d5cdbf7253f"><div class="ttname"><a href="group__connection__mgmt.html#ga3180e20634cf447edc962d5cdbf7253f">SocketPool_find</a></div><div class="ttdeci">Connection_T SocketPool_find(SocketPool_T pool, SocketPool_Predicate predicate, void *userdata)</div><div class="ttdoc">Find first connection matching a predicate.</div></div>
+<div class="ttc" id="agroup__connection__mgmt_html_gaaeff7efb1109a312f56e35689b67c652"><div class="ttname"><a href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket</a></div><div class="ttdeci">Socket_T Connection_socket(const Connection_T conn)</div><div class="ttdoc">Get connection's socket.</div></div>
+<div class="ttc" id="agroup__core__io_html_gab0957f43694d0728e70b23364a89623c"><div class="ttname"><a href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr</a></div><div class="ttdeci">const char * Socket_getpeeraddr(const Socket_T socket)</div><div class="ttdoc">Get peer IP address.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) worst case - scans until match or end</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga1277558455541e0ec64e20bf8d21b71c" title="Predicate callback for filtering connections.">SocketPool_Predicate</a> for predicate requirements. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga90825b0b38b8aa9afef5fc1d63458dac" title="Find all connections matching a predicate.">SocketPool_filter()</a> for finding all matching connections. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#gab6ffb3b44d5214daeed16af0c4cae08c" title="Iterate over active connections.">SocketPool_foreach()</a> for iterating all connections. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>.</p>
 
 </div>
 </div>
@@ -5090,6 +5557,8 @@ reconnection for reconnection patterns. </dd></dl>
 <dl class="section note"><dt>Note</dt><dd>O(n) scan; callback must not modify pool structure. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga618413d296dac8730047cf248273461e" title="Get active connection count.">SocketPool_count()</a> for getting connection count. </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>.</p>
+
 </div>
 </div>
 <a id="gafb57544a14c977302953fd36634bd004" name="gafb57544a14c977302953fd36634bd004"></a>
@@ -5124,7 +5593,7 @@ reconnection for reconnection patterns. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md354"></a>
+<h2><a class="anchor" id="autotoc_md387"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_function" href="group__connection__mgmt.html#gafb57544a14c977302953fd36634bd004">SocketPool_free</a>(&amp;pool);  <span class="comment">// Automatically closes pool resources</span></div>
 <div class="line"><span class="comment">// pool == NULL after call</span></div>
@@ -5138,7 +5607,7 @@ Usage Example</h2>
 <a class="el" href="group__connection__mgmt.html#gacdffcf1802367df60db15c649fc7072d" title="Remove socket from pool.">SocketPool_remove()</a> for individual connection cleanup. </dd></dl>
 <dl class="section user"><dt>Complexity\n O(1) - quick resource release, no socket operations</dt><dd></dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -5191,7 +5660,7 @@ Usage Example</h2>
 <li><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> unhealthy (disconnected, error, stale)</li>
 <li>Validation callback returns 0</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md355"></a>
+<h2><a class="anchor" id="autotoc_md388"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// In event loop, after poll indicates readable socket</span></div>
 <div class="line">Connection_T conn = <a class="code hl_function" href="group__connection__mgmt.html#ga21b17f01e3036b53fed194c6b3c0b95f">SocketPool_get</a>(pool, sock);</div>
@@ -5213,7 +5682,7 @@ Usage Example</h2>
 <div class="ttc" id="agroup__connection__mgmt_html_ga24170577512ce3a19fe195ab9c3576bf"><div class="ttname"><a href="group__connection__mgmt.html#ga24170577512ce3a19fe195ab9c3576bf">Connection_inbuf</a></div><div class="ttdeci">SocketBuf_T Connection_inbuf(const Connection_T conn)</div><div class="ttdoc">Get connection's input buffer.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga4aacfb9008833f24abec18b1d65d0d42"><div class="ttname"><a href="group__core__io.html#ga4aacfb9008833f24abec18b1d65d0d42">SocketBuf_read</a></div><div class="ttdeci">size_t SocketBuf_read(SocketBuf_T buf, void *data, size_t len)</div><div class="ttdoc">Read and remove data from the buffer.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga4f350e096708c438bc2002909325b143"><div class="ttname"><a href="group__core__io.html#ga4f350e096708c438bc2002909325b143">SocketBuf_available</a></div><div class="ttdeci">size_t SocketBuf_available(const SocketBuf_T buf)</div><div class="ttdoc">Query the number of bytes available for reading.</div></div>
-<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00114">SocketBuf.h:114</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00115">SocketBuf.h:115</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Automatically refreshes connection activity timestamp. </dd>
 <dd>
 Validation failures increment failure counters in pool stats. </dd></dl>
@@ -5230,6 +5699,142 @@ Connection_T accessors like <a class="el" href="group__connection__mgmt.html#gaa
 <a class="el" href="group__foundation.html#ga62f7a03bb960ab153cb4b8dd0f114980" title="Hash file descriptor using golden ratio multiplicative.">socket_util_hash_fd()</a> for underlying hash function. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> for full connection lifecycle. </dd></dl>
+
+</div>
+</div>
+<a id="ga996b6e1e70230dec597386572109b873" name="ga996b6e1e70230dec597386572109b873"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga996b6e1e70230dec597386572109b873">&#9670;&#160;</a></span>SocketPool_get_active_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketPool_get_active_count </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get count of currently active connections. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of active connections in the pool. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic read.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1).</dt><dd></dd></dl>
+<p>Convenience wrapper around <a class="el" href="group__connection__mgmt.html#ga8289eac993efd5cac1c6147c06d6d645" title="Get pool statistics snapshot.">SocketPool_get_stats()</a>.current_active.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga19433078a67ca838968245b41644fe7c" title="Get count of currently idle connections.">SocketPool_get_idle_count()</a> for idle connections. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga618413d296dac8730047cf248273461e" title="Get active connection count.">SocketPool_count()</a> for same functionality (alias). </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga8289eac993efd5cac1c6147c06d6d645" title="Get pool statistics snapshot.">SocketPool_get_stats()</a> for full statistics. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga86d406e9dc8b20a64731630a38b5f027" name="ga86d406e9dc8b20a64731630a38b5f027"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga86d406e9dc8b20a64731630a38b5f027">&#9670;&#160;</a></span>SocketPool_get_hit_rate()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double SocketPool_get_hit_rate </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get connection reuse rate (hit rate). </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Reuse rate as fraction (0.0 to 1.0), or 0.0 if no connections. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1).</dt><dd></dd></dl>
+<p>Returns the ratio of reused connections to total connection acquisitions. Higher values indicate better pool efficiency. Calculated as: reused / (added + reused)</p>
+<h2><a class="anchor" id="autotoc_md392"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">double</span> hit_rate = <a class="code hl_function" href="group__connection__mgmt.html#ga86d406e9dc8b20a64731630a38b5f027">SocketPool_get_hit_rate</a>(pool);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Connection reuse: %.1f%%\n&quot;</span>, hit_rate * 100.0);</div>
+<div class="ttc" id="agroup__connection__mgmt_html_ga86d406e9dc8b20a64731630a38b5f027"><div class="ttname"><a href="group__connection__mgmt.html#ga86d406e9dc8b20a64731630a38b5f027">SocketPool_get_hit_rate</a></div><div class="ttdeci">double SocketPool_get_hit_rate(SocketPool_T pool)</div><div class="ttdoc">Get connection reuse rate (hit rate).</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga8289eac993efd5cac1c6147c06d6d645" title="Get pool statistics snapshot.">SocketPool_get_stats()</a> for full statistics. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga2f8bfb464d9ab7068fefa9c0ba57c436" title="Reset pool statistics counters.">SocketPool_reset_stats()</a> to start fresh measurement window. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga19433078a67ca838968245b41644fe7c" name="ga19433078a67ca838968245b41644fe7c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga19433078a67ca838968245b41644fe7c">&#9670;&#160;</a></span>SocketPool_get_idle_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketPool_get_idle_count </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get count of currently idle connections. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of idle connections (active but not currently in use). </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic read.</dt><dd></dd></dl>
+<dl class="section user"><dt>Complexity\n O(1).</dt><dd></dd></dl>
+<p>Convenience wrapper around <a class="el" href="group__connection__mgmt.html#ga8289eac993efd5cac1c6147c06d6d645" title="Get pool statistics snapshot.">SocketPool_get_stats()</a>.current_idle.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga996b6e1e70230dec597386572109b873" title="Get count of currently active connections.">SocketPool_get_active_count()</a> for active connections. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga8289eac993efd5cac1c6147c06d6d645" title="Get pool statistics snapshot.">SocketPool_get_stats()</a> for full statistics. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -5790,7 +6395,7 @@ foundation::Arena_T::Arena_calloc() underlying mechanism (via <a class="el" href
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - pool operations are thread-safe after creation.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md353"></a>
+<h2><a class="anchor" id="autotoc_md386"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
@@ -5802,7 +6407,7 @@ Usage Example</h2>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
 <div class="line">    <a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="aSocketPool-private_8h_html_structSocketPool__T"><div class="ttname"><a href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00469">SocketPool-private.h:470</a></div></div>
+<div class="ttc" id="aSocketPool-private_8h_html_structSocketPool__T"><div class="ttname"><a href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a></div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00525">SocketPool-private.h:526</a></div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga2774ba952af4a9a218e33b492aed1a18"><div class="ttname"><a href="group__connection__mgmt.html#ga2774ba952af4a9a218e33b492aed1a18">SocketPool_new</a></div><div class="ttdeci">SocketPool_T SocketPool_new(Arena_T arena, size_t maxconns, size_t bufsize)</div><div class="ttdoc">Create a new connection pool.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
 <div class="ttc" id="agroup__foundation_html_ga6842e66018614df08139e67826cf3e0d"><div class="ttname"><a href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a></div><div class="ttdeci">void Arena_dispose(Arena_T *ap)</div><div class="ttdoc">Dispose of an arena and all its allocations, freeing underlying memory chunks.</div></div>
@@ -5824,7 +6429,7 @@ All connections share the same arena for memory management. </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga8ae494bcc57f791a1f8cbcf48b96b9a8" title="Minimum buffer size per connection.">SOCKET_MIN_BUFFER_SIZE</a> and <a class="el" href="group__foundation.html#ga72443e4b95fbd8ef4d191b754b4324dc" title="Maximum buffer size per connection.">SOCKET_MAX_BUFFER_SIZE</a> for buffer limits. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -6140,7 +6745,7 @@ All connections share the same arena for memory management. </dd></dl>
 <dd>
 <a class="el" href="group__connection__mgmt.html#gab2a7df0479b8f9ac899672afdb488b94" title="Remove idle connections.">SocketPool_cleanup()</a> for bulk removal. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -6379,6 +6984,72 @@ All connections share the same arena for memory management. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gad7679db7b1be62e465d9896944f3ad20" title="Notification callback when drain completes.">SocketPool_DrainCallback</a> for callback signature. </dd>
 <dd>
 <a class="el" href="group__connection__mgmt.html#ga24cd4e2f757497906a5aef89b133b068" title="Initiate graceful shutdown.">SocketPool_drain()</a> for initiating drain. </dd></dl>
+
+</div>
+</div>
+<a id="gaa0f0813679f7ffbff6ff75adb3678c8c" name="gaa0f0813679f7ffbff6ff75adb3678c8c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa0f0813679f7ffbff6ff75adb3678c8c">&#9670;&#160;</a></span>SocketPool_set_idle_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketPool_set_idle_callback </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__connection__mgmt.html#ga18f3ff7614b9968e5cc27f2017a0f058">SocketPool_IdleCallback</a>&#160;</td>
+          <td class="paramname"><em>cb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>data</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Register callback for when connections become idle. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+    <tr><td class="paramdir"></td><td class="paramname">cb</td><td>Callback function (NULL to clear). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>User data passed to callback. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
+<p>The callback is invoked when a connection transitions to idle state. Useful for monitoring, logging, or cleaning up per-connection resources.</p>
+<h2><a class="anchor" id="autotoc_md394"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> on_idle(Connection_T conn, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    Socket_T sock = <a class="code hl_function" href="group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652">Connection_socket</a>(conn);</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Connection from %s went idle\n&quot;</span>, <a class="code hl_function" href="group__core__io.html#gab0957f43694d0728e70b23364a89623c">Socket_getpeeraddr</a>(sock));</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_function" href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c">SocketPool_set_idle_callback</a>(pool, on_idle, NULL);</div>
+<div class="ttc" id="agroup__connection__mgmt_html_gaa0f0813679f7ffbff6ff75adb3678c8c"><div class="ttname"><a href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c">SocketPool_set_idle_callback</a></div><div class="ttdeci">void SocketPool_set_idle_callback(SocketPool_T pool, SocketPool_IdleCallback cb, void *data)</div><div class="ttdoc">Register callback for when connections become idle.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#ga18f3ff7614b9968e5cc27f2017a0f058" title="Callback invoked when a connection becomes idle.">SocketPool_IdleCallback</a> for callback requirements. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga76151bb579f44bdf79aeca57dbd8122e" title="Set idle connection timeout.">SocketPool_set_idle_timeout()</a> for automatic idle cleanup. </dd></dl>
 
 </div>
 </div>
@@ -6760,6 +7431,55 @@ utilities::SocketRateLimit_T for token bucket implementation. </dd></dl>
 
 </div>
 </div>
+<a id="ga4cef8507b62e5092e9064800c84f296f" name="ga4cef8507b62e5092e9064800c84f296f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4cef8507b62e5092e9064800c84f296f">&#9670;&#160;</a></span>SocketPool_shrink()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">size_t SocketPool_shrink </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a>&#160;</td>
+          <td class="paramname"><em>pool</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Release unused pool capacity. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">pool</td><td>Pool instance. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Number of connection slots released. </dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes.</dt><dd></dd></dl>
+<p>Shrinks the pool by releasing unused (free) connection slots, reducing memory footprint. Only affects slots that have never been used or have been freed. Does not affect currently active connections.</p>
+<h2><a class="anchor" id="autotoc_md393"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// After peak traffic subsides, reclaim unused memory</span></div>
+<div class="line"><span class="keywordtype">size_t</span> released = <a class="code hl_function" href="group__connection__mgmt.html#ga4cef8507b62e5092e9064800c84f296f">SocketPool_shrink</a>(pool);</div>
+<div class="line">printf(<span class="stringliteral">&quot;Released %zu unused slots\n&quot;</span>, released);</div>
+<div class="ttc" id="agroup__connection__mgmt_html_ga4cef8507b62e5092e9064800c84f296f"><div class="ttname"><a href="group__connection__mgmt.html#ga4cef8507b62e5092e9064800c84f296f">SocketPool_shrink</a></div><div class="ttdeci">size_t SocketPool_shrink(SocketPool_T pool)</div><div class="ttdoc">Release unused pool capacity.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Does not reduce maxconns - pool can still grow back to original size. </dd>
+<dd>
+Memory is not immediately returned to OS; managed by arena.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__connection__mgmt.html#gae7d2acf643422a026241225f245f8d26" title="Resize pool capacity at runtime.">SocketPool_resize()</a> for changing pool capacity. </dd>
+<dd>
+<a class="el" href="group__connection__mgmt.html#ga8363470d36d9cac714f087b8dcb1a048" title="Pre-allocate buffers for percentage of free slots.">SocketPool_prewarm()</a> for pre-allocating capacity. </dd></dl>
+
+</div>
+</div>
 <a id="ga0a62267ba3008f826b6952624dbc6a29" name="ga0a62267ba3008f826b6952624dbc6a29"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga0a62267ba3008f826b6952624dbc6a29">&#9670;&#160;</a></span>SocketPool_state()</h2>
 
@@ -6926,14 +7646,14 @@ utilities::SocketRateLimit_T for token bucket implementation. </dd></dl>
 <li>CIRCUIT_OPEN: Ignored until reset timeout elapses</li>
 </ul>
 <p>Success/failure detected via <a class="el" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538" title="Process I/O events from poll loop.">SocketReconnect_process()</a> on poll events or timeouts. Failed attempts increment statistics and may trigger backoff or circuit open.</p>
-<h2><a class="anchor" id="autotoc_md479"></a>
+<h2><a class="anchor" id="autotoc_md557"></a>
 State Transitions Triggered</h2>
 <ul>
 <li>DISCONNECTED -&gt; CONNECTING (immediate)</li>
 <li>BACKOFF -&gt; CONNECTING (after delay)</li>
 <li>CIRCUIT_OPEN -&gt; ignored</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md480"></a>
+<h2><a class="anchor" id="autotoc_md558"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(<span class="stringliteral">&quot;example.com&quot;</span>, 80, NULL, NULL,</div>
 <div class="line">NULL);</div>
@@ -7134,7 +7854,7 @@ Use this for intentional disconnection (e.g., shutdown). </dd></dl>
 <li>Invokes no callbacks (safe during destruction)</li>
 <li>Sets *conn to NULL to prevent use-after-free</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md477"></a>
+<h2><a class="anchor" id="autotoc_md555"></a>
 Cleanup Guarantees</h2>
 <ul>
 <li>Graceful shutdown of socket if possible (SOCKET_SHUT_RDWR)</li>
@@ -7142,7 +7862,7 @@ Cleanup Guarantees</h2>
 <li>Underlying Socket_T freed internally</li>
 <li>Statistics reset (not preserved)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md478"></a>
+<h2><a class="anchor" id="autotoc_md556"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(host, port, NULL, NULL, NULL);</div>
 <div class="line"><span class="comment">// ... use connection ...</span></div>
@@ -7270,7 +7990,7 @@ Usage Example</h2>
   </dd>
 </dl>
 <p>Initializes a reconnection context with the specified endpoint. Hostname is resolved synchronously using getaddrinfo(); for async resolution integrate with SocketDNS externally. The instance starts in RECONNECT_DISCONNECTED state. No connection attempt is made until <a class="el" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401" title="Initiate or queue a connection attempt according to current state and policy.">SocketReconnect_connect()</a> is called. Resources (timers, state) are allocated from internal Arena; freed on <a class="el" href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91" title="Destroy a SocketReconnect_T instance and release all associated resources.">SocketReconnect_free()</a>.</p>
-<h2><a class="anchor" id="autotoc_md474"></a>
+<h2><a class="anchor" id="autotoc_md552"></a>
 Validation Rules</h2>
 <ul>
 <li>host must be non-null and valid (checked via getaddrinfo)</li>
@@ -7278,7 +7998,7 @@ Validation Rules</h2>
 <li>policy values validated (positive delays, multiplier &gt;1, etc.)</li>
 <li>callback may be NULL</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md475"></a>
+<h2><a class="anchor" id="autotoc_md553"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Basic creation with defaults</span></div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
@@ -7289,7 +8009,7 @@ Usage Example</h2>
 <div class="line">    <span class="comment">// Handle init failure (e.g., invalid host)</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga3dc308919d4ccef64b7674cae246d9c0"><div class="ttname"><a href="group__connection__mgmt.html#ga3dc308919d4ccef64b7674cae246d9c0">SocketReconnect_Failed</a></div><div class="ttdeci">const Except_T SocketReconnect_Failed</div><div class="ttdoc">Exception type for errors in the reconnection module.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md476"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md554"></a>
 Advanced Configuration</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> policy;</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a>(&amp;policy);</div>
@@ -7445,7 +8165,7 @@ Advanced Configuration</h2>
 <li>Circuit breaker to prevent storms</li>
 <li>Health checks for proactive failure detection</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md488"></a>
+<h2><a class="anchor" id="autotoc_md566"></a>
 Defaults Table</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -7469,7 +8189,7 @@ Defaults Table</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">health_check_timeout_ms   </td><td class="markdownTableBodyNone">5000   </td><td class="markdownTableBodyNone">5s max to avoid blocking   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md489"></a>
+<h2><a class="anchor" id="autotoc_md567"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> policy;</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a>(&amp;policy);</div>
@@ -7528,13 +8248,13 @@ Usage Example</h2>
 <li>Other states: -1 (no FD to poll; use next_timeout_ms() for timers)</li>
 </ul>
 <p>Always pair with <a class="el" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538" title="Process I/O events from poll loop.">SocketReconnect_process()</a> when events occur on this FD. FD changes on reconnect (new socket created); re-add to epoll etc. after state change callbacks.</p>
-<h2><a class="anchor" id="autotoc_md482"></a>
+<h2><a class="anchor" id="autotoc_md560"></a>
 Event Loop Integration Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Single instance loop example</span></div>
 <div class="line"><a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(...);</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga2669844f3ad8a19649f2bc204eee8401">SocketReconnect_connect</a>(conn);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <span class="keywordtype">int</span> fd = <a class="code hl_function" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a>(conn);</div>
 <div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a>(conn);</div>
 <div class="line"> </div>
@@ -7549,9 +8269,9 @@ Event Loop Integration Example</h2>
 <div class="line"> </div>
 <div class="line">    <a class="code hl_function" href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a>(conn);  <span class="comment">// Advance timers</span></div>
 <div class="line">}</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga8dd2c1fe7147188da2be29f7623d2822"><div class="ttname"><a href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a></div><div class="ttdeci">void SocketReconnect_tick(SocketReconnect_T conn)</div><div class="ttdoc">Advance timers and perform periodic maintenance for state transitions and checks.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gaf5bf725fe34ae1de58a3ee05fbe270fd"><div class="ttname"><a href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a></div><div class="ttdeci">int SocketReconnect_next_timeout_ms(SocketReconnect_T conn)</div><div class="ttdoc">Calculate milliseconds until next timer event or action.</div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
 </div><!-- fragment --><dl class="section user"><dt>Thread Safety\n No - FD may change concurrently if multi-threaded (avoid)</dt><dd></dd></dl>
 <dl class="section user"><dt>Complexity\n O(1)</dt><dd></dd></dl>
 <dl class="section note"><dt>Note</dt><dd>FD valid only while returned &gt;=0; do not close or modify directly </dd></dl>
@@ -7659,17 +8379,17 @@ Event Loop Integration Example</h2>
 <li>Partial receives possible; loop until 0 for full messages</li>
 </ul>
 <p>TCP ensures ordered delivery when connected; 0 indicates clean close or abrupt disconnect.</p>
-<h2><a class="anchor" id="autotoc_md493"></a>
+<h2><a class="anchor" id="autotoc_md571"></a>
 Error Handling</h2>
 <ul>
 <li>Return 0: EOF or error triggering reconnect (check state after)</li>
 <li>errno=EAGAIN: Would block (non-blocking mode); try again later</li>
 <li>Other errnos from underlying recv propagated</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md494"></a>
+<h2><a class="anchor" id="autotoc_md572"></a>
 Usage Example - Transparent Recv Loop</h2>
 <div class="fragment"><div class="line"><span class="keywordtype">char</span> buf[1024];</div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a> &amp;&amp; <a class="code hl_function" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a>(conn)) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a> &amp;&amp; <a class="code hl_function" href="group__connection__mgmt.html#ga490043a4bfaba8214f5d10a3c7b956de">SocketReconnect_isconnected</a>(conn)) {</div>
 <div class="line">    ssize_t rcvd = <a class="code hl_function" href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a>(conn, buf, <span class="keyword">sizeof</span>(buf));</div>
 <div class="line">    <span class="keywordflow">if</span> (rcvd &gt; 0) {</div>
 <div class="line">        <span class="comment">// Process data</span></div>
@@ -7685,7 +8405,7 @@ Usage Example - Transparent Recv Loop</h2>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__connection__mgmt_html_ga92485113993efb3a1302bbcb8f57a908"><div class="ttname"><a href="group__connection__mgmt.html#ga92485113993efb3a1302bbcb8f57a908">SocketReconnect_recv</a></div><div class="ttdeci">ssize_t SocketReconnect_recv(SocketReconnect_T conn, void *buf, size_t len)</div><div class="ttdoc">Receive data from the reconnection-managed connection, auto-reconnecting on close or errors.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md495"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md573"></a>
 Performance Notes</h2>
 <ul>
 <li>For high-throughput: Use recvv() variants via direct socket access</li>
@@ -7802,14 +8522,14 @@ Does not disconnect if connected. Use after external recovery. </dd></dl>
 <li>Partial sends possible (like Socket_send); caller must handle retries if needed</li>
 </ul>
 <p>Does not buffer unsent data; for reliability use higher-level protocols (TCP ensures delivery if connected).</p>
-<h2><a class="anchor" id="autotoc_md490"></a>
+<h2><a class="anchor" id="autotoc_md568"></a>
 Error Handling</h2>
 <ul>
 <li>errno=ENOTCONN: Not connected or lost connection (reconnect queued)</li>
 <li>errno=ECONNRESET/EPIPE: Peer closed, triggers reconnect</li>
 <li>Other errnos propagated from underlying socket</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md491"></a>
+<h2><a class="anchor" id="autotoc_md569"></a>
 Usage Example - Transparent Send</h2>
 <div class="fragment"><div class="line"><span class="comment">// Assume conn connected</span></div>
 <div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *msg = <span class="stringliteral">&quot;Hello Server&quot;</span>;</div>
@@ -7826,7 +8546,7 @@ Usage Example - Transparent Send</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00544">SocketUtil.h:544</a></div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gae1f6cbe69ac37f9bae1efccfe98538ee"><div class="ttname"><a href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a></div><div class="ttdeci">ssize_t SocketReconnect_send(SocketReconnect_T conn, const void *buf, size_t len)</div><div class="ttdoc">Send data over the reconnection-managed connection with automatic retry on transient errors.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md492"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md570"></a>
 When to Use vs Direct Socket</h2>
 <ul>
 <li>Use this for simple apps wanting auto-reconnect without event loop</li>
@@ -7889,13 +8609,13 @@ When to Use vs Direct Socket</h2>
 </dl>
 <p>Overrides the default health check behavior used during CONNECTED state. The default check simply polls the socket for readability within the configured timeout to detect dead peers. Custom checks can perform application-specific validation (e.g., send ping, check latency).</p>
 <p>Changes take effect on next health check interval (no immediate invocation). If health checks disabled (interval=0), this has no effect.</p>
-<h2><a class="anchor" id="autotoc_md486"></a>
+<h2><a class="anchor" id="autotoc_md564"></a>
 Default vs Custom</h2>
 <ul>
 <li><b>Default</b>: Socket_poll for POLLIN within timeout_ms (lightweight, detects closes)</li>
 <li><b>Custom</b>: Caller-defined; must return 1=healthy, 0=unhealthy quickly</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md487"></a>
+<h2><a class="anchor" id="autotoc_md565"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Set custom check after creation</span></div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#gacf257c08816a36a97c02b32e034c0ea0">SocketReconnect_set_health_check</a>(conn, my_app_ping_check);</div>
@@ -7990,7 +8710,7 @@ Do not close or free the returned socket directly. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>Current SocketReconnect_State (e.g., RECONNECT_CONNECTED) </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - but read-only, safe if no concurrent mutations</dt><dd></dd></dl>
 <p>Provides snapshot of internal state machine for decision making or logging. States reflect connection status, backoff timers, and circuit breaker. Use in conditionals to gate operations (e.g., only send when CONNECTED).</p>
-<h2><a class="anchor" id="autotoc_md481"></a>
+<h2><a class="anchor" id="autotoc_md559"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_enumeration" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect_State</a> st = <a class="code hl_function" href="group__connection__mgmt.html#gac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect_state</a>(conn);</div>
 <div class="line"><span class="keywordflow">switch</span> (st) {</div>
@@ -8097,11 +8817,11 @@ Usage Example</h2>
 <li>Immediately after <a class="el" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd" title="Calculate milliseconds until next timer event or action.">SocketReconnect_next_timeout_ms()</a> returns &lt;=0</li>
 <li>Does not block; quick execution unless health check active</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md483"></a>
+<h2><a class="anchor" id="autotoc_md561"></a>
 Integration Patterns</h2>
-<h3><a class="anchor" id="autotoc_md484"></a>
+<h3><a class="anchor" id="autotoc_md562"></a>
 With Event Loop</h3>
-<div class="fragment"><div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="fragment"><div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <span class="keywordtype">int</span> timeout = <a class="code hl_function" href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a>(conn);</div>
 <div class="line">    timeout = MIN(timeout, 100);  <span class="comment">// Cap for responsiveness</span></div>
 <div class="line"> </div>
@@ -8115,7 +8835,7 @@ With Event Loop</h3>
 <div class="line">        <a class="code hl_function" href="group__connection__mgmt.html#ga4ca4375d521b1eddcc4cf3f75fe3b538">SocketReconnect_process</a>(conn);</div>
 <div class="line">    }</div>
 <div class="line">}</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md485"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md563"></a>
 Standalone Periodic Call</h3>
 <div class="fragment"><div class="line"><span class="comment">// In timer thread or main loop</span></div>
 <div class="line"><span class="keyword">static</span> int64_t last_tick = 0;</div>
@@ -8299,7 +9019,7 @@ error-handling for exception handling patterns. </dd>
 <dd>
 <a class="el" href="SocketUtil_8h.html#aad11dd8cef83792df92437f8d7ae3991">socket_error_buf</a> in <a class="el" href="SocketUtil_8h.html" title="Consolidated utility header for logging, metrics, events, and error handling.">SocketUtil.h</a> for error message formatting. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00241">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="connection__pool_8c_source.html#l00065">main()</a>, and <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
 
 </div>
 </div>
@@ -8330,7 +9050,7 @@ error-handling for exception handling patterns. </dd>
 <li>Invalid host/port parameters</li>
 <li>Unrecoverable state machine errors (rare)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md463"></a>
+<h2><a class="anchor" id="autotoc_md541"></a>
 Handling Pattern</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a> conn = <a class="code hl_function" href="group__connection__mgmt.html#ga2064741bf60283ac3315823128fa2082">SocketReconnect_new</a>(host, port, &amp;policy, NULL,</div>

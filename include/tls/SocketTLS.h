@@ -706,6 +706,55 @@ typedef struct SocketTLSContext_T *SocketTLSContext_T;
 extern void SocketTLS_enable (Socket_T socket, SocketTLSContext_T ctx);
 
 /**
+ * @brief Disable TLS on a socket, reverting to plain TCP communication
+ * @ingroup security
+ * @param socket The socket instance with TLS enabled
+ *
+ * Performs a graceful TLS teardown without closing the underlying socket,
+ * allowing continued use as a plain TCP connection. This is useful for:
+ * - STARTTLS reversal (downgrade from TLS to plain)
+ * - Protocol-level TLS renegotiation with mode switch
+ * - Graceful cleanup before connection handoff
+ *
+ * The function:
+ * 1. Attempts SSL_shutdown() to exchange close_notify alerts (best-effort)
+ * 2. Cleans up SSL object and TLS buffers securely
+ * 3. Resets socket to non-TLS mode for plain I/O
+ *
+ * Unlike SocketTLS_shutdown(), this function:
+ * - Does NOT raise exceptions on shutdown failure (best-effort)
+ * - Always leaves the socket in a usable non-TLS state
+ * - Returns success/failure status for logging purposes
+ *
+ * @return 1 on clean TLS shutdown, 0 if shutdown was incomplete but socket
+ *         is now in plain mode, -1 if TLS was not enabled
+ *
+ * @throws None - best-effort operation, always cleans up
+ * @threadsafe No - modifies socket state directly
+ *
+ * ## Usage Example (STARTTLS Reversal)
+ *
+ * @code{.c}
+ * // After TLS session, revert to plain for protocol reasons
+ * int result = SocketTLS_disable(sock);
+ * if (result >= 0) {
+ *     // Socket is now in plain TCP mode
+ *     Socket_send(sock, "PLAIN DATA", 10);
+ * }
+ * @endcode
+ *
+ * @warning After calling this, all I/O must use Socket_send/recv, not
+ *          SocketTLS_send/recv
+ * @warning Peer must also be expecting the TLS-to-plain transition
+ * @note Sensitive TLS buffers are securely cleared before deallocation
+ *
+ * @see SocketTLS_enable() to re-enable TLS after disable
+ * @see SocketTLS_shutdown() for strict shutdown that raises on failure
+ * @see Socket_send() / Socket_recv() for plain I/O after disable
+ */
+extern int SocketTLS_disable (Socket_T socket);
+
+/**
  * @brief Set SNI hostname for client TLS connections
  * @ingroup security
  * @param socket The socket instance
@@ -753,16 +802,59 @@ extern TLSHandshakeState SocketTLS_handshake (Socket_T socket);
  *
  * Convenience function to run the handshake loop until complete or timeout.
  * Uses SocketPoll internally for non-blocking operation if timeout > 0.
+ * Uses the default poll interval (SOCKET_TLS_POLL_INTERVAL_MS, typically 100ms).
  *
  * @return TLSHandshakeState (COMPLETE on success, ERROR on failure/timeout)
- * @throws SocketTLS_HandshakeFailed on error or timeout
+ * @throws SocketTLS_HandshakeFailed on error or timeout (includes elapsed time
+ *         in error message for diagnostics)
  * @threadsafe No
+ *
+ * ## Metrics Updated
+ * - SOCKET_CTR_TLS_HANDSHAKES_TOTAL: Incremented on success or failure
+ * - SOCKET_CTR_TLS_HANDSHAKES_FAILED: Incremented on failure/timeout
+ * - SOCKET_HIST_TLS_HANDSHAKE_TIME_MS: Records handshake duration on success
  *
  * Note: This is a higher-level helper; low-level code should use
  * SocketTLS_handshake() directly.
+ *
+ * @see SocketTLS_handshake_loop_ex() for configurable poll interval
  */
 extern TLSHandshakeState SocketTLS_handshake_loop (Socket_T socket,
                                                    int timeout_ms);
+
+/**
+ * @brief Complete handshake with timeout and configurable poll interval
+ * @ingroup security
+ * @param socket The socket instance with TLS enabled
+ * @param timeout_ms Maximum time to wait for handshake completion (0 for
+ * non-blocking)
+ * @param poll_interval_ms Interval between poll attempts (defaults to
+ * SOCKET_TLS_POLL_INTERVAL_MS if <= 0)
+ *
+ * Extended version of SocketTLS_handshake_loop() with configurable poll
+ * interval. Use smaller intervals (10-50ms) for latency-sensitive applications,
+ * larger intervals (200-500ms) for resource-constrained environments.
+ *
+ * @return TLSHandshakeState (COMPLETE on success, ERROR on failure/timeout)
+ * @throws SocketTLS_HandshakeFailed on error or timeout (includes elapsed time)
+ * @threadsafe No
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Low-latency handshake with 25ms polling
+ * TLSHandshakeState state = SocketTLS_handshake_loop_ex(sock, 5000, 25);
+ *
+ * // Resource-efficient handshake with 500ms polling
+ * TLSHandshakeState state = SocketTLS_handshake_loop_ex(sock, 30000, 500);
+ * @endcode
+ *
+ * @see SocketTLS_handshake_loop() for default poll interval
+ * @see SOCKET_TLS_POLL_INTERVAL_MS for the default value (100ms)
+ */
+extern TLSHandshakeState SocketTLS_handshake_loop_ex (Socket_T socket,
+                                                      int timeout_ms,
+                                                      int poll_interval_ms);
 
 /**
  * @brief Complete handshake using socket's timeout config

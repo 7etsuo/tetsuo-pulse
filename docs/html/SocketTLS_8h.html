@@ -111,6 +111,7 @@ $(document).ready(function(){initNavTree('SocketTLS_8h.html',''); initResizable(
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
@@ -141,6 +142,12 @@ $(document).ready(function(){initNavTree('SocketTLS_8h.html',''); initResizable(
 </div>
 <p><a href="SocketTLS_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketTLS__CertInfo" id="r_structSocketTLS__CertInfo"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#structSocketTLS__CertInfo">SocketTLS_CertInfo</a></td></tr>
+<tr class="memdesc:structSocketTLS__CertInfo"><td class="mdescLeft">&#160;</td><td class="mdescRight">Peer certificate information structure.  <a href="group__security.html#structSocketTLS__CertInfo">More...</a><br /></td></tr>
+<tr class="separator:structSocketTLS__CertInfo"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__security.html#ga63e73c93350813167a68162c5cb3d819">SocketTLS_T</a></td></tr>
@@ -226,6 +233,30 @@ Functions</h2></td></tr>
 <tr class="memitem:ga56acd283757bb0af4f4d59d3c0f218ea" id="r_ga56acd283757bb0af4f4d59d3c0f218ea"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga56acd283757bb0af4f4d59d3c0f218ea">SocketTLS_get_alpn_selected</a> (Socket_T socket)</td></tr>
 <tr class="memdesc:ga56acd283757bb0af4f4d59d3c0f218ea"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the negotiated ALPN protocol.  <br /></td></tr>
 <tr class="separator:ga56acd283757bb0af4f4d59d3c0f218ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab62e7185c08eb9459341471f56f400c5" id="r_gab62e7185c08eb9459341471f56f400c5"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gab62e7185c08eb9459341471f56f400c5">SocketTLS_session_save</a> (Socket_T socket, unsigned char *buffer, size_t *len)</td></tr>
+<tr class="memdesc:gab62e7185c08eb9459341471f56f400c5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Export TLS session for later resumption.  <br /></td></tr>
+<tr class="separator:gab62e7185c08eb9459341471f56f400c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga134fb43e30e16e0061eb633384c1cfa9" id="r_ga134fb43e30e16e0061eb633384c1cfa9"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga134fb43e30e16e0061eb633384c1cfa9">SocketTLS_session_restore</a> (Socket_T socket, const unsigned char *buffer, size_t len)</td></tr>
+<tr class="memdesc:ga134fb43e30e16e0061eb633384c1cfa9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Import previously saved TLS session for resumption.  <br /></td></tr>
+<tr class="separator:ga134fb43e30e16e0061eb633384c1cfa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2cd8dfa27f0caeb2838b97fc2be1dd02" id="r_ga2cd8dfa27f0caeb2838b97fc2be1dd02"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga2cd8dfa27f0caeb2838b97fc2be1dd02">SocketTLS_check_renegotiation</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga2cd8dfa27f0caeb2838b97fc2be1dd02"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check for and process pending renegotiation.  <br /></td></tr>
+<tr class="separator:ga2cd8dfa27f0caeb2838b97fc2be1dd02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaee27dc7f30471a33200568801ee37900" id="r_gaee27dc7f30471a33200568801ee37900"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaee27dc7f30471a33200568801ee37900">SocketTLS_disable_renegotiation</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:gaee27dc7f30471a33200568801ee37900"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disable TLS renegotiation on socket.  <br /></td></tr>
+<tr class="separator:gaee27dc7f30471a33200568801ee37900"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaa422a6083ae2ec362780b294c95bf5f" id="r_gaaa422a6083ae2ec362780b294c95bf5f"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaaa422a6083ae2ec362780b294c95bf5f">SocketTLS_get_peer_cert_info</a> (Socket_T socket, <a class="el" href="group__security.html#structSocketTLS__CertInfo">SocketTLS_CertInfo</a> *info)</td></tr>
+<tr class="memdesc:gaaa422a6083ae2ec362780b294c95bf5f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get peer certificate details.  <br /></td></tr>
+<tr class="separator:gaaa422a6083ae2ec362780b294c95bf5f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0528a24494f1c78b3eebefdba52916de" id="r_ga0528a24494f1c78b3eebefdba52916de"><td class="memItemLeft" align="right" valign="top">time_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga0528a24494f1c78b3eebefdba52916de">SocketTLS_get_cert_expiry</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:ga0528a24494f1c78b3eebefdba52916de"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get peer certificate expiration time.  <br /></td></tr>
+<tr class="separator:ga0528a24494f1c78b3eebefdba52916de"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga079fa7393dcf51155d5a6ecd7ddb58b8" id="r_ga079fa7393dcf51155d5a6ecd7ddb58b8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#ga079fa7393dcf51155d5a6ecd7ddb58b8">SocketTLS_get_cert_subject</a> (Socket_T socket, char *buf, size_t len)</td></tr>
+<tr class="memdesc:ga079fa7393dcf51155d5a6ecd7ddb58b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get peer certificate subject string.  <br /></td></tr>
+<tr class="separator:ga079fa7393dcf51155d5a6ecd7ddb58b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf80f10ed221220a75e520733953ed58c" id="r_gaf80f10ed221220a75e520733953ed58c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__security.html#gaf80f10ed221220a75e520733953ed58c">SocketTLS_get_ocsp_response_status</a> (Socket_T socket)</td></tr>
+<tr class="memdesc:gaf80f10ed221220a75e520733953ed58c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get OCSP stapling status from server response.  <br /></td></tr>
+<tr class="separator:gaf80f10ed221220a75e520733953ed58c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -251,7 +282,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>High-level TLS/SSL integration for secure Socket I/O with TLS 1.3 enforcement. </p>
 <p>This header provides the core API for enabling and managing TLS encryption on TCP sockets. It abstracts OpenSSL/LibreSSL complexities, offering non-blocking handshakes, secure send/recv, and post-handshake queries (ciphers, cert status). Exclusively supports TLS 1.3 for maximum security: PFS, secure defaults, no legacy support. Integrates seamlessly with SocketPoll for event-driven applications.</p>
-<h2><a class="anchor" id="autotoc_md545"></a>
+<h2><a class="anchor" id="autotoc_md629"></a>
 Core Features</h2>
 <ul>
 <li><b>TLS 1.3 Exclusive</b>: Enforced PFS, modern ciphers (AES-GCM, ChaCha20), anti-downgrade protection</li>
@@ -262,7 +293,7 @@ Core Features</h2>
 <li><b>Error Reporting</b>: Thread-local tls_error_buf + exceptions for detailed diagnostics</li>
 <li><b>Graceful Shutdown</b>: Bidirectional close_notify to prevent truncation attacks</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md546"></a>
+<h2><a class="anchor" id="autotoc_md630"></a>
 Typical Workflow</h2>
 <ol type="1">
 <li>Create Socket and connect/accept</li>
@@ -273,7 +304,7 @@ Typical Workflow</h2>
 <li>Use secure I/O</li>
 <li>Shutdown TLS before closing socket</li>
 </ol>
-<h2><a class="anchor" id="autotoc_md547"></a>
+<h2><a class="anchor" id="autotoc_md631"></a>
 Client Usage Example</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Socket_8h.html">socket/Socket.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketTLS_8h.html">tls/SocketTLS.h</a>&quot;</span></div>
@@ -345,8 +376,8 @@ Client Usage Example</h2>
 <div class="ttc" id="agroup__security_html_ggad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2"><div class="ttname"><a href="group__security.html#ggad092160c037d01929df1bb8d5b75b43caca78870a105a05fffb3d5d6ca022aff2">TLS_HANDSHAKE_ERROR</a></div><div class="ttdeci">@ TLS_HANDSHAKE_ERROR</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00553">SocketTLS.h:552</a></div></div>
 <div class="ttc" id="agroup__security_html_ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac"><div class="ttname"><a href="group__security.html#ggad092160c037d01929df1bb8d5b75b43cad39cdf43af44417566b39aa9929f7aac">TLS_HANDSHAKE_WANT_WRITE</a></div><div class="ttdeci">@ TLS_HANDSHAKE_WANT_WRITE</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00550">SocketTLS.h:550</a></div></div>
 <div class="ttc" id="agroup__security_html_ggad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2"><div class="ttname"><a href="group__security.html#ggad092160c037d01929df1bb8d5b75b43cae3a7df914ebdf339b8e7d711779670e2">TLS_HANDSHAKE_NOT_STARTED</a></div><div class="ttdeci">@ TLS_HANDSHAKE_NOT_STARTED</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS_8h_source.html#l00547">SocketTLS.h:547</a></div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md548"></a>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00619">SocketTLS-private.h:620</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md632"></a>
 Server Usage Example</h2>
 <div class="fragment"><div class="line">Socket_T listener = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line"><a class="code hl_function" href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a>(listener, <span class="stringliteral">&quot;0.0.0.0&quot;</span>, 443);</div>
@@ -360,7 +391,7 @@ Server Usage Example</h2>
 <div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1024);</div>
 <div class="line"><a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, listener, <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, listener);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *evs; <span class="keywordtype">int</span> nfds = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;evs, 100);</div>
 <div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nfds; ++i) {</div>
 <div class="line">        <span class="keywordflow">if</span> (evs[i].socket == listener) {</div>
@@ -380,6 +411,7 @@ Server Usage Example</h2>
 <div class="line">        }</div>
 <div class="line">    }</div>
 <div class="line">}</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Accept incoming connection.</div></div>
 <div class="ttc" id="agroup__core__io_html_gab24b026bc4c69e6f766211f44675e189"><div class="ttname"><a href="group__core__io.html#gab24b026bc4c69e6f766211f44675e189">Socket_listen</a></div><div class="ttdeci">void Socket_listen(Socket_T socket, int backlog)</div><div class="ttdoc">Listen for incoming connections.</div></div>
 <div class="ttc" id="agroup__core__io_html_gacb65d693d8c93e2a1fe6411dd0d0af98"><div class="ttname"><a href="group__core__io.html#gacb65d693d8c93e2a1fe6411dd0d0af98">Socket_bind</a></div><div class="ttdeci">void Socket_bind(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Bind a socket to a local IP address and port.</div></div>
@@ -393,8 +425,7 @@ Server Usage Example</h2>
 <div class="ttc" id="agroup__security_html_ga79a403f2f54f21c90a92e9cb73e24cbc"><div class="ttname"><a href="group__security.html#ga79a403f2f54f21c90a92e9cb73e24cbc">SocketTLSContext_new_server</a></div><div class="ttdeci">SocketTLSContext_T SocketTLSContext_new_server(const char *cert_file, const char *key_file, const char *ca_file)</div><div class="ttdoc">Create server TLS context with cert/key.</div></div>
 <div class="ttc" id="agroup__security_html_gaa7703e1d2c80b49601af8237e81729ef"><div class="ttname"><a href="group__security.html#gaa7703e1d2c80b49601af8237e81729ef">SocketTLSContext_set_min_protocol</a></div><div class="ttdeci">void SocketTLSContext_set_min_protocol(SocketTLSContext_T ctx, int version)</div><div class="ttdoc">Set minimum supported TLS version.</div></div>
 <div class="ttc" id="agroup__security_html_gac4de1881e05f041a3d5016cba7d5a045"><div class="ttname"><a href="group__security.html#gac4de1881e05f041a3d5016cba7d5a045">SocketTLSContext_load_ca</a></div><div class="ttdeci">void SocketTLSContext_load_ca(SocketTLSContext_T ctx, const char *ca_file)</div><div class="ttdoc">Load trusted CA certificates.</div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md549"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md633"></a>
 Error Handling &amp; Best Practices</h2>
 <ul>
 <li>Always check <a class="el" href="group__security.html#ga4fd56e743762151aa449744a8d574164" title="Get peer certificate verification result.">SocketTLS_get_verify_result()</a> after handshake; raise SocketTLS_VerifyFailed if != X509_V_OK</li>
@@ -404,7 +435,7 @@ Error Handling &amp; Best Practices</h2>
 <li>Log tls_error_buf on exceptions for debugging</li>
 <li>Integrate with SocketPool for connection limiting + SYNProtect</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md550"></a>
+<h2><a class="anchor" id="autotoc_md634"></a>
 Platform &amp; Build Requirements</h2>
 <ul>
 <li><b>TLS Backend</b>: OpenSSL &gt;=1.1.1 or LibreSSL &gt;=3.0 (CMake auto-detect)</li>

@@ -156,6 +156,9 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketWS__Message" id="r_structSocketWS__Message"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#structSocketWS__Message">SocketWS_Message</a></td></tr>
 <tr class="memdesc:structSocketWS__Message"><td class="mdescLeft">&#160;</td><td class="mdescRight">Complete reassembled WebSocket message from recv_message().  <a href="group__websocket.html#structSocketWS__Message">More...</a><br /></td></tr>
 <tr class="separator:structSocketWS__Message"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketWS__CompressionOptions" id="r_structSocketWS__CompressionOptions"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a></td></tr>
+<tr class="memdesc:structSocketWS__CompressionOptions"><td class="mdescLeft">&#160;</td><td class="mdescRight">WebSocket compression options.  <a href="group__websocket.html#structSocketWS__CompressionOptions">More...</a><br /></td></tr>
+<tr class="separator:structSocketWS__CompressionOptions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
@@ -171,6 +174,9 @@ Macros</h2></td></tr>
 <tr class="separator:ga9b9cdb003a53aa826efee47bcfbd59b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga012fa1b5257d1188d71ec84b86513bda" id="r_ga012fa1b5257d1188d71ec84b86513bda"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga012fa1b5257d1188d71ec84b86513bda">SOCKETWS_SEND_CHUNK_SIZE</a>&#160;&#160;&#160;8192</td></tr>
 <tr class="separator:ga012fa1b5257d1188d71ec84b86513bda"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad47afcd717fda7a921345994a4e5f4a5" id="r_gad47afcd717fda7a921345994a4e5f4a5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gad47afcd717fda7a921345994a4e5f4a5">RAISE_WS_ERROR</a>(e)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__websocket.html#structSocketWS">SocketWS</a>, e)</td></tr>
+<tr class="memdesc:gad47afcd717fda7a921345994a4e5f4a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module.  <br /></td></tr>
+<tr class="separator:gad47afcd717fda7a921345994a4e5f4a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;SocketWS_T</td></tr>
 <tr class="separator:ga0acb682b8260ab1c60b918599864e2e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -474,12 +480,27 @@ Functions</h2></td></tr>
 <tr class="memitem:ga1bfa823bd6275bfdcb9bab6f26ab90ee" id="r_ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga1bfa823bd6275bfdcb9bab6f26ab90ee">SocketWS_error_string</a> (<a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> error)</td></tr>
 <tr class="memdesc:ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get a human-readable string describing a WebSocket error code.  <br /></td></tr>
 <tr class="separator:ga1bfa823bd6275bfdcb9bab6f26ab90ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf68edb5baf8b959da2c8b63158d65916" id="r_gaf68edb5baf8b959da2c8b63158d65916"><td class="memItemLeft" align="right" valign="top">SocketWS_T&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaf68edb5baf8b959da2c8b63158d65916">SocketWS_connect</a> (const char *url, const char *protocols)</td></tr>
+<tr class="memdesc:gaf68edb5baf8b959da2c8b63158d65916"><td class="mdescLeft">&#160;</td><td class="mdescRight">One-liner WebSocket client connection.  <br /></td></tr>
+<tr class="separator:gaf68edb5baf8b959da2c8b63158d65916"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacbcbf4d1f7f94a24cbe57cfee8c5c705" id="r_gacbcbf4d1f7f94a24cbe57cfee8c5c705"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gacbcbf4d1f7f94a24cbe57cfee8c5c705">SocketWS_send_json</a> (SocketWS_T ws, const char *json)</td></tr>
+<tr class="memdesc:gacbcbf4d1f7f94a24cbe57cfee8c5c705"><td class="mdescLeft">&#160;</td><td class="mdescRight">Send JSON as text frame.  <br /></td></tr>
+<tr class="separator:gacbcbf4d1f7f94a24cbe57cfee8c5c705"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa120f2de8a8e3fe8d6670d5952ae3069" id="r_gaa120f2de8a8e3fe8d6670d5952ae3069"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaa120f2de8a8e3fe8d6670d5952ae3069">SocketWS_recv_json</a> (SocketWS_T ws, char **json_out, size_t *json_len)</td></tr>
+<tr class="memdesc:gaa120f2de8a8e3fe8d6670d5952ae3069"><td class="mdescLeft">&#160;</td><td class="mdescRight">Receive and return JSON string.  <br /></td></tr>
+<tr class="separator:gaa120f2de8a8e3fe8d6670d5952ae3069"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga9f35bc85185a4084dc4d4e553bbd4559" id="r_ga9f35bc85185a4084dc4d4e553bbd4559"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga9f35bc85185a4084dc4d4e553bbd4559">SocketWS_get_ping_latency</a> (SocketWS_T ws)</td></tr>
+<tr class="memdesc:ga9f35bc85185a4084dc4d4e553bbd4559"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get ping/pong round-trip time.  <br /></td></tr>
+<tr class="separator:ga9f35bc85185a4084dc4d4e553bbd4559"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga4bc96039ed3f1e6240cc6af7e3fdce13" id="r_ga4bc96039ed3f1e6240cc6af7e3fdce13"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga4bc96039ed3f1e6240cc6af7e3fdce13">SocketWS_compression_options_defaults</a> (<a class="el" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a> *options)</td></tr>
+<tr class="memdesc:ga4bc96039ed3f1e6240cc6af7e3fdce13"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize compression options with defaults.  <br /></td></tr>
+<tr class="separator:ga4bc96039ed3f1e6240cc6af7e3fdce13"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga519bf217226465597f30e1f87e19d34a" id="r_ga519bf217226465597f30e1f87e19d34a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga519bf217226465597f30e1f87e19d34a">SocketWS_enable_compression</a> (SocketWS_T ws, const <a class="el" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a> *options)</td></tr>
+<tr class="memdesc:ga519bf217226465597f30e1f87e19d34a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enable permessage-deflate compression.  <br /></td></tr>
+<tr class="separator:ga519bf217226465597f30e1f87e19d34a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:ga0fadbd57ccfb278acb88c94cc609c265" id="r_ga0fadbd57ccfb278acb88c94cc609c265"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0fadbd57ccfb278acb88c94cc609c265">SocketWS_DetailedException</a></td></tr>
-<tr class="memdesc:ga0fadbd57ccfb278acb88c94cc609c265"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module.  <br /></td></tr>
-<tr class="separator:ga0fadbd57ccfb278acb88c94cc609c265"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga0fb92a65a798e17aca6df1cdba118067" id="r_ga0fb92a65a798e17aca6df1cdba118067"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0fb92a65a798e17aca6df1cdba118067">SocketWS_Failed</a></td></tr>
 <tr class="memdesc:ga0fb92a65a798e17aca6df1cdba118067"><td class="mdescLeft">&#160;</td><td class="mdescRight">Exception raised for general WebSocket operation failures.  <br /></td></tr>
 <tr class="separator:ga0fb92a65a798e17aca6df1cdba118067"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -544,7 +565,7 @@ Variables</h2></td></tr>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#gacba3d485716ab762c1ecd90312174721" title="States for the frame parsing state machine.">SocketWS_FrameState</a> for parsing states. </dd>
 <dd>
-<a class="el" href="group__websocket.html#ga8ec0a78346a127f0919e6b9e61e79ecf" title="Incrementally parses WebSocket frame header from input data.">ws_frame_parse_header()</a> <a class="el" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a> entry point. </dd>
+<a class="el" href="group__websocket.html#ga8ec0a78346a127f0919e6b9e61e79ecf" title="Incrementally parses WebSocket frame header from input data.">ws_frame_parse_header()</a> <a class="el" href="connection__pool_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> entry point. </dd>
 <dd>
 <a class="el" href="group__websocket.html#gad0cb16d7a760ff6ea58750797c85ee15" title="Builds the binary WebSocket frame header into output buffer.">ws_frame_build_header()</a> for sending frames. </dd>
 <dd>
@@ -1370,7 +1391,94 @@ type</td>
 
 </div>
 </div>
+<a name="structSocketWS__CompressionOptions" id="structSocketWS__CompressionOptions"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#structSocketWS__CompressionOptions">&#9670;&#160;</a></span>SocketWS_CompressionOptions</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">struct SocketWS_CompressionOptions</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<div class="textblock"><p>WebSocket compression options. </p>
+
+<p class="definition">Definition at line <a class="el" href="SocketWS_8h_source.html#l01181">1181</a> of file <a class="el" href="SocketWS_8h_source.html">SocketWS.h</a>.</p>
+</div><table class="fieldtable">
+<tr><th colspan="3">Data Fields</th></tr>
+<tr><td class="fieldtype">
+<a id="a6bd6cb4d78b4124f05f7f33a6b2f7ef9" name="a6bd6cb4d78b4124f05f7f33a6b2f7ef9"></a>int</td>
+<td class="fieldname">
+client_max_window_bits</td>
+<td class="fielddoc">
+<p>Client LZ77 window (8-15, default 15) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a9531af4f7a0ab83dbe5b5264314b0943" name="a9531af4f7a0ab83dbe5b5264314b0943"></a>int</td>
+<td class="fieldname">
+client_no_context_takeover</td>
+<td class="fielddoc">
+<p>Client resets context per message </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a79d8c3d69d9897b2f5ee1ae446b4b97f" name="a79d8c3d69d9897b2f5ee1ae446b4b97f"></a>int</td>
+<td class="fieldname">
+level</td>
+<td class="fielddoc">
+<p>zlib compression level (1-9, default 6) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ad231279c72569dea7f7df4d716d09b86" name="ad231279c72569dea7f7df4d716d09b86"></a>int</td>
+<td class="fieldname">
+server_max_window_bits</td>
+<td class="fielddoc">
+<p>Server LZ77 window (8-15, default 15) </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a08a9c76cfe8723bcee370a37189441d2" name="a08a9c76cfe8723bcee370a37189441d2"></a>int</td>
+<td class="fieldname">
+server_no_context_takeover</td>
+<td class="fielddoc">
+<p>Server resets context per message </p>
+</td></tr>
+</table>
+
+</div>
+</div>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="gad47afcd717fda7a921345994a4e5f4a5" name="gad47afcd717fda7a921345994a4e5f4a5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gad47afcd717fda7a921345994a4e5f4a5">&#9670;&#160;</a></span>RAISE_WS_ERROR</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define RAISE_WS_ERROR</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">e</td><td>)</td>
+          <td>&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__websocket.html#structSocketWS">SocketWS</a>, e)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module. </p>
+<p>Declares module exceptions using SOCKET_DECLARE_MODULE_EXCEPTION. These are raised via TRY/EXCEPT or RAISE_WS_ERROR macro.</p>
+<p>Public exceptions exposed in <a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h:</a></p><ul>
+<li>SocketWS_Failed: General failures</li>
+<li>SocketWS_ProtocolError: RFC violations</li>
+<li>SocketWS_Closed: <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> closed</li>
+</ul>
+<p>Internal use: RAISE_WS_ERROR for quick error raising with module context.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">Except.h</a> for exception framework. </dd>
+<dd>
+docs/ERROR_HANDLING.md for patterns. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00702">702</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+
+</div>
+</div>
 <a id="ga9be4ad7326c3c8e0480ae9ca4170bc79" name="ga9be4ad7326c3c8e0480ae9ca4170bc79"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga9be4ad7326c3c8e0480ae9ca4170bc79">&#9670;&#160;</a></span>SOCKETWS_BASE_HEADER_SIZE</h2>
 
@@ -1862,7 +1970,7 @@ RFC 6455 section 5.3 for masking requirements. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - creates independent instance.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md496"></a>
+<h2><a class="anchor" id="autotoc_md574"></a>
 Client Usage Example</h2>
 <div class="fragment"><div class="line">  <a class="code hl_struct" href="group__websocket.html#structSocketWS__Config">SocketWS_Config</a> config;</div>
 <div class="line">  <a class="code hl_function" href="group__websocket.html#gac129f58e59f8b169f2c2a48a330fb176">SocketWS_config_defaults</a>(&amp;config);</div>
@@ -1949,7 +2057,7 @@ Use SocketWS_enable_auto_ping(ws, poll) after open for keepalive.</dd></dl>
 <dd>
 <a class="el" href="WEBSOCKET_8md.html">docs/WEBSOCKET.md</a> for full guide. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -2021,7 +2129,7 @@ Use SocketWS_enable_auto_ping(ws, poll) after open for keepalive.</dd></dl>
 <dd>
 RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
 
 </div>
 </div>
@@ -2060,7 +2168,7 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - reads internal state.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga467b55bf31eeff51106a1d111241ad54" title="Get close reason text from close frame.">SocketWS_close_reason()</a> for close reason text. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
 
 </div>
 </div>
@@ -2100,7 +2208,7 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - reads internal state.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga12bb7e4b6127548345c12ddde993704d" title="Get close code from close frame.">SocketWS_close_code()</a> for close code. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -2139,7 +2247,41 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - reads internal state.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#structSocketWS__Config" title="Configuration parameters for WebSocket instances.">SocketWS_Config</a> for compression configuration. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga4bc96039ed3f1e6240cc6af7e3fdce13" name="ga4bc96039ed3f1e6240cc6af7e3fdce13"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga4bc96039ed3f1e6240cc6af7e3fdce13">&#9670;&#160;</a></span>SocketWS_compression_options_defaults()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketWS_compression_options_defaults </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a> *&#160;</td>
+          <td class="paramname"><em>options</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Initialize compression options with defaults. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">options</td><td>Options structure to initialize </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -2183,7 +2325,85 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#structSocketWS__Config" title="Configuration parameters for WebSocket instances.">SocketWS_Config</a> for individual field descriptions and customization. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
+
+</div>
+</div>
+<a id="gaf68edb5baf8b959da2c8b63158d65916" name="gaf68edb5baf8b959da2c8b63158d65916"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf68edb5baf8b959da2c8b63158d65916">&#9670;&#160;</a></span>SocketWS_connect()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">SocketWS_T SocketWS_connect </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>url</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>protocols</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>One-liner WebSocket client connection. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">url</td><td>WebSocket URL (ws:// or wss://) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">protocols</td><td>Optional comma-separated subprotocols (may be NULL)</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Parses URL, creates socket, performs TLS handshake if wss://, creates WebSocket, and completes the opening handshake. Returns fully connected WebSocket in OPEN state.</p>
+<dl class="section return"><dt>Returns</dt><dd>WebSocket in OPEN state, or NULL on error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketWS_Failed</td><td>on connection or handshake failure </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md575"></a>
+URL Format</h2>
+<div class="fragment"><div class="line">ws:<span class="comment">//host[:port][/path]     - Unencrypted WebSocket</span></div>
+<div class="line">wss:<span class="comment">//host[:port][/path]    - TLS-encrypted WebSocket</span></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md576"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Simple connection</span></div>
+<div class="line">SocketWS_T ws = <a class="code hl_function" href="group__websocket.html#gaf68edb5baf8b959da2c8b63158d65916">SocketWS_connect</a>(<span class="stringliteral">&quot;wss://echo.websocket.org&quot;</span>, NULL);</div>
+<div class="line"><span class="keywordflow">if</span> (ws) {</div>
+<div class="line">    <a class="code hl_function" href="group__websocket.html#ga4b8450a05502aaa70e88cdf14a73fa03">SocketWS_send_text</a>(ws, <span class="stringliteral">&quot;Hello!&quot;</span>, 6);</div>
+<div class="line">    <span class="comment">// ... receive ...</span></div>
+<div class="line">    <a class="code hl_function" href="group__websocket.html#gaf04efc033266e882f59db340ca2f8d47">SocketWS_close</a>(ws, <a class="code hl_enumvalue" href="group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30">WS_CLOSE_NORMAL</a>, NULL);</div>
+<div class="line">    <a class="code hl_function" href="group__websocket.html#gaa040ebe5bc5f2673b04b15091a45b944">SocketWS_free</a>(&amp;ws);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// With subprotocol</span></div>
+<div class="line">SocketWS_T ws = <a class="code hl_function" href="group__websocket.html#gaf68edb5baf8b959da2c8b63158d65916">SocketWS_connect</a>(<span class="stringliteral">&quot;ws://api.example.com/ws&quot;</span>, <span class="stringliteral">&quot;graphql-ws&quot;</span>);</div>
+<div class="ttc" id="agroup__websocket_html_gaf04efc033266e882f59db340ca2f8d47"><div class="ttname"><a href="group__websocket.html#gaf04efc033266e882f59db340ca2f8d47">SocketWS_close</a></div><div class="ttdeci">int SocketWS_close(SocketWS_T ws, int code, const char *reason)</div><div class="ttdoc">Initiate graceful WebSocket close handshake.</div></div>
+<div class="ttc" id="agroup__websocket_html_gaf68edb5baf8b959da2c8b63158d65916"><div class="ttname"><a href="group__websocket.html#gaf68edb5baf8b959da2c8b63158d65916">SocketWS_connect</a></div><div class="ttdeci">SocketWS_T SocketWS_connect(const char *url, const char *protocols)</div><div class="ttdoc">One-liner WebSocket client connection.</div></div>
+<div class="ttc" id="agroup__websocket_html_gga386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30"><div class="ttname"><a href="group__websocket.html#gga386c437e966aeaeb091d1d81c0e77b13a297d5e27c1ad4b7c6660b005308a5f30">WS_CLOSE_NORMAL</a></div><div class="ttdeci">@ WS_CLOSE_NORMAL</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00203">SocketWS.h:203</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>For more control, use Socket_new + Socket_connect + SocketWS_client_new </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#gacad45d5dbc4f2191ba5f732a1b648842" title="Create a new client WebSocket instance from a connected TCP socket.">SocketWS_client_new()</a> for manual connection setup </dd>
+<dd>
+<a class="el" href="group__websocket.html#gaa040ebe5bc5f2673b04b15091a45b944" title="Dispose of a WebSocket instance, closing connection if open.">SocketWS_free()</a> for cleanup </dd></dl>
 
 </div>
 </div>
@@ -2288,6 +2508,74 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 
 </div>
 </div>
+<a id="ga519bf217226465597f30e1f87e19d34a" name="ga519bf217226465597f30e1f87e19d34a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga519bf217226465597f30e1f87e19d34a">&#9670;&#160;</a></span>SocketWS_enable_compression()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketWS_enable_compression </td>
+          <td>(</td>
+          <td class="paramtype">SocketWS_T&#160;</td>
+          <td class="paramname"><em>ws</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const <a class="el" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a> *&#160;</td>
+          <td class="paramname"><em>options</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Enable permessage-deflate compression. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ws</td><td>WebSocket instance (before handshake) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">options</td><td>Compression options (NULL for defaults)</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Enables RFC 7692 permessage-deflate compression for this WebSocket. Must be called before the handshake completes. The server may negotiate different parameters.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 if compression not supported or already connected</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md580"></a>
+Example</h2>
+<div class="fragment"><div class="line">SocketWS_T ws = <a class="code hl_function" href="group__websocket.html#gacad45d5dbc4f2191ba5f732a1b648842">SocketWS_client_new</a>(sock, host, path, &amp;config);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Enable compression before handshake</span></div>
+<div class="line"><a class="code hl_struct" href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a> opts;</div>
+<div class="line"><a class="code hl_function" href="group__websocket.html#ga4bc96039ed3f1e6240cc6af7e3fdce13">SocketWS_compression_options_defaults</a>(&amp;opts);</div>
+<div class="line">opts.<a class="code hl_variable" href="group__websocket.html#a79d8c3d69d9897b2f5ee1ae446b4b97f">level</a> = 9;  <span class="comment">// Maximum compression</span></div>
+<div class="line"><a class="code hl_function" href="group__websocket.html#ga519bf217226465597f30e1f87e19d34a">SocketWS_enable_compression</a>(ws, &amp;opts);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Now complete handshake</span></div>
+<div class="line"><a class="code hl_function" href="group__websocket.html#gacbbea030dbe9d643b7f8bd6c1656ff06">SocketWS_handshake</a>(ws);</div>
+<div class="ttc" id="agroup__websocket_html_a79d8c3d69d9897b2f5ee1ae446b4b97f"><div class="ttname"><a href="group__websocket.html#a79d8c3d69d9897b2f5ee1ae446b4b97f">SocketWS_CompressionOptions::level</a></div><div class="ttdeci">int level</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l01183">SocketWS.h:1183</a></div></div>
+<div class="ttc" id="agroup__websocket_html_ga4bc96039ed3f1e6240cc6af7e3fdce13"><div class="ttname"><a href="group__websocket.html#ga4bc96039ed3f1e6240cc6af7e3fdce13">SocketWS_compression_options_defaults</a></div><div class="ttdeci">void SocketWS_compression_options_defaults(SocketWS_CompressionOptions *options)</div><div class="ttdoc">Initialize compression options with defaults.</div></div>
+<div class="ttc" id="agroup__websocket_html_ga519bf217226465597f30e1f87e19d34a"><div class="ttname"><a href="group__websocket.html#ga519bf217226465597f30e1f87e19d34a">SocketWS_enable_compression</a></div><div class="ttdeci">int SocketWS_enable_compression(SocketWS_T ws, const SocketWS_CompressionOptions *options)</div><div class="ttdoc">Enable permessage-deflate compression.</div></div>
+<div class="ttc" id="agroup__websocket_html_structSocketWS__CompressionOptions"><div class="ttname"><a href="group__websocket.html#structSocketWS__CompressionOptions">SocketWS_CompressionOptions</a></div><div class="ttdoc">WebSocket compression options.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l01181">SocketWS.h:1182</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Requires zlib; returns -1 if compiled without SOCKETWS_HAS_DEFLATE </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga02790d0b994d613324052794269b0e22" title="Check if compression is enabled.">SocketWS_compression_enabled()</a> to check if active </dd>
+<dd>
+SocketWS_Config.enable_compression for config-based setup </dd></dl>
+
+</div>
+</div>
 <a id="ga1bfa823bd6275bfdcb9bab6f26ab90ee" name="ga1bfa823bd6275bfdcb9bab6f26ab90ee"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga1bfa823bd6275bfdcb9bab6f26ab90ee">&#9670;&#160;</a></span>SocketWS_error_string()</h2>
 
@@ -2326,7 +2614,7 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f" title="WebSocket-specific error codes for SocketWS_last_error().">SocketWS_Error</a> enum for error codes. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -2375,7 +2663,58 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#gacad45d5dbc4f2191ba5f732a1b648842" title="Create a new client WebSocket instance from a connected TCP socket.">SocketWS_client_new()</a>, <a class="el" href="group__websocket.html#ga29e02ecca2d5a1b78d0eaf2c08883960" title="Accept a WebSocket upgrade from a parsed HTTP request on a server socket.">SocketWS_server_accept()</a> for creation. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+
+</div>
+</div>
+<a id="ga9f35bc85185a4084dc4d4e553bbd4559" name="ga9f35bc85185a4084dc4d4e553bbd4559"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga9f35bc85185a4084dc4d4e553bbd4559">&#9670;&#160;</a></span>SocketWS_get_ping_latency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t SocketWS_get_ping_latency </td>
+          <td>(</td>
+          <td class="paramtype">SocketWS_T&#160;</td>
+          <td class="paramname"><em>ws</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get ping/pong round-trip time. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ws</td><td>WebSocket instance</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Returns the latency (RTT) of the most recent completed PING/PONG cycle. If no ping has been sent or pong not yet received, returns -1.</p>
+<dl class="section return"><dt>Returns</dt><dd>RTT in milliseconds (&gt;= 0), or -1 if no data available</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - reads internal timestamps</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md579"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Send ping and wait for pong</span></div>
+<div class="line"><a class="code hl_function" href="group__websocket.html#ga2be521a2fe8aa5eb5d30869905371a71">SocketWS_ping</a>(ws, <span class="stringliteral">&quot;test&quot;</span>, 4);</div>
+<div class="line"><span class="comment">// ... process events until pong received ...</span></div>
+<div class="line">int64_t rtt = <a class="code hl_function" href="group__websocket.html#ga9f35bc85185a4084dc4d4e553bbd4559">SocketWS_get_ping_latency</a>(ws);</div>
+<div class="line"><span class="keywordflow">if</span> (rtt &gt;= 0) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Latency: %lld ms\n&quot;</span>, (<span class="keywordtype">long</span> <span class="keywordtype">long</span>)rtt);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__websocket_html_ga2be521a2fe8aa5eb5d30869905371a71"><div class="ttname"><a href="group__websocket.html#ga2be521a2fe8aa5eb5d30869905371a71">SocketWS_ping</a></div><div class="ttdeci">int SocketWS_ping(SocketWS_T ws, const void *data, size_t len)</div><div class="ttdoc">Send a PING control frame for keepalive or to solicit immediate response from peer.</div></div>
+<div class="ttc" id="agroup__websocket_html_ga9f35bc85185a4084dc4d4e553bbd4559"><div class="ttname"><a href="group__websocket.html#ga9f35bc85185a4084dc4d4e553bbd4559">SocketWS_get_ping_latency</a></div><div class="ttdeci">int64_t SocketWS_get_ping_latency(SocketWS_T ws)</div><div class="ttdoc">Get ping/pong round-trip time.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga2be521a2fe8aa5eb5d30869905371a71" title="Send a PING control frame for keepalive or to solicit immediate response from peer.">SocketWS_ping()</a> to send PING </dd>
+<dd>
+<a class="el" href="group__websocket.html#ga0049a0e0f8a4218c5d5b3dbf8181b92f" title="Enable automatic periodic PING for connection keepalive.">SocketWS_enable_auto_ping()</a> for automatic keepalive </dd></dl>
 
 </div>
 </div>
@@ -2429,7 +2768,7 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dd>
 <a class="el" href="group__foundation.html#ga46f8d730d28e8c5cbd55e3cbe4c83945" title="Socket_geterrorcode - Convert last errno to normalized SocketErrorCode.">Socket_geterrorcode()</a> for underlying socket errors. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
 
 </div>
 </div>
@@ -2515,7 +2854,7 @@ RFC 6455 section 7.1-7.4 for close handshake details. </dd></dl>
 <dd>
 SocketWS_clear_error() if implemented for reset. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -2587,7 +2926,7 @@ SocketWS_clear_error() if implemented for reset. </dd></dl>
 <dd>
 RFC 6455 section 5.5.2 for PING frame details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -2803,6 +3142,8 @@ RFC 6455 section 5.5.3 for PONG details. </dd></dl>
 <dd>
 <a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> for full event loop example. </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
+
 </div>
 </div>
 <a id="ga134ea19e7c00142525cdf82b82425b6d" name="ga134ea19e7c00142525cdf82b82425b6d"></a>
@@ -2845,7 +3186,84 @@ RFC 6455 section 5.5.3 for PONG details. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#ga89d42ff813f81187667d894e0da0fce0" title="Retrieve the most recent error code for this WebSocket instance.">SocketWS_last_error()</a> for error details. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+
+</div>
+</div>
+<a id="gaa120f2de8a8e3fe8d6670d5952ae3069" name="gaa120f2de8a8e3fe8d6670d5952ae3069"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaa120f2de8a8e3fe8d6670d5952ae3069">&#9670;&#160;</a></span>SocketWS_recv_json()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a> SocketWS_recv_json </td>
+          <td>(</td>
+          <td class="paramtype">SocketWS_T&#160;</td>
+          <td class="paramname"><em>ws</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">char **&#160;</td>
+          <td class="paramname"><em>json_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">size_t *&#160;</td>
+          <td class="paramname"><em>json_len</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Receive and return JSON string. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ws</td><td>WebSocket instance in OPEN state </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_out</td><td>Output: received JSON string (caller must free) </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">json_len</td><td>Output: length of JSON string</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Receives a complete text message and returns it as a JSON string. Only accepts TEXT frames; returns error for BINARY.</p>
+<dl class="section return"><dt>Returns</dt><dd>WS_OK on success, error code on failure</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketWS_Closed</td><td>if connection closes </td></tr>
+    <tr><td class="paramname">SocketWS_Failed</td><td>on receive error </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md578"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">char</span> *json = NULL;</div>
+<div class="line"><span class="keywordtype">size_t</span> len;</div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__websocket.html#gaa120f2de8a8e3fe8d6670d5952ae3069">SocketWS_recv_json</a>(ws, &amp;json, &amp;len) == <a class="code hl_enumvalue" href="group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb">WS_OK</a>) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Received: %s\n&quot;</span>, json);</div>
+<div class="line">    <span class="comment">// Parse with your JSON library</span></div>
+<div class="line">    free(json);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__websocket_html_gaa120f2de8a8e3fe8d6670d5952ae3069"><div class="ttname"><a href="group__websocket.html#gaa120f2de8a8e3fe8d6670d5952ae3069">SocketWS_recv_json</a></div><div class="ttdeci">SocketWS_Error SocketWS_recv_json(SocketWS_T ws, char **json_out, size_t *json_len)</div><div class="ttdoc">Receive and return JSON string.</div></div>
+<div class="ttc" id="agroup__websocket_html_ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb"><div class="ttname"><a href="group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb">WS_OK</a></div><div class="ttdeci">@ WS_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00276">SocketWS.h:276</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Caller must free(json_out) on success </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga4614f5978e94a42cdb1191dbb6d38e85" title="Receive and reassemble a complete WebSocket message.">SocketWS_recv_message()</a> for full message control </dd>
+<dd>
+<a class="el" href="group__websocket.html#gacbcbf4d1f7f94a24cbe57cfee8c5c705" title="Send JSON as text frame.">SocketWS_send_json()</a> for sending JSON </dd></dl>
 
 </div>
 </div>
@@ -2907,7 +3325,7 @@ RFC 6455 section 5.5.3 for PONG details. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#ga134ea19e7c00142525cdf82b82425b6d" title="Check for complete messages ready to receive without blocking.">SocketWS_recv_available()</a> for non-blocking check. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
 
 </div>
 </div>
@@ -2950,7 +3368,7 @@ RFC 6455 section 5.5.3 for PONG details. </dd></dl>
 <dd>
 RFC 6455 section 1.9 for subprotocol negotiation. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -3017,7 +3435,70 @@ RFC 6455 section 1.9 for subprotocol negotiation. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#a622a5556ac8a0b6888819a40851a11fd">SocketWS_Config.max_frame_size</a> for fragmentation threshold. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+
+</div>
+</div>
+<a id="gacbcbf4d1f7f94a24cbe57cfee8c5c705" name="gacbcbf4d1f7f94a24cbe57cfee8c5c705"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gacbcbf4d1f7f94a24cbe57cfee8c5c705">&#9670;&#160;</a></span>SocketWS_send_json()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketWS_send_json </td>
+          <td>(</td>
+          <td class="paramtype">SocketWS_T&#160;</td>
+          <td class="paramname"><em>ws</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>json</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Send JSON as text frame. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">ws</td><td>WebSocket instance in OPEN state </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">json</td><td>JSON string to send (must be valid UTF-8)</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Convenience wrapper around <a class="el" href="group__websocket.html#ga4b8450a05502aaa70e88cdf14a73fa03" title="Send a text message over the WebSocket (opcode TEXT).">SocketWS_send_text()</a> that sends JSON data. Validates UTF-8 if config.validate_utf8 is enabled.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketWS_Closed</td><td>if not open </td></tr>
+    <tr><td class="paramname">SocketWS_Invalid_UTF8</td><td>if validation fails </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md577"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keyword">const</span> <span class="keywordtype">char</span> *msg = <span class="stringliteral">&quot;{\&quot;type\&quot;: \&quot;ping\&quot;, \&quot;id\&quot;: 123}&quot;</span>;</div>
+<div class="line"><a class="code hl_function" href="group__websocket.html#gacbcbf4d1f7f94a24cbe57cfee8c5c705">SocketWS_send_json</a>(ws, msg);</div>
+<div class="ttc" id="agroup__websocket_html_gacbcbf4d1f7f94a24cbe57cfee8c5c705"><div class="ttname"><a href="group__websocket.html#gacbcbf4d1f7f94a24cbe57cfee8c5c705">SocketWS_send_json</a></div><div class="ttdeci">int SocketWS_send_json(SocketWS_T ws, const char *json)</div><div class="ttdoc">Send JSON as text frame.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ga4b8450a05502aaa70e88cdf14a73fa03" title="Send a text message over the WebSocket (opcode TEXT).">SocketWS_send_text()</a> for raw text sending </dd>
+<dd>
+<a class="el" href="group__websocket.html#gaa120f2de8a8e3fe8d6670d5952ae3069" title="Receive and return JSON string.">SocketWS_recv_json()</a> for receiving JSON </dd></dl>
 
 </div>
 </div>
@@ -3085,7 +3566,7 @@ RFC 6455 section 1.9 for subprotocol negotiation. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#a1873fe17fa2f2d2d3c0d16cbfbcfc3f1">SocketWS_Config.validate_utf8</a> for control. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, and <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>.</p>
 
 </div>
 </div>
@@ -3262,6 +3743,8 @@ RFC 6455 section 1.9 for subprotocol negotiation. </dd></dl>
 <dd>
 Socket_T for socket operations (use cautiously). </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
+
 </div>
 </div>
 <a id="gaa40def588d31ab50126603fa720f83b0" name="gaa40def588d31ab50126603fa720f83b0"></a>
@@ -3304,7 +3787,7 @@ Socket_T for socket operations (use cautiously). </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#gaf04efc033266e882f59db340ca2f8d47" title="Initiate graceful WebSocket close handshake.">SocketWS_close()</a> which initiates CLOSING. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>, <a class="el" href="websocket__server_8c_source.html#l00233">process_websocket_clients()</a>, and <a class="el" href="websocket__server_8c_source.html#l00092">request_handler()</a>.</p>
 
 </div>
 </div>
@@ -3750,7 +4233,6 @@ RFC 6455 Section 5.2 for frame header format. </dd></dl>
 <div class="ttc" id="agroup__websocket_html_ga8ec0a78346a127f0919e6b9e61e79ecf"><div class="ttname"><a href="group__websocket.html#ga8ec0a78346a127f0919e6b9e61e79ecf">ws_frame_parse_header</a></div><div class="ttdeci">SocketWS_Error ws_frame_parse_header(SocketWS_FrameParse *frame, const unsigned char *data, size_t len, size_t *consumed)</div><div class="ttdoc">Incrementally parses WebSocket frame header from input data.</div></div>
 <div class="ttc" id="agroup__websocket_html_gabd79199a60ad91cf785166f24f41101f"><div class="ttname"><a href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS_Error</a></div><div class="ttdeci">SocketWS_Error</div><div class="ttdoc">WebSocket-specific error codes for SocketWS_last_error().</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00274">SocketWS.h:275</a></div></div>
 <div class="ttc" id="agroup__websocket_html_gae2e70a359f4a97f9eb37d3805c776e4f"><div class="ttname"><a href="group__websocket.html#gae2e70a359f4a97f9eb37d3805c776e4f">ws_frame_reset</a></div><div class="ttdeci">void ws_frame_reset(SocketWS_FrameParse *frame)</div><div class="ttdoc">Reset frame parser to initial state for new incoming frame.</div></div>
-<div class="ttc" id="agroup__websocket_html_ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb"><div class="ttname"><a href="group__websocket.html#ggabd79199a60ad91cf785166f24f41101fa8d6c24a81bab48a188c7f458bf6ecddb">WS_OK</a></div><div class="ttdeci">@ WS_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketWS_8h_source.html#l00276">SocketWS.h:276</a></div></div>
 <div class="ttc" id="agroup__websocket_html_structSocketWS__FrameParse"><div class="ttname"><a href="group__websocket.html#structSocketWS__FrameParse">SocketWS_FrameParse</a></div><div class="ttdoc">Context for parsing incoming WebSocket frames.</div><div class="ttdef"><b>Definition</b> <a href="SocketWS-private_8h_source.html#l00314">SocketWS-private.h:315</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Can be used interchangeably with memset(&amp;frame, 0, sizeof(frame)) </dd></dl>
 <dl class="section warning"><dt>Warning</dt><dd>Ensure frame struct is properly aligned for header_buf </dd></dl>
@@ -4056,7 +4538,7 @@ RFC 6455 Section 4.2.2 for accept key derivation. </dd></dl>
 <dd>
 RFC 6455 Section 5.2 for opcode ranges. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01401">1401</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01402">1402</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -4097,7 +4579,7 @@ RFC 6455 Section 5.2 for opcode ranges. </dd></dl>
 <dd>
 RFC 6455 Section 5.2 for data opcodes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01420">1420</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01421">1421</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 <p class="reference">References <a class="el" href="SocketWS_8h_source.html#l00176">WS_OPCODE_BINARY</a>, and <a class="el" href="SocketWS_8h_source.html#l00175">WS_OPCODE_TEXT</a>.</p>
 
@@ -4142,7 +4624,7 @@ RFC 6455 Section 5.2 for data opcodes. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#ga386c437e966aeaeb091d1d81c0e77b13" title="Status codes for WebSocket CLOSE frames (RFC 6455 section 7.4).">SocketWS_CloseCode</a> enum for common codes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01460">1460</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01461">1461</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 </div>
 </div>
@@ -4183,7 +4665,7 @@ RFC 6455 Section 5.2 for data opcodes. </dd></dl>
 <dd>
 RFC 6455 Section 5.2 Table 1 for opcodes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01436">1436</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l01437">1437</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 
 <p class="reference">References <a class="el" href="SocketWS_8h_source.html#l00176">WS_OPCODE_BINARY</a>, <a class="el" href="SocketWS_8h_source.html#l00177">WS_OPCODE_CLOSE</a>, and <a class="el" href="SocketWS_8h_source.html#l00179">WS_OPCODE_PONG</a>.</p>
 
@@ -4855,43 +5337,7 @@ Used internally for all error paths. </dd></dl>
 <dd>
 <a class="el" href="group__websocket.html#gaf04efc033266e882f59db340ca2f8d47" title="Initiate graceful WebSocket close handshake.">SocketWS_close()</a> to initiate close. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
-
-</div>
-</div>
-<a id="ga0fadbd57ccfb278acb88c94cc609c265" name="ga0fadbd57ccfb278acb88c94cc609c265"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga0fadbd57ccfb278acb88c94cc609c265">&#9670;&#160;</a></span>SocketWS_DetailedException</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="group__foundation.html#structExcept__T">Except_T</a> SocketWS_DetailedException</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module. </p>
-<p>Declares module exceptions using SOCKET_DECLARE_MODULE_EXCEPTION. These are raised via TRY/EXCEPT or RAISE_WS_ERROR macro.</p>
-<p>Public exceptions exposed in <a class="el" href="group__websocket.html#a2229fadf97885c574f68d8d98136b2a0">SocketWS.h:</a></p><ul>
-<li>SocketWS_Failed: General failures</li>
-<li>SocketWS_ProtocolError: RFC violations</li>
-<li>SocketWS_Closed: <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> closed</li>
-</ul>
-<p>Internal use: RAISE_WS_ERROR for quick error raising with module context.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">Except.h</a> for exception framework. </dd>
-<dd>
-docs/ERROR_HANDLING.md for patterns. </dd></dl>
-
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00698">698</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -4919,7 +5365,7 @@ docs/ERROR_HANDLING.md for patterns. </dd></dl>
 <p>Thrown on allocation failures, invalid states, or unrecoverable errors.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f" title="WebSocket-specific error codes for SocketWS_last_error().">SocketWS_Error</a> for specific error codes. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>
@@ -4947,7 +5393,7 @@ docs/ERROR_HANDLING.md for patterns. </dd></dl>
 <p>Raised on invalid opcodes, malformed frames, missing masks (server), etc.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__websocket.html#ggabd79199a60ad91cf785166f24f41101fac3b45ed8d1cffbe97ae99ad9368edfec">WS_ERROR_PROTOCOL</a> for related non-exception errors. </dd></dl>
 
-<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00040">main()</a>.</p>
+<p class="reference">Referenced by <a class="el" href="websocket__client_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>

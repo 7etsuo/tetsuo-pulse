@@ -29,13 +29,23 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   /* Initialize connection structure */
   memset (&conn, 0, sizeof (conn));
 
+  /* Allocate mutable copies - SocketCrypto_secure_clear needs writable memory */
+  char *username = strdup ("testuser");
+  char *password = strdup ("testpass");
+  if (!username || !password)
+    {
+      free (username);
+      free (password);
+      return 0;
+    }
+
   /* Test method selection response parsing */
   memcpy (conn.recv_buf, data,
           size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1);
   conn.recv_len
       = size < sizeof (conn.recv_buf) ? size : sizeof (conn.recv_buf) - 1;
-  conn.username = "testuser";
-  conn.password = "testpass";
+  conn.username = username;
+  conn.password = password;
 
   proxy_socks5_recv_method (&conn);
 
@@ -54,6 +64,10 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     {
       proxy_socks5_reply_to_result ((int)data[0]);
     }
+
+  /* Clean up */
+  free (username);
+  free (password);
 
   return 0;
 }

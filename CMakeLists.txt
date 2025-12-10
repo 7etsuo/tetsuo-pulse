@@ -553,6 +553,13 @@ set(TEST_SOURCES
     test_proxy_integration
     test_httpserver_load
     test_signals
+    test_cross_module_integration
+    test_load_integration
+    test_connection_resilience
+    test_platform_integration
+    test_multi_protocol_integration
+    test_socketretry
+    test_socketio
 )
 
 # TLS tests (only built when TLS is enabled)
@@ -716,14 +723,26 @@ if(ENABLE_FUZZING)
         fuzz_utf8_incremental
         fuzz_uri_parse
         fuzz_http_date
+        fuzz_http_core
+        fuzz_http_headers_collection
+        fuzz_http_cookies
+        fuzz_http_cookies_simple
+        fuzz_http_auth
+        fuzz_http_content_type
+        fuzz_http_smuggling
+        fuzz_http_client
         fuzz_http1_request
         fuzz_http1_response
         fuzz_http1_chunked
         fuzz_http1_headers
+        fuzz_http1_serialize
+        fuzz_http1_compression
         fuzz_hpack_decode
         fuzz_hpack_huffman
         fuzz_hpack_integer
+        fuzz_hpack_encode
         fuzz_http2_frames
+        fuzz_http2_frames_full
         fuzz_http2_headers
         fuzz_http2_settings
         fuzz_proxy_socks5
@@ -734,8 +753,14 @@ if(ENABLE_FUZZING)
         fuzz_pool_dos
         fuzz_ws_frame
         fuzz_ws_handshake
+        fuzz_websocket_handshake
         fuzz_utf8
         fuzz_ws_deflate
+        fuzz_http_server
+        fuzz_http2_connection
+        fuzz_metrics
+        fuzz_security
+        # fuzz_new_features  # TODO: Fix compilation errors - references removed APIs
     )
     
     # TLS fuzz harnesses (require SOCKET_HAS_TLS)
@@ -752,7 +777,6 @@ if(ENABLE_FUZZING)
             fuzz_dtls_context
             fuzz_dtls_io
             fuzz_dtls_cookie
-            fuzz_http_smuggling
             fuzz_ws_frames
             fuzz_hpack
             fuzz_tls_ct

@@ -124,13 +124,15 @@ $(document).ready(function(){initNavTree('SocketBuf_8h.html',''); initResizable(
 <div class="textblock"><code>#include &quot;<a class="el" href="Arena_8h_source.html">core/Arena.h</a>&quot;</code><br />
 <code>#include &lt;stdbool.h&gt;</code><br />
 <code>#include &lt;stddef.h&gt;</code><br />
+<code>#include &lt;sys/types.h&gt;</code><br />
 <code>#include &quot;<a class="el" href="Except_8h_source.html">core/Except.h</a>&quot;</code><br />
+<code>#include &lt;sys/uio.h&gt;</code><br />
 </div><div class="textblock"><div id="dynsection-0" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-0-trigger" src="closed.png" alt="+"/> Include dependency graph for SocketBuf.h:</div>
 <div id="dynsection-0-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-0-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketBuf_8h__incl.svg" width="299" height="256"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketBuf_8h__incl.svg" width="512" height="256"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div><div class="textblock"><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> This graph shows which files directly or indirectly include this file:</div>
@@ -206,6 +208,24 @@ Functions</h2></td></tr>
 <tr class="memitem:ga2e4e93aa0feab70464515b0ef3a57186" id="r_ga2e4e93aa0feab70464515b0ef3a57186"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga2e4e93aa0feab70464515b0ef3a57186">SocketBuf_written</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t len)</td></tr>
 <tr class="memdesc:ga2e4e93aa0feab70464515b0ef3a57186"><td class="mdescLeft">&#160;</td><td class="mdescRight">Commit bytes written via direct write pointer.  <br /></td></tr>
 <tr class="separator:ga2e4e93aa0feab70464515b0ef3a57186"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga42d28ec4481d1f695ddda98a9cf069dc" id="r_ga42d28ec4481d1f695ddda98a9cf069dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga42d28ec4481d1f695ddda98a9cf069dc">SocketBuf_compact</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf)</td></tr>
+<tr class="memdesc:ga42d28ec4481d1f695ddda98a9cf069dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move data to front of buffer, maximizing contiguous write space.  <br /></td></tr>
+<tr class="separator:ga42d28ec4481d1f695ddda98a9cf069dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga474df61426f231015e3efbf1afd0687d" id="r_ga474df61426f231015e3efbf1afd0687d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga474df61426f231015e3efbf1afd0687d">SocketBuf_ensure</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, size_t min_space)</td></tr>
+<tr class="memdesc:ga474df61426f231015e3efbf1afd0687d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ensure minimum write space is available, resizing if necessary.  <br /></td></tr>
+<tr class="separator:ga474df61426f231015e3efbf1afd0687d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga600c7d30acf5132a0e790140aacba506" id="r_ga600c7d30acf5132a0e790140aacba506"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga600c7d30acf5132a0e790140aacba506">SocketBuf_find</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, const void *needle, size_t needle_len)</td></tr>
+<tr class="memdesc:ga600c7d30acf5132a0e790140aacba506"><td class="mdescLeft">&#160;</td><td class="mdescRight">Search for a byte sequence in the buffer.  <br /></td></tr>
+<tr class="separator:ga600c7d30acf5132a0e790140aacba506"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3da1d72bb58c67433db7e075b833a47b" id="r_ga3da1d72bb58c67433db7e075b833a47b"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga3da1d72bb58c67433db7e075b833a47b">SocketBuf_readline</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, char *line, size_t max_len)</td></tr>
+<tr class="memdesc:ga3da1d72bb58c67433db7e075b833a47b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Read a line (up to and including newline) from the buffer.  <br /></td></tr>
+<tr class="separator:ga3da1d72bb58c67433db7e075b833a47b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaaaf29683accb04578c0fb3869d31ba1d" id="r_gaaaf29683accb04578c0fb3869d31ba1d"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaaaf29683accb04578c0fb3869d31ba1d">SocketBuf_readv</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, const struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:gaaaf29683accb04578c0fb3869d31ba1d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Scatter read from buffer into multiple iovecs.  <br /></td></tr>
+<tr class="separator:gaaaf29683accb04578c0fb3869d31ba1d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga315c19dd862a58b89ca13f3fb1165d09" id="r_ga315c19dd862a58b89ca13f3fb1165d09"><td class="memItemLeft" align="right" valign="top">ssize_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga315c19dd862a58b89ca13f3fb1165d09">SocketBuf_writev</a> (<a class="el" href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a> buf, const struct iovec *iov, int iovcnt)</td></tr>
+<tr class="memdesc:ga315c19dd862a58b89ca13f3fb1165d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Gather write from multiple iovecs into buffer.  <br /></td></tr>
+<tr class="separator:ga315c19dd862a58b89ca13f3fb1165d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -224,7 +244,7 @@ Variables</h2></td></tr>
 <li>Automatic wraparound handling - no manual offset management needed</li>
 <li>Arena-based memory management for efficient allocation/deallocation</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md415"></a>
+<h2><a class="anchor" id="autotoc_md486"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;<a class="code" href="SocketBuf_8h.html">socket/SocketBuf.h</a>&quot;</span></div>
 <div class="line"><span class="preprocessor">#include &quot;<a class="code" href="Arena_8h.html">core/Arena.h</a>&quot;</span></div>
@@ -272,7 +292,7 @@ Basic Usage</h2>
 <div class="ttc" id="agroup__core__io_html_gabad296e666bf8d65669ab7c71d6b8d97"><div class="ttname"><a href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a></div><div class="ttdeci">size_t SocketBuf_write(SocketBuf_T buf, const void *data, size_t len)</div><div class="ttdoc">Write data into the buffer.</div></div>
 <div class="ttc" id="agroup__core__io_html_gac82b13f33ba79d9fa97582a64654e8ef"><div class="ttname"><a href="group__core__io.html#gac82b13f33ba79d9fa97582a64654e8ef">SocketBuf_new</a></div><div class="ttdeci">SocketBuf_T SocketBuf_new(Arena_T arena, size_t capacity)</div><div class="ttdoc">Create a new circular buffer with specified initial capacity.</div></div>
 <div class="ttc" id="agroup__core__io_html_gad11c3dede8563afbb1a3e9b9f4e936e6"><div class="ttname"><a href="group__core__io.html#gad11c3dede8563afbb1a3e9b9f4e936e6">SocketBuf_consume</a></div><div class="ttdeci">void SocketBuf_consume(SocketBuf_T buf, size_t len)</div><div class="ttdoc">Discard data from the front of the buffer without reading it.</div></div>
-<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00114">SocketBuf.h:114</a></div></div>
+<div class="ttc" id="agroup__core__io_html_gad4b3ec10874282833e1b15760efa1b6c"><div class="ttname"><a href="group__core__io.html#gad4b3ec10874282833e1b15760efa1b6c">SocketBuf_T</a></div><div class="ttdeci">struct SocketBuf_T * SocketBuf_T</div><div class="ttdoc">Opaque handle to a circular buffer instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketBuf_8h_source.html#l00115">SocketBuf.h:115</a></div></div>
 <div class="ttc" id="agroup__core__io_html_gae4d5d95ed126030f6414b7f607cd555e"><div class="ttname"><a href="group__core__io.html#gae4d5d95ed126030f6414b7f607cd555e">SocketBuf_readptr</a></div><div class="ttdeci">const void * SocketBuf_readptr(SocketBuf_T buf, size_t *len)</div><div class="ttdoc">Obtain a direct pointer to readable data for zero-copy access.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
 <div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
@@ -282,7 +302,7 @@ Basic Usage</h2>
 <div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md416"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md487"></a>
 Security Considerations</h2>
 <p>For buffers holding sensitive data (e.g., TLS keys, passwords):</p>
 <div class="fragment"><div class="line"><span class="comment">// Before reuse or disposal</span></div>
@@ -319,7 +339,7 @@ SocketPool_T for pool usage. </dd>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00093">93</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketBuf_8h_source.html#l00094">94</a> of file <a class="el" href="SocketBuf_8h_source.html">SocketBuf.h</a>.</p>
 
 </div>
 </div>

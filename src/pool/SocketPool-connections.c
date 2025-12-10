@@ -19,9 +19,7 @@
 #include "pool/SocketPool-private.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
-/* Override default log component (SocketUtil.h sets "Socket") */
-#undef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "SocketPool"
+/* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
 #if SOCKET_HAS_TLS
 #include "socket/Socket-private.h"
@@ -534,14 +532,20 @@ find_or_create_slot (T pool, Socket_T socket, time_t now)
 }
 
 /**
- * @brief Check if pool is accepting new connections.
- * @pool Pool instance
+ * @brief Check if pool is accepting new connections (unlocked version).
+ * @ingroup connection_mgmt
+ * @param pool Pool instance.
+ * @return 1 if accepting (RUNNING state), 0 if draining or stopped.
+ * @threadsafe Call with mutex held.
  *
- * Returns: 1 if accepting (RUNNING state), 0 if draining or stopped
- * Thread-safe: Call with mutex held
+ * Internal version that assumes mutex is already held by caller.
+ * Uses atomic load with acquire semantics for state visibility.
+ *
+ * @see SocketPool_state() for public state query.
+ * @see SocketPool_is_draining() for drain status check.
  */
 static int
-check_pool_accepting (const T pool)
+is_pool_accepting_unlocked (const T pool)
 {
   return atomic_load_explicit (&pool->state, memory_order_acquire)
          == POOL_STATE_RUNNING;
@@ -562,7 +566,7 @@ add_unlocked (T pool, Socket_T socket, time_t now)
   Connection_T conn;
 
   /* Reject if draining or stopped */
-  if (!check_pool_accepting (pool))
+  if (!is_pool_accepting_unlocked (pool))
     return NULL;
 
   if (check_pool_full (pool))

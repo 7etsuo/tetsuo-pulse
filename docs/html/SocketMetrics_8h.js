@@ -148,6 +148,8 @@ var SocketMetrics_8h =
     [ "SocketMetrics_gauge_name", "group__utilities.html#ga1688939050a2c8207534463961107b3c", null ],
     [ "SocketMetrics_gauge_set", "group__utilities.html#ga136f209696f9bc3f2fc3ad47cdac0458", null ],
     [ "SocketMetrics_get", "group__utilities.html#ga88d6bd8b457374f89aaa5896e0b7bcca", null ],
+    [ "SocketMetrics_get_peak_connections", "group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1", null ],
+    [ "SocketMetrics_get_socket_count", "group__utilities.html#ga734ddc8b0557270744359de21721674b", null ],
     [ "SocketMetrics_histogram_count", "group__utilities.html#ga78400f007fa3b02037322fa951b526b4", null ],
     [ "SocketMetrics_histogram_help", "group__utilities.html#gaa5e1f5a07ebccb6667f60603a9f0aaa9", null ],
     [ "SocketMetrics_histogram_name", "group__utilities.html#ga339fc134239b6f057572e4d868abb6cb", null ],
@@ -159,5 +161,7 @@ var SocketMetrics_8h =
     [ "SocketMetrics_reset", "group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47", null ],
     [ "SocketMetrics_reset_counters", "group__utilities.html#gabf9b8dc5b74a93097dd1abc4d1c6f173", null ],
     [ "SocketMetrics_reset_histograms", "group__utilities.html#gad058c5608e74545a1b26ba51a9c2d579", null ],
-    [ "SocketMetrics_shutdown", "group__utilities.html#gac71136a870ed0e20e810cd9642aa6e88", null ]
+    [ "SocketMetrics_reset_peaks", "group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c", null ],
+    [ "SocketMetrics_shutdown", "group__utilities.html#gac71136a870ed0e20e810cd9642aa6e88", null ],
+    [ "SocketMetrics_update_peak_if_needed", "group__utilities.html#gaf0909288c50ba7de9b42d2f3df571ded", null ]
 ];

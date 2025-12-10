@@ -24,6 +24,7 @@ var group__dtls__config =
     [ "SOCKET_DTLS_MIN_MTU", "group__dtls__config.html#ga4e20e95db1f3cb5f21c2d10649ac36da", null ],
     [ "SOCKET_DTLS_MIN_VERSION", "group__dtls__config.html#gabc3e53580ef4039e6bd2b0453f1dec35", null ],
     [ "SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE", "group__dtls__config.html#ga83416fe8d965d7133943298dcd693bd3", null ],
+    [ "SOCKET_DTLS_PEER_CACHE_TTL_MS", "group__dtls__config.html#gac0ca0fd6096fc77e81ca4848dc02b37a", null ],
     [ "SOCKET_DTLS_RECORD_OVERHEAD", "group__dtls__config.html#gadc0eac3a553975d605f281a788d3a884", null ],
     [ "SOCKET_DTLS_SESSION_CACHE_SIZE", "group__dtls__config.html#ga5752ace7cf4781e4dad0786bd493af2e", null ],
     [ "SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT", "group__dtls__config.html#ga2b97166b3033d92fb8fb9dca5c70ea4f", null ],

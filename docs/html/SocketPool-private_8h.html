@@ -159,6 +159,15 @@ Data Structures</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
+<tr class="memitem:gae461bf5ddae6eda683926a6303af87f6" id="r_gae461bf5ddae6eda683926a6303af87f6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gae461bf5ddae6eda683926a6303af87f6">SOCKET_LOG_COMPONENT</a>&#160;&#160;&#160;&quot;SocketPool&quot;</td></tr>
+<tr class="memdesc:gae461bf5ddae6eda683926a6303af87f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default log component for all SocketPool implementation files.  <br /></td></tr>
+<tr class="separator:gae461bf5ddae6eda683926a6303af87f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga019e030e52afae45ed11af4470267f3d" id="r_ga019e030e52afae45ed11af4470267f3d"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga019e030e52afae45ed11af4470267f3d">POOL_LOCK</a>(p)</td></tr>
+<tr class="memdesc:ga019e030e52afae45ed11af4470267f3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Acquire pool mutex.  <br /></td></tr>
+<tr class="separator:ga019e030e52afae45ed11af4470267f3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab23175b8e98780e2f7f52a917e7d0862" id="r_gab23175b8e98780e2f7f52a917e7d0862"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gab23175b8e98780e2f7f52a917e7d0862">POOL_UNLOCK</a>(p)</td></tr>
+<tr class="memdesc:gab23175b8e98780e2f7f52a917e7d0862"><td class="mdescLeft">&#160;</td><td class="mdescRight">Release pool mutex.  <br /></td></tr>
+<tr class="separator:gab23175b8e98780e2f7f52a917e7d0862"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4a354a257cb7d9a1f7cd2befa6d72d0f" id="r_ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga4a354a257cb7d9a1f7cd2befa6d72d0f">SOCKET_HASH_SIZE</a>&#160;&#160;&#160;<a class="el" href="group__foundation.html#ga9aab9f1282519c6c66aca1271deffe84">SOCKET_HASH_TABLE_SIZE</a></td></tr>
 <tr class="memdesc:ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Alias for the library's central hash table size configuration.  <br /></td></tr>
 <tr class="separator:ga4a354a257cb7d9a1f7cd2befa6d72d0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -309,7 +318,7 @@ Doxyfile for documentation generation configuration. </dd></dl>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00469">469</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPool-private_8h_source.html#l00525">525</a> of file <a class="el" href="SocketPool-private_8h_source.html">SocketPool-private.h</a>.</p>
 </div><div id="dynsection-1" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-1-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketPool_T:</div>
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
@@ -423,6 +432,20 @@ free_list</td>
 hash_table</td>
 <td class="fielddoc">
 <p>Hash table for O(1) lookup </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="ae4aab2865fdf71868bedd09217299262" name="ae4aab2865fdf71868bedd09217299262"></a><a class="el" href="group__connection__mgmt.html#ga18f3ff7614b9968e5cc27f2017a0f058">SocketPool_IdleCallback</a></td>
+<td class="fieldname">
+idle_cb</td>
+<td class="fielddoc">
+<p>Callback when connection becomes idle </p>
+</td></tr>
+<tr><td class="fieldtype">
+<a id="a75a197974e3b46331c0e442323ea7af9" name="a75a197974e3b46331c0e442323ea7af9"></a>void *</td>
+<td class="fieldname">
+idle_cb_data</td>
+<td class="fielddoc">
+<p>User data for idle callback </p>
 </td></tr>
 <tr><td class="fieldtype">
 <a id="a2a06a66f461ba2602e2ea915cdcf82d7" name="a2a06a66f461ba2602e2ea915cdcf82d7"></a>time_t</td>

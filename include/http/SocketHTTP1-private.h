@@ -71,6 +71,32 @@
  */
 
 /* ============================================================================
+ * HTTP/1.1 Wire Format Constants (Shared)
+ * ============================================================================
+ */
+
+/** CRLF line terminator string for serialization */
+#define HTTP1_CRLF_STR "\r\n"
+
+/** Length of CRLF sequence */
+#define HTTP1_CRLF_LEN 2
+
+/** Single space separator for serialization */
+#define HTTP1_SP_STR " "
+
+/** Length of single space */
+#define HTTP1_SP_LEN 1
+
+/** Header name/value separator for serialization */
+#define HTTP1_HEADER_SEP_STR ": "
+
+/** Length of header separator */
+#define HTTP1_HEADER_SEP_LEN 2
+
+/** Hexadecimal radix for chunk size parsing/serialization */
+#define HTTP1_HEX_RADIX 16
+
+/* ============================================================================
  * Table-Driven DFA Character Classes
  * ============================================================================
  */

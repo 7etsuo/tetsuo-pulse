@@ -12,6 +12,6 @@ var searchData=
   ['tls_5fpinning_5finit_9',['tls_pinning_init',['../group__security.html#ga726c939b0e3e55893537751d2ea87dd8',1,'SocketTLS-private.h']]],
   ['tls_5fsecure_5ffree_5fpkey_10',['tls_secure_free_pkey',['../group__security.html#gabf9cbcc9cfbd30df1d1252ccaf34b8d0',1,'SocketTLS-private.h']]],
   ['tls_5fsocket_5fget_5fssl_11',['tls_socket_get_ssl',['../group__security.html#gac08c4201eb8ac29014cead5bf4a17adb',1,'SocketTLS-private.h']]],
-  ['tls_5fvalidate_5ffile_5fpath_12',['tls_validate_file_path',['../SocketTLS-private_8h.html#a7c1796c12a4cab58c4bc3eba891efc59',1,'SocketTLS-private.h']]],
+  ['tls_5fvalidate_5ffile_5fpath_12',['tls_validate_file_path',['../group__security.html#ga7c1796c12a4cab58c4bc3eba891efc59',1,'SocketTLS-private.h']]],
   ['tls_5fvalidate_5fhostname_13',['tls_validate_hostname',['../group__security.html#gaebeabc646fbd6961894512930a822ca9',1,'SocketTLS-private.h']]]
 ];

@@ -671,6 +671,18 @@ Functions</h2></td></tr>
 <tr class="memitem:ga6991175422fbbdf883b75713242b0e0f" id="r_ga6991175422fbbdf883b75713242b0e0f"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga6991175422fbbdf883b75713242b0e0f">SocketMetrics_category_name</a> (<a class="el" href="group__utilities.html#ga33af252a522ec94fe17be7f5e6aecf66">SocketMetricCategory</a> category)</td></tr>
 <tr class="memdesc:ga6991175422fbbdf883b75713242b0e0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the name of a metric category as a static string.  <br /></td></tr>
 <tr class="separator:ga6991175422fbbdf883b75713242b0e0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga734ddc8b0557270744359de21721674b" id="r_ga734ddc8b0557270744359de21721674b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a> (void)</td></tr>
+<tr class="memdesc:ga734ddc8b0557270744359de21721674b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current count of open sockets.  <br /></td></tr>
+<tr class="separator:ga734ddc8b0557270744359de21721674b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga30438b94d80a557393ec5e1eb815a9c1" id="r_ga30438b94d80a557393ec5e1eb815a9c1"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics_get_peak_connections</a> (void)</td></tr>
+<tr class="memdesc:ga30438b94d80a557393ec5e1eb815a9c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get peak (high watermark) count of simultaneous connections.  <br /></td></tr>
+<tr class="separator:ga30438b94d80a557393ec5e1eb815a9c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaac9a5c72ee4eab7298e004bbab8c984c" id="r_gaac9a5c72ee4eab7298e004bbab8c984c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c">SocketMetrics_reset_peaks</a> (void)</td></tr>
+<tr class="memdesc:gaac9a5c72ee4eab7298e004bbab8c984c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset peak connection counters.  <br /></td></tr>
+<tr class="separator:gaac9a5c72ee4eab7298e004bbab8c984c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaf0909288c50ba7de9b42d2f3df571ded" id="r_gaf0909288c50ba7de9b42d2f3df571ded"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gaf0909288c50ba7de9b42d2f3df571ded">SocketMetrics_update_peak_if_needed</a> (int current_count)</td></tr>
+<tr class="memdesc:gaf0909288c50ba7de9b42d2f3df571ded"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal: Update peak counter if current count is higher.  <br /></td></tr>
+<tr class="separator:gaf0909288c50ba7de9b42d2f3df571ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga984414b5ee576c6acb3fbd9e8a96ef0f" id="r_ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#structSocketRateLimit__T">SocketRateLimit_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga984414b5ee576c6acb3fbd9e8a96ef0f">SocketRateLimit_new</a> (<a class="el" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena, size_t tokens_per_sec, size_t bucket_size)</td></tr>
 <tr class="memdesc:ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new token bucket rate limiter.  <br /></td></tr>
 <tr class="separator:ga984414b5ee576c6acb3fbd9e8a96ef0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -700,6 +712,9 @@ Functions</h2></td></tr>
 <tr class="memitem:gae39058e1d9114bc4dc403587d062b2d6" id="r_gae39058e1d9114bc4dc403587d062b2d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae39058e1d9114bc4dc403587d062b2d6">SocketRateLimit_debug_live_count</a> (void)</td></tr>
 <tr class="memdesc:gae39058e1d9114bc4dc403587d062b2d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Debug utility: count of live (allocated) rate limiter instances.  <br /></td></tr>
 <tr class="separator:gae39058e1d9114bc4dc403587d062b2d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae60e4575d034cfe56be8b50e94ad5481" id="r_gae60e4575d034cfe56be8b50e94ad5481"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a> (<a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *policy)</td></tr>
+<tr class="memdesc:gae60e4575d034cfe56be8b50e94ad5481"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new retry context instance with optional custom policy.  <br /></td></tr>
+<tr class="separator:gae60e4575d034cfe56be8b50e94ad5481"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga68491b1f63c513ccc96a83a14d069e7b" id="r_ga68491b1f63c513ccc96a83a14d069e7b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a> (const unsigned char *data, size_t len)</td></tr>
 <tr class="memdesc:ga68491b1f63c513ccc96a83a14d069e7b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform one-shot validation of complete UTF-8 data buffer.  <br /></td></tr>
 <tr class="separator:ga68491b1f63c513ccc96a83a14d069e7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -769,7 +784,7 @@ Architecture Overview</h2>
 <div class="line">│              Foundation Layer                             │</div>
 <div class="line">│  Arena, Except, SocketUtil (legacy compat)                │</div>
 <div class="line">└───────────────────────────────────────────────────────────┘</div>
-<div class="ttc" id="agroup__connection__mgmt_html_structConnection"><div class="ttname"><a href="group__connection__mgmt.html#structConnection">Connection</a></div><div class="ttdoc">Internal structure representing a pooled connection slot.</div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00268">SocketPool-private.h:269</a></div></div>
+<div class="ttc" id="agroup__connection__mgmt_html_structConnection"><div class="ttname"><a href="group__connection__mgmt.html#structConnection">Connection</a></div><div class="ttdoc">Internal structure representing a pooled connection slot.</div><div class="ttdef"><b>Definition</b> <a href="SocketPool-private_8h_source.html#l00324">SocketPool-private.h:325</a></div></div>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md89"></a>
 Module Relationships</h2>
 <ul>
@@ -797,7 +812,7 @@ Module Relationships</h2>
 <li>Rate Limiting (SocketRateLimit): Token bucket for connection/byte throttling.</li>
 <li>Metrics collection and UTF-8 utilities.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md102"></a>
+<h2><a class="anchor" id="autotoc_md105"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌─────────────────────┐</div>
 <div class="line">│   Application       │  &lt;-- HTTP clients, pools, reconnect</div>
@@ -812,21 +827,21 @@ Architecture Overview</h2>
 <div class="line">┌──────────▼──────────┐</div>
 <div class="line">│   Foundation        │  &lt;-- Arena, Except, Timer</div>
 <div class="line">└─────────────────────┘</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md103"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md106"></a>
 Key Integration Patterns</h2>
 <ul>
 <li><b>Retry in Reconnect</b>: SocketReconnect uses SocketRetry internally for backoff.</li>
 <li><b>Rate Limit in Pool</b>: SocketPool integrates SocketRateLimit for per-IP limits.</li>
 <li><b>Metrics Everywhere</b>: All modules emit to SocketMetrics for observability.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md104"></a>
+<h2><a class="anchor" id="autotoc_md107"></a>
 Thread Safety</h2>
 <ul>
 <li>Instances: Generally not thread-safe (stateful).</li>
 <li>Pure functions: Thread-safe (e.g., calculate_delay).</li>
 <li>Use one instance per thread or external locking.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md105"></a>
+<h2><a class="anchor" id="autotoc_md108"></a>
 Platform Notes</h2>
 <ul>
 <li>Requires &lt;time.h&gt; CLOCK_MONOTONIC for accurate delays.</li>
@@ -1086,10 +1101,10 @@ tokens_per_sec</td>
 </div><div class="memdoc">
 <div class="textblock"><p>Configuration structure for retry policy. </p>
 <p>Defines parameters for exponential backoff with jitter, controlling retry timing, attempt limits, and backoff behavior.</p>
-<p>Default values can be overridden via compile-time macros or SocketRetry_policy_defaults().</p>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_new() to create retry context with policy. </dd>
+<p>Default values can be overridden via compile-time macros or <a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481" title="Create a new retry context instance with optional custom policy.">SocketRetry_policy_defaults()</a>.</p>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> to create retry context with policy. </dd>
 <dd>
-SocketRetry_set_policy() to update policy on existing context. </dd></dl>
+<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy()</a> to update policy on existing context. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketRetry_8h_source.html#l00130">130</a> of file <a class="el" href="SocketRetry_8h_source.html">SocketRetry.h</a>.</p>
 </div><table class="fieldtable">
@@ -1153,7 +1168,7 @@ Multiplier for exponential backoff (recommended &gt;1.0). <p>Default: SOCKET_RET
 </div><div class="memdoc">
 <div class="textblock"><p>Opaque structure capturing retry execution metrics and outcomes. </p>
 <p>Aggregates key performance indicators from a single retry sequence, enabling observability, alerting, and debugging. Populated by execute() functions, zero-initialized otherwise. Thread-safe for read if no concurrent writes.</p>
-<h2><a class="anchor" id="autotoc_md108"></a>
+<h2><a class="anchor" id="autotoc_md111"></a>
 Fields Table</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -1163,7 +1178,7 @@ Fields Table</h2>
 </table>
 <p>if executed) | | last_error | int | Final operation return (0=success, else errno-like code) | | total_delay_ms | int64_t | Sum of all backoff sleeps (monotonic ms; excludes op time) | | total_time_ms | int64_t | Wall-clock from start to end (ops + delays + overhead) |</p>
 <p>Usage: Retrieve via get_stats(), analyze for high retry rates or long delays.</p>
-<h2><a class="anchor" id="autotoc_md109"></a>
+<h2><a class="anchor" id="autotoc_md112"></a>
 Interpretation Notes</h2>
 <ul>
 <li>attempts ==1: No retries needed (immediate success or single failure)</li>
@@ -1176,11 +1191,11 @@ Interpretation Notes</h2>
 <dd>
 int64_t timings use <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> for precision. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n Read: Yes (atomic snapshot via get_stats()); Write: No</dt><dd></dd></dl>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_get_stats() accessor function. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats()</a> accessor function. </dd>
 <dd>
-SocketRetry_execute() or SocketRetry_simple() for updating fields. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> or SocketRetry_simple() for updating fields. </dd>
 <dd>
-SocketRetry_reset() clears to zero. </dd>
+<a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset()</a> clears to zero. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> influencing attempt counts/delays. </dd></dl>
 
@@ -1284,7 +1299,7 @@ state</td>
 <p>Maximum IP address string length. </p>
 <p>IPv6 with scope ID. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00837">837</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00874">874</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1304,7 +1319,7 @@ state</td>
 <p>Prime number for good distribution.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for IP tracking implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00826">826</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00863">863</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1323,7 +1338,7 @@ state</td>
 <p>Buffer size for formatted log messages. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01076">1076</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01113">1113</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1342,7 +1357,7 @@ state</td>
 <p>Default timestamp for formatting errors. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01106">1106</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01143">1143</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1361,7 +1376,7 @@ state</td>
 <p>Timestamp formatting buffer size. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01086">1086</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01123">1123</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1380,7 +1395,7 @@ state</td>
 <p>Timestamp format string. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01096">1096</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01133">1133</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1399,7 +1414,7 @@ state</td>
 <p>Log truncation suffix. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#ga1364e85e147f0f6d43c82b4ce3e326c1" title="Emit a log message.">SocketLog_emit()</a> for logging functions. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01116">1116</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01153">1153</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1418,7 +1433,7 @@ state</td>
 <p>Length of log truncation suffix. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga2d9c77a58bc1bafac674a2f3e7fd6110" title="Log truncation suffix.">SOCKET_LOG_TRUNCATION_SUFFIX</a> </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01126">1126</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01163">1163</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1511,7 +1526,7 @@ state</td>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00994">994</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l01096">1096</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1583,7 +1598,7 @@ state</td>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00979">979</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l01081">1081</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1604,7 +1619,7 @@ state</td>
 
 <p>SOCKET_METRICS_TIME_START - Start timing an operation. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l00971">971</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketMetrics_8h_source.html#l01073">1073</a> of file <a class="el" href="SocketMetrics_8h_source.html">SocketMetrics.h</a>.</p>
 
 </div>
 </div>
@@ -1624,7 +1639,7 @@ state</td>
 <p>0 = unlimited.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for bandwidth limiting. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00814">814</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00851">851</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1643,7 +1658,7 @@ state</td>
 <p>Default burst capacity for connection rate limiter. </p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for rate limiting implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00790">790</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00827">827</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1663,7 +1678,7 @@ state</td>
 <p>New connections per second.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRateLimit__T" title="Internal structure implementing the token bucket rate limiter.">SocketRateLimit_T</a> for rate limiting implementation. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00780">780</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00817">817</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1683,7 +1698,7 @@ state</td>
 <p>0 = unlimited.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketPool-private_8h.html#structSocketPool__T">SocketPool_T</a> for connection pool rate limiting. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00802">802</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00839">839</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -1841,7 +1856,7 @@ Rate Limiter Constants</h1>
 
 <p>Compile-time configurable default values for <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> fields. </p>
 <p>These macros allow customization of retry policy defaults without modifying source code. Override them before including <a class="el" href="SocketRetry_8h.html" title="Generic retry framework with exponential backoff and jitter for transient failures.">SocketRetry.h</a>.</p>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_policy_defaults() which uses these values. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481" title="Create a new retry context instance with optional custom policy.">SocketRetry_policy_defaults()</a> which uses these values. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> for structure details.</dd></dl>
 <p>Default maximum number of retry attempts.</p>
@@ -1906,7 +1921,7 @@ Rate Limiter Constants</h1>
 
 <p>Hard maximum attempts limit to prevent infinite retries. </p>
 <dl class="section note"><dt>Note</dt><dd>Internal safety cap; policy max_attempts cannot exceed this. Used in validation and delay calculations. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_calculate_delay() </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay()</a> </dd>
 <dd>
 <a class="el" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618" title="Maximum number of retry attempts before giving up.">SocketRetry_Policy::max_attempts</a> </dd></dl>
 
@@ -2095,11 +2110,11 @@ Rate Limiter Structure</h1>
 <a class="el" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7" title="Non-blocking attempt to acquire and consume tokens.">SocketRateLimit_try_acquire()</a> for non-blocking token consumption. </dd>
 <dd>
 <a class="el" href="group__utilities.html">Utilities module</a> for related helper modules.</dd></dl>
-<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via SocketRetry_new(), used in execute() functions, and freed with SocketRetry_free().</p>
+<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a>, used in execute() functions, and freed with <a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a>.</p>
 <p>Internal implementation uses Arena for memory management and tracks execution metrics. Not thread-safe; designed for single-threaded use per instance.</p>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_new() for allocation. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> for allocation. </dd>
 <dd>
-SocketRetry_execute() for usage. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
 
@@ -2130,11 +2145,11 @@ SocketRetry_execute() for usage. </dd>
 <a class="el" href="group__utilities.html#gabb5d1321362b759ed688cfc414c4b2a7" title="Non-blocking attempt to acquire and consume tokens.">SocketRateLimit_try_acquire()</a> for non-blocking token consumption. </dd>
 <dd>
 <a class="el" href="group__utilities.html">Utilities module</a> for related helper modules.</dd></dl>
-<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via SocketRetry_new(), used in execute() functions, and freed with SocketRetry_free().</p>
+<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a>, used in execute() functions, and freed with <a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a>.</p>
 <p>Internal implementation uses Arena for memory management and tracks execution metrics. Not thread-safe; designed for single-threaded use per instance.</p>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_new() for allocation. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> for allocation. </dd>
 <dd>
-SocketRetry_execute() for usage. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
 
@@ -2155,11 +2170,11 @@ SocketRetry_execute() for usage. </dd>
 </div><div class="memdoc">
 
 <p>Opaque handle for a retry context. </p>
-<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via SocketRetry_new(), used in execute() functions, and freed with SocketRetry_free().</p>
+<p>Manages retry policy, state, statistics, and backoff logic for retryable operations. Created via <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a>, used in execute() functions, and freed with <a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a>.</p>
 <p>Internal implementation uses Arena for memory management and tracks execution metrics. Not thread-safe; designed for single-threaded use per instance.</p>
-<dl class="section see"><dt>See also</dt><dd>SocketRetry_new() for allocation. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> for allocation. </dd>
 <dd>
-SocketRetry_execute() for usage. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for usage. </dd>
 <dd>
 <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> for performance metrics. </dd></dl>
 
@@ -2181,7 +2196,7 @@ SocketRetry_execute() for usage. </dd>
 </div><div class="memdoc">
 
 <p>User-defined callback implementing the core retryable operation. </p>
-<p>Invoked by SocketRetry_execute() to perform the actual work that may fail transiently. Must be idempotent: safe to call multiple times with same state, handling partial progress. Return 0 signals success (retry loop exits); non-zero triggers potential retry.</p>
+<p>Invoked by <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> to perform the actual work that may fail transiently. Must be idempotent: safe to call multiple times with same state, handling partial progress. Return 0 signals success (retry loop exits); non-zero triggers potential retry.</p>
 <p>Design guidelines:</p><ul>
 <li>Keep lightweight; heavy ops better wrapped in async or pooled.</li>
 <li>Use attempt param for logging/progressive behavior (e.g., increasing timeouts).</li>
@@ -2196,7 +2211,7 @@ SocketRetry_execute() for usage. </dd>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>0 = success (complete), &gt;0 = retryable error code (e.g., ETIMEDOUT), &lt;0 = fatal (but still checked by should_retry).</dd></dl>
-<h2><a class="anchor" id="autotoc_md106"></a>
+<h2><a class="anchor" id="autotoc_md109"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// TCP connect with logging</span></div>
 <div class="line"><span class="keyword">static</span> <span class="keywordtype">int</span> tcp_connect_op(<span class="keywordtype">void</span> *ctx_, <span class="keywordtype">int</span> attempt) {</div>
@@ -2220,16 +2235,17 @@ Usage Example</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Usage in execute</span></div>
 <div class="line">ConnectCtx ctx = { .host = <span class="stringliteral">&quot;example.com&quot;</span>, .port = 443 };</div>
-<div class="line"><span class="keywordtype">int</span> res = SocketRetry_execute(retry, tcp_connect_op, should_retry, &amp;ctx);</div>
+<div class="line"><span class="keywordtype">int</span> res = <a class="code hl_function" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute</a>(retry, tcp_connect_op, should_retry, &amp;ctx);</div>
 <div class="line"><span class="keywordflow">if</span> (res == 0 &amp;&amp; ctx.socket) {</div>
 <div class="line">    <span class="comment">// Use ctx.socket...</span></div>
 <div class="line">}</div>
+<div class="ttc" id="aSocketRetry_8h_html_ae9cb61aec8d7c8934a7481ed21e3bedf"><div class="ttname"><a href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute</a></div><div class="ttdeci">int SocketRetry_execute(SocketRetry_T retry, SocketRetry_Operation operation, SocketRetry_ShouldRetry should_retry, void *context)</div></div>
 <div class="ttc" id="aSocketUtil_8h_html_a7853a630bcaead9d41536ccbfd598f6d"><div class="ttname"><a href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_DEBUG_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00536">SocketUtil.h:536</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga6212fb2b6eefa567592a59f55c25a6f1"><div class="ttname"><a href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a></div><div class="ttdeci">Socket_T Socket_new(int domain, int type, int protocol)</div><div class="ttdoc">Create a new socket with specified domain, type, and protocol.</div></div>
 <div class="ttc" id="agroup__core__io_html_ga74ad7a9bb8deaf499c59d90d6e411f37"><div class="ttname"><a href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a></div><div class="ttdeci">void Socket_free(Socket_T *socket)</div><div class="ttdoc">Dispose of a socket instance and close the underlying file descriptor.</div></div>
 <div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
 <div class="ttc" id="agroup__foundation_html_gaacd3ef2f86186c451f2eb90cd490eae5"><div class="ttname"><a href="group__foundation.html#gaacd3ef2f86186c451f2eb90cd490eae5">Socket_geterrno</a></div><div class="ttdeci">int Socket_geterrno(void)</div><div class="ttdoc">Socket_geterrno - Retrieve the raw POSIX errno from the last system call error.Returns the errno valu...</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md107"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md110"></a>
 Advanced: Progressive Timeouts</h2>
 <div class="fragment"><div class="line"><span class="keyword">static</span> <span class="keywordtype">int</span> db_query_op(<span class="keywordtype">void</span> *ctx, <span class="keywordtype">int</span> attempt) {</div>
 <div class="line">    QueryCtx *qctx = (QueryCtx*)ctx;</div>
@@ -2241,7 +2257,7 @@ Advanced: Progressive Timeouts</h2>
 <dl class="section user"><dt>Thread Safety\n Caller ensures; context may need locks if shared.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8" title="Callback type to decide whether to retry after an operation failure.">SocketRetry_ShouldRetry</a> pairing for error decisions. </dd>
 <dd>
-SocketRetry_execute() invoker and loop logic. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> invoker and loop logic. </dd>
 <dd>
 <a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> common retryable codes. </dd>
 <dd>
@@ -2282,7 +2298,7 @@ docs/ERROR_HANDLING.md error code conventions. </dd></dl>
 <div class="ttc" id="aSocketUtil_8h_html_a78065a32bc90c30a5d062b0b9ac88163"><div class="ttname"><a href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163">SocketError_is_retryable_errno</a></div><div class="ttdeci">int SocketError_is_retryable_errno(int err)</div><div class="ttdoc">SocketError_is_retryable_errno - Check if errno indicates retryable error.</div></div>
 </div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> for common retryable errors. </dd>
 <dd>
-SocketRetry_execute() for integration. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for integration. </dd>
 <dd>
 <a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445" title="User-defined callback implementing the core retryable operation.">SocketRetry_Operation</a> for the operation being retried. </dd></dl>
 
@@ -3415,6 +3431,98 @@ TYPE socket_pool_connections_created counter</h1>
 
 </div>
 </div>
+<a id="ga30438b94d80a557393ec5e1eb815a9c1" name="ga30438b94d80a557393ec5e1eb815a9c1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga30438b94d80a557393ec5e1eb815a9c1">&#9670;&#160;</a></span>SocketMetrics_get_peak_connections()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketMetrics_get_peak_connections </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get peak (high watermark) count of simultaneous connections. </p>
+<p>Returns the highest number of Socket_T instances that were allocated simultaneously since the library was initialized or since the last call to <a class="el" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c" title="Reset peak connection counters.">SocketMetrics_reset_peaks()</a>.</p>
+<p>This is useful for capacity planning and understanding peak load.</p>
+<dl class="section return"><dt>Returns</dt><dd>Peak socket count since init/reset (&gt;= 0)</dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic counter read</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md102"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// After running load test</span></div>
+<div class="line">printf(<span class="stringliteral">&quot;Peak connections: %d\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics_get_peak_connections</a>());</div>
+<div class="line">printf(<span class="stringliteral">&quot;Current connections: %d\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a>());</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Reset for next interval</span></div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c">SocketMetrics_reset_peaks</a>();</div>
+<div class="ttc" id="agroup__utilities_html_ga30438b94d80a557393ec5e1eb815a9c1"><div class="ttname"><a href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics_get_peak_connections</a></div><div class="ttdeci">int SocketMetrics_get_peak_connections(void)</div><div class="ttdoc">Get peak (high watermark) count of simultaneous connections.</div></div>
+<div class="ttc" id="agroup__utilities_html_ga734ddc8b0557270744359de21721674b"><div class="ttname"><a href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a></div><div class="ttdeci">int SocketMetrics_get_socket_count(void)</div><div class="ttdoc">Get current count of open sockets.</div></div>
+<div class="ttc" id="agroup__utilities_html_gaac9a5c72ee4eab7298e004bbab8c984c"><div class="ttname"><a href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c">SocketMetrics_reset_peaks</a></div><div class="ttdeci">void SocketMetrics_reset_peaks(void)</div><div class="ttdoc">Reset peak connection counters.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga734ddc8b0557270744359de21721674b" title="Get current count of open sockets.">SocketMetrics_get_socket_count()</a> for current count </dd>
+<dd>
+<a class="el" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c" title="Reset peak connection counters.">SocketMetrics_reset_peaks()</a> to reset high watermark </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga734ddc8b0557270744359de21721674b" name="ga734ddc8b0557270744359de21721674b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga734ddc8b0557270744359de21721674b">&#9670;&#160;</a></span>SocketMetrics_get_socket_count()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketMetrics_get_socket_count </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Get current count of open sockets. </p>
+<p>Returns the number of Socket_T instances currently allocated (not freed). This is useful for monitoring resource usage and detecting leaks.</p>
+<dl class="section return"><dt>Returns</dt><dd>Current count of open Socket_T instances (&gt;= 0)</dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic counter read</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md101"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> before = <a class="code hl_function" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a>();</div>
+<div class="line">Socket_T sock = <a class="code hl_function" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1">Socket_new</a>(AF_INET, SOCK_STREAM, 0);</div>
+<div class="line">assert(<a class="code hl_function" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a>() == before + 1);</div>
+<div class="line"><a class="code hl_function" href="group__core__io.html#ga74ad7a9bb8deaf499c59d90d6e411f37">Socket_free</a>(&amp;sock);</div>
+<div class="line">assert(<a class="code hl_function" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics_get_socket_count</a>() == before);</div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>This wraps <a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a> for consistency with metrics API </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1" title="Get peak (high watermark) count of simultaneous connections.">SocketMetrics_get_peak_connections()</a> for high watermark </dd>
+<dd>
+<a class="el" href="group__socket__live__utils.html#gaa8cacd863c275e6e12f7c63b65708e1b" title="Query current number of active Socket_T instances (public for tests).">Socket_debug_live_count()</a> for underlying implementation </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="graceful__shutdown_8c_source.html#l00242">main()</a>.</p>
+
+</div>
+</div>
 <a id="ga78400f007fa3b02037322fa951b526b4" name="ga78400f007fa3b02037322fa951b526b4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga78400f007fa3b02037322fa951b526b4">&#9670;&#160;</a></span>SocketMetrics_histogram_count()</h2>
 
@@ -3822,6 +3930,48 @@ TYPE socket_pool_connections_created counter</h1>
 
 </div>
 </div>
+<a id="gaac9a5c72ee4eab7298e004bbab8c984c" name="gaac9a5c72ee4eab7298e004bbab8c984c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaac9a5c72ee4eab7298e004bbab8c984c">&#9670;&#160;</a></span>SocketMetrics_reset_peaks()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketMetrics_reset_peaks </td>
+          <td>(</td>
+          <td class="paramtype">void&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reset peak connection counters. </p>
+<p>Resets the peak (high watermark) connection count to the current count. This is useful for interval-based monitoring where you want to track peak usage per time period.</p>
+<dl class="section user"><dt>Thread Safety\n Yes - atomic update</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md103"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Log peaks every hour</span></div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line">    sleep(3600);</div>
+<div class="line">    printf(<span class="stringliteral">&quot;Peak this hour: %d\n&quot;</span>, <a class="code hl_function" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics_get_peak_connections</a>());</div>
+<div class="line">    <a class="code hl_function" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c">SocketMetrics_reset_peaks</a>();</div>
+<div class="line">}</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1" title="Get peak (high watermark) count of simultaneous connections.">SocketMetrics_get_peak_connections()</a> to query peak </dd>
+<dd>
+<a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47" title="Reset all metrics to initial values.">SocketMetrics_reset()</a> to reset all metrics including peaks </dd></dl>
+
+</div>
+</div>
 <a id="gac71136a870ed0e20e810cd9642aa6e88" name="gac71136a870ed0e20e810cd9642aa6e88"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#gac71136a870ed0e20e810cd9642aa6e88">&#9670;&#160;</a></span>SocketMetrics_shutdown()</h2>
 
@@ -3851,6 +4001,42 @@ TYPE socket_pool_connections_created counter</h1>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gaeefb37a161dced1c0dcf35cb8c472977" title="Initialize the metrics subsystem.">SocketMetrics_init()</a> for subsystem initialization. </dd>
 <dd>
 <a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47" title="Reset all metrics to initial values.">SocketMetrics_reset()</a> if reset needed before shutdown. </dd></dl>
+
+</div>
+</div>
+<a id="gaf0909288c50ba7de9b42d2f3df571ded" name="gaf0909288c50ba7de9b42d2f3df571ded"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gaf0909288c50ba7de9b42d2f3df571ded">&#9670;&#160;</a></span>SocketMetrics_update_peak_if_needed()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketMetrics_update_peak_if_needed </td>
+          <td>(</td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>current_count</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Internal: Update peak counter if current count is higher. </p>
+<p>Called from socket creation paths to track peak connections. Applications should not call this directly.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">current_count</td><td>Current socket count</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - uses atomic compare-and-swap</dt><dd></dd></dl>
 
 </div>
 </div>
@@ -4381,6 +4567,594 @@ TYPE socket_pool_connections_created counter</h1>
 </div><div class="memdoc">
 <dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2home_2tetsuo_2git_2tetsuo-socket_2include_2core_2SocketRateLimit_8h-example.html#a6">/home/tetsuo/git/tetsuo-socket/include/core/SocketRateLimit.h</a>.</dd>
 </dl>
+
+</div>
+</div>
+<a id="gae60e4575d034cfe56be8b50e94ad5481" name="gae60e4575d034cfe56be8b50e94ad5481"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gae60e4575d034cfe56be8b50e94ad5481">&#9670;&#160;</a></span>SocketRetry_policy_defaults()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketRetry_policy_defaults </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> *&#160;</td>
+          <td class="paramname"><em>policy</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a new retry context instance with optional custom policy. </p>
+<p>Allocates and initializes a new SocketRetry_T instance for managing retry logic with exponential backoff and jitter. The instance tracks state, statistics, and policy for retryable operations.</p>
+<p>If policy is NULL, conservative defaults are applied suitable for most transient failures (e.g., network timeouts, resource contention). Custom policies allow tuning for specific use cases like aggressive retries or long backoffs.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">policy</td><td>Optional retry policy (NULL for defaults). Must contain valid values if provided; invalid parameters raise exception.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>New SocketRetry_T instance.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketRetry_Failed</td><td>on allocation failure (ENOMEM) or invalid policy (e.g., negative delays, multiplier &lt;=0, jitter out of [0,1]).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - allocation is atomic; produces independent, isolated</dt><dd>instances. Multiple threads may create instances concurrently without synchronization.</dd></dl>
+<h2><a class="anchor" id="autotoc_md113"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <span class="comment">// Default policy for general use</span></div>
+<div class="line">    <a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Custom policy for more aggressive retries</span></div>
+<div class="line">    <a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> custom;</div>
+<div class="line">    <a class="code hl_function" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a>(&amp;custom);</div>
+<div class="line">    custom.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a> = 5;</div>
+<div class="line">    custom.<a class="code hl_variable" href="group__utilities.html#a3738bc8ccc78b3f879df09d685494714">initial_delay_ms</a> = 50;</div>
+<div class="line">    custom.<a class="code hl_variable" href="group__utilities.html#ae292a46f8c68e19cb29e72d49b48317e">multiplier</a> = 1.5;  <span class="comment">// Gentler backoff</span></div>
+<div class="line">    <a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> aggressive = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(&amp;custom);</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Use: e.g., SocketRetry_execute(aggressive, operation, NULL, ctx);</span></div>
+<div class="line"> </div>
+<div class="line">    <a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;aggressive);</div>
+<div class="line">    <a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Handle allocation/policy error</span></div>
+<div class="line">    fprintf(stderr, <span class="stringliteral">&quot;Retry context creation failed\n&quot;</span>);</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="aSocketRetry_8h_html_ac4c2c785391a4a69f76ddb4d9d25f19e"><div class="ttname"><a href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a></div><div class="ttdeci">SocketRetry_T SocketRetry_new(const SocketRetry_Policy *policy)</div></div>
+<div class="ttc" id="aSocketRetry_8h_html_ad758455d31f43b861881522be0982d62"><div class="ttname"><a href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a></div><div class="ttdeci">void SocketRetry_free(SocketRetry_T *retry)</div></div>
+<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
+<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
+<div class="ttc" id="agroup__utilities_html_a3738bc8ccc78b3f879df09d685494714"><div class="ttname"><a href="group__utilities.html#a3738bc8ccc78b3f879df09d685494714">SocketRetry_Policy::initial_delay_ms</a></div><div class="ttdeci">int initial_delay_ms</div><div class="ttdoc">Initial backoff delay in milliseconds for the first retry.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00151">SocketRetry.h:151</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ae292a46f8c68e19cb29e72d49b48317e"><div class="ttname"><a href="group__utilities.html#ae292a46f8c68e19cb29e72d49b48317e">SocketRetry_Policy::multiplier</a></div><div class="ttdeci">double multiplier</div><div class="ttdoc">Multiplier for exponential backoff (recommended &gt;1.0).</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00172">SocketRetry.h:172</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ae4fc9812297db12344b02e21d638a618"><div class="ttname"><a href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">SocketRetry_Policy::max_attempts</a></div><div class="ttdeci">int max_attempts</div><div class="ttdoc">Maximum number of retry attempts before giving up.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00141">SocketRetry.h:141</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ga419cec86f54612ef9204c059be3ec0a9"><div class="ttname"><a href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a></div><div class="ttdeci">struct SocketRetry_T * SocketRetry_T</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00094">SocketRetry.h:94</a></div></div>
+<div class="ttc" id="agroup__utilities_html_gae60e4575d034cfe56be8b50e94ad5481"><div class="ttname"><a href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a></div><div class="ttdeci">void SocketRetry_policy_defaults(SocketRetry_Policy *policy)</div><div class="ttdoc">Create a new retry context instance with optional custom policy.</div></div>
+<div class="ttc" id="agroup__utilities_html_gaee6d3d64f3c5b84ac6bbf38c67834fc4"><div class="ttname"><a href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a></div><div class="ttdeci">const Except_T SocketRetry_Failed</div><div class="ttdoc">Exception raised on critical retry operation failures.</div></div>
+<div class="ttc" id="agroup__utilities_html_structSocketRetry__Policy"><div class="ttname"><a href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a></div><div class="ttdoc">Configuration structure for retry policy.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00130">SocketRetry.h:131</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md114"></a>
+Error Handling Patterns</h2>
+<p>Wrap creation in TRY/EXCEPT for production code:</p>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line">    <span class="comment">// Proceed with retries...</span></div>
+<div class="line">    <a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga6a0e6b80dd3d5ca395cf58151749f5e2">RETURN</a>;  <span class="comment">// Success path</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Log or propagate error</span></div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a>;</div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__foundation_html_ga6a0e6b80dd3d5ca395cf58151749f5e2"><div class="ttname"><a href="group__foundation.html#ga6a0e6b80dd3d5ca395cf58151749f5e2">RETURN</a></div><div class="ttdeci">#define RETURN</div><div class="ttdoc">Return from function while cleaning up exception stack.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00824">Except.h:824</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga947ef43f0f0def3fcc050a8df849fd16"><div class="ttname"><a href="group__foundation.html#ga947ef43f0f0def3fcc050a8df849fd16">RERAISE</a></div><div class="ttdeci">#define RERAISE</div><div class="ttdoc">Re-raise the currently caught exception.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00725">Except.h:725</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - constant time initialization and memory allocation.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Internal Arena allocation; lifetime tied to <a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a>. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Policy validation occurs at creation; invalid values not partially applied.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481" title="Create a new retry context instance with optional custom policy.">SocketRetry_policy_defaults()</a> to initialize policy structure. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a> for proper cleanup to avoid leaks. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy()</a> for runtime policy updates. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> primary usage entry point. </dd>
+<dd>
+docs/ERROR_HANDLING.md for exception best practices.</dd></dl>
+<p>Dispose of a retry context and release all associated resources.</p>
+<p>Frees the SocketRetry_T instance, clearing internal arenas, statistics, timers, and any allocated state. The provided pointer is set to NULL post-free to prevent accidental use-after-free errors.</p>
+<p>Always pair with <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> for resource lifecycle management. Omitting this leads to memory leaks and potential resource exhaustion.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">retry</td><td>Pointer to SocketRetry_T (set to NULL on success).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - the instance must not be accessed by other threads during</dt><dd>free. Caller responsible for synchronization if multi-threaded.</dd></dl>
+<h2><a class="anchor" id="autotoc_md115"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"><span class="keywordflow">if</span> (retry) {</div>
+<div class="line">    <span class="comment">// Perform retries...</span></div>
+<div class="line">    <span class="keywordtype">int</span> result = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, my_operation, ctx);</div>
+<div class="line">    <span class="comment">// Check result...</span></div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);  <span class="comment">// Always free, even if new() succeeded</span></div>
+<div class="line">assert(retry == NULL);     <span class="comment">// Verified nullified</span></div>
+<div class="ttc" id="aSocketRetry_8h_html_a3a533ebca7a1e19c736a6a1debc07336"><div class="ttname"><a href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a></div><div class="ttdeci">int SocketRetry_execute_simple(SocketRetry_T retry, SocketRetry_Operation operation, void *context)</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md116"></a>
+Safe Cleanup in TRY Blocks</h2>
+<div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">    <a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line">    <span class="comment">// Operations...</span></div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#ga6a0e6b80dd3d5ca395cf58151749f5e2">RETURN</a>;  <span class="comment">// Success - free in FINALLY</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a>) {</div>
+<div class="line">    <span class="comment">// Error path</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
+<div class="line">    <a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);  <span class="comment">// Ensures cleanup regardless of path</span></div>
+<div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - constant time, but may involve O(n) arena clear if many</dt><dd>allocations.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Internal arenas are disposed; no need for manual Arena_clear/dispose. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Do not access retry after free; segfault or undefined behavior. </dd>
+<dd>
+Freeing NULL is safe (no-op).</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> counterpart allocation function. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d" title="Dispose of an arena and all its allocations, freeing underlying memory chunks.">Arena_dispose()</a> underlying mechanism for memory cleanup. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset()</a> for reusing without full free (statistics only). </dd>
+<dd>
+docs/MEMORY.md for arena-based allocation patterns (if exists).</dd></dl>
+<p>Execute a retryable operation with configurable backoff and retry logic.</p>
+<p>Invokes the provided operation callback repeatedly until success or policy limits are exceeded. Implements full exponential backoff with jitter to handle transient failures gracefully, preventing overload during outage storms.</p>
+<p>Execution flow:</p><ol type="1">
+<li>Call operation with attempt=1 (no initial delay).</li>
+<li>On failure (non-zero return), invoke should_retry (if provided).</li>
+<li>If retry approved, compute and sleep jittered backoff delay.</li>
+<li>Repeat up to max_attempts or until should_retry denies further attempts.</li>
+<li>Update statistics for monitoring.</li>
+</ol>
+<p>Does not throw exceptions; failures propagate as return codes from operation. Suitable for network ops, locks, or any idempotent retryable action.</p>
+<p>Backoff computation:</p><ul>
+<li>base = policy.initial_delay_ms * pow(policy.multiplier, attempt-1)</li>
+<li>capped = MIN(base, policy.max_delay_ms)</li>
+<li>jittered = capped * (1 + policy.jitter * (2*rand_uniform() - 1)) // [-jitter, +jitter]</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Initialized SocketRetry_T context (non-NULL). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">operation</td><td>Non-NULL callback implementing the retryable operation. Must return 0 on success, errno-like code on failure. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">should_retry</td><td>Optional NULL callback for custom retry decisions. If NULL, all failures retry up to max_attempts. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">context</td><td>Opaque user data passed unchanged to callbacks.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on eventual success, or last operation error code on exhaustion/failure.</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies internal state (stats, counters); serialize calls</dt><dd>per instance.</dd></dl>
+<h2><a class="anchor" id="autotoc_md117"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Define operation (e.g., connect with retry)</span></div>
+<div class="line"><span class="keywordtype">int</span> connect_op(<span class="keywordtype">void</span> *ctx, <span class="keywordtype">int</span> attempt) {</div>
+<div class="line">    ConnectCtx *cctx = (ConnectCtx*)ctx;</div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SOCKET_LOG_DEBUG_MSG</a>(<span class="stringliteral">&quot;Connect attempt %d&quot;</span>, attempt);</div>
+<div class="line">    <span class="keywordtype">int</span> res = connect(cctx-&gt;fd, cctx-&gt;addr, cctx-&gt;addrlen);</div>
+<div class="line">    <span class="keywordflow">return</span> (res &lt; 0) ? errno : 0;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Optional should-retry (e.g., only retryable errors)</span></div>
+<div class="line"><span class="keywordtype">int</span> should_retry_connect(<span class="keywordtype">int</span> err, <span class="keywordtype">int</span> attempt, <span class="keywordtype">void</span> *ctx) {</div>
+<div class="line">    (void)ctx; (void)attempt;</div>
+<div class="line">    <span class="keywordflow">return</span> <a class="code hl_function" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163">SocketError_is_retryable_errno</a>(err);  <span class="comment">// e.g., ETIMEDOUT,</span></div>
+<div class="line">ECONNREFUSED</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Execute</span></div>
+<div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line">ConnectCtx ctx = { .fd = sockfd, .addr = &amp;addr, .addrlen = addrlen };</div>
+<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute</a>(retry, connect_op, should_retry_connect,</div>
+<div class="line">&amp;ctx); <span class="keywordflow">if</span> (result != 0) { <a class="code hl_define" href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a>(<span class="stringliteral">&quot;Connect failed after</span></div>
+<div class="line"><span class="stringliteral">retries: %s&quot;</span>, strerror(result));</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats);  <span class="comment">// Log metrics</span></div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="ttc" id="aSocketRetry_8h_html_aa606e706f22216af24351ee324c0a468"><div class="ttname"><a href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a></div><div class="ttdeci">void SocketRetry_get_stats(const SocketRetry_T retry, SocketRetry_Stats *stats)</div></div>
+<div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00548">SocketUtil.h:548</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md118"></a>
+Simple Without Custom Retry Logic</h2>
+<p>Use <a class="el" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple()</a> for always-retry cases:</p>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> simple_result = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, connect_op, &amp;ctx);</div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(max_attempts * operation_time + total_delay) - bounded by</dt><dd>policy. Worst case: policy.max_attempts loops + sleeps.</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Sleeps use nanosleep with monotonic time; EINTR handled by resuming. </dd>
+<dd>
+Random jitter seeded internally; uniform distribution for fairness. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Operation must be idempotent; partial states may accumulate. </dd>
+<dd>
+Long max_delay_ms + high attempts can block thread significantly.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple()</a> convenience wrapper (always retries). </dd>
+<dd>
+<a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445" title="User-defined callback implementing the core retryable operation.">SocketRetry_Operation</a> callback requirements and examples. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8" title="Callback type to decide whether to retry after an operation failure.">SocketRetry_ShouldRetry</a> for advanced error filtering. </dd>
+<dd>
+<a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> tuning parameters and defaults. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats()</a> post-execution metrics. </dd>
+<dd>
+<a class="el" href="SocketUtil_8h.html#a78065a32bc90c30a5d062b0b9ac88163" title="SocketError_is_retryable_errno - Check if errno indicates retryable error.">SocketError_is_retryable_errno()</a> helper for should_retry. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> timing backend. </dd>
+<dd>
+docs/ERROR_HANDLING.md exception-free error propagation.</dd></dl>
+<p>Simplified execution of retryable operation, retrying all failures.</p>
+<p>Wrapper for <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> that automatically retries every non-zero return from operation up to max_attempts, without custom should_retry logic. Useful for operations where all errors are potentially transient (e.g., simple I/O retries without distinguishing error types).</p>
+<p>Behaves identically to SocketRetry_execute(retry, operation, NULL, context).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Initialized non-NULL SocketRetry_T context. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">operation</td><td>Non-NULL callback for the retryable operation. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">context</td><td>User data passed to operation (unchanged).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on success after retries, or final error code from operation.</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - updates retry state; concurrent calls undefined.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md119"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Simple DNS resolution retry (all failures retryable)</span></div>
+<div class="line"><span class="keywordtype">int</span> dns_resolve_op(<span class="keywordtype">void</span> *ctx, <span class="keywordtype">int</span> attempt) {</div>
+<div class="line">    DNSCtx *dctx = (DNSCtx*)ctx;</div>
+<div class="line">    <span class="keywordflow">return</span> <a class="code hl_function" href="group__dns.html#gab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a>(dctx-&gt;dns, dctx-&gt;host, dctx-&gt;port, NULL,</div>
+<div class="line">5000);</div>
+<div class="line">    <span class="comment">// Returns 0 success, error code failure</span></div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line">DNSCtx ctx = { .dns = dns, .host = <span class="stringliteral">&quot;example.com&quot;</span>, .port = 443 };</div>
+<div class="line"><span class="keywordtype">int</span> dns_err = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, dns_resolve_op, &amp;ctx);</div>
+<div class="line"><span class="keywordflow">if</span> (dns_err != 0) {</div>
+<div class="line">    <span class="comment">// Final failure after retries</span></div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> stats;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats);</div>
+<div class="line"><a class="code hl_define" href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a>(<span class="stringliteral">&quot;DNS retries: %d attempts, %lld ms total&quot;</span>,</div>
+<div class="line">stats.<a class="code hl_variable" href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">attempts</a>, stats.<a class="code hl_variable" href="group__utilities.html#a939cbbd0e2c2537391a2e970991a1c9d">total_time_ms</a>); <a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="ttc" id="aSocketUtil_8h_html_a9fe70c7ab8b971af2971f3a102b82819"><div class="ttname"><a href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_INFO_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00540">SocketUtil.h:540</a></div></div>
+<div class="ttc" id="agroup__dns_html_gab988727825887d34e87d144d30c30c2f"><div class="ttname"><a href="group__dns.html#gab988727825887d34e87d144d30c30c2f">SocketDNS_resolve_sync</a></div><div class="ttdeci">struct addrinfo * SocketDNS_resolve_sync(SocketDNS_T dns, const char *host, int port, const struct addrinfo *hints, int timeout_ms)</div><div class="ttdoc">Synchronous DNS resolution with optional timeout guarantee.</div></div>
+<div class="ttc" id="agroup__utilities_html_a7b978de556278e018fccc199dadd4a7d"><div class="ttname"><a href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">SocketRetry_Stats::attempts</a></div><div class="ttdeci">int attempts</div><div class="ttdoc">Total operation invocations during the retry sequence.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00425">SocketRetry.h:425</a></div></div>
+<div class="ttc" id="agroup__utilities_html_a939cbbd0e2c2537391a2e970991a1c9d"><div class="ttname"><a href="group__utilities.html#a939cbbd0e2c2537391a2e970991a1c9d">SocketRetry_Stats::total_time_ms</a></div><div class="ttdeci">int64_t total_time_ms</div><div class="ttdoc">Total wall-clock duration of entire execution (ms).</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00451">SocketRetry.h:451</a></div></div>
+<div class="ttc" id="agroup__utilities_html_structSocketRetry__Stats"><div class="ttname"><a href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a></div><div class="ttdoc">Opaque structure capturing retry execution metrics and outcomes.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00416">SocketRetry.h:417</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(max_attempts * op_time + delays) - same as full execute.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Equivalent to passing NULL should_retry; all errors retried. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Lacks error filtering; non-retryable errors (e.g., EINVAL) wasted attempts. Use full <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for selective retries.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for advanced control with should_retry. </dd>
+<dd>
+<a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445" title="User-defined callback implementing the core retryable operation.">SocketRetry_Operation</a> defining idempotent operations. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8" title="Callback type to decide whether to retry after an operation failure.">SocketRetry_ShouldRetry</a> when custom logic needed. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats()</a> to inspect retry outcomes.</dd></dl>
+<p>Copy retry statistics from the last execution into user structure.</p>
+<p>Captures performance and outcome metrics from the most recent <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> or _simple() invocation. Useful for logging, monitoring, alerting on high retry counts, or debugging failure patterns.</p>
+<p>Stats include attempts made, final error, delay time, and total execution time. Initialized to zero if no prior execution or after reset().</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Non-NULL SocketRetry_T to query (const access). </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">stats</td><td>Non-NULL pointer to <a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> to populate.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Partial - read-only; safe if no concurrent execute/reset.</dt><dd>Concurrent modifications (e.g., execute running) may yield inconsistent snapshot.</dd></dl>
+<h2><a class="anchor" id="autotoc_md120"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"><span class="comment">// ... execute retries ...</span></div>
+<div class="line"><span class="keywordtype">int</span> result = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, op, ctx);</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> stats;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats);</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordflow">if</span> (result != 0) {</div>
+<div class="line">    <a class="code hl_define" href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a>(<span class="stringliteral">&quot;Retry failed: %d attempts, last err=%d, total</span></div>
+<div class="line"><span class="stringliteral">time=%lld ms&quot;</span>, stats.<a class="code hl_variable" href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">attempts</a>, stats.<a class="code hl_variable" href="group__utilities.html#a560a11b7408ab6b745312cc2552aa387">last_error</a>, stats.<a class="code hl_variable" href="group__utilities.html#a939cbbd0e2c2537391a2e970991a1c9d">total_time_ms</a>); }</div>
+<div class="line"><span class="keywordflow">else</span> { <a class="code hl_define" href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a>(<span class="stringliteral">&quot;Success after %d attempts, delays totaled %lld</span></div>
+<div class="line"><span class="stringliteral">ms&quot;</span>, stats.<a class="code hl_variable" href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">attempts</a> - 1, stats.<a class="code hl_variable" href="group__utilities.html#aba725a298fa2b675bcdc8ea77ba8b27e">total_delay_ms</a>);</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00544">SocketUtil.h:544</a></div></div>
+<div class="ttc" id="agroup__utilities_html_a560a11b7408ab6b745312cc2552aa387"><div class="ttname"><a href="group__utilities.html#a560a11b7408ab6b745312cc2552aa387">SocketRetry_Stats::last_error</a></div><div class="ttdeci">int last_error</div><div class="ttdoc">Final error code from last operation call.</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00433">SocketRetry.h:433</a></div></div>
+<div class="ttc" id="agroup__utilities_html_aba725a298fa2b675bcdc8ea77ba8b27e"><div class="ttname"><a href="group__utilities.html#aba725a298fa2b675bcdc8ea77ba8b27e">SocketRetry_Stats::total_delay_ms</a></div><div class="ttdeci">int64_t total_delay_ms</div><div class="ttdoc">Aggregate backoff delay time across all retries (ms).</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00442">SocketRetry.h:442</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md121"></a>
+Monitoring Integration</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> stats;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats);</div>
+<div class="line"><a class="code hl_function" href="group__foundation.html#ga84618017b97e3f0eeb3c4814e939a7b4">SocketMetrics_increment</a>(METRIC_RETRY_ATTEMPTS, stats.<a class="code hl_variable" href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">attempts</a>);</div>
+<div class="line"><span class="keywordflow">if</span> (stats.<a class="code hl_variable" href="group__utilities.html#a7b978de556278e018fccc199dadd4a7d">attempts</a> &gt; policy.max_attempts / 2) {</div>
+<div class="line">    <span class="comment">// Alert on high retry rate</span></div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__foundation_html_ga84618017b97e3f0eeb3c4814e939a7b4"><div class="ttname"><a href="group__foundation.html#ga84618017b97e3f0eeb3c4814e939a7b4">SocketMetrics_increment</a></div><div class="ttdeci">void SocketMetrics_increment(SocketMetric metric, unsigned long value)</div><div class="ttdoc">SocketMetrics_increment - Increment a metric counter.</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - simple memory copy of fixed-size struct.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>stats populated atomically but reflects snapshot; use reset() for baselines. </dd>
+<dd>
+Zeroed fields indicate no execution or reset state. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Do not modify stats struct; it's output-only.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRetry__Stats" title="Opaque structure capturing retry execution metrics and outcomes.">SocketRetry_Stats</a> structure fields and semantics. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> or <a class="el" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple()</a> populating the stats. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset()</a> to clear for next measurement cycle. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga84618017b97e3f0eeb3c4814e939a7b4" title="SocketMetrics_increment - Increment a metric counter.">SocketMetrics_increment()</a> for integrating with library metrics.</dd></dl>
+<p>Reset internal state and statistics for fresh retry sequences.</p>
+<p>Clears counters, error states, timing accumulators, and transient data from previous executions, restoring the context to "newly created" state minus policy (which persists). Enables reusing the same instance across multiple independent retry operations without full reallocation.</p>
+<p>What is reset:</p><ul>
+<li>attempts = 0</li>
+<li>last_error = 0</li>
+<li>total_delay_ms = 0</li>
+<li>total_time_ms = 0</li>
+<li>Any internal attempt trackers or RNG state</li>
+</ul>
+<p>Policy unchanged; combine with set_policy() for full reconfiguration.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Non-NULL SocketRetry_T to reset.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies state; call only when idle (no concurrent</dt><dd>execute).</dd></dl>
+<h2><a class="anchor" id="autotoc_md122"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// First retry sequence (e.g., connect)</span></div>
+<div class="line"><span class="keywordtype">int</span> connect_res = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, connect_op, &amp;ctx1);</div>
+<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> stats1;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats1);  <span class="comment">// Capture first metrics</span></div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Reset for second independent sequence (e.g., DNS)</span></div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset</a>(retry);</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> dns_res = <a class="code hl_function" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry_execute_simple</a>(retry, dns_op, &amp;ctx2);</div>
+<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Stats">SocketRetry_Stats</a> stats2;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats</a>(retry, &amp;stats2);  <span class="comment">// Fresh metrics</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="ttc" id="aSocketRetry_8h_html_aceefc84a75ae5e4ed461d0139ceefaa3"><div class="ttname"><a href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset</a></div><div class="ttdeci">void SocketRetry_reset(SocketRetry_T retry)</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md123"></a>
+With Policy Change</h2>
+<div class="fragment"><div class="line"><a class="code hl_function" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset</a>(retry);  <span class="comment">// Clear stats</span></div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a>(retry, &amp;new_policy);  <span class="comment">// Update behavior</span></div>
+<div class="line"><span class="comment">// Now execute with new config and clean slate</span></div>
+<div class="ttc" id="aSocketRetry_8h_html_a29d7511f7531f4a23bd88f656df4636e"><div class="ttname"><a href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a></div><div class="ttdeci">void SocketRetry_set_policy(SocketRetry_T retry, const SocketRetry_Policy *policy)</div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - zeroing fixed structures and counters.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Policy preserved; use set_policy() + reset() for complete refresh. </dd>
+<dd>
+Does not deallocate; cheaper than new/free cycle for frequent reuse. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Reset during execute() corrupts state; ensure serialization.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry_get_stats()</a> read stats before reset. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> benefits from reset between sequences. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy()</a> pair for dynamic reconfiguration. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free()</a> for full lifecycle end.</dd></dl>
+<p>Copy current active policy settings into user-provided structure.</p>
+<p>Reads the policy currently in effect on the retry context (from new(), set_policy(), or defaults) and populates the output structure. Allows inspection for logging, configuration verification, or dynamic adaptation logic.</p>
+<p>Output reflects validated, effective values (e.g., clamped jitter).</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Non-NULL const SocketRetry_T to query. </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">policy</td><td>Non-NULL <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> to populate with current config.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Partial - const read; safe unless concurrent set_policy()/new().</dt><dd>Races may yield inconsistent but valid policy snapshot.</dd></dl>
+<h2><a class="anchor" id="autotoc_md124"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Verify or log current policy</span></div>
+<div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> current;</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#a16584da7cc4271a025fd7d831446d028">SocketRetry_get_policy</a>(retry, &amp;current);</div>
+<div class="line"><a class="code hl_define" href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a>(<span class="stringliteral">&quot;Current max_attempts: %d, jitter: %.2f&quot;</span>,</div>
+<div class="line">current.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a>, current.<a class="code hl_variable" href="group__utilities.html#ac44aa265265c65b8c29fd80aa3e0f61d">jitter</a>);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Adaptive logic example</span></div>
+<div class="line"><span class="keywordflow">if</span> (current.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a> &lt; 5 &amp;&amp; load_is_low()) {</div>
+<div class="line">    <a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> lenient;</div>
+<div class="line">    <a class="code hl_function" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a>(&amp;lenient);</div>
+<div class="line">    lenient.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a> = 10;</div>
+<div class="line">    <a class="code hl_function" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a>(retry, &amp;lenient);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+<div class="ttc" id="aSocketRetry_8h_html_a16584da7cc4271a025fd7d831446d028"><div class="ttname"><a href="SocketRetry_8h.html#a16584da7cc4271a025fd7d831446d028">SocketRetry_get_policy</a></div><div class="ttdeci">void SocketRetry_get_policy(const SocketRetry_T retry, SocketRetry_Policy *policy)</div></div>
+<div class="ttc" id="agroup__utilities_html_ac44aa265265c65b8c29fd80aa3e0f61d"><div class="ttname"><a href="group__utilities.html#ac44aa265265c65b8c29fd80aa3e0f61d">SocketRetry_Policy::jitter</a></div><div class="ttdeci">double jitter</div><div class="ttdoc">Jitter factor for randomizing delays (0.0=no jitter, 1.0=full).</div><div class="ttdef"><b>Definition</b> <a href="SocketRetry_8h_source.html#l00184">SocketRetry.h:184</a></div></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - struct copy.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>policy filled with runtime values, not compile-time defaults. </dd>
+<dd>
+No validation on output; values guaranteed valid by prior sets. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Concurrent set_policy() may change during copy (rare race).</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> populated structure details. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy()</a> to modify policy. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> initial policy source. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481" title="Create a new retry context instance with optional custom policy.">SocketRetry_policy_defaults()</a> for default initialization.</dd></dl>
+<p>Dynamically update retry policy on an existing context.</p>
+<p>Replaces current policy with new settings, validating and applying immediately. Affects all future <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> calls but not in-progress ones. Useful for adaptive behavior, e.g., tightening limits during high load.</p>
+<p>Validation checks:</p><ul>
+<li>policy non-NULL</li>
+<li>max_attempts &gt;=0</li>
+<li>delays &gt;0</li>
+<li>multiplier &gt;0</li>
+<li>0 &lt;= jitter &lt;=1 Invalid configs raise exception without partial application.</li>
+</ul>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">retry</td><td>Non-NULL SocketRetry_T to reconfigure. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">policy</td><td>Non-NULL new <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> settings.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketRetry_Failed</td><td>on NULL inputs or invalid policy values. Examples: negative delays, multiplier &lt;=0, jitter out of [0,1].</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - state mutation; ensure no concurrent execute()/get_stats().</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md125"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(NULL);</div>
+<div class="line"><span class="comment">// Initial use...</span></div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Adapt policy based on load</span></div>
+<div class="line"><span class="keywordflow">if</span> (high_load_detected()) {</div>
+<div class="line">    <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
+<div class="line">        <a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> strict;</div>
+<div class="line">        <a class="code hl_function" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a>(&amp;strict);</div>
+<div class="line">        strict.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a> = 1;  <span class="comment">// No retries during overload</span></div>
+<div class="line">        strict.<a class="code hl_variable" href="group__utilities.html#a3738bc8ccc78b3f879df09d685494714">initial_delay_ms</a> = 1000;  <span class="comment">// Longer initial wait</span></div>
+<div class="line">        <a class="code hl_function" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy</a>(retry, &amp;strict);</div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry_Failed</a>) {</div>
+<div class="line">        <span class="comment">// Invalid policy or other error</span></div>
+<div class="line">    } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Continue using updated retry...</span></div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - parameter validation and assignment.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Ongoing executions use old policy; new starts fresh. </dd>
+<dd>
+Statistics unchanged; reset() if needed for new baseline. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Frequent updates in hot path may impact performance.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> valid ranges and field docs. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a16584da7cc4271a025fd7d831446d028">SocketRetry_get_policy()</a> to read current config. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> initial policy setting. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry_reset()</a> complement for full refresh. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481" title="Create a new retry context instance with optional custom policy.">SocketRetry_policy_defaults()</a> source for base values.</dd></dl>
+<p>Populate <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> with safe, conservative default values.</p>
+<p>Initializes the policy structure with parameters tuned for typical transient failures in network or resource operations. Defaults balance responsiveness and stability: quick initial retries with gradual backoff to avoid overload.</p>
+<p>Defaults sourced from compile-time macros (overridable before inclusion). After init, customize as needed before passing to <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> or set_policy().</p>
+<h2><a class="anchor" id="autotoc_md126"></a>
+Default Values Table</h2>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Field   </th><th class="markdownTableHeadNone">Default Value   </th><th class="markdownTableHeadNone">Description    </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">max_attempts   </td><td class="markdownTableBodyNone">3   </td><td class="markdownTableBodyNone">Limited retries prevent infinite   </td></tr>
+</table>
+<p>loops | | initial_delay_ms | 100 ms | Quick first retry for fast recovery | | max_delay_ms | 30000 ms (30s)| Cap prevents indefinite blocking | | multiplier | 2.0 | Standard exponential growth | | jitter | 0.25 | Moderate randomization vs thundering herd |</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[out]</td><td class="paramname">policy</td><td>Non-NULL pointer to <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> to initialize.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - pure function; no state mutation or allocation.</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md127"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> policy;</div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a>(&amp;policy);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Customize for aggressive DNS retries</span></div>
+<div class="line">policy.<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a> = 10;</div>
+<div class="line">policy.<a class="code hl_variable" href="group__utilities.html#a3738bc8ccc78b3f879df09d685494714">initial_delay_ms</a> = 200;</div>
+<div class="line">policy.<a class="code hl_variable" href="group__utilities.html#ac44aa265265c65b8c29fd80aa3e0f61d">jitter</a> = 0.5;  <span class="comment">// More randomization</span></div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_typedef" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry_T</a> retry = <a class="code hl_function" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new</a>(&amp;policy);</div>
+<div class="line"><span class="comment">// Use retry...</span></div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry_free</a>(&amp;retry);</div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - simple assignment.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>Does not validate values; validation deferred to <a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a>/set_policy(). </dd>
+<dd>
+Compile-time overrides affect these defaults globally.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> structure and field documentation. </dd>
+<dd>
+SOCKET_RETRY_DEFAULT_* macros for overriding defaults. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> consumer of initialized policy. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry_set_policy()</a> for runtime application. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay()</a> using policy params.</dd></dl>
+<p>Compute jittered exponential backoff delay for a given retry attempt.</p>
+<p>Standalone function mirroring the delay calculation in <a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a>. Useful for pre-computing delays, logging expected wait times, or integrating with custom schedulers/timers outside the full retry framework.</p>
+<p>Applies full policy: exponential growth, capping, and randomization. Returns -1 for invalid inputs to signal errors without exceptions.</p>
+<p>Detailed formula:</p><ol type="1">
+<li>base_delay = policy-&gt;initial_delay_ms * pow(policy-&gt;multiplier, attempt</li>
+</ol>
+<ul>
+<li>1.0)</li>
+</ul>
+<ol type="1">
+<li>capped_delay = MIN(base_delay, policy-&gt;max_delay_ms)</li>
+<li>jitter_factor = 1.0 + policy-&gt;jitter * (2.0 * rand_uniform_01() - 1.0) // [-jitter, +jitter]</li>
+<li>final_delay = capped_delay * jitter_factor (always &gt;=0)</li>
+</ol>
+<p>Uses high-quality uniform random [0,1) for jitter; seed via srand() or equivalent.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">policy</td><td>Non-NULL <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> with valid parameters. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">attempt</td><td>1-based attempt number (1=first retry delay).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Delay in ms (&gt;=0) or -1 on error (NULL policy, attempt &lt;=0 or &gt;SOCKET_RETRY_MAX_ATTEMPTS).</dd></dl>
+<dl class="section user"><dt>Thread Safety\n Yes - pure function; thread-safe if rand() implementation is.</dt><dd>Note: shared rand() state requires external synchronization if unseeded.</dd></dl>
+<h2><a class="anchor" id="autotoc_md128"></a>
+Usage Example</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> policy;</div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry_policy_defaults</a>(&amp;policy);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Preview delays for attempts 1-3</span></div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> att = 1; att &lt;= 3; ++att) {</div>
+<div class="line">    <span class="keywordtype">int</span> delay = <a class="code hl_function" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay</a>(&amp;policy, att);</div>
+<div class="line">    <span class="keywordflow">if</span> (delay &gt;= 0) {</div>
+<div class="line">        <a class="code hl_define" href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a>(<span class="stringliteral">&quot;Attempt %d delay: %d ms&quot;</span>, att, delay);</div>
+<div class="line">    } <span class="keywordflow">else</span> {</div>
+<div class="line">        <a class="code hl_define" href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a>(<span class="stringliteral">&quot;Invalid attempt %d&quot;</span>, att);</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Expected approx: att1 ~100ms +/- jitter, att2 ~200ms, att3 ~400ms</span></div>
+<div class="line">capped/randomized</div>
+<div class="ttc" id="aSocketRetry_8h_html_a04fda3694b0be59a6427d2188af4e9de"><div class="ttname"><a href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay</a></div><div class="ttdeci">int SocketRetry_calculate_delay(const SocketRetry_Policy *policy, int attempt)</div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md129"></a>
+Custom Policy Preview</h2>
+<div class="fragment"><div class="line"><a class="code hl_struct" href="group__utilities.html#structSocketRetry__Policy">SocketRetry_Policy</a> aggressive = { .<a class="code hl_variable" href="group__utilities.html#ae4fc9812297db12344b02e21d638a618">max_attempts</a>=5, .initial_delay_ms=10,</div>
+<div class="line">.max_delay_ms=1000, .multiplier=1.5, .jitter=0.1 }; <span class="keywordtype">int</span> delay3 =</div>
+<div class="line"><a class="code hl_function" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry_calculate_delay</a>(&amp;aggressive, 3);  <span class="comment">// ~22.5 ms base + jitter</span></div>
+</div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - fixed math operations + pow() and rand() calls.</dt><dd></dd></dl>
+<dl class="section note"><dt>Note</dt><dd>pow() may have floating-point precision issues for large exponents; capped mitigates. </dd>
+<dd>
+rand_uniform_01() internal; equivalent to rand()/RAND_MAX. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Negative policy values yield undefined (but clamped) results. </dd>
+<dd>
+High multiplier + attempts can cause pow() overflow; use double safely.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> fields affecting computation. </dd>
+<dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> consumer of this logic in loop. </dd>
+<dd>
+&lt;math.h&gt; pow() and &lt;stdlib.h&gt; rand() dependencies. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> for measuring actual delays. Initialize a <a class="el" href="group__utilities.html#structSocketRetry__Policy" title="Configuration structure for retry policy.">SocketRetry_Policy</a> with default values. </dd></dl>
 
 </div>
 </div>
@@ -4925,7 +5699,7 @@ Does not modify input buffer.</dd></dl>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - safe for single-threaded use per state instance.</dt><dd></dd></dl>
 <dl class="section note"><dt>Note</dt><dd>Call <a class="el" href="group__utilities.html#ga388818b9081b6d4f7ad496c6f4a364ad" title="Finalize incremental UTF-8 validation and check completeness.">SocketUTF8_finish()</a> after all chunks to check final completeness. State remains valid for reset/reuse.</dd></dl>
-<h2><a class="anchor" id="autotoc_md229"></a>
+<h2><a class="anchor" id="autotoc_md235"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">  <span class="comment">// Example: Validate streaming data from socket recv (non-blocking)</span></div>
 <div class="line">  <a class="code hl_struct" href="group__utilities.html#structSocketUTF8__State">SocketUTF8_State</a> state;</div>
@@ -5056,7 +5830,7 @@ Usage Example</h2>
 <dl class="section note"><dt>Note</dt><dd>No dynamic allocation; suitable for embedded or high-performance use. </dd>
 <dd>
 Intended for WebSocket text frame validation (RFC 6455 §8.1).</dd></dl>
-<h2><a class="anchor" id="autotoc_md227"></a>
+<h2><a class="anchor" id="autotoc_md233"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">  <span class="comment">// One-shot validation for complete buffers (e.g., WebSocket text frames,</span></div>
 <div class="line">HTTP headers)</div>
@@ -5072,7 +5846,7 @@ Usage Example</h2>
 <div class="line">      <span class="comment">// e.g., reject frame or sanitize</span></div>
 <div class="line">  }</div>
 <div class="ttc" id="agroup__utilities_html_ga68491b1f63c513ccc96a83a14d069e7b"><div class="ttname"><a href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a></div><div class="ttdeci">SocketUTF8_Result SocketUTF8_validate(const unsigned char *data, size_t len)</div><div class="ttdoc">Perform one-shot validation of complete UTF-8 data buffer.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md228"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md234"></a>
 With Exception Handling</h2>
 <div class="fragment"><div class="line">  <a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">      <a class="code hl_enumeration" href="group__utilities.html#gae8b6c527962e3019992746f49aac247b">SocketUTF8_Result</a> res = <a class="code hl_function" href="group__utilities.html#ga68491b1f63c513ccc96a83a14d069e7b">SocketUTF8_validate</a>(payload, payload_len);</div>
@@ -5084,9 +5858,6 @@ With Exception Handling</h2>
 <div class="line">  } <a class="code hl_define" href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a>(<a class="code hl_variable" href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a>) {</div>
 <div class="line">      <span class="comment">// Protocol error handling (e.g., close connection)</span></div>
 <div class="line">  } <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-<div class="ttc" id="agroup__foundation_html_gab5e72fc2bd41014c75e0ace4feabfe8e"><div class="ttname"><a href="group__foundation.html#gab5e72fc2bd41014c75e0ace4feabfe8e">EXCEPT</a></div><div class="ttdeci">#define EXCEPT(e)</div><div class="ttdoc">Catch a specific exception type within a TRY block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01105">Except.h:1105</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
-<div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
 <div class="ttc" id="agroup__utilities_html_ga96b509b874774db6b22b3f25438a21d2"><div class="ttname"><a href="group__utilities.html#ga96b509b874774db6b22b3f25438a21d2">SocketUTF8_Failed</a></div><div class="ttdeci">const Except_T SocketUTF8_Failed</div><div class="ttdoc">Exception for UTF-8 validation and encoding failures.</div></div>
 </div><!-- fragment --><dl class="section user"><dt>Complexity\n O(n) time, O(1) space - single pass DFA validation.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#ga409d0ca4c468b8ca69e7b3b75c58841d" title="Validate a null-terminated C string as UTF-8.">SocketUTF8_validate_str()</a> convenience for null-terminated C strings. </dd>
@@ -5200,9 +5971,9 @@ With Exception Handling</h2>
 </ul>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> base exception type. </dd>
 <dd>
-SocketRetry_new() for context creation. </dd>
+<a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry_new()</a> for context creation. </dd>
 <dd>
-SocketRetry_execute() for retry execution. </dd>
+<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry_execute()</a> for retry execution. </dd>
 <dd>
 docs/ERROR_HANDLING.md for handling patterns. </dd></dl>
 

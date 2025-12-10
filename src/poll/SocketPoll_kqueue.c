@@ -67,7 +67,7 @@ backend_new (Arena_T arena, int maxevents)
   PollBackend_T backend;
 
   assert (arena != NULL);
-  assert (maxevents > 0);
+  /* Note: maxevents validation done by VALIDATE_MAXEVENTS below */
 
   VALIDATE_MAXEVENTS (maxevents, struct kevent);
 
@@ -246,11 +246,10 @@ backend_wait (PollBackend_T backend, int timeout_ms)
 
   assert (backend);
 
-  /* Convert milliseconds to timespec using defined constant */
+  /* Convert milliseconds to timespec using common macro */
   if (timeout_ms >= 0)
     {
-      ts.tv_sec = timeout_ms / SOCKET_MS_PER_SECOND;
-      ts.tv_nsec = (timeout_ms % SOCKET_MS_PER_SECOND) * SOCKET_NS_PER_MS;
+      TIMEOUT_MS_TO_TIMESPEC (timeout_ms, &ts);
       timeout_ptr = &ts;
     }
   /* If timeout_ms is -1, timeout_ptr stays NULL (infinite wait) */

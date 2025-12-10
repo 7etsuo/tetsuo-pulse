@@ -126,6 +126,7 @@ $(document).ready(function(){initNavTree('SocketDNS-private_8h.html',''); initRe
 <div class="textblock"><code>#include &lt;netdb.h&gt;</code><br />
 <code>#include &lt;pthread.h&gt;</code><br />
 <code>#include &lt;stdbool.h&gt;</code><br />
+<code>#include &lt;stdint.h&gt;</code><br />
 <code>#include &lt;sys/socket.h&gt;</code><br />
 <code>#include &lt;sys/time.h&gt;</code><br />
 <code>#include &lt;time.h&gt;</code><br />
@@ -156,6 +157,9 @@ Data Structures</h2></td></tr>
 <tr class="memitem:structSocketDNS__Request__T" id="r_structSocketDNS__Request__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__Request__T">SocketDNS_Request_T</a></td></tr>
 <tr class="memdesc:structSocketDNS__Request__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS resolution request structure.  <a href="group__dns.html#structSocketDNS__Request__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketDNS__Request__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:structSocketDNS__CacheEntry" id="r_structSocketDNS__CacheEntry"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__CacheEntry">SocketDNS_CacheEntry</a></td></tr>
+<tr class="memdesc:structSocketDNS__CacheEntry"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS cache entry structure.  <a href="group__dns.html#structSocketDNS__CacheEntry">More...</a><br /></td></tr>
+<tr class="separator:structSocketDNS__CacheEntry"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:structSocketDNS__T" id="r_structSocketDNS__T"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__dns.html#structSocketDNS__T">SocketDNS_T</a></td></tr>
 <tr class="memdesc:structSocketDNS__T"><td class="mdescLeft">&#160;</td><td class="mdescRight">Async DNS resolver structure.  <a href="group__dns.html#structSocketDNS__T">More...</a><br /></td></tr>
 <tr class="separator:structSocketDNS__T"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -420,7 +424,7 @@ Callback functions must be reentrant and fast; see SocketDNS_Callback documentat
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00262">262</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketDNS-private_8h_source.html#l00301">301</a> of file <a class="el" href="SocketDNS-private_8h_source.html">SocketDNS-private.h</a>.</p>
 
 </div>
 </div>
@@ -471,6 +475,8 @@ Callback functions must be reentrant and fast; see SocketDNS_Callback documentat
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p class="reference">Referenced by <a class="el" href="dns__lookup_8c_source.html#l00041">main()</a>.</p>
 
 </div>
 </div>

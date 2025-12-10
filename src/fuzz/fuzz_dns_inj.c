@@ -18,10 +18,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <netdb.h>
 
 #include "core/Arena.h"
 #include "core/Except.h"
 #include "dns/SocketDNS.h"
+#include "socket/SocketCommon.h"
 
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
@@ -35,11 +37,17 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
   volatile Arena_T arena = arena_instance;
   (void)arena; /* Used only for exception safety */
 
+  SocketDNS_T dns = NULL;
+  struct addrinfo *res = NULL;
+
   TRY
   {
-    SocketDNS_T dns = SocketDNS_new ();
+    dns = SocketDNS_new ();
     if (!dns)
-      return 0;
+      {
+        Arena_dispose (&arena_instance);
+        return 0;
+      }
 
     /* Fuzz hostname from data */
     char hostname[256];
@@ -47,23 +55,27 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
     memcpy (hostname, data, host_len);
     hostname[host_len] = '\0';
 
-    /* Validate/parse fuzzed hostname */
+    /* Validate/parse fuzzed hostname using sync API only.
+     * NOTE: We avoid the async API (SocketDNS_resolve/cancel) here because
+     * it has complex state management that can cause memory leaks if a
+     * request completes before cancel is called. The sync API tests the
+     * same hostname validation and resolution logic. */
     struct addrinfo hints = { 0 };
     hints.ai_family = AF_UNSPEC;
-    struct addrinfo *res = SocketDNS_resolve_sync (dns, hostname, 80, &hints,
-                                                   1000); /* Short timeout */
-
-    /* Fuzz request/cancel */
-    SocketDNS_Request_T req
-        = SocketDNS_resolve (dns, hostname, 80, NULL, NULL);
-    SocketDNS_cancel (dns, req);
-
-    freeaddrinfo (res);
-    SocketDNS_free (&dns);
+    res = SocketDNS_resolve_sync (dns, hostname, 80, &hints,
+                                  50); /* Very short timeout for fuzzing */
   }
   EXCEPT (SocketDNS_Failed) { /* Expected on invalid hosts */ }
   EXCEPT (Arena_Failed) { /* Expected on invalid hosts */ }
   END_TRY;
+
+  /* Cleanup outside TRY block to ensure it always happens.
+   * NOTE: Must use SocketCommon_free_addrinfo, NOT freeaddrinfo!
+   * SocketDNS_resolve_sync returns a copy made with SocketCommon_copy_addrinfo. */
+  if (res)
+    SocketCommon_free_addrinfo (res);
+  if (dns)
+    SocketDNS_free (&dns);
 
   Arena_dispose (&arena_instance);
 

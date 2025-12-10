@@ -15,6 +15,8 @@ var SocketPool_private_8h_structSocketPool__T =
     [ "drain_deadline_ms", "SocketPool-private_8h.html#a9f0354d73f0d9efba266c6e2fd4dc020", null ],
     [ "free_list", "SocketPool-private_8h.html#aca425db9d88c550ff2103458baaab68e", null ],
     [ "hash_table", "SocketPool-private_8h.html#a8f974d685068c8496066af1ed0821087", null ],
+    [ "idle_cb", "SocketPool-private_8h.html#ae4aab2865fdf71868bedd09217299262", null ],
+    [ "idle_cb_data", "SocketPool-private_8h.html#a75a197974e3b46331c0e442323ea7af9", null ],
     [ "idle_timeout_sec", "SocketPool-private_8h.html#a2a06a66f461ba2602e2ea915cdcf82d7", null ],
     [ "ip_tracker", "SocketPool-private_8h.html#a70b567f98102e00a15e49f691737e259", null ],
     [ "last_cleanup_ms", "SocketPool-private_8h.html#a4aa52b23aceb8ec9648e2907f756fe3a", null ],

@@ -113,16 +113,25 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <div class="textblock">Here is a list of all struct and union fields with links to the structures/unions they belong to:</div>
 
 <h3><a id="index_c" name="index_c"></a>- c -</h3><ul>
-<li>cache_hits&#160;:&#160;<a class="el" href="group__security.html#a70d502aab282236eeb7355421e143f6d">SocketDTLSContext_T</a>, <a class="el" href="group__security.html#ad2d4382d3d897eef58feeb1bc5f0b180">SocketTLSContext_T</a></li>
-<li>cache_misses&#160;:&#160;<a class="el" href="group__security.html#af440852f57a772abab3d4a41cae13bdf">SocketDTLSContext_T</a>, <a class="el" href="group__security.html#a6442d61b3e9bfe303c10206fbfc0df34">SocketTLSContext_T</a></li>
+<li>ca_state&#160;:&#160;<a class="el" href="group__core__io.html#a700468c7d3360df49c6d6591f0551e13">SocketTCPInfo</a></li>
+<li>cache_evictions&#160;:&#160;<a class="el" href="group__dns.html#ac0fa7dd0cc498c23a31a6f098b5722c3">SocketDNS_T</a></li>
+<li>cache_hash&#160;:&#160;<a class="el" href="group__dns.html#a16f569bb317093051b79b32c1849e986">SocketDNS_T</a></li>
+<li>cache_hits&#160;:&#160;<a class="el" href="group__dns.html#a95afde895cf101a50cb4a7d117272409">SocketDNS_T</a>, <a class="el" href="group__security.html#a70d502aab282236eeb7355421e143f6d">SocketDTLSContext_T</a>, <a class="el" href="group__security.html#ad2d4382d3d897eef58feeb1bc5f0b180">SocketTLSContext_T</a></li>
+<li>cache_insertions&#160;:&#160;<a class="el" href="group__dns.html#a93e8ba3f5a4605e1011252a7bd6fda05">SocketDNS_T</a></li>
+<li>cache_lru_head&#160;:&#160;<a class="el" href="group__dns.html#ab293feab42fe174da5f435f83b674df5">SocketDNS_T</a></li>
+<li>cache_lru_tail&#160;:&#160;<a class="el" href="group__dns.html#a07d905f3bad8fcf64ca67c8403df16e0">SocketDNS_T</a></li>
+<li>cache_max_entries&#160;:&#160;<a class="el" href="group__dns.html#a145218b12162a09a737407e6aacc63f5">SocketDNS_T</a></li>
+<li>cache_misses&#160;:&#160;<a class="el" href="group__dns.html#ae0a2004f91a93f8b0dc545f9218f1442">SocketDNS_T</a>, <a class="el" href="group__security.html#af440852f57a772abab3d4a41cae13bdf">SocketDTLSContext_T</a>, <a class="el" href="group__security.html#a6442d61b3e9bfe303c10206fbfc0df34">SocketTLSContext_T</a></li>
+<li>cache_size&#160;:&#160;<a class="el" href="group__dns.html#a48de60e4f89fdf4028b311c74af29dc5">SocketDNS_T</a></li>
 <li>cache_stores&#160;:&#160;<a class="el" href="group__security.html#a8817aca15ed7cd7d24215a5d253de80f">SocketDTLSContext_T</a>, <a class="el" href="group__security.html#ad4a23660c48a4a85d74a3b1459a86255">SocketTLSContext_T</a></li>
+<li>cache_ttl_seconds&#160;:&#160;<a class="el" href="group__dns.html#ac7e264776c53a4d8d430e8904586540e">SocketDNS_T</a></li>
 <li>cacheable&#160;:&#160;<a class="el" href="group__http.html#a7c626100bb166521094c508c2907cab3">SocketHTTP_MethodProperties</a></li>
 <li>callback&#160;:&#160;<a class="el" href="group__dns.html#ac737e6e0a2823df1c6a562ed9094ef68">SocketDNS_Request_T</a>, <a class="el" href="group__http.html#a0ce7b7d67a7e5b16f9660b30c35cb892">SocketHTTPClient_AsyncRequest_T</a>, <a class="el" href="group__reconnect__private.html#ac327afc59d110b4feded1c24acc20bd0">SocketReconnect_T</a>, <a class="el" href="group__event__system.html#aff80a635f3f8e99d2a20e1d0a46674a3">SocketTimer_T</a>, <a class="el" href="group__security.html#afb62260f9adaa9115085fc71e7e7da47">TLSContextALPN</a></li>
 <li>callback_data&#160;:&#160;<a class="el" href="group__dns.html#abb8217588f38c05ae1ef9c52ec58975f">SocketDNS_Request_T</a></li>
 <li>callback_user_data&#160;:&#160;<a class="el" href="group__security.html#a43a9b74e3e291fba62125636545d2faf">TLSContextALPN</a></li>
 <li>cancelled&#160;:&#160;<a class="el" href="group__event__system.html#a038e1cecaf5f6a57d82521cd40f9c24f">SocketTimer_T</a></li>
 <li>capacity&#160;:&#160;<a class="el" href="group__http1__private.html#afedc506305fd7d721f9234791d64f914">HTTP1_TokenBuf</a>, <a class="el" href="group__hpack__private.html#a6c163c2869d04eb47de479cdbf01d5d7">SocketHPACK_Table_T</a>, <a class="el" href="group__event__system.html#a719a334242bd551e439fadcdf85cc7d5">SocketTimer_heap_T</a>, <a class="el" href="group__websocket.html#a3964e0ace40259b1b0b84662c4e6766a">SocketWS_MessageAssembly</a>, <a class="el" href="group__security.html#a8c03b3c95111691bffb24b53e768f455">TLSContextPinning</a>, <a class="el" href="structTLSContextSNICerts.html#acc58d92d7886f40d7df072a58b14c17f">TLSContextSNICerts</a></li>
-<li>cb&#160;:&#160;<a class="el" href="group__connection__mgmt.html#a7d2ae7b39adc48ef126be349f9fcb75f">AsyncConnectContext_T</a>, <a class="el" href="structAsyncRequest.html#a12f4e9eea9831ce68a7d5fe3f2d95299">AsyncRequest</a></li>
+<li>cb&#160;:&#160;<a class="el" href="group__connection__mgmt.html#a7d2ae7b39adc48ef126be349f9fcb75f">AsyncConnectContext_T</a>, <a class="el" href="structAsyncRequest.html#a12f4e9eea9831ce68a7d5fe3f2d95299">AsyncRequest</a>, <a class="el" href="group__async__io.html#a91a78d77da2e9afd14eb14cb652e132f">SocketAsync_Op</a></li>
 <li>cert_files&#160;:&#160;<a class="el" href="structTLSContextSNICerts.html#a238e32f8911ae4e4ecdb34873c6af1c3">TLSContextSNICerts</a></li>
 <li>cert_lookup_callback&#160;:&#160;<a class="el" href="group__security.html#aee78309674162f25f5e7420359968eb0">SocketTLSContext_T</a></li>
 <li>cert_lookup_user_data&#160;:&#160;<a class="el" href="group__security.html#a3db93c60ba3f18b6b4ba41c4c075b7d7">SocketTLSContext_T</a></li>
@@ -142,8 +151,8 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>client_addr&#160;:&#160;<a class="el" href="group__http.html#afd3eb56604ea0e94b5dd78a47dba53ce">ServerConnection</a></li>
 <li>client_initiated_count&#160;:&#160;<a class="el" href="group__http2__private.html#a814832fd8688766a36be14cfa6c30e86">SocketHTTP2_Conn_T</a></li>
 <li>client_key&#160;:&#160;<a class="el" href="group__websocket.html#a1c7131bf8d7f89121d2d9789ba4185fd">SocketWS_Handshake</a></li>
-<li>client_max_window_bits&#160;:&#160;<a class="el" href="group__websocket.html#a69499ebf077e64c701c00bd44eb5164d">SocketWS_Handshake</a></li>
-<li>client_no_context_takeover&#160;:&#160;<a class="el" href="group__websocket.html#a87927c6556cbfd6bcaa36fdab5e5264c">SocketWS_Handshake</a></li>
+<li>client_max_window_bits&#160;:&#160;<a class="el" href="group__websocket.html#a6bd6cb4d78b4124f05f7f33a6b2f7ef9">SocketWS_CompressionOptions</a>, <a class="el" href="group__websocket.html#a69499ebf077e64c701c00bd44eb5164d">SocketWS_Handshake</a></li>
+<li>client_no_context_takeover&#160;:&#160;<a class="el" href="group__websocket.html#a9531af4f7a0ab83dbe5b5264314b0943">SocketWS_CompressionOptions</a>, <a class="el" href="group__websocket.html#a87927c6556cbfd6bcaa36fdab5e5264c">SocketWS_Handshake</a></li>
 <li>close_code&#160;:&#160;<a class="el" href="group__websocket.html#a32b7636f3af3ca86278460ab908a39a1">SocketWS_T</a></li>
 <li>close_reason&#160;:&#160;<a class="el" href="group__websocket.html#ab8999b9889de37462f8813eddd18a584">SocketWS_T</a></li>
 <li>close_received&#160;:&#160;<a class="el" href="group__websocket.html#a77d3a147cd9297721173bad50aef60ba">SocketWS_T</a></li>
@@ -161,6 +170,7 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>conn_callback_data&#160;:&#160;<a class="el" href="group__http2__private.html#a99c83a64db752ccfb771f52fe112fd86">SocketHTTP2_Conn_T</a></li>
 <li>conn_limiter&#160;:&#160;<a class="el" href="SocketPool-private_8h.html#ae44fbc805e4bbf62016630e93d62dbbf">SocketPool_T</a></li>
 <li>connect_in_progress&#160;:&#160;<a class="el" href="group__reconnect__private.html#a687b3c6cdc5b1250373bf27cd278b5f8">SocketReconnect_T</a></li>
+<li>connect_time_ms&#160;:&#160;<a class="el" href="group__core__io.html#a144a2c11649916fbe9800036b7bdbeb8">SocketStats_T</a></li>
 <li>connect_timeout_ms&#160;:&#160;<a class="el" href="group__http__client.html#gad0964ac6e0738a3c4914054529bb51a7">SocketHTTPClient_Config</a>, <a class="el" href="group__proxy.html#aa761e79e5c6644f3ccb22a4c0300105a">SocketProxy_Config</a>, <a class="el" href="group__proxy__private.html#ae0aebb2175653871184fe8875f57c633">SocketProxy_Conn_T</a>, <a class="el" href="group__foundation.html#a933213f87e1e773af80ae832d9cc6d47">SocketTimeouts_Extended_T</a>, <a class="el" href="group__foundation.html#a5d4d6de98cb88315bbe1d3768bedd373">SocketTimeouts_T</a></li>
 <li>connection&#160;:&#160;<a class="el" href="SocketUtil_8h.html#a4717d53ebfdfea8477f780ec66151dcb">SocketEventRecord.data</a></li>
 <li>connection_count&#160;:&#160;<a class="el" href="group__http.html#ad77c6e75d51e6d398bd53a055a1b85c0">SocketHTTPServer_T</a></li>
@@ -180,6 +190,7 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>cookie_jar&#160;:&#160;<a class="el" href="group__http.html#aa95ae33e55d3c6b1301b7c278845e674">SocketHTTPClient_T</a></li>
 <li>count&#160;:&#160;<a class="el" href="group__security.html#ac8b3b7861796653d2d0acc7145565007">DTLSContextALPN</a>, <a class="el" href="group__hpack__private.html#a78b5dcfe765af4dbaf0cd5c27c926ba0">SocketHPACK_Table_T</a>, <a class="el" href="group__http.html#a20e6c2f4d943d91c824a8ebe1e1f6871">SocketHTTP_Headers_T</a>, <a class="el" href="group__http.html#a244026bd85022fb84ac3d6240d834c56">SocketHTTPClient_CookieJar_T</a>, <a class="el" href="group__core__io.html#aa0eb80c5ca5d1e5862958659252abf7e">SocketLiveCount</a>, <a class="el" href="group__utilities.html#ae65da7d40c1b636bd5d688c6ab36176a">SocketMetrics_HistogramSnapshot</a>, <a class="el" href="SocketPool-private_8h.html#a78ca32e074acc98d6ce35e9b711ad4d9">SocketPool_T</a>, <a class="el" href="group__event__system.html#a5f7e444e7943597fa7d510072da85559">SocketTimer_heap_T</a>, <a class="el" href="group__security.html#ab1dcea98c46d2d5ec61117eda96c5546">TLSContextALPN</a>, <a class="el" href="group__security.html#a69993ad88f84592a194fded9c496181b">TLSContextPinning</a>, <a class="el" href="structTLSContextSNICerts.html#a160a6c0ace96c87b96f97ecc2da1e485">TLSContextSNICerts</a></li>
 <li>counters&#160;:&#160;<a class="el" href="group__utilities.html#ac3d167ae7fb495b924c2b9ace863445a">SocketMetrics_Snapshot</a></li>
+<li>create_time_ms&#160;:&#160;<a class="el" href="group__core__io.html#a14056db13d715c50412fa9b4ab30b3e6">SocketStats_T</a></li>
 <li>created&#160;:&#160;<a class="el" href="group__http.html#af93187faf56bdd5108dbf59ebbdb7978">CookieEntry</a></li>
 <li>created_at&#160;:&#160;<a class="el" href="group__connection__mgmt.html#af3cfe477e7b8b2a42d8398044512b6e4">Connection_T</a>, <a class="el" href="group__http.html#ad4e337e15ebff8d12e21dfe97c795f63">HTTPPoolEntry</a></li>
 <li>created_at_ms&#160;:&#160;<a class="el" href="group__http.html#ae180aae3784c8788b76bdbf607e13282">ServerConnection</a></li>
@@ -196,7 +207,9 @@ $(document).ready(function(){initNavTree('functions_c.html',''); initResizable()
 <li>current_blocked_ips&#160;:&#160;<a class="el" href="group__security.html#a62d7ed28eb018dac7c46b19f7447a420">SocketSYNProtect_Stats</a></li>
 <li>current_count&#160;:&#160;<a class="el" href="group__http.html#aa929d981c71d22b8bfacf23e8263161a">HTTPPool</a></li>
 <li>current_idle&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ae3f9de28a86d86ad1fb47f81934396e4">SocketPool_Stats</a></li>
+<li>current_size&#160;:&#160;<a class="el" href="group__dns.html#ae7b6f98198e752cc02f4e2bc650b5305">SocketDNS_CacheStats</a></li>
 <li>current_tracked_ips&#160;:&#160;<a class="el" href="group__security.html#a5c6dc902b20931d955219b937f8ed2d6">SocketSYNProtect_Stats</a></li>
+<li>custom_nameservers&#160;:&#160;<a class="el" href="group__dns.html#affc9bb7fb07c068e65155ad2107ee947">SocketDNS_T</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

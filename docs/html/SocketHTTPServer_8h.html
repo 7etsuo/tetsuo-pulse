@@ -230,6 +230,12 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga6eeba038caf0b48d3ae3527155ab8162" id="r_ga6eeba038caf0b48d3ae3527155ab8162"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer_DrainCallback</a>) (SocketHTTPServer_T server, int timed_out, void *userdata)</td></tr>
 <tr class="memdesc:ga6eeba038caf0b48d3ae3527155ab8162"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback notified when graceful drain (shutdown) completes.  <br /></td></tr>
 <tr class="separator:ga6eeba038caf0b48d3ae3527155ab8162"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0696714009dd36ac31e93f920b6cf99d" id="r_ga0696714009dd36ac31e93f920b6cf99d"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer_Middleware</a>) (SocketHTTPServer_Request_T req, void *userdata)</td></tr>
+<tr class="memdesc:ga0696714009dd36ac31e93f920b6cf99d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Middleware callback type.  <br /></td></tr>
+<tr class="separator:ga0696714009dd36ac31e93f920b6cf99d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga029660e6b2b44b3ac0418a902489b353" id="r_ga029660e6b2b44b3ac0418a902489b353"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer_ErrorHandler</a>) (SocketHTTPServer_Request_T req, int status_code, void *userdata)</td></tr>
+<tr class="memdesc:ga029660e6b2b44b3ac0418a902489b353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error handler callback type.  <br /></td></tr>
+<tr class="separator:ga029660e6b2b44b3ac0418a902489b353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -378,6 +384,15 @@ Functions</h2></td></tr>
 <tr class="memitem:gac7bf7e6cb42130716cebdb8fd22b30e6" id="r_gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac7bf7e6cb42130716cebdb8fd22b30e6">SocketHTTPServer_stats_reset</a> (SocketHTTPServer_T server)</td></tr>
 <tr class="memdesc:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset all resettable statistics counters to zero.  <br /></td></tr>
 <tr class="separator:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6fde0679e7d83a756be1b7485a93a247" id="r_ga6fde0679e7d83a756be1b7485a93a247"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer_add_static_dir</a> (SocketHTTPServer_T server, const char *prefix, const char *directory)</td></tr>
+<tr class="memdesc:ga6fde0679e7d83a756be1b7485a93a247"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add static file serving for a directory.  <br /></td></tr>
+<tr class="separator:ga6fde0679e7d83a756be1b7485a93a247"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga88c254c8a41cb79759d4e01413afde74" id="r_ga88c254c8a41cb79759d4e01413afde74"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer_add_middleware</a> (SocketHTTPServer_T server, <a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer_Middleware</a> middleware, void *userdata)</td></tr>
+<tr class="memdesc:ga88c254c8a41cb79759d4e01413afde74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add request middleware.  <br /></td></tr>
+<tr class="separator:ga88c254c8a41cb79759d4e01413afde74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ab6ea89ceceb9238afecfd7fe9b2941" id="r_ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3ab6ea89ceceb9238afecfd7fe9b2941">SocketHTTPServer_set_error_handler</a> (SocketHTTPServer_T server, <a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer_ErrorHandler</a> handler, void *userdata)</td></tr>
+<tr class="memdesc:ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom error page handler.  <br /></td></tr>
+<tr class="separator:ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>

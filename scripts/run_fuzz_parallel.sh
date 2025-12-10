@@ -43,7 +43,7 @@ TARGETS_CORE=(
     fuzz_ratelimit
     fuzz_iptracker
     fuzz_synprotect
-    fuzz_new_features
+    fuzz_pool_dos
 )
 
 TARGETS_CRYPTO=(
@@ -52,6 +52,7 @@ TARGETS_CRYPTO=(
 )
 
 TARGETS_UTF8=(
+    fuzz_utf8
     fuzz_utf8_validate
     fuzz_utf8_incremental
 )
@@ -70,6 +71,7 @@ TARGETS_DNS=(
     fuzz_ip_parse
     fuzz_cidr_parse
     fuzz_dns_validate
+    fuzz_dns_inj
     fuzz_address_parse
     fuzz_connect
     fuzz_happy_eyeballs
@@ -84,6 +86,7 @@ TARGETS_TLS=(
     fuzz_tls_io
     fuzz_tls_sni
     fuzz_tls_verify
+    fuzz_tls_ct
     fuzz_cert_pinning
 )
 
@@ -94,9 +97,32 @@ TARGETS_DTLS=(
     fuzz_dtls_io
 )
 
+TARGETS_PROXY=(
+    fuzz_proxy_url
+    fuzz_proxy_http
+    fuzz_proxy_socks4
+    fuzz_proxy_socks5
+)
+
+TARGETS_WS=(
+    fuzz_ws_frame
+    fuzz_ws_frames
+    fuzz_ws_handshake
+    fuzz_ws_deflate
+    fuzz_websocket_handshake
+)
+
 TARGETS_HTTP=(
     fuzz_uri_parse
     fuzz_http_date
+    fuzz_http_core
+    fuzz_http_headers_collection
+    fuzz_http_cookies
+    fuzz_http_cookies_simple
+    fuzz_http_auth
+    fuzz_http_content_type
+    fuzz_http_smuggling
+    fuzz_http_client
 )
 
 TARGETS_HTTP1=(
@@ -104,16 +130,21 @@ TARGETS_HTTP1=(
     fuzz_http1_response
     fuzz_http1_chunked
     fuzz_http1_headers
+    fuzz_http1_serialize
+    fuzz_http1_compression
 )
 
 TARGETS_HPACK=(
+    fuzz_hpack
     fuzz_hpack_decode
+    fuzz_hpack_encode
     fuzz_hpack_huffman
     fuzz_hpack_integer
 )
 
 TARGETS_HTTP2=(
     fuzz_http2_frames
+    fuzz_http2_frames_full
     fuzz_http2_headers
     fuzz_http2_settings
 )
@@ -125,7 +156,7 @@ build_target_list() {
     for group in "${GROUP_LIST[@]}"; do
         case "$group" in
             all)
-                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_CRYPTO[@]}" "${TARGETS_UTF8[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}" "${TARGETS_HTTP[@]}" "${TARGETS_HTTP1[@]}" "${TARGETS_HPACK[@]}" "${TARGETS_HTTP2[@]}")
+                TARGETS+=("${TARGETS_CORE[@]}" "${TARGETS_CRYPTO[@]}" "${TARGETS_UTF8[@]}" "${TARGETS_SOCKET[@]}" "${TARGETS_DNS[@]}" "${TARGETS_TLS[@]}" "${TARGETS_DTLS[@]}" "${TARGETS_PROXY[@]}" "${TARGETS_WS[@]}" "${TARGETS_HTTP[@]}" "${TARGETS_HTTP1[@]}" "${TARGETS_HPACK[@]}" "${TARGETS_HTTP2[@]}")
                 ;;
             core)
                 TARGETS+=("${TARGETS_CORE[@]}")
@@ -148,6 +179,12 @@ build_target_list() {
             dtls)
                 TARGETS+=("${TARGETS_DTLS[@]}")
                 ;;
+            proxy)
+                TARGETS+=("${TARGETS_PROXY[@]}")
+                ;;
+            ws|websocket)
+                TARGETS+=("${TARGETS_WS[@]}")
+                ;;
             http)
                 TARGETS+=("${TARGETS_HTTP[@]}")
                 ;;
@@ -162,7 +199,7 @@ build_target_list() {
                 ;;
             *)
                 log_error "Unknown group: $group"
-                log_info "Valid groups: all, core, crypto, utf8, socket, dns, tls, dtls, http, http1, hpack, http2"
+                log_info "Valid groups: all, core, crypto, utf8, socket, dns, tls, dtls, proxy, ws, http, http1, hpack, http2"
                 exit 1
                 ;;
         esac
@@ -192,31 +229,35 @@ show_usage() {
     echo "  -m MAXLEN   Maximum input length (default: $MAX_LEN)"
     echo "  -g GROUPS   Fuzzer groups to run, comma-separated (default: all)"
     echo "              Groups: all, core, crypto, utf8, socket, dns, tls, dtls,"
-    echo "                      http, http1, hpack, http2"
+    echo "                      proxy, ws, http, http1, hpack, http2"
     echo "  -r          Use ramdisk corpus (/mnt/fuzz_corpus)"
     echo "  -c          Continue from existing corpus"
     echo "  -q          Quick mode: 5 min, 4 jobs/target"
     echo "  -h          Show this help"
     echo ""
     echo "Fuzzer Groups:"
-    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect, new features"
+    echo "  core   - Arena, exception, timer, rate limit, IP tracker, SYN protect, pool DoS"
     echo "  crypto - Base64, hex encoding/decoding"
     echo "  utf8   - UTF-8 validation (one-shot and incremental)"
     echo "  socket - Socket buffer, I/O, poll, pool, dgram, Unix path"
-    echo "  dns    - IP/CIDR parsing, DNS validation, connect, Happy Eyeballs"
-    echo "  tls    - TLS ALPN, session, certs, I/O, SNI, verify, cert pinning"
+    echo "  dns    - IP/CIDR parsing, DNS validation/injection, connect, Happy Eyeballs"
+    echo "  tls    - TLS ALPN, session, certs, I/O, SNI, verify, CT, cert pinning"
     echo "  dtls   - DTLS context, cookie, handshake, I/O"
-    echo "  http   - URI parsing, HTTP date parsing"
-    echo "  http1  - HTTP/1.1 request, response, chunked, headers"
-    echo "  hpack  - HPACK decode, Huffman, integer coding"
-    echo "  http2  - HTTP/2 frames, headers, settings"
+    echo "  proxy  - Proxy URL, HTTP proxy, SOCKS4, SOCKS5"
+    echo "  ws     - WebSocket frame, frames, handshake, deflate"
+    echo "  http   - URI, date, core, headers, cookies, auth, content-type, smuggling, client"
+    echo "  http1  - HTTP/1.1 request, response, chunked, headers, serialize, compression"
+    echo "  hpack  - HPACK encode/decode, Huffman, integer coding"
+    echo "  http2  - HTTP/2 frames, frames_full, headers, settings"
     echo ""
     echo "Examples:"
-    echo "  $0                    # Default: all groups, 2 jobs/target (64 cores total)"
-    echo "  $0 -g http2           # Only HTTP/2 fuzzers (3 targets)"
-    echo "  $0 -g http,http1,http2 # All HTTP fuzzers (9 targets)"
-    echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (6 targets)"
-    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (11 targets)"
+    echo "  $0                    # Default: all groups, 2 jobs/target"
+    echo "  $0 -g http2           # Only HTTP/2 fuzzers (4 targets)"
+    echo "  $0 -g http,http1,http2 # All HTTP fuzzers (20 targets)"
+    echo "  $0 -g hpack,http2     # HPACK + HTTP/2 (9 targets)"
+    echo "  $0 -g tls,dtls        # TLS + DTLS fuzzers (12 targets)"
+    echo "  $0 -g ws              # WebSocket fuzzers (5 targets)"
+    echo "  $0 -g proxy           # Proxy fuzzers (4 targets)"
     echo "  $0 -g core -j 10      # Core fuzzers with 10 jobs each"
     echo "  $0 -j 32 -t 86400     # 32 jobs/target, 24 hours"
     echo "  $0 -r -j 16 -t 3600   # Use ramdisk, 16 jobs, 1 hour"

@@ -904,7 +904,7 @@ docs/ERROR_HANDLING.md for TRY/EXCEPT usage. </dd>
 <p>Value: 65536 bytes (64KB) - accommodates large HTTP CONNECT responses or SOCKS5 addr. Increased for HTTP headers (max per <a class="el" href="SocketHTTP_8h.html" title="Protocol-agnostic HTTP types, header handling, URI parsing, and utilities.">SocketHTTP.h</a>); used in conn-&gt;send_buf/recv_buf. Balances memory and performance for typical proxy messages.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__proxy__private.html#a64870d3e5ff24323c4d1566bc1fb06c6">SocketProxy_Conn_T::send_buf</a>, ::recv_buf </dd>
 <dd>
-SocketBuf_T::recvbuf for <a class="el" href="graceful__shutdown_8c.html#a0ddf1224851353fc92bfbff6f499fa97">main</a> receive buffer. </dd>
+SocketBuf_T::recvbuf for <a class="el" href="connection__pool_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> receive buffer. </dd>
 <dd>
 <a class="el" href="group__core__io.html#ga71e6170ecb08801fd53c849e1456e83c" title="Send pending protocol data from conn-&gt;send_buf.">socketproxy_do_send()</a>, <a class="el" href="group__core__io.html#gab87758fdfc1cbbf3af9740989da246fd" title="Receive protocol data into conn-&gt;recv_buf.">socketproxy_do_recv()</a> for usage. </dd>
 <dd>

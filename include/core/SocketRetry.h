@@ -1126,5 +1126,64 @@ typedef struct SocketRetry_Stats
 
 /** @} */
 
+/* ============================================================================
+ * Function Declarations
+ * ============================================================================
+ */
+
+/**
+ * Initialize a SocketRetry_Policy with default values.
+ */
+extern void SocketRetry_policy_defaults (SocketRetry_Policy *policy);
+
+/**
+ * Create a new retry context.
+ */
+extern T SocketRetry_new (const SocketRetry_Policy *policy);
+
+/**
+ * Free a retry context.
+ */
+extern void SocketRetry_free (T *retry);
+
+/**
+ * Execute an operation with retries.
+ */
+extern int SocketRetry_execute (T retry, SocketRetry_Operation operation,
+                                SocketRetry_ShouldRetry should_retry,
+                                void *context);
+
+/**
+ * Execute an operation with default retry logic.
+ */
+extern int SocketRetry_execute_simple (T retry, SocketRetry_Operation operation,
+                                       void *context);
+
+/**
+ * Get statistics from last execution.
+ */
+extern void SocketRetry_get_stats (const T retry, SocketRetry_Stats *stats);
+
+/**
+ * Reset context for reuse.
+ */
+extern void SocketRetry_reset (T retry);
+
+/**
+ * Get current policy.
+ */
+extern void SocketRetry_get_policy (const T retry, SocketRetry_Policy *policy);
+
+/**
+ * Update policy.
+ */
+extern void SocketRetry_set_policy (T retry, const SocketRetry_Policy *policy);
+
+/**
+ * Calculate delay for a given attempt.
+ */
+extern int SocketRetry_calculate_delay (const SocketRetry_Policy *policy,
+                                        int attempt);
+
 #undef T
 #endif /* SOCKETRETRY_INCLUDED */

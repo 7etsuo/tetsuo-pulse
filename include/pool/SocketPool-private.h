@@ -82,6 +82,62 @@
 #endif
 
 /* ============================================================================
+ * Logging Configuration
+ * ============================================================================
+ */
+
+/**
+ * @brief Default log component for all SocketPool implementation files.
+ * @ingroup connection_mgmt
+ *
+ * Overrides SOCKET_LOG_COMPONENT from SocketUtil.h for consistent logging.
+ * Each implementation file (.c) should not need to redefine this.
+ */
+#ifdef SOCKET_LOG_COMPONENT
+#undef SOCKET_LOG_COMPONENT
+#endif
+#define SOCKET_LOG_COMPONENT "SocketPool"
+
+/* ============================================================================
+ * Mutex Convenience Macros
+ * ============================================================================
+ */
+
+/**
+ * @brief Acquire pool mutex.
+ * @ingroup connection_mgmt
+ * @param p Pool instance.
+ *
+ * Convenience macro for consistent mutex locking across implementation files.
+ *
+ * @see POOL_UNLOCK for releasing the mutex.
+ * @see pthread_mutex_lock() for underlying operation.
+ */
+#define POOL_LOCK(p)                                                          \
+  do                                                                          \
+    {                                                                         \
+      pthread_mutex_lock (&(p)->mutex);                                       \
+    }                                                                         \
+  while (0)
+
+/**
+ * @brief Release pool mutex.
+ * @ingroup connection_mgmt
+ * @param p Pool instance.
+ *
+ * Convenience macro for consistent mutex unlocking across implementation files.
+ *
+ * @see POOL_LOCK for acquiring the mutex.
+ * @see pthread_mutex_unlock() for underlying operation.
+ */
+#define POOL_UNLOCK(p)                                                        \
+  do                                                                          \
+    {                                                                         \
+      pthread_mutex_unlock (&(p)->mutex);                                     \
+    }                                                                         \
+  while (0)
+
+/* ============================================================================
  * Hash Table Configuration
  * ============================================================================
  */

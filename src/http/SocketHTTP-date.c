@@ -1006,9 +1006,10 @@ SocketHTTP_date_parse (const char *date_str, size_t len, time_t *time_out)
         return 0;
     }
 
-  /* All formats failed */
-  SOCKET_LOG_WARN_MSG ("Invalid HTTP date format (len=%zu): %.50s...", len,
-                       date_str);
+  /* All formats failed - use %.*s to handle non-null-terminated input */
+  int print_len = (len > 50) ? 50 : (int)len;
+  SOCKET_LOG_WARN_MSG ("Invalid HTTP date format (len=%zu): %.*s...", len,
+                       print_len, date_str);
   return -1;
 }
 

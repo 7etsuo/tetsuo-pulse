@@ -10,7 +10,6 @@
  * - Trailer header support
  */
 
-#include "http/SocketHTTP-private.h"
 #include "http/SocketHTTP1-private.h"
 #include "http/SocketHTTP1.h"
 
@@ -23,9 +22,11 @@
  * ============================================================================
  */
 
-/** CRLF sequence as byte array (not null-terminated - wire format) */
-static const unsigned char HTTP1_CRLF_BYTES[2] = { '\r', '\n' };
-#define HTTP1_CRLF_LEN 2
+/**
+ * CRLF sequence as byte array (not null-terminated - wire format).
+ * Uses shared HTTP1_CRLF_LEN from SocketHTTP1-private.h.
+ */
+static const unsigned char HTTP1_CRLF_BYTES[HTTP1_CRLF_LEN] = { '\r', '\n' };
 
 /** Zero chunk size line "0\r\n" as byte array (not null-terminated - wire
  * format) */
@@ -36,8 +37,7 @@ static const unsigned char HTTP1_ZERO_CHUNK_BYTES[3] = { '0', '\r', '\n' };
 #define HTTP1_FINAL_CHUNK_MIN_SIZE                                            \
   (HTTP1_ZERO_CHUNK_SIZE_LINE_LEN + HTTP1_CRLF_LEN)
 
-/** Hex radix for chunk size parsing */
-#define HTTP1_HEX_RADIX 16
+/* Note: HTTP1_CRLF_LEN and HTTP1_HEX_RADIX defined in SocketHTTP1-private.h */
 
 /**
  * Approximate overhead per trailer entry (struct, null terminators, delimiters)

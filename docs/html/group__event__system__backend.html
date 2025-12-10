@@ -146,6 +146,9 @@ Macros</h2></td></tr>
 <tr class="memitem:gad5c973c74b3941d078d573439e92c65b" id="r_gad5c973c74b3941d078d573439e92c65b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#gad5c973c74b3941d078d573439e92c65b">VALIDATE_MAXEVENTS</a>(maxevents,  event_type)</td></tr>
 <tr class="memdesc:gad5c973c74b3941d078d573439e92c65b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Safeguard macro for validating maxevents against invalid values and overflow risks.  <br /></td></tr>
 <tr class="separator:gad5c973c74b3941d078d573439e92c65b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gadf73e3d7254bebcf3011e0fb3c310560" id="r_gadf73e3d7254bebcf3011e0fb3c310560"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#gadf73e3d7254bebcf3011e0fb3c310560">TIMEOUT_MS_TO_TIMESPEC</a>(timeout_ms,  ts)</td></tr>
+<tr class="memdesc:gadf73e3d7254bebcf3011e0fb3c310560"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert milliseconds to timespec for kqueue/poll backends.  <br /></td></tr>
+<tr class="separator:gadf73e3d7254bebcf3011e0fb3c310560"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga72ef813749c8c54d8f8ccf64ba724a0a" id="r_ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a>(fd)</td></tr>
 <tr class="memdesc:ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Essential macro to validate file descriptors before backend system calls.  <br /></td></tr>
 <tr class="separator:ga72ef813749c8c54d8f8ccf64ba724a0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -159,7 +162,7 @@ Typedefs</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Internal platform abstraction for efficient I/O event multiplexing. </p>
 <p>This module provides the backend interface that abstracts platform-specific polling mechanisms (epoll, kqueue, poll) into a uniform API used by SocketPoll. Designed for backend implementors; applications use SocketPoll directly.</p>
-<h2><a class="anchor" id="autotoc_md328"></a>
+<h2><a class="anchor" id="autotoc_md361"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌──────────────────────────────────┐</div>
 <div class="line">│       <a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> (Public)      │</div>
@@ -179,7 +182,7 @@ Architecture Overview</h2>
 <div class="ttc" id="agroup__event__system__backend_html_gadd97c2d63f6b491ef855bd928211e71b"><div class="ttname"><a href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></div><div class="ttdeci">struct PollBackend_T * PollBackend_T</div><div class="ttdoc">Opaque handle for platform-specific polling backend implementation.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00180">SocketPoll_backend.h:180</a></div></div>
 <div class="ttc" id="agroup__event__system_html_ga5b2c06638f0c76ea3c6c2f38503d266b"><div class="ttname"><a href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b">backend_wait</a></div><div class="ttdeci">int backend_wait(PollBackend_T backend, int timeout_ms)</div><div class="ttdoc">Wait for events.</div></div>
 <div class="ttc" id="agroup__poll__private_html_structSocketPoll__T"><div class="ttname"><a href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></div><div class="ttdoc">Opaque internal state structure for SocketPoll instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00404">SocketPoll-private.h:405</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md329"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md362"></a>
 Backend Implementations</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -188,14 +191,14 @@ Backend Implementations</h2>
 <td class="markdownTableBodyNone">epoll   </td><td class="markdownTableBodyNone">Linux (2.6.8+)   </td><td class="markdownTableBodyNone">Edge   </td><td class="markdownTableBodyNone">High performance, low   </td></tr>
 </table>
 <p>overhead | | kqueue | BSD, macOS, FreeBSD | Edge | Scalable, supports files/timers | | poll | All POSIX systems | Level | Portable, no special privileges |</p>
-<h2><a class="anchor" id="autotoc_md330"></a>
+<h2><a class="anchor" id="autotoc_md363"></a>
 Selection Strategy</h2>
 <ul>
 <li>Compile-time auto-detection via CMake</li>
 <li>Prioritizes high-performance backends when available</li>
 <li>Fallback to portable poll for unsupported platforms</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md331"></a>
+<h2><a class="anchor" id="autotoc_md364"></a>
 Interface Guarantees</h2>
 <ul>
 <li>Identical API across all backends</li>
@@ -204,7 +207,7 @@ Interface Guarantees</h2>
 <li>Event translation to SocketPoll_Events bitmasks</li>
 <li>No thread-safety in backends; SocketPoll provides mutex</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md332"></a>
+<h2><a class="anchor" id="autotoc_md365"></a>
 Implementation Requirements</h2>
 <ul>
 <li>Use VALIDATE_MAXEVENTS and VALIDATE_FD macros</li>
@@ -213,7 +216,7 @@ Implementation Requirements</h2>
 <li>Implement <a class="el" href="group__event__system.html#ga2edb00f128ad773d62c8f11c516153d9" title="Get human-readable backend name for debugging and logging.">backend_name()</a> for diagnostics</li>
 <li>Ensure idempotent del() operations</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md333"></a>
+<h2><a class="anchor" id="autotoc_md366"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__foundation.html">Core Foundation Modules</a> (Arena_T), <a class="el" href="Socket_8h.html" title="High-level TCP/IP and Unix domain socket interface.">Socket.h</a> (fd handling)</li>
@@ -226,6 +229,63 @@ Module Relationships</h2>
 <dd>
 <a class="el" href="ASYNC__IO_8md.html">docs/ASYNC_IO.md</a> for usage guides </dd></dl>
 <h2 class="groupheader">Macro Definition Documentation</h2>
+<a id="gadf73e3d7254bebcf3011e0fb3c310560" name="gadf73e3d7254bebcf3011e0fb3c310560"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#gadf73e3d7254bebcf3011e0fb3c310560">&#9670;&#160;</a></span>TIMEOUT_MS_TO_TIMESPEC</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">#define TIMEOUT_MS_TO_TIMESPEC</td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">timeout_ms, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname">ts&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Value:</b><div class="fragment"><div class="line">  <span class="keywordflow">do</span>                                                                          \</div>
+<div class="line">    {                                                                         \</div>
+<div class="line">      (ts)-&gt;tv_sec = (timeout_ms) / <a class="code hl_define" href="group__foundation.html#ga56c9492db4685ae9864baf230a439a30">SOCKET_MS_PER_SECOND</a>;                     \</div>
+<div class="line">      (ts)-&gt;tv_nsec                                                           \</div>
+<div class="line">          = ((timeout_ms) % <a class="code hl_define" href="group__foundation.html#ga56c9492db4685ae9864baf230a439a30">SOCKET_MS_PER_SECOND</a>) * <a class="code hl_define" href="group__foundation.html#ga0dd0226b79f2dc57e6741601fd56b51d">SOCKET_NS_PER_MS</a>;         \</div>
+<div class="line">    }                                                                         \</div>
+<div class="line">  while (0)</div>
+<div class="ttc" id="agroup__foundation_html_ga0dd0226b79f2dc57e6741601fd56b51d"><div class="ttname"><a href="group__foundation.html#ga0dd0226b79f2dc57e6741601fd56b51d">SOCKET_NS_PER_MS</a></div><div class="ttdeci">#define SOCKET_NS_PER_MS</div><div class="ttdoc">Nanoseconds per millisecond.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01869">SocketConfig.h:1869</a></div></div>
+<div class="ttc" id="agroup__foundation_html_ga56c9492db4685ae9864baf230a439a30"><div class="ttname"><a href="group__foundation.html#ga56c9492db4685ae9864baf230a439a30">SOCKET_MS_PER_SECOND</a></div><div class="ttdeci">#define SOCKET_MS_PER_SECOND</div><div class="ttdoc">Milliseconds per second.</div><div class="ttdef"><b>Definition</b> <a href="SocketConfig_8h_source.html#l01862">SocketConfig.h:1862</a></div></div>
+</div><!-- fragment -->
+<p>Convert milliseconds to timespec for kqueue/poll backends. </p>
+<p>Common helper to avoid code duplication between kqueue and poll backends which both need to convert millisecond timeouts to timespec structures. Uses constants from <a class="el" href="SocketConfig_8h.html" title="Compile-time and runtime configuration constants, limits, and platform adaptations.">SocketConfig.h</a> for the conversion.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">timeout_ms</td><td>Timeout in milliseconds (must be &gt;= 0). </td></tr>
+    <tr><td class="paramdir">[out]</td><td class="paramname">ts</td><td>Pointer to timespec structure to populate.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section note"><dt>Note</dt><dd>Only call when timeout_ms &gt;= 0; infinite wait (-1) should bypass. </dd>
+<dd>
+Uses SOCKET_MS_PER_SECOND and SOCKET_NS_PER_MS from <a class="el" href="SocketConfig_8h.html" title="Compile-time and runtime configuration constants, limits, and platform adaptations.">SocketConfig.h</a>.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__event__system.html#ga5b2c06638f0c76ea3c6c2f38503d266b" title="Wait for events.">backend_wait()</a> in kqueue and poll backends. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga56c9492db4685ae9864baf230a439a30" title="Milliseconds per second.">SOCKET_MS_PER_SECOND</a> time conversion constant. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga0dd0226b79f2dc57e6741601fd56b51d" title="Nanoseconds per millisecond.">SOCKET_NS_PER_MS</a> nanosecond conversion constant. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00303">303</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
+
+</div>
+</div>
 <a id="ga72ef813749c8c54d8f8ccf64ba724a0a" name="ga72ef813749c8c54d8f8ccf64ba724a0a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga72ef813749c8c54d8f8ccf64ba724a0a">&#9670;&#160;</a></span>VALIDATE_FD</h2>
 
@@ -253,7 +313,7 @@ Module Relationships</h2>
 </div><!-- fragment -->
 <p>Essential macro to validate file descriptors before backend system calls. </p>
 <p>Defensive check ensuring fd parameters to backend functions are valid (&gt;=0) prior to platform invocations like epoll_ctl or kevent. Prevents propagation of uninitialized or erroneous fds that could lead to system call failures or resource leaks.</p>
-<h2><a class="anchor" id="autotoc_md341"></a>
+<h2><a class="anchor" id="autotoc_md374"></a>
 Validation Details</h2>
 <p>Single condition: fd &gt;= 0 (standard POSIX requirement for valid fds).</p>
 <p>Failure mode: errno = EBADF; return -1; (tailored for int-returning functions).</p>
@@ -264,7 +324,7 @@ Validation Details</h2>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>Macro effect: Conditional return -1 with errno set; no explicit return value.</dd></dl>
-<h2><a class="anchor" id="autotoc_md342"></a>
+<h2><a class="anchor" id="autotoc_md375"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Universal pattern in backend_add/mod/del</span></div>
 <div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a>(<a class="code hl_typedef" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> self, <span class="keywordtype">int</span> fd, <span class="keywordtype">unsigned</span> events) {</div>
@@ -283,7 +343,7 @@ Usage Example</h2>
 <div class="line">    }</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="agroup__event__system__backend_html_ga72ef813749c8c54d8f8ccf64ba724a0a"><div class="ttname"><a href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a></div><div class="ttdeci">#define VALIDATE_FD(fd)</div><div class="ttdoc">Essential macro to validate file descriptors before backend system calls.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00344">SocketPoll_backend.h:344</a></div></div>
+<div class="ttc" id="agroup__event__system__backend_html_ga72ef813749c8c54d8f8ccf64ba724a0a"><div class="ttname"><a href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a></div><div class="ttdeci">#define VALIDATE_FD(fd)</div><div class="ttdoc">Essential macro to validate file descriptors before backend system calls.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00371">SocketPoll_backend.h:371</a></div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00181">SocketPoll.h:181</a></div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a></div><div class="ttdeci">@ POLL_WRITE</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00182">SocketPoll.h:182</a></div></div>
 </div><!-- fragment --><dl class="section user"><dt>Complexity\n O(1) - Trivial integer comparison.</dt><dd></dd></dl>
@@ -302,7 +362,7 @@ errno(3) for EBADF details </dd>
 <dd>
 <a class="el" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e" title="Register a socket for I/O event monitoring within the poll instance.">SocketPoll_add()</a> public method invoking <a class="el" href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6" title="Register file descriptor for I/O event notifications.">backend_add</a> indirectly </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00344">344</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketPoll__backend_8h_source.html#l00371">371</a> of file <a class="el" href="SocketPoll__backend_8h_source.html">SocketPoll_backend.h</a>.</p>
 
 </div>
 </div>
@@ -348,7 +408,7 @@ errno(3) for EBADF details </dd>
 </div><!-- fragment -->
 <p>Safeguard macro for validating maxevents against invalid values and overflow risks. </p>
 <p>Essential defensive programming macro invoked at backend initialization to validate the maximum event capacity parameter. Mitigates potential integer overflow in memory allocations for event structures and blocks zero/negative values that could lead to denial-of-service or undefined behavior.</p>
-<h2><a class="anchor" id="autotoc_md338"></a>
+<h2><a class="anchor" id="autotoc_md371"></a>
 Validation Criteria</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -360,7 +420,7 @@ Validation Criteria</h2>
 </table>
 <p>|</p>
 <p>The macro performs safe casting to size_t and uses division to detect potential overflow before any allocation occurs.</p>
-<h2><a class="anchor" id="autotoc_md339"></a>
+<h2><a class="anchor" id="autotoc_md372"></a>
 Error Propagation</h2>
 <p>Sets appropriate errno and executes 'return NULL;' (assumes caller returns pointer). For functions returning int, adjust manually or use variant macro.</p>
 <dl class="params"><dt>Parameters</dt><dd>
@@ -371,7 +431,7 @@ Error Propagation</h2>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>No return value - macro either validates successfully (no-op) or aborts function via return.</dd></dl>
-<h2><a class="anchor" id="autotoc_md340"></a>
+<h2><a class="anchor" id="autotoc_md373"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// In platform-specific backend_new() e.g., epoll backend</span></div>
 <div class="line"><span class="preprocessor">#include &lt;limits.h&gt;</span>  <span class="comment">// for SIZE_MAX</span></div>
@@ -440,7 +500,7 @@ SIZE_MAX limit in &lt;limits.h&gt; or &lt;stdint.h&gt; </dd>
 
 <p>Opaque handle for platform-specific polling backend implementation. </p>
 <p>Represents the platform-optimized polling mechanism (epoll/kqueue/poll) abstracted into a uniform interface for SocketPoll. Handles fd registration, event waiting, and notification delivery with platform-specific efficiency.</p>
-<h2><a class="anchor" id="autotoc_md334"></a>
+<h2><a class="anchor" id="autotoc_md367"></a>
 Lifecycle Management</h2>
 <ul>
 <li><b>Creation</b>: backend_new(arena, maxevents) - allocates from arena, initializes platform resources (e.g., epoll_create)</li>
@@ -448,10 +508,10 @@ Lifecycle Management</h2>
 <li><b>Cleanup</b>: backend_free(backend) - releases platform resources (e.g., epoll_ctl delete all, close fd); memory freed by arena dispose</li>
 <li><b>Destruction</b>: Arena_clear/dispose handles remaining memory; backend_free must be called first for resource leak prevention</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md335"></a>
+<h2><a class="anchor" id="autotoc_md368"></a>
 Thread Safety</h2>
 <dl class="section user"><dt>Thread Safety\n No - Individual backends are not thread-safe. SocketPoll_T</dt><dd>enforces single-threaded access via internal mutex. Concurrent calls to the same backend instance result in race conditions and undefined behavior.</dd></dl>
-<h2><a class="anchor" id="autotoc_md336"></a>
+<h2><a class="anchor" id="autotoc_md369"></a>
 Key Characteristics</h2>
 <ul>
 <li>Opaque structure: Internal fields platform-specific (e.g., epoll_fd, event array)</li>
@@ -459,7 +519,7 @@ Key Characteristics</h2>
 <li>Error handling: Sets errno on failures (EINVAL, ENOMEM, EBADF, etc.)</li>
 <li>Event capacity: Fixed at creation (maxevents); resize requires new backend</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md337"></a>
+<h2><a class="anchor" id="autotoc_md370"></a>
 Usage Patterns (Internal)</h2>
 <p>Backends are exclusively used within SocketPoll implementations:</p>
 <div class="fragment"><div class="line"><span class="comment">// Typical backend lifecycle in poll module</span></div>

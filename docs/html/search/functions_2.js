@@ -17,13 +17,14 @@ var searchData=
   ['connection_5flastactivity_14',['Connection_lastactivity',['../group__connection__mgmt.html#ga68397aca39e8902ee26108dcb86b5db1',1,'SocketPool.h']]],
   ['connection_5foutbuf_15',['Connection_outbuf',['../group__connection__mgmt.html#ga6d7573f71d8853943029cfd55fa3fb3a',1,'SocketPool.h']]],
   ['connection_5freconnect_16',['Connection_reconnect',['../group__connection__mgmt.html#ga0ea55ad82560acb8b5b44dceebc7c02f',1,'SocketPool.h']]],
-  ['connection_5fsetdata_17',['Connection_setdata',['../group__connection__mgmt.html#gab48a53bc1b36954d521104fedf9012c1',1,'SocketPool.h']]],
-  ['connection_5fsocket_18',['Connection_socket',['../group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652',1,'SocketPool.h']]],
-  ['create_5fcompletion_5fpipe_19',['create_completion_pipe',['../group__dns.html#gafd2db132989e70ce194d307157648be2',1,'SocketDNS-private.h']]],
-  ['create_5fsingle_5fworker_5fthread_20',['create_single_worker_thread',['../group__dns.html#ga94f5a6033fa425d4586553885a1dea47',1,'SocketDNS-private.h']]],
-  ['create_5fworker_5fthreads_21',['create_worker_threads',['../group__dns.html#gaa9424b326264ca67ebcd3b425836fd3e',1,'SocketDNS-private.h']]],
-  ['ctx_5falloc_5fand_5finit_22',['ctx_alloc_and_init',['../group__security.html#ga1e43ba6d103cbc8f43b748cf2ddf4b9a',1,'SocketTLS-private.h']]],
-  ['ctx_5farena_5falloc_23',['ctx_arena_alloc',['../group__security.html#ga9acf6c44e3887d6570aa5a3750a2b802',1,'SocketTLS-private.h']]],
-  ['ctx_5farena_5fstrdup_24',['ctx_arena_strdup',['../group__security.html#gac1dcd2082d3c29e557a920685766c44c',1,'SocketTLS-private.h']]],
-  ['ctx_5fraise_5fopenssl_5ferror_25',['ctx_raise_openssl_error',['../group__security.html#ga88ff84e8a0b38713099d838de6404163',1,'SocketTLS-private.h']]]
+  ['connection_5fsend_5ferror_17',['connection_send_error',['../group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd',1,'SocketHTTPServer-private.h']]],
+  ['connection_5fsetdata_18',['Connection_setdata',['../group__connection__mgmt.html#gab48a53bc1b36954d521104fedf9012c1',1,'SocketPool.h']]],
+  ['connection_5fsocket_19',['Connection_socket',['../group__connection__mgmt.html#gaaeff7efb1109a312f56e35689b67c652',1,'SocketPool.h']]],
+  ['create_5fcompletion_5fpipe_20',['create_completion_pipe',['../group__dns.html#gafd2db132989e70ce194d307157648be2',1,'SocketDNS-private.h']]],
+  ['create_5fsingle_5fworker_5fthread_21',['create_single_worker_thread',['../group__dns.html#ga94f5a6033fa425d4586553885a1dea47',1,'SocketDNS-private.h']]],
+  ['create_5fworker_5fthreads_22',['create_worker_threads',['../group__dns.html#gaa9424b326264ca67ebcd3b425836fd3e',1,'SocketDNS-private.h']]],
+  ['ctx_5falloc_5fand_5finit_23',['ctx_alloc_and_init',['../group__security.html#ga1e43ba6d103cbc8f43b748cf2ddf4b9a',1,'SocketTLS-private.h']]],
+  ['ctx_5farena_5falloc_24',['ctx_arena_alloc',['../group__security.html#ga9acf6c44e3887d6570aa5a3750a2b802',1,'SocketTLS-private.h']]],
+  ['ctx_5farena_5fstrdup_25',['ctx_arena_strdup',['../group__security.html#gac1dcd2082d3c29e557a920685766c44c',1,'SocketTLS-private.h']]],
+  ['ctx_5fraise_5fopenssl_5ferror_26',['ctx_raise_openssl_error',['../group__security.html#ga88ff84e8a0b38713099d838de6404163',1,'SocketTLS-private.h']]]
 ];

@@ -1,6 +1,6 @@
 var SocketWS_private_8h =
 [
-    [ "RAISE_WS_ERROR", "SocketWS-private_8h.html#ad47afcd717fda7a921345994a4e5f4a5", null ],
+    [ "RAISE_WS_ERROR", "group__websocket.html#gad47afcd717fda7a921345994a4e5f4a5", null ],
     [ "SOCKETWS_BASE_HEADER_SIZE", "group__websocket.html#ga9be4ad7326c3c8e0480ae9ca4170bc79", null ],
     [ "SOCKETWS_CONNECTION_VALUE", "SocketWS-private_8h.html#adfbfffa784988434081c8c80f3ec69aa", null ],
     [ "SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS", "SocketWS-private_8h.html#af7be9271e69a258e82d90db0bc75af3b", null ],
@@ -84,6 +84,5 @@ var SocketWS_private_8h =
     [ "ws_send_data_frame", "group__websocket.html#ga9e85c4df84bca9d7182a1196c4e0c723", null ],
     [ "ws_send_ping", "group__websocket.html#ga99c6c5ca0bace14d46703343595a785b", null ],
     [ "ws_send_pong", "group__websocket.html#ga7edd214f1189fb37ce58c28a47771151", null ],
-    [ "ws_set_error", "group__websocket.html#gab26b26aa679375629c245be95eaaf222", null ],
-    [ "SocketWS_DetailedException", "group__websocket.html#ga0fadbd57ccfb278acb88c94cc609c265", null ]
+    [ "ws_set_error", "group__websocket.html#gab26b26aa679375629c245be95eaaf222", null ]
 ];

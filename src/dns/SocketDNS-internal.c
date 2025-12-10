@@ -293,14 +293,24 @@ cleanup_partial_workers (struct SocketDNS_T *dns, int created_count)
  * set_worker_thread_name - Set thread name for debugging
  * @dns: DNS resolver instance
  * @thread_index: Index of thread to name
+ *
+ * Uses pthread_setname_np() on supported platforms (Linux, macOS).
+ * Thread names aid debugging in tools like gdb, htop, and ps.
  */
 static void
 set_worker_thread_name (struct SocketDNS_T *dns, int thread_index)
 {
-#ifdef PTHREAD_SET_NAME_SUPPORTED
+#if defined(__linux__) || defined(__APPLE__)
   char thread_name[SOCKET_DNS_THREAD_NAME_SIZE];
   snprintf (thread_name, sizeof (thread_name), "dns-worker-%d", thread_index);
+#if defined(__APPLE__)
+  /* macOS: pthread_setname_np takes only one argument (sets current thread) */
+  (void)dns;
+  pthread_setname_np (thread_name);
+#else
+  /* Linux: pthread_setname_np takes thread id and name */
   pthread_setname_np (dns->workers[thread_index], thread_name);
+#endif
 #else
   (void)dns;
   (void)thread_index;

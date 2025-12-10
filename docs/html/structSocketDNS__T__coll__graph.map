@@ -1,7 +1,10 @@
 <map id="SocketDNS_T" name="SocketDNS_T">
-<area shape="rect" id="Node000001" title="Async DNS resolver structure." alt="" coords="33,5,140,31"/>
-<area shape="rect" id="Node000002" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="5,132,168,157"/>
-<area shape="poly" id="edge3_Node000002_Node000001" title=" " alt="" coords="45,40,30,56,24,76,30,97,45,116,64,129,61,134,41,120,26,100,18,76,26,53,41,36"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,119,109,98,113,77,110,56,95,32,100,29,114,54,119,77,115,99,105,121"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="183,133,191,138,195,145,187,155,169,159,168,154,184,150,189,144,187,141,180,138"/>
+<area shape="rect" id="Node000001" title="Async DNS resolver structure." alt="" coords="36,141,143,167"/>
+<area shape="rect" id="Node000002" href="$group__dns.html#structSocketDNS__Request__T" title="DNS resolution request structure." alt="" coords="8,268,171,293"/>
+<area shape="poly" id="edge3_Node000002_Node000001" title=" " alt="" coords="48,176,33,192,26,212,33,233,48,252,66,265,63,270,44,256,28,236,21,212,28,189,44,172"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,255,112,234,116,213,112,192,98,168,103,165,117,190,121,213,117,235,108,257"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="185,269,194,274,197,281,189,291,172,295,170,290,187,286,192,280,190,277,183,274"/>
+<area shape="rect" id="Node000003" href="$group__dns.html#structSocketDNS__CacheEntry" title="DNS cache entry structure." alt="" coords="5,15,173,40"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="92,54,92,141,87,141,87,54"/>
+<area shape="poly" id="edge5_Node000003_Node000003" title=" " alt="" coords="188,16,196,20,200,28,192,37,174,42,173,36,189,33,195,27,193,24,186,21"/>
 </map>

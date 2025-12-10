@@ -103,9 +103,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
       if (size > 10)
         {
-          size_t domain_len = (size > sizeof (domain) - 1) ? sizeof (domain) - 1 : size / 3;
-          size_t path_len = (size > sizeof (path) - 1) ? sizeof (path) - 1 : size / 3;
-          size_t name_len = (size > sizeof (name) - 1) ? sizeof (name) - 1 : size / 3;
+          /* Split input into 3 parts, ensuring we don't read past buffer */
+          size_t third = size / 3;
+          size_t domain_len = (third > sizeof (domain) - 1) ? sizeof (domain) - 1 : third;
+          size_t path_len = (third > sizeof (path) - 1) ? sizeof (path) - 1 : third;
+          
+          /* Ensure we have enough data for all three parts */
+          size_t remaining = size - domain_len - path_len;
+          size_t name_len = (remaining > sizeof (name) - 1) ? sizeof (name) - 1 : remaining;
 
           memcpy (domain, data, domain_len);
           domain[domain_len] = '\0';
@@ -186,9 +191,11 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
         /* Create cookies with fuzzed expiration times */
         time_t now = time (NULL);
 
-        /* Use fuzz data for expiration offset */
-        int32_t offset_seconds = ((int32_t)data[0] << 24) | ((int32_t)data[1] << 16) |
-                                 ((int32_t)data[2] << 8) | (int32_t)data[3];
+        /* Use fuzz data for expiration offset - use unsigned to avoid UB */
+        int32_t offset_seconds = (int32_t)(((uint32_t)data[0] << 24) |
+                                           ((uint32_t)data[1] << 16) |
+                                           ((uint32_t)data[2] << 8) |
+                                           (uint32_t)data[3]);
 
         SocketHTTPClient_Cookie cookie;
         memset (&cookie, 0, sizeof (cookie));

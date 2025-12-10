@@ -427,20 +427,6 @@ chunk_cache_return (struct ChunkHeader *chunk)
 /* ==================== Alignment Calculation ==================== */
 
 /**
- * arena_calculate_aligned_size - Calculate properly aligned allocation size
- * @nbytes: Requested allocation size
- *
- * Returns: Aligned size, or 0 on overflow/invalid size/zero input
- * Thread-safe: Yes
- *
- * Performs all alignment and overflow checks in a single function:
- * 1. Validates nbytes is positive and within limits
- * 2. Calculates aligned size with overflow protection
- * 3. Validates final size is within limits
- *
- * Note: ARENA_ALIGNMENT_SIZE is sizeof(union align), guaranteed non-zero.
- */
-/**
  * arena_validate_nbytes - Validate input bytes for allocation
  * @nbytes: Bytes to validate
  *
@@ -561,14 +547,6 @@ arena_allocate_new_chunk (size_t chunk_size, struct ChunkHeader **ptr_out,
 }
 
 /**
- * arena_get_chunk - Get a chunk (from cache or allocate new)
- * @arena: Arena to get chunk for
- * @min_size: Minimum size needed
- *
- * Returns: ARENA_SUCCESS on success, ARENA_FAILURE on failure
- * Thread-safe: No (must be called with arena->mutex held)
- */
-/**
  * arena_get_chunk - Obtain chunk for allocation (reuse or allocate)
  * @arena: Arena needing chunk
  * @min_size: Minimum chunk size required
@@ -632,16 +610,6 @@ arena_release_all_chunks (T arena)
 
 /* ==================== Space Allocation ==================== */
 
-/**
- * arena_ensure_space - Ensure arena has enough space for allocation
- * @arena: Arena to check/expand
- * @aligned_size: Required aligned allocation size
- *
- * Returns: ARENA_SUCCESS if space available, ARENA_FAILURE otherwise
- * Thread-safe: No (must be called with arena->mutex held)
- *
- * Acquires new chunks as needed until arena has sufficient space.
- */
 /**
  * arena_ensure_space - Ensure sufficient space in current chunk or allocate
  * new

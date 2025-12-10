@@ -268,6 +268,15 @@ Macros</h2></td></tr>
 <tr class="memitem:gae19af4d3535b2bb856fa673bdaa45983" id="r_gae19af4d3535b2bb856fa673bdaa45983"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gae19af4d3535b2bb856fa673bdaa45983">SOCKET_DNS_THREAD_NAME_SIZE</a>&#160;&#160;&#160;16</td></tr>
 <tr class="memdesc:gae19af4d3535b2bb856fa673bdaa45983"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread name buffer size.  <br /></td></tr>
 <tr class="separator:gae19af4d3535b2bb856fa673bdaa45983"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga718d350473539fc8a704e3afa05bb694" id="r_ga718d350473539fc8a704e3afa05bb694"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga718d350473539fc8a704e3afa05bb694">SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS</a>&#160;&#160;&#160;300</td></tr>
+<tr class="memdesc:ga718d350473539fc8a704e3afa05bb694"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default DNS cache TTL in seconds.  <br /></td></tr>
+<tr class="separator:ga718d350473539fc8a704e3afa05bb694"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga176cef29fe829568359c936376db272e" id="r_ga176cef29fe829568359c936376db272e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga176cef29fe829568359c936376db272e">SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES</a>&#160;&#160;&#160;1000</td></tr>
+<tr class="memdesc:ga176cef29fe829568359c936376db272e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default maximum DNS cache entries.  <br /></td></tr>
+<tr class="separator:ga176cef29fe829568359c936376db272e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa40398fc3798e6302da2f39fcc3b9c64" id="r_gaa40398fc3798e6302da2f39fcc3b9c64"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gaa40398fc3798e6302da2f39fcc3b9c64">SOCKET_DNS_CACHE_HASH_SIZE</a>&#160;&#160;&#160;1021</td></tr>
+<tr class="memdesc:gaa40398fc3798e6302da2f39fcc3b9c64"><td class="mdescLeft">&#160;</td><td class="mdescRight">DNS cache hash table size.  <br /></td></tr>
+<tr class="separator:gaa40398fc3798e6302da2f39fcc3b9c64"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga673275383493d8cff8bc582fef311e42" id="r_ga673275383493d8cff8bc582fef311e42"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga673275383493d8cff8bc582fef311e42">POLL_INITIAL_FDS</a>&#160;&#160;&#160;64</td></tr>
 <tr class="memdesc:ga673275383493d8cff8bc582fef311e42"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initial file descriptor capacity for poll backend.  <br /></td></tr>
 <tr class="separator:ga673275383493d8cff8bc582fef311e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -497,6 +506,18 @@ Macros</h2></td></tr>
 <tr class="memitem:gaa6d9e9b8f4116f114766da91e8dd0744" id="r_gaa6d9e9b8f4116f114766da91e8dd0744"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa6d9e9b8f4116f114766da91e8dd0744">SOCKET_POOL_STATS_WINDOW_SEC</a>&#160;&#160;&#160;60</td></tr>
 <tr class="memdesc:gaa6d9e9b8f4116f114766da91e8dd0744"><td class="mdescLeft">&#160;</td><td class="mdescRight">Time window for pool statistics calculation.  <br /></td></tr>
 <tr class="separator:gaa6d9e9b8f4116f114766da91e8dd0744"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa74a3828cb86356140cb80cd1d0e688e" id="r_gaa74a3828cb86356140cb80cd1d0e688e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa74a3828cb86356140cb80cd1d0e688e">SOCKET_POOL_MAX_RATE_PER_SEC</a>&#160;&#160;&#160;1000000</td></tr>
+<tr class="memdesc:gaa74a3828cb86356140cb80cd1d0e688e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum rate limit value (connections per second).  <br /></td></tr>
+<tr class="separator:gaa74a3828cb86356140cb80cd1d0e688e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7ea8374cf5055b8fe5b30a0f57b4405e" id="r_ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga7ea8374cf5055b8fe5b30a0f57b4405e">SOCKET_POOL_MAX_BURST_MULTIPLIER</a>&#160;&#160;&#160;100</td></tr>
+<tr class="memdesc:ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum burst multiplier relative to rate.  <br /></td></tr>
+<tr class="separator:ga7ea8374cf5055b8fe5b30a0f57b4405e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga91891177acf4458552ad96ff6e2ae29e" id="r_ga91891177acf4458552ad96ff6e2ae29e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#ga91891177acf4458552ad96ff6e2ae29e">SOCKET_POOL_MAX_CONNECTIONS_PER_IP</a>&#160;&#160;&#160;10000</td></tr>
+<tr class="memdesc:ga91891177acf4458552ad96ff6e2ae29e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum connections allowed per IP address.  <br /></td></tr>
+<tr class="separator:ga91891177acf4458552ad96ff6e2ae29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa73d5adbdff8bd8738401ab2b2a7a9a3" id="r_gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__connection__mgmt.html#gaa73d5adbdff8bd8738401ab2b2a7a9a3">SOCKET_POOL_TOKENS_PER_ACCEPT</a>&#160;&#160;&#160;1</td></tr>
+<tr class="memdesc:gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tokens consumed per connection accept.  <br /></td></tr>
+<tr class="separator:gaa73d5adbdff8bd8738401ab2b2a7a9a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:gae5597cbeaa3012e797eb99aaf9570030" id="r_gae5597cbeaa3012e797eb99aaf9570030"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__foundation.html#gae5597cbeaa3012e797eb99aaf9570030">HASH_GOLDEN_RATIO</a>&#160;&#160;&#160;2654435761u</td></tr>
 <tr class="memdesc:gae5597cbeaa3012e797eb99aaf9570030"><td class="mdescLeft">&#160;</td><td class="mdescRight">Golden ratio constant for multiplicative hashing.  <br /></td></tr>
 <tr class="separator:gae5597cbeaa3012e797eb99aaf9570030"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -730,6 +751,21 @@ Macros</h2></td></tr>
 <tr class="memitem:gafd745a2d91d7bc8aad76a133ef1cb0bf" id="r_gafd745a2d91d7bc8aad76a133ef1cb0bf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gafd745a2d91d7bc8aad76a133ef1cb0bf">SOCKET_DEFAULT_KEEPALIVE_COUNT</a>&#160;&#160;&#160;3</td></tr>
 <tr class="memdesc:gafd745a2d91d7bc8aad76a133ef1cb0bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default TCP keep-alive probe count.  <br /></td></tr>
 <tr class="separator:gafd745a2d91d7bc8aad76a133ef1cb0bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gacd4fa06ce19af6f368a12df79ff7ad66" id="r_gacd4fa06ce19af6f368a12df79ff7ad66"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gacd4fa06ce19af6f368a12df79ff7ad66">SOCKET_KEEPALIVE_MAX_IDLE</a>&#160;&#160;&#160;(86400 * 365) /* 1 year in seconds */</td></tr>
+<tr class="memdesc:gacd4fa06ce19af6f368a12df79ff7ad66"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum TCP keep-alive idle time (seconds).  <br /></td></tr>
+<tr class="separator:gacd4fa06ce19af6f368a12df79ff7ad66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gab1ea2cf17f9bdb3c1486b5507a909b51" id="r_gab1ea2cf17f9bdb3c1486b5507a909b51"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gab1ea2cf17f9bdb3c1486b5507a909b51">SOCKET_KEEPALIVE_MAX_INTERVAL</a>&#160;&#160;&#160;3600 /* 1 hour */</td></tr>
+<tr class="memdesc:gab1ea2cf17f9bdb3c1486b5507a909b51"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum TCP keep-alive interval (seconds).  <br /></td></tr>
+<tr class="separator:gab1ea2cf17f9bdb3c1486b5507a909b51"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga7b31ca82a1d8746c1cb6465b8b186ad6" id="r_ga7b31ca82a1d8746c1cb6465b8b186ad6"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga7b31ca82a1d8746c1cb6465b8b186ad6">SOCKET_KEEPALIVE_MAX_COUNT</a>&#160;&#160;&#160;32</td></tr>
+<tr class="memdesc:ga7b31ca82a1d8746c1cb6465b8b186ad6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum TCP keep-alive probe count.  <br /></td></tr>
+<tr class="separator:ga7b31ca82a1d8746c1cb6465b8b186ad6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad2e12edc544b767b4c90fcc27f2dd2f0" id="r_gad2e12edc544b767b4c90fcc27f2dd2f0"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#gad2e12edc544b767b4c90fcc27f2dd2f0">SOCKET_MAX_DEFER_ACCEPT_SEC</a>&#160;&#160;&#160;3600 /* 1 hour */</td></tr>
+<tr class="memdesc:gad2e12edc544b767b4c90fcc27f2dd2f0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum TCP defer accept timeout (seconds).  <br /></td></tr>
+<tr class="separator:gad2e12edc544b767b4c90fcc27f2dd2f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga73ce13cff9dec99c824f8594e22f159e" id="r_ga73ce13cff9dec99c824f8594e22f159e"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga73ce13cff9dec99c824f8594e22f159e">SOCKET_MAX_CONGESTION_ALGO_LEN</a>&#160;&#160;&#160;63</td></tr>
+<tr class="memdesc:ga73ce13cff9dec99c824f8594e22f159e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum congestion control algorithm name length.  <br /></td></tr>
+<tr class="separator:ga73ce13cff9dec99c824f8594e22f159e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga4c36ad0507aab15f0b59b4ccde5dfb31" id="r_ga4c36ad0507aab15f0b59b4ccde5dfb31"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__core__io.html#ga4c36ad0507aab15f0b59b4ccde5dfb31">SOCKET_DEFAULT_DATAGRAM_TTL</a>&#160;&#160;&#160;64</td></tr>
 <tr class="memdesc:ga4c36ad0507aab15f0b59b4ccde5dfb31"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default datagram TTL value.  <br /></td></tr>
 <tr class="separator:ga4c36ad0507aab15f0b59b4ccde5dfb31"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -873,7 +909,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
 <p>When disabled (0, default), <a class="el" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e" title="Establish a connection to a remote host and port.">Socket_connect()</a> uses sequential connection attempts for backwards compatibility.</p>
 <p>Can be overridden at compile time with -DSOCKET_CONNECT_HAPPY_EYEBALLS=1 </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01364">1364</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01401">1401</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -889,7 +925,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02016">2016</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02107">2107</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -905,7 +941,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01975">1975</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02066">2066</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -921,7 +957,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01989">1989</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02080">2080</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -941,7 +977,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
 <p>Defense-in-depth limit to prevent resource exhaustion attacks. Set to 0 to disable the limit (unlimited registrations). Default: 0 (disabled) for backwards compatibility.</p>
 <p>Security note: In high-security deployments, consider setting this to a reasonable limit based on expected workload to prevent DoS. </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00643">643</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l00680">680</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -957,7 +993,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01611">1611</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01648">1648</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -973,7 +1009,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01606">1606</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01643">1643</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -989,7 +1025,7 @@ CMakeLists.txt - Build system integration. </dd></dl>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02015">2015</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l02106">2106</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>

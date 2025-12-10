@@ -134,12 +134,6 @@ ratelimit_calculate_elapsed (const T limiter, int64_t now_ms)
 }
 
 /**
- * ratelimit_add_tokens - Add calculated tokens to bucket
- * @limiter: Rate limiter instance
- * @tokens_to_add: Number of tokens to add
- * @now_ms: Current timestamp to record
- */
-/**
  * ratelimit_add_tokens - Add calculated tokens to the bucket (caller holds
  * lock)
  * @limiter: Rate limiter instance

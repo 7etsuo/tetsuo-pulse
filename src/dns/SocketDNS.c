@@ -1538,7 +1538,7 @@ cache_allocate_entry (struct SocketDNS_T *dns, const char *hostname,
   struct SocketDNS_CacheEntry *entry;
   int64_t now_ms;
 
-  entry = Arena_alloc (dns->arena, sizeof (*entry), __FILE__, __LINE__);
+  entry = ALLOC (dns->arena, sizeof (*entry));
   if (!entry)
     return NULL;
 
@@ -1796,6 +1796,45 @@ SocketDNS_get_prefer_ipv6 (T dns)
 }
 
 /**
+ * @brief Copy string array to arena-allocated storage (helper).
+ * @param dns DNS resolver instance.
+ * @param src Source string array.
+ * @param count Number of strings.
+ * @param dest_array Pointer to destination array pointer.
+ * @param dest_count Pointer to destination count.
+ * @return 0 on success, -1 on allocation failure.
+ * @threadsafe Must be called with mutex locked.
+ * @internal
+ */
+static int
+copy_string_array_to_arena (struct SocketDNS_T *dns, const char **src,
+                            size_t count, char ***dest_array,
+                            size_t *dest_count)
+{
+  size_t i;
+
+  *dest_array = ALLOC (dns->arena, count * sizeof (char *));
+  if (!*dest_array)
+    return -1;
+
+  for (i = 0; i < count; i++)
+    {
+      size_t len = strlen (src[i]);
+      (*dest_array)[i] = ALLOC (dns->arena, len + 1);
+      if (!(*dest_array)[i])
+        {
+          *dest_array = NULL;
+          *dest_count = 0;
+          return -1;
+        }
+      memcpy ((*dest_array)[i], src[i], len + 1);
+    }
+
+  *dest_count = count;
+  return 0;
+}
+
+/**
  * SocketDNS_set_nameservers - Set custom nameservers
  * @dns: DNS resolver instance
  * @servers: Array of nameserver IP addresses
@@ -1811,53 +1850,29 @@ SocketDNS_get_prefer_ipv6 (T dns)
 int
 SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 {
-  size_t i;
+  int result;
 
   assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Free existing custom nameservers */
-  if (dns->custom_nameservers)
-    {
-      /* Strings are arena-allocated, just clear array */
-      dns->custom_nameservers = NULL;
-      dns->nameserver_count = 0;
-    }
+  /* Clear existing custom nameservers (arena-allocated, just NULL ptr) */
+  dns->custom_nameservers = NULL;
+  dns->nameserver_count = 0;
 
   if (servers == NULL || count == 0)
     {
-      /* Revert to system nameservers */
       pthread_mutex_unlock (&dns->mutex);
       return 0;
     }
 
-  /* Allocate array for custom nameservers */
-  dns->custom_nameservers
-      = Arena_alloc (dns->arena, count * sizeof (char *), __FILE__, __LINE__);
-  if (!dns->custom_nameservers)
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return -1;
-    }
-
-  for (i = 0; i < count; i++)
-    {
-      size_t len = strlen (servers[i]);
-      dns->custom_nameservers[i]
-          = Arena_alloc (dns->arena, len + 1, __FILE__, __LINE__);
-      if (!dns->custom_nameservers[i])
-        {
-          dns->custom_nameservers = NULL;
-          dns->nameserver_count = 0;
-          pthread_mutex_unlock (&dns->mutex);
-          return -1;
-        }
-      strcpy (dns->custom_nameservers[i], servers[i]);
-    }
-
-  dns->nameserver_count = count;
+  result = copy_string_array_to_arena (dns, servers, count,
+                                       &dns->custom_nameservers,
+                                       &dns->nameserver_count);
   pthread_mutex_unlock (&dns->mutex);
+
+  if (result < 0)
+    return -1;
 
   /* Note: Actually using custom nameservers requires platform-specific
    * resolver configuration (e.g., res_init() on Linux). Since getaddrinfo()
@@ -1881,52 +1896,29 @@ SocketDNS_set_nameservers (T dns, const char **servers, size_t count)
 int
 SocketDNS_set_search_domains (T dns, const char **domains, size_t count)
 {
-  size_t i;
+  int result;
 
   assert (dns);
 
   pthread_mutex_lock (&dns->mutex);
 
-  /* Free existing search domains */
-  if (dns->search_domains)
-    {
-      dns->search_domains = NULL;
-      dns->search_domain_count = 0;
-    }
+  /* Clear existing search domains (arena-allocated, just NULL ptr) */
+  dns->search_domains = NULL;
+  dns->search_domain_count = 0;
 
   if (domains == NULL || count == 0)
     {
-      /* Revert to system search domains */
       pthread_mutex_unlock (&dns->mutex);
       return 0;
     }
 
-  /* Allocate array for custom search domains */
-  dns->search_domains
-      = Arena_alloc (dns->arena, count * sizeof (char *), __FILE__, __LINE__);
-  if (!dns->search_domains)
-    {
-      pthread_mutex_unlock (&dns->mutex);
-      return -1;
-    }
-
-  for (i = 0; i < count; i++)
-    {
-      size_t len = strlen (domains[i]);
-      dns->search_domains[i]
-          = Arena_alloc (dns->arena, len + 1, __FILE__, __LINE__);
-      if (!dns->search_domains[i])
-        {
-          dns->search_domains = NULL;
-          dns->search_domain_count = 0;
-          pthread_mutex_unlock (&dns->mutex);
-          return -1;
-        }
-      strcpy (dns->search_domains[i], domains[i]);
-    }
-
-  dns->search_domain_count = count;
+  result = copy_string_array_to_arena (dns, domains, count,
+                                       &dns->search_domains,
+                                       &dns->search_domain_count);
   pthread_mutex_unlock (&dns->mutex);
+
+  if (result < 0)
+    return -1;
 
   SOCKET_LOG_WARN_MSG (
       "Custom search domains configured but not applied (platform limitation)");

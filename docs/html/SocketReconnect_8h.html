@@ -139,7 +139,7 @@ $(document).ready(function(){initNavTree('SocketReconnect_8h.html',''); initResi
 <div id="dynsection-1-summary" class="dynsummary" style="display:block;">
 </div>
 <div id="dynsection-1-content" class="dyncontent" style="display:none;">
-<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="419" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
+<div class="center"><iframe scrolling="no" frameborder="0" src="SocketReconnect_8h__dep__incl.svg" width="495" height="183"><p><b>This browser is not able to show SVG: try Firefox, Chrome, Safari, or Opera instead.</b></p></iframe></div>
 </div>
 </div>
 <p><a href="SocketReconnect_8h_source.html">Go to the source code of this file.</a></p>
@@ -268,7 +268,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Automatic reconnection framework for resilient TCP connections with backoff and circuit breaker patterns. </p>
 <p>This header provides a robust reconnection mechanism for network applications, implementing exponential backoff, jitter to avoid thundering herd, circuit breaker to prevent cascading failures, and optional health checks. The module integrates seamlessly with event loops and provides transparent I/O wrappers that automatically handle disconnections and reconnections.</p>
-<h2><a class="anchor" id="autotoc_md452"></a>
+<h2><a class="anchor" id="autotoc_md530"></a>
 Features</h2>
 <ul>
 <li>Exponential backoff with configurable initial delay, multiplier, max delay, and jitter</li>
@@ -280,7 +280,7 @@ Features</h2>
 <li>Event loop integration via pollfd, process, and tick functions</li>
 <li>Statistics query for attempts and failures</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md453"></a>
+<h2><a class="anchor" id="autotoc_md531"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌─────────────────────────────┐</div>
 <div class="line">│    Application Layer        │</div>
@@ -305,14 +305,14 @@ Architecture Overview</h2>
 <div class="line">│   Arena, Except, Timer      │</div>
 <div class="line">└─────────────────────────────┘</div>
 <div class="ttc" id="agroup__reconnect__private_html_structSocketReconnect__T"><div class="ttname"><a href="group__reconnect__private.html#structSocketReconnect__T">SocketReconnect_T</a></div><div class="ttdoc">Opaque internal context for reconnecting socket management.</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect-private_8h_source.html#l00296">SocketReconnect-private.h:297</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md454"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md532"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Depends on</b>: <a class="el" href="group__core__io.html">Core I/O Modules</a> (Socket_T for underlying connections), <a class="el" href="group__foundation.html">Core Foundation Modules</a> (Arena for memory, Except for error handling, SocketTimer for internal timing)</li>
 <li><b>Used by</b>: <a class="el" href="group__connection__mgmt.html">Connection Management Modules</a> (SocketPool for pooled reconnections), <a class="el" href="group__http.html">HTTP Modules</a> (<a class="el" href="group__http.html#structSocketHTTPClient" title="Main HTTP client instance managing configuration, pool, auth, and state.">SocketHTTPClient</a> for resilient HTTP requests)</li>
 <li><b>Integrates with</b>: <a class="el" href="group__event__system.html">Event System Modules</a> (SocketPoll for event handling)</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md455"></a>
+<h2><a class="anchor" id="autotoc_md533"></a>
 Platform Requirements</h2>
 <ul>
 <li>POSIX-compliant system (Linux, BSD, macOS)</li>
@@ -320,9 +320,9 @@ Platform Requirements</h2>
 <li>CLOCK_MONOTONIC for accurate timing</li>
 <li>No external dependencies beyond standard library and socket primitives</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md456"></a>
+<h2><a class="anchor" id="autotoc_md534"></a>
 Typical Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md457"></a>
+<h3><a class="anchor" id="autotoc_md535"></a>
 Simple I/O Passthrough</h3>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a> policy;</div>
 <div class="line"><a class="code hl_function" href="group__connection__mgmt.html#ga4bc781f13408c70bfe9d28148ac87212">SocketReconnect_policy_defaults</a>(&amp;policy);</div>
@@ -341,7 +341,7 @@ Simple I/O Passthrough</h3>
 <div class="ttc" id="agroup__connection__mgmt_html_ga9d8b4dd4a693ba7acb20ff8e78defe91"><div class="ttname"><a href="group__connection__mgmt.html#ga9d8b4dd4a693ba7acb20ff8e78defe91">SocketReconnect_free</a></div><div class="ttdeci">void SocketReconnect_free(SocketReconnect_T *conn)</div><div class="ttdoc">Destroy a SocketReconnect_T instance and release all associated resources.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gae1f6cbe69ac37f9bae1efccfe98538ee"><div class="ttname"><a href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect_send</a></div><div class="ttdeci">ssize_t SocketReconnect_send(SocketReconnect_T conn, const void *buf, size_t len)</div><div class="ttdoc">Send data over the reconnection-managed connection with automatic retry on transient errors.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_structSocketReconnect__Policy__T"><div class="ttname"><a href="group__connection__mgmt.html#structSocketReconnect__Policy__T">SocketReconnect_Policy_T</a></div><div class="ttdoc">Configuration structure defining backoff policy, circuit breaker thresholds, and health check paramet...</div><div class="ttdef"><b>Definition</b> <a href="SocketReconnect_8h_source.html#l00362">SocketReconnect.h:363</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md458"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md536"></a>
 Event Loop Integration</h3>
 <div class="fragment"><div class="line"><span class="comment">// In event loop</span></div>
 <div class="line"><span class="keywordtype">int</span> fd = <a class="code hl_function" href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a>(conn);</div>
@@ -358,7 +358,7 @@ Event Loop Integration</h3>
 <div class="ttc" id="agroup__connection__mgmt_html_ga8dd2c1fe7147188da2be29f7623d2822"><div class="ttname"><a href="group__connection__mgmt.html#ga8dd2c1fe7147188da2be29f7623d2822">SocketReconnect_tick</a></div><div class="ttdeci">void SocketReconnect_tick(SocketReconnect_T conn)</div><div class="ttdoc">Advance timers and perform periodic maintenance for state transitions and checks.</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gaa2db0dea41db5bb5a7efeec947323da8"><div class="ttname"><a href="group__connection__mgmt.html#gaa2db0dea41db5bb5a7efeec947323da8">SocketReconnect_pollfd</a></div><div class="ttdeci">int SocketReconnect_pollfd(SocketReconnect_T conn)</div><div class="ttdoc">Retrieve file descriptor for event loop integration (poll/epoll/kqueue/select).</div></div>
 <div class="ttc" id="agroup__connection__mgmt_html_gaf5bf725fe34ae1de58a3ee05fbe270fd"><div class="ttname"><a href="group__connection__mgmt.html#gaf5bf725fe34ae1de58a3ee05fbe270fd">SocketReconnect_next_timeout_ms</a></div><div class="ttdeci">int SocketReconnect_next_timeout_ms(SocketReconnect_T conn)</div><div class="ttdoc">Calculate milliseconds until next timer event or action.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md459"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md537"></a>
 Thread Safety</h2>
 <ul>
 <li>Individual <a class="el" href="group__reconnect__private.html#structSocketReconnect__T" title="Opaque internal context for reconnecting socket management.">SocketReconnect_T</a> instances must be accessed from a single thread</li>

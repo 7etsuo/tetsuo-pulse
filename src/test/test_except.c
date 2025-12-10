@@ -724,6 +724,9 @@ TEST (except_uncaught_with_reason_aborts)
     }
   if (pid == 0)
     {
+      /* Child inherits parent's Except_stack - must reset to NULL for
+       * uncaught exception to properly abort instead of longjmp */
+      Except_stack = NULL;
       /* Flush coverage before the abort-triggering operation */
       flush_coverage_before_abort ();
       /* Child: raise exception outside TRY - should abort */
@@ -748,6 +751,9 @@ TEST (except_uncaught_no_reason_aborts)
     }
   if (pid == 0)
     {
+      /* Child inherits parent's Except_stack - must reset to NULL for
+       * uncaught exception to properly abort instead of longjmp */
+      Except_stack = NULL;
       /* Flush coverage before the abort-triggering operation */
       flush_coverage_before_abort ();
       /* Child: raise exception with NULL reason outside TRY */
@@ -772,6 +778,9 @@ TEST (except_uncaught_file_no_line_aborts)
     }
   if (pid == 0)
     {
+      /* Child inherits parent's Except_stack - must reset to NULL for
+       * uncaught exception to properly abort instead of longjmp */
+      Except_stack = NULL;
       /* Flush coverage before the abort-triggering operation */
       flush_coverage_before_abort ();
       /* Child: raise with file but line=0 */
@@ -796,6 +805,9 @@ TEST (except_uncaught_no_file_with_line_aborts)
     }
   if (pid == 0)
     {
+      /* Child inherits parent's Except_stack - must reset to NULL for
+       * uncaught exception to properly abort instead of longjmp */
+      Except_stack = NULL;
       /* Flush coverage before the abort-triggering operation */
       flush_coverage_before_abort ();
       /* Child: raise with NULL file but positive line */
@@ -820,6 +832,9 @@ TEST (except_uncaught_no_location_aborts)
     }
   if (pid == 0)
     {
+      /* Child inherits parent's Except_stack - must reset to NULL for
+       * uncaught exception to properly abort instead of longjmp */
+      Except_stack = NULL;
       /* Flush coverage before the abort-triggering operation */
       flush_coverage_before_abort ();
       /* Child: raise with NULL file and line=0 */

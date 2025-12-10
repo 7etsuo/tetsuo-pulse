@@ -259,16 +259,9 @@ tracker_free_raw (const T tracker, void *ptr)
 
 /**
  * allocate_entry - Allocate IPEntry from arena or heap
- * @tracker: IP tracker instance
- *
- * Returns: New entry or NULL on allocation failure
- * Thread-safe: No (caller must hold mutex)
- */
-/**
- * allocate_entry - Allocate and initialize IPEntry from arena or heap
  * @tracker: Tracker instance (determines arena vs malloc)
  *
- * Returns: Allocated entry or NULL on failure
+ * Returns: Allocated entry or NULL on allocation failure
  * Thread-safe: No (caller must hold mutex)
  */
 static IPEntry *

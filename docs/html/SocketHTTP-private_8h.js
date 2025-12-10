@@ -17,7 +17,6 @@ var SocketHTTP_private_8h =
       [ "URI_STATE_QUERY", "group__http.html#gga18f37238f317f3d8c35e7b5540883ca6afdbe16fc170052fdcd8a8bad735508df", null ],
       [ "URI_STATE_FRAGMENT", "group__http.html#gga18f37238f317f3d8c35e7b5540883ca6abe2af2f5d2cab49a46d6ce236d50b31d", null ]
     ] ],
-    [ "sockethttp_hash_name", "group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c", null ],
     [ "sockethttp_name_equal", "group__http.html#ga66c434e450dcd98423aa25dcccef00c1", null ],
     [ "sockethttp_hex_value", "group__http.html#ga42653a02dca3cb9f33cef15f09f56389", null ],
     [ "sockethttp_tchar_table", "group__http.html#ga2e16fb26eaa473b37c1658e3fc672f2c", null ],

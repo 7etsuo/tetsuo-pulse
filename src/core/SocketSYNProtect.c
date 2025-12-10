@@ -2266,15 +2266,6 @@ SocketSYNProtect_get_ip_state (T protect, const char *ip,
   return 0;
 }
 
-/**
- * count_currently_blocked - Count IPs with active blocks
- * @protect: Protection instance (must hold mutex)
- * @now_ms: Current timestamp
- *
- * Returns: Number of blocked IPs
- */
-/* count_currently_blocked moved earlier for forward reference */
-
 void
 SocketSYNProtect_stats (T protect, SocketSYNProtect_Stats *stats)
 {

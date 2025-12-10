@@ -114,8 +114,7 @@ $(document).ready(function(){initNavTree('SocketWS-private_8h.html',''); initRes
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
-<a href="#func-members">Functions</a> &#124;
-<a href="#var-members">Variables</a>  </div>
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">SocketWS-private.h File Reference<div class="ingroups"><a class="el" href="group__websocket.html">WebSocket Modules</a></div></div></div>
 </div><!--header-->
 <div class="contents">
@@ -242,8 +241,9 @@ Macros</h2></td></tr>
 <tr class="separator:af355ec85445795b559621b274394d226"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af7be9271e69a258e82d90db0bc75af3b" id="r_af7be9271e69a258e82d90db0bc75af3b"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS-private_8h.html#af7be9271e69a258e82d90db0bc75af3b">SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS</a>&#160;&#160;&#160;15</td></tr>
 <tr class="separator:af7be9271e69a258e82d90db0bc75af3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad47afcd717fda7a921345994a4e5f4a5" id="r_ad47afcd717fda7a921345994a4e5f4a5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="SocketWS-private_8h.html#ad47afcd717fda7a921345994a4e5f4a5">RAISE_WS_ERROR</a>(e)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__websocket.html#structSocketWS">SocketWS</a>, e)</td></tr>
-<tr class="separator:ad47afcd717fda7a921345994a4e5f4a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gad47afcd717fda7a921345994a4e5f4a5" id="r_gad47afcd717fda7a921345994a4e5f4a5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gad47afcd717fda7a921345994a4e5f4a5">RAISE_WS_ERROR</a>(e)&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__websocket.html#structSocketWS">SocketWS</a>, e)</td></tr>
+<tr class="memdesc:gad47afcd717fda7a921345994a4e5f4a5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module.  <br /></td></tr>
+<tr class="separator:gad47afcd717fda7a921345994a4e5f4a5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -368,12 +368,6 @@ Functions</h2></td></tr>
 <tr class="memitem:gaa294a0ac7ea37e1701081a48f47da419" id="r_gaa294a0ac7ea37e1701081a48f47da419"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#gaa294a0ac7ea37e1701081a48f47da419">ws_is_valid_close_code</a> (int code)</td></tr>
 <tr class="memdesc:gaa294a0ac7ea37e1701081a48f47da419"><td class="mdescLeft">&#160;</td><td class="mdescRight">Validate close status code per RFC 6455.  <br /></td></tr>
 <tr class="separator:gaa294a0ac7ea37e1701081a48f47da419"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
-Variables</h2></td></tr>
-<tr class="memitem:ga0fadbd57ccfb278acb88c94cc609c265" id="r_ga0fadbd57ccfb278acb88c94cc609c265"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="group__foundation.html#structExcept__T">Except_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__websocket.html#ga0fadbd57ccfb278acb88c94cc609c265">SocketWS_DetailedException</a></td></tr>
-<tr class="memdesc:ga0fadbd57ccfb278acb88c94cc609c265"><td class="mdescLeft">&#160;</td><td class="mdescRight">Thread-local exception declarations for <a class="el" href="group__websocket.html#structSocketWS" title="Opaque WebSocket connection context holding all protocol state.">SocketWS</a> module.  <br /></td></tr>
-<tr class="separator:ga0fadbd57ccfb278acb88c94cc609c265"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Internal implementation details for WebSocket module. </p>
@@ -388,26 +382,6 @@ Variables</h2></td></tr>
 
 <p class="definition">Definition in file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
 </div><h2 class="groupheader">Macro Definition Documentation</h2>
-<a id="ad47afcd717fda7a921345994a4e5f4a5" name="ad47afcd717fda7a921345994a4e5f4a5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad47afcd717fda7a921345994a4e5f4a5">&#9670;&#160;</a></span>RAISE_WS_ERROR</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">#define RAISE_WS_ERROR</td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname">e</td><td>)</td>
-          <td>&#160;&#160;&#160;<a class="el" href="SocketUtil_8h.html#aba03b2fa3f583e8cc687a3247db5a91b">SOCKET_RAISE_MODULE_ERROR</a> (<a class="el" href="group__websocket.html#structSocketWS">SocketWS</a>, e)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="SocketWS-private_8h_source.html#l00701">701</a> of file <a class="el" href="SocketWS-private_8h_source.html">SocketWS-private.h</a>.</p>
-
-</div>
-</div>
 <a id="adfbfffa784988434081c8c80f3ec69aa" name="adfbfffa784988434081c8c80f3ec69aa"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adfbfffa784988434081c8c80f3ec69aa">&#9670;&#160;</a></span>SOCKETWS_CONNECTION_VALUE</h2>
 

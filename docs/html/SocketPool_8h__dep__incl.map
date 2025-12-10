@@ -1,7 +1,9 @@
 <map id="SocketPool.h" name="SocketPool.h">
-<area shape="rect" id="Node000001" title="Connection pooling with automatic lifecycle management." alt="" coords="109,5,209,31"/>
+<area shape="rect" id="Node000001" title="Connection pooling with automatic lifecycle management." alt="" coords="185,5,285,31"/>
 <area shape="rect" id="Node000002" href="$SocketPool-private_8h.html" title="Private implementation details and internal structures for SocketPool module." alt="" coords="5,79,148,104"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="137,42,92,80,88,76,134,38"/>
-<area shape="rect" id="Node000003" href="$graceful__shutdown_8c.html" title=" " alt="" coords="172,79,315,104"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="185,38,231,76,228,80,182,42"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="199,39,104,81,102,76,197,34"/>
+<area shape="rect" id="Node000003" href="$connection__pool_8c.html" title=" " alt="" coords="172,79,299,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="238,44,238,79,233,79,233,44"/>
+<area shape="rect" id="Node000004" href="$graceful__shutdown_8c.html" title=" " alt="" coords="323,79,465,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="274,34,369,76,367,81,272,39"/>
 </map>

@@ -284,13 +284,15 @@ validate_keepalive_parameters (int idle, int interval, int count)
                "Invalid keepalive parameters (idle=%d, interval=%d, "
                "count=%d): all must be > 0",
                idle, interval, count);
-  if (idle > 86400 * 365 || interval > 3600 || count > 32)
+  if (idle > SOCKET_KEEPALIVE_MAX_IDLE || interval > SOCKET_KEEPALIVE_MAX_INTERVAL
+      || count > SOCKET_KEEPALIVE_MAX_COUNT)
     {
-      RAISE_MSG (
-          Socket_Failed,
-          "Unreasonable keepalive parameters (idle=%d, interval=%d, "
-          "count=%d): values too large (max idle=1yr, interval=1hr, count=32)",
-          idle, interval, count);
+      RAISE_MSG (Socket_Failed,
+                 "Unreasonable keepalive parameters (idle=%d, interval=%d, "
+                 "count=%d): values too large (max idle=%d, interval=%d, "
+                 "count=%d)",
+                 idle, interval, count, SOCKET_KEEPALIVE_MAX_IDLE,
+                 SOCKET_KEEPALIVE_MAX_INTERVAL, SOCKET_KEEPALIVE_MAX_COUNT);
     }
 }
 
@@ -480,11 +482,12 @@ Socket_setcongestion (T socket, const char *algorithm)
       RAISE_MSG (Socket_Failed,
                  "Invalid congestion algorithm: null or empty string");
     }
-  size_t alen = strnlen (algorithm, 64);
-  if (alen == 64)
+  size_t alen = strnlen (algorithm, SOCKET_MAX_CONGESTION_ALGO_LEN + 1);
+  if (alen > SOCKET_MAX_CONGESTION_ALGO_LEN)
     {
       RAISE_MSG (Socket_Failed,
-                 "Congestion algorithm name too long (maximum 63 characters)");
+                 "Congestion algorithm name too long (maximum %d characters)",
+                 SOCKET_MAX_CONGESTION_ALGO_LEN);
     }
   if (setsockopt (SocketBase_fd (socket->base), SOCKET_IPPROTO_TCP,
                   SOCKET_TCP_CONGESTION, algorithm, (socklen_t)(alen + 1))
@@ -729,11 +732,11 @@ Socket_setdeferaccept (T socket, int timeout_sec)
   if (timeout_sec < 0)
     RAISE_MSG (Socket_Failed,
                "Invalid defer accept timeout: %d (must be >= 0)", timeout_sec);
-  if (timeout_sec > 3600)
+  if (timeout_sec > SOCKET_MAX_DEFER_ACCEPT_SEC)
     {
       RAISE_MSG (Socket_Failed,
-                 "Defer accept timeout too large: %d (maximum 1 hour)",
-                 timeout_sec);
+                 "Defer accept timeout too large: %d (maximum %d seconds)",
+                 timeout_sec, SOCKET_MAX_DEFER_ACCEPT_SEC);
     }
 
 #if SOCKET_HAS_TCP_DEFER_ACCEPT

@@ -6,5 +6,7 @@ var group__event__system_structSocketTimer__T =
     [ "heap_index", "group__event__system.html#a6773d27e4dd53f972df13651ed8bf518", null ],
     [ "id", "group__event__system.html#ae3f246704f321c316d308121213b1b66", null ],
     [ "interval_ms", "group__event__system.html#a420d42e1d3c0288bf9bb505fc8fcf1b1", null ],
+    [ "paused", "group__event__system.html#a72c783843fa4e30f54e0117795be4bc3", null ],
+    [ "paused_remaining_ms", "group__event__system.html#ade3e97b04a4cd4401431da1e1b6cfd08", null ],
     [ "userdata", "group__event__system.html#ab3ccb2b76d027a31b3ec829323639c08", null ]
 ];

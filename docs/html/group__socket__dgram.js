@@ -3,6 +3,7 @@ var group__socket__dgram =
     [ "SocketDgram.h", "SocketDgram_8h.html", null ],
     [ "T", "group__socket__dgram.html#ga0acb682b8260ab1c60b918599864e2e5", null ],
     [ "SocketDgram_bind", "group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee", null ],
+    [ "SocketDgram_bind_udp", "group__socket__dgram.html#ga2bd6bd1b211d0c3a74cae1849316c1b1", null ],
     [ "SocketDgram_connect", "group__socket__dgram.html#gabcb18c16142d3b5ef49bee08a96e15fa", null ],
     [ "SocketDgram_debug_live_count", "group__socket__dgram.html#ga0e8f0a454d58b2ff87878e39960c9187", null ],
     [ "SocketDgram_fd", "group__socket__dgram.html#ga54e91e6824df0c114a5e6a4d79e5c6fb", null ],

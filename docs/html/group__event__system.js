@@ -12,6 +12,8 @@ var group__event__system =
       [ "heap_index", "group__event__system.html#a6773d27e4dd53f972df13651ed8bf518", null ],
       [ "id", "group__event__system.html#ae3f246704f321c316d308121213b1b66", null ],
       [ "interval_ms", "group__event__system.html#a420d42e1d3c0288bf9bb505fc8fcf1b1", null ],
+      [ "paused", "group__event__system.html#a72c783843fa4e30f54e0117795be4bc3", null ],
+      [ "paused_remaining_ms", "group__event__system.html#ade3e97b04a4cd4401431da1e1b6cfd08", null ],
       [ "userdata", "group__event__system.html#ab3ccb2b76d027a31b3ec829323639c08", null ]
     ] ],
     [ "SocketTimer_heap_T", "group__event__system.html#structSocketTimer__heap__T", [
@@ -89,11 +91,14 @@ var group__event__system =
     [ "SocketPoll_del", "group__event__system.html#ga3074c5a225a7c49880951ecfb984498f", null ],
     [ "SocketPoll_free", "group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2", null ],
     [ "SocketPoll_get_async", "group__event__system.html#ga665b3363d16ab859ec60e69a792d1ff0", null ],
+    [ "SocketPoll_get_backend_name", "group__event__system.html#ga6738f488e8f1e6ecdb5378558cb60d0d", null ],
+    [ "SocketPoll_get_registered_sockets", "group__event__system.html#ga3d325d274b1961db5b3e838b740c9813", null ],
     [ "socketpoll_get_timer_heap", "group__event__system.html#gaf791d7d3363309127dbdd94e4181b8c3", null ],
     [ "SocketPoll_getdefaulttimeout", "group__event__system.html#ga1bb5e288308c3de5a479b27366bba257", null ],
     [ "SocketPoll_getmaxregistered", "group__event__system.html#ga16688a9e444183863bab8051f57fe688", null ],
     [ "SocketPoll_getregisteredcount", "group__event__system.html#gac79e719de24f09f84eb3816b3ab60c65", null ],
     [ "SocketPoll_mod", "group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85", null ],
+    [ "SocketPoll_modify_events", "group__event__system.html#gaa1f994f0aac83e9119aea12a4f3ddb89", null ],
     [ "SocketPoll_new", "group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7", null ],
     [ "SocketPoll_setdefaulttimeout", "group__event__system.html#ga945845cc57758a91e47a75ef17064d2a", null ],
     [ "SocketPoll_setmaxregistered", "group__event__system.html#ga35d4052d444bcab4cae26f41cf5729eb", null ],
@@ -109,8 +114,11 @@ var group__event__system =
     [ "SocketTimer_heap_pop", "group__event__system.html#ga9e40363cf44bb1025f2269ddc2cef0d2", null ],
     [ "SocketTimer_heap_push", "group__event__system.html#ga04afe41789d51a71d4a03883a89ad61c", null ],
     [ "SocketTimer_heap_remaining", "group__event__system.html#ga69365f1c685576d76414fbb43fe2248b", null ],
+    [ "SocketTimer_pause", "group__event__system.html#ga5808ca3ea797fc76f76406d82daca0ac", null ],
     [ "SocketTimer_process_expired", "group__event__system.html#ga888ed4acbf5d1ca29bdafc07f346566e", null ],
     [ "SocketTimer_remaining", "group__event__system.html#ga4c5519b89e0bba69f26d03b6893ba779", null ],
+    [ "SocketTimer_reschedule", "group__event__system.html#ga60383fbce3a4bfa8124beefdf1e7eb10", null ],
+    [ "SocketTimer_resume", "group__event__system.html#gabdbcc665c288caa6e0d4ca211530238c", null ],
     [ "SocketPoll_Failed", "group__event__system.html#gab4754362476e3ffc3e000b1cbcc2a6f0", null ],
     [ "SocketTimer_Failed", "group__event__system.html#ga2f0acf311c238671c6d9d14d4cc7c158", null ]
 ];

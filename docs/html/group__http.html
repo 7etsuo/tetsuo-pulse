@@ -461,6 +461,12 @@ Typedefs</h2></td></tr>
 <tr class="memitem:ga6eeba038caf0b48d3ae3527155ab8162" id="r_ga6eeba038caf0b48d3ae3527155ab8162"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer_DrainCallback</a>) (SocketHTTPServer_T server, int timed_out, void *userdata)</td></tr>
 <tr class="memdesc:ga6eeba038caf0b48d3ae3527155ab8162"><td class="mdescLeft">&#160;</td><td class="mdescRight">Callback notified when graceful drain (shutdown) completes.  <br /></td></tr>
 <tr class="separator:ga6eeba038caf0b48d3ae3527155ab8162"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga0696714009dd36ac31e93f920b6cf99d" id="r_ga0696714009dd36ac31e93f920b6cf99d"><td class="memItemLeft" align="right" valign="top">typedef int(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer_Middleware</a>) (SocketHTTPServer_Request_T req, void *userdata)</td></tr>
+<tr class="memdesc:ga0696714009dd36ac31e93f920b6cf99d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Middleware callback type.  <br /></td></tr>
+<tr class="separator:ga0696714009dd36ac31e93f920b6cf99d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga029660e6b2b44b3ac0418a902489b353" id="r_ga029660e6b2b44b3ac0418a902489b353"><td class="memItemLeft" align="right" valign="top">typedef void(*&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer_ErrorHandler</a>) (SocketHTTPServer_Request_T req, int status_code, void *userdata)</td></tr>
+<tr class="memdesc:ga029660e6b2b44b3ac0418a902489b353"><td class="mdescLeft">&#160;</td><td class="mdescRight">Error handler callback type.  <br /></td></tr>
+<tr class="separator:ga029660e6b2b44b3ac0418a902489b353"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -981,9 +987,6 @@ Functions</h2></td></tr>
 <tr class="memitem:ga09650dc7a68806989192e4cd31b4393b" id="r_ga09650dc7a68806989192e4cd31b4393b"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga09650dc7a68806989192e4cd31b4393b">SocketHPACK_result_string</a> (<a class="el" href="group__http.html#ga623ed321b4ede47b3ac642a001c57ef4">SocketHPACK_Result</a> result)</td></tr>
 <tr class="memdesc:ga09650dc7a68806989192e4cd31b4393b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get error description.  <br /></td></tr>
 <tr class="separator:ga09650dc7a68806989192e4cd31b4393b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ga8814ebfa618ed93bd36aebe1a4f7d63c" id="r_ga8814ebfa618ed93bd36aebe1a4f7d63c"><td class="memItemLeft" align="right" valign="top">static unsigned&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c">sockethttp_hash_name</a> (const char *name, size_t len)</td></tr>
-<tr class="memdesc:ga8814ebfa618ed93bd36aebe1a4f7d63c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Hash HTTP header name for case-insensitive bucket lookup.  <br /></td></tr>
-<tr class="separator:ga8814ebfa618ed93bd36aebe1a4f7d63c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga66c434e450dcd98423aa25dcccef00c1" id="r_ga66c434e450dcd98423aa25dcccef00c1"><td class="memItemLeft" align="right" valign="top">static int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga66c434e450dcd98423aa25dcccef00c1">sockethttp_name_equal</a> (const char *a, size_t a_len, const char *b, size_t b_len)</td></tr>
 <tr class="memdesc:ga66c434e450dcd98423aa25dcccef00c1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Perform case-insensitive comparison of HTTP header names.  <br /></td></tr>
 <tr class="separator:ga66c434e450dcd98423aa25dcccef00c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1275,6 +1278,9 @@ Functions</h2></td></tr>
 <tr class="memitem:gaecc3cd561f0ff3d1ae821ec6c66cf7f4" id="r_gaecc3cd561f0ff3d1ae821ec6c66cf7f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gaecc3cd561f0ff3d1ae821ec6c66cf7f4">httpclient_clear_response_for_retry</a> (<a class="el" href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a> *response)</td></tr>
 <tr class="memdesc:gaecc3cd561f0ff3d1ae821ec6c66cf7f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clear client-specific HTTP response for retry.  <br /></td></tr>
 <tr class="separator:gaecc3cd561f0ff3d1ae821ec6c66cf7f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga78ff9a4160aa8d2d7909b8f165fd74dd" id="r_ga78ff9a4160aa8d2d7909b8f165fd74dd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd">connection_send_error</a> (SocketHTTPServer_T server, <a class="el" href="group__http.html#structServerConnection">ServerConnection</a> *conn, int status_code, const char *reason)</td></tr>
+<tr class="memdesc:ga78ff9a4160aa8d2d7909b8f165fd74dd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Allocate and initialize a new <a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> for an accepted client socket.  <br /></td></tr>
+<tr class="separator:ga78ff9a4160aa8d2d7909b8f165fd74dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ga08bbe8e6a3560817cd898a51622bc6ce" id="r_ga08bbe8e6a3560817cd898a51622bc6ce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga08bbe8e6a3560817cd898a51622bc6ce">SocketHTTPServer_config_defaults</a> (<a class="el" href="group__http.html#structSocketHTTPServer__Config">SocketHTTPServer_Config</a> *config)</td></tr>
 <tr class="memdesc:ga08bbe8e6a3560817cd898a51622bc6ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize <a class="el" href="group__http.html#structSocketHTTPServer__Config" title="HTTP server configuration structure.">SocketHTTPServer_Config</a> with safe default values.  <br /></td></tr>
 <tr class="separator:ga08bbe8e6a3560817cd898a51622bc6ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1407,6 +1413,15 @@ Functions</h2></td></tr>
 <tr class="memitem:gac7bf7e6cb42130716cebdb8fd22b30e6" id="r_gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#gac7bf7e6cb42130716cebdb8fd22b30e6">SocketHTTPServer_stats_reset</a> (SocketHTTPServer_T server)</td></tr>
 <tr class="memdesc:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset all resettable statistics counters to zero.  <br /></td></tr>
 <tr class="separator:gac7bf7e6cb42130716cebdb8fd22b30e6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6fde0679e7d83a756be1b7485a93a247" id="r_ga6fde0679e7d83a756be1b7485a93a247"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer_add_static_dir</a> (SocketHTTPServer_T server, const char *prefix, const char *directory)</td></tr>
+<tr class="memdesc:ga6fde0679e7d83a756be1b7485a93a247"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add static file serving for a directory.  <br /></td></tr>
+<tr class="separator:ga6fde0679e7d83a756be1b7485a93a247"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga88c254c8a41cb79759d4e01413afde74" id="r_ga88c254c8a41cb79759d4e01413afde74"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer_add_middleware</a> (SocketHTTPServer_T server, <a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer_Middleware</a> middleware, void *userdata)</td></tr>
+<tr class="memdesc:ga88c254c8a41cb79759d4e01413afde74"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add request middleware.  <br /></td></tr>
+<tr class="separator:ga88c254c8a41cb79759d4e01413afde74"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3ab6ea89ceceb9238afecfd7fe9b2941" id="r_ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__http.html#ga3ab6ea89ceceb9238afecfd7fe9b2941">SocketHTTPServer_set_error_handler</a> (SocketHTTPServer_T server, <a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer_ErrorHandler</a> handler, void *userdata)</td></tr>
+<tr class="memdesc:ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set custom error page handler.  <br /></td></tr>
+<tr class="separator:ga3ab6ea89ceceb9238afecfd7fe9b2941"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -2060,7 +2075,7 @@ max_table_size</td>
 <dd>
 <a class="el" href="group__http.html#ga66c434e450dcd98423aa25dcccef00c1" title="Perform case-insensitive comparison of HTTP header names.">sockethttp_name_equal()</a> for case-insensitive <a class="el" href="group__http.html#a7ce0d3244038d233e4b932e5a7ae391d">name</a> matching. </dd>
 <dd>
-<a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c" title="Hash HTTP header name for case-insensitive bucket lookup.">sockethttp_hash_name()</a> for hash computation. </dd></dl>
+<a class="el" href="group__foundation.html#gaacb8ea34fa3de46f676cc0b1bd887f66" title="Case-insensitive length-aware DJB2 hash.">socket_util_hash_djb2_ci_len()</a> for hash computation. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00068">68</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 </div><div id="dynsection-2" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
@@ -2145,7 +2160,7 @@ value_len</td>
 <dd>
 <a class="el" href="group__http.html#structHeaderEntry" title="Individual HTTP header entry (name-value pair).">HeaderEntry</a> for individual header nodes. </dd>
 <dd>
-<a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c" title="Hash HTTP header name for case-insensitive bucket lookup.">sockethttp_hash_name()</a> and <a class="el" href="group__http.html#ga66c434e450dcd98423aa25dcccef00c1" title="Perform case-insensitive comparison of HTTP header names.">sockethttp_name_equal()</a> for internal lookup logic.</dd></dl>
+<a class="el" href="group__foundation.html#gaacb8ea34fa3de46f676cc0b1bd887f66" title="Case-insensitive length-aware DJB2 hash.">socket_util_hash_djb2_ci_len()</a> and <a class="el" href="group__http.html#ga66c434e450dcd98423aa25dcccef00c1" title="Perform case-insensitive comparison of HTTP header names.">sockethttp_name_equal()</a> for internal lookup logic.</dd></dl>
 <p>Manages a dynamic collection of HTTP headers with O(1) case-insensitive lookup using hash table. Memory allocated from provided arena; lifetime tied to arena. Supports duplicates, iteration, and validation against HTTP limits. Thread-unsafe; synchronize externally if shared across threads. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga99b788a59c808ad4e1860b7e64514aa2" title="Create a new empty HTTP header collection.">SocketHTTP_Headers_new()</a> to create a new collection. </dd>
 <dd>
 <a class="el" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb" title="Add header (null-terminated strings).">SocketHTTP_Headers_add()</a> to add headers. </dd>
@@ -2737,7 +2752,7 @@ version</td>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for max sizes enforced during append/terminate. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00463">463</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00489">489</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -2813,7 +2828,7 @@ SocketHTTP_Headers_T for header handling. </dd>
 <dd>
 RFC 7230 for HTTP/1.1 specification compliance details. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00521">521</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00547">547</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><div id="dynsection-4" onclick="return toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;">
   <img id="dynsection-4-trigger" src="closed.png" alt="+"/> Collaboration diagram for SocketHTTP1_Parser_T:</div>
 <div id="dynsection-4-summary" class="dynsummary" style="display:block;">
@@ -4952,7 +4967,7 @@ Total HTTP requests processed (successful. <ul>
       </table>
 </div><div class="memdoc">
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00536">536</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00562">562</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 </div><table class="fieldtable">
 <tr><th colspan="3">Data Fields</th></tr>
 <tr><td class="fieldtype">
@@ -5109,7 +5124,7 @@ conn</td>
 SocketHTTP1_Config::max_method_size, max_uri_size, etc. for runtime limits.</dd></dl>
 <p>Default initial capacity for method token buffer (e.g., "GET", "POST"). </p>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00887">887</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00913">913</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5145,7 +5160,7 @@ SocketHTTP1_Config::max_method_size, max_uri_size, etc. for runtime limits.</dd>
 <dd>
 Chunk size parsing in <a class="el" href="group__http.html#gga8cc947a0df8404588ec5ca3e179d4e57ab7b4ce15946e80a464e77140eccff4a1">HTTP1_PS_CHUNK_SIZE</a> state. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00798">798</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00824">824</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5178,7 +5193,7 @@ Chunk size parsing in <a class="el" href="group__http.html#gga8cc947a0df8404588e
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522daacd8c712af8908596a851f6e5562d83a">HTTP1_CC_DIGIT</a>] in DFA classification. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00767">767</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00793">793</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5217,7 +5232,7 @@ Full field-value = *( field-content / obs-fold ); field-content = field-vchar [ 
 <dd>
 RFC 7230 section 3.2.4 "header fields" for field-value grammar. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00863">863</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00889">889</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5252,7 +5267,7 @@ RFC 7230 section 3.2.4 "header fields" for field-value grammar. </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da71c5a60af06842c56be4d7a923934495">HTTP1_CC_HEX</a>] for DFA usage (hex letters only, excluding digits). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00780">780</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00806">806</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5287,7 +5302,7 @@ Lenient for interoperability; strict mode may reject. </dd></dl>
 <dd>
 RFC 7230 section 3.2.6 errata for obs-text allowance. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00845">845</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00871">871</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5320,7 +5335,7 @@ RFC 7230 section 3.2.6 errata for obs-text allowance. </dd></dl>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da3d21b5d792e1a54df67d261bfa1949c9">HTTP1_CC_SP</a>, <a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da6b9785ef8fcec73290b936557760e8ad">HTTP1_CC_HTAB</a>] for DFA classes. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00812">812</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00838">838</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5354,7 +5369,7 @@ RFC 7230 section 3.2.6 "token" production. </dd>
 <dd>
 <a class="el" href="group__http1__private.html#ga8132b7d377746bbf6e235a4d127deb17" title="Precomputed character classification table for HTTP/1.1 DFA.">http1_char_class</a>[<a class="el" href="group__http1__private.html#gga7159889d7065ff0d078e4b7170bc522da89762af0b431acb2669d5a6c6bf9be60">HTTP1_CC_TCHAR</a>] related DFA class. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00754">754</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00780">780</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5389,7 +5404,7 @@ Used in header field values, reason phrases; excludes SP (separate class). </dd>
 <dd>
 RFC 7230 section 3.2.4 field-value allows VCHAR / SP / HTAB / obs-text. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00828">828</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00854">854</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -5746,7 +5761,7 @@ SocketHTTPServer_T for HTTP server. </dd>
 <dd>
 SocketWS_T for WebSocket over HTTP. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01251">1251</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01288">1288</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -5773,7 +5788,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dd>
 <a class="el" href="WEBSOCKET_8md.html">docs/WEBSOCKET.md</a> for usage guide. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01269">1269</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketConfig_8h_source.html#l01306">1306</a> of file <a class="el" href="SocketConfig_8h_source.html">SocketConfig.h</a>.</p>
 
 </div>
 </div>
@@ -5945,7 +5960,7 @@ SocketWS_client_connect() for client connections. </dd>
 
 <p>Hash table bucket count for header collections (internal constant). </p>
 <p>Fixed prime number (31) providing good distribution for typical HTTP header counts (10-30). Balances low collision rate with minimal memory overhead.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c" title="Hash HTTP header name for case-insensitive bucket lookup.">sockethttp_hash_name()</a> for the hashing function used. </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gaacb8ea34fa3de46f676cc0b1bd887f66" title="Case-insensitive length-aware DJB2 hash.">socket_util_hash_djb2_ci_len()</a> for the hashing function used. </dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes - compile-time constant.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#aa21dae3f3eb3b5f5a8a071a678b597fa">SocketHTTP_Headers::buckets</a> for the hash table implementation. </dd></dl>
 
@@ -5983,7 +5998,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga68e3ed44f86aa5b9ce778bf3ff1fb868" title="Percent-decode string.">SocketHTTP_URI_decode()</a> usage example. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00315">315</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00296">296</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6016,7 +6031,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd>RFC 9110 §5.6 for complete tchar grammar. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00245">245</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00226">226</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6051,7 +6066,7 @@ SocketWS_client_connect() for client connections. </dd>
 <dl class="section user"><dt>Thread Safety\n Yes - macro, pure function.</dt><dd></dd></dl>
 <dl class="section see"><dt>See also</dt><dd>RFC 3986 §2.3 unreserved characters. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00279">279</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00260">260</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -6295,6 +6310,33 @@ If timed_out, some requests may have been aborted; check stats for details.</dd>
 
 </div>
 </div>
+<a id="ga029660e6b2b44b3ac0418a902489b353" name="ga029660e6b2b44b3ac0418a902489b353"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga029660e6b2b44b3ac0418a902489b353">&#9670;&#160;</a></span>SocketHTTPServer_ErrorHandler</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef void(* SocketHTTPServer_ErrorHandler) (SocketHTTPServer_Request_T req, int status_code, void *userdata)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Error handler callback type. </p>
+<p>Called when the server generates an error response (4xx, 5xx). Allows customization of error pages.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">req</td><td>Request context (status already set) </td></tr>
+    <tr><td class="paramname">status_code</td><td>HTTP status code (400-599) </td></tr>
+    <tr><td class="paramname">userdata</td><td>Handler-specific data </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l02055">2055</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
 <a id="ga8805b706921b37e2e91e68a861ddc97c" name="ga8805b706921b37e2e91e68a861ddc97c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ga8805b706921b37e2e91e68a861ddc97c">&#9670;&#160;</a></span>SocketHTTPServer_Handler</h2>
 
@@ -6335,6 +6377,33 @@ SocketHTTP_Headers_T for header manipulation. </dd>
 HTTP Module Group for protocol details. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l00480">480</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
+
+</div>
+</div>
+<a id="ga0696714009dd36ac31e93f920b6cf99d" name="ga0696714009dd36ac31e93f920b6cf99d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga0696714009dd36ac31e93f920b6cf99d">&#9670;&#160;</a></span>SocketHTTPServer_Middleware</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef int(* SocketHTTPServer_Middleware) (SocketHTTPServer_Request_T req, void *userdata)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Middleware callback type. </p>
+<p>Middleware functions are called before the main handler for each request. They can inspect/modify the request, set response headers, or short-circuit by returning non-zero.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">req</td><td>Request context </td></tr>
+    <tr><td class="paramname">userdata</td><td>Middleware-specific data </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 to continue to next middleware/handler, non-zero to stop (request considered handled) </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="SocketHTTPServer_8h_source.html#l01982">1982</a> of file <a class="el" href="SocketHTTPServer_8h_source.html">SocketHTTPServer.h</a>.</p>
 
 </div>
 </div>
@@ -6465,7 +6534,7 @@ RFC 7230 sections 3 (message format) and 4 (request/response) for grammar. </dd>
 <tr><td class="fieldname"><a id="gga8cc947a0df8404588ec5ca3e179d4e57a028d2301664d8f8873288ebc2ad3e211" name="gga8cc947a0df8404588ec5ca3e179d4e57a028d2301664d8f8873288ebc2ad3e211"></a>HTTP1_NUM_STATES&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00233">233</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00259">259</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
 </div>
 </div>
@@ -7014,7 +7083,7 @@ RFC 9113 Section 5.1 for connection preface and state transitions. </dd></dl>
 <tr><td class="fieldname"><a id="gga18f37238f317f3d8c35e7b5540883ca6abe2af2f5d2cab49a46d6ce236d50b31d" name="gga18f37238f317f3d8c35e7b5540883ca6abe2af2f5d2cab49a46d6ce236d50b31d"></a>URI_STATE_FRAGMENT&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00189">189</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00170">170</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -7061,6 +7130,547 @@ RFC 9113 Section 5.1 for connection preface and state transitions. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#structSocketHTTP__Response" title="Protocol-agnostic representation of an HTTP response message.">SocketHTTP_Response</a> for fields reset. </dd>
 <dd>
 <a class="el" href="group__http.html#gaecc3cd561f0ff3d1ae821ec6c66cf7f4" title="Clear client-specific HTTP response for retry.">httpclient_clear_response_for_retry()</a> for client-specific. </dd></dl>
+
+</div>
+</div>
+<a id="ga78ff9a4160aa8d2d7909b8f165fd74dd" name="ga78ff9a4160aa8d2d7909b8f165fd74dd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga78ff9a4160aa8d2d7909b8f165fd74dd">&#9670;&#160;</a></span>connection_send_error()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void connection_send_error </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPServer_T&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__http.html#structServerConnection">ServerConnection</a> *&#160;</td>
+          <td class="paramname"><em>conn</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>status_code</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>reason</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Allocate and initialize a new <a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> for an accepted client socket. </p>
+<p>Allocates memory from the server's arena for a new connection structure and initializes all fields including socket transfer, client address, state, buffers, parser, timing, and server list integration. Checks limits (max_connections, per-IP) and rate limiters before full init. On failure, cleans up partial state and closes socket.</p>
+<p>Handles edge cases like immediate rejection due to limits or allocation failure. Supports both TCP and Unix domain sockets. Initial state set to CONN_STATE_READING_REQUEST for immediate polling readiness.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning HTTP server instance providing config, arena, poll, trackers. </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">socket</td><td>Newly accepted client socket (non-blocking; ownership transferred).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Initialized ServerConnection*, or NULL if rejected or init failed (check errno or exceptions).</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Socket_Failed</td><td>Socket ops fail (getpeername, buffer setup). </td></tr>
+    <tr><td class="paramname">Arena_Failed</td><td>Arena alloc fails for conn or sub-structures. </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>Internal validation or list ops fail.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - single-threaded event loop only; modifies</dt><dd>server-&gt;connections and counts.</dd></dl>
+<p>Usage Example (Internal)</p>
+<div class="fragment"><div class="line"><span class="comment">// In server accept handler (e.g., SocketHTTPServer.c)</span></div>
+<div class="line">Socket_T client = <a class="code hl_function" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a>(server.listen_socket);</div>
+<div class="line"><span class="keywordflow">if</span> (client) {</div>
+<div class="line">    <a class="code hl_struct" href="group__http.html#structServerConnection">ServerConnection</a> *conn = connection_new(server, client);</div>
+<div class="line">    <span class="keywordflow">if</span> (conn) {</div>
+<div class="line">        <a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(server.poll, conn-&gt;<a class="code hl_variable" href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">socket</a>, POLLIN, conn);</div>
+<div class="line">        <span class="comment">// conn already in server-&gt;connections</span></div>
+<div class="line">    } <span class="comment">// else rejected, socket closed</span></div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__core__io_html_ga32b67d95639513cd6a602f6175b48f15"><div class="ttname"><a href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15">Socket_accept</a></div><div class="ttdeci">Socket_T Socket_accept(Socket_T socket)</div><div class="ttdoc">Accept incoming connection.</div></div>
+<div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for I/O event monitoring within the poll instance.</div></div>
+<div class="ttc" id="agroup__http_html_ad17ef845d8eec0ea60e869085d4bfc4e"><div class="ttname"><a href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">ServerConnection::socket</a></div><div class="ttdeci">Socket_T socket</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00123">SocketHTTPServer-private.h:123</a></div></div>
+<div class="ttc" id="agroup__http_html_structServerConnection"><div class="ttname"><a href="group__http.html#structServerConnection">ServerConnection</a></div><div class="ttdoc">Core internal structure representing an active HTTP client connection.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00121">SocketHTTPServer-private.h:122</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Socket closed on failure. Buffers and parser sized per config. Metrics updated on success. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>No TLS init; add separately if HTTPS. </dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) average - allocs, hash lookups for trackers.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga32b67d95639513cd6a602f6175b48f15" title="Accept incoming connection.">Socket_accept()</a> for socket acquisition. </dd>
+<dd>
+connection_close() paired cleanup. </dd>
+<dd>
+<a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> for state details.</dd></dl>
+<p>Close and cleanup a server connection, releasing resources.</p>
+<p>Performs complete teardown of a <a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a>: removes from server's doubly-linked list, updates connection_count and metrics (decrements active connections gauge), closes underlying socket (graceful half-close if in response state, force otherwise), clears and releases buffers, resets parser, frees arena allocations (request/response data, temp objects), and clears sensitive data (e.g., body with secureclear if applicable). Handles partial states like streaming body or pending response.</p>
+<p>Idempotent for NULL conn. Checks drain state: during draining, attempts graceful shutdown before close. Logs closure reason via SocketLog if debug enabled.</p>
+<p>Called from event loop on errors, timeouts, idle expiry, or explicit close.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server for list/stats/metrics updates (non-NULL expected). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to close (set to NULL implicitly via ownership; may be NULL).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>void - no return value; exceptions on critical failures (rare).</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Socket_Failed</td><td>If socket shutdown/close fails (e.g., EPIPE). </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>Internal list removal or metrics update errors.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies shared server-&gt;connections list and counts;</dt><dd>single-thread access only.</dd></dl>
+<p>Internal Usage</p>
+<p>Invoked when connection errors, times out, or finishes last request and keep-alive expires.</p>
+<div class="fragment"><div class="line"><span class="comment">// Example in error handling or timeout check</span></div>
+<div class="line"><span class="keywordflow">if</span> (connection_timed_out(conn)) {</div>
+<div class="line">    connection_close(server, conn);</div>
+<div class="line">    <span class="comment">// conn now invalid; server lists updated</span></div>
+<div class="line">} <span class="keywordflow">else</span> <span class="keywordflow">if</span> (Socket_isclosed(conn-&gt;<a class="code hl_variable" href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">socket</a>)) {</div>
+<div class="line">    SocketLog_debug(<span class="stringliteral">&quot;Peer closed connection&quot;</span>);</div>
+<div class="line">    connection_close(server, conn);</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li>Graceful Close During Drain</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// In drain mode, attempt half-close</span></div>
+<div class="line"><span class="keywordflow">if</span> (server-&gt;state == <a class="code hl_enumvalue" href="group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da">HTTPSERVER_STATE_DRAINING</a> &amp;&amp; conn-&gt;<a class="code hl_variable" href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">state</a> ==</div>
+<div class="line"><a class="code hl_enumvalue" href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6ad69b80f38fd99efdbeacc02584ec1e8c">CONN_STATE_SENDING_RESPONSE</a>) { <a class="code hl_function" href="group__core__io.html#ga559b1aaebbe5d0ca69ec99e15b1c7e68">Socket_shutdown</a>(conn-&gt;<a class="code hl_variable" href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">socket</a>, SHUT_WR);  <span class="comment">//</span></div>
+<div class="line">Half-close</div>
+<div class="line">    <span class="comment">// Wait brief period for peer ACK, then full close</span></div>
+<div class="line">}</div>
+<div class="line">connection_close(server, conn);</div>
+<div class="ttc" id="agroup__core__io_html_ga559b1aaebbe5d0ca69ec99e15b1c7e68"><div class="ttname"><a href="group__core__io.html#ga559b1aaebbe5d0ca69ec99e15b1c7e68">Socket_shutdown</a></div><div class="ttdeci">void Socket_shutdown(Socket_T socket, int how)</div><div class="ttdoc">Disable further sends and/or receives.</div></div>
+<div class="ttc" id="agroup__http_html_a6ec20b901dea8f5a4fc3caa83c830e63"><div class="ttname"><a href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">ServerConnection::state</a></div><div class="ttdeci">ServerConnState state</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00126">SocketHTTPServer-private.h:126</a></div></div>
+<div class="ttc" id="agroup__http_html_gga0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da"><div class="ttname"><a href="group__http.html#gga0ac9162aaf92d18d40cf0443909e3e97ab9ea109b294256f80f9c605af4ee33da">HTTPSERVER_STATE_DRAINING</a></div><div class="ttdeci">@ HTTPSERVER_STATE_DRAINING</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer_8h_source.html#l00288">SocketHTTPServer.h:288</a></div></div>
+<div class="ttc" id="agroup__http_html_gga2f08f039d21b354ac9e74c026ffa84a6ad69b80f38fd99efdbeacc02584ec1e8c"><div class="ttname"><a href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6ad69b80f38fd99efdbeacc02584ec1e8c">CONN_STATE_SENDING_RESPONSE</a></div><div class="ttdeci">@ CONN_STATE_SENDING_RESPONSE</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00091">SocketHTTPServer-private.h:91</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Arena cleared but not disposed (server-owned). Socket always closed. </dd>
+<dd>
+Metrics: decrement active conns, increment closed counter with reason tag if supported. </dd>
+<dd>
+During drain, invokes drain_callback if last connection closes gracefully. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Force closes streaming connections; may leave client in inconsistent state. </dd>
+<dd>
+Not called for listen socket; use <a class="el" href="group__http.html#gaf332d06f999890e277dc83777d669f00" title="Stop accepting new connections while allowing existing ones to complete.">SocketHTTPServer_stop()</a> instead.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - fixed cleanup steps, list removal O(1) with prev/next</dt><dd>pointers.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd>Socket_close() low-level socket closure. </dd>
+<dd>
+<a class="el" href="group__http.html#ga20dcaa755268733bbeae04c26f6ca6bb" title="Initiate graceful server shutdown by draining active connections.">SocketHTTPServer_drain()</a> server-level graceful shutdown coordinating multiple closes. </dd>
+<dd>
+<a class="el" href="group__http.html#structServerConnection" title="Core internal structure representing an active HTTP client connection.">ServerConnection</a> for fields zeroed/cleared during teardown. </dd>
+<dd>
+<a class="el" href="group__core__io.html#ga559b1aaebbe5d0ca69ec99e15b1c7e68" title="Disable further sends and/or receives.">Socket_shutdown()</a> for graceful half-closes in advanced scenarios.</dd></dl>
+<p>Perform read operation on connection, handling partial reads and timeouts.</p>
+<p>Reads data from the connection socket into the input buffer (SocketBuf), handling non-blocking semantics, partial reads, and errors. Updates last_activity timestamp and increments bytes received metric. On successful read, feeds data to HTTP parser if in reading state, advancing state machine (headers -&gt; body -&gt; complete). Checks and enforces read timeouts per config (request_read_timeout_ms). Detects disconnect/EOF and transitions to CLOSED state.</p>
+<p>Supports pipelining for HTTP/1.1 keep-alive (multiple requests on conn). Handles TLS if enabled on socket (transparent via Socket_recv). Rejects oversized reads exceeding max_header_size or max_body_size, triggering error response or close.</p>
+<p>Called from poll event loop when POLLIN on conn-&gt;socket.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server (for config, metrics, timeouts; unused directly but for API). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to read from (updates inbuf, state, timing).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>&gt;0 number of bytes read and buffered, 0 on EOF/disconnect (sets state CLOSED), &lt;0 on error (errno set; e.g., EAGAIN means try later, others close conn).</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Socket_Closed</td><td>Propagates if recv indicates peer close (handled as return 0). </td></tr>
+    <tr><td class="paramname">Socket_Failed</td><td>On recv errors beyond EAGAIN/EWOULDBLOCK (closes conn). </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>If timeout exceeded or buffer overflow.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies conn state and shared metrics; event loop thread</dt><dd>only.</dd></dl>
+<p>Internal Usage</p>
+<p>Dispatched in <a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985" title="Main event loop step: poll, accept, parse, handle requests.">SocketHTTPServer_process()</a> or poll loop on read events.</p>
+<div class="fragment"><div class="line"><span class="comment">// In poll event processing</span></div>
+<div class="line"><a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> *events;</div>
+<div class="line"><span class="keywordtype">int</span> nev = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(server.poll, &amp;events, timeout);</div>
+<div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; nev; i++) {</div>
+<div class="line">    <span class="keywordflow">if</span> (events[i].events &amp; POLLIN) {</div>
+<div class="line">        <a class="code hl_struct" href="group__http.html#structServerConnection">ServerConnection</a> *conn = events[i].<a class="code hl_variable" href="group__event__system.html#acb5b92ec2f2954ee3baa024a74ce4655">data</a>;</div>
+<div class="line">        <span class="keywordtype">int</span> nread = connection_read(server, conn);</div>
+<div class="line">        <span class="keywordflow">if</span> (nread &lt; 0) {</div>
+<div class="line">            connection_close(server, conn);</div>
+<div class="line">        } <span class="keywordflow">else</span> <span class="keywordflow">if</span> (nread &gt; 0) {</div>
+<div class="line">            <span class="comment">// Process parsed data if request complete</span></div>
+<div class="line">            <span class="keywordflow">if</span> (conn-&gt;<a class="code hl_variable" href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">state</a> == <a class="code hl_enumvalue" href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6adeb6efe48608abba0bb7ecd6b16aed02">CONN_STATE_HANDLING</a>) {</div>
+<div class="line">                <span class="comment">// Invoke handler</span></div>
+<div class="line">            }</div>
+<div class="line">        }</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__event__system_html_acb5b92ec2f2954ee3baa024a74ce4655"><div class="ttname"><a href="group__event__system.html#acb5b92ec2f2954ee3baa024a74ce4655">SocketEvent_T::data</a></div><div class="ttdeci">void * data</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00208">SocketPoll.h:208</a></div></div>
+<div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
+<div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00205">SocketPoll.h:206</a></div></div>
+<div class="ttc" id="agroup__http_html_gga2f08f039d21b354ac9e74c026ffa84a6adeb6efe48608abba0bb7ecd6b16aed02"><div class="ttname"><a href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6adeb6efe48608abba0bb7ecd6b16aed02">CONN_STATE_HANDLING</a></div><div class="ttdeci">@ CONN_STATE_HANDLING</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00089">SocketHTTPServer-private.h:89</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Uses fixed recv buffer (HTTPSERVER_RECV_BUFFER_SIZE ~4KB); multiple calls for large data. </dd>
+<dd>
+Updates SocketMetrics_counter_add for bytes_received. </dd>
+<dd>
+On disconnect (n==0), sets state CLOSED and returns -1 for close trigger. </dd>
+<dd>
+Timeouts checked against request_start_ms or last_activity; aborts slow reads. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>EAGAIN/WOULDBLOCK returns 0 (no error); retry on next poll. </dd>
+<dd>
+Does not feed to HTTP/2 frame parser; separate path for HTTP/2 conns.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n=bytes read - single recv + buf write + optional</dt><dd>parser exec.</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga95db343f47445925cecd6b20054518e9" title="Receive data.">Socket_recv()</a> underlying non-blocking recv call. </dd>
+<dd>
+<a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> invoked internally for HTTP/1.1 parsing. </dd>
+<dd>
+<a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97" title="Write data into the buffer.">SocketBuf_write()</a> for buffering incoming data. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> for timeout enforcement.</dd></dl>
+<p>Send data over connection, handling partial sends and buffering.</p>
+<p>Attempts to send data via Socket_sendall (blocking until complete or error), handling non-blocking socket behavior by buffering unsent bytes in outbuf for later retry on POLLOUT events. Updates last_activity and bytes_sent metrics. Enforces response_write_timeout_ms; aborts if total send time exceeds. Applies bandwidth limits if Socket_setbandwidth configured on socket. On peer close or error, sets state CLOSED and propagates.</p>
+<p>Supports TLS transparently (uses SocketTLS_send if enabled). For large data, caller should chunk or stream; this function handles one call's data. Buffers to outbuf only if partial send (EAGAIN); drains buf on success.</p>
+<p>Called from response serialization, streaming callbacks, or buf drain on write-ready.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server (for config, metrics; partial param for future extensions). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to send on (updates outbuf, state, timing). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">data</td><td>Pointer to data to send (may be NULL for 0 len flush). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">len</td><td>Number of bytes from data to send (0 ok).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 on full success (all bytes sent or buffered), &lt;0 on fatal error (closes conn).</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Socket_Closed</td><td>If peer closed during send (sets CLOSED, returns &lt;0). </td></tr>
+    <tr><td class="paramname">Socket_Failed</td><td>On send errors (EPIPE, ECONNRESET) or timeout. </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>If buffering fails or limits exceeded.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies conn outbuf and state; event thread only.</dt><dd></dd></dl>
+<p>Internal Usage</p>
+<p>Used for sending response headers, body chunks, or draining buffered data.</p>
+<div class="fragment"><div class="line"><span class="comment">// Sending response body chunk</span></div>
+<div class="line"><span class="keywordtype">int</span> res = connection_send_data(server, conn, body_chunk, chunk_len);</div>
+<div class="line"><span class="keywordflow">if</span> (res &lt; 0) {</div>
+<div class="line">    connection_close(server, conn);</div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    <span class="comment">// Success; continue streaming if more</span></div>
+<div class="line">    <span class="keywordflow">if</span> (more_data) {</div>
+<div class="line">        <span class="comment">// Schedule next on POLLOUT or continue if blocking</span></div>
+<div class="line">    }</div>
+<div class="line">}</div>
+</div><!-- fragment --><ul>
+<li>Buffered Partial Send</li>
+</ul>
+<div class="fragment"><div class="line"><span class="comment">// If non-blocking and partial</span></div>
+<div class="line">ssize_t sent = <a class="code hl_function" href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a>(conn-&gt;<a class="code hl_variable" href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">socket</a>, data, len);  <span class="comment">// Internal via</span></div>
+<div class="line">sendall <span class="keywordflow">if</span> (sent &lt; len) { <a class="code hl_function" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a>(conn-&gt;<a class="code hl_variable" href="group__http.html#a084420a5dab13cdc91eb0c78af297029">outbuf</a>, (<span class="keywordtype">char</span>*)data + sent,</div>
+<div class="line">len - sent); <a class="code hl_function" href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a>(server.poll, conn-&gt;<a class="code hl_variable" href="group__http.html#ad17ef845d8eec0ea60e869085d4bfc4e">socket</a>, POLLIN | POLLOUT,</div>
+<div class="line">conn);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__core__io_html_ga23ace6e065fe4b9a01db8caa6513515b"><div class="ttname"><a href="group__core__io.html#ga23ace6e065fe4b9a01db8caa6513515b">Socket_send</a></div><div class="ttdeci">ssize_t Socket_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send data.</div></div>
+<div class="ttc" id="agroup__core__io_html_gabad296e666bf8d65669ab7c71d6b8d97"><div class="ttname"><a href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97">SocketBuf_write</a></div><div class="ttdeci">size_t SocketBuf_write(SocketBuf_T buf, const void *data, size_t len)</div><div class="ttdoc">Write data into the buffer.</div></div>
+<div class="ttc" id="agroup__event__system_html_ga3755cc4d5ed8838ce2261f0efd1d5d85"><div class="ttname"><a href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85">SocketPoll_mod</a></div><div class="ttdeci">void SocketPoll_mod(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Update event monitoring and/or user data for a registered socket.</div></div>
+<div class="ttc" id="agroup__http_html_a084420a5dab13cdc91eb0c78af297029"><div class="ttname"><a href="group__http.html#a084420a5dab13cdc91eb0c78af297029">ServerConnection::outbuf</a></div><div class="ttdeci">SocketBuf_T outbuf</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00129">SocketHTTPServer-private.h:129</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Uses Socket_sendall internally for complete-or-error semantics. </dd>
+<dd>
+Buffers only remainder on partial; drains outbuf when possible. </dd>
+<dd>
+Metrics: adds sent bytes to HTTP_SERVER_BYTES_SENT counter. </dd>
+<dd>
+Timeouts cumulative for entire response; reset on state change. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Large data without chunking may buffer excessively; use streaming API. </dd>
+<dd>
+For HTTP/2, uses stream send with flow control; separate impl.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n=len - send + potential buf write; O(1) amortized.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb" title="Send all data (handles partial sends).">Socket_sendall()</a> core blocking send logic. </dd>
+<dd>
+<a class="el" href="group__security.html#gabdb38e692dde58bbec4ab905eeb8b3aa" title="Send data over TLS-encrypted connection.">SocketTLS_send()</a> if TLS enabled on socket. </dd>
+<dd>
+<a class="el" href="group__core__io.html#gabad296e666bf8d65669ab7c71d6b8d97" title="Write data into the buffer.">SocketBuf_write()</a> for partial buffering. </dd>
+<dd>
+<a class="el" href="group__event__system.html#ga3755cc4d5ed8838ce2261f0efd1d5d85" title="Update event monitoring and/or user data for a registered socket.">SocketPoll_mod()</a> to enable POLLOUT after buffering.</dd></dl>
+<p>Reset connection state for new request on keep-alive connection.</p>
+<p>Prepares a keep-alive connection for processing the next HTTP request after completing the previous one. Clears per-request state: resets HTTP/1.1 parser to initial request mode, empties inbuf and outbuf (discards any residual data), clears response_headers, resets response status/body/flags, frees request body memory (secure clear if sensitive), increments request_count, updates last_activity_ms to now, and resets body_received and streaming flags. Socket remains open and registered in poll.</p>
+<p>Validates keep-alive eligibility: checks <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a>: keep-alive header, HTTP/1.1 default, idle time &lt; keepalive_timeout_ms, request_count &lt; max_requests_per_connection. Transitions state back to CONN_STATE_READING_REQUEST.</p>
+<p>Called internally after connection_finish_request() if keep-alive conditions met.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td>Keep-alive connection to reset (must be in valid post-response state).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>void.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">Arena_Failed</td><td>If clearing/realloc during reset fails (rare). </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>If validation fails (e.g., max requests exceeded).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies conn fields; called from event thread</dt><dd>post-handler.</dd></dl>
+<p>Internal Usage</p>
+<p>Invoked after finishing a request if keep-alive allowed.</p>
+<div class="fragment"><div class="line"><span class="comment">// In connection_finish_request() tail</span></div>
+<div class="line"><span class="keywordflow">if</span> (<a class="code hl_function" href="group__http1.html#ga6207068650f6737b8f98ed419e51d56c">SocketHTTP1_Parser_should_keepalive</a>(conn-&gt;<a class="code hl_variable" href="group__http.html#a0a9015d402c97f1eccdc566463ac2be0">parser</a>) &amp;&amp;</div>
+<div class="line">    (<a class="code hl_function" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a>() - conn-&gt;<a class="code hl_variable" href="group__http.html#a2d68413f411b807a1590cbf2b39fbbc9">last_activity_ms</a> &lt;</div>
+<div class="line">server-&gt;config.keepalive_timeout_ms) &amp;&amp; conn-&gt;<a class="code hl_variable" href="group__http.html#ad6c56d1c7dab164c743b8f25c6f7af4a">request_count</a> &lt;</div>
+<div class="line">server-&gt;config.max_requests_per_connection) {</div>
+<div class="line">    connection_reset_for_keepalive(conn);</div>
+<div class="line">    conn-&gt;<a class="code hl_variable" href="group__http.html#a6ec20b901dea8f5a4fc3caa83c830e63">state</a> = <a class="code hl_enumvalue" href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6aa1627273364b1e8c6d1a01e893e97540">CONN_STATE_READING_REQUEST</a>;</div>
+<div class="line">    <span class="comment">// Continue polling for next request on same conn</span></div>
+<div class="line">} <span class="keywordflow">else</span> {</div>
+<div class="line">    connection_close(server, conn);</div>
+<div class="line">}</div>
+<div class="ttc" id="agroup__foundation_html_ga264bfa9d1cf07aa22446a4df6c4936bf"><div class="ttname"><a href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a></div><div class="ttdeci">int64_t Socket_get_monotonic_ms(void)</div><div class="ttdoc">Socket_get_monotonic_ms - Get current monotonic time in milliseconds.</div></div>
+<div class="ttc" id="agroup__http1_html_ga6207068650f6737b8f98ed419e51d56c"><div class="ttname"><a href="group__http1.html#ga6207068650f6737b8f98ed419e51d56c">SocketHTTP1_Parser_should_keepalive</a></div><div class="ttdeci">int SocketHTTP1_Parser_should_keepalive(SocketHTTP1_Parser_T parser)</div><div class="ttdoc">Check keep-alive status.</div></div>
+<div class="ttc" id="agroup__http_html_a0a9015d402c97f1eccdc566463ac2be0"><div class="ttname"><a href="group__http.html#a0a9015d402c97f1eccdc566463ac2be0">ServerConnection::parser</a></div><div class="ttdeci">SocketHTTP1_Parser_T parser</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00127">SocketHTTPServer-private.h:127</a></div></div>
+<div class="ttc" id="agroup__http_html_a2d68413f411b807a1590cbf2b39fbbc9"><div class="ttname"><a href="group__http.html#a2d68413f411b807a1590cbf2b39fbbc9">ServerConnection::last_activity_ms</a></div><div class="ttdeci">int64_t last_activity_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00157">SocketHTTPServer-private.h:157</a></div></div>
+<div class="ttc" id="agroup__http_html_ad6c56d1c7dab164c743b8f25c6f7af4a"><div class="ttname"><a href="group__http.html#ad6c56d1c7dab164c743b8f25c6f7af4a">ServerConnection::request_count</a></div><div class="ttdeci">size_t request_count</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00160">SocketHTTPServer-private.h:160</a></div></div>
+<div class="ttc" id="agroup__http_html_gga2f08f039d21b354ac9e74c026ffa84a6aa1627273364b1e8c6d1a01e893e97540"><div class="ttname"><a href="group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6aa1627273364b1e8c6d1a01e893e97540">CONN_STATE_READING_REQUEST</a></div><div class="ttdeci">@ CONN_STATE_READING_REQUEST</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00087">SocketHTTPServer-private.h:87</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Does not touch socket or poll registration; assumes still valid. </dd>
+<dd>
+Parser reset preserves config (max_header etc.); new parse from scratch. </dd>
+<dd>
+Buffers cleared but capacity preserved for reuse efficiency. </dd>
+<dd>
+For HTTP/2, resets stream count but conn remains for multiplexing. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Fails if called mid-request or on closed conn; assert in debug. </dd>
+<dd>
+Sensitive data in body cleared with <a class="el" href="group__core__io.html#gaf0f12ab9bbed33398141c41561c1fcb7" title="Securely erase all data by zeroing memory contents.">SocketBuf_secureclear()</a> if flagged.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - fixed clears and resets; no loops or allocs.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga49a9ded0a495db9d15e7b6ec5abce5cb" title="Reset parser for next message.">SocketHTTP1_Parser_reset()</a> underlying parser state reset. </dd>
+<dd>
+<a class="el" href="group__http1.html#ga6207068650f6737b8f98ed419e51d56c" title="Check keep-alive status.">SocketHTTP1_Parser_should_keepalive()</a> check for HTTP/1.1 keep-alive. </dd>
+<dd>
+connection_parse_request() subsequent parsing after reset. </dd>
+<dd>
+connection_finish_request() precursor call determining need for reset.</dd></dl>
+<p>Finalize current request processing and prepare for next or close.</p>
+<p>Marks the end of request handling: records latency histogram, increments request completed metric, frees per-request arena allocations (body, temp headers), clears request fields (request ptr, body data), updates response timing if applicable. Evaluates keep-alive viability: checks protocol support, headers (<a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a>: close?), idle time vs keepalive_timeout_ms, total requests vs max_per_conn. If viable, calls connection_reset_for_keepalive() and keeps in poll; else queues for close via connection_close() or timer.</p>
+<p>Triggered after handler returns and response fully sent (or error sent). Ensures resources freed promptly to avoid leaks in long-lived conns.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server for metrics, config, timers. </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> post-handler (updates state to IDLE or reset).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>void.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>On metrics update or reset failures.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - updates conn and server metrics/state.</dt><dd></dd></dl>
+<p>Internal Usage</p>
+<p>Called after response send complete or handler error.</p>
+<div class="fragment"><div class="line"><span class="comment">// Post-response in send_response tail</span></div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c">SocketMetrics_histogram_observe</a>(<a class="code hl_enumvalue" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f">SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</a>,</div>
+<div class="line">                                <a class="code hl_function" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf">Socket_get_monotonic_ms</a>() -</div>
+<div class="line">conn-&gt;<a class="code hl_variable" href="group__http.html#a6d00d0e9adff3f66fefcf14b6881e8f1">request_start_ms</a>);</div>
+<div class="line"><a class="code hl_function" href="group__utilities.html#ga051f576075a7c5fa39982fc3256127db">SocketMetrics_counter_inc</a>(SOCKET_CTR_HTTP_SERVER_REQUESTS_COMPLETED);</div>
+<div class="line">connection_finish_request(server, conn);</div>
+<div class="line"><span class="comment">// Now either reset for next or close</span></div>
+<div class="ttc" id="agroup__http_html_a6d00d0e9adff3f66fefcf14b6881e8f1"><div class="ttname"><a href="group__http.html#a6d00d0e9adff3f66fefcf14b6881e8f1">ServerConnection::request_start_ms</a></div><div class="ttdeci">int64_t request_start_ms</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00158">SocketHTTPServer-private.h:158</a></div></div>
+<div class="ttc" id="agroup__utilities_html_ga051f576075a7c5fa39982fc3256127db"><div class="ttname"><a href="group__utilities.html#ga051f576075a7c5fa39982fc3256127db">SocketMetrics_counter_inc</a></div><div class="ttdeci">void SocketMetrics_counter_inc(SocketCounterMetric metric)</div><div class="ttdoc">Increment a counter metric by 1 atomically.</div></div>
+<div class="ttc" id="agroup__utilities_html_gade1b121ba0fc5aaf631a0ec0a060843c"><div class="ttname"><a href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c">SocketMetrics_histogram_observe</a></div><div class="ttdeci">void SocketMetrics_histogram_observe(SocketHistogramMetric metric, double value)</div><div class="ttdoc">Record observation in histogram.</div></div>
+<div class="ttc" id="agroup__utilities_html_gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f"><div class="ttname"><a href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f">SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</a></div><div class="ttdeci">@ SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</div><div class="ttdef"><b>Definition</b> <a href="SocketMetrics_8h_source.html#l00513">SocketMetrics.h:513</a></div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Latency observed here; requires request_start_ms set in parse. </dd>
+<dd>
+Frees request arena; any handler-alloc'd objects invalid after. </dd>
+<dd>
+If streaming response unfinished, aborts stream and closes. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Handler userdata not cleared; manage externally if per-req. </dd>
+<dd>
+For HTTP/2, decrements active_streams; may keep conn open.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) - fixed updates and conditional reset/close.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#a1e78410c99812889132c0977539d170b" title="Keep-alive timeout in ms (default: 60s). Maximum time a connection can remain idle before closure.">SocketHTTPServer_Config::keepalive_timeout_ms</a> limit check. </dd>
+<dd>
+connection_reset_for_keepalive() if keeping open. </dd>
+<dd>
+connection_close() if terminating. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c" title="Record observation in histogram.">SocketMetrics_histogram_observe()</a> latency recording.</dd></dl>
+<p>Parse incoming request data, handling headers and body.</p>
+<p>Incrementally parses buffered input data using <a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a>, advancing through request line, headers, then body (content-length or chunked). On complete headers, extracts method/path/version, builds headers container, checks Content-Length vs max_body_size, sets up body buffering or streaming callback. Runs validator callback if configured; rejects with error status if returns 0. Transitions states: READING_REQUEST -&gt; READING_BODY -&gt; HANDLING on complete. Handles pipelining by preparing for next parse after body.</p>
+<p>Supports HTTP/1.1 features: chunked, expect/continue, upgrades (WebSocket/proxy). For HTTP/2, dispatched to frame parser instead. Enforces timeouts during parse.</p>
+<p>Called after reads fill inbuf until request complete or error.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server (config for limits, validator callback). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> with inbuf data (updates parser, request fields, state).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>0 to continue parsing (more data needed), 1 request fully parsed/validated and ready for handler, &lt;0 parse/validation failure (sets errno, sends error or closes).</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTP1_ParseError</td><td>Malformed request (400 sent). </td></tr>
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>Limits exceeded, validator reject, or internal. </td></tr>
+    <tr><td class="paramname">SocketHTTP_InvalidURI</td><td>Bad URI syntax. </td></tr>
+    <tr><td class="paramname">Arena_Failed</td><td>Body alloc exceeds limits.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - advances shared parser and conn state.</dt><dd></dd></dl>
+<p>Internal Usage</p>
+<p>Looped in process until return 1 or error.</p>
+<p>Called in the main event loop after reading data to parse HTTP requests incrementally.</p>
+<dl class="section note"><dt>Note</dt><dd>Body alloc only if &lt; max_body_size and not streaming; else setup callback. </dd>
+<dd>
+Validator runs post-headers pre-body; can access headers/path but not body. </dd>
+<dd>
+For chunked, parses extensions/trailers; rejects unknown. </dd>
+<dd>
+Upgrades (e.g., WebSocket) pause parsing; handler decides accept/respond. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Slow header/body attacks detected via timeout and size limits. </dd>
+<dd>
+Pipelining: parses next request immediately after body if data available.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) where n=parsed bytes - linear in input size.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#ga83fa0ae51796710bc10e16154b448a3f" title="Incrementally parse HTTP/1.1 message data using DFA state machine.">SocketHTTP1_Parser_execute()</a> incremental parse core. </dd>
+<dd>
+<a class="el" href="group__http.html#gab095eb6d03d06f9c1d8041dc3aa56094" title="Middleware callback for request validation and authentication.">SocketHTTPServer_Validator</a> pre-handler check. </dd>
+<dd>
+<a class="el" href="group__http.html#structSocketHTTP__Request" title="Protocol-agnostic representation of an HTTP request message.">SocketHTTP_Request</a> built from parse results. </dd>
+<dd>
+<a class="el" href="group__http.html#gab347055b7285aedad5fa0f504c3a655e" title="Callback for streaming request body data incrementally.">SocketHTTPServer_BodyCallback</a> for streaming setup.</dd></dl>
+<p>Serialize and send HTTP response (headers + body).</p>
+<p>Constructs and transmits the HTTP response: serializes status line and headers (adding defaults like Date, Server, Content-Length/Transfer-Encoding), then body data (direct if small/static, chunked for streaming/large). For HTTP/1.1 uses SocketHTTP1_serialize_response + chunk_encode if needed; for HTTP/2 dispatches to stream send_headers/send_data with HPACK. Sets response_headers_sent flag, starts response_start_ms timing, updates metrics (response size, status code counter). Handles errors by falling back to error response or close.</p>
+<p>Manages transfer encoding: chunked if unknown length/streaming, compressed if config enables and client accepts. Ensures <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a>: close if !keepalive. Transitions state to SENDING_RESPONSE or STREAMING_RESPONSE.</p>
+<p>Called after handler sets response via Request API or error paths.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server (config for defaults, compression). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> with response data set (status, headers, body; updates state).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>void - sends async; errors trigger close or retry.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>Serialize or send fails. </td></tr>
+    <tr><td class="paramname">Socket_Failed</td><td>Underlying send errors.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - serializes and sends on conn.</dt><dd></dd></dl>
+<p>Internal Usage</p>
+<p>After handler or validator reject.</p>
+<div class="fragment"><div class="line"><span class="comment">// Post-handler</span></div>
+<div class="line">conn-&gt;<a class="code hl_variable" href="group__http.html#a18a4b84df637a5c900f68d3adf4b50a4">response_status</a> = 200;</div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a>(conn-&gt;<a class="code hl_variable" href="group__http.html#a0efb6f239cce61968170fb096c6ff1f8">response_headers</a>, <span class="stringliteral">&quot;Content-Type&quot;</span>,</div>
+<div class="line"><span class="stringliteral">&quot;text/plain&quot;</span>); conn-&gt;<a class="code hl_variable" href="group__http.html#afa93f78c8c290656e5a7ae5797d5488c">response_body</a> = <span class="stringliteral">&quot;Hello World&quot;</span>; conn-&gt;<a class="code hl_variable" href="group__http.html#aa70d8f5cc078f0bf58b2f16f33ee284f">response_body_len</a></div>
+<div class="line">= 11; connection_send_response(server, conn);</div>
+<div class="line"><span class="comment">// Async; state now SENDING_RESPONSE</span></div>
+<div class="ttc" id="agroup__http_html_a0efb6f239cce61968170fb096c6ff1f8"><div class="ttname"><a href="group__http.html#a0efb6f239cce61968170fb096c6ff1f8">ServerConnection::response_headers</a></div><div class="ttdeci">SocketHTTP_Headers_T response_headers</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00146">SocketHTTPServer-private.h:146</a></div></div>
+<div class="ttc" id="agroup__http_html_a18a4b84df637a5c900f68d3adf4b50a4"><div class="ttname"><a href="group__http.html#a18a4b84df637a5c900f68d3adf4b50a4">ServerConnection::response_status</a></div><div class="ttdeci">int response_status</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00145">SocketHTTPServer-private.h:145</a></div></div>
+<div class="ttc" id="agroup__http_html_aa70d8f5cc078f0bf58b2f16f33ee284f"><div class="ttname"><a href="group__http.html#aa70d8f5cc078f0bf58b2f16f33ee284f">ServerConnection::response_body_len</a></div><div class="ttdeci">size_t response_body_len</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00148">SocketHTTPServer-private.h:148</a></div></div>
+<div class="ttc" id="agroup__http_html_afa93f78c8c290656e5a7ae5797d5488c"><div class="ttname"><a href="group__http.html#afa93f78c8c290656e5a7ae5797d5488c">ServerConnection::response_body</a></div><div class="ttdeci">void * response_body</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPServer-private_8h_source.html#l00147">SocketHTTPServer-private.h:147</a></div></div>
+<div class="ttc" id="agroup__http_html_ga564aa2d79c404e093b07c56e7d7910eb"><div class="ttname"><a href="group__http.html#ga564aa2d79c404e093b07c56e7d7910eb">SocketHTTP_Headers_add</a></div><div class="ttdeci">int SocketHTTP_Headers_add(SocketHTTP_Headers_T headers, const char *name, const char *value)</div><div class="ttdoc">Add header (null-terminated strings).</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Adds mandatory headers: Date (GMT), Content-Length or Transfer-Encoding. </dd>
+<dd>
+Chunked for unknown len; trailers if provided. </dd>
+<dd>
+HTTP/2: end_headers/end_stream flags set per response_finished. </dd>
+<dd>
+Compression (gzip) if Accept-Encoding and not no-transform. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Buffers entire response if not streaming; use begin_stream for large. </dd>
+<dd>
+Status 1xx informational handled specially (no body).</dd></dl>
+<dl class="section user"><dt>Complexity\n O(n) for serialization and send where n=response size.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http1.html#gab8921dc474a57cdb9e68ac329f70a100" title="Serialize response to buffer.">SocketHTTP1_serialize_response()</a> HTTP/1.1 header serialization. </dd>
+<dd>
+<a class="el" href="group__http1.html#ga1ee4d308dc266c293146b181d75c0fd9" title="Encode data as single chunk.">SocketHTTP1_chunk_encode()</a> for chunked body. </dd>
+<dd>
+SocketHTTP2_Stream_send_headers/data() for HTTP/2. </dd>
+<dd>
+<a class="el" href="group__http.html#ga3bcf9f5487eca065ac77e28cdcb03482" title="Format time as HTTP-date (IMF-fixdate)">SocketHTTP_date_format()</a> for Date header.</dd></dl>
+<p>Send HTTP error response with status and optional body.</p>
+<p>Quickly generates and sends a standard error response for common failures (parse errors, limits exceeded, validation rejects). Sets status code and reason phrase via <a class="el" href="group__http.html#gad0f790ccec22e5c3862f7d07abc81038" title="Get reason phrase for status code.">SocketHTTP_status_reason()</a>, adds minimal headers (Content-Type: text/plain; charset=utf-8, Content-Length, <a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a>: close if appropriate). Body is optional plain-text message or auto-generated (e.g., "400 Bad Request"). Logs error at WARN/ERROR level with details (status, client addr, request method/path if available). Increments error counter metric tagged by status category (4xx/5xx).</p>
+<p>Bypasses full response setup; directly calls connection_send_response after minimal conn response fields set. Resets any pending response state. For security, omits sensitive details in body/log (no stack traces).</p>
+<p>Used in error paths: parse failures, timeouts, limits, validator rejects, handler exceptions.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Owning server (for logging, metrics, config). </td></tr>
+    <tr><td class="paramdir">[in,out]</td><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to send error on (sets response, may close after). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">status</td><td>HTTP status code (100-599; validated via SocketHTTP_status_valid). </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">body</td><td>Optional custom error message body (NULL for default; UTF-8 text).</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>void - sends immediately; errors lead to connection_close.</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>If serialization or send fails (closes conn). </td></tr>
+    <tr><td class="paramname">Socket_Failed</td><td>Underlying transport errors.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - sets conn response state.</dt><dd></dd></dl>
+<p>Internal Usage</p>
+<p>Quick error dispatch in failure paths.</p>
+<div class="fragment"><div class="line"><span class="comment">// On parse error</span></div>
+<div class="line"><span class="keywordflow">if</span> (parse_failed) {</div>
+<div class="line">    <a class="code hl_function" href="group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd">connection_send_error</a>(server, conn, 400, <span class="stringliteral">&quot;Invalid JSON&quot;</span>);</div>
+<div class="line">    connection_finish_request(server, conn);  <span class="comment">// Or direct close</span></div>
+<div class="line">}</div>
+<div class="line"><span class="comment">// On limit</span></div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd">connection_send_error</a>(server, conn, 429, <span class="stringliteral">&quot;Rate limit exceeded&quot;</span>);</div>
+<div class="ttc" id="agroup__http_html_ga78ff9a4160aa8d2d7909b8f165fd74dd"><div class="ttname"><a href="group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd">connection_send_error</a></div><div class="ttdeci">void connection_send_error(SocketHTTPServer_T server, ServerConnection *conn, int status_code, const char *reason)</div><div class="ttdoc">Allocate and initialize a new ServerConnection for an accepted client socket.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Default body for common codes (e.g., 404 "Not Found", 500 "Internal
+Server Error"). </dd>
+<dd>
+Logs with client addr, status, brief reason; debug includes request info. </dd>
+<dd>
+Metrics: SOCKET_CTR_HTTP_SERVER_RESPONSES_TOTAL with status tag. </dd>
+<dd>
+Always closes connection for 5xx (server error); may keep for 4xx client errors. </dd></dl>
+<dl class="section warning"><dt>Warning</dt><dd>Avoid sensitive info in custom body; use generic messages in prod. </dd>
+<dd>
+Overrides any prior response setup in conn.</dd></dl>
+<dl class="section user"><dt>Complexity\n O(1) + O(m) where m=body len - fixed headers + send.</dt><dd></dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gad0f790ccec22e5c3862f7d07abc81038" title="Get reason phrase for status code.">SocketHTTP_status_reason()</a> auto reason phrase. </dd>
+<dd>
+connection_send_response() underlying general send (simplified path). </dd>
+<dd>
+SocketLog_warn/error() for logging integration. </dd>
+<dd>
+<a class="el" href="group__http.html#gafa90f0cd5d3fa4e281b6debe6fed8fe6" title="Get status code category.">SocketHTTP_status_category()</a> for metric tagging.</dd></dl>
+<p>Note on removed latency tracking for HTTP requests.</p>
+<p>Direct latency tracking code removed; use SocketMetrics histograms:</p>
+<p>SocketMetrics_histogram_observe(SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS,
+latency_ms);</p>
+<p>Place observes at key points:</p><ul>
+<li>Start: request_start_ms = <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a>;</li>
+<li>End: latency_ms = <a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> - request_start_ms; SocketMetrics_histogram_observe(..., latency_ms);</li>
+</ul>
+<p>Supports p50/p95/p99 percentiles for monitoring. </p><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__utilities.html#gade1b121ba0fc5aaf631a0ec0a060843c" title="Record observation in histogram.">SocketMetrics_histogram_observe()</a> API details. </dd>
+<dd>
+<a class="el" href="group__foundation.html#ga264bfa9d1cf07aa22446a4df6c4936bf" title="Socket_get_monotonic_ms - Get current monotonic time in milliseconds.">Socket_get_monotonic_ms()</a> for high-res timing. </dd>
+<dd>
+<a class="el" href="group__utilities.html#gga92d395571ae200be798481ea090e0e1ea639c5c4fe6ff72fa817325146734d53f">SOCKET_HIST_HTTP_SERVER_REQUEST_LATENCY_MS</a> constant.</dd></dl>
+<p>Send an HTTP error response. </p><dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">server</td><td>HTTP server instance </td></tr>
+    <tr><td class="paramname">conn</td><td><a class="el" href="group__connection__mgmt.html#structConnection" title="Internal structure representing a pooled connection slot.">Connection</a> to send error on </td></tr>
+    <tr><td class="paramname">status_code</td><td>HTTP status code (e.g., 400, 404, 500) </td></tr>
+    <tr><td class="paramname">reason</td><td>Reason phrase for the status </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -7136,9 +7746,9 @@ Does not null-terminate; call <a class="el" href="group__http.html#ga607c2b77d65
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for parser-wide size limits (this is per-call cap). </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00663">663</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00689">689</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00493">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00491">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00492">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7209,9 +7819,9 @@ Does not zero the buffer contents; undefined until first append. </dd></dl>
 <dd>
 <a class="el" href="group__http.html#ga5487c78dd04b035e7acc9637725342da" title="Append a single character to the token buffer, growing capacity if necessary.">http1_tokenbuf_append()</a> for first data addition. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00611">611</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00637">637</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00493">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00491">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00492">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7255,9 +7865,9 @@ Previous data remains in buffer until overwritten; use secureclear if sensitive.
 <dd>
 <a class="el" href="group__http1__private.html#a031b669ec44709ed42b56a778f12d147">HTTP1_TokenBuf::len</a> for the reset field. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00636">636</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00662">662</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="SocketHTTP1-private_8h_source.html#l00492">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -7331,9 +7941,9 @@ Returned pointer valid until next append/reset/growth; do not free. </dd></dl>
 <dd>
 <a class="el" href="group__http1.html#structSocketHTTP1__Config" title="Runtime configuration structure for the HTTP/1.1 parser.">SocketHTTP1_Config</a> for overall size limits. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00711">711</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP1-private_8h_source.html#l00737">737</a> of file <a class="el" href="SocketHTTP1-private_8h_source.html">SocketHTTP1-private.h</a>.</p>
 
-<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00467">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00465">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00466">HTTP1_TokenBuf::len</a>.</p>
+<p class="reference">References <a class="el" href="group__foundation.html#gad93b1dd7d771cbed846dcc3c5c836917">Arena_alloc()</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00493">HTTP1_TokenBuf::capacity</a>, <a class="el" href="SocketHTTP1-private_8h_source.html#l00491">HTTP1_TokenBuf::data</a>, and <a class="el" href="SocketHTTP1-private_8h_source.html#l00492">HTTP1_TokenBuf::len</a>.</p>
 
 </div>
 </div>
@@ -9995,7 +10605,7 @@ docs/HTTP-REFACTOR.md for backoff strategy. </dd></dl>
 <dd>
 docs/METRICS.md for performance considerations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00852">852</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTPClient-private_8h_source.html#l00858">858</a> of file <a class="el" href="SocketHTTPClient-private_8h_source.html">SocketHTTPClient-private.h</a>.</p>
 
 <p class="reference">References <a class="el" href="SocketUtil_8h_source.html#l01949">socket_util_hash_djb2_ci_len()</a>, and <a class="el" href="SocketUtil_8h_source.html#l01829">socket_util_hash_uint()</a>.</p>
 
@@ -10871,7 +11481,7 @@ docs/HTTP-REFACTOR.md for status handling. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - modifies decoder state (table updates); requires external</dt><dd>synchronization for shared use.</dd></dl>
-<h2><a class="anchor" id="autotoc_md276"></a>
+<h2><a class="anchor" id="autotoc_md295"></a>
 Basic Usage Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// In HTTP/2 frame processing loop</span></div>
 <div class="line"><a class="code hl_struct" href="group__hpack.html#structSocketHPACK__Header">SocketHPACK_Header</a> headers[128];  <span class="comment">// Reasonable max for most requests</span></div>
@@ -10911,7 +11521,7 @@ Basic Usage Pattern</h2>
 <div class="ttc" id="agroup__http_html_gaaf99a02bd5f3dd4baedcbde590cc5d09"><div class="ttname"><a href="group__http.html#gaaf99a02bd5f3dd4baedcbde590cc5d09">SocketHPACK_Error</a></div><div class="ttdeci">const Except_T SocketHPACK_Error</div><div class="ttdoc">SocketHPACK_Error - General HPACK operation failure.</div></div>
 <div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a07efa48e67fe81302926870297c48d35">HPACK_INCOMPLETE</a></div><div class="ttdeci">@ HPACK_INCOMPLETE</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00218">SocketHPACK.h:218</a></div></div>
 <div class="ttc" id="agroup__http_html_gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a"><div class="ttname"><a href="group__http.html#gga623ed321b4ede47b3ac642a001c57ef4a370961ee61b12c85a811642cc58d8d2a">HPACK_OK</a></div><div class="ttdeci">@ HPACK_OK</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00217">SocketHPACK.h:217</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md277"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md296"></a>
 Error Codes and Recovery</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -10920,7 +11530,7 @@ Error Codes and Recovery</h2>
 <td class="markdownTableBodyNone">HPACK_ERROR_INVALID_INDEX   </td><td class="markdownTableBodyNone">Invalid table index   </td><td class="markdownTableBodyNone">Peer error; send   </td></tr>
 </table>
 <p>RST_STREAM or GOAWAY | | HPACK_ERROR_HUFFMAN | Corrupt Huffman codes/padding | Validate peer; close connection | | HPACK_ERROR_TABLE_SIZE | Invalid size update &gt; max | Protocol violation; reject update | | HPACK_ERROR_HEADER_SIZE | Single header exceeds limit | Increase config or drop oversized | | HPACK_ERROR_LIST_SIZE | Total size exceeds limit | Increase config or truncate headers | | HPACK_ERROR_BOMB | Excessive expansion ratio | Tighten max_expansion_ratio; ban peer IP |</p>
-<h2><a class="anchor" id="autotoc_md278"></a>
+<h2><a class="anchor" id="autotoc_md297"></a>
 Security Considerations</h2>
 <ul>
 <li>Configurable limits prevent DoS via large headers or table updates.</li>
@@ -12006,7 +12616,7 @@ In production, log and monitor error rates for HPACK_ERROR_* codes.</dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - caller must ensure no concurrent access to the table or</dt><dd>arena.</dd></dl>
-<h2><a class="anchor" id="autotoc_md269"></a>
+<h2><a class="anchor" id="autotoc_md288"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
@@ -12023,7 +12633,7 @@ Usage Example</h2>
 <div class="ttc" id="agroup__http_html_ga821f51d4c73a41cfb01e75068c83e29e"><div class="ttname"><a href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a></div><div class="ttdeci">void SocketHPACK_Table_free(SocketHPACK_Table_T *table)</div><div class="ttdoc">Dispose of a dynamic table instance and release its resources.</div></div>
 <div class="ttc" id="agroup__http_html_gad2e8414c30906d4f093a213b088edf03"><div class="ttname"><a href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a></div><div class="ttdeci">SocketHPACK_Table_T SocketHPACK_Table_new(size_t max_size, Arena_T arena)</div><div class="ttdoc">Create a new dynamic HPACK table for header compression.</div></div>
 <div class="ttc" id="agroup__http_html_gaf6f02b4c16e51b058621e83fbfb1293a"><div class="ttname"><a href="group__http.html#gaf6f02b4c16e51b058621e83fbfb1293a">SOCKETHPACK_DEFAULT_TABLE_SIZE</a></div><div class="ttdeci">#define SOCKETHPACK_DEFAULT_TABLE_SIZE</div><div class="ttdoc">Default dynamic table size in bytes (RFC 7541 default).</div><div class="ttdef"><b>Definition</b> <a href="SocketHPACK_8h_source.html#l00130">SocketHPACK.h:130</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md270"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md289"></a>
 Important Notes</h2>
 <ul>
 <li>Always pair with <a class="el" href="group__http.html#gad2e8414c30906d4f093a213b088edf03" title="Create a new dynamic HPACK table for header compression.">SocketHPACK_Table_new()</a> using the same arena for lifecycle management.</li>
@@ -12186,7 +12796,7 @@ Important Notes</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - atomic creation; arena must be synchronized if shared</dt><dd>across threads.</dd></dl>
-<h2><a class="anchor" id="autotoc_md267"></a>
+<h2><a class="anchor" id="autotoc_md286"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
 <div class="line">SocketHPACK_Table_T table = NULL;</div>
@@ -12201,7 +12811,7 @@ Basic Usage</h2>
 <div class="line"><a class="code hl_function" href="group__http.html#ga821f51d4c73a41cfb01e75068c83e29e">SocketHPACK_Table_free</a>(&amp;table);</div>
 <div class="ttc" id="agroup__foundation_html_ga3d38c6361ecf1c4873bbcb2de8a50874"><div class="ttname"><a href="group__foundation.html#ga3d38c6361ecf1c4873bbcb2de8a50874">Except_stack</a></div><div class="ttdeci">Except_Frame * Except_stack</div><div class="ttdoc">Thread-local exception stack for TRY/EXCEPT/FINALLY blocks.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga6053a34c90a976ac971313bd5f201fb3"><div class="ttname"><a href="group__foundation.html#ga6053a34c90a976ac971313bd5f201fb3">Arena_Failed</a></div><div class="ttdeci">const Except_T Arena_Failed</div><div class="ttdoc">Exception raised when arena allocation fails.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md268"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md287"></a>
 Advanced Configuration</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -12290,7 +12900,7 @@ docs/HTTP-REFACTOR.md for performance tuning </dd>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n No - concurrent updates or accesses may lead to inconsistent</dt><dd>state or data races.</dd></dl>
-<h2><a class="anchor" id="autotoc_md271"></a>
+<h2><a class="anchor" id="autotoc_md290"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">SocketHPACK_Table_T table = ...;  <span class="comment">// Initialized table</span></div>
 <div class="line"> </div>
@@ -12306,7 +12916,7 @@ Usage Example</h2>
 <div class="line"><a class="code hl_function" href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a>(table, 2048);   <span class="comment">// 2KB</span></div>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
 <div class="ttc" id="agroup__http_html_gaa6f9521e46c52adbe47ecb48c2abc307"><div class="ttname"><a href="group__http.html#gaa6f9521e46c52adbe47ecb48c2abc307">SocketHPACK_Table_set_max_size</a></div><div class="ttdeci">void SocketHPACK_Table_set_max_size(SocketHPACK_Table_T table, size_t max_size)</div><div class="ttdoc">Update the maximum size of the dynamic table.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md272"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md291"></a>
 Eviction Behavior</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -12318,7 +12928,7 @@ Eviction Behavior</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">new_size == 0   </td><td class="markdownTableBodyNone">Clear entire table   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md273"></a>
+<h2><a class="anchor" id="autotoc_md292"></a>
 Query After Update</h2>
 <p>After calling, verify with:</p><ul>
 <li>SocketHPACK_Table_size(table) &lt;= max_size</li>
@@ -12378,7 +12988,7 @@ Synchronized between encoder/decoder via SETTINGS frames in HTTP/2.</dd></dl>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Current table size in bytes (sum of name/value lengths + SOCKETHPACK_ENTRY_OVERHEAD * entry count).</dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - concurrent table modifications (add/evict) may cause</dt><dd>inconsistent return values.</dd></dl>
-<h2><a class="anchor" id="autotoc_md274"></a>
+<h2><a class="anchor" id="autotoc_md293"></a>
 Usage Example</h2>
 <div class="fragment"><div class="line">SocketHPACK_Table_T table = <a class="code hl_function" href="group__http.html#gad2e8414c30906d4f093a213b088edf03">SocketHPACK_Table_new</a>(4096, arena);</div>
 <div class="line"><span class="keywordtype">size_t</span> size = <a class="code hl_function" href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a>(table);  <span class="comment">// Initially 0</span></div>
@@ -12391,7 +13001,7 @@ Usage Example</h2>
 <div class="line">printf(<span class="stringliteral">&quot;Table size: %zu bytes\n&quot;</span>, size);</div>
 <div class="ttc" id="agroup__http_html_ga43f69e69234e33e6fba377e1eeb53d89"><div class="ttname"><a href="group__http.html#ga43f69e69234e33e6fba377e1eeb53d89">SocketHPACK_Table_size</a></div><div class="ttdeci">size_t SocketHPACK_Table_size(SocketHPACK_Table_T table)</div><div class="ttdoc">Query the current size of the dynamic table in bytes.</div></div>
 <div class="ttc" id="agroup__http_html_gad46ef6fbf9994cc55c982d507ce473eb"><div class="ttname"><a href="group__http.html#gad46ef6fbf9994cc55c982d507ce473eb">SocketHPACK_Table_add</a></div><div class="ttdeci">SocketHPACK_Result SocketHPACK_Table_add(SocketHPACK_Table_T table, const char *name, size_t name_len, const char *value, size_t value_len)</div><div class="ttdoc">Add entry to dynamic table.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md275"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md294"></a>
 Size Calculation</h2>
 <p>Total size = \sum (name_len + value_len) + (count * SOCKETHPACK_ENTRY_OVERHEAD)</p>
 <table class="markdownTable">
@@ -12605,59 +13215,6 @@ docs/HTTP-REFACTOR.md<a class="el" href="group__hpack.html">HPACK Header Compres
 <li>RFC 850: Sunday, 06-Nov-94 08:49:37 GMT (obsolete)</li>
 <li>ANSI C: Sun Nov 6 08:49:37 1994 (obsolete) </li>
 </ul>
-
-</div>
-</div>
-<a id="ga8814ebfa618ed93bd36aebe1a4f7d63c" name="ga8814ebfa618ed93bd36aebe1a4f7d63c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ga8814ebfa618ed93bd36aebe1a4f7d63c">&#9670;&#160;</a></span>sockethttp_hash_name()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">static unsigned sockethttp_hash_name </td>
-          <td>(</td>
-          <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>name</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&#160;</td>
-          <td class="paramname"><em>len</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">inline</span><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Hash HTTP header name for case-insensitive bucket lookup. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">name</td><td>Pointer to null-terminated or length-bounded header name bytes. </td></tr>
-    <tr><td class="paramname">len</td><td>Exact byte length of name (excluding null if present). </td></tr>
-  </table>
-  </dd>
-</dl>
-<dl class="section return"><dt>Returns</dt><dd>Computed hash modulo SOCKETHTTP_HEADER_BUCKETS (0-30). </dd></dl>
-<dl class="section user"><dt>Thread Safety\n Yes - pure function, no side effects or shared state.</dt><dd></dd></dl>
-<p>Implements case-insensitive DJB2 hash variant: folds input to lowercase during hashing for consistent header name bucketing per RFC 9110. Designed for low collision rate with typical HTTP headers.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga1ff149febc7c6bd14ef6e8cee65f8653" title="Hash table bucket count for header collections (internal constant).">SOCKETHTTP_HEADER_BUCKETS</a> for table size. </dd>
-<dd>
-<a class="el" href="group__http.html#ga66c434e450dcd98423aa25dcccef00c1" title="Perform case-insensitive comparison of HTTP header names.">sockethttp_name_equal()</a> companion for equality checks. </dd>
-<dd>
-<a class="el" href="group__http.html#ga14656f39c3a134218da1afd58407bda1" title="Get first header value (case-insensitive).">SocketHTTP_Headers_get()</a> for usage in public API. </dd></dl>
 
 </div>
 </div>
@@ -13857,13 +14414,13 @@ docs/HTTP-REFACTOR.md<a class="el" href="group__hpack.html">HPACK Header Compres
 <dl class="section user"><dt>Thread Safety\n Yes - pure function using standard library strncasecmp().</dt><dd></dd></dl>
 <p>Compares HTTP header field names per RFC 9110 §5.2 rule: field names case-insensitive. Early length check avoids unnecessary strncasecmp call. Used in hash table lookup collision resolution.</p>
 <dl class="section note"><dt>Note</dt><dd>Does not validate input as tokens; assumes pre-validated names. </dd></dl>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c" title="Hash HTTP header name for case-insensitive bucket lookup.">sockethttp_hash_name()</a> for complementary hashing. </dd>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__foundation.html#gaacb8ea34fa3de46f676cc0b1bd887f66" title="Case-insensitive length-aware DJB2 hash.">socket_util_hash_djb2_ci_len()</a> for complementary hashing. </dd>
 <dd>
 strncasecmp(3) for implementation details. </dd>
 <dd>
 <a class="el" href="group__http.html#ga14656f39c3a134218da1afd58407bda1" title="Get first header value (case-insensitive).">SocketHTTP_Headers_get()</a> and <a class="el" href="group__http.html#ga894520d65dc4573481c9a4028f73ae11" title="Check if header exists.">SocketHTTP_Headers_has()</a> for usage. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00161">161</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SocketHTTP-private_8h_source.html#l00142">142</a> of file <a class="el" href="SocketHTTP-private_8h_source.html">SocketHTTP-private.h</a>.</p>
 
 </div>
 </div>
@@ -14497,6 +15054,184 @@ strncasecmp(3) for implementation details. </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Static string like "HTTP/1.1", or "HTTP/?" for unknown </dd></dl>
 <dl class="section user"><dt>Thread Safety\n Yes</dt><dd></dd></dl>
+
+</div>
+</div>
+<a id="ga88c254c8a41cb79759d4e01413afde74" name="ga88c254c8a41cb79759d4e01413afde74"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga88c254c8a41cb79759d4e01413afde74">&#9670;&#160;</a></span>SocketHTTPServer_add_middleware()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPServer_add_middleware </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPServer_T&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer_Middleware</a>&#160;</td>
+          <td class="paramname"><em>middleware</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>userdata</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add request middleware. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Server instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">middleware</td><td>Middleware callback </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">userdata</td><td>User data passed to callback</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Adds middleware to the processing chain. Middleware is executed in order of addition, before the main request handler. Common uses:</p><ul>
+<li>Logging and metrics</li>
+<li>Authentication/authorization</li>
+<li>CORS headers</li>
+<li>Request validation</li>
+<li>Rate limiting</li>
+</ul>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error (too many middleware)</dd></dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies server configuration</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md339"></a>
+Execution Order</h2>
+<div class="fragment"><div class="line">Request → Middleware 1 → Middleware 2 → ... → Handler → Response</div>
+<div class="line">               ↓             ↓</div>
+<div class="line">          (can <span class="keywordtype">short</span>-circuit and send response)</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md340"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> log_middleware(SocketHTTPServer_Request_T req, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    printf(<span class="stringliteral">&quot;[%s] %s\n&quot;</span>,</div>
+<div class="line">           <a class="code hl_function" href="group__http.html#gaeebb1299d256377b2abc6756c77827ef">SocketHTTP_method_name</a>(<a class="code hl_function" href="group__http.html#ga62a61206448cffe1710070a6c64b554d">SocketHTTPServer_Request_method</a>(req)),</div>
+<div class="line">           <a class="code hl_function" href="group__http.html#ga62b0e10b9c135a08852e56eb1eae8ac4">SocketHTTPServer_Request_path</a>(req));</div>
+<div class="line">    <span class="keywordflow">return</span> 0;  <span class="comment">// Continue to next</span></div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> auth_middleware(SocketHTTPServer_Request_T req, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    <span class="keyword">const</span> <span class="keywordtype">char</span> *token = <a class="code hl_function" href="group__http.html#ga776474c545e883c3ee264a53bd31bfc7">SocketHTTPServer_Request_header</a>(req, <span class="stringliteral">&quot;Authorization&quot;</span>);</div>
+<div class="line">    <span class="keywordflow">if</span> (!token || !validate_token(token)) {</div>
+<div class="line">        <a class="code hl_function" href="group__http.html#ga4d1d923d82851f33216006a798844e99">SocketHTTPServer_Request_status</a>(req, 401);</div>
+<div class="line">        <a class="code hl_function" href="group__http.html#ga5ac214850c3334c5413bcad0c0ae9b5e">SocketHTTPServer_Request_body_data</a>(req, <span class="stringliteral">&quot;Unauthorized&quot;</span>, 12);</div>
+<div class="line">        <a class="code hl_function" href="group__http.html#ga908829abf68bcfe935568fe4f45c0330">SocketHTTPServer_Request_finish</a>(req);</div>
+<div class="line">        <span class="keywordflow">return</span> 1;  <span class="comment">// Stop processing</span></div>
+<div class="line">    }</div>
+<div class="line">    <span class="keywordflow">return</span> 0;  <span class="comment">// Continue</span></div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer_add_middleware</a>(server, log_middleware, NULL);</div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer_add_middleware</a>(server, auth_middleware, &amp;auth_config);</div>
+<div class="ttc" id="agroup__http_html_ga4d1d923d82851f33216006a798844e99"><div class="ttname"><a href="group__http.html#ga4d1d923d82851f33216006a798844e99">SocketHTTPServer_Request_status</a></div><div class="ttdeci">void SocketHTTPServer_Request_status(SocketHTTPServer_Request_T req, int code)</div><div class="ttdoc">Set the HTTP status code for the response.</div></div>
+<div class="ttc" id="agroup__http_html_ga5ac214850c3334c5413bcad0c0ae9b5e"><div class="ttname"><a href="group__http.html#ga5ac214850c3334c5413bcad0c0ae9b5e">SocketHTTPServer_Request_body_data</a></div><div class="ttdeci">void SocketHTTPServer_Request_body_data(SocketHTTPServer_Request_T req, const void *data, size_t len)</div><div class="ttdoc">Set the complete response body from a data buffer.</div></div>
+<div class="ttc" id="agroup__http_html_ga62a61206448cffe1710070a6c64b554d"><div class="ttname"><a href="group__http.html#ga62a61206448cffe1710070a6c64b554d">SocketHTTPServer_Request_method</a></div><div class="ttdeci">SocketHTTP_Method SocketHTTPServer_Request_method(SocketHTTPServer_Request_T req)</div><div class="ttdoc">Retrieve the parsed HTTP method from the request.</div></div>
+<div class="ttc" id="agroup__http_html_ga62b0e10b9c135a08852e56eb1eae8ac4"><div class="ttname"><a href="group__http.html#ga62b0e10b9c135a08852e56eb1eae8ac4">SocketHTTPServer_Request_path</a></div><div class="ttdeci">const char * SocketHTTPServer_Request_path(SocketHTTPServer_Request_T req)</div><div class="ttdoc">Get the request path (URI path component).</div></div>
+<div class="ttc" id="agroup__http_html_ga776474c545e883c3ee264a53bd31bfc7"><div class="ttname"><a href="group__http.html#ga776474c545e883c3ee264a53bd31bfc7">SocketHTTPServer_Request_header</a></div><div class="ttdeci">void SocketHTTPServer_Request_header(SocketHTTPServer_Request_T req, const char *name, const char *value)</div><div class="ttdoc">Add a header field to the HTTP response.</div></div>
+<div class="ttc" id="agroup__http_html_ga88c254c8a41cb79759d4e01413afde74"><div class="ttname"><a href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer_add_middleware</a></div><div class="ttdeci">int SocketHTTPServer_add_middleware(SocketHTTPServer_T server, SocketHTTPServer_Middleware middleware, void *userdata)</div><div class="ttdoc">Add request middleware.</div></div>
+<div class="ttc" id="agroup__http_html_ga908829abf68bcfe935568fe4f45c0330"><div class="ttname"><a href="group__http.html#ga908829abf68bcfe935568fe4f45c0330">SocketHTTPServer_Request_finish</a></div><div class="ttdeci">void SocketHTTPServer_Request_finish(SocketHTTPServer_Request_T req)</div><div class="ttdoc">Finalize the response and transmit it to the client.</div></div>
+<div class="ttc" id="agroup__http_html_gaeebb1299d256377b2abc6756c77827ef"><div class="ttname"><a href="group__http.html#gaeebb1299d256377b2abc6756c77827ef">SocketHTTP_method_name</a></div><div class="ttdeci">const char * SocketHTTP_method_name(SocketHTTP_Method method)</div><div class="ttdoc">Get method name string.</div></div>
+</div><!-- fragment --><dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaaf56db2565e6fdebcebf0bb7df24b959" title="Register the primary request handler callback and associated user data.">SocketHTTPServer_set_handler()</a> for <a class="el" href="connection__pool_8c.html#a3c04138a5bfe5d72780bb7e82a18e627">main</a> handler </dd>
+<dd>
+<a class="el" href="group__http.html#gab095eb6d03d06f9c1d8041dc3aa56094" title="Middleware callback for request validation and authentication.">SocketHTTPServer_Validator</a> for validation-only middleware </dd></dl>
+
+</div>
+</div>
+<a id="ga6fde0679e7d83a756be1b7485a93a247" name="ga6fde0679e7d83a756be1b7485a93a247"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga6fde0679e7d83a756be1b7485a93a247">&#9670;&#160;</a></span>SocketHTTPServer_add_static_dir()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SocketHTTPServer_add_static_dir </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPServer_T&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>prefix</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>directory</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Add static file serving for a directory. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Server instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">prefix</td><td>URL prefix to match (e.g., "/static") </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">directory</td><td>Filesystem directory to serve from</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Configures the server to serve static files from the specified directory for requests matching the URL prefix. Supports common content types, conditional requests (If-Modified-Since), and range requests.</p>
+<dl class="section return"><dt>Returns</dt><dd>0 on success, -1 on error (directory not accessible)</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketHTTPServer_Failed</td><td>if directory invalid </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n No - modifies server configuration</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md337"></a>
+Security Notes</h2>
+<ul>
+<li>Path traversal attacks prevented (.. normalized)</li>
+<li>Symlinks followed only within directory (configurable)</li>
+<li>No directory listing by default</li>
+<li>Hidden files (dot-files) not served by default</li>
+</ul>
+<h2><a class="anchor" id="autotoc_md338"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// Serve /static/foo.js from ./public/foo.js</span></div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer_add_static_dir</a>(server, <span class="stringliteral">&quot;/static&quot;</span>, <span class="stringliteral">&quot;./public&quot;</span>);</div>
+<div class="line"> </div>
+<div class="line"><span class="comment">// Serve /assets/* from /var/www/assets/</span></div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer_add_static_dir</a>(server, <span class="stringliteral">&quot;/assets&quot;</span>, <span class="stringliteral">&quot;/var/www/assets&quot;</span>);</div>
+<div class="ttc" id="agroup__http_html_ga6fde0679e7d83a756be1b7485a93a247"><div class="ttname"><a href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer_add_static_dir</a></div><div class="ttdeci">int SocketHTTPServer_add_static_dir(SocketHTTPServer_T server, const char *prefix, const char *directory)</div><div class="ttdoc">Add static file serving for a directory.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Requests not matching static files fall through to handler </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#gaaf56db2565e6fdebcebf0bb7df24b959" title="Register the primary request handler callback and associated user data.">SocketHTTPServer_set_handler()</a> for dynamic handling </dd></dl>
 
 </div>
 </div>
@@ -16452,6 +17187,77 @@ Not called on abrupt free()/errors; use atexit or signals for those.</dd></dl>
 <dd>
 docs/SIGNALS.md "Shutdown Hooks" for integration.</dd></dl>
 <dl class="section user"><dt>Thread Safety\n No - updates server callback slot.</dt><dd></dd></dl>
+
+</div>
+</div>
+<a id="ga3ab6ea89ceceb9238afecfd7fe9b2941" name="ga3ab6ea89ceceb9238afecfd7fe9b2941"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga3ab6ea89ceceb9238afecfd7fe9b2941">&#9670;&#160;</a></span>SocketHTTPServer_set_error_handler()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SocketHTTPServer_set_error_handler </td>
+          <td>(</td>
+          <td class="paramtype">SocketHTTPServer_T&#160;</td>
+          <td class="paramname"><em>server</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer_ErrorHandler</a>&#160;</td>
+          <td class="paramname"><em>handler</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">void *&#160;</td>
+          <td class="paramname"><em>userdata</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Set custom error page handler. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">server</td><td>Server instance </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">handler</td><td>Error handler callback (NULL to reset to default) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">userdata</td><td>User data passed to callback</td></tr>
+  </table>
+  </dd>
+</dl>
+<p>Sets a custom handler for generating error responses. Called for all server-generated errors (not application-generated via handler).</p>
+<dl class="section user"><dt>Thread Safety\n No - modifies server configuration</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md341"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="keywordtype">void</span> custom_error(SocketHTTPServer_Request_T req, <span class="keywordtype">int</span> code, <span class="keywordtype">void</span> *data) {</div>
+<div class="line">    <span class="keywordtype">char</span> body[256];</div>
+<div class="line">    snprintf(body, <span class="keyword">sizeof</span>(body),</div>
+<div class="line">             <span class="stringliteral">&quot;&lt;html&gt;&lt;body&gt;&lt;h1&gt;Error %d&lt;/h1&gt;&quot;</span></div>
+<div class="line">             <span class="stringliteral">&quot;&lt;p&gt;%s&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;&quot;</span>,</div>
+<div class="line">             code, http_status_message(code));</div>
+<div class="line">    <a class="code hl_function" href="group__http.html#ga776474c545e883c3ee264a53bd31bfc7">SocketHTTPServer_Request_header</a>(req, <span class="stringliteral">&quot;Content-Type&quot;</span>, <span class="stringliteral">&quot;text/html&quot;</span>);</div>
+<div class="line">    <a class="code hl_function" href="group__http.html#ga5ac214850c3334c5413bcad0c0ae9b5e">SocketHTTPServer_Request_body_data</a>(req, body, strlen(body));</div>
+<div class="line">    <a class="code hl_function" href="group__http.html#ga908829abf68bcfe935568fe4f45c0330">SocketHTTPServer_Request_finish</a>(req);</div>
+<div class="line">}</div>
+<div class="line"> </div>
+<div class="line"><a class="code hl_function" href="group__http.html#ga3ab6ea89ceceb9238afecfd7fe9b2941">SocketHTTPServer_set_error_handler</a>(server, custom_error, NULL);</div>
+<div class="ttc" id="agroup__http_html_ga3ab6ea89ceceb9238afecfd7fe9b2941"><div class="ttname"><a href="group__http.html#ga3ab6ea89ceceb9238afecfd7fe9b2941">SocketHTTPServer_set_error_handler</a></div><div class="ttdeci">void SocketHTTPServer_set_error_handler(SocketHTTPServer_T server, SocketHTTPServer_ErrorHandler handler, void *userdata)</div><div class="ttdoc">Set custom error page handler.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Default handler sends minimal text/plain response </dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__http.html#ga4d1d923d82851f33216006a798844e99" title="Set the HTTP status code for the response.">SocketHTTPServer_Request_status()</a> to check/set status </dd></dl>
 
 </div>
 </div>

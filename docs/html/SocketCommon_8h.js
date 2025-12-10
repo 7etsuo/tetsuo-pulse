@@ -37,6 +37,7 @@ var SocketCommon_8h =
     [ "SocketCommon_set_ttl", "group__core__io.html#ga1eab30cecc7dae2a4c02efd95c5feae5", null ],
     [ "SocketCommon_setcloexec", "group__core__io.html#gad3eb3f6fe09b2b58693a7044631916d8", null ],
     [ "SocketCommon_setup_hints", "group__core__io.html#ga47abb5d32959260cc8251419d652de1b", null ],
+    [ "SocketCommon_shutdown_globals", "group__core__io.html#gab2a42dead580007f2f04aac09eabf7a4", null ],
     [ "SocketCommon_sync_iov_progress", "group__core__io.html#gaad5b4b92ce57c8168a7cb4462ee73d99", null ],
     [ "SocketCommon_timeouts_getdefaults", "group__core__io.html#gad2318fb3606f6a71c2a11e247ff876d5", null ],
     [ "SocketCommon_timeouts_setdefaults", "group__core__io.html#ga98a87ba229cdf264bec87129ce8918f5", null ],

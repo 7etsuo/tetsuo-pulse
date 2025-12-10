@@ -115,10 +115,10 @@ $(document).ready(function(){initNavTree('migration_guide.html',''); initResizab
 <div class="contents">
 <div class="textblock"><p>Guide for migrating to the Socket Library from other networking libraries.</p>
 <hr  />
-<h1><a class="anchor" id="autotoc_md900"></a>
+<h1><a class="anchor" id="autotoc_md991"></a>
 Migration from BSD Sockets</h1>
 <p>The Socket Library provides a higher-level abstraction over BSD sockets.</p>
-<h2><a class="anchor" id="autotoc_md901"></a>
+<h2><a class="anchor" id="autotoc_md992"></a>
 Socket Creation</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> fd = socket(AF_INET, SOCK_STREAM, 0);</div>
 <div class="line"><span class="keywordflow">if</span> (fd &lt; 0) {</div>
@@ -138,7 +138,7 @@ Socket Creation</h2>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
 <div class="ttc" id="agroup__foundation_html_gad2746371528bdf15c3910b7bf217dac0"><div class="ttname"><a href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a></div><div class="ttdeci">#define TRY</div><div class="ttdoc">Start a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00991">Except.h:991</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gae6628ac788ad213363b89dba9868420b"><div class="ttname"><a href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a></div><div class="ttdeci">#define END_TRY</div><div class="ttdoc">Complete a TRY/EXCEPT/FINALLY exception handling block.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01439">Except.h:1439</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md902"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md993"></a>
 Connecting</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>sockaddr_in addr;</div>
 <div class="line">memset(&amp;addr, 0, <span class="keyword">sizeof</span>(addr));</div>
@@ -151,7 +151,7 @@ Connecting</h2>
 <div class="line">}</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a>(sock, host, port);  <span class="comment">/* Handles DNS too */</span></div>
 <div class="ttc" id="agroup__core__io_html_gac14390090ee26136c1f7a816fc08406e"><div class="ttname"><a href="group__core__io.html#gac14390090ee26136c1f7a816fc08406e">Socket_connect</a></div><div class="ttdeci">void Socket_connect(Socket_T socket, const char *host, int port)</div><div class="ttdoc">Establish a connection to a remote host and port.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md903"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md994"></a>
 Sending Data</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line">ssize_t total = 0;</div>
 <div class="line"><span class="keywordflow">while</span> (total &lt; len) {</div>
@@ -165,7 +165,7 @@ Sending Data</h2>
 <div class="line">}</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a>(sock, buf, len);  <span class="comment">/* Handles partial sends and EINTR */</span></div>
 <div class="ttc" id="agroup__core__io_html_ga6ea9ad33d78c50d327c9677b52849bcb"><div class="ttname"><a href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket_sendall</a></div><div class="ttdeci">ssize_t Socket_sendall(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send all data (handles partial sends).</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md904"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md995"></a>
 Socket Options</h2>
 <p><b>BSD Sockets:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> optval = 1;</div>
 <div class="line">setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &amp;optval, <span class="keyword">sizeof</span>(optval));</div>
@@ -175,7 +175,7 @@ Socket Options</h2>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a>(sock);</div>
 <div class="line">Socket_setlinger(sock, 1, 0);</div>
 <div class="ttc" id="agroup__core__io_html_ga2c6f352cec920859c71206898ed135fc"><div class="ttname"><a href="group__core__io.html#ga2c6f352cec920859c71206898ed135fc">Socket_setreuseaddr</a></div><div class="ttdeci">void Socket_setreuseaddr(Socket_T socket)</div><div class="ttdoc">Enable address reuse.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md905"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md996"></a>
 API Mapping (BSD -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -218,9 +218,9 @@ API Mapping (BSD -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>writev()</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="group__core__io.html#gaf6d033a04d5041249950fa2f54a8d9fd" title="Scatter/gather send all (handles partial sends).">Socket_sendvall()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md907"></a>
+<h1><a class="anchor" id="autotoc_md998"></a>
 Migration from libcurl</h1>
-<h2><a class="anchor" id="autotoc_md908"></a>
+<h2><a class="anchor" id="autotoc_md999"></a>
 Simple GET Request</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">CURL *curl = curl_easy_init();</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_URL, <span class="stringliteral">&quot;https://example.com&quot;</span>);</div>
@@ -239,14 +239,14 @@ Simple GET Request</h2>
 <div class="ttc" id="agroup__http__client_html_ga826bca53483c23de2c8b03d456010149"><div class="ttname"><a href="group__http__client.html#ga826bca53483c23de2c8b03d456010149">SocketHTTPClient_Response_free</a></div><div class="ttdeci">void SocketHTTPClient_Response_free(SocketHTTPClient_Response *response)</div><div class="ttdoc">Free response resources.</div></div>
 <div class="ttc" id="agroup__http__client_html_gafef425814e66932f7cf1f36e9356b70e"><div class="ttname"><a href="group__http__client.html#gafef425814e66932f7cf1f36e9356b70e">SocketHTTPClient_get</a></div><div class="ttdeci">int SocketHTTPClient_get(SocketHTTPClient_T client, const char *url, SocketHTTPClient_Response *response)</div><div class="ttdoc">Perform synchronous GET request.</div></div>
 <div class="ttc" id="agroup__http__client_html_structSocketHTTPClient__Response"><div class="ttname"><a href="group__http__client.html#structSocketHTTPClient__Response">SocketHTTPClient_Response</a></div><div class="ttdoc">HTTP response structure returned by client functions.</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTPClient_8h_source.html#l00601">SocketHTTPClient.h:602</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md909"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1000"></a>
 POST Request</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">curl_easy_setopt(curl, CURLOPT_POST, 1L);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);</div>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_function" href="group__http__client.html#ga9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a>(client, url, <span class="stringliteral">&quot;application/json&quot;</span>, json, strlen(json), &amp;response);</div>
 <div class="ttc" id="agroup__http__client_html_ga9b47bc2dd38d4a6700af79ced0acecb2"><div class="ttname"><a href="group__http__client.html#ga9b47bc2dd38d4a6700af79ced0acecb2">SocketHTTPClient_post</a></div><div class="ttdeci">int SocketHTTPClient_post(SocketHTTPClient_T client, const char *url, const char *content_type, const void *body, size_t body_len, SocketHTTPClient_Response *response)</div><div class="ttdoc">Perform synchronous POST request.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md910"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1001"></a>
 Custom Headers</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>curl_slist *headers = NULL;</div>
 <div class="line">headers = curl_slist_append(headers, <span class="stringliteral">&quot;Content-Type: application/json&quot;</span>);</div>
@@ -260,7 +260,7 @@ Custom Headers</h2>
 <div class="ttc" id="agroup__http__client_html_ga4ba09b6d59cc2aee465749978f62ad76"><div class="ttname"><a href="group__http__client.html#ga4ba09b6d59cc2aee465749978f62ad76">SocketHTTPClient_Request_execute</a></div><div class="ttdeci">int SocketHTTPClient_Request_execute(SocketHTTPClient_Request_T req, SocketHTTPClient_Response *response)</div><div class="ttdoc">Execute request.</div></div>
 <div class="ttc" id="agroup__http__client_html_ga8a7c54a81dc916af60f9747162e844a2"><div class="ttname"><a href="group__http__client.html#ga8a7c54a81dc916af60f9747162e844a2">SocketHTTPClient_Request_header</a></div><div class="ttdeci">int SocketHTTPClient_Request_header(SocketHTTPClient_Request_T req, const char *name, const char *value)</div><div class="ttdoc">Add header.</div></div>
 <div class="ttc" id="agroup__http_html_ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659"><div class="ttname"><a href="group__http.html#ggaf6f90bb536a5cd085f4327bda4d3ee8fa90754abc55dbb76862fa50abee5af659">HTTP_METHOD_GET</a></div><div class="ttdeci">@ HTTP_METHOD_GET</div><div class="ttdef"><b>Definition</b> <a href="SocketHTTP_8h_source.html#l00315">SocketHTTP.h:314</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md911"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1002"></a>
 Proxy Configuration</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">curl_easy_setopt(curl, CURLOPT_PROXY, <span class="stringliteral">&quot;socks5://localhost:1080&quot;</span>);</div>
 <div class="line">curl_easy_setopt(curl, CURLOPT_PROXYUSERPWD, <span class="stringliteral">&quot;user:pass&quot;</span>);</div>
@@ -270,7 +270,7 @@ Proxy Configuration</h2>
 <div class="line">client = <a class="code hl_function" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient_new</a>(&amp;config);</div>
 <div class="ttc" id="agroup__core__io_html_gae16c20e1d43f38171ccaad8408598490"><div class="ttname"><a href="group__core__io.html#gae16c20e1d43f38171ccaad8408598490">SocketProxy_parse_url</a></div><div class="ttdeci">int SocketProxy_parse_url(const char *url, SocketProxy_Config *config, Arena_T arena)</div><div class="ttdoc">Parse proxy URL string into configuration structure.</div></div>
 <div class="ttc" id="agroup__proxy_html_structSocketProxy__Config"><div class="ttname"><a href="group__proxy.html#structSocketProxy__Config">SocketProxy_Config</a></div><div class="ttdoc">Configuration structure for proxy connections.</div><div class="ttdef"><b>Definition</b> <a href="SocketProxy_8h_source.html#l00379">SocketProxy.h:380</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md912"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1003"></a>
 Error Handling</h2>
 <p><b>libcurl:</b> </p><div class="fragment"><div class="line">CURLcode res = curl_easy_perform(curl);</div>
 <div class="line"><span class="keywordflow">if</span> (res != CURLE_OK) {</div>
@@ -288,7 +288,7 @@ Error Handling</h2>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="agroup__http__client_html_ga50039c8c595271d7d51b28ed5a4e7196"><div class="ttname"><a href="group__http__client.html#ga50039c8c595271d7d51b28ed5a4e7196">SocketHTTPClient_DNSFailed</a></div><div class="ttdeci">const Except_T SocketHTTPClient_DNSFailed</div><div class="ttdoc">DNS resolution failure.</div></div>
 <div class="ttc" id="agroup__http__client_html_gaa0847dd6efa2f627e07173f29b29c8ae"><div class="ttname"><a href="group__http__client.html#gaa0847dd6efa2f627e07173f29b29c8ae">SocketHTTPClient_Timeout</a></div><div class="ttdeci">const Except_T SocketHTTPClient_Timeout</div><div class="ttdoc">Request timeout exceeded.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md913"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1004"></a>
 API Mapping (libcurl -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -317,9 +317,9 @@ API Mapping (libcurl -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>CURLOPT_HTTPHEADER</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="group__http__client.html#ga8a7c54a81dc916af60f9747162e844a2" title="Add header.">SocketHTTPClient_Request_header()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md915"></a>
+<h1><a class="anchor" id="autotoc_md1006"></a>
 Migration from libevent</h1>
-<h2><a class="anchor" id="autotoc_md916"></a>
+<h2><a class="anchor" id="autotoc_md1007"></a>
 Event Loop</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>event_base *base = event_base_new();</div>
 <div class="line"><span class="keyword">struct </span>event *ev = event_new(base, fd, EV_READ | EV_PERSIST, callback, arg);</div>
@@ -328,21 +328,21 @@ Event Loop</h2>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1000);</div>
 <div class="line"><a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, socket, <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, userdata);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> events[100];</div>
 <div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 100, 1000);</div>
 <div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; n; i++) {</div>
 <div class="line">        handle_event(events[i].socket, events[i].events, events[i].data);</div>
 <div class="line">    }</div>
 <div class="line">}</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__event__system_html_ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e"><div class="ttname"><a href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a></div><div class="ttdeci">void SocketPoll_add(SocketPoll_T poll, Socket_T socket, unsigned events, void *data)</div><div class="ttdoc">Register a socket for I/O event monitoring within the poll instance.</div></div>
 <div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
 <div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00181">SocketPoll.h:181</a></div></div>
 <div class="ttc" id="agroup__event__system_html_structSocketEvent__T"><div class="ttname"><a href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a></div><div class="ttdoc">Event notification structure returned by polling operations.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00205">SocketPoll.h:206</a></div></div>
 <div class="ttc" id="agroup__poll__private_html_structSocketPoll__T"><div class="ttname"><a href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></div><div class="ttdoc">Opaque internal state structure for SocketPoll instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00404">SocketPoll-private.h:405</a></div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md917"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1008"></a>
 Callback Style</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keywordtype">void</span> read_cb(evutil_socket_t fd, <span class="keywordtype">short</span> events, <span class="keywordtype">void</span> *arg) {</div>
 <div class="line">    <span class="keywordtype">char</span> buf[1024];</div>
@@ -356,7 +356,7 @@ Callback Style</h2>
 <div class="line">    }</div>
 <div class="line">}</div>
 <div class="ttc" id="agroup__core__io_html_ga95db343f47445925cecd6b20054518e9"><div class="ttname"><a href="group__core__io.html#ga95db343f47445925cecd6b20054518e9">Socket_recv</a></div><div class="ttdeci">ssize_t Socket_recv(Socket_T socket, void *buf, size_t len)</div><div class="ttdoc">Receive data.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md918"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1009"></a>
 Timers</h2>
 <p><b>libevent:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>event *timer = evtimer_new(base, timer_cb, arg);</div>
 <div class="line"><span class="keyword">struct </span>timeval tv = {5, 0};</div>
@@ -365,7 +365,7 @@ Timers</h2>
 <div class="line">SocketTimer_schedule(timer, 5000, timer_callback, userdata);</div>
 <div class="line"><span class="comment">/* Process in poll loop */</span></div>
 <div class="ttc" id="agroup__event__system_html_structSocketTimer__T"><div class="ttname"><a href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a></div><div class="ttdoc">Internal representation of a single scheduled timer event.</div><div class="ttdef"><b>Definition</b> <a href="SocketTimer-private_8h_source.html#l00140">SocketTimer-private.h:141</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md919"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1010"></a>
 API Mapping (libevent -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -392,9 +392,9 @@ API Mapping (libevent -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>bufferevent_*</code>   </td><td class="markdownTableBodyNone"><code>SocketBuf_T</code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md921"></a>
+<h1><a class="anchor" id="autotoc_md1012"></a>
 Migration from libev</h1>
-<h2><a class="anchor" id="autotoc_md922"></a>
+<h2><a class="anchor" id="autotoc_md1013"></a>
 Event Loop</h2>
 <p><b>libev:</b> </p><div class="fragment"><div class="line"><span class="keyword">struct </span>ev_loop *loop = ev_default_loop(0);</div>
 <div class="line">ev_io watcher;</div>
@@ -404,15 +404,15 @@ Event Loop</h2>
 </div><!-- fragment --><p><b>Socket Library:</b> </p><div class="fragment"><div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1000);</div>
 <div class="line"><a class="code hl_function" href="group__event__system.html#ga6c9f3f1a23dd85dd2d44ff9b0ced4e1e">SocketPoll_add</a>(poll, socket, <a class="code hl_enumvalue" href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a>, userdata);</div>
 <div class="line"> </div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <a class="code hl_struct" href="group__event__system.html#structSocketEvent__T">SocketEvent_T</a> events[100];</div>
 <div class="line">    <span class="keywordtype">int</span> n = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, events, 100, 1000);</div>
 <div class="line">    <span class="comment">/* Process events */</span></div>
 <div class="line">}</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md924"></a>
+<h1><a class="anchor" id="autotoc_md1015"></a>
 Migration from OpenSSL Direct</h1>
-<h2><a class="anchor" id="autotoc_md925"></a>
+<h2><a class="anchor" id="autotoc_md1016"></a>
 TLS Client</h2>
 <p><b>OpenSSL:</b> </p><div class="fragment"><div class="line">SSL_CTX *ctx = SSL_CTX_new(TLS_client_method());</div>
 <div class="line">SSL_CTX_set_min_proto_version(ctx, TLS1_3_VERSION);</div>
@@ -443,8 +443,8 @@ TLS Client</h2>
 <div class="ttc" id="agroup__security_html_gabdb38e692dde58bbec4ab905eeb8b3aa"><div class="ttname"><a href="group__security.html#gabdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS_send</a></div><div class="ttdeci">ssize_t SocketTLS_send(Socket_T socket, const void *buf, size_t len)</div><div class="ttdoc">Send data over TLS-encrypted connection.</div></div>
 <div class="ttc" id="agroup__security_html_gaea7ca3e656e9b58706fafc3232147203"><div class="ttname"><a href="group__security.html#gaea7ca3e656e9b58706fafc3232147203">SocketTLSContext_free</a></div><div class="ttdeci">void SocketTLSContext_free(SocketTLSContext_T *ctx_p)</div><div class="ttdoc">Dispose of TLS context and resources.</div></div>
 <div class="ttc" id="agroup__security_html_gaeaa77dd7852b535baf17b53ee2518454"><div class="ttname"><a href="group__security.html#gaeaa77dd7852b535baf17b53ee2518454">SocketTLS_handshake</a></div><div class="ttdeci">TLSHandshakeState SocketTLS_handshake(Socket_T socket)</div><div class="ttdoc">Perform non-blocking TLS handshake.</div></div>
-<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00738">SocketTLS-private.h:739</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md926"></a>
+<div class="ttc" id="agroup__security_html_structSocketTLSContext__T"><div class="ttname"><a href="group__security.html#structSocketTLSContext__T">SocketTLSContext_T</a></div><div class="ttdoc">TLS context structure for managing OpenSSL SSL_CTX with secure defaults, certificates,...</div><div class="ttdef"><b>Definition</b> <a href="SocketTLS-private_8h_source.html#l00619">SocketTLS-private.h:620</a></div></div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1017"></a>
 API Mapping (OpenSSL -&gt; Socket Library)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -475,9 +475,9 @@ API Mapping (OpenSSL -&gt; Socket Library)</h2>
 <td class="markdownTableBodyNone"><code>SSL_get_cipher()</code>   </td><td class="markdownTableBodyNone"><code><a class="el" href="group__security.html#ga0859f0a6e05840bdc037c3765e22b7b1" title="Get negotiated cipher suite name.">SocketTLS_get_cipher()</a></code>   </td></tr>
 </table>
 <hr  />
-<h1><a class="anchor" id="autotoc_md928"></a>
+<h1><a class="anchor" id="autotoc_md1019"></a>
 Common Patterns</h1>
-<h2><a class="anchor" id="autotoc_md929"></a>
+<h2><a class="anchor" id="autotoc_md1020"></a>
 Error Handling Pattern</h2>
 <p><b>Other Libraries (error codes):</b> </p><div class="fragment"><div class="line"><span class="keywordtype">int</span> result = some_function();</div>
 <div class="line"><span class="keywordflow">if</span> (result &lt; 0) {</div>
@@ -497,7 +497,7 @@ Error Handling Pattern</h2>
 <div class="line">    <span class="comment">/* error - Socket_GetLastError() for details */</span></div>
 <div class="line">}</div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md930"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md1021"></a>
 Resource Cleanup Pattern</h2>
 <p><b>Other Libraries:</b> </p><div class="fragment"><div class="line">Socket *sock = create_socket();</div>
 <div class="line"><span class="keywordflow">if</span> (!sock) <span class="keywordflow">goto</span> cleanup;</div>
@@ -519,23 +519,23 @@ Resource Cleanup Pattern</h2>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="agroup__foundation_html_ga0e2a75478cd44f1666a6aca626c5c50b"><div class="ttname"><a href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a></div><div class="ttdeci">#define FINALLY</div><div class="ttdoc">Define cleanup code that executes regardless of exceptions.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l01326">Except.h:1326</a></div></div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md932"></a>
+<h1><a class="anchor" id="autotoc_md1023"></a>
 Key Differences</h1>
-<h2><a class="anchor" id="autotoc_md933"></a>
+<h2><a class="anchor" id="autotoc_md1024"></a>
 Memory Management</h2>
 <ul>
 <li><b>Arena allocation</b> - Related objects allocated together</li>
 <li><b>Automatic cleanup</b> - <a class="el" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d" title="Dispose of an arena and all its allocations, freeing underlying memory chunks.">Arena_dispose()</a> frees everything</li>
 <li><b>No manual free</b> for individual objects in arena</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md934"></a>
+<h2><a class="anchor" id="autotoc_md1025"></a>
 Error Handling</h2>
 <ul>
 <li><b>Exceptions</b> instead of error codes</li>
 <li><b>Thread-local</b> error messages</li>
 <li><b>Detailed context</b> in exceptions</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md935"></a>
+<h2><a class="anchor" id="autotoc_md1026"></a>
 Thread Safety</h2>
 <ul>
 <li><b>Instance-based</b> - One instance per thread</li>
@@ -543,7 +543,7 @@ Thread Safety</h2>
 <li><b>No global state</b></li>
 </ul>
 <hr  />
-<h1><a class="anchor" id="autotoc_md937"></a>
+<h1><a class="anchor" id="autotoc_md1028"></a>
 Getting Started</h1>
 <ol type="1">
 <li><b>Replace socket creation</b> with <code><a class="el" href="group__core__io.html#ga6212fb2b6eefa567592a59f55c25a6f1" title="Create a new socket with specified domain, type, and protocol.">Socket_new()</a></code></li>
@@ -554,7 +554,7 @@ Getting Started</h1>
 <li><b>Enable TLS</b> with <code><a class="el" href="group__security.html#gab9a8fb788aa1f0d21b5773bc43a48d6f" title="Enable TLS on a socket using the provided context.">SocketTLS_enable()</a></code> for HTTPS</li>
 </ol>
 <hr  />
-<h1><a class="anchor" id="autotoc_md939"></a>
+<h1><a class="anchor" id="autotoc_md1030"></a>
 See Also</h1>
 <ul>
 <li><a class="el" href="http_guide.html">HTTP Guide</a></li>

@@ -14,6 +14,7 @@ var group__core__io_structSocketBase__T =
     [ "remote_addrlen", "group__core__io.html#a0553821afb7b1028576f1d2c5efa737b", null ],
     [ "remoteaddr", "group__core__io.html#aceb1ee55b03c6fd1c0f7181f9602a5fe", null ],
     [ "remoteport", "group__core__io.html#afd758e86987da928869ef3423702657b", null ],
+    [ "stats", "group__core__io.html#a12bc6e41774944e9ffcb432818c5b650", null ],
     [ "timeouts", "group__core__io.html#ae8e8251cc5e3777f97ff402b5040404c", null ],
     [ "type", "group__core__io.html#a2c7f813a92514f2cb7389bf3b92ae46b", null ]
 ];

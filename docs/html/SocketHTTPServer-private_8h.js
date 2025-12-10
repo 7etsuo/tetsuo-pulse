@@ -11,5 +11,6 @@ var SocketHTTPServer_private_8h =
       [ "CONN_STATE_SENDING_RESPONSE", "group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6ad69b80f38fd99efdbeacc02584ec1e8c", null ],
       [ "CONN_STATE_CLOSED", "group__http.html#gga2f08f039d21b354ac9e74c026ffa84a6a789a51a79c10caae10604554eb601e74", null ]
     ] ],
+    [ "connection_send_error", "group__http.html#ga78ff9a4160aa8d2d7909b8f165fd74dd", null ],
     [ "SOCKET_DECLARE_MODULE_EXCEPTION", "SocketHTTPServer-private_8h.html#a414a240e03c5900e3e14930b208125d3", null ]
 ];

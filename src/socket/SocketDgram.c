@@ -460,9 +460,10 @@ SocketDgram_setttl (T socket, int ttl)
   int socket_family;
   assert (socket);
 
-  if (ttl < 1 || ttl > 255)
+  if (ttl < 1 || ttl > SOCKET_MAX_TTL)
     {
-      SOCKET_ERROR_MSG ("Invalid TTL value: %d (must be 1-255)", ttl);
+      SOCKET_ERROR_MSG ("Invalid TTL value: %d (must be 1-%d)", ttl,
+                        SOCKET_MAX_TTL);
       RAISE_MODULE_ERROR (SocketDgram_Failed);
     }
 

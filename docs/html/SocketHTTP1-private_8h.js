@@ -1,10 +1,15 @@
 var SocketHTTP1_private_8h =
 [
+    [ "HTTP1_CRLF_LEN", "group__http1__private.html#ga833f77660f54619d605c38473ed04ef1", null ],
+    [ "HTTP1_CRLF_STR", "group__http1__private.html#ga3de8e5d179cf9d6dc99bd5328f2b4793", null ],
     [ "HTTP1_DEFAULT_HEADER_NAME_BUF_SIZE", "group__http1__private.html#gaa750a4a233ab27ba2857e2ab63258535", null ],
     [ "HTTP1_DEFAULT_HEADER_VALUE_BUF_SIZE", "group__http1__private.html#ga5943569b15eb4a4ad46e352e21ea14ea", null ],
     [ "HTTP1_DEFAULT_METHOD_BUF_SIZE", "group__http.html#gae09fc6308bb228c3eb507ec485846076", null ],
     [ "HTTP1_DEFAULT_REASON_BUF_SIZE", "group__http1__private.html#ga362225da7c45277cb41d4135c22e635b", null ],
     [ "HTTP1_DEFAULT_URI_BUF_SIZE", "group__http1__private.html#ga4738efb4bea5ccacccfc1be5a105cb13", null ],
+    [ "HTTP1_HEADER_SEP_LEN", "group__http1__private.html#gaa609a8ec0f40fe483965c96b89658520", null ],
+    [ "HTTP1_HEADER_SEP_STR", "group__http1__private.html#ga427358fd1a7a113e37c28936b213cac5", null ],
+    [ "HTTP1_HEX_RADIX", "group__http1__private.html#gad0eee87e865b999e8056b135f0d59073", null ],
     [ "http1_hex_value", "group__http.html#ga683b2be81e4af9b09423fa3c2a5c7eb0", null ],
     [ "http1_is_digit", "group__http.html#gaff5dc6e13b07479e1b825ecc2e11eb57", null ],
     [ "http1_is_field_vchar", "group__http.html#ga08806d6bccfe78181471506d451e0714", null ],
@@ -13,6 +18,8 @@ var SocketHTTP1_private_8h =
     [ "http1_is_ows", "group__http.html#ga6594d0715c53c5e9e378da5b9ee77273", null ],
     [ "http1_is_tchar", "group__http.html#gad098b78544bfd51e17a57911075fe03f", null ],
     [ "http1_is_vchar", "group__http.html#ga9329808739b93de1cbadaaf106822798", null ],
+    [ "HTTP1_SP_LEN", "group__http1__private.html#ga441e6bc3c644d405a65b676adba6b530", null ],
+    [ "HTTP1_SP_STR", "group__http1__private.html#ga3288d36f2a2855c4cfd01ef77d1922e5", null ],
     [ "HTTP1_Action", "group__http1__private.html#gaf958f972f68a3e764050f88c3475f37e", [
       [ "HTTP1_ACT_NONE", "group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ea10c8525ecd04bf01bbcb70feb7412129", null ],
       [ "HTTP1_ACT_STORE_METHOD", "group__http1__private.html#ggaf958f972f68a3e764050f88c3475f37ead977c273af054d9012962da8cee85da7", null ],

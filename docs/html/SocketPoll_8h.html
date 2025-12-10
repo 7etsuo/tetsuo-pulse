@@ -210,6 +210,15 @@ Functions</h2></td></tr>
 <tr class="memitem:gac79e719de24f09f84eb3816b3ab60c65" id="r_gac79e719de24f09f84eb3816b3ab60c65"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gac79e719de24f09f84eb3816b3ab60c65">SocketPoll_getregisteredcount</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
 <tr class="memdesc:gac79e719de24f09f84eb3816b3ab60c65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get current registered socket count.  <br /></td></tr>
 <tr class="separator:gac79e719de24f09f84eb3816b3ab60c65"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga6738f488e8f1e6ecdb5378558cb60d0d" id="r_ga6738f488e8f1e6ecdb5378558cb60d0d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga6738f488e8f1e6ecdb5378558cb60d0d">SocketPoll_get_backend_name</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll)</td></tr>
+<tr class="memdesc:ga6738f488e8f1e6ecdb5378558cb60d0d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the name of the polling backend in use.  <br /></td></tr>
+<tr class="separator:ga6738f488e8f1e6ecdb5378558cb60d0d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga3d325d274b1961db5b3e838b740c9813" id="r_ga3d325d274b1961db5b3e838b740c9813"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga3d325d274b1961db5b3e838b740c9813">SocketPoll_get_registered_sockets</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, Socket_T *sockets, int max)</td></tr>
+<tr class="memdesc:ga3d325d274b1961db5b3e838b740c9813"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get list of currently registered sockets.  <br /></td></tr>
+<tr class="separator:ga3d325d274b1961db5b3e838b740c9813"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gaa1f994f0aac83e9119aea12a4f3ddb89" id="r_gaa1f994f0aac83e9119aea12a4f3ddb89"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gaa1f994f0aac83e9119aea12a4f3ddb89">SocketPoll_modify_events</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, Socket_T socket, unsigned add_events, unsigned remove_events)</td></tr>
+<tr class="memdesc:gaa1f994f0aac83e9119aea12a4f3ddb89"><td class="mdescLeft">&#160;</td><td class="mdescRight">Modify event mask for a registered socket (add or remove flags).  <br /></td></tr>
+<tr class="separator:gaa1f994f0aac83e9119aea12a4f3ddb89"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>

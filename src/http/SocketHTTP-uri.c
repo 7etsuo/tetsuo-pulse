@@ -1063,21 +1063,23 @@ SocketHTTP_URI_build (const SocketHTTP_URI *uri, char *output,
  * is_token_char - Check if character is valid HTTP token character (RFC 7230)
  * @c: Character to check
  *
+ * Uses the centralized SOCKETHTTP_IS_TCHAR table lookup for O(1) validation.
+ *
  * Returns: Non-zero if valid token char, zero otherwise
  */
 static inline int
 is_token_char (unsigned char c)
 {
-  return isalnum (c) || c == '!' || c == '#' || c == '$' || c == '%'
-         || c == '&' || c == '\'' || c == '*' || c == '+' || c == '-'
-         || c == '.' || c == '^' || c == '_' || c == '`' || c == '|'
-         || c == '~';
+  return SOCKETHTTP_IS_TCHAR (c);
 }
 
 /**
  * validate_token_span - Validate entire span consists of HTTP token chars
  * @start: Start of span
  * @len: Length of span
+ *
+ * Uses the centralized SOCKETHTTP_IS_TCHAR table lookup for O(1) per-char
+ * validation.
  *
  * Returns: 1 if all characters are valid tokens, 0 otherwise
  */
@@ -1086,7 +1088,7 @@ validate_token_span (const char *start, size_t len)
 {
   for (size_t i = 0; i < len; i++)
     {
-      if (!is_token_char ((unsigned char)start[i]))
+      if (!SOCKETHTTP_IS_TCHAR (start[i]))
         return 0;
     }
   return 1;

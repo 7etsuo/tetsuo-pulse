@@ -255,14 +255,6 @@ except_store_exception (Except_Frame *frame, const Except_T *e,
 
 /**
  * except_pop_frame - Unwind exception stack by popping current frame
- * @frame: Current exception frame to pop
- *
- * Updates the thread-local exception stack to point to the previous frame.
- *
- * Thread-safe: Yes (thread-local storage)
- */
-/**
- * except_pop_frame - Unwind exception stack by popping current frame
  * @frame: Current exception frame to pop (must not be NULL)
  *
  * Updates the thread-local exception stack to point to the previous frame.
@@ -278,14 +270,6 @@ except_pop_frame (Except_Frame *frame)
   Except_stack = frame->prev;
 }
 
-/**
- * except_jump_to_handler - Perform non-local jump to exception handler
- * @frame: Exception frame containing jump buffer
- *
- * This function does not return - it performs a longjmp to the TRY block.
- *
- * Thread-safe: Yes (operates on caller's frame)
- */
 /**
  * except_jump_to_handler - Perform non-local jump to exception handler
  * @frame: Exception frame containing jump buffer (must not be NULL)

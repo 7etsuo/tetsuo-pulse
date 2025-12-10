@@ -20,9 +20,7 @@
 #include "socket/SocketReconnect.h"
 /* SocketUtil.h included via SocketPool-private.h */
 
-/* Override default log component (SocketUtil.h sets "Socket") */
-#undef SOCKET_LOG_COMPONENT
-#define SOCKET_LOG_COMPONENT "SocketPool"
+/* SOCKET_LOG_COMPONENT defined in SocketPool-private.h */
 
 #define T SocketPool_T
 
@@ -343,6 +341,11 @@ initialize_pool_mutex (T pool)
 static void
 build_free_list (T pool, size_t maxconns)
 {
+  /* CRITICAL: Initialize free_list to NULL before building the chain.
+   * Without this, the first connection's free_next would be garbage,
+   * causing infinite loop when iterating the free list in shrink(). */
+  pool->free_list = NULL;
+
   for (size_t i = maxconns; i > 0; --i)
     {
       struct Connection *conn = &pool->connections[i - 1];

@@ -1,5 +1,9 @@
 var SocketHTTPClient_private_8h =
 [
+    [ "HTTPCLIENT_BASIC_PREFIX", "SocketHTTPClient-private_8h.html#af969e108480310cf66140e89a88b3da7", null ],
+    [ "HTTPCLIENT_BASIC_PREFIX_LEN", "SocketHTTPClient-private_8h.html#aac29b553074a8e98fd2925b1ecc9dcf3", null ],
+    [ "HTTPCLIENT_BEARER_PREFIX", "SocketHTTPClient-private_8h.html#adad5ff1ecc4bad718c9c7bd0a386f1e1", null ],
+    [ "HTTPCLIENT_BEARER_PREFIX_LEN", "SocketHTTPClient-private_8h.html#a0edba3dd03e4aecc2ee61250210300b6", null ],
     [ "HTTPCLIENT_DIGEST_A_BUFFER_SIZE", "SocketHTTPClient-private_8h.html#a3db68e362a4cd23917b2e2b6dc05ef22", null ],
     [ "HTTPCLIENT_DIGEST_ALGORITHM_MAX_LEN", "SocketHTTPClient-private_8h.html#aca4e69f011e9351cdc536e4ff39e1fc8", null ],
     [ "HTTPCLIENT_DIGEST_BASIC_PREFIX", "SocketHTTPClient-private_8h.html#ae66a7ce0f5a7adb89c206d35e2f63668", null ],

@@ -111,6 +111,7 @@ $(document).ready(function(){initNavTree('SocketAsync_8h.html',''); initResizabl
 
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Macros</a> &#124;
 <a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
@@ -141,6 +142,12 @@ $(document).ready(function(){initNavTree('SocketAsync_8h.html',''); initResizabl
 </div>
 <p><a href="SocketAsync_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Data Structures</h2></td></tr>
+<tr class="memitem:structSocketAsync__Op" id="r_structSocketAsync__Op"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a></td></tr>
+<tr class="memdesc:structSocketAsync__Op"><td class="mdescLeft">&#160;</td><td class="mdescRight">Async operation descriptor for batch submission.  <a href="group__async__io.html#structSocketAsync__Op">More...</a><br /></td></tr>
+<tr class="separator:structSocketAsync__Op"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="define-members" name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:ga0acb682b8260ab1c60b918599864e2e5" id="r_ga0acb682b8260ab1c60b918599864e2e5"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga0acb682b8260ab1c60b918599864e2e5">T</a>&#160;&#160;&#160;<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a></td></tr>
@@ -165,6 +172,20 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:gae66259c675b6f9658c95d34e1fbfefdf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bit flags to control behavior of asynchronous I/O operations.  <a href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">More...</a><br /></td></tr>
 <tr class="separator:gae66259c675b6f9658c95d34e1fbfefdf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga24d405b3be635f02866bbde768cd25d2" id="r_ga24d405b3be635f02866bbde768cd25d2"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> { <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a859cc2d974e5262e4a5d57271365b89c">ASYNC_BACKEND_AUTO</a> = 0
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a920a63bf50729d81f35b30872a768b4d">ASYNC_BACKEND_IO_URING</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2ac0cc203a353faa0167083dfdfa43b200">ASYNC_BACKEND_KQUEUE</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a90e2a0cec9e33dd5fba8e51b87605067">ASYNC_BACKEND_POLL</a>
+, <br />
+&#160;&#160;<a class="el" href="group__async__io.html#gga24d405b3be635f02866bbde768cd25d2a271e5a811d8915068dea53264a8695d8">ASYNC_BACKEND_NONE</a>
+<br />
+ }</td></tr>
+<tr class="memdesc:ga24d405b3be635f02866bbde768cd25d2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Backend type identifiers for runtime selection.  <a href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">More...</a><br /></td></tr>
+<tr class="separator:ga24d405b3be635f02866bbde768cd25d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
@@ -192,6 +213,18 @@ Functions</h2></td></tr>
 <tr class="memitem:gafae22c23e82d55f6fa3eaf74c0c37f5d" id="r_gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync_backend_name</a> (const <a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
 <tr class="memdesc:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the name of the active asynchronous backend.  <br /></td></tr>
 <tr class="separator:gafae22c23e82d55f6fa3eaf74c0c37f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae43318fc62792b6730cd3966912ded85" id="r_gae43318fc62792b6730cd3966912ded85"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae43318fc62792b6730cd3966912ded85">SocketAsync_submit_batch</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async, <a class="el" href="group__async__io.html#structSocketAsync__Op">SocketAsync_Op</a> *ops, size_t count)</td></tr>
+<tr class="memdesc:gae43318fc62792b6730cd3966912ded85"><td class="mdescLeft">&#160;</td><td class="mdescRight">Submit multiple async operations in a single call.  <br /></td></tr>
+<tr class="separator:gae43318fc62792b6730cd3966912ded85"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga534a39bfb57ab257465c0dbdb5e52fd2" id="r_ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2">SocketAsync_cancel_all</a> (<a class="el" href="group__async__io.html#structSocketAsync__T">SocketAsync_T</a> async)</td></tr>
+<tr class="memdesc:ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel all pending async operations.  <br /></td></tr>
+<tr class="separator:ga534a39bfb57ab257465c0dbdb5e52fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gae2b2e59aaa4d0620c5c064447a2d1fd8" id="r_gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync_backend_available</a> (<a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> backend)</td></tr>
+<tr class="memdesc:gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if a specific backend is available at runtime.  <br /></td></tr>
+<tr class="separator:gae2b2e59aaa4d0620c5c064447a2d1fd8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga909ff893fe99d63d68c29102f3f90600" id="r_ga909ff893fe99d63d68c29102f3f90600"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600">SocketAsync_set_backend</a> (<a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync_Backend</a> backend)</td></tr>
+<tr class="memdesc:ga909ff893fe99d63d68c29102f3f90600"><td class="mdescLeft">&#160;</td><td class="mdescRight">Request a specific async backend for new contexts.  <br /></td></tr>
+<tr class="separator:ga909ff893fe99d63d68c29102f3f90600"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -202,7 +235,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Platform-optimized asynchronous I/O for high-performance networking. </p>
 <p>This header defines the SocketAsync API for submitting non-blocking send/recv operations to kernel or user-space async mechanisms, with callback completion. Enables scalable I/O without busy-waiting or thread-per-connection models.</p>
-<h2><a class="anchor" id="autotoc_md392"></a>
+<h2><a class="anchor" id="autotoc_md459"></a>
 Features</h2>
 <ul>
 <li><b>Native Backends</b>: io_uring (Linux), kqueue AIO (BSD/macOS), poll fallback</li>
@@ -212,7 +245,7 @@ Features</h2>
 <li><b>Thread-Safe</b>: Concurrent submissions and processing</li>
 <li><b>Fallback Graceful</b>: Transparent degradation on unsupported platforms</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md393"></a>
+<h2><a class="anchor" id="autotoc_md460"></a>
 Platform Support</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">

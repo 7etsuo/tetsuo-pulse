@@ -132,7 +132,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>shutdown_workers()&#160;:&#160;<a class="el" href="group__dns.html#ga6b30e5d8a0c4c61b78414c87fc2e6ad6">SocketDNS-private.h</a></li>
 <li>signal_completion()&#160;:&#160;<a class="el" href="group__dns.html#ga01e5cc089ceff56a8558e455b94c8254">SocketDNS-private.h</a></li>
 <li>SIGNAL_DNS_COMPLETION&#160;:&#160;<a class="el" href="group__dns.html#ga6aa3910745c244fe5ce4c66b7e31ce58">SocketDNS-private.h</a></li>
-<li>signal_handler()&#160;:&#160;<a class="el" href="graceful__shutdown_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">graceful_shutdown.c</a>, <a class="el" href="http__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">http_server.c</a>, <a class="el" href="websocket__client_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_client.c</a>, <a class="el" href="websocket__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_server.c</a></li>
+<li>signal_handler()&#160;:&#160;<a class="el" href="graceful__shutdown_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">graceful_shutdown.c</a>, <a class="el" href="http__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">http_server.c</a>, <a class="el" href="tcp__echo__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">tcp_echo_server.c</a>, <a class="el" href="udp__echo__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">udp_echo_server.c</a>, <a class="el" href="websocket__client_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_client.c</a>, <a class="el" href="websocket__server_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">websocket_server.c</a>, <a class="el" href="connection__pool_8c.html#ac8e66a8857ca7f368cfc16bdbbac37d9">connection_pool.c</a></li>
+<li>simulate_work_wrapper()&#160;:&#160;<a class="el" href="connection__pool_8c.html#a43b44b2a826a1b75b25fe990d66c80c0">connection_pool.c</a></li>
 <li>SOCKET_AF_INET&#160;:&#160;<a class="el" href="group__core__io.html#ga04ce265041d74932e7d3354651fd0a79">SocketConfig.h</a></li>
 <li>SOCKET_AF_INET6&#160;:&#160;<a class="el" href="group__core__io.html#ga7a754a1f4470597ea52da2a678378100">SocketConfig.h</a></li>
 <li>SOCKET_AF_UNIX&#160;:&#160;<a class="el" href="group__core__io.html#gaf26b9f671650b58e0bd264a71ec3cbfa">SocketConfig.h</a></li>
@@ -216,7 +217,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_CTR_TLS_RENEGOTIATIONS&#160;:&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3aaf76f030b15e405bba3d7d83b2f360">SocketMetrics.h</a></li>
 <li>SOCKET_CTR_TLS_SESSION_REUSE_COUNT&#160;:&#160;<a class="el" href="group__utilities.html#gga1c2d3a4ca0a94b5d52917b2020796ceea3ddea97b6728cd7d48218615e95926a4">SocketMetrics.h</a></li>
 <li>SOCKET_DATA_HASH_SIZE&#160;:&#160;<a class="el" href="group__event__system.html#ga7c0e59971e52bc0a110b2a7066ea2732">SocketPoll-private.h</a></li>
-<li>SOCKET_DECLARE_MODULE_EXCEPTION()&#160;:&#160;<a class="el" href="SocketHTTPServer-private_8h.html#a414a240e03c5900e3e14930b208125d3">SocketHTTPServer-private.h</a>, <a class="el" href="SocketUtil_8h.html#a9a80f14591d4cdb7347af54b5f66e766">SocketUtil.h</a></li>
+<li>SOCKET_DECLARE_MODULE_EXCEPTION&#160;:&#160;<a class="el" href="SocketUtil_8h.html#a9a80f14591d4cdb7347af54b5f66e766">SocketUtil.h</a>, <a class="el" href="SocketHTTPServer-private_8h.html#a414a240e03c5900e3e14930b208125d3">SocketHTTPServer-private.h</a></li>
 <li>SOCKET_DEFAULT_CONNECT_TIMEOUT_MS&#160;:&#160;<a class="el" href="group__foundation.html#gaaa099b2101176b12abb25299a6ac5bd1">SocketConfig.h</a></li>
 <li>SOCKET_DEFAULT_DATAGRAM_TTL&#160;:&#160;<a class="el" href="group__core__io.html#ga4c36ad0507aab15f0b59b4ccde5dfb31">SocketConfig.h</a></li>
 <li>SOCKET_DEFAULT_DNS_TIMEOUT_MS&#160;:&#160;<a class="el" href="group__core__io.html#gac01d46f482abd08d6fb51a115b3590c4">SocketConfig.h</a></li>
@@ -234,7 +235,10 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>socket_default_timeouts_mutex&#160;:&#160;<a class="el" href="SocketCommon_8h.html#a9c962297b30fb9c609c3170d508a8c12">SocketCommon.h</a></li>
 <li>SOCKET_DEFAULT_TLS_TIMEOUT_MS&#160;:&#160;<a class="el" href="group__foundation.html#ga1b06aa0632dd6d7cb1eaea90a2aadcd8">SocketConfig.h</a></li>
 <li>SOCKET_DGRAM_TYPE&#160;:&#160;<a class="el" href="group__core__io.html#gaeb19a3aa101d92d9befe7a980238bf0d">SocketConfig.h</a></li>
+<li>SOCKET_DNS_CACHE_HASH_SIZE&#160;:&#160;<a class="el" href="group__core__io.html#gaa40398fc3798e6302da2f39fcc3b9c64">SocketConfig.h</a></li>
 <li>SOCKET_DNS_COMPLETION_SIGNAL_BYTE&#160;:&#160;<a class="el" href="group__core__io.html#ga38939e0f4010e9cc311360b1d974d068">SocketConfig.h</a></li>
+<li>SOCKET_DNS_DEFAULT_CACHE_MAX_ENTRIES&#160;:&#160;<a class="el" href="group__core__io.html#ga176cef29fe829568359c936376db272e">SocketConfig.h</a></li>
+<li>SOCKET_DNS_DEFAULT_CACHE_TTL_SECONDS&#160;:&#160;<a class="el" href="group__core__io.html#ga718d350473539fc8a704e3afa05bb694">SocketConfig.h</a></li>
 <li>SOCKET_DNS_MAX_LABEL_LENGTH&#160;:&#160;<a class="el" href="group__core__io.html#gab9d107f9984dd45f9ba4b1618ad373ad">SocketConfig.h</a></li>
 <li>SOCKET_DNS_MAX_PENDING&#160;:&#160;<a class="el" href="group__core__io.html#gafe6640a153bf74038b7a011808d6bf78">SocketConfig.h</a></li>
 <li>SOCKET_DNS_PIPE_BUFFER_SIZE&#160;:&#160;<a class="el" href="group__core__io.html#gaabf88e7e79136014eb538ec90cf2a0f4">SocketConfig.h</a></li>
@@ -267,6 +271,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_DTLS_MIN_MTU&#160;:&#160;<a class="el" href="group__dtls__config.html#ga4e20e95db1f3cb5f21c2d10649ac36da">SocketDTLSConfig.h</a></li>
 <li>SOCKET_DTLS_MIN_VERSION&#160;:&#160;<a class="el" href="group__dtls__config.html#gabc3e53580ef4039e6bd2b0453f1dec35">SocketDTLSConfig.h</a></li>
 <li>SOCKET_DTLS_OPENSSL_ERRSTR_BUFSIZE&#160;:&#160;<a class="el" href="group__dtls__config.html#ga83416fe8d965d7133943298dcd693bd3">SocketDTLSConfig.h</a></li>
+<li>SOCKET_DTLS_PEER_CACHE_TTL_MS&#160;:&#160;<a class="el" href="group__dtls__config.html#gac0ca0fd6096fc77e81ca4848dc02b37a">SocketDTLSConfig.h</a></li>
 <li>SOCKET_DTLS_RECORD_OVERHEAD&#160;:&#160;<a class="el" href="group__dtls__config.html#gadc0eac3a553975d605f281a788d3a884">SocketDTLSConfig.h</a></li>
 <li>SOCKET_DTLS_SESSION_CACHE_SIZE&#160;:&#160;<a class="el" href="group__dtls__config.html#ga5752ace7cf4781e4dad0786bd493af2e">SocketDTLSConfig.h</a></li>
 <li>SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT&#160;:&#160;<a class="el" href="group__dtls__config.html#ga2b97166b3033d92fb8fb9dca5c70ea4f">SocketDTLSConfig.h</a></li>
@@ -411,9 +416,12 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_IPV6_UNICAST_HOPS&#160;:&#160;<a class="el" href="group__core__io.html#ga6718d10ef55392425b3e4eea07ee15ce">SocketConfig.h</a></li>
 <li>SOCKET_IPV6_V6ONLY&#160;:&#160;<a class="el" href="group__core__io.html#gabc73d2f6f2da35365e09b28eff6364b8">SocketConfig.h</a></li>
 <li>socket_is_tls_enabled()&#160;:&#160;<a class="el" href="group__core__io.html#gabc70395a3d965153d4502752c496544e">SocketIO.h</a></li>
+<li>SOCKET_KEEPALIVE_MAX_COUNT&#160;:&#160;<a class="el" href="group__core__io.html#ga7b31ca82a1d8746c1cb6465b8b186ad6">SocketConfig.h</a></li>
+<li>SOCKET_KEEPALIVE_MAX_IDLE&#160;:&#160;<a class="el" href="group__core__io.html#gacd4fa06ce19af6f368a12df79ff7ad66">SocketConfig.h</a></li>
+<li>SOCKET_KEEPALIVE_MAX_INTERVAL&#160;:&#160;<a class="el" href="group__core__io.html#gab1ea2cf17f9bdb3c1486b5507a909b51">SocketConfig.h</a></li>
 <li>socket_last_errno&#160;:&#160;<a class="el" href="SocketUtil_8h.html#af5b8b680923b7f67d1ec0aa8c0b0434e">SocketUtil.h</a></li>
 <li>SOCKET_LOG_BUFFER_SIZE&#160;:&#160;<a class="el" href="group__utilities.html#ga6359d7f5856bc1d8e19de36b71156f7a">SocketConfig.h</a></li>
-<li>SOCKET_LOG_COMPONENT&#160;:&#160;<a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SocketUtil.h</a>, <a class="el" href="SocketHTTPClient-private_8h.html#ae461bf5ddae6eda683926a6303af87f6">SocketHTTPClient-private.h</a>, <a class="el" href="group__proxy__private.html#gae461bf5ddae6eda683926a6303af87f6">SocketProxy-private.h</a></li>
+<li>SOCKET_LOG_COMPONENT&#160;:&#160;<a class="el" href="SocketUtil_8h.html#ae461bf5ddae6eda683926a6303af87f6">SocketUtil.h</a>, <a class="el" href="SocketHTTPClient-private_8h.html#ae461bf5ddae6eda683926a6303af87f6">SocketHTTPClient-private.h</a>, <a class="el" href="group__connection__mgmt.html#gae461bf5ddae6eda683926a6303af87f6">SocketPool-private.h</a>, <a class="el" href="group__proxy__private.html#gae461bf5ddae6eda683926a6303af87f6">SocketProxy-private.h</a></li>
 <li>SOCKET_LOG_DEBUG&#160;:&#160;<a class="el" href="group__foundation.html#ggadf209a9f107e88a5df277fcc3e2641d1afcef44613645b3fd4a45bf5b4bfdbba7">SocketUtil.h</a></li>
 <li>SOCKET_LOG_DEBUG_MSG&#160;:&#160;<a class="el" href="SocketUtil_8h.html#a7853a630bcaead9d41536ccbfd598f6d">SocketUtil.h</a></li>
 <li>SOCKET_LOG_DEFAULT_TIMESTAMP&#160;:&#160;<a class="el" href="group__utilities.html#ga88eea454f08ac7601d29bde68168ba5d">SocketConfig.h</a></li>
@@ -434,7 +442,9 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_LOG_WARN&#160;:&#160;<a class="el" href="group__foundation.html#ggadf209a9f107e88a5df277fcc3e2641d1ae3b46610cd2f65cecc4fa333a827212c">SocketUtil.h</a></li>
 <li>SOCKET_LOG_WARN_MSG&#160;:&#160;<a class="el" href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SocketUtil.h</a></li>
 <li>SOCKET_MAX_BUFFER_SIZE&#160;:&#160;<a class="el" href="group__foundation.html#ga72443e4b95fbd8ef4d191b754b4324dc">SocketConfig.h</a></li>
+<li>SOCKET_MAX_CONGESTION_ALGO_LEN&#160;:&#160;<a class="el" href="group__core__io.html#ga73ce13cff9dec99c824f8594e22f159e">SocketConfig.h</a></li>
 <li>SOCKET_MAX_CONNECTIONS&#160;:&#160;<a class="el" href="group__foundation.html#ga72f1e9bc10cc82fb4ee1915335d60152">SocketConfig.h</a></li>
+<li>SOCKET_MAX_DEFER_ACCEPT_SEC&#160;:&#160;<a class="el" href="group__core__io.html#gad2e12edc544b767b4c90fcc27f2dd2f0">SocketConfig.h</a></li>
 <li>SOCKET_MAX_EVENT_BATCH&#160;:&#160;<a class="el" href="group__async__io.html#ga5528f1e60147c0bb8dfa520faa03988e">SocketConfig.h</a></li>
 <li>SOCKET_MAX_FDS_PER_MSG&#160;:&#160;<a class="el" href="group__core__io.html#ga9b64483d1dd5d32bba7937741c36cabf">SocketConfig.h</a></li>
 <li>SOCKET_MAX_LISTEN_BACKLOG&#160;:&#160;<a class="el" href="group__core__io.html#ga2fb10bfccfe83fb0bb5873949cf8a2f7">SocketConfig.h</a></li>
@@ -501,7 +511,11 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_POOL_DEFAULT_PREWARM_PCT&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga46e9cd9dc6e5eabbe91e5fa71ec00b81">SocketConfig.h</a></li>
 <li>SOCKET_POOL_MAX_ASYNC_PENDING&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gae34901523f9a628eab93a9f50bf70366">SocketConfig.h</a></li>
 <li>SOCKET_POOL_MAX_BATCH_ACCEPTS&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga331e1002cf6dfb30695f5af41625cf46">SocketConfig.h</a></li>
+<li>SOCKET_POOL_MAX_BURST_MULTIPLIER&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga7ea8374cf5055b8fe5b30a0f57b4405e">SocketConfig.h</a></li>
+<li>SOCKET_POOL_MAX_CONNECTIONS_PER_IP&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga91891177acf4458552ad96ff6e2ae29e">SocketConfig.h</a></li>
+<li>SOCKET_POOL_MAX_RATE_PER_SEC&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaa74a3828cb86356140cb80cd1d0e688e">SocketConfig.h</a></li>
 <li>SOCKET_POOL_STATS_WINDOW_SEC&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaa6d9e9b8f4116f114766da91e8dd0744">SocketConfig.h</a></li>
+<li>SOCKET_POOL_TOKENS_PER_ACCEPT&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaa73d5adbdff8bd8738401ab2b2a7a9a3">SocketConfig.h</a></li>
 <li>SOCKET_PORT_STR_BUFSIZE&#160;:&#160;<a class="el" href="group__foundation.html#gaa5594e0bf4a9a492cc6e9dd7bcdae74c">SocketConfig.h</a></li>
 <li>SOCKET_PORT_VALID_RANGE&#160;:&#160;<a class="el" href="group__foundation.html#gaf1293b9728b8f28d2b171010978521f2">SocketConfig.h</a></li>
 <li>SOCKET_PROXY_BUFFER_SIZE&#160;:&#160;<a class="el" href="group__proxy__private.html#gadfe4c6b10bc2da57d2677a32a8fc2f02">SocketProxy-private.h</a></li>
@@ -569,6 +583,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>socket_send_internal()&#160;:&#160;<a class="el" href="group__core__io.html#gad65971e86ea8dcbaa79e4e457612d3a6">SocketIO.h</a></li>
 <li>Socket_send_limited()&#160;:&#160;<a class="el" href="group__core__io.html#ga274b6782b2029d2d8aa33579ad60a4c1">Socket.h</a></li>
 <li>Socket_sendall()&#160;:&#160;<a class="el" href="group__core__io.html#ga6ea9ad33d78c50d327c9677b52849bcb">Socket.h</a></li>
+<li>Socket_sendall_timeout()&#160;:&#160;<a class="el" href="group__core__io.html#gaea9384979b83066a7a6fa1418a5862d2">Socket.h</a></li>
 <li>Socket_sendfd()&#160;:&#160;<a class="el" href="group__core__io.html#ga001e932180b059a805ca53a8edbeef15">Socket.h</a></li>
 <li>Socket_sendfds()&#160;:&#160;<a class="el" href="group__core__io.html#ga70c2f94b87d307842c7d11de0b6a2bce">Socket.h</a></li>
 <li>Socket_sendfile()&#160;:&#160;<a class="el" href="group__core__io.html#gad1003c289820587894dbfcad9b567c43">Socket.h</a></li>
@@ -577,6 +592,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>Socket_sendmsg()&#160;:&#160;<a class="el" href="group__core__io.html#gaeb12f81392f3c1fb21255bf44521e20c">Socket.h</a></li>
 <li>Socket_sendv()&#160;:&#160;<a class="el" href="group__core__io.html#gadb50371f84b2c796c4e57a34d41f180a">Socket.h</a></li>
 <li>socket_sendv_internal()&#160;:&#160;<a class="el" href="group__core__io.html#ga714a501a951663d0248972ef6cc75818">SocketIO.h</a></li>
+<li>Socket_sendv_timeout()&#160;:&#160;<a class="el" href="group__core__io.html#ga7224aed85b1b920cc62fea881ae6f056">Socket.h</a></li>
 <li>Socket_sendvall()&#160;:&#160;<a class="el" href="group__core__io.html#gaf6d033a04d5041249950fa2f54a8d9fd">Socket.h</a></li>
 <li>Socket_setbandwidth()&#160;:&#160;<a class="el" href="group__core__io.html#gacab565f9a6e6c40c56d6d21df89b30a9">Socket.h</a></li>
 <li>Socket_setcloexec()&#160;:&#160;<a class="el" href="group__core__io.html#ga18ad1f92bb3233c463ea4067b69f73c2">Socket.h</a></li>
@@ -608,6 +624,10 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_SO_SNDTIMEO&#160;:&#160;<a class="el" href="group__core__io.html#ga4e79c5dbef56609cfb2ca32a5cf82257">SocketConfig.h</a></li>
 <li>SOCKET_SOCK_CLOEXEC&#160;:&#160;<a class="el" href="group__core__io.html#ga3e9c0eecdab0e5173a8a5c75d84dc932">SocketConfig.h</a></li>
 <li>SOCKET_SOL_SOCKET&#160;:&#160;<a class="el" href="group__core__io.html#gaa4457fd2dac639801c08d5b7633cf0e8">SocketConfig.h</a></li>
+<li>Socket_splice()&#160;:&#160;<a class="el" href="group__core__io.html#ga06c26a5a5989a15050513a8a3721f7ea">Socket.h</a></li>
+<li>SOCKET_SSL_MAX_PATH_LEN&#160;:&#160;<a class="el" href="group__security.html#gac8a7e5b01f43f247f01dc9abcc07badd">SocketSSL-internal.h</a></li>
+<li>SOCKET_SSL_OPENSSL_ERRSTR_BUFSIZE&#160;:&#160;<a class="el" href="group__security.html#ga5a80f979c35111f40039334296df6946">SocketSSL-internal.h</a></li>
+<li>SOCKET_SSL_UNUSED&#160;:&#160;<a class="el" href="group__security.html#ga05467aa5ac0a7b753f98efb02eeeb8a3">SocketSSL-internal.h</a></li>
 <li>SOCKET_STREAM_TYPE&#160;:&#160;<a class="el" href="group__core__io.html#gae91c5e89e959589a4c72b572da87aed1">SocketConfig.h</a></li>
 <li>SOCKET_STRERROR_BUFSIZE&#160;:&#160;<a class="el" href="group__foundation.html#ga88a91dddef3e3d02a87b3f8074e75ca7">SocketConfig.h</a></li>
 <li>SOCKET_STRINGIFY&#160;:&#160;<a class="el" href="group__foundation.html#gade5be545e65cd20a1da8d7ba01f59928">SocketConfig.h</a></li>
@@ -657,6 +677,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_TLS_MAX_ALPN_PROTOCOLS&#160;:&#160;<a class="el" href="group__tls__config.html#ga31c8aa5bed2b0db51e53847e6b6bc22c">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_MAX_ALPN_TOTAL_BYTES&#160;:&#160;<a class="el" href="group__tls__config.html#gaa52cffca1d260f855e90946554827278">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_MAX_CERT_CHAIN_DEPTH&#160;:&#160;<a class="el" href="group__tls__config.html#ga4d5991568275ac5f8d677aea34656f0a">SocketTLSConfig.h</a></li>
+<li>SOCKET_TLS_MAX_CERT_FILE_SIZE&#160;:&#160;<a class="el" href="group__tls__config.html#gabdf2425db5b9d316a6a8816aec985b85">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_MAX_CRL_FILES_IN_DIR&#160;:&#160;<a class="el" href="group__tls__config.html#ga65c50bd768a726e7a7f036f32a58e49d">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_MAX_CRL_SIZE&#160;:&#160;<a class="el" href="group__tls__config.html#gabcf496a1134e5bff5ea583e6395f4a44">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_MAX_LABEL_LEN&#160;:&#160;<a class="el" href="group__tls__config.html#ga17ff6f02c79ea2099d8329a0e82a6000">SocketTLSConfig.h</a></li>
@@ -672,6 +693,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_TLS_PIN_INITIAL_CAPACITY&#160;:&#160;<a class="el" href="group__tls__config.html#ga3e34a6589554ee91a77d39057681e22e">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_POLL_INTERVAL_MS&#160;:&#160;<a class="el" href="group__tls__config.html#ga5ca7b5f2bc6a521f8b7fb7b94196a94e">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_SESSION_CACHE_SIZE&#160;:&#160;<a class="el" href="group__tls__config.html#gaddb5f5a6224c2d4c50908c19baab9a2d">SocketTLSConfig.h</a></li>
+<li>SOCKET_TLS_SESSION_MAX_TIMEOUT&#160;:&#160;<a class="el" href="group__tls__config.html#gadce5ee3d7fc35a8c50f15ae1be580a3f">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_SESSION_TIMEOUT_DEFAULT&#160;:&#160;<a class="el" href="group__tls__config.html#ga5554586ea5eb4bf0a81c54963d0cbb2f">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_SNI_INITIAL_CAPACITY&#160;:&#160;<a class="el" href="group__tls__config.html#gaed59df6881f4fbedd888f060a563eca0">SocketTLSConfig.h</a></li>
 <li>SOCKET_TLS_TICKET_KEY_LEN&#160;:&#160;<a class="el" href="group__tls__config.html#gac328cd9a67a36754bdeb92361fb9526b">SocketTLSConfig.h</a></li>
@@ -710,9 +732,12 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKET_VERSION_MINOR&#160;:&#160;<a class="el" href="group__foundation.html#ga5e8e7af9a925dfd168fd9d57d420b31e">SocketConfig.h</a></li>
 <li>SOCKET_VERSION_PATCH&#160;:&#160;<a class="el" href="group__foundation.html#gae9e9c414384981ffd1cb1f4ce1242c18">SocketConfig.h</a></li>
 <li>SOCKET_VERSION_STRING&#160;:&#160;<a class="el" href="group__foundation.html#gac86c0a6be253f84d0f811e4d522332b1">SocketConfig.h</a></li>
+<li>SocketAsync_Backend&#160;:&#160;<a class="el" href="group__async__io.html#ga24d405b3be635f02866bbde768cd25d2">SocketAsync.h</a></li>
+<li>SocketAsync_backend_available()&#160;:&#160;<a class="el" href="group__async__io.html#gae2b2e59aaa4d0620c5c064447a2d1fd8">SocketAsync.h</a></li>
 <li>SocketAsync_backend_name()&#160;:&#160;<a class="el" href="group__async__io.html#gafae22c23e82d55f6fa3eaf74c0c37f5d">SocketAsync.h</a></li>
 <li>SocketAsync_Callback&#160;:&#160;<a class="el" href="group__async__io.html#gad6644a0c3153b65fa217ecbc45b5b8f9">SocketAsync.h</a></li>
 <li>SocketAsync_cancel()&#160;:&#160;<a class="el" href="group__async__io.html#ga275aefb76cdeb48b9b9330a777a2bb8c">SocketAsync.h</a></li>
+<li>SocketAsync_cancel_all()&#160;:&#160;<a class="el" href="group__async__io.html#ga534a39bfb57ab257465c0dbdb5e52fd2">SocketAsync.h</a></li>
 <li>SocketAsync_Failed&#160;:&#160;<a class="el" href="group__async__io.html#ga55b9b96eff9c17f45ff5bfb37f431075">SocketAsync.h</a></li>
 <li>SocketAsync_Flags&#160;:&#160;<a class="el" href="group__async__io.html#gae66259c675b6f9658c95d34e1fbfefdf">SocketAsync.h</a></li>
 <li>SocketAsync_free()&#160;:&#160;<a class="el" href="group__async__io.html#ga0d3a7b456b962c6abf4dfd91859492e0">SocketAsync.h</a></li>
@@ -721,6 +746,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketAsync_process_completions()&#160;:&#160;<a class="el" href="group__async__io.html#ga1cc05d5d1dd032943b57a03da3061da7">SocketAsync.h</a></li>
 <li>SocketAsync_recv()&#160;:&#160;<a class="el" href="group__async__io.html#ga46adb5a1db31901afa5d1d6514e41b64">SocketAsync.h</a></li>
 <li>SocketAsync_send()&#160;:&#160;<a class="el" href="group__async__io.html#gae0ecf4f023555d16b855d39841521f2b">SocketAsync.h</a></li>
+<li>SocketAsync_set_backend()&#160;:&#160;<a class="el" href="group__async__io.html#ga909ff893fe99d63d68c29102f3f90600">SocketAsync.h</a></li>
+<li>SocketAsync_submit_batch()&#160;:&#160;<a class="el" href="group__async__io.html#gae43318fc62792b6730cd3966912ded85">SocketAsync.h</a></li>
 <li>SocketBase_arena()&#160;:&#160;<a class="el" href="group__core__io.html#gae819168ebf1a49f132758d251e14958c">SocketCommon-private.h</a></li>
 <li>SocketBase_domain()&#160;:&#160;<a class="el" href="group__core__io.html#gaa16683bd3c975d0bc23a0ebf7df57767">SocketCommon-private.h</a></li>
 <li>SocketBase_fd()&#160;:&#160;<a class="el" href="group__core__io.html#ga7094c29ef2257e271eb2e6be911dd2ab">SocketCommon-private.h</a></li>
@@ -785,6 +812,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketCommon_setreuseport()&#160;:&#160;<a class="el" href="SocketCommon-private_8h.html#aa361a68a5dbaffd56e363b48963c2fdf">SocketCommon-private.h</a></li>
 <li>SocketCommon_settimeout()&#160;:&#160;<a class="el" href="SocketCommon-private_8h.html#a3ed109beae3f198d1714566573eb7366">SocketCommon-private.h</a></li>
 <li>SocketCommon_setup_hints()&#160;:&#160;<a class="el" href="group__core__io.html#ga47abb5d32959260cc8251419d652de1b">SocketCommon.h</a></li>
+<li>SocketCommon_shutdown_globals()&#160;:&#160;<a class="el" href="group__core__io.html#gab2a42dead580007f2f04aac09eabf7a4">SocketCommon.h</a></li>
 <li>SocketCommon_sync_iov_progress()&#160;:&#160;<a class="el" href="group__core__io.html#gaad5b4b92ce57c8168a7cb4462ee73d99">SocketCommon.h</a></li>
 <li>SocketCommon_timeouts_getdefaults()&#160;:&#160;<a class="el" href="group__core__io.html#gad2318fb3606f6a71c2a11e247ff876d5">SocketCommon.h</a></li>
 <li>SocketCommon_timeouts_setdefaults()&#160;:&#160;<a class="el" href="group__core__io.html#ga98a87ba229cdf264bec87129ce8918f5">SocketCommon.h</a></li>
@@ -828,6 +856,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketDgram_setreuseport()&#160;:&#160;<a class="el" href="group__socket__dgram.html#ga9770b3c571ac6a900071db266a632816">SocketDgram.h</a></li>
 <li>SocketDgram_settimeout()&#160;:&#160;<a class="el" href="group__socket__dgram.html#gafe579d108c83517ff9ceeac750139bc4">SocketDgram.h</a></li>
 <li>SocketDgram_setttl()&#160;:&#160;<a class="el" href="group__socket__dgram.html#ga22d94185a6ccf28eceb98d69240ba3d2">SocketDgram.h</a></li>
+<li>SocketDNS_set_nameservers()&#160;:&#160;<a class="el" href="group__dns.html#ga686f6e19ce68debbdbb9638b1a60b573">SocketDNS.h</a></li>
+<li>SocketDNS_set_search_domains()&#160;:&#160;<a class="el" href="group__dns.html#gae01bb71c26d598319a2fdfe043bf455e">SocketDNS.h</a></li>
 <li>SocketDNS_setmaxpending()&#160;:&#160;<a class="el" href="group__dns.html#ga55b33b7c9a44dc087be0f74b259d54f7">SocketDNS.h</a></li>
 <li>SocketDNS_settimeout()&#160;:&#160;<a class="el" href="group__dns.html#ga390b733f1a522dcaccede3adf56fece0">SocketDNS.h</a></li>
 <li>SocketDTLS_CookieFailed&#160;:&#160;<a class="el" href="group__security.html#ga69b6e30fa30bd7fe0a621d807796d73f">SocketDTLS.h</a></li>
@@ -993,6 +1023,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTP2_Conn_arena()&#160;:&#160;<a class="el" href="group__http2.html#ga12d9e2a8985ca9063c60842fcde83980">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_flush()&#160;:&#160;<a class="el" href="group__http2.html#ga667e2c409b1c71f702559904a823c6af">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_free()&#160;:&#160;<a class="el" href="group__http2.html#ga13128ca7c1208a2a4694ea9926e2ff20">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_Conn_get_concurrent_streams()&#160;:&#160;<a class="el" href="group__http2.html#gaba874aa14f603318b8d01ae418b8f868">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_get_local_setting()&#160;:&#160;<a class="el" href="group__http2.html#gad7e3dd8d7d156d66f0e7a020ecdb75d4">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_get_setting()&#160;:&#160;<a class="el" href="group__http2.html#ga4e07a686761551bf19c8fb513feb0103">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_goaway()&#160;:&#160;<a class="el" href="group__http2.html#ga572c83da10b0028e5c8eba35daad06d5">SocketHTTP2.h</a></li>
@@ -1001,10 +1032,12 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTP2_Conn_last_stream_id()&#160;:&#160;<a class="el" href="group__http2.html#ga8b438032a990cdc059ec3afcf002a501">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_new()&#160;:&#160;<a class="el" href="group__http2.html#gaac497f685932335cce6c3868243edf3c">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_ping()&#160;:&#160;<a class="el" href="group__http2.html#ga6af782386d1634eb1a7fe105b82938cf">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_Conn_ping_wait()&#160;:&#160;<a class="el" href="group__http2.html#gaf36c5fa3a56717959b1ee7e4b33d0eb5">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_process()&#160;:&#160;<a class="el" href="group__http2.html#gaecd0eb2455f15e9c9cea360331dcff5b">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_recv_window()&#160;:&#160;<a class="el" href="group__http2.html#ga835634eb0dbb8316097e755768956306">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_send_window()&#160;:&#160;<a class="el" href="group__http2.html#ga7d6946f3ae6907c3e2207cd87f7c84f0">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_set_conn_callback()&#160;:&#160;<a class="el" href="group__http2.html#ga86560d058cbae3ae5fd5b3964c308d84">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_Conn_set_max_concurrent()&#160;:&#160;<a class="el" href="group__http2.html#ga7d8467a272b8c792449c4bd9631eed30">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_set_stream_callback()&#160;:&#160;<a class="el" href="group__http2.html#ga93ddae7c32f498ea89e5d089b10e7080">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_settings()&#160;:&#160;<a class="el" href="group__http2.html#gae0eb32c4b96fbf53f984c778859ca7c3">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Conn_socket()&#160;:&#160;<a class="el" href="group__http2.html#gab805b04d372fb6fdc75a5495d2cde2b2">SocketHTTP2.h</a></li>
@@ -1027,7 +1060,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTP2_error_string()&#160;:&#160;<a class="el" href="group__http2.html#gaa7c75e897126298258fbde690c8baaa5">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_ErrorCode&#160;:&#160;<a class="el" href="group__http2.html#ga0dae3fde0d9081ed887d2476442f6ee9">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Failed&#160;:&#160;<a class="el" href="group__http2__private.html#ga68eac1aa9760e1a798b7e594bfc46da1">SocketHTTP2-private.h</a></li>
-<li>SocketHTTP2_FlowControlError&#160;:&#160;<a class="el" href="group__http2__private.html#ga7f79462d19b6633911fbf1d683df1ad5">SocketHTTP2-private.h</a>, <a class="el" href="group__http2.html#ga7f79462d19b6633911fbf1d683df1ad5">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_FlowControlError&#160;:&#160;<a class="el" href="group__http2.html#ga7f79462d19b6633911fbf1d683df1ad5">SocketHTTP2.h</a>, <a class="el" href="group__http2__private.html#ga7f79462d19b6633911fbf1d683df1ad5">SocketHTTP2-private.h</a></li>
 <li>SocketHTTP2_frame_header_parse()&#160;:&#160;<a class="el" href="group__http2.html#ga439a2fd76b902c7218ea92c9cfd2a9c3">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_frame_header_serialize()&#160;:&#160;<a class="el" href="group__http2.html#gaf41a82ae4777a86f95990cdaeff20900">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_frame_type_string()&#160;:&#160;<a class="el" href="group__http2.html#ga57e81dab63e8dd6a94d9c2366b2cad61">SocketHTTP2.h</a></li>
@@ -1040,7 +1073,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKETHTTP2_MAX_WINDOW_SIZE&#160;:&#160;<a class="el" href="group__http2.html#ga4c45c0b678bddd3940ec141601a23f50">SocketHTTP2.h</a></li>
 <li>SOCKETHTTP2_PING_RATE_LIMIT&#160;:&#160;<a class="el" href="group__http2.html#ga348b0240c0ad1819de8e1c5aac87788b">SocketHTTP2.h</a></li>
 <li>SOCKETHTTP2_PING_RATE_WINDOW_MS&#160;:&#160;<a class="el" href="group__http2.html#ga31f0fa5dd50b7518853bc761bab152a9">SocketHTTP2.h</a></li>
-<li>SocketHTTP2_ProtocolError&#160;:&#160;<a class="el" href="group__http2__private.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2-private.h</a>, <a class="el" href="group__http2.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_ProtocolError&#160;:&#160;<a class="el" href="group__http2.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2.h</a>, <a class="el" href="group__http2__private.html#gac51371422726d9cacab52b583dcd7587">SocketHTTP2-private.h</a></li>
 <li>SocketHTTP2_Role&#160;:&#160;<a class="el" href="group__http2.html#gabdba00019b45cc844046f038c7c7d590">SocketHTTP2.h</a></li>
 <li>SOCKETHTTP2_RST_RATE_LIMIT&#160;:&#160;<a class="el" href="group__http2.html#gaa20a27a38e12d263a948524dd53c6fa6">SocketHTTP2.h</a></li>
 <li>SOCKETHTTP2_RST_RATE_WINDOW_MS&#160;:&#160;<a class="el" href="group__http2.html#ga9887f36b7f564f07f4aaf2edbbb380c0">SocketHTTP2.h</a></li>
@@ -1067,7 +1100,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTP2_stream_state_string()&#160;:&#160;<a class="el" href="group__http2.html#ga1972e0a26eb71569d6d561bae3a85da8">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_Stream_window_update()&#160;:&#160;<a class="el" href="group__http2.html#gac6a15b2e7183cb4408510bac49674c36">SocketHTTP2.h</a></li>
 <li>SocketHTTP2_StreamCallback&#160;:&#160;<a class="el" href="group__http2.html#ga990cec8dae4a5eb79e28e30039038a98">SocketHTTP2.h</a></li>
-<li>SocketHTTP2_StreamError&#160;:&#160;<a class="el" href="group__http2__private.html#gaad19ee7b4b3a371cb35bd42c9247dda8">SocketHTTP2-private.h</a>, <a class="el" href="group__http2.html#gaad19ee7b4b3a371cb35bd42c9247dda8">SocketHTTP2.h</a></li>
+<li>SocketHTTP2_StreamError&#160;:&#160;<a class="el" href="group__http2.html#gaad19ee7b4b3a371cb35bd42c9247dda8">SocketHTTP2.h</a>, <a class="el" href="group__http2__private.html#gaad19ee7b4b3a371cb35bd42c9247dda8">SocketHTTP2-private.h</a></li>
 <li>SocketHTTP2_StreamState&#160;:&#160;<a class="el" href="group__http2.html#ga6a90f4be9250fb7b967b5deefc0df5dc">SocketHTTP2.h</a></li>
 <li>SocketHTTP_Coding&#160;:&#160;<a class="el" href="group__http.html#ga5b16a96fcd7f45cd6d9e1929c9d9ab80">SocketHTTP.h</a></li>
 <li>SocketHTTP_coding_name()&#160;:&#160;<a class="el" href="group__http.html#ga0868f224eab429e1d2216651beee04fa">SocketHTTP.h</a></li>
@@ -1076,7 +1109,6 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTP_date_format()&#160;:&#160;<a class="el" href="group__http.html#ga3bcf9f5487eca065ac77e28cdcb03482">SocketHTTP.h</a></li>
 <li>SocketHTTP_date_parse()&#160;:&#160;<a class="el" href="group__http.html#gad1bd59d68c6362c7a547785c53709163">SocketHTTP.h</a></li>
 <li>SocketHTTP_Failed&#160;:&#160;<a class="el" href="group__http.html#ga4f683bdd1ab1acf36a383a7be5f5b6d2">SocketHTTP.h</a></li>
-<li>sockethttp_hash_name()&#160;:&#160;<a class="el" href="group__http.html#ga8814ebfa618ed93bd36aebe1a4f7d63c">SocketHTTP-private.h</a></li>
 <li>SOCKETHTTP_HEADER_BUCKETS&#160;:&#160;<a class="el" href="group__http.html#ga1ff149febc7c6bd14ef6e8cee65f8653">SocketHTTP-private.h</a></li>
 <li>SocketHTTP_header_name_valid()&#160;:&#160;<a class="el" href="group__http.html#ga9cd7416c4d2d906c57303c814cfffa05">SocketHTTP.h</a></li>
 <li>SocketHTTP_header_value_valid()&#160;:&#160;<a class="el" href="group__http.html#gafcd22b68210c4a6e922bbb88f34caacd">SocketHTTP.h</a></li>
@@ -1150,6 +1182,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTPClient_CookieJar_set()&#160;:&#160;<a class="el" href="group__http__client.html#gae276f63daea601b662eae51e1973f3e5">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_delete()&#160;:&#160;<a class="el" href="group__http__client.html#ga6bc9ded2b6017d03733c50c493605ef7">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_DNSFailed&#160;:&#160;<a class="el" href="group__http__client.html#ga50039c8c595271d7d51b28ed5a4e7196">SocketHTTPClient.h</a></li>
+<li>SocketHTTPClient_download()&#160;:&#160;<a class="el" href="group__http__client.html#ga64bc4c1b75476e2a14943c266ea003a5">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_Error&#160;:&#160;<a class="el" href="group__http__client.html#ga6b0f544308db17e698b4c05ac3358b75">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_error_is_retryable()&#160;:&#160;<a class="el" href="group__http__client.html#gaf69fc4efa6d5b4df9cdf207cfa05b6b9">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_error_string()&#160;:&#160;<a class="el" href="group__http__client.html#ga859120de13b0764564f3c1ce111b3379">SocketHTTPClient.h</a></li>
@@ -1159,6 +1192,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTPClient_get_async()&#160;:&#160;<a class="el" href="group__http__client.html#ga887d2e7f1b676b7a1bd44de4a2964e03">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_get_cookie_jar()&#160;:&#160;<a class="el" href="group__http__client.html#ga52e891cd45c787d4025e15d8c4c42849">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_head()&#160;:&#160;<a class="el" href="group__http__client.html#ga4efcd265a023ce14464f07ef360fb030">SocketHTTPClient.h</a></li>
+<li>SocketHTTPClient_json_get()&#160;:&#160;<a class="el" href="group__http__client.html#gad7ef646194fff0c4a78d1ab5574b99f9">SocketHTTPClient.h</a></li>
+<li>SocketHTTPClient_json_post()&#160;:&#160;<a class="el" href="group__http__client.html#gaf04f866a5685f7f367989e2daf7e029d">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_last_error()&#160;:&#160;<a class="el" href="group__http__client.html#gac8680d78a9d70c7662d39466c63aab72">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_new()&#160;:&#160;<a class="el" href="group__http__client.html#ga2d57db3a9a6388315f253caa099e4205">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_pool_clear()&#160;:&#160;<a class="el" href="group__http__client.html#ga1fd6bae0397b3156f49100f444fdaac6">SocketHTTPClient.h</a></li>
@@ -1185,6 +1220,9 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTPClient_Timeout&#160;:&#160;<a class="el" href="group__http__client.html#gaa0847dd6efa2f627e07173f29b29c8ae">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_TLSFailed&#160;:&#160;<a class="el" href="group__http__client.html#gac109f9bf9ba67f2f56db130172b3dd94">SocketHTTPClient.h</a></li>
 <li>SocketHTTPClient_TooManyRedirects&#160;:&#160;<a class="el" href="group__http__client.html#gafd7d2611128ad32cc65cb256403c671f">SocketHTTPClient.h</a></li>
+<li>SocketHTTPClient_upload()&#160;:&#160;<a class="el" href="group__http__client.html#ga9da5a8ded3a0f92ef57dc546dc0d33b2">SocketHTTPClient.h</a></li>
+<li>SocketHTTPServer_add_middleware()&#160;:&#160;<a class="el" href="group__http.html#ga88c254c8a41cb79759d4e01413afde74">SocketHTTPServer.h</a></li>
+<li>SocketHTTPServer_add_static_dir()&#160;:&#160;<a class="el" href="group__http.html#ga6fde0679e7d83a756be1b7485a93a247">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_BindFailed&#160;:&#160;<a class="el" href="group__http.html#gab0cf03445c053391004f6234e29812f5">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_BodyCallback&#160;:&#160;<a class="el" href="group__http.html#gab347055b7285aedad5fa0f504c3a655e">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_config_defaults()&#160;:&#160;<a class="el" href="group__http.html#ga08bbe8e6a3560817cd898a51622bc6ce">SocketHTTPServer.h</a></li>
@@ -1193,10 +1231,12 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTPServer_drain_remaining_ms()&#160;:&#160;<a class="el" href="group__http.html#gaecec7fdc3ab750e67925295b736dcef0">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_drain_wait()&#160;:&#160;<a class="el" href="group__http.html#ga16195c5b1094a43bc7ee7531c3674958">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_DrainCallback&#160;:&#160;<a class="el" href="group__http.html#ga6eeba038caf0b48d3ae3527155ab8162">SocketHTTPServer.h</a></li>
+<li>SocketHTTPServer_ErrorHandler&#160;:&#160;<a class="el" href="group__http.html#ga029660e6b2b44b3ac0418a902489b353">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_Failed&#160;:&#160;<a class="el" href="group__http.html#gab0e17c60a6e02fe69434302760371464">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_fd()&#160;:&#160;<a class="el" href="group__http.html#ga23f97a896233d7ca6259ab43684e784d">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_free()&#160;:&#160;<a class="el" href="group__http.html#gacf5856e5b1728e44bbb68ef2e4637318">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_Handler&#160;:&#160;<a class="el" href="group__http.html#ga8805b706921b37e2e91e68a861ddc97c">SocketHTTPServer.h</a></li>
+<li>SocketHTTPServer_Middleware&#160;:&#160;<a class="el" href="group__http.html#ga0696714009dd36ac31e93f920b6cf99d">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_new()&#160;:&#160;<a class="el" href="group__http.html#gaea4fe38f3115faefc4bbc7f28e6b7362">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_poll()&#160;:&#160;<a class="el" href="group__http.html#gaf4e5392eaefa9ee259824571a1c5487d">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_process()&#160;:&#160;<a class="el" href="group__http.html#gab2ad4e6a795964f1edabf14a71b83985">SocketHTTPServer.h</a></li>
@@ -1227,12 +1267,13 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketHTTPServer_Request_upgrade_websocket()&#160;:&#160;<a class="el" href="group__http.html#ga27bf639b401330e8d40ebbaf0c93e12b">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_Request_version()&#160;:&#160;<a class="el" href="group__http.html#ga28be52d1b6393421dd306dc400d443ee">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_set_drain_callback()&#160;:&#160;<a class="el" href="group__http.html#gaffa4a9003d4696ab088d906cba07e39e">SocketHTTPServer.h</a></li>
+<li>SocketHTTPServer_set_error_handler()&#160;:&#160;<a class="el" href="group__http.html#ga3ab6ea89ceceb9238afecfd7fe9b2941">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_set_handler()&#160;:&#160;<a class="el" href="group__http.html#gaaf56db2565e6fdebcebf0bb7df24b959">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_set_rate_limit()&#160;:&#160;<a class="el" href="group__http.html#ga0d43e263bbd16177f78d4eef9b84ec1d">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_set_validator()&#160;:&#160;<a class="el" href="group__http.html#ga44d4d4090830ab41d87e7635cd7468ca">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_start()&#160;:&#160;<a class="el" href="group__http.html#gafa06caca93c0fac3e52f7749abe03be9">SocketHTTPServer.h</a></li>
-<li>SocketHTTPServer_state()&#160;:&#160;<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_State&#160;:&#160;<a class="el" href="group__http.html#ga0ac9162aaf92d18d40cf0443909e3e97">SocketHTTPServer.h</a></li>
+<li>SocketHTTPServer_state()&#160;:&#160;<a class="el" href="group__http.html#ga2f70285ff97bb4a7755c0e14c789c0b0">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_stats()&#160;:&#160;<a class="el" href="group__http.html#ga4695eb50357dd731435f3558bf30d932">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_stats_reset()&#160;:&#160;<a class="el" href="group__http.html#gac7bf7e6cb42130716cebdb8fd22b30e6">SocketHTTPServer.h</a></li>
 <li>SocketHTTPServer_stop()&#160;:&#160;<a class="el" href="group__http.html#gaf332d06f999890e277dc83777d669f00">SocketHTTPServer.h</a></li>
@@ -1294,6 +1335,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketMetrics_gauge_name()&#160;:&#160;<a class="el" href="group__utilities.html#ga1688939050a2c8207534463961107b3c">SocketMetrics.h</a></li>
 <li>SocketMetrics_gauge_set()&#160;:&#160;<a class="el" href="group__utilities.html#ga136f209696f9bc3f2fc3ad47cdac0458">SocketMetrics.h</a></li>
 <li>SocketMetrics_get()&#160;:&#160;<a class="el" href="group__utilities.html#ga88d6bd8b457374f89aaa5896e0b7bcca">SocketMetrics.h</a></li>
+<li>SocketMetrics_get_peak_connections()&#160;:&#160;<a class="el" href="group__utilities.html#ga30438b94d80a557393ec5e1eb815a9c1">SocketMetrics.h</a></li>
+<li>SocketMetrics_get_socket_count()&#160;:&#160;<a class="el" href="group__utilities.html#ga734ddc8b0557270744359de21721674b">SocketMetrics.h</a></li>
 <li>SocketMetrics_getsnapshot()&#160;:&#160;<a class="el" href="group__foundation.html#gadf35517a39395522a5884f9d92c7086d">SocketUtil.h</a></li>
 <li>SocketMetrics_histogram_count()&#160;:&#160;<a class="el" href="group__utilities.html#ga78400f007fa3b02037322fa951b526b4">SocketMetrics.h</a></li>
 <li>SocketMetrics_histogram_help()&#160;:&#160;<a class="el" href="group__utilities.html#gaa5e1f5a07ebccb6667f60603a9f0aaa9">SocketMetrics.h</a></li>
@@ -1309,8 +1352,10 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketMetrics_reset()&#160;:&#160;<a class="el" href="group__utilities.html#gab129aa3dd03bc8e5670da9abf0c41a47">SocketMetrics.h</a></li>
 <li>SocketMetrics_reset_counters()&#160;:&#160;<a class="el" href="group__utilities.html#gabf9b8dc5b74a93097dd1abc4d1c6f173">SocketMetrics.h</a></li>
 <li>SocketMetrics_reset_histograms()&#160;:&#160;<a class="el" href="group__utilities.html#gad058c5608e74545a1b26ba51a9c2d579">SocketMetrics.h</a></li>
+<li>SocketMetrics_reset_peaks()&#160;:&#160;<a class="el" href="group__utilities.html#gaac9a5c72ee4eab7298e004bbab8c984c">SocketMetrics.h</a></li>
 <li>SocketMetrics_shutdown()&#160;:&#160;<a class="el" href="group__utilities.html#gac71136a870ed0e20e810cd9642aa6e88">SocketMetrics.h</a></li>
 <li>SocketMetrics_snapshot_value()&#160;:&#160;<a class="el" href="group__foundation.html#ga820e9846700ad0b85c0ad19e7324825e">SocketUtil.h</a></li>
+<li>SocketMetrics_update_peak_if_needed()&#160;:&#160;<a class="el" href="group__utilities.html#gaf0909288c50ba7de9b42d2f3df571ded">SocketMetrics.h</a></li>
 <li>SocketMetricType&#160;:&#160;<a class="el" href="group__utilities.html#ga15ccb5af3b5e42916f5a329763c5b73d">SocketMetrics.h</a></li>
 <li>SocketPair_new()&#160;:&#160;<a class="el" href="group__core__io.html#ga1290da3d1c546b8c550a59e138f722b8">Socket.h</a></li>
 <li>socketpoll_get_timer_heap()&#160;:&#160;<a class="el" href="group__event__system.html#gaf791d7d3363309127dbdd94e4181b8c3">SocketPoll-private.h</a></li>
@@ -1322,6 +1367,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>socketpool_hash()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga3eec83919427223173cdaae6f1b36b8a">SocketPool-private.h</a></li>
 <li>SocketPool_set_bufsize()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga83ad1fb6ad736f4169297af3fd255410">SocketPool.h</a></li>
 <li>SocketPool_set_drain_callback()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga254e5c125de7413e1fa2a8809350d4e0">SocketPool.h</a></li>
+<li>SocketPool_set_idle_callback()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaa0f0813679f7ffbff6ff75adb3678c8c">SocketPool.h</a></li>
 <li>SocketPool_set_idle_timeout()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga76151bb579f44bdf79aeca57dbd8122e">SocketPool.h</a></li>
 <li>SocketPool_set_reconnect_policy()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gae4b6b07007da08326b53c069a4c1f2ea">SocketPool.h</a></li>
 <li>SocketPool_set_resize_callback()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga9c7cd8aa28512bb3e73885f5968a46cd">SocketPool.h</a></li>
@@ -1329,8 +1375,9 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketPool_set_validation_callback()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga11a46794f10d4d659cf75412e84cef31">SocketPool.h</a></li>
 <li>SocketPool_setconnrate()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga204d43047f820499ae59b7984f00b148">SocketPool.h</a></li>
 <li>SocketPool_setmaxperip()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gaf8991c65cdec81d2a8db01a2f820a42b">SocketPool.h</a></li>
-<li>SocketPool_State&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gae5f905ecace343c3b462dfadd5fa8056">SocketPool.h</a></li>
+<li>SocketPool_shrink()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga4cef8507b62e5092e9064800c84f296f">SocketPool.h</a></li>
 <li>SocketPool_state()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga0a62267ba3008f826b6952624dbc6a29">SocketPool.h</a></li>
+<li>SocketPool_State&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gae5f905ecace343c3b462dfadd5fa8056">SocketPool.h</a></li>
 <li>socketproxy_advance_state()&#160;:&#160;<a class="el" href="group__proxy__private.html#gada1416d62b5113240c93bd3020dc4b68">SocketProxy-private.h</a></li>
 <li>SocketProxy_config_defaults()&#160;:&#160;<a class="el" href="group__core__io.html#ga197242786615adf218d849747bc0fd67">SocketProxy.h</a></li>
 <li>SocketProxy_Conn_cancel()&#160;:&#160;<a class="el" href="group__core__io.html#ga2853a36e933b9ac3803173169b1b159e">SocketProxy.h</a></li>
@@ -1381,11 +1428,21 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketReconnect_send()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gae1f6cbe69ac37f9bae1efccfe98538ee">SocketReconnect.h</a></li>
 <li>SocketReconnect_set_health_check()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gacf257c08816a36a97c02b32e034c0ea0">SocketReconnect.h</a></li>
 <li>SocketReconnect_socket()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga4c91b5c376059d9c35d2623cbc6bd7b5">SocketReconnect.h</a></li>
-<li>SocketReconnect_State&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect.h</a></li>
 <li>SocketReconnect_state()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gac2a144f4c67fde49d88d0a53aa528c14">SocketReconnect.h</a></li>
+<li>SocketReconnect_State&#160;:&#160;<a class="el" href="group__connection__mgmt.html#gab0f7f9254ebc5d681f058d6b2c26f548">SocketReconnect.h</a></li>
 <li>SocketReconnect_state_name()&#160;:&#160;<a class="el" href="group__connection__mgmt.html#ga0678924e4ecd0f43e1385d2e0b5354d4">SocketReconnect.h</a></li>
+<li>SocketRetry_calculate_delay()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#a04fda3694b0be59a6427d2188af4e9de">SocketRetry.h</a></li>
+<li>SocketRetry_execute()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#ae9cb61aec8d7c8934a7481ed21e3bedf">SocketRetry.h</a></li>
+<li>SocketRetry_execute_simple()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#a3a533ebca7a1e19c736a6a1debc07336">SocketRetry.h</a></li>
 <li>SocketRetry_Failed&#160;:&#160;<a class="el" href="group__utilities.html#gaee6d3d64f3c5b84ac6bbf38c67834fc4">SocketRetry.h</a></li>
+<li>SocketRetry_free()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#ad758455d31f43b861881522be0982d62">SocketRetry.h</a></li>
+<li>SocketRetry_get_policy()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#a16584da7cc4271a025fd7d831446d028">SocketRetry.h</a></li>
+<li>SocketRetry_get_stats()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#aa606e706f22216af24351ee324c0a468">SocketRetry.h</a></li>
+<li>SocketRetry_new()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#ac4c2c785391a4a69f76ddb4d9d25f19e">SocketRetry.h</a></li>
 <li>SocketRetry_Operation&#160;:&#160;<a class="el" href="group__utilities.html#ga683a32a8d8f572bacd7470f3d386a445">SocketRetry.h</a></li>
+<li>SocketRetry_policy_defaults()&#160;:&#160;<a class="el" href="group__utilities.html#gae60e4575d034cfe56be8b50e94ad5481">SocketRetry.h</a></li>
+<li>SocketRetry_reset()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#aceefc84a75ae5e4ed461d0139ceefaa3">SocketRetry.h</a></li>
+<li>SocketRetry_set_policy()&#160;:&#160;<a class="el" href="SocketRetry_8h.html#a29d7511f7531f4a23bd88f656df4636e">SocketRetry.h</a></li>
 <li>SocketRetry_ShouldRetry&#160;:&#160;<a class="el" href="group__utilities.html#gaebff54019f122cf3c0cb72a8ec2ed1b8">SocketRetry.h</a></li>
 <li>SocketRetry_T&#160;:&#160;<a class="el" href="group__utilities.html#ga419cec86f54612ef9204c059be3ec0a9">SocketRetry.h</a></li>
 <li>SocketSecurity_check_add()&#160;:&#160;<a class="el" href="group__foundation.html#ga808c8911cd0b5d129ad1a3ea2e25e2b0">SocketSecurity.h</a></li>
@@ -1448,10 +1505,15 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketTimer_heap_pop()&#160;:&#160;<a class="el" href="group__event__system.html#ga9e40363cf44bb1025f2269ddc2cef0d2">SocketTimer-private.h</a></li>
 <li>SocketTimer_heap_push()&#160;:&#160;<a class="el" href="group__event__system.html#ga04afe41789d51a71d4a03883a89ad61c">SocketTimer-private.h</a></li>
 <li>SocketTimer_heap_remaining()&#160;:&#160;<a class="el" href="group__event__system.html#ga69365f1c685576d76414fbb43fe2248b">SocketTimer-private.h</a></li>
+<li>SocketTimer_pause()&#160;:&#160;<a class="el" href="group__event__system.html#ga5808ca3ea797fc76f76406d82daca0ac">SocketTimer.h</a></li>
 <li>SocketTimer_process_expired()&#160;:&#160;<a class="el" href="group__event__system.html#ga888ed4acbf5d1ca29bdafc07f346566e">SocketTimer-private.h</a></li>
 <li>SocketTimer_remaining()&#160;:&#160;<a class="el" href="group__event__system.html#ga4c5519b89e0bba69f26d03b6893ba779">SocketTimer.h</a></li>
+<li>SocketTimer_reschedule()&#160;:&#160;<a class="el" href="group__event__system.html#ga60383fbce3a4bfa8124beefdf1e7eb10">SocketTimer.h</a></li>
+<li>SocketTimer_resume()&#160;:&#160;<a class="el" href="group__event__system.html#gabdbcc665c288caa6e0d4ca211530238c">SocketTimer.h</a></li>
 <li>SocketTimerCallback&#160;:&#160;<a class="el" href="group__event__system.html#gafb51f69cdbf1b882a7a4226959c4fca7">SocketTimer.h</a></li>
 <li>SocketTLS_send()&#160;:&#160;<a class="el" href="group__security.html#gabdb38e692dde58bbec4ab905eeb8b3aa">SocketTLS.h</a></li>
+<li>SocketTLS_session_restore()&#160;:&#160;<a class="el" href="group__security.html#ga134fb43e30e16e0061eb633384c1cfa9">SocketTLS.h</a></li>
+<li>SocketTLS_session_save()&#160;:&#160;<a class="el" href="group__security.html#gab62e7185c08eb9459341471f56f400c5">SocketTLS.h</a></li>
 <li>SocketTLS_set_hostname()&#160;:&#160;<a class="el" href="group__security.html#ga15d2c8f4eaea80114bbd2123da025e56">SocketTLS.h</a></li>
 <li>SocketTLS_shutdown()&#160;:&#160;<a class="el" href="group__security.html#gab11506db6f41f31e9fc170b3d0e848f1">SocketTLS.h</a></li>
 <li>SocketTLS_ShutdownFailed&#160;:&#160;<a class="el" href="group__security.html#gaa724dbe4115729ef621c0f1f74b5afd6">SocketTLS.h</a></li>
@@ -1533,16 +1595,18 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketWS_CloseCode&#160;:&#160;<a class="el" href="group__websocket.html#ga386c437e966aeaeb091d1d81c0e77b13">SocketWS.h</a></li>
 <li>SocketWS_Closed&#160;:&#160;<a class="el" href="group__websocket.html#ga51caf3b6f8086dc6535fd843593dcbde">SocketWS.h</a></li>
 <li>SocketWS_compression_enabled()&#160;:&#160;<a class="el" href="group__websocket.html#ga02790d0b994d613324052794269b0e22">SocketWS.h</a></li>
+<li>SocketWS_compression_options_defaults()&#160;:&#160;<a class="el" href="group__websocket.html#ga4bc96039ed3f1e6240cc6af7e3fdce13">SocketWS.h</a></li>
 <li>SocketWS_config_defaults()&#160;:&#160;<a class="el" href="group__websocket.html#gac129f58e59f8b169f2c2a48a330fb176">SocketWS.h</a></li>
+<li>SocketWS_connect()&#160;:&#160;<a class="el" href="group__websocket.html#gaf68edb5baf8b959da2c8b63158d65916">SocketWS.h</a></li>
 <li>SOCKETWS_CONNECTION_VALUE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#adfbfffa784988434081c8c80f3ec69aa">SocketWS-private.h</a></li>
 <li>SOCKETWS_DEFAULT_DEFLATE_WINDOW_BITS&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#af7be9271e69a258e82d90db0bc75af3b">SocketWS-private.h</a></li>
 <li>SOCKETWS_DEFAULT_HTTP_PORT&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#ae03aaf5538f374aaf4295e1ef9c85167">SocketWS-private.h</a></li>
 <li>SOCKETWS_DEFAULT_HTTPS_PORT&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#acfdfcc48763830cd37ffe12cc0df149f">SocketWS-private.h</a></li>
 <li>SOCKETWS_DEFAULT_PING_INTERVAL_MS&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a9d6d507d17982eac314c560a41446004">SocketWS-private.h</a></li>
 <li>SOCKETWS_DEFAULT_PING_TIMEOUT_MS&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#af355ec85445795b559621b274394d226">SocketWS-private.h</a></li>
-<li>SocketWS_DetailedException&#160;:&#160;<a class="el" href="group__websocket.html#ga0fadbd57ccfb278acb88c94cc609c265">SocketWS-private.h</a></li>
 <li>SocketWS_disable_auto_ping()&#160;:&#160;<a class="el" href="group__websocket.html#gaedcf20cd5206a2cd971a60a98a58ff5f">SocketWS.h</a></li>
 <li>SocketWS_enable_auto_ping()&#160;:&#160;<a class="el" href="group__websocket.html#ga0049a0e0f8a4218c5d5b3dbf8181b92f">SocketWS.h</a></li>
+<li>SocketWS_enable_compression()&#160;:&#160;<a class="el" href="group__websocket.html#ga519bf217226465597f30e1f87e19d34a">SocketWS.h</a></li>
 <li>SocketWS_Error&#160;:&#160;<a class="el" href="group__websocket.html#gabd79199a60ad91cf785166f24f41101f">SocketWS.h</a></li>
 <li>SOCKETWS_ERROR_BUFSIZE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a10d37729dd536e6f6b474e2845258b3a">SocketWS-private.h</a></li>
 <li>SocketWS_error_string()&#160;:&#160;<a class="el" href="group__websocket.html#ga1bfa823bd6275bfdcb9bab6f26ab90ee">SocketWS.h</a></li>
@@ -1554,6 +1618,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKETWS_FIN_BIT&#160;:&#160;<a class="el" href="group__websocket.html#ga9b9cdb003a53aa826efee47bcfbd59b6">SocketWS-private.h</a></li>
 <li>SocketWS_FrameState&#160;:&#160;<a class="el" href="group__websocket.html#gacba3d485716ab762c1ecd90312174721">SocketWS-private.h</a></li>
 <li>SocketWS_free()&#160;:&#160;<a class="el" href="group__websocket.html#gaa040ebe5bc5f2673b04b15091a45b944">SocketWS.h</a></li>
+<li>SocketWS_get_ping_latency()&#160;:&#160;<a class="el" href="group__websocket.html#ga9f35bc85185a4084dc4d4e553bbd4559">SocketWS.h</a></li>
 <li>SocketWS_handshake()&#160;:&#160;<a class="el" href="group__websocket.html#gacbbea030dbe9d643b7f8bd6c1656ff06">SocketWS.h</a></li>
 <li>SOCKETWS_HANDSHAKE_REQUEST_SIZE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a1f8f3dff56fb9db8ff0ce9906efe6dc4">SocketWS-private.h</a></li>
 <li>SOCKETWS_HANDSHAKE_RESPONSE_SIZE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a7a1ca51df4bfd876c820e884f5ad6b97">SocketWS-private.h</a></li>
@@ -1585,6 +1650,7 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketWS_ProtocolError&#160;:&#160;<a class="el" href="group__websocket.html#ga8400199bb1b785111015ff06d16de370">SocketWS.h</a></li>
 <li>SocketWS_recv_available()&#160;:&#160;<a class="el" href="group__websocket.html#ga134ea19e7c00142525cdf82b82425b6d">SocketWS.h</a></li>
 <li>SOCKETWS_RECV_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a9acb472b6bed5c068d87b1aad663d2c7">SocketWS-private.h</a></li>
+<li>SocketWS_recv_json()&#160;:&#160;<a class="el" href="group__websocket.html#gaa120f2de8a8e3fe8d6670d5952ae3069">SocketWS.h</a></li>
 <li>SocketWS_recv_message()&#160;:&#160;<a class="el" href="group__websocket.html#ga4614f5978e94a42cdb1191dbb6d38e85">SocketWS.h</a></li>
 <li>SocketWS_Role&#160;:&#160;<a class="el" href="group__websocket.html#ga9d14d3d0f1b05e44fcd74782107cbd94">SocketWS.h</a></li>
 <li>SOCKETWS_RSV1_BIT&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a85347dc247b578950eb5aa2ed921f5c0">SocketWS-private.h</a></li>
@@ -1594,12 +1660,13 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SocketWS_send_binary()&#160;:&#160;<a class="el" href="group__websocket.html#ga1a8aff35f7c69172e0c2f9c0ec53abcb">SocketWS.h</a></li>
 <li>SOCKETWS_SEND_BUFFER_SIZE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a063de1584abd1a2a63506c87264b733d">SocketWS-private.h</a></li>
 <li>SOCKETWS_SEND_CHUNK_SIZE&#160;:&#160;<a class="el" href="group__websocket.html#ga012fa1b5257d1188d71ec84b86513bda">SocketWS-private.h</a></li>
+<li>SocketWS_send_json()&#160;:&#160;<a class="el" href="group__websocket.html#gacbcbf4d1f7f94a24cbe57cfee8c5c705">SocketWS.h</a></li>
 <li>SocketWS_send_text()&#160;:&#160;<a class="el" href="group__websocket.html#ga4b8450a05502aaa70e88cdf14a73fa03">SocketWS.h</a></li>
 <li>SocketWS_server_accept()&#160;:&#160;<a class="el" href="group__websocket.html#ga29e02ecca2d5a1b78d0eaf2c08883960">SocketWS.h</a></li>
 <li>SocketWS_server_reject()&#160;:&#160;<a class="el" href="group__websocket.html#gad6e400c85623f8603c5965d38b1a60e0">SocketWS.h</a></li>
 <li>SocketWS_socket()&#160;:&#160;<a class="el" href="group__websocket.html#ga00e6f2953f92843874cd7b6c3e363288">SocketWS.h</a></li>
-<li>SocketWS_State&#160;:&#160;<a class="el" href="group__websocket.html#gab8b49607a661224d66bb264b1e597e2d">SocketWS.h</a></li>
 <li>SocketWS_state()&#160;:&#160;<a class="el" href="group__websocket.html#gaa40def588d31ab50126603fa720f83b0">SocketWS.h</a></li>
+<li>SocketWS_State&#160;:&#160;<a class="el" href="group__websocket.html#gab8b49607a661224d66bb264b1e597e2d">SocketWS.h</a></li>
 <li>SOCKETWS_UPGRADE_VALUE&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#ab7201a452c374f1956301bd28b40007b">SocketWS-private.h</a></li>
 <li>SOCKETWS_XOR_ALIGN_MASK&#160;:&#160;<a class="el" href="SocketWS-private_8h.html#a256ffaed18ba75a9fb892600abf4d5c3">SocketWS-private.h</a></li>
 <li>SOCKETWS_XOR_ALIGN_SIZE&#160;:&#160;<a class="el" href="group__websocket.html#gaf21b49963e774f217dd5558e8ce0fbc6">SocketWS-private.h</a></li>
@@ -1638,6 +1705,8 @@ $(document).ready(function(){initNavTree('globals_s.html',''); initResizable(); 
 <li>SOCKS5_REPLY_SUCCESS&#160;:&#160;<a class="el" href="group__proxy__private.html#gac61a81038f320a72896daefe88499731">SocketProxy-private.h</a></li>
 <li>SOCKS5_REPLY_TTL_EXPIRED&#160;:&#160;<a class="el" href="group__proxy__private.html#ga7f1453ad2ffabd1b55a8449044544951">SocketProxy-private.h</a></li>
 <li>SOCKS5_VERSION&#160;:&#160;<a class="el" href="group__proxy__private.html#ga5b416217434efd51f168a4d339a92eb3">SocketProxy-private.h</a></li>
+<li>ssl_format_openssl_error_to_buf()&#160;:&#160;<a class="el" href="group__security.html#gaa6c36a8a759e38dd1c814247d126fcd5">SocketSSL-internal.h</a></li>
+<li>ssl_validate_file_path()&#160;:&#160;<a class="el" href="group__security.html#gabbf38dfe506fbe8f9679d014c04f3bf5">SocketSSL-internal.h</a></li>
 <li>start_dns_workers()&#160;:&#160;<a class="el" href="group__dns.html#ga966920bebbea908c25400af44930fe59">SocketDNS-private.h</a></li>
 <li>store_resolution_result()&#160;:&#160;<a class="el" href="group__dns.html#gadbc14c60ccd56fe1f73c7d52b04d0664">SocketDNS-private.h</a></li>
 <li>submit_dns_request()&#160;:&#160;<a class="el" href="group__dns.html#gadfd7ab93512c5ab94d32415eac07e69e">SocketDNS-private.h</a></li>

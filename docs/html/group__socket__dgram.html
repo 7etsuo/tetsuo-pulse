@@ -237,6 +237,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ga0e8f0a454d58b2ff87878e39960c9187" id="r_ga0e8f0a454d58b2ff87878e39960c9187"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__socket__dgram.html#ga0e8f0a454d58b2ff87878e39960c9187">SocketDgram_debug_live_count</a> (void)</td></tr>
 <tr class="memdesc:ga0e8f0a454d58b2ff87878e39960c9187"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get number of live datagram socket instances.  <br /></td></tr>
 <tr class="separator:ga0e8f0a454d58b2ff87878e39960c9187"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga2bd6bd1b211d0c3a74cae1849316c1b1" id="r_ga2bd6bd1b211d0c3a74cae1849316c1b1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__socket__dgram.html#ga2bd6bd1b211d0c3a74cae1849316c1b1">SocketDgram_bind_udp</a> (const char *host, int port)</td></tr>
+<tr class="memdesc:ga2bd6bd1b211d0c3a74cae1849316c1b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a bound UDP socket in one call.  <br /></td></tr>
+<tr class="separator:ga2bd6bd1b211d0c3a74cae1849316c1b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -247,7 +250,7 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Comprehensive API for UDP and datagram sockets including multicast, broadcast, and scatter/gather support. </p>
 <p>The Datagram Sockets module offers a high-level, exception-based interface for connectionless protocols like UDP. It abstracts low-level socket operations, providing features for reliable messaging over unreliable transports. Supports IPv4, IPv6, and Unix domain datagrams with advanced capabilities for network discovery, streaming, and IPC.</p>
-<h2><a class="anchor" id="autotoc_md431"></a>
+<h2><a class="anchor" id="autotoc_md508"></a>
 Architecture Overview</h2>
 <div class="fragment"><div class="line">┌───────────────────────────────────────────────────────────┐</div>
 <div class="line">│                    Application Layer                      │</div>
@@ -266,7 +269,7 @@ Architecture Overview</h2>
 <div class="ttc" id="aSocketDgram-private_8h_html_structSocketDgram__T"><div class="ttname"><a href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a></div><div class="ttdoc">Opaque type representing a datagram socket instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketDgram-private_8h_source.html#l00043">SocketDgram-private.h:44</a></div></div>
 <div class="ttc" id="agroup__core__io_html_ga2ef0927dc8f89dfd9193fc9a39300fc2"><div class="ttname"><a href="group__core__io.html#ga2ef0927dc8f89dfd9193fc9a39300fc2">SocketBase_T</a></div><div class="ttdeci">#define SocketBase_T</div><div class="ttdoc">Opaque base structure for shared socket functionality.</div><div class="ttdef"><b>Definition</b> <a href="SocketCommon_8h_source.html#l00660">SocketCommon.h:660</a></div></div>
 <div class="ttc" id="agroup__foundation_html_structExcept__T"><div class="ttname"><a href="group__foundation.html#structExcept__T">Except_T</a></div><div class="ttdoc">Exception structure for structured error handling.</div><div class="ttdef"><b>Definition</b> <a href="Except_8h_source.html#l00216">Except.h:217</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md432"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md509"></a>
 Key Features</h2>
 <ul>
 <li><b>Connectionless &amp; Connected Modes</b>: Use sendto/recvfrom for arbitrary peers or connect for default destination optimization.</li>
@@ -277,7 +280,7 @@ Key Features</h2>
 <li><b>Thread Safety</b>: Individual socket operations are thread-safe; no global state.</li>
 <li><b>Platform Agnostic</b>: Auto-detects backends (epoll, kqueue, poll) for performance.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md433"></a>
+<h2><a class="anchor" id="autotoc_md510"></a>
 Module Relationships</h2>
 <ul>
 <li><b>Dependencies</b>: <a class="el" href="Except_8h.html" title="Structured exception handling for C with TRY/EXCEPT/FINALLY blocks.">core/Except.h</a> (exceptions), <a class="el" href="SocketCommon_8h.html" title="Common utilities shared between Socket and SocketDgram modules.">socket/SocketCommon.h</a> (base socket), sys/socket.h (POSIX)</li>
@@ -285,7 +288,7 @@ Module Relationships</h2>
 <li><b>Integration</b>: <a class="el" href="SocketPoll_8h.html" title="Cross-platform high-level interface for monitoring multiple sockets for I/O events.">poll/SocketPoll.h</a> for event multiplexing, <a class="el" href="SocketPool_8h.html" title="Connection pooling with automatic lifecycle management.">pool/SocketPool.h</a> for UDP connection pooling (rare)</li>
 <li><b>Utilities</b>: Uses core/SocketUtil for hashing, timeouts, logging; core/Arena_T for internal allocations</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md434"></a>
+<h2><a class="anchor" id="autotoc_md511"></a>
 Platform Requirements &amp; Limitations</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -299,7 +302,7 @@ Platform Requirements &amp; Limitations</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone">Limits   </td><td class="markdownTableBodyNone">Subject to ulimit -n (open files), SO_MAXCONN   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md435"></a>
+<h2><a class="anchor" id="autotoc_md512"></a>
 Error Handling</h2>
 <ul>
 <li>Primary exception: SocketDgram_Failed for syscalls, invalid params, resource issues</li>
@@ -307,7 +310,7 @@ Error Handling</h2>
 <li>Use <a class="el" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db" title="Socket_GetLastError - Retrieve the most recent formatted error message.">Socket_GetLastError()</a> for human-readable messages post-exception</li>
 <li>See docs/ERROR_HANDLING.md for TRY/EXCEPT patterns</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md436"></a>
+<h2><a class="anchor" id="autotoc_md513"></a>
 Performance Notes</h2>
 <ul>
 <li>O(1) for most operations (syscalls)</li>
@@ -315,7 +318,7 @@ Performance Notes</h2>
 <li>Buffer sizes tunable via getsockopt (default OS-dependent, often 212KB)</li>
 <li>For high-throughput, use recvvall/sendvall to minimize copies</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md437"></a>
+<h2><a class="anchor" id="autotoc_md514"></a>
 Security Considerations</h2>
 <ul>
 <li>CLOEXEC enabled by default to prevent fd leaks in forks</li>
@@ -422,7 +425,7 @@ Security Considerations</h2>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - Safe if socket not concurrently accessed.</dt><dd>Bind is not reentrant on same socket; synchronize if multi-threaded init.</dd></dl>
-<h2><a class="anchor" id="autotoc_md444"></a>
+<h2><a class="anchor" id="autotoc_md521"></a>
 Basic Usage: Server Bind</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>
@@ -441,7 +444,7 @@ Basic Usage: Server Bind</h2>
 <div class="ttc" id="agroup__socket__dgram_html_ga020169c79640786afa4c36fd1dc965e4"><div class="ttname"><a href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a></div><div class="ttdeci">void SocketDgram_free(SocketDgram_T *socket)</div><div class="ttdoc">Dispose of a datagram socket, closing the underlying file descriptor and freeing resources.</div></div>
 <div class="ttc" id="agroup__socket__dgram_html_ga0c81d9ef1d90e7ab34dd7286f13878ee"><div class="ttname"><a href="group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee">SocketDgram_bind</a></div><div class="ttdeci">void SocketDgram_bind(SocketDgram_T socket, const char *host, int port)</div><div class="ttdoc">Bind a datagram socket to a local IP address and port.</div></div>
 <div class="ttc" id="agroup__socket__dgram_html_gad6902c87ab5883f155dab2adfa950c52"><div class="ttname"><a href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a></div><div class="ttdeci">SocketDgram_T SocketDgram_new(int domain, int protocol)</div><div class="ttdoc">Create a new UDP/datagram socket with specified domain and protocol.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md445"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md522"></a>
 Client Bind to Ephemeral Port with Reuse</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET6, 0);</div>
@@ -479,6 +482,91 @@ getaddrinfo(3) for address resolution details. </dd>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a>#privileged-ports for permission advice. </dd>
 <dd>
 docs/ERROR_HANDLING.md for bind-specific errors. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__server_8c_source.html#l00039">main()</a>.</p>
+
+</div>
+</div>
+<a id="ga2bd6bd1b211d0c3a74cae1849316c1b1" name="ga2bd6bd1b211d0c3a74cae1849316c1b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ga2bd6bd1b211d0c3a74cae1849316c1b1">&#9670;&#160;</a></span>SocketDgram_bind_udp()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> SocketDgram_bind_udp </td>
+          <td>(</td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>host</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>port</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">extern</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Create a bound UDP socket in one call. </p>
+<p>Convenience function that combines <a class="el" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52" title="Create a new UDP/datagram socket with specified domain and protocol.">SocketDgram_new()</a>, <a class="el" href="group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee" title="Bind a datagram socket to a local IP address and port.">SocketDgram_bind()</a> into a single call. Creates a UDP socket bound to the specified address and port, ready for sending/receiving datagrams.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramdir">[in]</td><td class="paramname">host</td><td>Local address to bind (NULL or "" for INADDR_ANY) </td></tr>
+    <tr><td class="paramdir">[in]</td><td class="paramname">port</td><td>Local port to bind (1-65535, or 0 for ephemeral port)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>New bound UDP socket ready for <a class="el" href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923" title="Send datagram to specific address.">SocketDgram_sendto()</a>/recvfrom()</dd></dl>
+<dl class="exception"><dt>Exceptions</dt><dd>
+  <table class="exception">
+    <tr><td class="paramname">SocketDgram_Failed</td><td>on socket creation or bind failure</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section user"><dt>Thread Safety\n Yes - creates new socket instance</dt><dd></dd></dl>
+<h2><a class="anchor" id="autotoc_md523"></a>
+Example</h2>
+<div class="fragment"><div class="line"><span class="comment">// UDP server</span></div>
+<div class="line"><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> server = <a class="code hl_function" href="group__socket__dgram.html#ga2bd6bd1b211d0c3a74cae1849316c1b1">SocketDgram_bind_udp</a>(<span class="stringliteral">&quot;0.0.0.0&quot;</span>, 5353);</div>
+<div class="line"><span class="keywordtype">char</span> buf[1024];</div>
+<div class="line"><span class="keywordtype">char</span> sender_ip[INET6_ADDRSTRLEN];</div>
+<div class="line"><span class="keywordtype">int</span> sender_port;</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line">    ssize_t n = <a class="code hl_function" href="group__socket__dgram.html#gada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a>(server, buf, <span class="keyword">sizeof</span>(buf),</div>
+<div class="line">                                     sender_ip, <span class="keyword">sizeof</span>(sender_ip),</div>
+<div class="line">                                     &amp;sender_port);</div>
+<div class="line">    <span class="keywordflow">if</span> (n &gt; 0) {</div>
+<div class="line">        <span class="comment">// Echo back</span></div>
+<div class="line">        <a class="code hl_function" href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923">SocketDgram_sendto</a>(server, buf, n, sender_ip, sender_port);</div>
+<div class="line">    }</div>
+<div class="line">}</div>
+<div class="line"><a class="code hl_function" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a>(&amp;server);</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
+<div class="ttc" id="agroup__socket__dgram_html_ga08371cbf32cb15528b42e189f8267923"><div class="ttname"><a href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923">SocketDgram_sendto</a></div><div class="ttdeci">ssize_t SocketDgram_sendto(SocketDgram_T socket, const void *buf, size_t len, const char *host, int port)</div><div class="ttdoc">Send datagram to specific address.</div></div>
+<div class="ttc" id="agroup__socket__dgram_html_ga2bd6bd1b211d0c3a74cae1849316c1b1"><div class="ttname"><a href="group__socket__dgram.html#ga2bd6bd1b211d0c3a74cae1849316c1b1">SocketDgram_bind_udp</a></div><div class="ttdeci">SocketDgram_T SocketDgram_bind_udp(const char *host, int port)</div><div class="ttdoc">Create a bound UDP socket in one call.</div></div>
+<div class="ttc" id="agroup__socket__dgram_html_gada4b76edaec59a44eb5bc959e6948d3f"><div class="ttname"><a href="group__socket__dgram.html#gada4b76edaec59a44eb5bc959e6948d3f">SocketDgram_recvfrom</a></div><div class="ttdeci">ssize_t SocketDgram_recvfrom(SocketDgram_T socket, void *buf, size_t len, char *host, size_t host_len, int *port)</div><div class="ttdoc">Receive datagram and get sender address.</div></div>
+</div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>Use port 0 to let the OS assign an ephemeral port </dd>
+<dd>
+For IPv6, use "::" as host for dual-stack binding</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee" title="Bind a datagram socket to a local IP address and port.">SocketDgram_bind()</a> for separate bind operation </dd>
+<dd>
+<a class="el" href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923" title="Send datagram to specific address.">SocketDgram_sendto()</a>, <a class="el" href="group__socket__dgram.html#gada4b76edaec59a44eb5bc959e6948d3f" title="Receive datagram and get sender address.">SocketDgram_recvfrom()</a> for I/O </dd>
+<dd>
+<a class="el" href="group__core__io.html#gabf72952b9d7d0e4fc8255de6c92fbe11" title="Create a listening TCP server socket in one call.">Socket_listen_tcp()</a> for TCP server convenience function </dd></dl>
 
 </div>
 </div>
@@ -544,6 +632,8 @@ The socket only accepts packets from the connected address. You can still use se
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__socket__dgram.html#ga0c81d9ef1d90e7ab34dd7286f13878ee" title="Bind a datagram socket to a local IP address and port.">SocketDgram_bind()</a> for binding to a local address. </dd>
 <dd>
 <a class="el" href="group__socket__dgram.html#ga08b2ab199a5c50a654683ba1ddb4d004" title="Send to default destination (connected socket).">SocketDgram_send()</a> for sending to connected destination. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__client_8c_source.html#l00025">main()</a>.</p>
 
 </div>
 </div>
@@ -660,7 +750,7 @@ The socket only accepts packets from the connected address. You can still use se
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Conditional - Safe if no concurrent use of this socket instance.</dt><dd>Caller must ensure exclusive access or use mutex. Idempotent for NULL.</dd></dl>
-<h2><a class="anchor" id="autotoc_md442"></a>
+<h2><a class="anchor" id="autotoc_md519"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = NULL;</div>
 <div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
@@ -671,7 +761,7 @@ Basic Usage</h2>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#ga0e2a75478cd44f1666a6aca626c5c50b">FINALLY</a> {</div>
 <div class="line">    <a class="code hl_function" href="group__socket__dgram.html#ga020169c79640786afa4c36fd1dc965e4">SocketDgram_free</a>(&amp;sock);  <span class="comment">// Always call, even on error or NULL</span></div>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md443"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md520"></a>
 In Pool or Array Management</h2>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sockets[10] = {0};</div>
 <div class="line"><span class="comment">// ... populate some sockets ...</span></div>
@@ -692,6 +782,8 @@ Close is not atomic; avoid calling while other threads read/write the socket.</d
 <a class="el" href="group__socket__dgram.html#ga0e8f0a454d58b2ff87878e39960c9187" title="Get number of live datagram socket instances.">SocketDgram_debug_live_count()</a> for verifying all sockets freed in tests. </dd>
 <dd>
 docs/ERROR_HANDLING.md#finally-blocks for cleanup patterns. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__client_8c_source.html#l00025">main()</a>.</p>
 
 </div>
 </div>
@@ -1260,7 +1352,7 @@ For IPv6, group should start with ff00::/8. </dd></dl>
   </dd>
 </dl>
 <dl class="section user"><dt>Thread Safety\n Yes - Each call creates an independent socket instance with no</dt><dd>shared state. Safe to invoke concurrently from multiple threads.</dd></dl>
-<h2><a class="anchor" id="autotoc_md440"></a>
+<h2><a class="anchor" id="autotoc_md517"></a>
 Basic Usage</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);  <span class="comment">// IPv4 UDP socket</span></div>
@@ -1277,7 +1369,7 @@ Basic Usage</h2>
 <div class="line">} <a class="code hl_define" href="group__foundation.html#gae6628ac788ad213363b89dba9868420b">END_TRY</a>;</div>
 <div class="ttc" id="aSocketUtil_8h_html_a16642c35dec627aeb4976538671b1552"><div class="ttname"><a href="SocketUtil_8h.html#a16642c35dec627aeb4976538671b1552">SOCKET_LOG_ERROR_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_ERROR_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00548">SocketUtil.h:548</a></div></div>
 <div class="ttc" id="agroup__foundation_html_gac71a25566cdc9e11eaecb16c966081db"><div class="ttname"><a href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db">Socket_GetLastError</a></div><div class="ttdeci">const char * Socket_GetLastError(void)</div><div class="ttdoc">Socket_GetLastError - Retrieve the most recent formatted error message.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md441"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md518"></a>
 Advanced Usage: IPv6 Multicast Receiver</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET6, 0);</div>
@@ -1323,6 +1415,8 @@ SocketPoll_T::SocketPoll_add() for event loop integration. </dd>
 docs/ERROR_HANDLING.md for advanced exception patterns. </dd>
 <dd>
 <a class="el" href="SECURITY_8md.html">docs/SECURITY.md</a> for socket permission and firewall considerations. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__client_8c_source.html#l00025">main()</a>.</p>
 
 </div>
 </div>
@@ -1386,6 +1480,8 @@ docs/ERROR_HANDLING.md for advanced exception patterns. </dd>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__socket__dgram.html#ga08b2ab199a5c50a654683ba1ddb4d004" title="Send to default destination (connected socket).">SocketDgram_send()</a> for sending to connected sockets. </dd>
 <dd>
 <a class="el" href="group__socket__dgram.html#gada4b76edaec59a44eb5bc959e6948d3f" title="Receive datagram and get sender address.">SocketDgram_recvfrom()</a> for receiving with sender info. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__client_8c_source.html#l00025">main()</a>.</p>
 
 </div>
 </div>
@@ -1546,6 +1642,8 @@ The port parameter receives the sender's port number. </dd></dl>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923" title="Send datagram to specific address.">SocketDgram_sendto()</a> for sending datagrams. </dd>
 <dd>
 <a class="el" href="group__socket__dgram.html#gaf832ef8734ab4dfb43ad639470461bda" title="Receive from default source (connected socket).">SocketDgram_recv()</a> for receiving from connected sockets. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__server_8c_source.html#l00039">main()</a>.</p>
 
 </div>
 </div>
@@ -1744,6 +1842,8 @@ Use <a class="el" href="group__socket__dgram.html#ga73455982ede6d44649f85adb25c4
 <dd>
 <a class="el" href="group__socket__dgram.html#ga08371cbf32cb15528b42e189f8267923" title="Send datagram to specific address.">SocketDgram_sendto()</a> for sending to arbitrary addresses. </dd></dl>
 
+<p class="reference">Referenced by <a class="el" href="udp__echo__client_8c_source.html#l00025">main()</a>.</p>
+
 </div>
 </div>
 <a id="gadc08ada68a6f9a6922d4e2b0b8f4c081" name="gadc08ada68a6f9a6922d4e2b0b8f4c081"></a>
@@ -1896,6 +1996,8 @@ Unlike TCP, send may return less than len only on would-block, not partial sends
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__socket__dgram.html#gada4b76edaec59a44eb5bc959e6948d3f" title="Receive datagram and get sender address.">SocketDgram_recvfrom()</a> for receiving datagrams. </dd>
 <dd>
 <a class="el" href="group__socket__dgram.html#gabcb18c16142d3b5ef49bee08a96e15fa" title="Set default destination for socket.">SocketDgram_connect()</a> for setting default destination. </dd></dl>
+
+<p class="reference">Referenced by <a class="el" href="udp__echo__server_8c_source.html#l00039">main()</a>.</p>
 
 </div>
 </div>
@@ -2418,7 +2520,7 @@ Default is usually 64. Use 1 for link-local only. </dd></dl>
 <p>It wraps errno and provides context via <a class="el" href="group__foundation.html#gac71a25566cdc9e11eaecb16c966081db" title="Socket_GetLastError - Retrieve the most recent formatted error message.">Socket_GetLastError()</a> for diagnostics. Use in EXCEPT blocks to catch and handle specific conditions, or <a class="el" href="group__foundation.html#ga4b19847d604cdc5896376e694ee2a9c1" title="SocketError_categorize_errno - Classify errno into SocketErrorCategory.">SocketError_categorize_errno()</a> to classify as retryable/transient vs permanent.</p>
 <p>Hierarchy: Extends <a class="el" href="group__foundation.html#structExcept__T" title="Exception structure for structured error handling.">Except_T</a> base with module-specific message formatting. Thread-local stack via Except_stack for propagation.</p>
 <p>Best practice: Catch in FINALLY-free patterns; log with SOCKET_LOG_ERROR_MSG including errno.</p>
-<h2><a class="anchor" id="autotoc_md439"></a>
+<h2><a class="anchor" id="autotoc_md516"></a>
 Handling Example</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <a class="code hl_struct" href="SocketDgram-private_8h.html#structSocketDgram__T">SocketDgram_T</a> sock = <a class="code hl_function" href="group__socket__dgram.html#gad6902c87ab5883f155dab2adfa950c52">SocketDgram_new</a>(AF_INET, 0);</div>

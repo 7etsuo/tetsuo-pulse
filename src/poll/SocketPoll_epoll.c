@@ -297,7 +297,8 @@ backend_get_event (const PollBackend_T backend, int index, int *fd_out,
   assert (fd_out);
   assert (events_out);
 
-  if (index < 0 || index >= backend->last_nev || index >= backend->maxevents)
+  /* Note: last_nev is always <= maxevents (bounded by epoll_wait return) */
+  if (index < 0 || index >= backend->last_nev)
     return -1;
 
   ev = &backend->events[index];

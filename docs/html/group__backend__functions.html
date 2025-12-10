@@ -144,7 +144,7 @@ Functions</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <p>Essential functions for polling backend operations and lifecycle. </p>
 <p>Encapsulates the full backend contract: initialization, socket management, event polling, and teardown. Ensures uniform behavior across platform backends while allowing optimized implementations.</p>
-<h2><a class="anchor" id="autotoc_md343"></a>
+<h2><a class="anchor" id="autotoc_md376"></a>
 Backend Selection &amp; Platform Mapping</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -156,7 +156,7 @@ Backend Selection &amp; Platform Mapping</h2>
 </table>
 <p>Edge | Supports &gt; fds (files/signals) | | 3 | poll | Any POSIX | Level | Simple, but scans all fds each wait |</p>
 <p>Selection via CMake (autoconf-like probes); logs via <a class="el" href="group__event__system.html#ga2edb00f128ad773d62c8f11c516153d9" title="Get human-readable backend name for debugging and logging.">backend_name()</a>.</p>
-<h2><a class="anchor" id="autotoc_md344"></a>
+<h2><a class="anchor" id="autotoc_md377"></a>
 API Contract Summary</h2>
 <ul>
 <li><b>Success</b>: 0 or valid pointer</li>
@@ -167,7 +167,7 @@ API Contract Summary</h2>
 <li><b>Events</b>: Bitmask translation mandatory (POLL_* -&gt; platform equiv)</li>
 <li><b>Cleanup</b>: Idempotent; safe post-arena dispose but recommended before</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md345"></a>
+<h2><a class="anchor" id="autotoc_md378"></a>
 Common Error Codes (errno)</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -187,7 +187,7 @@ Common Error Codes (errno)</h2>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone">EAGAIN   </td><td class="markdownTableBodyNone">wait   </td><td class="markdownTableBodyNone">Non-blocking timeout (0 ms)   </td></tr>
 </table>
-<h2><a class="anchor" id="autotoc_md346"></a>
+<h2><a class="anchor" id="autotoc_md379"></a>
 Implementation Guidelines</h2>
 <ul>
 <li><b>Validation</b>: Mandatory <a class="el" href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a" title="Essential macro to validate file descriptors before backend system calls.">VALIDATE_FD(fd)</a> in add/mod/del; VALIDATE_MAXEVENTS in new</li>
@@ -274,7 +274,7 @@ VALIDATE_* macros for input sanitization </dd>
 <li>Platform: EEXIST (already added), ENOSYS (unsupported)</li>
 </ul>
 <dl class="section user"><dt>Thread Safety\n No - Modifies shared backend state; SocketPoll mutex required.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md351"></a>
+<h2><a class="anchor" id="autotoc_md384"></a>
 Integration Example</h2>
 <div class="fragment"><div class="line"><span class="comment">// Internal backend_add with logging/validation</span></div>
 <div class="line"><span class="keywordtype">int</span> <a class="code hl_function" href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a>(<a class="code hl_typedef" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> self, <span class="keywordtype">int</span> fd, <span class="keywordtype">unsigned</span> events) {</div>
@@ -298,7 +298,7 @@ Integration Example</h2>
 <div class="line">}</div>
 <div class="ttc" id="aSocketUtil_8h_html_ae560ccd4aef66d44e8ecbd256844059c"><div class="ttname"><a href="SocketUtil_8h.html#ae560ccd4aef66d44e8ecbd256844059c">SOCKET_LOG_WARN_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_WARN_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00544">SocketUtil.h:544</a></div></div>
 <div class="ttc" id="agroup__backend__functions_html_gaa51ec4e5f966a860cdd9359c36e977c6"><div class="ttname"><a href="group__backend__functions.html#gaa51ec4e5f966a860cdd9359c36e977c6">backend_add</a></div><div class="ttdeci">int backend_add(PollBackend_T backend, int fd, unsigned events)</div><div class="ttdoc">Register file descriptor for I/O event notifications.</div></div>
-<div class="ttc" id="agroup__event__system__backend_html_ga72ef813749c8c54d8f8ccf64ba724a0a"><div class="ttname"><a href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a></div><div class="ttdeci">#define VALIDATE_FD(fd)</div><div class="ttdoc">Essential macro to validate file descriptors before backend system calls.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00344">SocketPoll_backend.h:344</a></div></div>
+<div class="ttc" id="agroup__event__system__backend_html_ga72ef813749c8c54d8f8ccf64ba724a0a"><div class="ttname"><a href="group__event__system__backend.html#ga72ef813749c8c54d8f8ccf64ba724a0a">VALIDATE_FD</a></div><div class="ttdeci">#define VALIDATE_FD(fd)</div><div class="ttdoc">Essential macro to validate file descriptors before backend system calls.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00371">SocketPoll_backend.h:371</a></div></div>
 <div class="ttc" id="agroup__event__system__backend_html_gadd97c2d63f6b491ef855bd928211e71b"><div class="ttname"><a href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></div><div class="ttdeci">struct PollBackend_T * PollBackend_T</div><div class="ttdoc">Opaque handle for platform-specific polling backend implementation.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll__backend_8h_source.html#l00180">SocketPoll_backend.h:180</a></div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6a19f5d65c083268df50040f34f306d1b8">POLL_READ</a></div><div class="ttdeci">@ POLL_READ</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00181">SocketPoll.h:181</a></div></div>
 <div class="ttc" id="agroup__event__system_html_gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195"><div class="ttname"><a href="group__event__system.html#gga9e8943c9cb47aba63dda4ad9083142b6acd6f685ba9cebb83074be444222ae195">POLL_WRITE</a></div><div class="ttdeci">@ POLL_WRITE</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll_8h_source.html#l00182">SocketPoll.h:182</a></div></div>
@@ -366,7 +366,7 @@ Internal state reset; safe for multiple invocations on same instance.</dd></dl>
 <li>errno may be set by close but ignored (leak already occurred)</li>
 </ul>
 <dl class="section user"><dt>Thread Safety\n Partial - Safe if serialized; concurrent with active wait/add</dt><dd>risky.</dd></dl>
-<h2><a class="anchor" id="autotoc_md349"></a>
+<h2><a class="anchor" id="autotoc_md382"></a>
 Standard Usage Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// Cleanup in SocketPoll destructor or error path</span></div>
 <div class="line"><span class="keywordflow">if</span> (self-&gt;backend != NULL) {</div>
@@ -378,7 +378,7 @@ Standard Usage Pattern</h2>
 <div class="ttc" id="aSocketUtil_8h_html_a9fe70c7ab8b971af2971f3a102b82819"><div class="ttname"><a href="SocketUtil_8h.html#a9fe70c7ab8b971af2971f3a102b82819">SOCKET_LOG_INFO_MSG</a></div><div class="ttdeci">#define SOCKET_LOG_INFO_MSG(fmt,...)</div><div class="ttdef"><b>Definition</b> <a href="SocketUtil_8h_source.html#l00540">SocketUtil.h:540</a></div></div>
 <div class="ttc" id="agroup__backend__functions_html_ga30a767499b3aa80b77e4fb63368be228"><div class="ttname"><a href="group__backend__functions.html#ga30a767499b3aa80b77e4fb63368be228">backend_free</a></div><div class="ttdeci">void backend_free(PollBackend_T backend)</div><div class="ttdoc">Perform backend cleanup: close platform resources but retain arena memory.</div></div>
 <div class="ttc" id="agroup__event__system_html_ga2edb00f128ad773d62c8f11c516153d9"><div class="ttname"><a href="group__event__system.html#ga2edb00f128ad773d62c8f11c516153d9">backend_name</a></div><div class="ttdeci">const char * backend_name(void)</div><div class="ttdoc">Get human-readable backend name for debugging and logging.</div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md350"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md383"></a>
 In Error Handling Context</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    <span class="comment">// ... operations using backend ...</span></div>
@@ -469,7 +469,7 @@ No metrics emitted; caller should increment METRIC_BACKEND_FREED if tracking.</d
 <li>Platform: e.g., EOPNOTSUPP if mod unsupported</li>
 </ul>
 <dl class="section user"><dt>Thread Safety\n No - Alters shared registration state; requires locking.</dt><dd></dd></dl>
-<h2><a class="anchor" id="autotoc_md352"></a>
+<h2><a class="anchor" id="autotoc_md385"></a>
 Usage Pattern</h2>
 <div class="fragment"><div class="line"><span class="comment">// Dynamic event adjustment e.g., after socket state change</span></div>
 <div class="line"><span class="keywordtype">int</span> update_events(<a class="code hl_typedef" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a> backend, <span class="keywordtype">int</span> fd, <span class="keywordtype">unsigned</span> new_evs) {</div>
@@ -562,7 +562,7 @@ Not all events need explicit set; platforms infer ERROR/HUP. </dd></dl>
 <li>EMFILE / ENFILE / EACCES: Platform init failure (e.g., epoll_create1)</li>
 </ul>
 <dl class="section user"><dt>Thread Safety\n Yes - Creates isolated instance; safe from any thread (arena</dt><dd>must be thread-local or locked).</dd></dl>
-<h2><a class="anchor" id="autotoc_md347"></a>
+<h2><a class="anchor" id="autotoc_md380"></a>
 Basic Usage (Internal)</h2>
 <div class="fragment"><div class="line"><span class="comment">// Example in backend factory function</span></div>
 <div class="line"><a class="code hl_typedef" href="group__event__system__backend.html#gadd97c2d63f6b491ef855bd928211e71b">PollBackend_T</a></div>
@@ -581,7 +581,7 @@ Basic Usage (Internal)</h2>
 <div class="ttc" id="agroup__backend__functions_html_gaa198b207e04b5bb6bec2746c7d86b735"><div class="ttname"><a href="group__backend__functions.html#gaa198b207e04b5bb6bec2746c7d86b735">backend_new</a></div><div class="ttdeci">PollBackend_T backend_new(Arena_T arena, int maxevents)</div><div class="ttdoc">Allocate and initialize a platform-optimized polling backend.</div></div>
 <div class="ttc" id="agroup__foundation_html_ga481ecfe6b9e5c83515c92d1808e4b2f9"><div class="ttname"><a href="group__foundation.html#ga481ecfe6b9e5c83515c92d1808e4b2f9">Socket_safe_strerror</a></div><div class="ttdeci">const char * Socket_safe_strerror(int errnum)</div><div class="ttdoc">Provides a thread-safe and bounds-checked implementation of strerror().</div></div>
 <div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md348"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md381"></a>
 With Error Handling</h2>
 <div class="fragment"><div class="line"><a class="code hl_define" href="group__foundation.html#gad2746371528bdf15c3910b7bf217dac0">TRY</a> {</div>
 <div class="line">    self-&gt;backend = <a class="code hl_function" href="group__backend__functions.html#gaa198b207e04b5bb6bec2746c7d86b735">backend_new</a>(self-&gt;arena, SOCKET_POLL_DEFAULT_MAXEVENTS);</div>

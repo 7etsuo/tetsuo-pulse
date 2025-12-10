@@ -166,6 +166,15 @@ Functions</h2></td></tr>
 <tr class="memitem:ga4c5519b89e0bba69f26d03b6893ba779" id="r_ga4c5519b89e0bba69f26d03b6893ba779"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga4c5519b89e0bba69f26d03b6893ba779">SocketTimer_remaining</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> timer)</td></tr>
 <tr class="memdesc:ga4c5519b89e0bba69f26d03b6893ba779"><td class="mdescLeft">&#160;</td><td class="mdescRight">Query milliseconds remaining until timer expiry.  <br /></td></tr>
 <tr class="separator:ga4c5519b89e0bba69f26d03b6893ba779"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga60383fbce3a4bfa8124beefdf1e7eb10" id="r_ga60383fbce3a4bfa8124beefdf1e7eb10"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga60383fbce3a4bfa8124beefdf1e7eb10">SocketTimer_reschedule</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> timer, int64_t new_delay_ms)</td></tr>
+<tr class="memdesc:ga60383fbce3a4bfa8124beefdf1e7eb10"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reschedule a timer with a new delay.  <br /></td></tr>
+<tr class="separator:ga60383fbce3a4bfa8124beefdf1e7eb10"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ga5808ca3ea797fc76f76406d82daca0ac" id="r_ga5808ca3ea797fc76f76406d82daca0ac"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#ga5808ca3ea797fc76f76406d82daca0ac">SocketTimer_pause</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> timer)</td></tr>
+<tr class="memdesc:ga5808ca3ea797fc76f76406d82daca0ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pause a timer, preserving remaining time.  <br /></td></tr>
+<tr class="separator:ga5808ca3ea797fc76f76406d82daca0ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:gabdbcc665c288caa6e0d4ca211530238c" id="r_gabdbcc665c288caa6e0d4ca211530238c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__event__system.html#gabdbcc665c288caa6e0d4ca211530238c">SocketTimer_resume</a> (<a class="el" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll, <a class="el" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> timer)</td></tr>
+<tr class="memdesc:gabdbcc665c288caa6e0d4ca211530238c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Resume a paused timer.  <br /></td></tr>
+<tr class="separator:gabdbcc665c288caa6e0d4ca211530238c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -188,7 +197,7 @@ Variables</h2></td></tr>
 <li>Millisecond resolution for delays and intervals</li>
 <li>Timers may fire slightly after deadline due to event loop scheduling and system load</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md208"></a>
+<h2><a class="anchor" id="autotoc_md211"></a>
 Default Values and Limits</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -214,9 +223,9 @@ Default Values and Limits</h2>
 <li>Timer expiry clamped on overflow; logged as warning</li>
 <li>Dependent on poll backend timeout limits for very long delays</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md209"></a>
+<h2><a class="anchor" id="autotoc_md212"></a>
 Usage Patterns</h2>
-<h3><a class="anchor" id="autotoc_md210"></a>
+<h3><a class="anchor" id="autotoc_md213"></a>
 Basic Event Loop with Timer</h3>
 <div class="fragment"><div class="line"><a class="code hl_struct" href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a> poll = <a class="code hl_function" href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a>(1024);</div>
 <div class="line"><a class="code hl_typedef" href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a> arena = <a class="code hl_function" href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a>();</div>
@@ -225,7 +234,7 @@ Basic Event Loop with Timer</h3>
 <div class="line"><a class="code hl_struct" href="group__event__system.html#structSocketTimer__T">SocketTimer_T</a> timer = <a class="code hl_function" href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a>(poll, 5000, cleanup_cb, userdata);</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Event loop automatically handles timer firing</span></div>
-<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
+<div class="line"><span class="keywordflow">while</span> (<a class="code hl_variable" href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a>) {</div>
 <div class="line">    <span class="keywordtype">int</span> events = <a class="code hl_function" href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a>(poll, &amp;event_list, -1);</div>
 <div class="line">    <span class="comment">// Process I/O events...</span></div>
 <div class="line">    <span class="comment">// Timers fired during wait() if expired</span></div>
@@ -233,6 +242,7 @@ Basic Event Loop with Timer</h3>
 <div class="line"> </div>
 <div class="line"><a class="code hl_function" href="group__event__system.html#gaca744c50badbdb869c52088b9f32f8d2">SocketPoll_free</a>(&amp;poll);</div>
 <div class="line"><a class="code hl_function" href="group__foundation.html#ga6842e66018614df08139e67826cf3e0d">Arena_dispose</a>(&amp;arena);</div>
+<div class="ttc" id="aconnection__pool_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="connection__pool_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="connection__pool_8c_source.html#l00029">connection_pool.c:29</a></div></div>
 <div class="ttc" id="agroup__event__system_html_ga2537cebf106e583079ec472086a26d65"><div class="ttname"><a href="group__event__system.html#ga2537cebf106e583079ec472086a26d65">SocketTimer_add</a></div><div class="ttdeci">SocketTimer_T SocketTimer_add(SocketPoll_T poll, int64_t delay_ms, SocketTimerCallback callback, void *userdata)</div><div class="ttdoc">Add a one-shot timer to the event poll.</div></div>
 <div class="ttc" id="agroup__event__system_html_gaa3d47365dd18329d50ee636284839738"><div class="ttname"><a href="group__event__system.html#gaa3d47365dd18329d50ee636284839738">SocketPoll_wait</a></div><div class="ttdeci">int SocketPoll_wait(SocketPoll_T poll, SocketEvent_T **events, int timeout)</div><div class="ttdoc">Block and wait for I/O events or timeout on registered sockets.</div></div>
 <div class="ttc" id="agroup__event__system_html_gac1fbd1a09d564f7988b0e427e5707ca7"><div class="ttname"><a href="group__event__system.html#gac1fbd1a09d564f7988b0e427e5707ca7">SocketPoll_new</a></div><div class="ttdeci">SocketPoll_T SocketPoll_new(int maxevents)</div><div class="ttdoc">Create a new event poll instance.</div></div>
@@ -242,8 +252,7 @@ Basic Event Loop with Timer</h3>
 <div class="ttc" id="agroup__foundation_html_ga6a6d6890eb6ed1248ae1a5f0c677c7a4"><div class="ttname"><a href="group__foundation.html#ga6a6d6890eb6ed1248ae1a5f0c677c7a4">Arena_new</a></div><div class="ttdeci">Arena_T Arena_new(void)</div><div class="ttdoc">Create a new memory arena with initial capacity and thread-safe protection.</div></div>
 <div class="ttc" id="agroup__foundation_html_gac1ed22b9df4eff7a3398cac608c090cc"><div class="ttname"><a href="group__foundation.html#gac1ed22b9df4eff7a3398cac608c090cc">Arena_T</a></div><div class="ttdeci">struct Arena_T * Arena_T</div><div class="ttdef"><b>Definition</b> <a href="Arena_8h_source.html#l00080">Arena.h:80</a></div></div>
 <div class="ttc" id="agroup__poll__private_html_structSocketPoll__T"><div class="ttname"><a href="group__poll__private.html#structSocketPoll__T">SocketPoll_T</a></div><div class="ttdoc">Opaque internal state structure for SocketPoll instance.</div><div class="ttdef"><b>Definition</b> <a href="SocketPoll-private_8h_source.html#l00404">SocketPoll-private.h:405</a></div></div>
-<div class="ttc" id="ahttp__server_8c_html_af1f449cc09f8d36befcce07bc38c29c0"><div class="ttname"><a href="http__server_8c.html#af1f449cc09f8d36befcce07bc38c29c0">running</a></div><div class="ttdeci">static volatile int running</div><div class="ttdef"><b>Definition</b> <a href="http__server_8c_source.html#l00032">http_server.c:32</a></div></div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md211"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md214"></a>
 Cleanup and Resource Management</h3>
 <p>Timers are arena-allocated; dispose arena to free all timers in heap. Cancel pending timers before arena dispose to avoid leaks if arena reused.</p>
 <dl class="section see"><dt>See also</dt><dd><a class="el" href="group__poll__private.html#structSocketPoll__T" title="Opaque internal state structure for SocketPoll instance.">SocketPoll_T</a> for full event loop documentation. </dd>
