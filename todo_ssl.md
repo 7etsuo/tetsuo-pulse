@@ -789,62 +789,141 @@ testing requirements, documentation, security hardening, and future enhancements
 - DTLS 1.2 enforcement verified via `SOCKET_DTLS_MIN_VERSION = DTLS1_2_VERSION` in `SocketDTLSConfig.h`
 - Cookie secrets securely cleared via `SocketCrypto_secure_clear()` in `SocketDTLSContext_free()`
 
-### 5.2 Certificate Management — *depends on 5.1, 7.1 (reuses 2.2 patterns)*
+### 5.2 Certificate Management — *depends on 5.1, 7.1 (reuses 2.2 patterns)* ✅ COMPLETE
 **Difficulty: 4/9** _(Reuses TLS patterns)_
 
-- [ ] **SocketDTLSContext_load_certificate()**: Verify cert/key loading and validation
-- [ ] **SocketDTLSContext_load_ca()**: Verify CA loading (file and directory modes)
-- [ ] **SocketDTLSContext_set_verify_mode()**: Verify correct mapping to SSL_VERIFY_* flags
+- [x] **SocketDTLSContext_load_certificate()**: Verify cert/key loading and validation
+  - Implemented in `src/tls/SocketDTLSContext.c:392-424`
+  - Uses `SSL_CTX_use_certificate_chain_file()` and `SSL_CTX_use_PrivateKey_file()`
+  - Validates key matches cert via `SSL_CTX_check_private_key()`
+  - Security: File path validation via `dtls_validate_file_path()`, size limits via `SOCKET_DTLS_MAX_FILE_SIZE`
+- [x] **SocketDTLSContext_load_ca()**: Verify CA loading (file and directory modes)
+  - Implemented in `src/tls/SocketDTLSContext.c:426-470`
+  - Uses `SSL_CTX_load_verify_locations()` for both file and directory
+  - Auto-detects mode via `S_ISDIR(st.st_mode)`
+- [x] **SocketDTLSContext_set_verify_mode()**: Verify correct mapping to SSL_VERIFY_* flags
+  - Implemented in `src/tls/SocketDTLSContext.c:472-487`
+  - Maps `TLS_VERIFY_NONE`, `TLS_VERIFY_PEER`, `TLS_VERIFY_FAIL_IF_NO_PEER_CERT`, `TLS_VERIFY_CLIENT_ONCE`
 
-### 5.3 Cookie Exchange (DoS Protection) — *depends on 5.1, 6.4*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_FULL_SERVER_LIFECYCLE tests verify mode)
+
+### 5.3 Cookie Exchange (DoS Protection) — *depends on 5.1, 6.4* ✅ COMPLETE
 **Difficulty: 7/9** _(Security-critical: HMAC, timestamps, secret rotation)_
 
-- [ ] **SocketDTLSContext_enable_cookie_exchange()**: Verify cookie callbacks are installed
-- [ ] **SocketDTLSContext_enable_cookie_exchange()**: Verify automatic secret key generation
-- [ ] **SocketDTLSContext_set_cookie_secret()**: Verify secret length validation (32 bytes)
-- [ ] **SocketDTLSContext_set_cookie_secret()**: Verify secret is securely stored
-- [ ] **SocketDTLSContext_rotate_cookie_secret()**: Verify new random secret generation
-- [ ] **SocketDTLSContext_has_cookie_exchange()**: Verify query function
-- [ ] **Cookie HMAC-SHA256**: Verify cookie = HMAC(secret, client_addr || client_port || timestamp)
-- [ ] **Cookie Timestamp Buckets**: Verify time-based cookie validation with window tolerance
-- [ ] **Cookie Secret Rotation**: Verify old cookies are invalid after rotation
+- [x] **SocketDTLSContext_enable_cookie_exchange()**: Verify cookie callbacks are installed
+  - Implemented in `src/tls/SocketDTLSContext.c:494-521`
+  - Installs `dtls_cookie_generate_cb` and `dtls_cookie_verify_cb` via OpenSSL callbacks
+- [x] **SocketDTLSContext_enable_cookie_exchange()**: Verify automatic secret key generation
+  - Uses `SocketCrypto_random_bytes()` for 32-byte cryptographic random secret
+- [x] **SocketDTLSContext_set_cookie_secret()**: Verify secret length validation (32 bytes)
+  - Implemented in `src/tls/SocketDTLSContext.c:523-540`
+  - Validates `len == SOCKET_DTLS_COOKIE_SECRET_LEN` (32 bytes)
+- [x] **SocketDTLSContext_set_cookie_secret()**: Verify secret is securely stored
+  - Protected by `pthread_mutex_lock(&ctx->cookie.secret_mutex)`
+- [x] **SocketDTLSContext_rotate_cookie_secret()**: Verify new random secret generation
+  - Implemented in `src/tls/SocketDTLSContext.c:542-564`
+  - Copies current to `prev_secret`, generates new via `SocketCrypto_random_bytes()`
+- [x] **SocketDTLSContext_has_cookie_exchange()**: Verify query function
+  - Implemented in `src/tls/SocketDTLSContext.c:566-570`
+  - Returns `ctx->cookie.cookie_enabled` flag
+- [x] **Cookie HMAC-SHA256**: Cookie = HMAC(secret, client_addr || client_port || timestamp)
+  - Implemented in `dtls_generate_cookie_hmac()` in `SocketDTLS-private.h`
+- [x] **Cookie Timestamp Buckets**: Time-based validation with `SOCKET_DTLS_COOKIE_LIFETIME_SEC` (60s)
+- [x] **Cookie Secret Rotation**: Old cookies verified against both current and prev_secret
 
-### 5.4 MTU Configuration — *depends on 5.1, 6.3*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_cookie.c`, `src/fuzz/fuzz_dtls_context.c` (OP_COOKIE_EXCHANGE)
+
+### 5.4 MTU Configuration — *depends on 5.1, 6.3* ✅ COMPLETE
 **Difficulty: 3/9** _(Range validation)_
 
-- [ ] **SocketDTLSContext_set_mtu()**: Verify MTU range validation (576-9000)
-- [ ] **SocketDTLSContext_set_mtu()**: Verify default MTU (1400 bytes) is appropriate
-- [ ] **SocketDTLSContext_get_mtu()**: Verify current MTU is returned
+- [x] **SocketDTLSContext_set_mtu()**: Verify MTU range validation (576-9000)
+  - Implemented in `src/tls/SocketDTLSContext.c:577-591`
+  - Uses `SOCKET_DTLS_VALID_MTU()` macro for range check
+  - Raises `SocketDTLS_Failed` with detailed error if invalid
+- [x] **SocketDTLSContext_set_mtu()**: Verify default MTU (1400 bytes) is appropriate
+  - Default set in `alloc_context()` via `ctx->mtu = SOCKET_DTLS_DEFAULT_MTU`
+- [x] **SocketDTLSContext_get_mtu()**: Verify current MTU is returned
+  - Implemented in `src/tls/SocketDTLSContext.c:593-597`
+  - Returns `ctx->mtu` or `SOCKET_DTLS_DEFAULT_MTU` if ctx NULL
 
-### 5.5 Protocol Configuration — *depends on 5.1, 6.1, 6.2*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_SET_MTU tests with fuzzed values)
+**Unit Tests**: `src/fuzz/fuzz_dtls_config.c` verifies `SOCKET_DTLS_VALID_MTU()` macro
+
+### 5.5 Protocol Configuration — *depends on 5.1, 6.1, 6.2* ✅ COMPLETE
 **Difficulty: 3/9** _(Similar to TLS config)_
 
-- [ ] **SocketDTLSContext_set_min_protocol()**: Verify DTLS 1.2 minimum enforcement
-- [ ] **SocketDTLSContext_set_max_protocol()**: Verify max version setting (DTLS 1.3 if available)
-- [ ] **SocketDTLSContext_set_cipher_list()**: Verify cipher string parsing
+- [x] **SocketDTLSContext_set_min_protocol()**: Verify DTLS 1.2 minimum enforcement
+  - Implemented in `src/tls/SocketDTLSContext.c:603-610`
+  - Uses `SSL_CTX_set_min_proto_version(ctx->ssl_ctx, version)`
+  - Default enforces DTLS 1.2 via `SOCKET_DTLS_MIN_VERSION = DTLS1_2_VERSION`
+- [x] **SocketDTLSContext_set_max_protocol()**: Verify max version setting (DTLS 1.3 if available)
+  - Implemented in `src/tls/SocketDTLSContext.c:612-619`
+  - Uses `SSL_CTX_set_max_proto_version(ctx->ssl_ctx, version)`
+  - `SOCKET_DTLS_MAX_VERSION` auto-detects DTLS 1.3 support
+- [x] **SocketDTLSContext_set_cipher_list()**: Verify cipher string parsing
+  - Implemented in `src/tls/SocketDTLSContext.c:621-630`
+  - Uses `SSL_CTX_set_cipher_list()`, defaults to `SOCKET_DTLS_CIPHERSUITES`
 
-### 5.6 ALPN Support — *depends on 5.1 (reuses 2.10 patterns)*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_SET_CIPHER with fuzzed cipher strings)
+**Unit Tests**: `src/fuzz/fuzz_dtls_config.c` verifies protocol version constants
+
+### 5.6 ALPN Support — *depends on 5.1 (reuses 2.10 patterns)* ✅ COMPLETE
 **Difficulty: 3/9** _(Reuses TLS ALPN logic)_
 
-- [ ] **SocketDTLSContext_set_alpn_protos()**: Verify protocol list encoding and validation
-- [ ] **ALPN Selection Callback**: Verify server-side ALPN selection works
+- [x] **SocketDTLSContext_set_alpn_protos()**: Verify protocol list encoding and validation
+  - Implemented in `src/tls/SocketDTLSContext.c:679-766`
+  - Validates protocol count <= `SOCKET_DTLS_MAX_ALPN_PROTOCOLS` (16)
+  - Validates individual protocol length <= `SOCKET_DTLS_MAX_ALPN_LEN` (255)
+  - Arena-allocates protocol strings and wire format
+- [x] **ALPN Selection Callback**: Verify server-side ALPN selection works
+  - `alpn_select_cb()` implemented in `src/tls/SocketDTLSContext.c:640-677`
+  - Server: Registers via `SSL_CTX_set_alpn_select_cb()`
+  - Client: Builds wire format and calls `SSL_CTX_set_alpn_protos()`
 
-### 5.7 Session Management — *depends on 5.1 (reuses 2.11 patterns)*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_SET_ALPN with fuzzed protocol names)
+
+### 5.7 Session Management — *depends on 5.1 (reuses 2.11 patterns)* ✅ COMPLETE
 **Difficulty: 4/9** _(Reuses TLS session patterns)_
 
-- [ ] **SocketDTLSContext_enable_session_cache()**: Verify cache enabling for server/client
-- [ ] **SocketDTLSContext_get_cache_stats()**: Verify hits/misses/stores counters
+- [x] **SocketDTLSContext_enable_session_cache()**: Verify cache enabling for server/client
+  - Implemented in `src/tls/SocketDTLSContext.c:774-803`
+  - Server: `SSL_SESS_CACHE_SERVER`, Client: `SSL_SESS_CACHE_CLIENT`
+  - Validates cache size via `SocketSecurity_check_size()`
+  - Sets cache size via `SSL_CTX_sess_set_cache_size()`
+  - Sets timeout via `SSL_CTX_set_timeout()`
+- [x] **SocketDTLSContext_get_cache_stats()**: Verify hits/misses/stores counters
+  - Implemented in `src/tls/SocketDTLSContext.c:805-822`
+  - Thread-safe via `pthread_mutex_lock(&ctx->stats_mutex)`
+  - Returns `ctx->cache_hits`, `ctx->cache_misses`, `ctx->cache_stores`
 
-### 5.8 Timeout Configuration — *depends on 5.1, 6.5*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_ENABLE_CACHE tests with fuzzed params)
+
+### 5.8 Timeout Configuration — *depends on 5.1, 6.5* ✅ COMPLETE
 **Difficulty: 3/9** _(Retransmission timer config)_
 
-- [ ] **SocketDTLSContext_set_timeout()**: Verify initial and max retransmission timeout settings
+- [x] **SocketDTLSContext_set_timeout()**: Verify initial and max retransmission timeout settings
+  - Implemented in `src/tls/SocketDTLSContext.c:829-848`
+  - Validates both values via `SOCKET_DTLS_VALID_TIMEOUT()` macro
+  - Stores in `ctx->initial_timeout_ms` and `ctx->max_timeout_ms`
+  - Default: `SOCKET_DTLS_INITIAL_TIMEOUT_MS` (1000ms), `SOCKET_DTLS_MAX_TIMEOUT_MS` (60000ms)
 
-### 5.9 Internal Functions — *depends on 5.1*
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_SET_TIMEOUT with fuzzed values)
+**Unit Tests**: `src/fuzz/fuzz_dtls_config.c` verifies `SOCKET_DTLS_VALID_TIMEOUT()` macro
+
+### 5.9 Internal Functions — *depends on 5.1* ✅ COMPLETE
 **Difficulty: 2/9** _(Simple internal accessors)_
 
-- [ ] **SocketDTLSContext_get_ssl_ctx()**: Verify internal accessor returns correct SSL_CTX*
-- [ ] **SocketDTLSContext_is_server()**: Verify server mode detection
+- [x] **SocketDTLSContext_get_ssl_ctx()**: Verify internal accessor returns correct SSL_CTX*
+  - Implemented in `src/tls/SocketDTLSContext.c:855-859`
+  - Returns `ctx->ssl_ctx` or NULL if ctx NULL
+- [x] **SocketDTLSContext_is_server()**: Verify server mode detection
+  - Implemented in `src/tls/SocketDTLSContext.c:861-865`
+  - Returns `ctx->is_server` (1 for server, 0 for client)
+- [x] **dtls_context_get_from_ssl()**: Get context from SSL object via ex_data
+  - Implemented in `src/tls/SocketDTLSContext.c:873-888`
+  - Uses `SSL_CTX_get_ex_data()` with registered index
+
+**Fuzzing Coverage**: `src/fuzz/fuzz_dtls_context.c` (OP_FULL_SERVER_LIFECYCLE tests all accessors)
 
 ---
 
