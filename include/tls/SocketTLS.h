@@ -880,15 +880,77 @@ extern TLSHandshakeState SocketTLS_handshake_auto (Socket_T socket);
  * @ingroup security
  * @param socket The socket instance with TLS enabled
  *
- * Initiates a bidirectional TLS shutdown (close_notify alert). May need
- * multiple calls for full shutdown in non-blocking mode. Call before
- * Socket_close() to ensure proper TLS termination.
+ * Initiates a bidirectional TLS shutdown by sending close_notify and waiting
+ * for the peer's close_notify response. This ensures a clean termination of
+ * the TLS session. Uses the socket's operation timeout or defaults to
+ * SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS.
+ *
+ * ## Shutdown Behavior
+ *
+ * - **Blocking mode**: Waits up to timeout for peer's close_notify response
+ * - **Non-blocking mode**: Uses internal polling to complete shutdown
+ * - **Timeout**: If peer doesn't respond, sends close_notify (best effort)
+ *   and raises SocketTLS_ShutdownFailed
+ * - **Error handling**: Only raises exceptions on protocol errors, not on
+ *   EAGAIN/EWOULDBLOCK (handled internally via polling)
+ *
+ * ## When to Use
+ *
+ * Call before Socket_close() for:
+ * - Clean session termination (enables session resumption)
+ * - Preventing truncation attacks (receiver knows no more data coming)
+ * - Protocol compliance (TLS spec requires close_notify)
+ *
+ * For faster shutdown without waiting, use SocketTLS_shutdown_send().
  *
  * @return void
- * @throws SocketTLS_ShutdownFailed on error
+ * @throws SocketTLS_ShutdownFailed on protocol error or timeout
  * @threadsafe No - modifies SSL object state
+ *
+ * @see SocketTLS_shutdown_send() for unidirectional (half-close) shutdown
+ * @see SocketTLS_disable() for best-effort shutdown without exceptions
  */
 extern void SocketTLS_shutdown (Socket_T socket);
+
+/**
+ * @brief Send close_notify without waiting for peer response (half-close)
+ * @ingroup security
+ * @param socket The socket instance with TLS enabled
+ *
+ * Performs a unidirectional TLS shutdown by sending the close_notify alert
+ * without waiting for the peer's response. This is faster than full shutdown
+ * and suitable when:
+ * - The socket will be closed immediately after
+ * - You don't need session resumption
+ * - Quick teardown is more important than protocol compliance
+ *
+ * ## Non-blocking Behavior
+ *
+ * For non-blocking sockets, if the close_notify cannot be sent immediately:
+ * - Returns 0 with errno=EAGAIN
+ * - Caller can poll for POLL_WRITE and retry, or proceed to close
+ *
+ * @return 1 on success (close_notify sent),
+ *         0 if would block (errno=EAGAIN) - retry after polling,
+ *         -1 if TLS not enabled or already shutdown
+ *
+ * @throws SocketTLS_ShutdownFailed on protocol error (rare)
+ * @threadsafe No - modifies SSL object state
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Quick shutdown - don't wait for peer response
+ * int ret = SocketTLS_shutdown_send(sock);
+ * if (ret == 0 && errno == EAGAIN) {
+ *     // Optional: poll and retry, or just proceed to close
+ * }
+ * Socket_close(sock);  // Close underlying socket
+ * @endcode
+ *
+ * @see SocketTLS_shutdown() for full bidirectional shutdown
+ */
+extern int SocketTLS_shutdown_send (Socket_T socket);
 
 /* TLS I/O operations */
 /**
@@ -1095,17 +1157,42 @@ extern const char *SocketTLS_get_verify_error_string (Socket_T socket,
  * @ingroup security
  * @param socket The socket instance with completed handshake
  *
- * Determines if the connection used a resumed session (faster handshake via
- * session tickets/cache).
+ * After a successful handshake, determines if the connection used session
+ * resumption (abbreviated handshake) or a full handshake.
  *
- * @return 1 if reused, 0 if full handshake, -1 if unavailable
+ * ## TLS 1.3 Session Resumption
+ *
+ * In TLS 1.3, session resumption uses Pre-Shared Keys (PSK):
+ * - Returns 1 if a valid session was restored and server accepted it
+ * - Resumed sessions provide the same security as full handshakes
+ * - 0-RTT early data (if enabled) is a separate feature
+ *
+ * ## When to Call
+ *
+ * Call after handshake completion to verify resumption success:
+ * @code{.c}
+ * SocketTLS_session_restore(sock, session_data, len);
+ * SocketTLS_handshake_auto(sock);
+ *
+ * if (SocketTLS_is_session_reused(sock) == 1) {
+ *     printf("Fast resumed connection!\n");
+ * } else {
+ *     printf("Full handshake (save new session for next time)\n");
+ *     SocketTLS_session_save(sock, new_session, &new_len);
+ * }
+ * @endcode
+ *
+ * @return 1 if session was reused (abbreviated handshake),
+ *         0 if full handshake was performed,
+ *         -1 if TLS not enabled or handshake not complete
+ *
  * @throws None
  * @threadsafe Yes - reads immutable post-handshake state
  *
- * @see SocketTLSContext_enable_session_cache() for enabling session caching.
- * @see SocketTLSContext_enable_session_tickets() for ticket-based resumption.
- * @see SocketTLSContext_get_cache_stats() for monitoring cache performance.
- * @see docs/SECURITY_GUIDE.md for session resumption security considerations.
+ * @see SocketTLS_session_save() to export session for future use
+ * @see SocketTLS_session_restore() to restore session before handshake
+ * @see SocketTLSContext_enable_session_cache() for server-side caching
+ * @see SocketTLSContext_enable_session_tickets() for ticket-based resumption
  */
 extern int SocketTLS_is_session_reused (Socket_T socket);
 
@@ -1139,15 +1226,41 @@ extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
  * @brief Export TLS session for later resumption
  * @ingroup security
  * @param[in] socket Socket with completed TLS handshake
- * @param[out] buffer Buffer to store serialized session
- * @param[in,out] len On input: buffer size; On output: actual session size
+ * @param[out] buffer Buffer to store serialized session (NULL to query size)
+ * @param[in,out] len On input: buffer size; On output: actual/required size
  *
- * Exports the current TLS session data in a format suitable for persistent
- * storage or transfer to another process. The session can later be restored
- * with SocketTLS_session_restore() for 0-RTT or abbreviated handshakes.
+ * Exports the current TLS session data in DER format suitable for persistent
+ * storage or transfer. The session can later be restored with
+ * SocketTLS_session_restore() for abbreviated handshakes.
  *
- * @return 1 on success, 0 if buffer too small (len updated with required size),
- *         -1 on error (no session, TLS not enabled)
+ * ## TLS 1.3 Session Handling
+ *
+ * TLS 1.3 delivers sessions asynchronously via NewSessionTicket messages
+ * AFTER handshake completion. Important considerations:
+ *
+ * - **Timing**: For TLS 1.3, calling immediately after handshake may return -1.
+ *   Session tickets are typically sent shortly after handshake completes.
+ *   Perform some I/O or wait briefly before saving.
+ *
+ * - **Multiple tickets**: Servers may send multiple tickets. Only the most
+ *   recent is captured.
+ *
+ * - **Lifetime**: TLS 1.3 sessions have server-enforced expiration. This
+ *   function checks validity before export.
+ *
+ * ## Buffer Sizing
+ *
+ * To determine required buffer size:
+ * @code{.c}
+ * size_t required_len = 0;
+ * SocketTLS_session_save(sock, NULL, &required_len);
+ * // Now required_len contains the needed buffer size
+ * @endcode
+ *
+ * @return 1 on success (session saved),
+ *         0 if buffer too small or querying size (len updated),
+ *         -1 on error (no session, expired, TLS not enabled, handshake
+ * incomplete)
  *
  * @throws None
  * @threadsafe No - must synchronize access to same socket
@@ -1155,18 +1268,25 @@ extern const char *SocketTLS_get_alpn_selected (Socket_T socket);
  * ## Example
  *
  * @code{.c}
- * // Save session for later resumption
- * size_t len = 4096;
- * unsigned char session_data[4096];
+ * // Perform some I/O first to receive TLS 1.3 session tickets
+ * SocketTLS_recv(sock, buf, sizeof(buf));
  *
+ * // Query required size
+ * size_t len = 0;
+ * SocketTLS_session_save(sock, NULL, &len);
+ *
+ * // Allocate and save
+ * unsigned char *session_data = malloc(len);
  * if (SocketTLS_session_save(sock, session_data, &len) == 1) {
- *     // Store session_data[:len] to disk or cache
  *     write_session_cache(host, session_data, len);
  * }
+ * free(session_data);
  * @endcode
  *
- * @note Session data is sensitive - store securely
+ * @note Session data is sensitive - store encrypted at rest
  * @note Session validity depends on server policy (typically 24h-7d)
+ * @warning For TLS 1.3, wait for I/O activity before saving to ensure ticket
+ * receipt
  *
  * @see SocketTLS_session_restore() to import saved session
  * @see SocketTLS_is_session_reused() to verify resumption worked
@@ -1178,15 +1298,36 @@ extern int SocketTLS_session_save (Socket_T socket, unsigned char *buffer,
 /**
  * @brief Import previously saved TLS session for resumption
  * @ingroup security
- * @param[in] socket Socket with TLS enabled but before handshake
+ * @param[in] socket Socket with TLS enabled but BEFORE handshake
  * @param[in] buffer Buffer containing serialized session
  * @param[in] len Length of session data
  *
  * Restores a previously exported TLS session to enable session resumption.
- * Must be called after SocketTLS_enable() but before SocketTLS_handshake().
- * If the server accepts the session, the handshake will be abbreviated.
+ * When the handshake is performed, OpenSSL will attempt to resume the session.
  *
- * @return 1 on success, 0 on invalid session data, -1 on error
+ * ## Critical Timing Requirement
+ *
+ * This function MUST be called in this order:
+ * 1. SocketTLS_enable(sock, ctx)
+ * 2. SocketTLS_set_hostname(sock, hostname) // if needed
+ * 3. **SocketTLS_session_restore(sock, data, len)** ← HERE
+ * 4. SocketTLS_handshake*()
+ *
+ * Calling after handshake has no effect and returns -1.
+ *
+ * ## Graceful Failure Handling
+ *
+ * Session restoration fails gracefully in these cases:
+ * - Session data is corrupted or invalid (returns 0)
+ * - Session has expired (returns 0)
+ * - Server no longer accepts the session (handshake proceeds normally)
+ *
+ * In all cases, the handshake falls back to full negotiation automatically.
+ * Use SocketTLS_is_session_reused() after handshake to verify success.
+ *
+ * @return 1 on success (session set for resumption attempt),
+ *         0 on invalid/expired session data (full handshake will occur),
+ *         -1 on error (TLS not enabled, handshake already done)
  *
  * @throws None
  * @threadsafe No - must synchronize access to same socket
@@ -1201,17 +1342,22 @@ extern int SocketTLS_session_save (Socket_T socket, unsigned char *buffer,
  * size_t len;
  * unsigned char *session_data = read_session_cache("example.com", &len);
  * if (session_data) {
- *     SocketTLS_session_restore(sock, session_data, len);
+ *     int ret = SocketTLS_session_restore(sock, session_data, len);
  *     free(session_data);
+ *     if (ret == 0) {
+ *         // Session expired/invalid - will do full handshake
+ *     }
  * }
  *
  * SocketTLS_handshake_auto(sock);
  * if (SocketTLS_is_session_reused(sock)) {
  *     printf("Session resumed!\n");
+ * } else {
+ *     printf("Full handshake performed\n");
  * }
  * @endcode
  *
- * @note Session may be rejected by server (full handshake will occur)
+ * @note Session may be rejected by server even if restore succeeds
  * @note Only valid for same server the session was created with
  *
  * @see SocketTLS_session_save() to export session

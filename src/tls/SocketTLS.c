@@ -707,6 +707,75 @@ SocketTLS_handshake_auto (Socket_T socket)
   return SocketTLS_handshake_loop (socket, timeout_ms);
 }
 
+/**
+ * shutdown_handle_ssl_error - Handle SSL_shutdown errors in non-blocking mode
+ * @socket: Socket instance
+ * @ssl: SSL object
+ * @result: SSL_shutdown() return value
+ * @want_events_out: Output for poll events needed (POLL_READ/POLL_WRITE)
+ *
+ * Returns: 1 if should continue polling, 0 if fatal error occurred
+ * Thread-safe: No
+ *
+ * Unlike handshake error handling, shutdown treats EAGAIN/WANT_* as
+ * non-fatal - we continue polling. Only protocol errors are fatal.
+ */
+static int
+shutdown_handle_ssl_error (Socket_T socket, SSL *ssl, int result,
+                           unsigned *want_events_out)
+{
+  int ssl_error = SSL_get_error (ssl, result);
+
+  *want_events_out = 0;
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+      *want_events_out = POLL_READ;
+      errno = EAGAIN;
+      return 1; /* Continue polling */
+
+    case SSL_ERROR_WANT_WRITE:
+      *want_events_out = POLL_WRITE;
+      errno = EAGAIN;
+      return 1; /* Continue polling */
+
+    case SSL_ERROR_SYSCALL:
+      /* System call error during shutdown.
+       * If errno is EAGAIN/EWOULDBLOCK, the operation just needs to be
+       * retried. If errno is 0 with result 0, peer closed unexpectedly. Other
+       * errors (ECONNRESET, EPIPE, etc.) indicate connection lost - not fatal
+       * for shutdown since we're closing anyway. */
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        {
+          *want_events_out = POLL_READ | POLL_WRITE;
+          return 1; /* Continue polling */
+        }
+      if (errno == 0)
+        errno = ECONNRESET;
+      /* Connection lost during shutdown - mark as done (partial) */
+      socket->tls_shutdown_done = 0; /* Partial/failed shutdown */
+      return 0;                       /* Stop, but don't raise exception */
+
+    case SSL_ERROR_ZERO_RETURN:
+      /* Peer already sent close_notify - we're done */
+      socket->tls_shutdown_done = 1;
+      return 0; /* Complete - stop looping */
+
+    case SSL_ERROR_SSL:
+      /* Protocol error - this is a real failure */
+      errno = EPROTO;
+      tls_format_openssl_error ("TLS shutdown protocol error");
+      return -1; /* Fatal error */
+
+    default:
+      /* Unknown error */
+      errno = EIO;
+      tls_format_openssl_error ("TLS shutdown unknown error");
+      return -1; /* Fatal error */
+    }
+}
+
 void
 SocketTLS_shutdown (Socket_T socket)
 {
@@ -739,39 +808,161 @@ SocketTLS_shutdown (Socket_T socket)
       int result = SSL_shutdown (ssl);
       if (result == 1)
         {
+          /* Complete bidirectional shutdown: both close_notify sent and
+           * received */
           socket->tls_shutdown_done = 1;
           free_tls_resources (socket);
-          return; /* Complete */
+          return;
         }
-      else if (result < 0)
+      else if (result == 0)
         {
-          TLSHandshakeState state = tls_handle_ssl_error (socket, ssl, result);
-          if (state == TLS_HANDSHAKE_ERROR)
+          /* Unidirectional shutdown: our close_notify sent, waiting for peer.
+           * Per SSL_shutdown(3): "A second call is needed to complete the
+           * bidirectional shutdown." Continue looping after poll. */
+        }
+      else /* result < 0 */
+        {
+          unsigned want_events = 0;
+          int cont = shutdown_handle_ssl_error (socket, ssl, result,
+                                                &want_events);
+          if (cont < 0)
             {
-              tls_format_openssl_error ("Shutdown failed");
+              /* Fatal protocol error - raise exception */
               free_tls_resources (socket);
               RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
             }
-          /* WANT_READ/WRITE: continue loop with poll */
-        }
-      else /* result == 0: partial shutdown, need to retry after I/O */
-        {
-          /* Continue to poll loop below */
+          if (cont == 0)
+            {
+              /* Shutdown complete or connection lost - clean up and return */
+              free_tls_resources (socket);
+              return;
+            }
+          /* cont == 1: WANT_READ/WRITE - poll and retry */
         }
 
       /* Need I/O for remaining shutdown steps */
       unsigned events = POLL_READ | POLL_WRITE; /* Shutdown may need both */
       int poll_timeout
           = SocketTimeout_poll_timeout (SOCKET_TLS_POLL_INTERVAL_MS, deadline);
+      if (poll_timeout < 0)
+        break; /* Timeout expired */
       if (!do_handshake_poll (socket, events, poll_timeout))
-        continue; /* EINTR or timeout slice, retry */
+        continue; /* EINTR or timeout slice, check deadline again */
     }
 
-  /* Timeout */
-  tls_format_openssl_error ("Shutdown timeout");
+  /* Timeout - perform partial shutdown (send our close_notify if possible) */
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (ssl)
+    {
+      /* Try one more non-blocking SSL_shutdown to send close_notify */
+      (void)SSL_shutdown (ssl);
+    }
+
+  /* Mark as partial shutdown and clean up without raising exception for
+   * timeout. Timeout during shutdown is not critical - we sent our
+   * close_notify (or tried to), and the socket will be closed anyway. */
+  socket->tls_shutdown_done = 0; /* Partial shutdown */
   free_tls_resources (socket);
-  RAISE_TLS_ERROR_MSG (SocketTLS_ShutdownFailed,
-                       "TLS shutdown timeout after %d ms", timeout_ms);
+
+  /* For strict mode, raise exception on timeout. Most applications don't need
+   * this level of strictness since the connection is being closed anyway. */
+  TLS_ERROR_FMT ("TLS shutdown timeout after %d ms", timeout_ms);
+  RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+}
+
+/**
+ * SocketTLS_shutdown_send - Send close_notify without waiting for peer
+ * response
+ * @socket: Socket with TLS enabled
+ *
+ * Performs a unidirectional (half-close) TLS shutdown by sending the
+ * close_notify alert without waiting for the peer's response. This is
+ * useful when:
+ * - You want faster connection teardown
+ * - You don't need to verify peer received the alert
+ * - The underlying socket will be closed immediately after
+ *
+ * For non-blocking sockets, this function will attempt to send the
+ * close_notify immediately. If it would block, it returns 0 with
+ * errno=EAGAIN, and the caller should poll for POLL_WRITE and retry.
+ *
+ * Returns: 1 on success (close_notify sent),
+ *          0 if would block (errno=EAGAIN) - retry after poll,
+ *          -1 if TLS not enabled or already shutdown
+ *
+ * Raises: SocketTLS_ShutdownFailed on protocol error
+ * Thread-safe: No
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Quick shutdown - don't wait for peer
+ * int ret = SocketTLS_shutdown_send(sock);
+ * if (ret == 0 && errno == EAGAIN) {
+ *     // For non-blocking, poll and retry if needed
+ *     // Or just proceed to close - best effort
+ * }
+ * Socket_close(sock);
+ * @endcode
+ *
+ * @see SocketTLS_shutdown() for bidirectional shutdown
+ */
+int
+SocketTLS_shutdown_send (Socket_T socket)
+{
+  assert (socket);
+
+  if (!socket->tls_enabled)
+    return -1;
+
+  if (socket->tls_shutdown_done)
+    return 1; /* Already done */
+
+  SSL *ssl = tls_socket_get_ssl (socket);
+  if (!ssl)
+    return -1;
+
+  /* Set quiet shutdown mode to skip waiting for peer's close_notify */
+  SSL_set_quiet_shutdown (ssl, 1);
+
+  int result = SSL_shutdown (ssl);
+
+  if (result >= 0)
+    {
+      /* result == 0: close_notify sent (unidirectional shutdown complete)
+       * result == 1: full shutdown (shouldn't happen with quiet mode, but ok)
+       */
+      socket->tls_shutdown_done = 1;
+      return 1;
+    }
+
+  /* result < 0: check error */
+  int ssl_error = SSL_get_error (ssl, result);
+
+  switch (ssl_error)
+    {
+    case SSL_ERROR_WANT_READ:
+    case SSL_ERROR_WANT_WRITE:
+      errno = EAGAIN;
+      return 0; /* Would block - caller should retry */
+
+    case SSL_ERROR_SYSCALL:
+      if (errno == EAGAIN || errno == EWOULDBLOCK)
+        return 0; /* Would block */
+      /* Connection error - treat as partial success (we tried) */
+      socket->tls_shutdown_done = 0;
+      return 1;
+
+    case SSL_ERROR_SSL:
+      /* Protocol error */
+      tls_format_openssl_error ("TLS shutdown_send protocol error");
+      RAISE_TLS_ERROR (SocketTLS_ShutdownFailed);
+
+    default:
+      /* Unknown or zero return - treat as success */
+      socket->tls_shutdown_done = 1;
+      return 1;
+    }
 }
 
 /* ============================================================================
@@ -1078,8 +1269,20 @@ SocketTLS_is_session_reused (Socket_T socket)
 {
   assert (socket);
 
+  /* Validate preconditions */
+  if (!socket->tls_enabled)
+    return -1;
+
+  if (!socket->tls_handshake_done)
+    return -1; /* Must complete handshake first */
+
   SSL *ssl = tls_socket_get_ssl (socket);
-  return ssl ? (SSL_session_reused (ssl) ? 1 : 0) : -1;
+  if (!ssl)
+    return -1;
+
+  /* SSL_session_reused() returns 1 if a session was reused, 0 otherwise.
+   * For TLS 1.3, this indicates PSK resumption was used. */
+  return SSL_session_reused (ssl) ? 1 : 0;
 }
 
 const char *
@@ -1110,20 +1313,86 @@ SocketTLS_get_alpn_selected (Socket_T socket)
 
 /* ==================== Session Management ==================== */
 
+/**
+ * SocketTLS_session_save - Export TLS session for later resumption
+ * @socket: Socket with completed TLS handshake
+ * @buffer: Buffer to store serialized session (NULL to query size only)
+ * @len: On input: buffer size; On output: actual/required session size
+ *
+ * Exports the current TLS session data in DER format for persistent storage
+ * or transfer. The session can be restored with SocketTLS_session_restore()
+ * for abbreviated handshakes (session resumption).
+ *
+ * ## TLS 1.3 Considerations
+ *
+ * TLS 1.3 uses session tickets delivered asynchronously via NewSessionTicket
+ * messages AFTER the handshake completes. Key points:
+ *
+ * 1. **Timing**: For TLS 1.3, this function may return -1 if called
+ *    immediately after handshake. Session tickets are typically sent by the
+ *    server shortly after handshake. Wait for I/O activity or use a callback.
+ *
+ * 2. **Multiple tickets**: TLS 1.3 servers may send multiple session tickets.
+ *    Only the most recent is captured by SSL_get1_session().
+ *
+ * 3. **Ticket lifetime**: TLS 1.3 sessions have limited validity set by the
+ *    server. Check the session's lifetime before storage.
+ *
+ * ## Buffer Sizing
+ *
+ * To determine required buffer size, call with buffer=NULL or with a buffer:
+ * - If buffer is too small, returns 0 and sets *len to required size
+ * - If buffer is NULL, returns 0 and sets *len to required size
+ *
+ * Returns: 1 on success (session saved),
+ *          0 if buffer too small (len updated with required size),
+ *          -1 on error (no session, TLS not enabled, handshake incomplete)
+ *
+ * Thread-safe: No
+ *
+ * @note Session data is sensitive - store securely (encrypted at rest)
+ * @warning For TLS 1.3, call after some I/O to ensure ticket receipt
+ */
 int
 SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
 {
   assert (socket);
-  assert (buffer || len);
   assert (len);
+
+  /* Validate preconditions */
+  if (!socket->tls_enabled)
+    return -1;
+
+  if (!socket->tls_handshake_done)
+    return -1; /* Must complete handshake first */
 
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
+  /* Get session - for TLS 1.3, this returns the most recent ticket.
+   * SSL_get1_session() increments reference count, we must free it. */
   SSL_SESSION *session = SSL_get1_session (ssl);
   if (!session)
-    return -1;
+    {
+      /* No session available. For TLS 1.3, this might mean:
+       * - Server hasn't sent NewSessionTicket yet (call later)
+       * - Server disabled session tickets
+       * - Session already expired */
+      return -1;
+    }
+
+  /* Check if session is still valid (TLS 1.3 sessions can expire quickly) */
+  time_t session_timeout = SSL_SESSION_get_timeout (session);
+  time_t session_time = SSL_SESSION_get_time (session);
+  time_t now = time (NULL);
+
+  if (session_time + session_timeout < now)
+    {
+      /* Session already expired */
+      SSL_SESSION_free (session);
+      return -1;
+    }
 
   /* Get required length first */
   int session_len = i2d_SSL_SESSION (session, NULL);
@@ -1133,15 +1402,15 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
       return -1;
     }
 
-  /* Check if buffer is large enough */
-  if ((size_t)session_len > *len)
+  /* Check if just querying size or if buffer is too small */
+  if (buffer == NULL || (size_t)session_len > *len)
     {
       *len = (size_t)session_len;
       SSL_SESSION_free (session);
-      return 0; /* Buffer too small */
+      return 0; /* Buffer too small or size query */
     }
 
-  /* Serialize session */
+  /* Serialize session to buffer */
   unsigned char *p = buffer;
   int written = i2d_SSL_SESSION (session, &p);
   SSL_SESSION_free (session);
@@ -1153,6 +1422,42 @@ SocketTLS_session_save (Socket_T socket, unsigned char *buffer, size_t *len)
   return 1;
 }
 
+/**
+ * SocketTLS_session_restore - Import saved TLS session for resumption
+ * @socket: Socket with TLS enabled but BEFORE handshake
+ * @buffer: Buffer containing serialized session
+ * @len: Length of session data
+ *
+ * Restores a previously exported TLS session to enable session resumption.
+ * When the handshake is performed, OpenSSL will attempt to resume the session.
+ *
+ * ## Critical Timing
+ *
+ * This function MUST be called:
+ * - AFTER SocketTLS_enable()
+ * - BEFORE SocketTLS_handshake()
+ *
+ * Calling after handshake has no effect.
+ *
+ * ## Failure Modes
+ *
+ * Session restoration may fail gracefully if:
+ * - Session data is corrupted or invalid
+ * - Session has expired (server-enforced lifetime)
+ * - Server no longer accepts the session (rotated keys, etc.)
+ *
+ * In all cases, the handshake falls back to a full handshake automatically.
+ * Use SocketTLS_is_session_reused() after handshake to check if resumption
+ * occurred.
+ *
+ * Returns: 1 on success (session set for resumption),
+ *          0 on invalid/expired session data (will do full handshake),
+ *          -1 on error (TLS not enabled, handshake already done)
+ *
+ * Thread-safe: No
+ *
+ * @note Server may still reject resumption; always check is_session_reused()
+ */
 int
 SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
                            size_t len)
@@ -1160,22 +1465,85 @@ SocketTLS_session_restore (Socket_T socket, const unsigned char *buffer,
   assert (socket);
   assert (buffer);
 
+  /* Validate preconditions */
+  if (!socket->tls_enabled)
+    return -1;
+
+  /* Must be called BEFORE handshake - check state */
+  if (socket->tls_handshake_done)
+    {
+      /* Already handshaked - too late to restore session.
+       * This is a programming error, but we return gracefully. */
+      return -1;
+    }
+
   SSL *ssl = tls_socket_get_ssl (socket);
   if (!ssl)
     return -1;
 
-  /* Deserialize session */
+  /* Validate length to prevent integer overflow in d2i_SSL_SESSION */
+  if (len == 0 || len > (size_t)LONG_MAX)
+    return 0; /* Invalid data */
+
+  /* Deserialize session from DER format */
   const unsigned char *p = buffer;
   SSL_SESSION *session = d2i_SSL_SESSION (NULL, &p, (long)len);
   if (!session)
-    return 0; /* Invalid session data */
+    {
+      /* Invalid or corrupted session data.
+       * This is not an error - handshake will proceed without resumption. */
+      return 0;
+    }
 
-  /* Set session for resumption */
+  /* Check if session has expired */
+  time_t session_timeout = SSL_SESSION_get_timeout (session);
+  time_t session_time = SSL_SESSION_get_time (session);
+  time_t now = time (NULL);
+
+  if (session_time + session_timeout < now)
+    {
+      /* Session expired - free and return gracefully.
+       * Handshake will proceed with full negotiation. */
+      SSL_SESSION_free (session);
+      return 0;
+    }
+
+  /* Set session for resumption attempt.
+   * SSL_set_session() does NOT take ownership - it copies/refs the session.
+   * We still need to free our reference. */
   int ret = SSL_set_session (ssl, session);
   SSL_SESSION_free (session);
 
-  return ret ? 1 : -1;
+  if (!ret)
+    {
+      /* OpenSSL rejected the session - rare but possible.
+       * Handshake will proceed with full negotiation. */
+      return 0;
+    }
+
+  return 1; /* Session set successfully - resumption will be attempted */
 }
+
+/**
+ * SocketTLS_is_session_reused - Check if session resumption occurred
+ * @socket: Socket with completed TLS handshake
+ *
+ * After a successful handshake, this function checks whether the connection
+ * used session resumption (abbreviated handshake) or a full handshake.
+ *
+ * ## TLS 1.3 Session Resumption
+ *
+ * In TLS 1.3, session resumption works via Pre-Shared Keys (PSK):
+ * - If a valid session was restored and accepted, this returns 1
+ * - The resumed session provides the same security as a full handshake
+ * - 0-RTT early data (if enabled) is a separate feature
+ *
+ * Returns: 1 if session was reused (abbreviated handshake),
+ *          0 if full handshake was performed,
+ *          -1 if TLS not enabled or handshake not complete
+ *
+ * Thread-safe: Yes - reads immutable post-handshake state
+ */
 
 /* ==================== Renegotiation Control ==================== */
 

@@ -768,6 +768,7 @@ if(ENABLE_FUZZING)
         list(APPEND FUZZ_SOURCES
             fuzz_tls_alpn
             fuzz_tls_session
+            fuzz_tls_shutdown
             fuzz_tls_certs
             fuzz_tls_verify
             fuzz_tls_sni
