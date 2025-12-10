@@ -674,9 +674,9 @@ SocketBuf_compact (T buf)
           char *temp = Arena_alloc (buf->arena, buf->size, __FILE__, __LINE__);
           if (temp)
             {
-              memcpy (temp, buf->data + buf->head, first_part);
-              memcpy (temp + first_part, buf->data, second_part);
-              memcpy (buf->data, temp, buf->size);
+              memmove (temp, buf->data + buf->head, first_part);
+              memmove (temp + first_part, buf->data, second_part);
+              memmove (buf->data, temp, buf->size);
               /* Arena temp will be freed with arena */
             }
           else

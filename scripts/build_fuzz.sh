@@ -87,7 +87,7 @@ CC=clang cmake .. $CMAKE_OPTS
 
 # Build
 log_info "Building with $JOBS parallel jobs..."
-make -j"$JOBS"
+make fuzzers -j"$JOBS"
 
 # Count fuzzers
 FUZZ_COUNT=$(ls -1 fuzz_* 2>/dev/null | wc -l)
@@ -100,5 +100,5 @@ echo "  ./scripts/run_fuzz_parallel.sh -g http2    # HTTP/2 fuzzers only"
 echo "  ./scripts/run_fuzz_parallel.sh -g hpack    # HPACK fuzzers only"
 echo "  ./scripts/run_fuzz_parallel.sh -g crypto   # Crypto fuzzers only"
 echo "  ./scripts/run_fuzz_parallel.sh -g all -q   # Quick smoke test (5 min)"
-echo "  ./scripts/run_fuzz_parallel.sh             # Full run (1 hour, all 48 fuzzers)"
+echo "  ./scripts/run_fuzz_parallel.sh             # Full run (1 hour, all fuzzers)"
 

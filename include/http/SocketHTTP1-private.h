@@ -677,7 +677,7 @@ http1_tokenbuf_append (HTTP1_TokenBuf *buf, Arena_T arena, char c,
       if (!new_data)
         return -1;
 
-      memcpy (new_data, buf->data, buf->len);
+      memmove (new_data, buf->data, buf->len);
       buf->data = new_data;
       buf->capacity = new_capacity;
     }
@@ -721,7 +721,7 @@ http1_tokenbuf_terminate (HTTP1_TokenBuf *buf, Arena_T arena, size_t max_size)
       if (!new_data)
         return NULL;
 
-      memcpy (new_data, buf->data, buf->len);
+      memmove (new_data, buf->data, buf->len);
       buf->data = new_data;
       buf->capacity = new_capacity;
     }

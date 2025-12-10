@@ -104,7 +104,7 @@ arena_strdup_n (Arena_T arena, const char *str, size_t len)
   char *copy = ALLOC (arena, len + 1);
   if (!copy)
     return NULL;
-  memcpy (copy, str, len);
+  memmove (copy, str, len);
   copy[len] = '\0';
   return copy;
 }

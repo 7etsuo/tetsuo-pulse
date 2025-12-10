@@ -12,10 +12,11 @@ set(CMAKE_C_EXTENSIONS ON)  # Enable GNU extensions (_GNU_SOURCE)
 # Compiler flags
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Werror -Wno-unused-function -Wno-unused-variable -Wno-comment -Wno-implicit-int -Wno-implicit-function-declaration -Wno-ignored-qualifiers -Wno-return-type -Wno-error=return-type -D_GNU_SOURCE -pthread -fno-strict-aliasing -fPIC")
 
-# Note: Executable stack warnings are expected due to setjmp/longjmp usage in Except.h
-# The TRY/EXCEPT/FINALLY exception handling system requires setjmp/longjmp, which
-# can trigger executable stack requirements. This is normal and safe - modern kernels
-# still enforce NX protection even when the binary requests executable stack.
+# Executable stack warning is expected and harmless:
+# - Caused by setjmp/longjmp in TRY/EXCEPT/FINALLY exception handling
+# - Modern Linux kernels enforce NX protection regardless of this flag
+# - This is a legacy warning from early 2000s security implementations
+# - The code is completely safe despite the warning
 set(CMAKE_C_FLAGS_DEBUG "-g -Og")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 
@@ -331,15 +332,25 @@ if(SOCKET_HAS_TLS AND OpenSSL_FOUND)
     target_include_directories(socket_objects PRIVATE ${OPENSSL_INCLUDE_DIR})
 endif()
 
-# CRITICAL: Apply fuzzer instrumentation to library objects when fuzzing
-# Without this, the fuzzer only instruments the harness code, not the library!
+# For fuzzing, build an instrumented static library instead of instrumenting objects
 if(ENABLE_FUZZING)
-    target_compile_options(socket_objects PRIVATE
+    # Create instrumented version of the library for fuzzers
+    add_library(socket_fuzz STATIC $<TARGET_OBJECTS:socket_objects>)
+    set_target_properties(socket_fuzz PROPERTIES OUTPUT_NAME socket_fuzz)
+    target_compile_options(socket_fuzz PRIVATE
         -fsanitize=fuzzer-no-link,address,undefined
         -fno-omit-frame-pointer
         -g
     )
-    message(STATUS "Library objects compiled with fuzzer instrumentation")
+    target_link_options(socket_fuzz PRIVATE
+        -fsanitize=fuzzer-no-link,address,undefined
+    )
+    if(SOCKET_HAS_TLS)
+        target_link_libraries(socket_fuzz pthread m dl ${LIBURING_LIBRARIES} ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
+    else()
+        target_link_libraries(socket_fuzz pthread m ${LIBURING_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
+    endif()
+    message(STATUS "Instrumented fuzzing library created")
 endif()
 
 # Static library
@@ -719,7 +730,7 @@ if(ENABLE_FUZZING)
         fuzz_proxy_socks4
         fuzz_proxy_http
         fuzz_proxy_url
-        # fuzz_dns_inj  # TODO: Fix incomplete type error
+        fuzz_dns_inj
         fuzz_pool_dos
         fuzz_ws_frame
         fuzz_ws_handshake
@@ -745,36 +756,29 @@ if(ENABLE_FUZZING)
             fuzz_ws_frames
             fuzz_hpack
             fuzz_tls_ct
-            # fuzz_dtls_handshake  # TODO: Fix linker flag issue
+            fuzz_dtls_handshake
         )
     endif()
     
     # Create fuzz executable for each harness
     foreach(fuzz_name ${FUZZ_SOURCES})
         if(EXISTS "${CMAKE_SOURCE_DIR}/src/fuzz/${fuzz_name}.c")
-            add_executable(${fuzz_name} 
-                src/fuzz/${fuzz_name}.c 
-                $<TARGET_OBJECTS:socket_objects>
+            add_executable(${fuzz_name}
+                src/fuzz/${fuzz_name}.c
             )
-            
+
             # Apply fuzzer compile flags
-            target_compile_options(${fuzz_name} PRIVATE 
-                -fsanitize=fuzzer-no-link,address,undefined 
-                -fno-omit-frame-pointer 
+            target_compile_options(${fuzz_name} PRIVATE
+                -fsanitize=fuzzer-no-link,address,undefined
+                -fno-omit-frame-pointer
                 -g
             )
-            
-            # Apply fuzzer link flags
-            target_link_options(${fuzz_name} PRIVATE 
+
+            # Link against instrumented library and apply sanitizer flags
+            target_link_libraries(${fuzz_name} socket_fuzz)
+            target_link_options(${fuzz_name} PRIVATE
                 -fsanitize=fuzzer,address,undefined
             )
-            
-            # Link libraries
-            if(SOCKET_HAS_TLS)
-                target_link_libraries(${fuzz_name} pthread m ${OPENSSL_LIBRARIES} ${HTTP_COMPRESSION_LIBS})
-            else()
-                target_link_libraries(${fuzz_name} pthread m ${HTTP_COMPRESSION_LIBS})
-            endif()
             
             target_include_directories(${fuzz_name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
             

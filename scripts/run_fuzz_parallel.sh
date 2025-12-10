@@ -313,7 +313,7 @@ for target in "${AVAILABLE_TARGETS[@]}"; do
 done
 
 # Create output directories
-FINDINGS_DIR="fuzz_findings_$(date +%Y%m%d_%H%M%S)"
+FINDINGS_DIR="$(pwd)/fuzz_findings_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$FINDINGS_DIR"
 log_info "Findings will be saved to: $FINDINGS_DIR"
 
@@ -341,7 +341,9 @@ for target in "${AVAILABLE_TARGETS[@]}"; do
     log_file="$FINDINGS_DIR/${target}.log"
     
     log_info "Starting $target with $JOBS_PER_TARGET parallel jobs"
-    
+    log_info "  Corpus: $corpus_dir/"
+    log_info "  Artifacts: $FINDINGS_DIR/${target}_"
+
     "$BUILD_DIR/$target" "$corpus_dir/" \
         -fork=$JOBS_PER_TARGET \
         -max_len=$MAX_LEN \
@@ -370,14 +372,25 @@ echo ""
 echo "Results saved to: $FINDINGS_DIR/"
 echo ""
 
-# Check for crashes
+# Check for crashes in artifact files and logs
 CRASHES=$(ls -1 "$FINDINGS_DIR"/*crash* 2>/dev/null | wc -l)
 TIMEOUTS=$(ls -1 "$FINDINGS_DIR"/*timeout* 2>/dev/null | wc -l)
 OOM=$(ls -1 "$FINDINGS_DIR"/*oom* 2>/dev/null | wc -l)
 
-if [[ $CRASHES -gt 0 ]]; then
-    log_error "CRASHES FOUND: $CRASHES"
-    ls -la "$FINDINGS_DIR"/*crash* 2>/dev/null
+# Also check log files for crash indicators (in case artifacts aren't saved)
+LOG_CRASHES=$(grep -l "ERROR: AddressSanitizer\|ERROR: UndefinedBehaviorSanitizer\|Test unit written to\|SUMMARY:.*ABORTING" "$FINDINGS_DIR"/*.log 2>/dev/null | wc -l)
+
+TOTAL_CRASHES=$((CRASHES + LOG_CRASHES))
+
+if [[ $TOTAL_CRASHES -gt 0 ]]; then
+    log_error "CRASHES FOUND: $TOTAL_CRASHES ($CRASHES artifacts, $LOG_CRASHES in logs)"
+    if [[ $CRASHES -gt 0 ]]; then
+        ls -la "$FINDINGS_DIR"/*crash* 2>/dev/null
+    fi
+    if [[ $LOG_CRASHES -gt 0 ]]; then
+        echo "Crashes detected in logs:"
+        grep -l "ERROR: AddressSanitizer\|ERROR: UndefinedBehaviorSanitizer\|Test unit written to\|SUMMARY:.*ABORTING" "$FINDINGS_DIR"/*.log 2>/dev/null
+    fi
 fi
 
 if [[ $TIMEOUTS -gt 0 ]]; then
@@ -388,7 +401,7 @@ if [[ $OOM -gt 0 ]]; then
     log_warn "OOM errors: $OOM"
 fi
 
-if [[ $CRASHES -eq 0 && $TIMEOUTS -eq 0 && $OOM -eq 0 ]]; then
+if [[ $TOTAL_CRASHES -eq 0 && $TIMEOUTS -eq 0 && $OOM -eq 0 ]]; then
     log_info "No crashes, timeouts, or OOM errors found!"
 fi
 
@@ -399,4 +412,20 @@ for target in "${AVAILABLE_TARGETS[@]}"; do
     echo "=== $target ==="
     grep -E "(cov:|ft:|corp:|exec/s:|NEW|BINGO)" "$FINDINGS_DIR/${target}.log" 2>/dev/null | tail -10 || true
 done
+
+# Show all artifact files found
+log_section "Artifact Summary"
+echo "Findings directory: $FINDINGS_DIR"
+echo ""
+echo "Crash artifacts:"
+ls -1 "$FINDINGS_DIR"/*crash* 2>/dev/null || echo "  None found"
+echo ""
+echo "Timeout artifacts:"
+ls -1 "$FINDINGS_DIR"/*timeout* 2>/dev/null || echo "  None found"
+echo ""
+echo "OOM artifacts:"
+ls -1 "$FINDINGS_DIR"/*oom* 2>/dev/null || echo "  None found"
+echo ""
+echo "All artifacts:"
+ls -1 "$FINDINGS_DIR"/* 2>/dev/null | grep -v "\.log$" | head -20 || echo "  None found"
 
