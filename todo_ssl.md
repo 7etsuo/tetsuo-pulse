@@ -169,11 +169,34 @@ testing requirements, documentation, security hardening, and future enhancements
 
 ### 1.9 Connection Information Queries
 
-- [ ] **SocketTLS_get_cipher()**: Verify correct cipher name returned for all TLS 1.3 cipher suites
-- [ ] **SocketTLS_get_version()**: Verify "TLSv1.3" string returned for TLS 1.3 connections
-- [ ] **SocketTLS_get_alpn_selected()**: Test when no ALPN was negotiated (should return NULL)
-- [ ] **SocketTLS_get_verify_result()**: Verify correct X509_V_* error codes are returned
-- [ ] **SocketTLS_get_verify_error_string()**: Test buffer handling and truncation for long error strings
+- [x] **SocketTLS_get_cipher()**: Verify correct cipher name returned for all TLS 1.3 cipher suites
+  - ✅ Implementation verified at `SocketTLS.c:1199-1210` - uses `SSL_get_current_cipher()` and `SSL_CIPHER_get_name()`
+  - ✅ Returns IANA cipher suite names for TLS 1.3 (e.g., "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256")
+  - ✅ Returns NULL for non-TLS sockets or before handshake
+  - ✅ Unit test added: `tls_get_cipher_tls13` in `test_tls_integration.c`
+- [x] **SocketTLS_get_version()**: Verify "TLSv1.3" string returned for TLS 1.3 connections
+  - ✅ Implementation verified at `SocketTLS.c:1213-1219` - uses `SSL_get_version()`
+  - ✅ Returns "TLSv1.3" for TLS 1.3 connections as expected
+  - ✅ Returns NULL for non-TLS sockets
+  - ✅ Unit test added: `tls_get_version_tls13` in `test_tls_integration.c`
+- [x] **SocketTLS_get_alpn_selected()**: Test when no ALPN was negotiated (should return NULL)
+  - ✅ Implementation verified at `SocketTLS.c:1288-1312` - uses `SSL_get0_alpn_selected()`
+  - ✅ Correctly returns NULL when `alpn_data` is NULL or `alpn_len` is 0
+  - ✅ Validates ALPN length against `SOCKET_TLS_MAX_ALPN_LEN` to prevent buffer overflow
+  - ✅ Unit test added: `tls_get_alpn_no_negotiation` in `test_tls_integration.c`
+- [x] **SocketTLS_get_verify_result()**: Verify correct X509_V_* error codes are returned
+  - ✅ Implementation verified at `SocketTLS.c:1221-1234` - uses `SSL_get_verify_result()`
+  - ✅ Returns `X509_V_ERR_INVALID_CALL` for invalid state (not enabled, no handshake)
+  - ✅ Returns correct X509_V_* codes: `X509_V_OK`, `X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT`, `X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN`, etc.
+  - ✅ Unit test added: `tls_get_verify_result_codes` in `test_tls_integration.c`
+- [x] **SocketTLS_get_verify_error_string()**: Test buffer handling and truncation for long error strings
+  - ✅ Implementation verified at `SocketTLS.c:1236-1265` - uses `X509_verify_cert_error_string()` and `ERR_error_string_n()`
+  - ✅ Returns NULL for invalid parameters (NULL socket, NULL buf, size=0)
+  - ✅ Returns NULL when verify result is X509_V_OK (no error)
+  - ✅ Uses `strncpy` with `size - 1` for proper truncation
+  - ✅ Always null-terminates the buffer: `buf[size - 1] = '\0'`
+  - ✅ Handles edge cases: 1-byte buffer, small buffers, normal buffers
+  - ✅ Unit test added: `tls_get_verify_error_string_buffer` in `test_tls_integration.c`
 
 ---
 

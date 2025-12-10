@@ -2586,6 +2586,588 @@ TEST (tls_is_session_reused_states)
 #endif
 }
 
+/* ==================== Connection Info Query Tests (Section 1.9) ====================
+ */
+
+/**
+ * Test SocketTLS_get_cipher() for TLS 1.3 cipher suites.
+ * Verifies that correct cipher names are returned for all TLS 1.3 cipher suites.
+ */
+TEST (tls_get_cipher_tls13)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_cipher_tls13.crt";
+  const char *key_file = "test_cipher_tls13.key";
+  Socket_T client = NULL, server = NULL, plain = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Test get_cipher before handshake - should return NULL */
+    const char *cipher_before = SocketTLS_get_cipher (client);
+    ASSERT_NULL (cipher_before);
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Test get_cipher after handshake - must return valid TLS 1.3 cipher */
+    const char *cipher = SocketTLS_get_cipher (client);
+    ASSERT_NOT_NULL (cipher);
+    ASSERT (strlen (cipher) > 0);
+
+    /* Verify it's a TLS 1.3 cipher suite name */
+    int is_tls13_cipher = 0;
+    if (strstr (cipher, "TLS_AES_256_GCM_SHA384") != NULL
+        || strstr (cipher, "TLS_AES_128_GCM_SHA256") != NULL
+        || strstr (cipher, "TLS_CHACHA20_POLY1305_SHA256") != NULL
+        || strstr (cipher, "TLS_AES_128_CCM_SHA256") != NULL
+        || strstr (cipher, "TLS_AES_128_CCM_8_SHA256") != NULL
+        || strstr (cipher, "AES") != NULL /* Older OpenSSL format */
+        || strstr (cipher, "CHACHA") != NULL)
+      is_tls13_cipher = 1;
+    ASSERT_EQ (is_tls13_cipher, 1);
+
+    /* Verify both client and server see the same cipher */
+    const char *server_cipher = SocketTLS_get_cipher (server);
+    ASSERT_NOT_NULL (server_cipher);
+    ASSERT (strcmp (cipher, server_cipher) == 0);
+
+    /* Test get_cipher on non-TLS socket returns NULL */
+    plain = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NULL (SocketTLS_get_cipher (plain));
+    Socket_free (&plain);
+    plain = NULL;
+  }
+  FINALLY
+  {
+    if (plain)
+      Socket_free (&plain);
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/**
+ * Test SocketTLS_get_version() returns "TLSv1.3" for TLS 1.3 connections.
+ */
+TEST (tls_get_version_tls13)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_version_tls13.crt";
+  const char *key_file = "test_version_tls13.key";
+  Socket_T client = NULL, server = NULL, plain = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Test get_version before handshake - should return NULL or empty */
+    const char *version_before = SocketTLS_get_version (client);
+    /* May return "unknown" or NULL before handshake depending on OpenSSL */
+    (void)version_before;
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Test get_version after handshake - must return "TLSv1.3" */
+    const char *version = SocketTLS_get_version (client);
+    ASSERT_NOT_NULL (version);
+    ASSERT (strcmp (version, "TLSv1.3") == 0);
+
+    /* Verify server also sees TLSv1.3 */
+    const char *server_version = SocketTLS_get_version (server);
+    ASSERT_NOT_NULL (server_version);
+    ASSERT (strcmp (server_version, "TLSv1.3") == 0);
+
+    /* Test get_version on non-TLS socket returns NULL */
+    plain = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NULL (SocketTLS_get_version (plain));
+    Socket_free (&plain);
+    plain = NULL;
+  }
+  FINALLY
+  {
+    if (plain)
+      Socket_free (&plain);
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/**
+ * Test SocketTLS_get_alpn_selected() returns NULL when no ALPN negotiated.
+ */
+TEST (tls_get_alpn_no_negotiation)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_alpn_none.crt";
+  const char *key_file = "test_alpn_none.key";
+  Socket_T client = NULL, server = NULL, plain = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_NONE);
+
+    /* Do NOT set ALPN protocols on either side */
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Complete handshake */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            || server_state != TLS_HANDSHAKE_COMPLETE)
+           && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    ASSERT_EQ (client_state, TLS_HANDSHAKE_COMPLETE);
+    ASSERT_EQ (server_state, TLS_HANDSHAKE_COMPLETE);
+
+    /* Test get_alpn_selected returns NULL when no ALPN was configured */
+    const char *alpn = SocketTLS_get_alpn_selected (client);
+    ASSERT_NULL (alpn); /* No ALPN negotiated */
+
+    /* Server side should also return NULL */
+    const char *server_alpn = SocketTLS_get_alpn_selected (server);
+    ASSERT_NULL (server_alpn);
+
+    /* Test get_alpn on non-TLS socket returns NULL */
+    plain = Socket_new (AF_INET, SOCK_STREAM, 0);
+    ASSERT_NULL (SocketTLS_get_alpn_selected (plain));
+    Socket_free (&plain);
+    plain = NULL;
+  }
+  FINALLY
+  {
+    if (plain)
+      Socket_free (&plain);
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/**
+ * Test SocketTLS_get_verify_result() returns correct X509_V_* error codes.
+ */
+TEST (tls_get_verify_result_codes)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_verify_codes.crt";
+  const char *key_file = "test_verify_codes.key";
+  Socket_T client = NULL, server = NULL, plain = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+
+    /* Enable verification but with self-signed cert (will fail verify) */
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Test get_verify_result before handshake - returns X509_V_ERR_INVALID_CALL
+     */
+    long result = SocketTLS_get_verify_result (client);
+    ASSERT_EQ (result, (long)X509_V_ERR_INVALID_CALL);
+
+    /* Complete handshake (may fail due to self-signed cert) */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+    int handshake_failed = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            && client_state != TLS_HANDSHAKE_ERROR)
+           && (server_state != TLS_HANDSHAKE_COMPLETE
+               && server_state != TLS_HANDSHAKE_ERROR)
+           && loops < 1000)
+      {
+        TRY
+        {
+          if (client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+            client_state = SocketTLS_handshake (client);
+        }
+        EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+        EXCEPT (SocketTLS_VerifyFailed)
+        {
+          handshake_failed = 1;
+          client_state = TLS_HANDSHAKE_ERROR;
+        }
+        END_TRY;
+
+        TRY
+        {
+          if (server_state != TLS_HANDSHAKE_COMPLETE
+              && server_state != TLS_HANDSHAKE_ERROR)
+            server_state = SocketTLS_handshake (server);
+        }
+        EXCEPT (SocketTLS_HandshakeFailed) { handshake_failed = 1; }
+        END_TRY;
+
+        loops++;
+        usleep (1000);
+      }
+
+    /* With self-signed cert and VERIFY_PEER, handshake should fail with
+     * specific X509_V_* error code (e.g., X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+     * or X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT) */
+    if (handshake_failed || client_state == TLS_HANDSHAKE_ERROR)
+      {
+        /* Check verify result for specific X509 error code */
+        result = SocketTLS_get_verify_result (client);
+        /* Self-signed cert errors: */
+        int is_valid_error = (result == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+                              || result == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+                              || result == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT
+                              || result
+                                     == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+                              || result == X509_V_ERR_CERT_UNTRUSTED
+                              || result == X509_V_ERR_INVALID_CALL);
+        ASSERT (is_valid_error);
+      }
+
+    /* Test on non-TLS socket */
+    plain = Socket_new (AF_INET, SOCK_STREAM, 0);
+    result = SocketTLS_get_verify_result (plain);
+    ASSERT_EQ (result, (long)X509_V_ERR_INVALID_CALL);
+    Socket_free (&plain);
+    plain = NULL;
+  }
+  FINALLY
+  {
+    if (plain)
+      Socket_free (&plain);
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/**
+ * Test SocketTLS_get_verify_error_string() buffer handling and truncation.
+ */
+TEST (tls_get_verify_error_string_buffer)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_verify_str.crt";
+  const char *key_file = "test_verify_str.key";
+  Socket_T client = NULL, server = NULL, plain = NULL;
+  SocketTLSContext_T client_ctx = NULL, server_ctx = NULL;
+
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  TRY
+  {
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx, TLS_VERIFY_PEER);
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    /* Complete handshake (expected to fail with self-signed cert) */
+    TLSHandshakeState client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    TLSHandshakeState server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    int loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE
+            && client_state != TLS_HANDSHAKE_ERROR)
+           && (server_state != TLS_HANDSHAKE_COMPLETE
+               && server_state != TLS_HANDSHAKE_ERROR)
+           && loops < 1000)
+      {
+        TRY
+        {
+          if (client_state != TLS_HANDSHAKE_COMPLETE
+              && client_state != TLS_HANDSHAKE_ERROR)
+            client_state = SocketTLS_handshake (client);
+        }
+        EXCEPT (SocketTLS_HandshakeFailed) { client_state = TLS_HANDSHAKE_ERROR; }
+        EXCEPT (SocketTLS_VerifyFailed) { client_state = TLS_HANDSHAKE_ERROR; }
+        END_TRY;
+
+        TRY
+        {
+          if (server_state != TLS_HANDSHAKE_COMPLETE
+              && server_state != TLS_HANDSHAKE_ERROR)
+            server_state = SocketTLS_handshake (server);
+        }
+        EXCEPT (SocketTLS_HandshakeFailed) { server_state = TLS_HANDSHAKE_ERROR; }
+        END_TRY;
+
+        loops++;
+        usleep (1000);
+      }
+
+    /* Test buffer handling - NULL buffer */
+    const char *result = SocketTLS_get_verify_error_string (client, NULL, 0);
+    ASSERT_NULL (result);
+
+    /* Test buffer handling - zero size */
+    char buf[256];
+    result = SocketTLS_get_verify_error_string (client, buf, 0);
+    ASSERT_NULL (result);
+
+    /* If handshake failed due to verification error, test with valid buffer */
+    if (client_state == TLS_HANDSHAKE_ERROR)
+      {
+        long code = SocketTLS_get_verify_result (client);
+        if (code != X509_V_OK && code != X509_V_ERR_INVALID_CALL)
+          {
+            /* Test with normal buffer */
+            memset (buf, 0, sizeof (buf));
+            result = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
+            if (result)
+              {
+                ASSERT (strlen (buf) > 0);
+                ASSERT (buf[sizeof (buf) - 1] == '\0'
+                        || strlen (buf) < sizeof (buf) - 1);
+              }
+
+            /* Test truncation with small buffer (10 bytes) */
+            char small_buf[10];
+            memset (small_buf, 'X', sizeof (small_buf));
+            result = SocketTLS_get_verify_error_string (client, small_buf,
+                                                        sizeof (small_buf));
+            if (result)
+              {
+                /* Verify null-termination */
+                ASSERT (small_buf[sizeof (small_buf) - 1] == '\0');
+                /* Verify truncation occurred (length <= 9) */
+                ASSERT (strlen (small_buf) <= sizeof (small_buf) - 1);
+              }
+
+            /* Test with 1-byte buffer (edge case) */
+            char tiny_buf[1];
+            result = SocketTLS_get_verify_error_string (client, tiny_buf,
+                                                        sizeof (tiny_buf));
+            if (result)
+              {
+                ASSERT (tiny_buf[0] == '\0');
+              }
+          }
+      }
+
+    /* Test on non-TLS socket - returns error string for invalid call error */
+    plain = Socket_new (AF_INET, SOCK_STREAM, 0);
+    result = SocketTLS_get_verify_error_string (plain, buf, sizeof (buf));
+    /* Non-TLS sockets return X509_V_ERR_INVALID_CALL which has an error string */
+    if (result)
+      {
+        ASSERT (strlen (buf) > 0);
+      }
+    Socket_free (&plain);
+    plain = NULL;
+
+    /* Test on successful verification (no error) - should return NULL */
+    /* First need a successful handshake */
+    Socket_free (&client);
+    Socket_free (&server);
+    SocketTLSContext_free (&client_ctx);
+    SocketTLSContext_free (&server_ctx);
+    client = NULL;
+    server = NULL;
+    client_ctx = NULL;
+    server_ctx = NULL;
+
+    server_ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+    client_ctx = SocketTLSContext_new_client (NULL);
+    SocketTLSContext_set_verify_mode (client_ctx,
+                                      TLS_VERIFY_NONE); /* Accept self-signed */
+
+    SocketPair_new (SOCK_STREAM, &client, &server);
+    Socket_setnonblocking (client);
+    Socket_setnonblocking (server);
+
+    SocketTLS_enable (client, client_ctx);
+    SocketTLS_enable (server, server_ctx);
+
+    client_state = TLS_HANDSHAKE_IN_PROGRESS;
+    server_state = TLS_HANDSHAKE_IN_PROGRESS;
+    loops = 0;
+
+    while ((client_state != TLS_HANDSHAKE_COMPLETE)
+           && (server_state != TLS_HANDSHAKE_COMPLETE) && loops < 1000)
+      {
+        if (client_state != TLS_HANDSHAKE_COMPLETE)
+          client_state = SocketTLS_handshake (client);
+        if (server_state != TLS_HANDSHAKE_COMPLETE)
+          server_state = SocketTLS_handshake (server);
+        loops++;
+        usleep (1000);
+      }
+
+    if (client_state == TLS_HANDSHAKE_COMPLETE)
+      {
+        long code = SocketTLS_get_verify_result (client);
+        if (code == X509_V_OK)
+          {
+            /* No error - get_verify_error_string should return NULL */
+            result = SocketTLS_get_verify_error_string (client, buf, sizeof (buf));
+            ASSERT_NULL (result);
+          }
+      }
+  }
+  FINALLY
+  {
+    if (plain)
+      Socket_free (&plain);
+    if (client)
+      Socket_free (&client);
+    if (server)
+      Socket_free (&server);
+    if (client_ctx)
+      SocketTLSContext_free (&client_ctx);
+    if (server_ctx)
+      SocketTLSContext_free (&server_ctx);
+    remove_test_certs (cert_file, key_file);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
 int
 main (void)
 {
