@@ -531,43 +531,76 @@ testing requirements, documentation, security hardening, and future enhancements
   - Security recommendations and migration guidance
   - Added #ifndef guards to allow proper compile-time overrides
 
-### 3.2 Cipher Suite Defaults — *NONE*
+### 3.2 Cipher Suite Defaults — *COMPLETE*
 **Difficulty: 3/9** _(Cipher priority rationale and testing)_
 
-- [ ] **SOCKET_TLS13_CIPHERSUITES**: Verify default includes AES-256-GCM, ChaCha20-Poly1305, AES-128-GCM in that order
-- [ ] **Cipher Priority Order**: Document rationale for cipher ordering (AES-256 for max security, ChaCha20 for mobile)
-- [ ] **Override Documentation**: Document how to customize ciphers for specific environments
+- [x] **SOCKET_TLS13_CIPHERSUITES**: Verified default includes AES-256-GCM, ChaCha20-Poly1305, AES-128-GCM in that order
+  - Defined in `SocketTLSConfig.h:407-409`
+  - Order verified via fuzzer assertions in `fuzz_tls_config.c:verify_default_constants()`
+- [x] **Cipher Priority Order**: Documented comprehensive rationale for cipher ordering
+  - AES-256-GCM first: Maximum security (256-bit), AES-NI hardware acceleration, NSA Suite B compliant
+  - ChaCha20-Poly1305 second: Constant-time implementation, excellent on ARM/mobile without AES-NI
+  - AES-128-GCM third: Fallback for compatibility, still provides strong security
+  - Documentation updated in `SocketTLSConfig.h:354-406` with detailed rationale table
+- [x] **Override Documentation**: Documented how to customize ciphers for specific environments
+  - Added three override examples: ChaCha20-first for mobile, AES-128-only for constrained, AES-256-only for max security
+  - Include validation recommendations (openssl ciphers -v, ssllabs.com)
 
-### 3.3 Timeout Configuration — *NONE*
+### 3.3 Timeout Configuration — *COMPLETE*
 **Difficulty: 2/9** _(Simple constant verification)_
 
-- [ ] **SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS**: Verify 30 seconds default is appropriate
-- [ ] **SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS**: Verify 5 seconds default for shutdown
-- [ ] **SOCKET_TLS_POLL_INTERVAL_MS**: Verify 100ms polling interval for non-blocking operations
+- [x] **SOCKET_TLS_DEFAULT_HANDSHAKE_TIMEOUT_MS**: Verified 30 seconds (30000ms) is appropriate
+  - Defined in `SocketTLSConfig.h:427`
+  - Rationale documented: accommodates high-latency links, OCSP/CRL validation, deep cert chains
+  - Override examples added for internal networks (10s) and satellite links (60s)
+- [x] **SOCKET_TLS_DEFAULT_SHUTDOWN_TIMEOUT_MS**: Verified 5 seconds (5000ms) default for shutdown
+  - Defined in `SocketTLSConfig.h:440`
+  - Rationale documented: quick teardown, resource release, protocol compliance
+- [x] **SOCKET_TLS_POLL_INTERVAL_MS**: Verified 100ms polling interval for non-blocking operations
+  - Defined in `SocketTLSConfig.h:452`
+  - Rationale documented: balances responsiveness with CPU efficiency
 
-### 3.4 Buffer and Size Limits — *NONE*
+### 3.4 Buffer and Size Limits — *COMPLETE*
 **Difficulty: 2/9** _(Limit verification and documentation)_
 
-- [ ] **SOCKET_TLS_BUFFER_SIZE**: Verify 16384 bytes (TLS max record size)
-- [ ] **SOCKET_TLS_MAX_CERT_CHAIN_DEPTH**: Verify 10 levels for chain validation
-- [ ] **SOCKET_TLS_MAX_ALPN_LEN**: Verify 255 bytes per protocol name
-- [ ] **SOCKET_TLS_MAX_ALPN_TOTAL_BYTES**: Verify 1024 bytes total for ALPN list
-- [ ] **SOCKET_TLS_MAX_SNI_LEN**: Verify 255 bytes for SNI hostname
-- [ ] **SOCKET_TLS_SESSION_CACHE_SIZE**: Verify 1000 sessions default
-- [ ] **SOCKET_TLS_ERROR_BUFSIZE**: Verify 512 bytes for error messages
-- [ ] **SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE**: Verify 256 bytes for OpenSSL error strings
+- [x] **SOCKET_TLS_BUFFER_SIZE**: Verified 16384 bytes (TLS max record size per RFC 8446 Section 5.1)
+  - Defined in `SocketTLSConfig.h:475`
+- [x] **SOCKET_TLS_MAX_CERT_CHAIN_DEPTH**: Verified 10 levels for chain validation
+  - Defined in `SocketTLSConfig.h:497` with example depth table (Let's Encrypt: 2, Enterprise: 3-5, Gov/Mil: 4-7)
+- [x] **SOCKET_TLS_MAX_ALPN_LEN**: Verified 255 bytes per protocol name (RFC 7301 Section 3.1 max)
+  - Defined in `SocketTLSConfig.h:512`
+- [x] **SOCKET_TLS_MAX_ALPN_TOTAL_BYTES**: Verified 1024 bytes total for ALPN list
+  - Defined in `SocketTLSConfig.h:526`
+- [x] **SOCKET_TLS_MAX_SNI_LEN**: Verified 255 bytes for SNI hostname (RFC 1035/6066 compliant)
+  - Defined in `SocketTLSConfig.h:541`
+- [x] **SOCKET_TLS_SESSION_CACHE_SIZE**: Verified 1000 sessions default with memory estimate (~1MB)
+  - Defined in `SocketTLSConfig.h:560`
+- [x] **SOCKET_TLS_ERROR_BUFSIZE**: Verified 512 bytes for error messages
+  - Defined in `SocketTLSConfig.h:576`
+- [x] **SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE**: Verified 256 bytes for OpenSSL error strings
+  - Defined in `SocketTLSConfig.h:591`
 
-### 3.5 Security Limits — *NONE*
+### 3.5 Security Limits — *COMPLETE*
 **Difficulty: 2/9** _(Limit verification and enforcement testing)_
 
-- [ ] **SOCKET_TLS_MAX_SNI_CERTS**: Verify 100 certificate limit for SNI
-- [ ] **SOCKET_TLS_MAX_PINS**: Verify 32 pin limit for certificate pinning
-- [ ] **SOCKET_TLS_TICKET_KEY_LEN**: Verify 80 bytes for session ticket keys
-- [ ] **SOCKET_TLS_MAX_OCSP_RESPONSE_LEN**: Verify 64KB for OCSP responses
-- [ ] **SOCKET_TLS_MAX_PATH_LEN**: Verify 4096 bytes for file paths
-- [ ] **SOCKET_TLS_MAX_CRL_SIZE**: Verify 10MB for CRL files
-- [ ] **SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL**: Verify 60 seconds minimum
-- [ ] **SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL**: Verify 1 year maximum
+- [x] **SOCKET_TLS_MAX_SNI_CERTS**: Verified 100 certificate limit for SNI virtual hosting
+  - Defined in `SocketTLSConfig.h:617`
+- [x] **SOCKET_TLS_MAX_PINS**: Verified 32 pin limit for certificate pinning (OWASP-aligned)
+  - Defined in `SocketTLSConfig.h:689` with rationale for constant-time lookup
+- [x] **SOCKET_TLS_TICKET_KEY_LEN**: Verified 80 bytes for session ticket keys (16 name + 32 AES + 32 HMAC)
+  - Defined in `SocketTLSConfig.h:641` with detailed key structure documentation
+- [x] **SOCKET_TLS_MAX_OCSP_RESPONSE_LEN**: Verified 64KB for OCSP responses
+  - Defined in `SocketTLSConfig.h:674`
+- [x] **SOCKET_TLS_MAX_PATH_LEN**: Verified 4096 bytes for file paths (POSIX PATH_MAX)
+  - Defined in `SocketTLSConfig.h:690`
+- [x] **SOCKET_TLS_MAX_CRL_SIZE**: Verified 10MB for CRL files (accommodates major CA CRLs)
+  - Defined in `SocketTLSConfig.h:716`
+- [x] **SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL**: Verified 60 seconds minimum (DoS prevention)
+  - Defined in `SocketTLSConfig.h:729`
+- [x] **SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL**: Verified 1 year maximum (31,536,000 seconds)
+  - Defined in `SocketTLSConfig.h:745`
+
+**Fuzzing Coverage**: All constants verified in `src/fuzz/fuzz_tls_config.c:verify_default_constants()`
 
 ---
 
