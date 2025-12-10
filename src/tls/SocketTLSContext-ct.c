@@ -8,6 +8,7 @@
  * publicly auditable CT logs.
  *
  * Requires OpenSSL 1.1.0+ with CT support compiled in.
+ * CT support is detected via SOCKET_HAS_CT_SUPPORT in SocketTLSConfig.h.
  *
  * Thread safety: Configuration is NOT thread-safe - perform before sharing.
  */
@@ -16,24 +17,13 @@
 
 #include "tls/SocketTLS-private.h"
 #include <assert.h>
-#include <openssl/opensslv.h>
 #include <openssl/ssl.h>
 
 #define T SocketTLSContext_T
 
 SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 
-/* ============================================================================
- * CT Support Detection
- * ============================================================================
- */
-
-/* CT support requires OpenSSL 1.1.0+ and CT being compiled in */
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(OPENSSL_NO_CT)
-#define SOCKET_HAS_CT_SUPPORT 1
-#else
-#define SOCKET_HAS_CT_SUPPORT 0
-#endif
+/* CT support detection is now in SocketTLSConfig.h (included via private.h) */
 
 /* ============================================================================
  * Certificate Transparency Implementation

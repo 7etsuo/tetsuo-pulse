@@ -34,6 +34,9 @@ enum SessionOp
   SESSION_ENABLE_TICKETS,
   SESSION_GET_STATS,
   SESSION_SET_ID_CONTEXT,
+  SESSION_ROTATE_TICKET_KEY,
+  SESSION_DISABLE_TICKETS,
+  SESSION_CHECK_TICKETS_ENABLED,
   SESSION_OP_COUNT
 };
 
@@ -150,6 +153,72 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
             {
               SocketTLSContext_set_session_id_context (ctx, key_data, 64);
             }
+        }
+        break;
+
+      case SESSION_ROTATE_TICKET_KEY:
+        {
+          /* Test session ticket key rotation with fuzzed key material */
+          /* First enable tickets, then try rotation */
+          unsigned char initial_key[TICKET_KEY_SIZE];
+          memset (initial_key, 0xAA, TICKET_KEY_SIZE);
+          SocketTLSContext_enable_session_tickets (ctx, initial_key,
+                                                   TICKET_KEY_SIZE);
+
+          if (key_size >= TICKET_KEY_SIZE)
+            {
+              /* Valid rotation */
+              SocketTLSContext_rotate_session_ticket_key (ctx, key_data,
+                                                          TICKET_KEY_SIZE);
+            }
+          else if (key_size > 0)
+            {
+              /* Invalid key size - should fail */
+              SocketTLSContext_rotate_session_ticket_key (ctx, key_data,
+                                                          key_size);
+            }
+        }
+        break;
+
+      case SESSION_DISABLE_TICKETS:
+        {
+          /* Test disabling session tickets */
+          unsigned char key[TICKET_KEY_SIZE];
+          memset (key, 0xBB, TICKET_KEY_SIZE);
+
+          /* Enable, then disable */
+          SocketTLSContext_enable_session_tickets (ctx, key, TICKET_KEY_SIZE);
+          SocketTLSContext_disable_session_tickets (ctx);
+
+          /* Multiple disable calls should be safe */
+          SocketTLSContext_disable_session_tickets (ctx);
+
+          /* Can we re-enable after disable? */
+          if (key_size >= TICKET_KEY_SIZE)
+            {
+              SocketTLSContext_enable_session_tickets (ctx, key_data,
+                                                       TICKET_KEY_SIZE);
+            }
+        }
+        break;
+
+      case SESSION_CHECK_TICKETS_ENABLED:
+        {
+          /* Test tickets enabled check in various states */
+          int enabled = SocketTLSContext_session_tickets_enabled (ctx);
+          (void)enabled;
+
+          /* Enable and check */
+          unsigned char key[TICKET_KEY_SIZE];
+          memset (key, 0xCC, TICKET_KEY_SIZE);
+          SocketTLSContext_enable_session_tickets (ctx, key, TICKET_KEY_SIZE);
+          enabled = SocketTLSContext_session_tickets_enabled (ctx);
+          (void)enabled;
+
+          /* Disable and check */
+          SocketTLSContext_disable_session_tickets (ctx);
+          enabled = SocketTLSContext_session_tickets_enabled (ctx);
+          (void)enabled;
         }
         break;
       }

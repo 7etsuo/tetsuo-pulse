@@ -243,13 +243,108 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
 #if SOCKET_HAS_TLS
 
 #include <openssl/err.h>
+#include <openssl/opensslv.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
 
 /* ============================================================================
+ * Certificate Transparency (CT) Support Detection
+ * ============================================================================
+ *
+ * CT support requires OpenSSL 1.1.0+ and CT compiled in (not OPENSSL_NO_CT).
+ * This macro is used throughout the TLS modules to conditionally compile
+ * CT functionality.
+ *
+ * Usage in application code:
+ *   #if SOCKET_HAS_CT_SUPPORT
+ *       SocketTLSContext_enable_ct(ctx, CT_VALIDATION_STRICT);
+ *   #endif
+ *
+ * @see SocketTLSContext_enable_ct() for CT configuration
+ * @see RFC 6962 Certificate Transparency specification
+ */
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(OPENSSL_NO_CT)
+#define SOCKET_HAS_CT_SUPPORT 1
+#else
+#define SOCKET_HAS_CT_SUPPORT 0
+#endif
+
+/* ============================================================================
  * TLS Protocol Versions
  * ============================================================================
+ *
+ * DEFAULT: Strict TLS 1.3-only enforcement (SOCKET_TLS_MIN_VERSION ==
+ * SOCKET_TLS_MAX_VERSION == TLS1_3_VERSION).
+ *
+ * This is the RECOMMENDED configuration for security. TLS 1.3 provides:
+ * - Mandatory Perfect Forward Secrecy (PFS) with ephemeral keys
+ * - Modern AEAD ciphers only (no CBC, RC4, 3DES)
+ * - Simplified handshake (1-RTT, optional 0-RTT)
+ * - Protection against downgrade attacks
+ * - Removal of legacy/vulnerable features (renegotiation, compression)
+ *
+ * LEGACY COMPATIBILITY (NOT RECOMMENDED):
+ * =======================================
+ * If you MUST support legacy systems that cannot upgrade to TLS 1.3, you can
+ * override these constants BEFORE including this header. This is strongly
+ * discouraged and should only be used as a last resort.
+ *
+ * ## Security Implications of Lowering TLS Version
+ *
+ * | Version    | Security Status | Known Vulnerabilities |
+ * |------------|-----------------|------------------------|
+ * | TLS 1.3    | SECURE          | None known             |
+ * | TLS 1.2    | ACCEPTABLE*     | Lucky13, ROBOT, CBC issues |
+ * | TLS 1.1    | DEPRECATED      | No PFS by default, BEAST variants |
+ * | TLS 1.0    | DEPRECATED      | BEAST, POODLE variants |
+ * | SSL 3.0    | BROKEN          | POODLE, padding oracle attacks |
+ * | SSL 2.0    | BROKEN          | Completely broken, never use |
+ *
+ * *TLS 1.2 is acceptable only with ECDHE+AEAD cipher suites and proper config.
+ *
+ * ## Legacy Override Example (Compile-Time)
+ *
+ * @code{.c}
+ * // BEFORE including SocketTLSConfig.h, define overrides:
+ * // WARNING: This weakens security! Document your justification.
+ * #define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION
+ * #define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
+ * #include "tls/SocketTLSConfig.h"
+ *
+ * // This allows TLS 1.2 fallback while preferring TLS 1.3
+ * @endcode
+ *
+ * ## Runtime Override (Preferred for Flexibility)
+ *
+ * @code{.c}
+ * // Use SocketTLSConfig_T for runtime configuration:
+ * SocketTLSConfig_T config;
+ * SocketTLS_config_defaults(&config);
+ *
+ * // Override for legacy compatibility (logs security warning):
+ * config.min_version = TLS1_2_VERSION;  // Allow TLS 1.2 fallback
+ * // config.max_version remains TLS1_3_VERSION (prefer TLS 1.3)
+ *
+ * SocketTLSContext_T ctx = SocketTLSContext_new(&config);
+ * @endcode
+ *
+ * ## Alternative: Per-Context Override (Most Flexible)
+ *
+ * @code{.c}
+ * // Create with defaults, then adjust specific context:
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ *
+ * // Lower version for specific legacy connection (emits warning log):
+ * SocketTLSContext_set_min_protocol(ctx, TLS1_2_VERSION);
+ * @endcode
+ *
+ * SECURITY RECOMMENDATION:
+ * - Prefer upgrading legacy systems to TLS 1.3
+ * - If TLS 1.2 is required, use ECDHE key exchange only
+ * - Monitor connections and plan migration timelines
+ * - Audit cipher suites: remove CBC modes, use AEAD only
+ * - Consider separate contexts for legacy vs. modern connections
  */
 
 /**
@@ -264,15 +359,24 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * Used as default for SocketTLSConfig_T::min_version and applied via
  * SocketTLSContext_set_min_protocol().
  *
- * ## Override Example
+ * ## Override for Legacy Compatibility (NOT RECOMMENDED)
  *
  * @code{.c}
- * // Allow TLS 1.2+ for legacy server compatibility (less secure)
+ * // COMPILE-TIME: Define before including header
  * #define SOCKET_TLS_MIN_VERSION TLS1_2_VERSION
- * #include "SocketTLSConfig.h"
+ * #include "tls/SocketTLSConfig.h"
+ *
+ * // RUNTIME: Use SocketTLSConfig_T structure
+ * SocketTLSConfig_T cfg;
+ * SocketTLS_config_defaults(&cfg);
+ * cfg.min_version = TLS1_2_VERSION;  // Allow TLS 1.2 fallback
+ * SocketTLSContext_T ctx = SocketTLSContext_new(&cfg);
+ *
+ * // PER-CONTEXT: Adjust after creation
+ * SocketTLSContext_set_min_protocol(ctx, TLS1_2_VERSION);
  * @endcode
  *
- * @warning Overriding to versions below TLS1.3 exposes connections to
+ * @warning Overriding to versions below TLS1_3_VERSION exposes connections to
  * deprecated ciphers, weaker key exchanges, and known attacks (e.g., POODLE,
  * Lucky13, BEAST). Use only for unavoidable legacy interop; prefer upgrades.
  * @note TLS1.3 provides 0-RTT resumption (with caveats), improved handshake,
@@ -282,12 +386,13 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @see SOCKET_TLS_MAX_VERSION for maximum version pairing.
  * @see SocketTLSConfig_T::min_version for runtime configuration field.
  * @see SocketTLSContext_set_min_protocol() for context-specific setting.
- * @see
- * https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
+ * @see https://owasp.org/www-project-cheat-sheets/cheat_sheets/TLS_Cipher_String_Cheat_Sheet
  * for cipher guidance.
  * @see docs/SECURITY.md#tls-versions for detailed version security analysis.
  */
+#ifndef SOCKET_TLS_MIN_VERSION
 #define SOCKET_TLS_MIN_VERSION TLS1_3_VERSION
+#endif
 
 /**
  * @brief Maximum TLS protocol version - STRICT TLS 1.3 ONLY
@@ -304,15 +409,19 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * ## Override Example
  *
  * @code{.c}
- * // Not typically needed, but for future-proofing (hypothetical)
- * #define SOCKET_TLS_MAX_VERSION 0x0304  // TLS 1.4 if defined later
- * #include "SocketTLSConfig.h"
+ * // Allow future TLS versions (hypothetical - use with caution)
+ * #define SOCKET_TLS_MAX_VERSION 0  // 0 = no maximum limit (auto-highest)
+ * #include "tls/SocketTLSConfig.h"
+ *
+ * // Or for strict pinning to TLS 1.3 only (default, most secure):
+ * // Leave SOCKET_TLS_MAX_VERSION undefined to use TLS1_3_VERSION
  * @endcode
  *
  * @note Raising max_version requires OpenSSL support and security review of
- * new protocols.
+ * new protocols. Setting to 0 allows OpenSSL to auto-select highest available.
  * @warning Allowing future versions without validation risks unknown
- * vulnerabilities.
+ * vulnerabilities. The default TLS1_3_VERSION is recommended until TLS 1.4
+ * is standardized and OpenSSL support is mature.
  * @complexity Compile-time constant
  *
  * @see SOCKET_TLS_MIN_VERSION for minimum version pairing.
@@ -320,7 +429,9 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @see SocketTLSContext_set_max_protocol() for context setting.
  * @see docs/SECURITY.md#tls-versions for version policy recommendations.
  */
+#ifndef SOCKET_TLS_MAX_VERSION
 #define SOCKET_TLS_MAX_VERSION TLS1_3_VERSION
+#endif
 
 /* ============================================================================
  * TLS Cipher Suites
@@ -332,54 +443,69 @@ extern void SocketTLS_config_defaults (SocketTLSConfig_T *config);
  * @ingroup tls_config
  *
  * Modern cipher suites providing perfect forward secrecy (ECDHE key exchange)
- * and authenticated encryption with associated data (AEAD modes). Prioritizes
- * ChaCha20-Poly1305 for systems without AES-NI hardware acceleration, ensuring
- * strong performance and security across devices.
+ * and authenticated encryption with associated data (AEAD modes).
  *
- * Order preference: AES-256-GCM (maximum security), ChaCha20-Poly1305
- * (mobile/ARM optimized), AES-128-GCM (balanced compatibility).
+ * ## Cipher Priority Order Rationale
  *
- * Excludes legacy/insecure options:
- * - CBC modes (padding oracle attacks like Lucky13)
- * - RC4 (broken stream cipher)
- * - 3DES (weak, small key size)
- * - Static RSA key exchange (no PFS)
- * - Weak hashes (MD5, SHA1)
+ * The default order is optimized for **maximum security on modern hardware**:
  *
- * Used internally by SocketTLSContext_new*() functions as default cipher list.
+ * 1. **TLS_AES_256_GCM_SHA384** (first priority)
+ *    - 256-bit key provides highest security margin against future attacks
+ *    - AES-NI hardware acceleration on x86/x64/ARM64 makes it fastest option
+ *    - Required by NSA Suite B for TOP SECRET classification
  *
- * ## Override Example
+ * 2. **TLS_CHACHA20_POLY1305_SHA256** (second priority)
+ *    - Constant-time implementation resistant to cache-timing attacks
+ *    - Excellent on mobile/ARM devices without AES hardware acceleration
+ *    - Comparable security to AES-256-GCM (256-bit effective key)
+ *
+ * 3. **TLS_AES_128_GCM_SHA256** (third priority)
+ *    - 128-bit key is sufficient for most threat models
+ *    - Fallback for environments that only support AES-128
+ *    - Still provides strong security with good performance
+ *
+ * ## Override Examples
  *
  * @code{.c}
- * // Prefer ChaCha20 for non-AES hardware (e.g., embedded/mobile)
- * #define SOCKET_TLS13_CIPHERSUITES
- * "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384"
+ * // Prefer ChaCha20 for non-AES hardware (e.g., older mobile/embedded)
+ * #define SOCKET_TLS13_CIPHERSUITES \
+ *     "TLS_CHACHA20_POLY1305_SHA256:TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256"
+ * #include "SocketTLSConfig.h"
+ *
+ * // AES-128 only for resource-constrained environments
+ * #define SOCKET_TLS13_CIPHERSUITES "TLS_AES_128_GCM_SHA256"
+ * #include "SocketTLSConfig.h"
+ *
+ * // Maximum security only (no fallback)
+ * #define SOCKET_TLS13_CIPHERSUITES "TLS_AES_256_GCM_SHA384"
  * #include "SocketTLSConfig.h"
  * @endcode
  *
  * ## Security Properties Table
  *
- * | Suite                      | Key Exchange | Encryption | Integrity | Notes
- * |
- * |----------------------------|--------------|------------|-----------|-------|
- * | TLS_AES_256_GCM_SHA384     | ECDHE        | AES-256-GCM| GCM       |
- * Highest security, AES-NI accelerated | | TLS_CHACHA20_POLY1305_SHA256 |
- * ECDHE      | ChaCha20   | Poly1305  | Software-friendly, resistant to timing
- * attacks | | TLS_AES_128_GCM_SHA256     | ECDHE        | AES-128-GCM| GCM |
- * Good balance, widely supported |
+ * | Suite                      | Key Exchange | Encryption  | Integrity | Notes                                    |
+ * |----------------------------|--------------|-------------|-----------|------------------------------------------|
+ * | TLS_AES_256_GCM_SHA384     | ECDHE        | AES-256-GCM | GCM       | Highest security, AES-NI accelerated     |
+ * | TLS_CHACHA20_POLY1305_SHA256| ECDHE       | ChaCha20    | Poly1305  | Software-friendly, timing-attack resistant|
+ * | TLS_AES_128_GCM_SHA256     | ECDHE        | AES-128-GCM | GCM       | Good balance, widely supported           |
  *
- * @warning Custom orders/lists must maintain PFS+AEAD; validate with openssl
- * ciphers -v or ssllabs.com. Removing suites may reduce compatibility; adding
- * insecure ones compromises security.
- * @note TLS1.3 mandates PFS and AEAD, eliminating many legacy issues.
- * @complexity Compile-time string constant
+ * ## Excluded Ciphers (Legacy/Insecure)
  *
- * @see SocketTLSContext_set_cipher_list() for runtime override on contexts.
- * @see https://wiki.mozilla.org/Security/Server_Side_TLS for Mozilla
- * guidelines (intermediate+ profile).
+ * - CBC modes (padding oracle attacks like Lucky13, BEAST)
+ * - RC4 (broken stream cipher, RFC 7465)
+ * - 3DES (weak 112-bit effective key, Sweet32 attack)
+ * - Static RSA key exchange (no PFS)
+ * - MD5/SHA1 signatures (collision attacks)
+ *
+ * @warning Custom orders/lists must maintain PFS+AEAD. Validate with:
+ *          `openssl ciphers -v` or https://www.ssllabs.com/ssltest/
+ * @note TLS 1.3 mandates PFS and AEAD, eliminating many legacy issues.
+ * @complexity Compile-time string constant - zero runtime overhead
+ *
+ * @see SocketTLSContext_set_ciphersuites() for runtime override on contexts.
+ * @see https://wiki.mozilla.org/Security/Server_Side_TLS for Mozilla guidelines.
  * @see https://www.ssllabs.com/ssltest/ for server configuration testing.
  * @see docs/SECURITY.md#ciphersuites for library-specific recommendations.
- * @see @ref tls_config for related constants like timeouts and buffers.
  */
 #define SOCKET_TLS13_CIPHERSUITES                                             \
   "TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:TLS_AES_128_GCM_"      \

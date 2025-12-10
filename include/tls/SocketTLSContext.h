@@ -1332,6 +1332,80 @@ extern void SocketTLSContext_enable_session_tickets (T ctx,
                                                      const unsigned char *key,
                                                      size_t key_len);
 
+/**
+ * @brief Rotate the session ticket encryption key.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance
+ * @param[in] new_key New ticket encryption key (SOCKET_TLS_TICKET_KEY_LEN bytes)
+ * @param new_key_len Length of new key (must be SOCKET_TLS_TICKET_KEY_LEN = 80
+ * bytes)
+ *
+ * Replaces the current session ticket key with a new one. Existing sessions
+ * using the old key will fail resumption on next connection (forcing full
+ * handshake). For graceful rotation without breaking active sessions, use
+ * OpenSSL's multi-key approach or schedule rotation during low-traffic periods.
+ *
+ * Security: The old key is securely cleared from memory before being replaced.
+ * The new key is validated for correct length before installation.
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * // Periodic key rotation (e.g., daily)
+ * unsigned char new_key[80];
+ * if (RAND_bytes(new_key, 80) != 1) {
+ *     // Handle RNG failure
+ * }
+ * TRY {
+ *     SocketTLSContext_rotate_session_ticket_key(ctx, new_key, 80);
+ * } EXCEPT(SocketTLS_Failed) {
+ *     // Handle rotation failure
+ * } END_TRY;
+ * // Securely clear the temporary key
+ * OPENSSL_cleanse(new_key, 80);
+ * @endcode
+ *
+ * @return void
+ * @throws SocketTLS_Failed if tickets not enabled, invalid key length, or
+ * OpenSSL fails
+ * @threadsafe Yes (mutex protected)
+ *
+ * @see SocketTLSContext_enable_session_tickets() to initially enable tickets
+ * @see SocketTLSContext_session_tickets_enabled() to check if tickets are
+ * enabled
+ * @see SOCKET_TLS_TICKET_KEY_LEN for required key length (80 bytes)
+ */
+extern void SocketTLSContext_rotate_session_ticket_key (
+    T ctx, const unsigned char *new_key, size_t new_key_len);
+
+/**
+ * @brief Check if session tickets are enabled.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance
+ *
+ * @return 1 if session tickets are enabled, 0 otherwise
+ * @throws None
+ * @threadsafe Yes (read-only)
+ */
+extern int SocketTLSContext_session_tickets_enabled (T ctx);
+
+/**
+ * @brief Disable session tickets and securely clear the key.
+ * @ingroup security
+ * @param[in] ctx The TLS context instance
+ *
+ * Disables session ticket support and securely wipes the ticket encryption
+ * key from memory. Use when ticket-based resumption is no longer desired
+ * or when rotating to a completely new session management approach.
+ *
+ * @return void
+ * @throws None
+ * @threadsafe Yes (mutex protected)
+ *
+ * @see SocketTLSContext_enable_session_tickets() to re-enable
+ */
+extern void SocketTLSContext_disable_session_tickets (T ctx);
+
 /* ============================================================================
  * Certificate Pinning (SPKI SHA256)
  * ============================================================================

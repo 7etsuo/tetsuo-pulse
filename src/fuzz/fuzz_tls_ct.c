@@ -12,6 +12,10 @@
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
  * fuzz_tls_ct Run: ./fuzz_tls_ct corpus/tls_ct/ -fork=16 -max_len=8192
+ *
+ * CT Support Detection:
+ * - SOCKET_HAS_CT_SUPPORT is defined in SocketTLSConfig.h
+ * - Requires OpenSSL 1.1.0+ without OPENSSL_NO_CT
  */
 
 #include <assert.h>
@@ -21,6 +25,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "tls/SocketTLSConfig.h"  /* For SOCKET_HAS_CT_SUPPORT */
 #include "tls/SocketTLSContext.h"
 
 #if !SOCKET_HAS_TLS || !SOCKET_HAS_CT_SUPPORT

@@ -375,6 +375,120 @@ SocketTLSContext_enable_session_tickets (T ctx, const unsigned char *key,
     }
 }
 
+/**
+ * SocketTLSContext_rotate_session_ticket_key - Rotate the session ticket key
+ * @ctx: TLS context (must not be NULL)
+ * @new_key: New ticket encryption key (must be SOCKET_TLS_TICKET_KEY_LEN bytes)
+ * @new_key_len: Key length (must equal SOCKET_TLS_TICKET_KEY_LEN = 80)
+ *
+ * Raises: SocketTLS_Failed on invalid parameters or OpenSSL error
+ *
+ * Replaces the current session ticket key with a new one. The old key is
+ * securely cleared from memory before being replaced. Existing sessions
+ * encrypted with the old key will fail resumption (full handshake required).
+ *
+ * For graceful rotation without breaking active sessions, schedule rotation
+ * during low-traffic periods or implement multi-key support.
+ *
+ * Thread-safe: Yes - uses stats_mutex to protect key updates.
+ */
+void
+SocketTLSContext_rotate_session_ticket_key (T ctx, const unsigned char *new_key,
+                                            size_t new_key_len)
+{
+  assert (ctx);
+  assert (ctx->ssl_ctx);
+
+  if (!ctx->tickets_enabled)
+    {
+      RAISE_CTX_ERROR_MSG (
+          SocketTLS_Failed,
+          "Cannot rotate session ticket key: tickets not enabled");
+    }
+
+  if (new_key_len != SOCKET_TLS_TICKET_KEY_LEN)
+    {
+      RAISE_CTX_ERROR_FMT (
+          SocketTLS_Failed,
+          "Session ticket key length must be exactly %d bytes, got %zu",
+          SOCKET_TLS_TICKET_KEY_LEN, new_key_len);
+    }
+
+  if (new_key == NULL)
+    {
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "New session ticket key pointer cannot be NULL");
+    }
+
+  /* Thread-safe key rotation using stats_mutex */
+  pthread_mutex_lock (&ctx->stats_mutex);
+
+  /* Securely clear old key before replacement */
+  OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+
+  /* Copy new key into structure */
+  memcpy (ctx->ticket_key, new_key, new_key_len);
+
+  /* Apply to OpenSSL context */
+  if (SSL_CTX_ctrl (ctx->ssl_ctx, SSL_CTRL_SET_TLSEXT_TICKET_KEYS,
+                    (int)new_key_len, ctx->ticket_key)
+      != 1)
+    {
+      /* Clear key material on failure */
+      OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+      ctx->tickets_enabled = 0;
+      pthread_mutex_unlock (&ctx->stats_mutex);
+      ctx_raise_openssl_error ("Failed to rotate session ticket keys");
+    }
+
+  pthread_mutex_unlock (&ctx->stats_mutex);
+}
+
+/**
+ * SocketTLSContext_session_tickets_enabled - Check if session tickets enabled
+ * @ctx: TLS context (may be NULL)
+ *
+ * Returns: 1 if session tickets are enabled, 0 otherwise
+ *
+ * Thread-safe: Yes - read-only access to atomic flag.
+ */
+int
+SocketTLSContext_session_tickets_enabled (T ctx)
+{
+  if (!ctx)
+    return 0;
+  return ctx->tickets_enabled;
+}
+
+/**
+ * SocketTLSContext_disable_session_tickets - Disable tickets and clear key
+ * @ctx: TLS context (must not be NULL)
+ *
+ * Disables session ticket support and securely wipes the ticket encryption
+ * key from memory. Does nothing if tickets are not enabled.
+ *
+ * Thread-safe: Yes - uses stats_mutex to protect key clearing.
+ */
+void
+SocketTLSContext_disable_session_tickets (T ctx)
+{
+  assert (ctx);
+
+  if (!ctx->tickets_enabled)
+    return;
+
+  pthread_mutex_lock (&ctx->stats_mutex);
+
+  /* Securely clear the ticket key */
+  OPENSSL_cleanse (ctx->ticket_key, SOCKET_TLS_TICKET_KEY_LEN);
+  ctx->tickets_enabled = 0;
+
+  /* Disable tickets in OpenSSL by setting the NO_TICKET option */
+  SSL_CTX_set_options (ctx->ssl_ctx, SSL_OP_NO_TICKET);
+
+  pthread_mutex_unlock (&ctx->stats_mutex);
+}
+
 #undef T
 
 #endif /* SOCKET_HAS_TLS */

@@ -422,35 +422,63 @@ testing requirements, documentation, security hardening, and future enhancements
 - [ ] **Ticket Key Rotation**: Consider adding automatic key rotation support
 - [ ] **Ticket Key Secure Storage**: Verify key is securely stored and cleared on context free
 
-### 2.13 Certificate Pinning (SPKI SHA256) — *depends on 2.1, 2.4, 7.\* (crypto utils)*
+### 2.13 Certificate Pinning (SPKI SHA256) — *depends on 2.1, 2.4, 7.\* (crypto utils)* ✅ COMPLETE
 **Difficulty: 7/9** _(Security-critical: timing attacks, chain traversal, constant-time compare)_
 
-- [ ] **SocketTLSContext_add_pin()**: Verify 32-byte binary hash is correctly stored
-- [ ] **SocketTLSContext_add_pin_hex()**: Verify 64-character hex parsing and "sha256//" prefix handling
-- [ ] **SocketTLSContext_add_pin_from_cert()**: Verify SPKI extraction and SHA256 hashing
-- [ ] **SocketTLSContext_add_pin_from_x509()**: Verify X509 object handling
-- [ ] **SocketTLSContext_clear_pins()**: Verify secure memory clearing before release
-- [ ] **SocketTLSContext_set_pin_enforcement()**: Verify strict (1) vs warn-only (0) modes
-- [ ] **SocketTLSContext_get_pin_enforcement()**: Verify query returns correct mode
-- [ ] **SocketTLSContext_get_pin_count()**: Verify accurate count returned
-- [ ] **SocketTLSContext_has_pins()**: Verify boolean check works correctly
-- [ ] **SocketTLSContext_verify_pin()**: Verify constant-time hash comparison via `SocketCrypto_secure_compare()`
-- [ ] **SocketTLSContext_verify_cert_pin()**: Verify SPKI extraction from X509 and comparison
-- [ ] **tls_pinning_check_chain()**: Verify chain traversal (leaf first, then intermediates)
-- [ ] **tls_pinning_find()**: Verify O(n) constant-time scan for timing attack prevention
-- [ ] **Pin Limit Enforcement**: Verify `SOCKET_TLS_MAX_PINS` (32) limit is enforced
-- [ ] **SocketTLS_PinVerifyFailed**: Verify exception is raised on pin mismatch in strict mode
+- [x] **SocketTLSContext_add_pin()**: Verify 32-byte binary hash is correctly stored
+  - Implemented in `SocketTLSContext-pinning.c:385-396` with mutex protection
+- [x] **SocketTLSContext_add_pin_hex()**: Verify 64-character hex parsing and "sha256//" prefix handling
+  - Implemented in `SocketTLSContext-pinning.c:409-429` with parse_hex_hash() helper
+- [x] **SocketTLSContext_add_pin_from_cert()**: Verify SPKI extraction and SHA256 hashing
+  - Implemented in `SocketTLSContext-pinning.c:442-524` with file validation and symlink protection
+- [x] **SocketTLSContext_add_pin_from_x509()**: Verify X509 object handling
+  - Implemented in `SocketTLSContext-pinning.c:537-555`
+- [x] **SocketTLSContext_clear_pins()**: Verify secure memory clearing before release
+  - Implemented in `SocketTLSContext-pinning.c:567-584` using `SocketCrypto_secure_clear()`
+- [x] **SocketTLSContext_set_pin_enforcement()**: Verify strict (1) vs warn-only (0) modes
+  - Implemented in `SocketTLSContext-pinning.c:596-603`
+- [x] **SocketTLSContext_get_pin_enforcement()**: Verify query returns correct mode
+  - Implemented in `SocketTLSContext-pinning.c:612-622`
+- [x] **SocketTLSContext_get_pin_count()**: Verify accurate count returned
+  - Implemented in `SocketTLSContext-pinning.c:631-641`
+- [x] **SocketTLSContext_has_pins()**: Verify boolean check works correctly
+  - Implemented in `SocketTLSContext-pinning.c:650-660`
+- [x] **SocketTLSContext_verify_pin()**: Verify constant-time hash comparison via `SocketCrypto_secure_compare()`
+  - Implemented in `SocketTLSContext-pinning.c:673-686` using `tls_pinning_find()`
+- [x] **SocketTLSContext_verify_cert_pin()**: Verify SPKI extraction from X509 and comparison
+  - Implemented in `SocketTLSContext-pinning.c:698-718`
+- [x] **tls_pinning_check_chain()**: Verify chain traversal (leaf first, then intermediates)
+  - Implemented in `SocketTLSContext-pinning.c:315-368` with snapshot-based thread safety
+- [x] **tls_pinning_find()**: Verify O(n) constant-time scan for timing attack prevention
+  - Implemented in `SocketTLSContext-pinning.c:277-296` - scans ALL pins for constant time
+- [x] **Pin Limit Enforcement**: Verify `SOCKET_TLS_MAX_PINS` (32) limit is enforced
+  - Implemented via `check_pin_limit()` in `SocketTLSContext-pinning.c:101-110`
+- [x] **SocketTLS_PinVerifyFailed**: Verify exception is raised on pin mismatch in strict mode
+  - Defined in `SocketTLSContext-pinning.c:57-58`, raised via `handle_pin_mismatch()` in verify callback
+- [x] **Verification Integration**: Pin checking integrated into TLS handshake
+  - Implemented in `SocketTLSContext-verify.c:337-365` via `internal_verify_callback()`
+- [x] **Fuzzing Harness**: Complete fuzzer for certificate pinning
+  - Implemented in `src/fuzz/fuzz_cert_pinning.c` covering all pin operations
 
 ### 2.14 Certificate Transparency (RFC 6962) — *depends on 2.1, 2.3*
 **Difficulty: 6/9** _(CT log integration, OpenSSL CT API)_
 
-- [ ] **SocketTLSContext_enable_ct()**: Verify CT is enabled via `SSL_CTX_enable_ct()`
-- [ ] **SocketTLSContext_enable_ct()**: Test strict vs permissive mode behavior
-- [ ] **SocketTLSContext_enable_ct()**: Verify server context rejection (CT is client-only)
-- [ ] **SocketTLSContext_ct_enabled()**: Verify query returns correct state
-- [ ] **SocketTLSContext_get_ct_mode()**: Verify correct mode is returned
-- [ ] **SocketTLSContext_set_ctlog_list_file()**: Verify custom CT log list loading
-- [ ] **CT Support Detection**: Verify `SOCKET_HAS_CT_SUPPORT` macro correctly detects OpenSSL 1.1.0+ with CT
+- [x] **SocketTLSContext_enable_ct()**: Verify CT is enabled via `SSL_CTX_enable_ct()`
+  - Implemented in `SocketTLSContext-ct.c:57-75` with strict/permissive mode mapping
+- [x] **SocketTLSContext_enable_ct()**: Test strict vs permissive mode behavior
+  - Tested in `test_tls_ct.c:40-49` (ct_context_basic_operations)
+- [x] **SocketTLSContext_enable_ct()**: Verify server context rejection (CT is client-only)
+  - Implemented in `SocketTLSContext-ct.c:63-65`, tested in `test_tls_ct.c:132-196`
+- [x] **SocketTLSContext_ct_enabled()**: Verify query returns correct state
+  - Implemented in `SocketTLSContext-ct.c:84-89`, tested in `test_tls_ct.c:37,42`
+- [x] **SocketTLSContext_get_ct_mode()**: Verify correct mode is returned
+  - Implemented in `SocketTLSContext-ct.c:98-103`, tested in `test_tls_ct.c:38,43,49`
+- [x] **SocketTLSContext_set_ctlog_list_file()**: Verify custom CT log list loading
+  - Implemented in `SocketTLSContext-ct.c:116-137` with path validation
+  - Tested in `test_tls_ct.c:52-95` for NULL, empty, and valid paths
+- [x] **CT Support Detection**: Verify `SOCKET_HAS_CT_SUPPORT` macro correctly detects OpenSSL 1.1.0+ with CT
+  - Defined in `SocketTLSConfig.h:266-270` using `OPENSSL_VERSION_NUMBER >= 0x10100000L && !defined(OPENSSL_NO_CT)`
+  - Stub implementations provided for unsupported builds in `SocketTLSContext-ct.c:148-199`
 
 ---
 
@@ -458,12 +486,18 @@ testing requirements, documentation, security hardening, and future enhancements
 
 **File:** `include/tls/SocketTLSConfig.h`
 
-### 3.1 Protocol Version Constants — *NONE*
+### 3.1 Protocol Version Constants — *COMPLETE*
 **Difficulty: 2/9** _(Config verification and documentation)_
 
-- [ ] **SOCKET_TLS_MIN_VERSION**: Verify set to `TLS1_3_VERSION` for security
-- [ ] **SOCKET_TLS_MAX_VERSION**: Verify set to `TLS1_3_VERSION` (strict TLS 1.3-only)
-- [ ] **Override Documentation**: Document how to override for legacy compatibility (not recommended)
+- [x] **SOCKET_TLS_MIN_VERSION**: Verified set to `TLS1_3_VERSION` for security (line 313 in SocketTLSConfig.h)
+- [x] **SOCKET_TLS_MAX_VERSION**: Verified set to `TLS1_3_VERSION` (strict TLS 1.3-only, line 346)
+- [x] **Override Documentation**: Added comprehensive legacy compatibility override documentation with:
+  - Security implications table (TLS versions vs vulnerabilities)
+  - Compile-time override examples (#define before include)
+  - Runtime override examples (SocketTLSConfig_T)
+  - Per-context override examples (SocketTLSContext_set_min_protocol)
+  - Security recommendations and migration guidance
+  - Added #ifndef guards to allow proper compile-time overrides
 
 ### 3.2 Cipher Suite Defaults — *NONE*
 **Difficulty: 3/9** _(Cipher priority rationale and testing)_

@@ -1099,6 +1099,114 @@ TEST (tls_set_max_protocol)
 #endif
 }
 
+/* Test protocol version configuration with security warnings (Section 2.8) */
+TEST (tls_protocol_version_config)
+{
+#if SOCKET_HAS_TLS
+  SocketTLSContext_T ctx = NULL;
+  SocketTLSConfig_T config;
+
+  /* Test 1: Verify default config uses TLS 1.3 */
+  SocketTLS_config_defaults (&config);
+  ASSERT_EQ (config.min_version, TLS1_3_VERSION);
+  ASSERT_EQ (config.max_version, TLS1_3_VERSION);
+
+  /* Test 2: Create context with default config - should be TLS 1.3 */
+  TRY
+  {
+    ctx = SocketTLSContext_new (NULL);
+    ASSERT (ctx != NULL);
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Unexpected failure */ }
+  END_TRY;
+  if (ctx)
+    SocketTLSContext_free (&ctx);
+
+  /* Test 3: Create context with explicit TLS 1.3 config */
+  config.min_version = TLS1_3_VERSION;
+  config.max_version = TLS1_3_VERSION;
+  TRY
+  {
+    ctx = SocketTLSContext_new (&config);
+    ASSERT (ctx != NULL);
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+  END_TRY;
+  if (ctx)
+    SocketTLSContext_free (&ctx);
+
+  /* Test 4: Set min protocol to TLS 1.2 (should log security warning) */
+  ctx = SocketTLSContext_new_client (NULL);
+  ASSERT (ctx != NULL);
+  TRY
+  {
+    /* This should succeed but log a security warning */
+    SocketTLSContext_set_min_protocol (ctx, TLS1_2_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* May fail if OpenSSL strictly enforces TLS 1.3, which is acceptable */
+  }
+  END_TRY;
+  SocketTLSContext_free (&ctx);
+
+  /* Test 5: Set max protocol to TLS 1.2 (should log security warning) */
+  ctx = SocketTLSContext_new_client (NULL);
+  ASSERT (ctx != NULL);
+  TRY
+  {
+    /* This should succeed but log a security warning */
+    SocketTLSContext_set_max_protocol (ctx, TLS1_2_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* May fail if min > max after setting, which is acceptable */
+  }
+  END_TRY;
+  SocketTLSContext_free (&ctx);
+
+  /* Test 6: Set min protocol to TLS 1.0 (should log warning for legacy) */
+  ctx = SocketTLSContext_new_client (NULL);
+  ASSERT (ctx != NULL);
+  TRY
+  {
+    SocketTLSContext_set_min_protocol (ctx, TLS1_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected to fail with TLS 1.3-only build */
+  }
+  END_TRY;
+  SocketTLSContext_free (&ctx);
+
+  /* Test 7: Test setting both min and max consistently */
+  ctx = SocketTLSContext_new_client (NULL);
+  ASSERT (ctx != NULL);
+  TRY
+  {
+    SocketTLSContext_set_max_protocol (ctx, TLS1_3_VERSION);
+    SocketTLSContext_set_min_protocol (ctx, TLS1_3_VERSION);
+  }
+  EXCEPT (SocketTLS_Failed) { ASSERT (0); /* Should not fail */ }
+  END_TRY;
+  SocketTLSContext_free (&ctx);
+#else
+  (void)0;
+#endif
+}
+
+/* Test that config_defaults handles NULL gracefully */
+TEST (tls_config_defaults_null_safe)
+{
+#if SOCKET_HAS_TLS
+  /* Should not crash when passed NULL */
+  SocketTLS_config_defaults (NULL);
+  /* Test passed if we get here without crash */
+#else
+  (void)0;
+#endif
+}
+
 /* ==================== Cipher List Tests ==================== */
 
 TEST (tls_set_cipher_list_valid)
@@ -1655,6 +1763,201 @@ TEST (tls_session_tickets_key_length)
     Arena_dispose (&arena);
   }
   END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+/* ==================== Session Ticket Rotation Tests
+ * ==================== */
+
+TEST (tls_session_tickets_rotation)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_ticket_rotate.crt";
+  const char *key_file = "test_ticket_rotate.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Initially tickets should not be enabled */
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 0);
+
+    /* Enable tickets with initial key */
+    unsigned char key1[80];
+    memset (key1, 0x11, sizeof (key1));
+    SocketTLSContext_enable_session_tickets (ctx, key1, 80);
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 1);
+
+    /* Rotate to new key */
+    unsigned char key2[80];
+    memset (key2, 0x22, sizeof (key2));
+    TRY
+    {
+      SocketTLSContext_rotate_session_ticket_key (ctx, key2, 80);
+      /* Should succeed */
+    }
+    EXCEPT (SocketTLS_Failed)
+    {
+      ASSERT (0); /* Should not raise */
+    }
+    END_TRY;
+
+    /* Tickets should still be enabled */
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 1);
+
+    /* Rotate again with another key */
+    unsigned char key3[80];
+    memset (key3, 0x33, sizeof (key3));
+    TRY { SocketTLSContext_rotate_session_ticket_key (ctx, key3, 80); }
+    EXCEPT (SocketTLS_Failed) { ASSERT (0); }
+    END_TRY;
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_session_tickets_rotation_errors)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_ticket_rotate_err.crt";
+  const char *key_file = "test_ticket_rotate_err.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+  volatile int raised = 0;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Rotation without enabling tickets should fail */
+    unsigned char key[80];
+    memset (key, 0xAA, sizeof (key));
+    raised = 0;
+    TRY
+    {
+      SocketTLSContext_rotate_session_ticket_key (ctx, key, 80);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+    ASSERT_EQ (raised, 1);
+
+    /* Enable tickets first */
+    SocketTLSContext_enable_session_tickets (ctx, key, 80);
+
+    /* Rotation with wrong key length should fail */
+    raised = 0;
+    unsigned char short_key[48];
+    memset (short_key, 0xBB, sizeof (short_key));
+    TRY
+    {
+      SocketTLSContext_rotate_session_ticket_key (ctx, short_key, 48);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+    ASSERT_EQ (raised, 1);
+
+    /* Rotation with NULL key should fail */
+    raised = 0;
+    TRY
+    {
+      SocketTLSContext_rotate_session_ticket_key (ctx, NULL, 80);
+      ASSERT (0); /* Should raise */
+    }
+    EXCEPT (SocketTLS_Failed) { raised = 1; }
+    END_TRY;
+    ASSERT_EQ (raised, 1);
+
+    /* Tickets should still be enabled after failed rotations */
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_session_tickets_disable)
+{
+#if SOCKET_HAS_TLS
+  const char *cert_file = "test_ticket_disable.crt";
+  const char *key_file = "test_ticket_disable.key";
+  if (generate_test_certs (cert_file, key_file) != 0)
+    return;
+
+  Arena_T arena = Arena_new ();
+  SocketTLSContext_T ctx = NULL;
+
+  TRY
+  {
+    ctx = SocketTLSContext_new_server (cert_file, key_file, NULL);
+
+    /* Enable tickets */
+    unsigned char key[80];
+    memset (key, 0x55, sizeof (key));
+    SocketTLSContext_enable_session_tickets (ctx, key, 80);
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 1);
+
+    /* Disable tickets */
+    SocketTLSContext_disable_session_tickets (ctx);
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 0);
+
+    /* Disabling again should be a no-op (no crash) */
+    SocketTLSContext_disable_session_tickets (ctx);
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 0);
+
+    /* Re-enable should work */
+    unsigned char key2[80];
+    memset (key2, 0x66, sizeof (key2));
+    SocketTLSContext_enable_session_tickets (ctx, key2, 80);
+    ASSERT_EQ (SocketTLSContext_session_tickets_enabled (ctx), 1);
+  }
+  FINALLY
+  {
+    if (ctx)
+      SocketTLSContext_free (&ctx);
+    remove_test_certs (cert_file, key_file);
+    Arena_dispose (&arena);
+  }
+  END_TRY;
+#else
+  (void)0;
+#endif
+}
+
+TEST (tls_session_tickets_null_check)
+{
+#if SOCKET_HAS_TLS
+  /* Check NULL context handling */
+  ASSERT_EQ (SocketTLSContext_session_tickets_enabled (NULL), 0);
 #else
   (void)0;
 #endif

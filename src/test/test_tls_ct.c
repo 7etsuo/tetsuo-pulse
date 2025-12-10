@@ -3,6 +3,10 @@
  *
  * Tests CT enable/disable, modes, custom log lists, and integration with TLS
  * context. Requires SOCKET_HAS_TLS and SOCKET_HAS_CT_SUPPORT.
+ *
+ * CT Support Detection:
+ * - SOCKET_HAS_CT_SUPPORT is defined in SocketTLSConfig.h
+ * - Requires OpenSSL 1.1.0+ without OPENSSL_NO_CT
  */
 
 #include <assert.h>
@@ -15,6 +19,7 @@
 #include "test/Test.h"
 
 #if SOCKET_HAS_TLS
+#include "tls/SocketTLSConfig.h" /* For SOCKET_HAS_CT_SUPPORT */
 #include "tls/SocketTLSContext.h"
 
 TEST (ct_context_basic_operations)

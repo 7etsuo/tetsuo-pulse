@@ -569,11 +569,46 @@ apply_min_proto_fallback (T ctx, int version)
 #endif
 }
 
+/**
+ * version_name - Get human-readable TLS version name
+ * @version: OpenSSL protocol version constant
+ *
+ * Returns: Static string with version name for logging
+ */
+static const char *
+version_name (int version)
+{
+  switch (version)
+    {
+    case TLS1_VERSION:
+      return "TLS 1.0";
+    case TLS1_1_VERSION:
+      return "TLS 1.1";
+    case TLS1_2_VERSION:
+      return "TLS 1.2";
+    case TLS1_3_VERSION:
+      return "TLS 1.3";
+    default:
+      return "Unknown";
+    }
+}
+
 void
 SocketTLSContext_set_min_protocol (T ctx, int version)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
+
+  /* Security warning: TLS versions below 1.3 have known weaknesses */
+  if (version < TLS1_3_VERSION)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "SECURITY WARNING: Setting minimum TLS version to %s "
+          "(0x%04X) - versions below TLS 1.3 have known vulnerabilities "
+          "(POODLE, BEAST, Lucky13). Consider using TLS 1.3 (0x%04X) for "
+          "production environments.",
+          version_name (version), version, TLS1_3_VERSION);
+    }
 
   if (SSL_CTX_set_min_proto_version (ctx->ssl_ctx, version) != 1)
     apply_min_proto_fallback (ctx, version);
@@ -584,6 +619,26 @@ SocketTLSContext_set_max_protocol (T ctx, int version)
 {
   assert (ctx);
   assert (ctx->ssl_ctx);
+
+  /* Validate version is a known TLS version */
+  if (version != TLS1_VERSION && version != TLS1_1_VERSION
+      && version != TLS1_2_VERSION && version != TLS1_3_VERSION && version != 0)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "Unknown TLS version constant 0x%04X passed to "
+          "SocketTLSContext_set_max_protocol - this may not work as expected",
+          version);
+    }
+
+  /* Security info: log max version for debugging */
+  if (version < TLS1_3_VERSION && version != 0)
+    {
+      SOCKET_LOG_WARN_MSG (
+          "SECURITY WARNING: Setting maximum TLS version to %s "
+          "(0x%04X) - this limits connections to older protocols with known "
+          "vulnerabilities. Ensure this is intentional.",
+          version_name (version), version);
+    }
 
   if (SSL_CTX_set_max_proto_version (ctx->ssl_ctx, version) != 1)
     ctx_raise_openssl_error ("Failed to set maximum TLS protocol version");
