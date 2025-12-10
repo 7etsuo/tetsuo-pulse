@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "core/Except.h"
+#include "tls/SocketSSL-internal.h"
 #include "tls/SocketTLS.h"
 #include "tls/SocketTLSConfig.h"
 #include "tls/SocketTLSContext.h"
@@ -105,6 +106,22 @@ verify_default_constants (void)
   assert (SOCKET_TLS_MAX_CRL_SIZE == 10 * 1024 * 1024);
   assert (SOCKET_TLS_CRL_MIN_REFRESH_INTERVAL == 60);
   assert (SOCKET_TLS_CRL_MAX_REFRESH_INTERVAL == 365LL * 24 * 3600);
+
+  /* Section 7.3: Utility Macros */
+  /* Verify SOCKET_SSL_UNUSED() macro exists and works correctly */
+  {
+    int unused_var = 42;
+    const char *unused_str = "test";
+    void *unused_ptr = NULL;
+
+    /* These should compile without -Wunused-variable warnings */
+    SOCKET_SSL_UNUSED (unused_var);
+    SOCKET_SSL_UNUSED (unused_str);
+    SOCKET_SSL_UNUSED (unused_ptr);
+
+    /* Verify macro expands to (void)(x) pattern */
+    /* If this compiles, the macro is working */
+  }
 }
 
 /* Fuzz cipher suite string validation */

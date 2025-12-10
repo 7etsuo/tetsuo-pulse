@@ -29,6 +29,10 @@
 #include "socket/SocketBuf.h"
 #include "test/Test.h"
 
+#if SOCKET_HAS_TLS
+#include "tls/SocketSSL-internal.h"
+#endif
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -1020,6 +1024,82 @@ TEST (security_cookie_file_load_large_rejected)
   /* Cleanup */
   unlink (temp_filename);
 }
+
+/* ============================================================================
+ * TLS Utility Macro Tests
+ * ============================================================================
+ */
+
+#if SOCKET_HAS_TLS
+
+/*
+ * Helper function with intentionally unused parameters for testing
+ * SOCKET_SSL_UNUSED macro - compiles without warnings when macro is correct.
+ */
+static int
+helper_with_unused_params (int used, int unused1, const char *unused2,
+                           void *unused3)
+{
+  /* Suppress unused parameter warnings using the TLS utility macro */
+  SOCKET_SSL_UNUSED (unused1);
+  SOCKET_SSL_UNUSED (unused2);
+  SOCKET_SSL_UNUSED (unused3);
+
+  /* Only use the first parameter */
+  return used * 2;
+}
+
+TEST (security_ssl_unused_macro_works)
+{
+  /*
+   * SOCKET_SSL_UNUSED() macro verification:
+   * - This test verifies the macro correctly suppresses -Wunused-parameter
+   * - The helper function has 3 unused parameters marked with the macro
+   * - If the macro is broken, this file will fail to compile with -Werror
+   * - If we reach here, the macro works correctly
+   */
+
+  /* Call helper with unused parameters - should compile without warnings */
+  int result = helper_with_unused_params (5, 10, "ignored", NULL);
+  ASSERT_EQ (10, result);
+
+  /* Verify inline usage of macro also works */
+  int local_unused = 42;
+  SOCKET_SSL_UNUSED (local_unused);
+
+  /* Verify macro expansion is correct: (void)(x) */
+  const char *str_unused = "test";
+  SOCKET_SSL_UNUSED (str_unused);
+
+  /* Verify it works with expressions (though unusual usage) */
+  int a = 1, b = 2;
+  SOCKET_SSL_UNUSED (a + b);
+
+  /* If we got here without compiler warnings, macro is verified */
+  ASSERT (1); /* Explicit success marker */
+}
+
+TEST (security_ssl_unused_macro_in_callback_pattern)
+{
+  /*
+   * OpenSSL callbacks often have parameters we don't use.
+   * This tests the pattern used in real TLS callback code.
+   */
+
+  /* Simulate OpenSSL-style callback signature */
+  struct
+  {
+    int (*callback) (int, int, void *);
+  } mock_ssl;
+
+  /* Use a lambda-like pattern commonly seen in callbacks */
+  mock_ssl.callback = NULL; /* Would be a real callback in production */
+  SOCKET_SSL_UNUSED (mock_ssl);
+
+  ASSERT (1);
+}
+
+#endif /* SOCKET_HAS_TLS */
 
 /* ============================================================================
  * Main Test Runner

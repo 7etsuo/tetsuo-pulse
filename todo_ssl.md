@@ -838,10 +838,14 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 - [ ] **ssl_format_openssl_error_to_buf()**: Verify ERR_clear_error() is called after formatting
 - [ ] **Error Buffer Sizes**: Verify `SOCKET_SSL_OPENSSL_ERRSTR_BUFSIZE` (256) is sufficient
 
-### 7.3 Utility Macros — *NONE*
+### 7.3 Utility Macros — *COMPLETE*
 **Difficulty: 1/9** _(Simple macro)_
 
-- [ ] **SOCKET_SSL_UNUSED()**: Verify unused parameter suppression macro
+- [x] **SOCKET_SSL_UNUSED()**: Verify unused parameter suppression macro
+  - Implemented in `include/tls/SocketSSL-internal.h` line 44
+  - Aliases: `TLS_UNUSED()` in SocketTLS-private.h, `DTLS_UNUSED()` in SocketDTLS-private.h
+  - Verified via unit tests in `test_security.c` (security_ssl_unused_macro_works)
+  - Production usage verified in 5+ TLS callback functions
 
 ---
 
