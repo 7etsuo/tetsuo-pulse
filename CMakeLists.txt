@@ -784,6 +784,7 @@ if(ENABLE_FUZZING)
             fuzz_dtls_context
             fuzz_dtls_io
             fuzz_dtls_cookie
+            fuzz_dtls_config  # DTLS Configuration (Section 6)
             fuzz_ws_frames
             fuzz_hpack
             fuzz_tls_ct

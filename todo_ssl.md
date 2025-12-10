@@ -608,15 +608,33 @@ testing requirements, documentation, security hardening, and future enhancements
 
 **Files:** `include/tls/SocketDTLS.h`, `src/tls/SocketDTLS.c`
 
-### 4.1 DTLS Enable and Configuration — *depends on 5.1, 6.\*, 7.\**
+### 4.1 DTLS Enable and Configuration — *depends on 5.1, 6.\*, 7.\** ✅
 **Difficulty: 5/9** _(DTLS-specific setup, peer management)_
 
-- [ ] **SocketDTLS_enable()**: Verify DTLS is enabled on datagram sockets correctly
-- [ ] **SocketDTLS_enable()**: Test that context ownership is transferred to socket
-- [ ] **SocketDTLS_set_peer()**: Verify peer address resolution (sync, may block on DNS)
-- [ ] **SocketDTLS_set_hostname()**: Verify SNI extension and hostname verification setup
-- [ ] **SocketDTLS_set_mtu()**: Verify MTU range validation (576-9000 bytes)
-- [ ] **SocketDTLS_get_mtu()**: Verify current effective MTU is returned
+- [x] **SocketDTLS_enable()**: Verify DTLS is enabled on datagram sockets correctly
+  - Implemented in `src/tls/SocketDTLS.c:409-443`
+  - Creates SSL object from context, attaches datagram BIO, sets MTU and options
+  - Validates socket type (SOCK_DGRAM), prevents double-enable
+- [x] **SocketDTLS_enable()**: Test that context ownership is transferred to socket
+  - Context stored in `socket->dtls_ctx`, cleaned up with socket via `free_dtls_resources()`
+  - SSL object created with `SSL_new()` and attached via `SSL_set_app_data()`
+- [x] **SocketDTLS_set_peer()**: Verify peer address resolution (sync, may block on DNS)
+  - Implemented in `src/tls/SocketDTLS.c:446-473`
+  - Uses peer resolution cache with 30-second TTL (`SOCKET_DTLS_PEER_CACHE_TTL_MS`)
+  - Supports IPv4 and IPv6 via `dtls_resolve_peer()` and `BIO_ADDR` API
+- [x] **SocketDTLS_set_hostname()**: Verify SNI extension and hostname verification setup
+  - Implemented in `src/tls/SocketDTLS.c:477-512`
+  - Validates hostname length (max `SOCKET_DTLS_MAX_SNI_LEN = 255`)
+  - Sets SNI via `SSL_set_tlsext_host_name()` and verification via `SSL_set1_host()`
+- [x] **SocketDTLS_set_mtu()**: Verify MTU range validation (576-9000 bytes)
+  - Implemented in `src/tls/SocketDTLS.c:516-533`
+  - Validates via `SOCKET_DTLS_VALID_MTU()` macro (576-9000 range)
+  - Sets both `SSL_set_mtu()` and `DTLS_set_link_mtu()`
+- [x] **SocketDTLS_get_mtu()**: Verify current effective MTU is returned
+  - Implemented in `src/tls/SocketDTLS.c:959-962`
+  - Returns `socket->dtls_mtu` or default if socket NULL
+
+**Fuzzing Coverage**: All functions covered in `src/fuzz/fuzz_dtls_enable_config.c`
 
 ### 4.2 DTLS Handshake — *depends on 4.1, 5.3, 6.4, 6.5*
 **Difficulty: 6/9** _(Cookie exchange, retransmission, state machine)_
@@ -735,64 +753,68 @@ testing requirements, documentation, security hardening, and future enhancements
 
 ---
 
-## 6. DTLS Configuration *(No dependencies — pure constants, parallelize freely)*
+## 6. DTLS Configuration *(No dependencies — pure constants, parallelize freely)* ✅ COMPLETE
 
 **File:** `include/tls/SocketDTLSConfig.h`
+**Fuzz Harness:** `src/fuzz/fuzz_dtls_config.c`
+**Completed:** December 2025
 
-### 6.1 Protocol Version Constants — *NONE*
+All DTLS configuration constants verified and documented with comprehensive fuzzing coverage.
+
+### 6.1 Protocol Version Constants — *NONE* ✅
 **Difficulty: 2/9** _(Config verification)_
 
-- [ ] **SOCKET_DTLS_MIN_VERSION**: Verify set to `DTLS1_2_VERSION`
-- [ ] **SOCKET_DTLS_MAX_VERSION**: Verify set to `DTLS1_3_VERSION` if available, else `DTLS1_2_VERSION`
+- [x] **SOCKET_DTLS_MIN_VERSION**: Verified set to `DTLS1_2_VERSION` (line 64)
+- [x] **SOCKET_DTLS_MAX_VERSION**: Verified set to `DTLS1_3_VERSION` if available, else `DTLS1_2_VERSION` (lines 76-81)
 
-### 6.2 Cipher Suites — *NONE*
+### 6.2 Cipher Suites — *NONE* ✅
 **Difficulty: 2/9** _(Config verification)_
 
-- [ ] **SOCKET_DTLS_CIPHERSUITES**: Verify modern ECDHE + AEAD suites are default
+- [x] **SOCKET_DTLS_CIPHERSUITES**: Verified modern ECDHE + AEAD suites (lines 101-108): AES256-GCM, ChaCha20-Poly1305, AES128-GCM
 
-### 6.3 MTU Settings — *NONE*
+### 6.3 MTU Settings — *NONE* ✅
 **Difficulty: 2/9** _(Constant verification and documentation)_
 
-- [ ] **SOCKET_DTLS_DEFAULT_MTU**: Verify 1400 bytes default (conservative for tunnels)
-- [ ] **SOCKET_DTLS_MIN_MTU**: Verify 576 bytes minimum (IPv4 minimum reassembly)
-- [ ] **SOCKET_DTLS_MAX_MTU**: Verify 9000 bytes maximum (jumbo frames)
-- [ ] **SOCKET_DTLS_MAX_RECORD_SIZE**: Verify 16384 bytes (TLS record max)
-- [ ] **SOCKET_DTLS_RECORD_OVERHEAD**: Verify 64 bytes conservative estimate
-- [ ] **SOCKET_DTLS_MAX_PAYLOAD**: Verify calculation (MTU - overhead - headers)
+- [x] **SOCKET_DTLS_DEFAULT_MTU**: Verified 1400 bytes (line 132)
+- [x] **SOCKET_DTLS_MIN_MTU**: Verified 576 bytes (line 144)
+- [x] **SOCKET_DTLS_MAX_MTU**: Verified 9000 bytes (line 157)
+- [x] **SOCKET_DTLS_MAX_RECORD_SIZE**: Verified 16384 bytes (line 172)
+- [x] **SOCKET_DTLS_RECORD_OVERHEAD**: Verified 64 bytes (line 187)
+- [x] **SOCKET_DTLS_MAX_PAYLOAD**: Verified calculation (lines 201-203)
 
-### 6.4 Cookie Protection Parameters — *NONE*
+### 6.4 Cookie Protection Parameters — *NONE* ✅
 **Difficulty: 2/9** _(Security constant verification)_
 
-- [ ] **SOCKET_DTLS_COOKIE_LEN**: Verify 32 bytes (HMAC-SHA256 truncated)
-- [ ] **SOCKET_DTLS_COOKIE_SECRET_LEN**: Verify 32 bytes for HMAC key
-- [ ] **SOCKET_DTLS_COOKIE_LIFETIME_SEC**: Verify 60 seconds validity
-- [ ] **SOCKET_DTLS_MAX_PENDING_COOKIES**: Verify 1000 concurrent exchanges limit
+- [x] **SOCKET_DTLS_COOKIE_LEN**: Verified 32 bytes (line 225)
+- [x] **SOCKET_DTLS_COOKIE_SECRET_LEN**: Verified 32 bytes (line 230)
+- [x] **SOCKET_DTLS_COOKIE_LIFETIME_SEC**: Verified 60 seconds (line 236)
+- [x] **SOCKET_DTLS_MAX_PENDING_COOKIES**: Verified 1000 limit (line 241)
 
-### 6.5 Timeout Configuration — *NONE*
+### 6.5 Timeout Configuration — *NONE* ✅
 **Difficulty: 2/9** _(DTLS timing constants)_
 
-- [ ] **SOCKET_DTLS_INITIAL_TIMEOUT_MS**: Verify 1000ms initial retransmission timeout
-- [ ] **SOCKET_DTLS_MAX_TIMEOUT_MS**: Verify 60000ms maximum timeout
-- [ ] **SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS**: Verify 30000ms total handshake timeout
-- [ ] **SOCKET_DTLS_MAX_RETRANSMITS**: Verify 12 retransmissions maximum
+- [x] **SOCKET_DTLS_INITIAL_TIMEOUT_MS**: Verified 1000ms (line 261)
+- [x] **SOCKET_DTLS_MAX_TIMEOUT_MS**: Verified 60000ms (line 266)
+- [x] **SOCKET_DTLS_DEFAULT_HANDSHAKE_TIMEOUT_MS**: Verified 30000ms (line 271)
+- [x] **SOCKET_DTLS_MAX_RETRANSMITS**: Verified 12 retransmissions (line 276)
 
-### 6.6 Session and Limits — *NONE*
+### 6.6 Session and Limits — *NONE* ✅
 **Difficulty: 2/9** _(Limit constant verification)_
 
-- [ ] **SOCKET_DTLS_SESSION_CACHE_SIZE**: Verify 1000 sessions default
-- [ ] **SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT**: Verify 300 seconds (5 minutes)
-- [ ] **SOCKET_DTLS_ERROR_BUFSIZE**: Verify 512 bytes for error messages
-- [ ] **SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH**: Verify 10 levels
-- [ ] **SOCKET_DTLS_MAX_SNI_LEN**: Verify 255 bytes
-- [ ] **SOCKET_DTLS_MAX_ALPN_LEN**: Verify 255 bytes
-- [ ] **SOCKET_DTLS_MAX_PATH_LEN**: Verify 4096 bytes
-- [ ] **SOCKET_DTLS_MAX_FILE_SIZE**: Verify 1MB limit for cert/key files
+- [x] **SOCKET_DTLS_SESSION_CACHE_SIZE**: Verified 1000 sessions (line 288)
+- [x] **SOCKET_DTLS_SESSION_TIMEOUT_DEFAULT**: Verified 300 seconds (line 292)
+- [x] **SOCKET_DTLS_ERROR_BUFSIZE**: Verified 512 bytes (line 303)
+- [x] **SOCKET_DTLS_MAX_CERT_CHAIN_DEPTH**: Verified 10 levels (line 312)
+- [x] **SOCKET_DTLS_MAX_SNI_LEN**: Verified 255 bytes (line 318)
+- [x] **SOCKET_DTLS_MAX_ALPN_LEN**: Verified 255 bytes (line 323)
+- [x] **SOCKET_DTLS_MAX_PATH_LEN**: Verified 4096 bytes (line 332)
+- [x] **SOCKET_DTLS_MAX_FILE_SIZE**: Verified 1MB limit (line 348)
 
-### 6.7 Validation Macros — *NONE*
+### 6.7 Validation Macros — *NONE* ✅
 **Difficulty: 2/9** _(Simple macro verification)_
 
-- [ ] **SOCKET_DTLS_VALID_MTU()**: Verify range check macro works correctly
-- [ ] **SOCKET_DTLS_VALID_TIMEOUT()**: Verify timeout validation macro
+- [x] **SOCKET_DTLS_VALID_MTU()**: Verified range check (lines 365-367)
+- [x] **SOCKET_DTLS_VALID_TIMEOUT()**: Verified timeout validation (lines 376-377)
 
 ---
 
