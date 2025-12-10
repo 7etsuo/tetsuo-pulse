@@ -28,49 +28,10 @@ SOCKET_DECLARE_MODULE_EXCEPTION (SocketTLSContext);
 /* ============================================================================
  * CRL Path Validation Helpers
  * ============================================================================
+ *
+ * Uses shared ssl_contains_control_chars() and ssl_contains_path_traversal()
+ * from SocketSSL-internal.h for consistency across TLS/DTLS modules.
  */
-
-/**
- * contains_control_chars - Check if string contains ASCII control characters
- * @data: String to validate
- * @len: Length of string
- *
- * Control characters are bytes 0x00-0x1F and 0x7F (DEL).
- *
- * Returns: 1 if control characters found, 0 otherwise
- * Thread-safe: Yes (pure function)
- */
-static int
-contains_control_chars (const char *data, size_t len)
-{
-  for (size_t i = 0; i < len; i++)
-    {
-      unsigned char c = (unsigned char)data[i];
-      /* ASCII control: 0x00-0x1F (space-1) and 0x7F (DEL) */
-      if (c < 0x20 || c == 0x7F)
-        return 1;
-    }
-  return 0;
-}
-
-/**
- * contains_path_traversal - Check if path contains traversal sequences
- * @path: Path string to validate
- *
- * Detects ".." in any form that could escape the intended directory.
- * Covers /../, \..\ (Windows), mixed separators, and path start.
- *
- * Returns: 1 if traversal detected, 0 otherwise
- * Thread-safe: Yes (pure function)
- */
-static int
-contains_path_traversal (const char *path)
-{
-  /* Reject any ".." - realpath will resolve but we want defense-in-depth */
-  if (strstr (path, "..") != NULL)
-    return 1;
-  return 0;
-}
 
 /**
  * validate_path_chars - Validate path contains no control characters
@@ -85,7 +46,7 @@ contains_path_traversal (const char *path)
 static void
 validate_path_chars (const char *path, size_t path_len, const char *context)
 {
-  if (contains_control_chars (path, path_len))
+  if (ssl_contains_control_chars (path, path_len))
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "%s path contains invalid control character", context);
 }
@@ -158,7 +119,7 @@ validate_crl_path_security (const char *crl_path)
   validate_path_length (path_len, "CRL");
   validate_path_chars (crl_path, path_len, "CRL");
 
-  if (contains_path_traversal (crl_path))
+  if (ssl_contains_path_traversal (crl_path, path_len))
     RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
                          "CRL path contains '..' traversal (not allowed)");
 
@@ -176,7 +137,7 @@ validate_crl_path_security (const char *crl_path)
       RAISE_CTX_ERROR_MSG (SocketTLS_Failed, "Resolved CRL path too long");
     }
 
-  if (contains_control_chars (resolved_path, res_len))
+  if (ssl_contains_control_chars (resolved_path, res_len))
     {
       free (resolved_path);
       RAISE_CTX_ERROR_MSG (

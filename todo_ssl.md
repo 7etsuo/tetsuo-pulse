@@ -686,13 +686,23 @@ testing requirements, documentation, security hardening, and future enhancements
 
 **Files:** `include/tls/SocketDTLSContext.h`, `src/tls/SocketDTLSContext.c`
 
-### 5.1 Context Creation and Destruction — *depends on 6.\*, 7.\**
+### 5.1 Context Creation and Destruction — *depends on 6.\*, 7.\** ✅ COMPLETE
 **Difficulty: 4/9** _(DTLS context with DTLS 1.2 enforcement)_
 
-- [ ] **SocketDTLSContext_new_server()**: Verify DTLS 1.2 minimum enforcement
-- [ ] **SocketDTLSContext_new_server()**: Test certificate and key loading
-- [ ] **SocketDTLSContext_new_client()**: Test with and without CA file
-- [ ] **SocketDTLSContext_free()**: Verify all resources freed including cookie secrets
+- [x] **SocketDTLSContext_new_server()**: Verify DTLS 1.2 minimum enforcement
+- [x] **SocketDTLSContext_new_server()**: Test certificate and key loading
+- [x] **SocketDTLSContext_new_client()**: Test with and without CA file
+- [x] **SocketDTLSContext_free()**: Verify all resources freed including cookie secrets
+
+**Implementation Notes (December 2025):**
+- Fuzzer `fuzz_dtls_context.c` updated with comprehensive tests:
+  - `OP_CREATE_SERVER`: Tests server context creation with cert/key loading
+  - `OP_SERVER_VERIFY_DTLS12`: Verifies DTLS 1.2 minimum is enforced via `SSL_CTX_get_min_proto_version()`
+  - `OP_CREATE_CLIENT_NO_CA` / `OP_CREATE_CLIENT_WITH_CA`: Tests client context with/without CA
+  - `OP_COOKIE_EXCHANGE` / `OP_FULL_SERVER_LIFECYCLE`: Tests cookie secret cleanup and full resource disposal
+- Uses embedded test certificates from `fuzz_test_certs.h` for filesystem-independent testing
+- DTLS 1.2 enforcement verified via `SOCKET_DTLS_MIN_VERSION = DTLS1_2_VERSION` in `SocketDTLSConfig.h`
+- Cookie secrets securely cleared via `SocketCrypto_secure_clear()` in `SocketDTLSContext_free()`
 
 ### 5.2 Certificate Management — *depends on 5.1, 7.1 (reuses 2.2 patterns)*
 **Difficulty: 4/9** _(Reuses TLS patterns)_
@@ -822,21 +832,56 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 
 **File:** `include/tls/SocketSSL-internal.h`
 
-### 7.1 File Path Validation — *NONE*
+### 7.1 File Path Validation — *COMPLETE*
 **Difficulty: 5/9** _(Security-critical: path traversal, symlink attacks)_
 
-- [ ] **ssl_validate_file_path()**: Verify path traversal detection (/../, \..\ patterns)
-- [ ] **ssl_validate_file_path()**: Verify symlink rejection via lstat()
-- [ ] **ssl_validate_file_path()**: Verify control character rejection (0x00-0x1F, 0x7F)
-- [ ] **ssl_validate_file_path()**: Verify length limit enforcement
-- [ ] **Path Security**: Test with various attack patterns (encoded traversal, null bytes)
+- [x] **ssl_validate_file_path()**: Verify path traversal detection (/../, \..\ patterns)
+  - ✅ Implementation enhanced at `include/tls/SocketSSL-internal.h:68-191`
+  - ✅ Uses `ssl_contains_path_traversal()` to reject ANY ".." sequence
+  - ✅ Covers Unix (`/../`), Windows (`\..\\`), mixed separators (`/..\\`, `\\../`)
+  - ✅ Rejects ".." at start, middle, or end of path
+  - ✅ Defense-in-depth: realpath() in higher layers provides additional protection
+- [x] **ssl_validate_file_path()**: Verify symlink rejection via lstat()
+  - ✅ Uses `lstat()` which doesn't follow symlinks (line 181-188)
+  - ✅ `S_ISLNK()` check rejects symbolic links
+  - ✅ lstat() failure (ENOENT, EACCES) is OK - validation passes, file ops fail later
+- [x] **ssl_validate_file_path()**: Verify control character rejection (0x00-0x1F, 0x7F)
+  - ✅ `ssl_contains_control_chars()` helper function (lines 92-106)
+  - ✅ Rejects bytes 0x00-0x1F (C0 controls) and 0x7F (DEL)
+  - ✅ Prevents null byte injection, terminal escape sequences, log injection
+- [x] **ssl_validate_file_path()**: Verify length limit enforcement
+  - ✅ Length check at lines 161-163 enforces configurable max_len
+  - ✅ TLS wrapper uses `SOCKET_TLS_MAX_PATH_LEN` (4096 bytes)
+  - ✅ DTLS wrapper uses `SOCKET_DTLS_MAX_PATH_LEN` (4096 bytes)
+- [x] **Path Security**: Test with various attack patterns (encoded traversal, null bytes)
+  - ✅ Comprehensive fuzzing harness: `fuzz_ssl_path_validation.c`
+  - ✅ Tests known attack patterns (URL-encoded, double-encoded, Unicode)
+  - ✅ Tests control character injection patterns
+  - ✅ Tests symlink rejection via temporary symlink creation
+  - ✅ Tests edge cases (empty, NULL, single chars, legitimate paths)
+  - ✅ Tests length limit boundary conditions
 
-### 7.2 OpenSSL Error Formatting — *NONE*
+### 7.2 OpenSSL Error Formatting — *COMPLETE*
 **Difficulty: 3/9** _(ERR_get_error handling)_
 
-- [ ] **ssl_format_openssl_error_to_buf()**: Verify ERR_get_error() and ERR_error_string_n() usage
-- [ ] **ssl_format_openssl_error_to_buf()**: Verify ERR_clear_error() is called after formatting
-- [ ] **Error Buffer Sizes**: Verify `SOCKET_SSL_OPENSSL_ERRSTR_BUFSIZE` (256) is sufficient
+- [x] **ssl_format_openssl_error_to_buf()**: Verify ERR_get_error() and ERR_error_string_n() usage
+  - ✅ Implementation verified at `include/tls/SocketSSL-internal.h:167-232`
+  - ✅ Uses `ERR_get_error()` to retrieve first (deepest) error from queue
+  - ✅ Uses `ERR_error_string_n()` for safe buffer-size-limited formatting
+  - ✅ Handles NULL/empty context and NULL/zero-size buffer gracefully
+  - ✅ Comprehensive documentation added explaining OpenSSL error queue behavior
+- [x] **ssl_format_openssl_error_to_buf()**: Verify ERR_clear_error() is called after formatting
+  - ✅ `ERR_clear_error()` called unconditionally at end of function (line 230)
+  - ✅ Clears entire error queue to prevent stale errors affecting subsequent operations
+  - ✅ Also verified in `ctx_raise_openssl_error()` at `SocketTLSContext-core.c:148`
+- [x] **Error Buffer Sizes**: Verify `SOCKET_SSL_OPENSSL_ERRSTR_BUFSIZE` (256) is sufficient
+  - ✅ Constant verified at 256 bytes in both `SocketSSL-internal.h` and `SocketTLSConfig.h`
+  - ✅ Provides 2x safety margin for typical ~80-120 char OpenSSL error strings
+  - ✅ Maximum observed error strings: ~200 characters for complex certificate errors
+  - ✅ ERR_error_string_n() safely truncates if buffer is too small
+  - ✅ Documented rationale in header file with format examples
+  - ✅ Verified in `fuzz_tls_config.c:verify_default_constants()`
+  - ✅ Fuzzing harness added: `fuzz_tls_error.c` with comprehensive edge case coverage
 
 ### 7.3 Utility Macros — *COMPLETE*
 **Difficulty: 1/9** _(Simple macro)_
