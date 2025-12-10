@@ -780,6 +780,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_protocol_version  # Protocol Version Configuration (Section 2.8)
             fuzz_cert_pinning
             fuzz_tls_crl  # CRL Management (Section 2.5)
+            fuzz_tls_error  # OpenSSL Error Formatting (Section 7.2)
             # DTLS fuzz harnesses
             fuzz_dtls_context
             fuzz_dtls_io

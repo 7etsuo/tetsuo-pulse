@@ -100,18 +100,41 @@ raise_system_error (const char *context)
  * ctx_raise_openssl_error - Format and raise OpenSSL error
  * @context: Error context description
  *
- * Reads the first error from OpenSSL's error queue, formats it into
- * the thread-local error buffer, and raises SocketTLS_Failed.
- * Clears the entire error queue to prevent stale errors.
+ * Reads the first (deepest) error from OpenSSL's thread-local error queue,
+ * formats it into the thread-local error buffer, and raises SocketTLS_Failed.
+ *
+ * ## OpenSSL Error Queue Handling
+ *
+ * - ERR_get_error() retrieves errors FIFO (first-in, first-out)
+ * - First error is typically the root cause and most specific
+ * - ERR_error_string_n() safely formats with buffer size limit
+ * - ERR_clear_error() clears the entire queue to prevent stale errors
+ *
+ * ## Buffer Size Rationale
+ *
+ * Uses SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE (256 bytes), which provides:
+ * - 2x safety margin for typical ~120 char OpenSSL errors
+ * - Safe truncation via ERR_error_string_n() if overflow
+ *
+ * @note This function always raises an exception and never returns.
+ * @note ERR_clear_error() is called before raising to prevent error leakage.
+ *
+ * @see ssl_format_openssl_error_to_buf() for non-raising version.
  */
 void
 ctx_raise_openssl_error (const char *context)
 {
-  unsigned long err = ERR_get_error ();
+  unsigned long err;
   char err_str[SOCKET_TLS_OPENSSL_ERRSTR_BUFSIZE];
+
+  /* ERR_get_error() returns 0 if queue is empty.
+   * Removes the error from queue as side effect. */
+  err = ERR_get_error ();
 
   if (err != 0)
     {
+      /* ERR_error_string_n() safely formats with size limit.
+       * Format: "error:[hex]:[lib]:[func]:[reason]" */
       ERR_error_string_n (err, err_str, sizeof (err_str));
       SOCKET_ERROR_MSG ("%s: %s", context, err_str);
     }
@@ -121,6 +144,9 @@ ctx_raise_openssl_error (const char *context)
                         context);
     }
 
+  /* Clear remaining errors before raising to prevent:
+   * 1. Stale errors affecting subsequent operations
+   * 2. Memory buildup from unread errors */
   ERR_clear_error ();
   RAISE_CTX_ERROR (SocketTLS_Failed);
 }
