@@ -774,6 +774,7 @@ if(ENABLE_FUZZING)
             fuzz_tls_sni
             fuzz_tls_io
             fuzz_tls_ocsp
+            fuzz_tls_context  # TLS Context Management (Section 2.1-2.3)
             fuzz_cert_pinning
             # DTLS fuzz harnesses
             fuzz_dtls_context

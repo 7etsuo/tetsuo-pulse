@@ -316,6 +316,9 @@ store_sni_metadata (T ctx, const char *hostname, const char *cert_file,
  * @path: File path for error messages
  * @obj_type: Object type for error messages
  *
+ * Enforces SOCKET_TLS_MAX_CERT_FILE_SIZE (1MB) limit to prevent memory
+ * exhaustion attacks from maliciously oversized certificate/key files.
+ *
  * Raises: SocketTLS_Failed if file too large or seek fails
  */
 static void
@@ -334,12 +337,13 @@ check_pem_file_size (FILE *fp, const char *path, const char *obj_type)
       ctx_raise_openssl_error ("Cannot determine PEM file size");
     }
 
-  size_t max_file_size = SocketSecurity_get_max_allocation () / 16;
-  if ((size_t)fsize > max_file_size)
+  /* Use defined constant for certificate file size limit (1MB default) */
+  if ((size_t)fsize > SOCKET_TLS_MAX_CERT_FILE_SIZE)
     {
       fclose (fp);
       ctx_raise_error_fmt ("%s file '%s' too large: %ld bytes (max %zu)",
-                           obj_type, path, fsize, max_file_size);
+                           obj_type, path, fsize,
+                           (size_t)SOCKET_TLS_MAX_CERT_FILE_SIZE);
     }
 }
 
@@ -409,18 +413,32 @@ static STACK_OF (X509) * load_chain_from_file (const char *cert_file)
  * load_pkey_from_file - Load private key from PEM file
  * @key_file: Key file path
  *
+ * Loads an unencrypted private key from a PEM-formatted file.
+ *
+ * NOTE: Encrypted private keys (those requiring a passphrase) are NOT
+ * supported by this function. The passphrase callback is set to NULL,
+ * so encrypted keys will fail with "Failed to parse private key PEM".
+ * To use encrypted keys, applications must:
+ * 1. Decrypt the key externally before loading, OR
+ * 2. Implement a custom loading mechanism with SSL_CTX_set_default_passwd_cb()
+ *
  * Returns: Loaded EVP_PKEY (caller owns)
- * Raises: SocketTLS_Failed on file or parse error
+ * Raises: SocketTLS_Failed on file or parse error (including encrypted keys)
  */
 static EVP_PKEY *
 load_pkey_from_file (const char *key_file)
 {
   FILE *fp = open_pem_file (key_file, "private key");
+
+  /* NULL password callback - encrypted keys will fail.
+   * This is intentional: passphrase prompts are interactive and
+   * incompatible with automated server deployment. */
   EVP_PKEY *pkey = PEM_read_PrivateKey (fp, NULL, NULL, NULL);
   fclose (fp);
 
   if (!pkey)
-    ctx_raise_openssl_error ("Failed to parse private key PEM");
+    ctx_raise_openssl_error (
+        "Failed to parse private key PEM (encrypted keys not supported)");
 
   return pkey;
 }

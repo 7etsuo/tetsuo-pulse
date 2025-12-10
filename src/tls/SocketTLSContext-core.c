@@ -212,7 +212,8 @@ init_crl_mutex (T ctx)
  * @ssl_ctx: OpenSSL context to configure
  *
  * Sets minimum/maximum protocol to TLS1.3, configures modern ciphers,
- * and disables renegotiation for security.
+ * disables renegotiation for security, and sets certificate chain
+ * depth limit.
  *
  * Raises: SocketTLS_Failed on configuration failure
  */
@@ -241,6 +242,11 @@ configure_tls13_only (SSL_CTX *ssl_ctx)
   SSL_CTX_set_options (ssl_ctx, SSL_OP_NO_RENEGOTIATION
                                     | SSL_OP_CIPHER_SERVER_PREFERENCE
                                     | SSL_OP_NO_COMPRESSION);
+
+  /* Set maximum certificate chain depth to prevent DoS from excessively
+   * long chains. SOCKET_TLS_MAX_CERT_CHAIN_DEPTH (default 10) allows
+   * typical commercial CA hierarchies while blocking malicious chains. */
+  SSL_CTX_set_verify_depth (ssl_ctx, SOCKET_TLS_MAX_CERT_CHAIN_DEPTH);
 }
 
 /* ============================================================================

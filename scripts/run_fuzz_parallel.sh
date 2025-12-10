@@ -87,6 +87,7 @@ TARGETS_TLS=(
     fuzz_tls_sni
     fuzz_tls_verify
     fuzz_tls_ct
+    fuzz_tls_context  # TLS Context Management (Section 2.1-2.3)
     fuzz_cert_pinning
 )
 
