@@ -721,8 +721,8 @@ extern void SocketTLSContext_set_ocsp_response (T ctx,
  * TLS handshakes.
  * @ingroup security
  *
- * @param ssl OpenSSL SSL connection object during handshake.
- * @param arg User-provided data from SocketTLSContext_set_ocsp_gen_callback().
+ * @param ssl OpenSSL SSL connection object during handshake (use to get SNI, cert info)
+ * @param arg User-provided data from SocketTLSContext_set_ocsp_gen_callback()
  *
  * This callback is invoked by OpenSSL during the TLS handshake when OCSP
  * stapling is requested by the client (via status_request extension). It
@@ -730,35 +730,76 @@ extern void SocketTLSContext_set_ocsp_response (T ctx,
  * server's certificate, allowing the client to verify revocation status
  * without additional round-trips.
  *
- * Return a freshly allocated OCSP_RESPONSE* (OpenSSL takes ownership and frees
- * it after use), or NULL on error (no stapling provided, client may fallback
- * or fail based on policy).
+ * ## Ownership Semantics (CRITICAL)
  *
- * Best practices:
- * - Use cached or freshly fetched OCSP from CA.
- * - Ensure response is not expired (clients reject old responses).
- * - Handle generation errors gracefully (log, return NULL).
- * - For performance, pre-generate responses or use short-lived cache.
- * - Support multiple certificates via SNI (check ssl->s3->tmp.cert or
- * similar).
+ * **OpenSSL TAKES OWNERSHIP of the returned OCSP_RESPONSE***
  *
- * Errors in generation do not abort handshake but may reduce security (no
- * revocation check).
+ * The returned OCSP_RESPONSE* must be freshly allocated (via OCSP_RESPONSE_new()
+ * or d2i_OCSP_RESPONSE()). OpenSSL will call OCSP_RESPONSE_free() on it after
+ * the handshake completes. Do NOT:
+ * - Return a cached/shared OCSP_RESPONSE without duplicating
+ * - Free the response after returning (OpenSSL owns it)
+ * - Return stack-allocated or static responses
  *
- * @return OCSP_RESPONSE* (valid DER-encoded response, owned by OpenSSL) or
- * NULL on failure.
- * @throws None - handle errors internally; use SocketLog for logging.
- * @threadsafe Conditional - must be reentrant/thread-safe if context shared
- * across threads.
+ * To return a cached response, use OCSP_RESPONSE_dup() or reload from storage:
  *
- * @see SocketTLSContext_set_ocsp_gen_callback() to register and enable this
- * callback.
- * @see SocketTLSContext_set_ocsp_response() for simpler static response
- * configuration.
- * @see SocketTLS_get_ocsp_status() on client side to verify stapled response.
- * @see @ref security for broader TLS security features including CRL and
- * pinning.
- * @see docs/SECURITY.md#ocsp-stapling for setup and troubleshooting.
+ * @code{.c}
+ * OCSP_RESPONSE *my_ocsp_callback(SSL *ssl, void *arg) {
+ *     OcspCache *cache = (OcspCache *)arg;
+ *
+ *     // Get certificate being served (for SNI support)
+ *     X509 *cert = SSL_get_certificate(ssl);
+ *     if (!cert) return NULL;
+ *
+ *     // Lookup cached response by certificate fingerprint
+ *     unsigned char fp[32];
+ *     X509_digest(cert, EVP_sha256(), fp, NULL);
+ *
+ *     const unsigned char *cached_der;
+ *     size_t cached_len;
+ *     if (!ocsp_cache_get(cache, fp, &cached_der, &cached_len))
+ *         return NULL;  // No cached response
+ *
+ *     // Parse and return FRESH copy (OpenSSL takes ownership)
+ *     const unsigned char *p = cached_der;
+ *     return d2i_OCSP_RESPONSE(NULL, &p, cached_len);
+ * }
+ * @endcode
+ *
+ * ## Best Practices
+ *
+ * - **Caching**: Pre-fetch and cache OCSP responses; refresh before nextUpdate
+ * - **Freshness**: Ensure response is not expired (clients reject stale responses)
+ * - **SNI Support**: Check SSL_get_certificate() for multi-cert servers
+ * - **Error Handling**: Return NULL on errors (handshake continues without stapling)
+ * - **Performance**: Avoid blocking I/O in callback; use background refresh
+ * - **Monitoring**: Log failures for operational visibility
+ *
+ * ## Error Behavior
+ *
+ * Returning NULL does NOT abort the handshake. The client may:
+ * - Fallback to direct OCSP query (if configured)
+ * - Accept the certificate without revocation check (policy-dependent)
+ * - Fail the connection (strict OCSP-must-staple policies)
+ *
+ * ## Thread Safety
+ *
+ * This callback may be invoked concurrently from multiple threads if the
+ * TLS context is shared. Ensure thread-safe access to caches and external
+ * resources. Consider per-thread caching or mutex protection.
+ *
+ * @return OCSP_RESPONSE* - freshly allocated response (OpenSSL takes ownership
+ *         and will call OCSP_RESPONSE_free()), or NULL if no response available
+ * @throws None - handle errors internally; use SocketLog for logging
+ * @threadsafe MUST be reentrant/thread-safe if context is shared across threads
+ *
+ * @see SocketTLSContext_set_ocsp_gen_callback() to register this callback
+ * @see SocketTLSContext_set_ocsp_response() for simpler static response stapling
+ * @see SocketTLS_get_ocsp_status() for client-side stapled response verification
+ * @see OCSP_RESPONSE_dup() if you need to return a cached response
+ * @see SSL_get_certificate() to get the server cert for SNI-aware responses
+ * @see @ref security for TLS security features (CRL, pinning, CT)
+ * @see docs/SECURITY.md#ocsp-stapling for deployment guide
  */
 typedef OCSP_RESPONSE *(*SocketTLSOcspGenCallback) (SSL *ssl, void *arg);
 
@@ -838,35 +879,170 @@ extern int SocketTLSContext_ocsp_stapling_enabled (T ctx);
  */
 
 /**
- * @brief Custom certificate lookup function.
+ * @brief Custom certificate lookup function for loading certs from non-filesystem sources.
  * @ingroup security
- * @param store_ctx OpenSSL store context for current verification
- * @param name Subject name being looked up
- * @param user_data User data from set_cert_lookup_callback
+ * @param store_ctx OpenSSL store context for current verification (provides chain context)
+ * @param name Subject name being looked up (issuer of certificate being verified)
+ * @param user_data User data from SocketTLSContext_set_cert_lookup_callback()
  *
- * @return X509 certificate if found (caller takes ownership), NULL otherwise
- * @threadsafe Must be thread-safe if context is shared
+ * This callback is invoked during certificate chain building when OpenSSL needs
+ * to find issuer certificates. Common use cases include:
+ *
+ * ## Hardware Security Module (HSM) Integration
+ *
+ * Load certificates stored in HSMs (e.g., PKCS#11 devices, TPM):
+ *
+ * @code{.c}
+ * X509 *hsm_cert_lookup(X509_STORE_CTX *ctx, X509_NAME *name, void *data) {
+ *     PKCS11_Session *session = (PKCS11_Session *)data;
+ *
+ *     // Convert X509_NAME to searchable format
+ *     char subject_str[256];
+ *     X509_NAME_oneline(name, subject_str, sizeof(subject_str));
+ *
+ *     // Query HSM for certificate with matching subject
+ *     unsigned char *cert_der = NULL;
+ *     size_t cert_len = 0;
+ *     if (!pkcs11_find_cert_by_subject(session, subject_str, &cert_der, &cert_len))
+ *         return NULL;
+ *
+ *     // Parse DER to X509 (caller takes ownership)
+ *     const unsigned char *p = cert_der;
+ *     X509 *cert = d2i_X509(NULL, &p, cert_len);
+ *     free(cert_der);
+ *     return cert;  // Ownership transferred to caller
+ * }
+ * @endcode
+ *
+ * ## Database Integration
+ *
+ * Load certificates from SQL databases, LDAP, or other storage:
+ *
+ * @code{.c}
+ * X509 *db_cert_lookup(X509_STORE_CTX *ctx, X509_NAME *name, void *data) {
+ *     DatabaseConn *db = (DatabaseConn *)data;
+ *
+ *     // Get subject hash for efficient lookup
+ *     unsigned long hash = X509_NAME_hash(name);
+ *
+ *     // Query database by subject hash
+ *     unsigned char *pem_data = NULL;
+ *     size_t pem_len = 0;
+ *     if (!db_query_cert_by_hash(db, hash, &pem_data, &pem_len))
+ *         return NULL;
+ *
+ *     // Parse PEM to X509
+ *     BIO *bio = BIO_new_mem_buf(pem_data, pem_len);
+ *     X509 *cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
+ *     BIO_free(bio);
+ *     free(pem_data);
+ *     return cert;  // Ownership transferred to caller
+ * }
+ * @endcode
+ *
+ * ## Ownership Semantics
+ *
+ * **CRITICAL**: The returned X509 certificate's ownership is transferred to the caller
+ * (the library/OpenSSL). The callback must allocate a new X509 object or increment
+ * the reference count using X509_up_ref() if returning a shared certificate. The
+ * caller will call X509_free() when done.
+ *
+ * @return X509 certificate if found (caller takes ownership via X509_free()),
+ *         NULL if no matching certificate found
+ * @throws None - return NULL on errors, do not raise exceptions
+ * @threadsafe MUST be thread-safe if TLS context is shared across threads.
+ *             Multiple concurrent verifications may invoke this callback simultaneously.
+ *
+ * @see SocketTLSContext_set_cert_lookup_callback() to register this callback
+ * @see X509_NAME_hash() for efficient subject name hashing
+ * @see X509_up_ref() if returning a shared/cached certificate
  */
 typedef X509 *(*SocketTLSCertLookupCallback) (X509_STORE_CTX *store_ctx,
-                                              X509_NAME *name,
+                                              const X509_NAME *name,
                                               void *user_data);
 
 /**
- * @brief Register custom cert lookup.
+ * @brief Register custom certificate lookup callback for HSM, database, or remote sources.
  * @ingroup security
  * @param ctx TLS context instance
- * @param callback Lookup function (NULL to disable)
- * @param user_data User data passed to callback
+ * @param callback Lookup function (NULL to disable custom lookup)
+ * @param user_data User data passed to callback (e.g., database connection, HSM session)
  *
- * Sets a custom callback for certificate lookup during verification.
- * This allows loading certificates from databases, HSMs, or other sources
- * instead of the filesystem.
+ * Sets a custom callback for certificate lookup during chain verification. This enables
+ * loading issuer certificates from non-filesystem sources such as:
  *
- * Note: Requires OpenSSL 1.1.0+ for X509_STORE_set_lookup_certs_cb.
+ * - **Hardware Security Modules (HSMs)**: PKCS#11 tokens, TPM, smart cards
+ * - **Databases**: SQL, NoSQL, LDAP directories
+ * - **Remote Services**: REST APIs, certificate repositories
+ * - **In-Memory Caches**: Pre-loaded certificate pools
+ *
+ * ## How It Works
+ *
+ * During TLS handshake verification, when OpenSSL needs to find an issuer certificate
+ * to build the certificate chain, it calls this callback with the required subject name.
+ * The callback should search its data source and return a matching certificate.
+ *
+ * ## Integration with OpenSSL
+ *
+ * - **OpenSSL 3.0+**: Uses X509_STORE_set_lookup_certs_cb() for seamless, automatic
+ *   integration with OpenSSL's chain building. The callback is invoked automatically
+ *   during verification when issuer certificates are needed.
+ *
+ * - **OpenSSL 1.1.x/LibreSSL**: The callback is stored but NOT invoked automatically.
+ *   Users must invoke it manually from a custom verification callback
+ *   (SocketTLSContext_set_verify_callback) when needed.
+ *
+ * ## Usage Example (OpenSSL 3.0+)
+ *
+ * @code{.c}
+ * // HSM-backed certificate lookup - automatic invocation
+ * PKCS11_Session *hsm_session = pkcs11_open_session(...);
+ *
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client("ca-bundle.pem");
+ * SocketTLSContext_set_cert_lookup_callback(ctx, hsm_cert_lookup, hsm_session);
+ *
+ * // On OpenSSL 3.0+, verification will automatically query HSM
+ * SocketTLS_enable(sock, ctx);
+ * SocketTLS_handshake_auto(sock);
+ * @endcode
+ *
+ * ## Usage Example (OpenSSL < 3.0 - Manual Invocation)
+ *
+ * @code{.c}
+ * // For older OpenSSL, invoke callback from custom verify callback
+ * int my_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx,
+ *                        SocketTLSContext_T tls_ctx, Socket_T socket,
+ *                        void *user_data) {
+ *     // Get the callback from context
+ *     SocketTLSCertLookupCallback lookup_cb = user_data->lookup_cb;
+ *     if (lookup_cb && need_issuer_cert(x509_ctx)) {
+ *         X509_NAME *issuer = X509_get_issuer_name(X509_STORE_CTX_get_current_cert(x509_ctx));
+ *         X509 *issuer_cert = lookup_cb(x509_ctx, issuer, user_data->lookup_data);
+ *         if (issuer_cert) {
+ *             // Add to chain...
+ *             X509_free(issuer_cert);
+ *         }
+ *     }
+ *     return preverify_ok;
+ * }
+ * @endcode
+ *
+ * ## Thread Safety
+ *
+ * The callback MUST be thread-safe if the TLS context is shared across threads.
+ * Consider using connection pooling for database handles or thread-local HSM sessions.
  *
  * @return void
- * @throws SocketTLS_Failed if not supported or OpenSSL error
- * @threadsafe Yes (mutex protected) - configure before sharing context
+ * @throws SocketTLS_Failed if OpenSSL store configuration fails
+ * @threadsafe Yes (configure before sharing context across threads)
+ *
+ * @note **OpenSSL 3.0+**: Full automatic integration via X509_STORE_set_lookup_certs_cb()
+ * @note **OpenSSL < 3.0**: Callback stored but requires manual invocation from verify callback
+ * @warning Callback must not raise exceptions - return NULL on errors
+ *
+ * @see SocketTLSCertLookupCallback for callback signature and ownership rules
+ * @see SocketTLSContext_set_verify_callback() for custom verification logic
+ * @see docs/SECURITY.md#hsm-integration for HSM deployment guide
  */
 extern void SocketTLSContext_set_cert_lookup_callback (
     T ctx, SocketTLSCertLookupCallback callback, void *user_data);

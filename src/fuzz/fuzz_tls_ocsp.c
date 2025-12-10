@@ -1,5 +1,5 @@
 /**
- * fuzz_tls_ocsp.c - Fuzzer for TLS OCSP Response Parsing
+ * fuzz_tls_ocsp.c - Fuzzer for TLS OCSP Response Parsing and Stapling
  *
  * Part of the Socket Library Fuzzing Suite
  *
@@ -8,6 +8,9 @@
  * - OCSP_response_get1_basic() - Basic response extraction
  * - OCSP_single_get0_status() - Certificate status extraction
  * - OCSP_check_validity() - Response freshness validation
+ * - SocketTLSContext_set_ocsp_response() - Static OCSP response stapling
+ * - SocketTLSContext_enable_ocsp_stapling() - Client-side OCSP request
+ * - SocketTLSContext_ocsp_stapling_enabled() - Query OCSP state
  *
  * Build: CC=clang cmake .. -DENABLE_FUZZING=ON -DENABLE_TLS=ON && make
  * fuzz_tls_ocsp Run:   ./fuzz_tls_ocsp corpus/tls_ocsp/ -fork=16 -max_len=65536
@@ -23,6 +26,7 @@
 
 #include "core/Arena.h"
 #include "core/Except.h"
+#include "tls/SocketTLSContext.h"
 
 #include <openssl/bio.h>
 #include <openssl/err.h>
@@ -37,6 +41,8 @@ enum OcspOp
   OCSP_PARSE_AND_VERIFY,
   OCSP_CHECK_VALIDITY,
   OCSP_EXTRACT_STATUS,
+  OCSP_SET_STATIC_RESPONSE,
+  OCSP_ENABLE_STAPLING,
   OCSP_OP_COUNT
 };
 
@@ -227,13 +233,107 @@ fuzz_check_ocsp_validity (const uint8_t *data, size_t size)
 }
 
 /**
+ * fuzz_set_static_ocsp_response - Test SocketTLSContext_set_ocsp_response()
+ * @data: Fuzz data to use as OCSP response
+ * @size: Data size
+ *
+ * Tests the static OCSP response API with malformed/random data.
+ * The function should validate the response format and reject invalid data.
+ *
+ * Returns: 1 if accepted, 0 if rejected (expected for invalid data)
+ */
+static int
+fuzz_set_static_ocsp_response (const uint8_t *data, size_t size)
+{
+  SocketTLSContext_T ctx = NULL;
+  int result = 0;
+
+  /* Create a server context for testing OCSP response setting */
+  TRY
+  {
+    /* Use embedded test certs for fuzzing (defined in fuzz_test_certs.h) */
+    ctx = SocketTLSContext_new (NULL);
+    if (!ctx)
+      return 0;
+
+    /* Try to set the fuzz data as an OCSP response.
+     * This should fail for most random data as the format is invalid. */
+    SocketTLSContext_set_ocsp_response (ctx, (const unsigned char *)data, size);
+    result = 1; /* If we get here, the response was accepted */
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* Expected for invalid OCSP response data */
+    result = 0;
+  }
+  ELSE
+  {
+    result = 0;
+  }
+  END_TRY;
+
+  if (ctx)
+    SocketTLSContext_free (&ctx);
+
+  return result;
+}
+
+/**
+ * fuzz_enable_ocsp_stapling - Test OCSP stapling enable/query APIs
+ * @data: Fuzz data (controls test flow)
+ * @size: Data size
+ *
+ * Tests SocketTLSContext_enable_ocsp_stapling() and
+ * SocketTLSContext_ocsp_stapling_enabled() with client contexts.
+ *
+ * Returns: 1 on success, 0 on error
+ */
+static int
+fuzz_enable_ocsp_stapling (const uint8_t *data, size_t size)
+{
+  SocketTLSContext_T ctx = NULL;
+  int result = 0;
+
+  (void)data;
+  (void)size;
+
+  TRY
+  {
+    /* Create client context */
+    ctx = SocketTLSContext_new_client (NULL);
+    if (!ctx)
+      return 0;
+
+    /* Enable OCSP stapling */
+    SocketTLSContext_enable_ocsp_stapling (ctx);
+
+    /* Verify it's enabled */
+    result = SocketTLSContext_ocsp_stapling_enabled (ctx);
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    result = 0;
+  }
+  ELSE
+  {
+    result = 0;
+  }
+  END_TRY;
+
+  if (ctx)
+    SocketTLSContext_free (&ctx);
+
+  return result;
+}
+
+/**
  * LLVMFuzzerTestOneInput - libFuzzer entry point
  *
  * Input format:
  * - Byte 0: Operation selector
  * - Remaining: OCSP response data or timestamp components
  *
- * Tests OCSP parsing without network I/O.
+ * Tests OCSP parsing and stapling APIs without network I/O.
  */
 int
 LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
@@ -265,6 +365,14 @@ LLVMFuzzerTestOneInput (const uint8_t *data, size_t size)
 
     case OCSP_EXTRACT_STATUS:
       fuzz_extract_ocsp_status (ocsp_data, ocsp_size);
+      break;
+
+    case OCSP_SET_STATIC_RESPONSE:
+      fuzz_set_static_ocsp_response (ocsp_data, ocsp_size);
+      break;
+
+    case OCSP_ENABLE_STAPLING:
+      fuzz_enable_ocsp_stapling (ocsp_data, ocsp_size);
       break;
     }
 

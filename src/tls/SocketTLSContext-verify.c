@@ -857,7 +857,86 @@ SocketTLSContext_ocsp_stapling_enabled (T ctx)
 /* ============================================================================
  * Custom Certificate Store Callback
  * ============================================================================
+ *
+ * OpenSSL 1.1.0+ provides X509_STORE_set_lookup_certs_cb() for custom
+ * certificate lookup during chain building. This allows loading certificates
+ * from databases, HSMs, or other non-filesystem sources.
+ *
+ * The callback is invoked when OpenSSL needs to find issuer certificates
+ * during chain verification. It receives the subject name being searched
+ * and should return a STACK_OF(X509) with matching certificates.
+ *
+ * Thread Safety: The callback must be thread-safe as it may be called
+ * concurrently from multiple verification operations if the context
+ * is shared across threads.
  */
+
+/* X509_STORE_set_lookup_certs_cb is only available in OpenSSL 3.0.0+
+ * Check for OPENSSL_VERSION_NUMBER >= 0x30000000L */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+
+/**
+ * cert_lookup_wrapper - Internal wrapper for X509_STORE lookup callback
+ * @store_ctx: OpenSSL X509_STORE_CTX (from which we get our context)
+ * @name: X509_NAME being looked up (issuer subject name)
+ *
+ * This callback is invoked by OpenSSL during certificate chain building
+ * when it needs to find certificates matching a given subject name.
+ * We retrieve our stored user callback and invoke it.
+ *
+ * Returns: STACK_OF(X509) containing matching certificates (caller takes
+ *          ownership of stack and certs), or NULL if none found.
+ *
+ * Thread-safe: Yes, if user callback is thread-safe
+ */
+static STACK_OF (X509) *
+    cert_lookup_wrapper (X509_STORE_CTX *store_ctx, const X509_NAME *name)
+{
+  STACK_OF (X509) *result = NULL;
+
+  /* Get the SSL_CTX from the X509_STORE_CTX */
+  X509_STORE *store = X509_STORE_CTX_get0_store (store_ctx);
+  if (!store)
+    return NULL;
+
+  /* We need to find our SocketTLSContext_T. The store doesn't directly
+   * have ex_data, but we can check all SSL objects using this store.
+   * For simplicity, we use a static approach: store the context pointer
+   * in the X509_STORE ex_data. */
+  T ctx = (T)X509_STORE_get_ex_data (store, 0);
+  if (!ctx)
+    return NULL;
+
+  SocketTLSCertLookupCallback user_cb
+      = (SocketTLSCertLookupCallback)ctx->cert_lookup_callback;
+  if (!user_cb)
+    return NULL;
+
+  /* Call user's lookup callback
+   * User returns a single X509* which they allocate - we take ownership */
+  X509 *cert = user_cb (store_ctx, name, ctx->cert_lookup_user_data);
+  if (!cert)
+    return NULL;
+
+  /* Wrap single certificate in a STACK_OF(X509) as OpenSSL expects */
+  result = sk_X509_new_null ();
+  if (!result)
+    {
+      X509_free (cert);
+      return NULL;
+    }
+
+  if (!sk_X509_push (result, cert))
+    {
+      X509_free (cert);
+      sk_X509_free (result);
+      return NULL;
+    }
+
+  return result;
+}
+
+#endif /* OPENSSL_VERSION_NUMBER >= 0x30000000L */
 
 void
 SocketTLSContext_set_cert_lookup_callback (
@@ -869,9 +948,48 @@ SocketTLSContext_set_cert_lookup_callback (
   ctx->cert_lookup_callback = (void *)callback;
   ctx->cert_lookup_user_data = user_data;
 
-  /* Note: Callback available for use in custom verify callbacks.
-   * OpenSSL doesn't have built-in hook for certificate lookup.
-   * See header documentation for usage pattern. */
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+  /* OpenSSL 3.0+: Use X509_STORE_set_lookup_certs_cb for automatic integration */
+  X509_STORE *store = SSL_CTX_get_cert_store (ctx->ssl_ctx);
+  if (!store)
+    {
+      RAISE_CTX_ERROR_MSG (SocketTLS_Failed,
+                           "Failed to get certificate store for lookup callback");
+    }
+
+  if (callback)
+    {
+      /* Store our context in the X509_STORE ex_data for retrieval in callback.
+       * OpenSSL's X509_STORE has ex_data slots we can use. */
+      if (X509_STORE_set_ex_data (store, 0, ctx) != 1)
+        {
+          RAISE_CTX_ERROR_MSG (
+              SocketTLS_Failed,
+              "Failed to set ex_data on X509_STORE for callback context");
+        }
+
+      /* Set the lookup callback.
+       * X509_STORE_set_lookup_certs registers a function that OpenSSL
+       * calls when building certificate chains and needing to find
+       * issuer certificates by subject name. */
+      X509_STORE_set_lookup_certs (store, cert_lookup_wrapper);
+    }
+  else
+    {
+      /* Disable custom lookup by clearing the callback */
+      X509_STORE_set_lookup_certs (store, NULL);
+      X509_STORE_set_ex_data (store, 0, NULL);
+    }
+#else
+  /* OpenSSL < 3.0.0: X509_STORE_set_lookup_certs_cb not available.
+   * Callback is stored and can be used in custom verify callbacks.
+   * Users can invoke the callback manually from SocketTLSVerifyCallback. */
+  if (callback)
+    {
+      SOCKET_LOG_INFO_MSG ("Certificate lookup callback registered. On OpenSSL < 3.0, "
+                           "callback must be invoked from custom verify callbacks.");
+    }
+#endif
 }
 
 #undef T
