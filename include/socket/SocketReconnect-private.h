@@ -104,6 +104,11 @@
 #include "socket/SocketReconnect.h"
 #include <stdint.h>
 
+#if SOCKET_HAS_TLS
+#include "tls/SocketTLS.h"
+#include "tls/SocketTLSContext.h"
+#endif
+
 /* ============================================================================
  * Internal Constants
  * ============================================================================
@@ -381,6 +386,39 @@ struct SocketReconnect_T
 
   /** Cached errno from last failure; 0 if no error */
   int last_error;
+
+#if SOCKET_HAS_TLS
+  /* TLS Configuration - Optional secure connection support */
+
+  /** TLS context for secure connections; NULL if TLS not configured.
+   *  NOT owned by SocketReconnect - caller must ensure ctx outlives conn.
+   *  Applied via SocketTLS_enable() after each successful TCP connect. */
+  SocketTLSContext_T tls_ctx;
+
+  /** SNI hostname for TLS certificate verification; arena-allocated.
+   *  Used for SSL_set_tlsext_host_name() and X509 hostname check.
+   *  NULL if TLS not configured. */
+  char *tls_hostname;
+
+  /** Current TLS handshake state; tracks progress during async handshake.
+   *  Reset to TLS_HANDSHAKE_NOT_STARTED on each new connection attempt. */
+  TLSHandshakeState tls_handshake_state;
+
+  /** Flag: TLS handshake has been initiated for current connection.
+   *  Set after SocketTLS_enable(); cleared on disconnect/error. */
+  int tls_handshake_started;
+
+  /** Flag: Enable session resumption for faster reconnects.
+   *  When enabled, saves session after handshake and restores on reconnect. */
+  int tls_session_resumption_enabled;
+
+  /** Saved TLS session data for resumption; arena-allocated.
+   *  Populated after successful handshake if resumption enabled. */
+  unsigned char *tls_session_data;
+
+  /** Length of saved TLS session data in bytes. */
+  size_t tls_session_data_len;
+#endif /* SOCKET_HAS_TLS */
 };
 
 /* ============================================================================

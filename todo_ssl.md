@@ -1083,7 +1083,7 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 - [x] **test_dtls_integration.c**: End-to-end DTLS client-server communication
 - [x] **test_tls_http2.c**: TLS with HTTP/2 ALPN negotiation
 - [x] **test_mtls.c**: Mutual TLS authentication (client and server certs)
-- [ ] **test_tls_reconnect.c**: TLS with automatic reconnection
+- [x] **test_tls_reconnect.c**: TLS with automatic reconnection
 - [x] **test_tls_pool.c**: TLS with connection pooling
 
 ### 8.3 Fuzzing Harnesses — *depends on 1.2, 1.3, 2.2, 2.10, 4.2, 5.3*

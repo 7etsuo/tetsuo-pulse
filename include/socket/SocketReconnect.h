@@ -1305,5 +1305,156 @@ extern ssize_t SocketReconnect_recv (T conn, void *buf, size_t len);
  */
 extern const char *SocketReconnect_state_name (SocketReconnect_State state);
 
+/* ============================================================================
+ * TLS Integration (Conditional)
+ * ============================================================================
+ */
+
+#if SOCKET_HAS_TLS
+/* Temporarily undefine T to avoid conflict with TLS headers' T macro */
+#undef T
+#include "tls/SocketTLS.h"
+#include "tls/SocketTLSContext.h"
+/* Restore T for remaining function declarations */
+#define T SocketReconnect_T
+
+/**
+ * @brief Configure TLS for reconnecting connections.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ * @param[in] ctx TLS context (caller retains ownership; must outlive conn)
+ * @param[in] hostname SNI hostname for certificate verification (copied)
+ *
+ * Enables TLS on all future connections made by this reconnection instance.
+ * The TLS context is NOT owned by SocketReconnect - caller must ensure it
+ * remains valid for the lifetime of the reconnection instance.
+ *
+ * After TCP connect completes, TLS handshake is performed automatically.
+ * The hostname is used for:
+ * - SNI (Server Name Indication) extension per RFC 6066
+ * - Certificate hostname verification via X509_check_host()
+ *
+ * ## Usage Example
+ *
+ * @code{.c}
+ * SocketTLSContext_T ctx = SocketTLSContext_new_client(NULL);
+ * SocketReconnect_T conn = SocketReconnect_new("api.example.com", 443,
+ *                                               NULL, NULL, NULL);
+ * SocketReconnect_set_tls(conn, ctx, "api.example.com");
+ * SocketReconnect_connect(conn);
+ *
+ * // TLS handshake happens automatically after TCP connect
+ * while (!SocketReconnect_isconnected(conn)) {
+ *     SocketReconnect_tick(conn);
+ * }
+ *
+ * // Now using encrypted connection
+ * SocketReconnect_send(conn, data, len);  // Uses SocketTLS_send internally
+ * @endcode
+ *
+ * @note Call before SocketReconnect_connect() for first connection
+ * @note Can be called while disconnected to change TLS settings
+ * @warning Calling while connected has no effect until next reconnect
+ * @threadsafe No - must be called from same thread as other operations
+ *
+ * @throws SocketReconnect_Failed if hostname is NULL or too long
+ *
+ * @see SocketReconnect_disable_tls() to remove TLS configuration
+ * @see SocketReconnect_tls_enabled() to query TLS state
+ * @see SocketTLSContext_new_client() for context creation
+ */
+extern void SocketReconnect_set_tls (T conn, SocketTLSContext_T ctx,
+                                     const char *hostname);
+
+/**
+ * @brief Disable TLS for future connections.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ *
+ * Clears TLS configuration. Future connections will be plain TCP.
+ * If currently connected with TLS, the connection remains encrypted
+ * until disconnect; the next reconnect will be unencrypted.
+ *
+ * @note Does not affect current connection if active
+ * @threadsafe No
+ *
+ * @see SocketReconnect_set_tls() to enable TLS
+ */
+extern void SocketReconnect_disable_tls (T conn);
+
+/**
+ * @brief Check if TLS is configured for this connection.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ *
+ * @return 1 if TLS is configured (context set), 0 otherwise
+ * @threadsafe Yes - reads only
+ *
+ * @see SocketReconnect_set_tls() to configure TLS
+ */
+extern int SocketReconnect_tls_enabled (T conn);
+
+/**
+ * @brief Get the configured TLS hostname.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ *
+ * @return SNI hostname or NULL if TLS not configured
+ * @threadsafe Yes - returns internal pointer (valid until set_tls/free)
+ *
+ * @see SocketReconnect_set_tls() to set hostname
+ */
+extern const char *SocketReconnect_get_tls_hostname (T conn);
+
+/**
+ * @brief Get current TLS handshake state.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ *
+ * Returns the current TLS handshake progress. Useful for debugging
+ * and advanced event loop integration.
+ *
+ * @return Current TLSHandshakeState, or TLS_HANDSHAKE_NOT_STARTED if
+ *         TLS not enabled or no handshake in progress
+ * @threadsafe Yes - reads only
+ *
+ * @see TLSHandshakeState for state descriptions
+ */
+extern TLSHandshakeState SocketReconnect_tls_handshake_state (T conn);
+
+/**
+ * @brief Enable TLS session resumption for faster reconnects.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ * @param[in] enable 1 to enable session caching, 0 to disable
+ *
+ * When enabled, successful TLS sessions are saved and restored on
+ * reconnect attempts, enabling abbreviated handshakes (0-RTT for TLS 1.3).
+ * This significantly reduces reconnection latency.
+ *
+ * @note Enabled by default when TLS is configured
+ * @note Session data stored internally; cleared on disable_tls or free
+ * @threadsafe No
+ *
+ * @see SocketTLS_is_session_reused() to check if resumption worked
+ */
+extern void SocketReconnect_set_session_resumption (T conn, int enable);
+
+/**
+ * @brief Check if last connection used session resumption.
+ * @ingroup connection_mgmt
+ * @param[in] conn Reconnection context
+ *
+ * @return 1 if session was resumed (abbreviated handshake),
+ *         0 if full handshake was performed,
+ *         -1 if not connected or TLS not enabled
+ * @threadsafe Yes - reads only
+ *
+ * @see SocketReconnect_set_session_resumption() to enable caching
+ */
+extern int SocketReconnect_is_session_reused (T conn);
+
+#endif /* SOCKET_HAS_TLS */
+
 #undef T
 #endif /* SOCKETRECONNECT_INCLUDED */

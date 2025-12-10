@@ -131,6 +131,18 @@ SocketReconnect_policy_defaults (SocketReconnect_Policy_T *policy)
 }
 
 /* ============================================================================
+ * Forward Declarations
+ * ============================================================================
+ */
+
+static void handle_connect_failure (T conn);
+
+#if SOCKET_HAS_TLS
+static void save_tls_session (T conn);
+static int restore_tls_session (T conn);
+#endif /* SOCKET_HAS_TLS */
+
+/* ============================================================================
  * Internal State Machine Helpers
  * ============================================================================
  */
@@ -280,12 +292,46 @@ circuit_allows_attempt (T conn)
 /**
  * close_socket - Close and free current socket
  * @conn: Reconnection context
+ *
+ * Performs graceful TLS shutdown if TLS was enabled before closing
+ * the underlying socket. Ignores errors during shutdown to ensure
+ * cleanup always succeeds.
  */
 static void
 close_socket (T conn)
 {
   if (conn->socket)
     {
+#if SOCKET_HAS_TLS
+      /* Perform TLS shutdown if handshake completed */
+      if (conn->tls_ctx && conn->tls_handshake_started
+          && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
+        {
+          /* Best-effort TLS shutdown - ignore errors */
+          TRY { SocketTLS_shutdown_send (conn->socket); }
+          EXCEPT (SocketTLS_ShutdownFailed)
+          {
+            /* Ignore - peer may have already closed */
+            SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                             "%s:%d TLS shutdown failed (ignored)", conn->host,
+                             conn->port);
+          }
+          EXCEPT (SocketTLS_Failed)
+          {
+            /* Ignore - TLS may be in bad state */
+          }
+          EXCEPT (Socket_Closed)
+          {
+            /* Ignore - socket already closed */
+          }
+          END_TRY;
+        }
+
+      /* Reset TLS state for next connection attempt */
+      conn->tls_handshake_started = 0;
+      conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
+#endif /* SOCKET_HAS_TLS */
+
       Socket_free (&conn->socket);
       conn->socket = NULL;
     }
@@ -474,13 +520,196 @@ check_connect_completion (T conn)
 }
 /* LCOV_EXCL_STOP */
 
+#if SOCKET_HAS_TLS
 /**
- * handle_connect_success - Process successful connection
+ * start_tls_handshake - Initialize TLS on connected socket
+ * @conn: Reconnection context with TCP connection established
+ *
+ * Returns: 1 if TLS started successfully, 0 on error
+ *
+ * Called after TCP connect succeeds when TLS is configured.
+ * Enables TLS, sets hostname, restores session, and initiates handshake.
+ */
+static int
+start_tls_handshake (T conn)
+{
+  assert (conn->tls_ctx);
+  assert (conn->tls_hostname);
+  assert (conn->socket);
+
+  TRY
+  {
+    /* Enable TLS on the socket */
+    SocketTLS_enable (conn->socket, conn->tls_ctx);
+
+    /* Set SNI hostname for certificate verification */
+    SocketTLS_set_hostname (conn->socket, conn->tls_hostname);
+
+    /* Attempt session resumption if we have saved session data */
+    restore_tls_session (conn);
+
+    conn->tls_handshake_started = 1;
+    conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
+
+    SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                     "%s:%d TLS enabled, starting handshake", conn->host,
+                     conn->port);
+    return 1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "TLS enable failed: %s", Socket_GetLastError ());
+    conn->last_error = errno;
+    return 0;
+  }
+  END_TRY;
+
+  return 1;
+}
+
+/**
+ * perform_tls_handshake_step - Execute one step of TLS handshake
+ * @conn: Reconnection context with TLS handshake in progress
+ *
+ * Returns: 1 if handshake complete, 0 if in progress, -1 on error
+ *
+ * Drives the TLS handshake state machine. Should be called from process()
+ * when socket events indicate readiness.
+ */
+static int
+perform_tls_handshake_step (T conn)
+{
+  TLSHandshakeState state;
+
+  TRY { state = SocketTLS_handshake (conn->socket); }
+  EXCEPT (SocketTLS_HandshakeFailed)
+  {
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "TLS handshake failed: %s", Socket_GetLastError ());
+    conn->last_error = errno;
+    conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
+    return -1;
+  }
+  EXCEPT (SocketTLS_VerifyFailed)
+  {
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "TLS certificate verification failed: %s", Socket_GetLastError ());
+    conn->last_error = errno;
+    conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
+    return -1;
+  }
+  EXCEPT (SocketTLS_Failed)
+  {
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS error: %s",
+              Socket_GetLastError ());
+    conn->last_error = errno;
+    conn->tls_handshake_state = TLS_HANDSHAKE_ERROR;
+    return -1;
+  }
+  END_TRY;
+
+  conn->tls_handshake_state = state;
+
+  switch (state)
+    {
+    case TLS_HANDSHAKE_COMPLETE:
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d TLS handshake complete (cipher: %s)", conn->host,
+                       conn->port, SocketTLS_get_cipher (conn->socket));
+
+      /* Save session for future resumption */
+      save_tls_session (conn);
+      return 1;
+
+    case TLS_HANDSHAKE_WANT_READ:
+    case TLS_HANDSHAKE_WANT_WRITE:
+    case TLS_HANDSHAKE_IN_PROGRESS:
+      /* Continue handshake on next event */
+      return 0;
+
+    case TLS_HANDSHAKE_ERROR:
+      if (conn->error_buf[0] == '\0')
+        {
+          snprintf (conn->error_buf, sizeof (conn->error_buf),
+                    "TLS handshake error");
+        }
+      return -1;
+
+    default:
+      return 0;
+    }
+}
+
+/**
+ * complete_tls_connection - Finalize connection after TLS handshake success
  * @conn: Reconnection context
+ */
+static void
+complete_tls_connection (T conn)
+{
+  conn->consecutive_failures = 0;
+  conn->attempt_count = 0;
+  conn->total_successes++;
+  conn->last_success_time_ms = socketreconnect_get_time_ms ();
+  conn->last_health_check_ms = conn->last_success_time_ms;
+
+  conn->error_buf[0] = '\0';
+  conn->last_error = 0;
+
+  update_circuit_breaker (conn, 1);
+  transition_state (conn, RECONNECT_CONNECTED);
+
+  SocketLog_emitf (SOCKET_LOG_INFO, SOCKET_LOG_COMPONENT,
+                   "%s:%d TLS connection established successfully", conn->host,
+                   conn->port);
+}
+#endif /* SOCKET_HAS_TLS */
+
+/**
+ * handle_connect_success - Process successful TCP connection
+ * @conn: Reconnection context
+ *
+ * For plain TCP: Transitions to CONNECTED immediately.
+ * For TLS: Initiates TLS handshake; CONNECTED transition deferred.
  */
 static void
 handle_connect_success (T conn)
 {
+#if SOCKET_HAS_TLS
+  if (conn->tls_ctx)
+    {
+      /* TLS enabled - start handshake instead of completing connection */
+      if (!start_tls_handshake (conn))
+        {
+          /* TLS setup failed - treat as connection failure */
+          handle_connect_failure (conn);
+          return;
+        }
+
+      /* Stay in CONNECTING state while TLS handshake proceeds */
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d TCP connected, TLS handshake pending",
+                       conn->host, conn->port);
+
+      /* Immediately try first handshake step */
+      int hs_result = perform_tls_handshake_step (conn);
+      if (hs_result == 1)
+        {
+          /* Handshake completed immediately (unlikely but possible) */
+          complete_tls_connection (conn);
+        }
+      else if (hs_result < 0)
+        {
+          /* Handshake failed */
+          handle_connect_failure (conn);
+        }
+      /* hs_result == 0: handshake in progress, wait for events */
+      return;
+    }
+#endif /* SOCKET_HAS_TLS */
+
+  /* Plain TCP connection success */
   conn->consecutive_failures = 0;
   conn->attempt_count = 0;
   conn->total_successes++;
@@ -901,18 +1130,44 @@ SocketReconnect_process (T conn)
   assert (conn);
 
   /* LCOV_EXCL_START - requires non-routable address for EINPROGRESS */
-  if (conn->state == RECONNECT_CONNECTING && conn->connect_in_progress)
+  if (conn->state == RECONNECT_CONNECTING)
     {
-      int result = check_connect_completion (conn);
-      if (result > 0)
+      /* Check if TCP connect is still in progress */
+      if (conn->connect_in_progress)
         {
-          handle_connect_success (conn);
+          int result = check_connect_completion (conn);
+          if (result > 0)
+            {
+              handle_connect_success (conn);
+            }
+          else if (result < 0)
+            {
+              handle_connect_failure (conn);
+            }
+          /* result == 0: still connecting */
+          return;
         }
-      else if (result < 0)
+
+#if SOCKET_HAS_TLS
+      /* Check if TLS handshake is in progress */
+      if (conn->tls_ctx && conn->tls_handshake_started
+          && conn->tls_handshake_state != TLS_HANDSHAKE_COMPLETE
+          && conn->tls_handshake_state != TLS_HANDSHAKE_ERROR)
         {
-          handle_connect_failure (conn);
+          int hs_result = perform_tls_handshake_step (conn);
+          if (hs_result == 1)
+            {
+              /* TLS handshake complete */
+              complete_tls_connection (conn);
+            }
+          else if (hs_result < 0)
+            {
+              /* TLS handshake failed */
+              handle_connect_failure (conn);
+            }
+          /* hs_result == 0: handshake in progress */
         }
-      /* result == 0: still connecting */
+#endif /* SOCKET_HAS_TLS */
     }
   /* LCOV_EXCL_STOP */
 }
@@ -1058,7 +1313,19 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
       return -1;
     }
 
-  TRY { result = Socket_send (conn->socket, buf, len); }
+  TRY
+  {
+#if SOCKET_HAS_TLS
+    if (conn->tls_ctx && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
+      {
+        result = SocketTLS_send (conn->socket, buf, len);
+      }
+    else
+#endif /* SOCKET_HAS_TLS */
+      {
+        result = Socket_send (conn->socket, buf, len);
+      }
+  }
   EXCEPT (Socket_Failed)
   {
     /* Connection error - trigger reconnect */
@@ -1079,6 +1346,30 @@ SocketReconnect_send (T conn, const void *buf, size_t len)
     errno = ENOTCONN;
     return -1;
   }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* TLS error - trigger reconnect */
+    conn->last_error = errno;
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS send failed: %s",
+              Socket_GetLastError ());
+    close_socket (conn);
+    handle_connect_failure (conn);
+    errno = ENOTCONN;
+    return -1;
+  }
+  EXCEPT (SocketTLS_ProtocolError)
+  {
+    /* TLS protocol error - trigger reconnect */
+    conn->last_error = errno;
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "TLS protocol error: %s", Socket_GetLastError ());
+    close_socket (conn);
+    handle_connect_failure (conn);
+    errno = ENOTCONN;
+    return -1;
+  }
+#endif /* SOCKET_HAS_TLS */
   END_TRY;
 
   return result;
@@ -1098,7 +1389,19 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
       return -1;
     }
 
-  TRY { result = Socket_recv (conn->socket, buf, len); }
+  TRY
+  {
+#if SOCKET_HAS_TLS
+    if (conn->tls_ctx && conn->tls_handshake_state == TLS_HANDSHAKE_COMPLETE)
+      {
+        result = SocketTLS_recv (conn->socket, buf, len);
+      }
+    else
+#endif /* SOCKET_HAS_TLS */
+      {
+        result = Socket_recv (conn->socket, buf, len);
+      }
+  }
   EXCEPT (Socket_Failed)
   {
     /* Connection error - trigger reconnect */
@@ -1117,6 +1420,28 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
     handle_connect_failure (conn);
     return 0;
   }
+#if SOCKET_HAS_TLS
+  EXCEPT (SocketTLS_Failed)
+  {
+    /* TLS error - trigger reconnect */
+    conn->last_error = errno;
+    snprintf (conn->error_buf, sizeof (conn->error_buf), "TLS recv failed: %s",
+              Socket_GetLastError ());
+    close_socket (conn);
+    handle_connect_failure (conn);
+    return 0;
+  }
+  EXCEPT (SocketTLS_ProtocolError)
+  {
+    /* TLS protocol error - trigger reconnect */
+    conn->last_error = errno;
+    snprintf (conn->error_buf, sizeof (conn->error_buf),
+              "TLS protocol error: %s", Socket_GetLastError ());
+    close_socket (conn);
+    handle_connect_failure (conn);
+    return 0;
+  }
+#endif /* SOCKET_HAS_TLS */
   END_TRY;
 
   if (result == 0)
@@ -1128,5 +1453,208 @@ SocketReconnect_recv (T conn, void *buf, size_t len)
 
   return result;
 }
+
+/* ============================================================================
+ * TLS Integration Functions (Conditional)
+ * ============================================================================
+ */
+
+#if SOCKET_HAS_TLS
+
+void
+SocketReconnect_set_tls (T conn, SocketTLSContext_T ctx, const char *hostname)
+{
+  assert (conn);
+  assert (ctx);
+
+  if (!hostname || hostname[0] == '\0')
+    {
+      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
+                                 "TLS hostname cannot be NULL or empty");
+    }
+
+  size_t hostname_len = strlen (hostname);
+  if (hostname_len > SOCKET_RECONNECT_MAX_HOST_LEN)
+    {
+      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
+                                 "TLS hostname exceeds maximum length (%d)",
+                                 SOCKET_RECONNECT_MAX_HOST_LEN);
+    }
+
+  /* Store context reference (caller retains ownership) */
+  conn->tls_ctx = ctx;
+
+  /* Copy hostname to arena for lifetime management */
+  conn->tls_hostname
+      = Arena_alloc (conn->arena, hostname_len + 1, __FILE__, __LINE__);
+  if (!conn->tls_hostname)
+    {
+      conn->tls_ctx = NULL;
+      RAISE_RECONNECT_ERROR_MSG (SocketReconnect_Failed,
+                                 "Failed to allocate TLS hostname buffer");
+    }
+  memcpy (conn->tls_hostname, hostname, hostname_len + 1);
+
+  /* Enable session resumption by default */
+  conn->tls_session_resumption_enabled = 1;
+
+  /* Reset handshake state */
+  conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
+  conn->tls_handshake_started = 0;
+
+  SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                   "%s:%d TLS configured with hostname '%s'", conn->host,
+                   conn->port, hostname);
+}
+
+void
+SocketReconnect_disable_tls (T conn)
+{
+  assert (conn);
+
+  if (conn->tls_ctx)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d TLS disabled", conn->host, conn->port);
+    }
+
+  conn->tls_ctx = NULL;
+  conn->tls_hostname = NULL; /* Arena-allocated, freed with arena */
+  conn->tls_handshake_state = TLS_HANDSHAKE_NOT_STARTED;
+  conn->tls_handshake_started = 0;
+  conn->tls_session_resumption_enabled = 0;
+
+  /* Clear saved session data */
+  conn->tls_session_data = NULL;
+  conn->tls_session_data_len = 0;
+}
+
+int
+SocketReconnect_tls_enabled (T conn)
+{
+  assert (conn);
+  return conn->tls_ctx != NULL;
+}
+
+const char *
+SocketReconnect_get_tls_hostname (T conn)
+{
+  assert (conn);
+  return conn->tls_hostname;
+}
+
+TLSHandshakeState
+SocketReconnect_tls_handshake_state (T conn)
+{
+  assert (conn);
+  if (!conn->tls_ctx)
+    return TLS_HANDSHAKE_NOT_STARTED;
+  return conn->tls_handshake_state;
+}
+
+void
+SocketReconnect_set_session_resumption (T conn, int enable)
+{
+  assert (conn);
+  conn->tls_session_resumption_enabled = enable ? 1 : 0;
+
+  if (!enable)
+    {
+      /* Clear saved session */
+      conn->tls_session_data = NULL;
+      conn->tls_session_data_len = 0;
+    }
+}
+
+int
+SocketReconnect_is_session_reused (T conn)
+{
+  assert (conn);
+
+  if (!conn->tls_ctx || conn->state != RECONNECT_CONNECTED || !conn->socket)
+    return -1;
+
+  return SocketTLS_is_session_reused (conn->socket);
+}
+
+/**
+ * save_tls_session - Save TLS session for future resumption
+ * @conn: Reconnection context
+ *
+ * Saves the current TLS session data to the arena for use on reconnect.
+ * Called after successful TLS handshake if session resumption is enabled.
+ */
+static void
+save_tls_session (T conn)
+{
+  if (!conn->tls_session_resumption_enabled || !conn->socket)
+    return;
+
+  /* Query required buffer size */
+  size_t required_len = 0;
+  if (SocketTLS_session_save (conn->socket, NULL, &required_len) != 0)
+    return; /* No session available */
+
+  if (required_len == 0)
+    return;
+
+  /* Allocate buffer in arena */
+  unsigned char *session_buf
+      = Arena_alloc (conn->arena, required_len, __FILE__, __LINE__);
+  if (!session_buf)
+    {
+      SocketLog_emitf (SOCKET_LOG_WARN, SOCKET_LOG_COMPONENT,
+                       "%s:%d failed to allocate session buffer (%zu bytes)",
+                       conn->host, conn->port, required_len);
+      return;
+    }
+
+  /* Save session */
+  size_t actual_len = required_len;
+  if (SocketTLS_session_save (conn->socket, session_buf, &actual_len) == 1)
+    {
+      conn->tls_session_data = session_buf;
+      conn->tls_session_data_len = actual_len;
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d saved TLS session (%zu bytes)", conn->host,
+                       conn->port, actual_len);
+    }
+}
+
+/**
+ * restore_tls_session - Restore saved TLS session for resumption
+ * @conn: Reconnection context
+ *
+ * Attempts to restore a previously saved session. Called after TLS enable
+ * but before handshake.
+ *
+ * Returns: 1 if session restored, 0 if no session or restore failed
+ */
+static int
+restore_tls_session (T conn)
+{
+  if (!conn->tls_session_resumption_enabled || !conn->tls_session_data
+      || conn->tls_session_data_len == 0)
+    return 0;
+
+  int result = SocketTLS_session_restore (conn->socket, conn->tls_session_data,
+                                          conn->tls_session_data_len);
+  if (result == 1)
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d restored TLS session for resumption", conn->host,
+                       conn->port);
+    }
+  else
+    {
+      SocketLog_emitf (SOCKET_LOG_DEBUG, SOCKET_LOG_COMPONENT,
+                       "%s:%d TLS session restore failed (full handshake)",
+                       conn->host, conn->port);
+    }
+
+  return result == 1 ? 1 : 0;
+}
+
+#endif /* SOCKET_HAS_TLS */
 
 #undef T
