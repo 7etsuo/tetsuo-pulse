@@ -152,6 +152,8 @@
 - [x] `SocketWS_connect(url, protocols)` - One-liner WebSocket client
 - [x] `SocketWS_send_json(conn, json)` - Send JSON as text frame
 - [x] `SocketWS_recv_json(conn, json)` - Receive and parse JSON
+- [x] `SocketWS_recv_message()` - Receive complete WebSocket messages
+- [x] `SocketWS_recv_available()` - Check for available messages
 
 ### Control Frames
 - [x] `SocketWS_ping(conn, data, len)` - Send ping with payload (already existed)
@@ -250,11 +252,13 @@
 
 ### Fuzzing Enhancements
 - [x] Update fuzzing script for 64-core parallel execution
-- [x] Add all working fuzzers to parallel runner (48 fuzzers)
+- [x] Add all working fuzzers to parallel runner (50 fuzzers)
 - [x] Optimize job distribution (2 jobs/target = 64 cores total)
 - [x] Create corpus directories and seed files
-- [x] Fix build issues (ssize_t, linker flags)
-- [x] Exclude broken fuzzers temporarily (fuzz_new_features, fuzz_dns_inj, fuzz_dtls_handshake)
+- [x] Fix build issues (ssize_t, linker flags, incomplete types)
+- [x] Fix fuzz_dns_inj (use Request_T instead of incomplete type)
+- [x] Fix fuzz_dtls_handshake (resolved linker flag issue)
+- [x] Exclude fuzz_new_features temporarily (exception type errors remain)
 - [x] Achieve 100% test pass rate (45/45 tests passing)
 
 ### Benchmarks

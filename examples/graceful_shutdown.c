@@ -1,10 +1,11 @@
 /**
  * graceful_shutdown.c - Production-grade signal handling example
  *
- * Demonstrates async-signal-safe shutdown patterns:
+ * Demonstrates async-signal-safe shutdown patterns using high-level APIs:
  * - Self-pipe trick for signal notification
  * - Integration with SocketPoll event loop (using poll timeout)
  * - Graceful connection draining with timeout
+ * - SocketPool for connection management
  * - Clean resource cleanup
  *
  * Build:
@@ -224,8 +225,8 @@ handle_client_data (Socket_T client, SocketBuf_T inbuf, SocketBuf_T outbuf)
   }
   EXCEPT (Socket_Failed)
   {
-    printf ("[%s:%d] Socket error: %s\n", Socket_getpeeraddr (client),
-            Socket_getpeerport (client), Socket_GetLastError ());
+    printf ("[%s:%d] Socket error\n", Socket_getpeeraddr (client),
+            Socket_getpeerport (client));
   }
   END_TRY;
 
@@ -316,26 +317,32 @@ main (int argc, char *argv[])
           {
             /* Check for new connections */
             if (events[i].socket == server)
+      {
+        Socket_T client = Socket_accept (server);
+        if (client)
+          {
+            Socket_setnonblocking (client);
+            Connection_T conn = SocketPool_add (pool, client);
+            if (conn)
               {
-                Socket_T client = Socket_accept (server);
-                if (client)
-                  {
-                    Socket_setnonblocking (client);
-                    Connection_T conn = SocketPool_add (pool, client);
-                    if (conn)
-                      {
-                        SocketPoll_add (poll, client, POLL_READ, conn);
-                        printf ("[%s:%d] Client connected (total: %zu)\n",
-                                Socket_getpeeraddr (client),
-                                Socket_getpeerport (client),
-                                SocketPool_count (pool));
-                      }
-                    else
-                      {
-                        printf ("Pool full, rejecting connection\n");
-                        Socket_free (&client);
-                      }
-                  }
+                SocketPoll_add (poll, client, POLL_READ, conn);
+
+                /* Get pool statistics */
+                size_t active_count = SocketPool_get_active_count (pool);
+                size_t idle_count = SocketPool_get_idle_count (pool);
+                double hit_rate = SocketPool_get_hit_rate (pool);
+
+                printf ("[%s:%d] Client connected (active: %zu, idle: %zu, hit rate: %.1f%%)\n",
+                        Socket_getpeeraddr (client),
+                        Socket_getpeerport (client),
+                        active_count, idle_count, hit_rate * 100.0);
+              }
+            else
+              {
+                printf ("Pool full, rejecting connection\n");
+                Socket_free (&client);
+              }
+          }
                 continue;
               }
 
@@ -352,6 +359,16 @@ main (int argc, char *argv[])
                     /* Close connection */
                     SocketPoll_del (poll, client);
                     SocketPool_remove (pool, client);
+
+                    /* Show socket statistics before closing */
+                    SocketStats_T stats;
+                    Socket_getstats (client, &stats);
+                    printf ("[%s:%d] Stats: sent=%zu, recv=%zu, duration=%.1fs\n",
+                            Socket_getpeeraddr (client),
+                            Socket_getpeerport (client),
+                            stats.bytes_sent, stats.bytes_received,
+                            (Socket_get_monotonic_ms () - stats.create_time_ms) / 1000.0);
+
                     Socket_free (&client);
                     printf ("Connections remaining: %zu\n",
                             SocketPool_count (pool));
@@ -433,15 +450,15 @@ main (int argc, char *argv[])
   }
   EXCEPT (Socket_Failed)
   {
-    fprintf (stderr, "Socket error: %s\n", Socket_GetLastError ());
+    fprintf (stderr, "Socket error\n"); /* Note: This returns const char * */
   }
   EXCEPT (SocketPoll_Failed)
   {
-    fprintf (stderr, "Poll error: %s\n", Socket_GetLastError ());
+    fprintf (stderr, "Poll error\n");
   }
   EXCEPT (SocketPool_Failed)
   {
-    fprintf (stderr, "Pool error: %s\n", Socket_GetLastError ());
+    fprintf (stderr, "Pool error\n");
   }
   END_TRY;
 
@@ -474,6 +491,11 @@ main (int argc, char *argv[])
 
   cleanup_signal_handling ();
   printf ("Signal handling cleaned up\n");
+
+  /* Print final statistics */
+  printf ("\n=== Final Statistics ===\n");
+  printf ("Peak connections: %d\n", SocketMetrics_get_peak_connections ());
+  printf ("Total sockets created: %d\n", SocketMetrics_get_socket_count ());
 
   printf ("\nGraceful shutdown complete.\n");
   return 0;

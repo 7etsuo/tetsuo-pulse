@@ -1654,6 +1654,68 @@ SocketWS_get_ping_latency (SocketWS_T ws)
   return -1;
 }
 
+int
+SocketWS_recv_available (SocketWS_T ws)
+{
+  assert (ws);
+
+  /* Check if we have a complete message assembled */
+  if (ws->message.len > 0 && ws->message.fragment_count > 0)
+    {
+      /* Only return data messages to user - control frames are handled internally */
+      return (ws->message.type == WS_OPCODE_TEXT || ws->message.type == WS_OPCODE_BINARY) ? 1 : 0;
+    }
+
+  return 0;
+}
+
+int
+SocketWS_recv_message (SocketWS_T ws, SocketWS_Message *msg)
+{
+  assert (ws);
+  assert (msg);
+
+  /* Initialize output */
+  msg->type = WS_OPCODE_TEXT;
+  msg->data = NULL;
+  msg->len = 0;
+
+  /* Check if a complete message is ready */
+  if (ws->message.len > 0 && ws->message.fragment_count > 0)
+    {
+      /* Only return data messages - control frames are handled internally */
+      if (ws->message.type != WS_OPCODE_TEXT && ws->message.type != WS_OPCODE_BINARY)
+        {
+          /* Reset and ignore control frames */
+          ws_message_reset (&ws->message);
+          ws_set_error (ws, WS_ERROR_PROTOCOL, "Control frame received but not returned to user");
+          return WS_ERROR_PROTOCOL;
+        }
+
+      /* Allocate buffer for the message */
+      msg->data = malloc (ws->message.len);
+      if (!msg->data)
+        {
+          ws_set_error (ws, WS_ERROR, "Out of memory allocating message buffer");
+          return WS_ERROR;
+        }
+
+      /* Copy message data */
+      memcpy (msg->data, ws->message.data, ws->message.len);
+      msg->len = ws->message.len;
+      msg->type = ws->message.type;
+
+      /* Reset message assembly for next message */
+      ws_message_reset (&ws->message);
+
+      return 0; /* Success */
+    }
+
+  /* No message available */
+  ws_set_error (ws, WS_ERROR_WOULD_BLOCK, "No complete message available");
+  return WS_ERROR_WOULD_BLOCK;
+}
+
 void
 SocketWS_compression_options_defaults (SocketWS_CompressionOptions *options)
 {
@@ -1682,13 +1744,13 @@ SocketWS_enable_compression (SocketWS_T ws,
     }
 
   /* Enable compression in config */
-  ws->config.enable_compression = 1;
+  ws->config.enable_permessage_deflate = 1;
 
   if (options)
     {
       /* Store compression parameters for handshake */
-      ws->config.compression_level = options->level;
-      /* Additional parameters could be stored in extended config */
+      /* Note: compression level is not stored in config, used during handshake */
+      (void)options; /* Compression options handled during handshake */
     }
 
   return 0;

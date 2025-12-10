@@ -41,15 +41,13 @@ target_link_libraries(example_http_server ${EXAMPLE_LIBS})
 
 # =============================================================================
 # WebSocket Examples
-# Note: WebSocket recv API not fully implemented yet - examples disabled
 # =============================================================================
 
-# TODO: Enable when SocketWS_recv_message and SocketWS_recv_available are implemented
-# add_executable(example_websocket_client websocket_client.c)
-# target_link_libraries(example_websocket_client ${EXAMPLE_LIBS})
+add_executable(example_websocket_client websocket_client.c)
+target_link_libraries(example_websocket_client ${EXAMPLE_LIBS})
 
-# add_executable(example_websocket_server websocket_server.c)
-# target_link_libraries(example_websocket_server ${EXAMPLE_LIBS})
+add_executable(example_websocket_server websocket_server.c)
+target_link_libraries(example_websocket_server ${EXAMPLE_LIBS})
 
 # =============================================================================
 # Proxy Example

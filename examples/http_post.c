@@ -1,8 +1,10 @@
 /**
- * http_post.c - HTTP POST with JSON Body Example
+ * http_post.c - HTTP POST Examples
  *
- * Demonstrates HTTP POST using the SocketHTTPClient API with JSON payload.
- * Shows both simple API and request builder API.
+ * Demonstrates HTTP POST operations using SocketHTTPClient APIs:
+ * - Simple POST with JSON payload
+ * - Request builder API with custom headers
+ * - JSON POST with automatic serialization
  *
  * Build:
  *   cmake -DBUILD_EXAMPLES=ON ..
@@ -129,6 +131,40 @@ main (int argc, char **argv)
 
         /* Free request builder */
         SocketHTTPClient_Request_free (&req);
+      }
+
+    /* Free second response */
+    SocketHTTPClient_Response_free (&response);
+    memset (&response, 0, sizeof (response));
+
+    /* Method 3: JSON POST with automatic serialization */
+    printf ("\n=== Using JSON POST API ===\n\n");
+
+    char *json_response = NULL;
+    size_t json_response_len = 0;
+    int json_post_status = SocketHTTPClient_json_post (client, url, json_payload,
+                                                       &json_response, &json_response_len);
+
+    if (json_post_status < 0)
+      {
+        fprintf (stderr, "JSON POST request failed\n");
+        result = 1;
+      }
+    else
+      {
+        printf ("JSON POST Status: %d\n", json_post_status);
+        printf ("Response Length: %zu bytes\n\n", json_response_len);
+
+        if (json_response && json_response_len > 0)
+          {
+            size_t display_len = json_response_len > 2000 ? 2000 : json_response_len;
+            printf ("JSON POST Response:\n");
+            fwrite (json_response, 1, display_len, stdout);
+            printf ("\n");
+          }
+
+        /* Free JSON response */
+        free (json_response);
       }
   }
   EXCEPT (SocketHTTPClient_DNSFailed)

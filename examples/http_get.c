@@ -1,7 +1,10 @@
 /**
- * http_get.c - Simple HTTP GET Request Example
+ * http_get.c - HTTP GET Request Examples
  *
- * Demonstrates basic HTTP GET using the SocketHTTPClient API.
+ * Demonstrates various HTTP GET operations using SocketHTTPClient APIs:
+ * - Basic GET request
+ * - JSON GET with automatic parsing
+ * - File download
  *
  * Build:
  *   cmake -DBUILD_EXAMPLES=ON ..
@@ -9,7 +12,7 @@
  *
  * Usage:
  *   ./example_http_get [url]
- *   ./example_http_get https://example.com
+ *   ./example_http_get https://httpbin.org/json
  */
 
 #include <signal.h>
@@ -73,6 +76,69 @@ main (int argc, char **argv)
               }
             printf ("\n----------------------------------------\n");
           }
+      }
+
+    /* Free first response */
+    SocketHTTPClient_Response_free (&response);
+    memset (&response, 0, sizeof (response));
+
+    /* Method 2: JSON GET with automatic parsing */
+    printf ("\n=== Using JSON GET API ===\n\n");
+
+    const char *json_url = "https://httpbin.org/json";
+    if (strcmp (url, "https://example.com") != 0)
+      {
+        json_url = url; /* Use provided URL if it's not the default */
+      }
+
+    char *json_data = NULL;
+    size_t json_len = 0;
+    int json_status = SocketHTTPClient_json_get (client, json_url, &json_data, &json_len);
+
+    if (json_status < 0)
+      {
+        fprintf (stderr, "JSON GET request failed\n");
+        result = 1;
+      }
+    else
+      {
+        printf ("JSON Status: %d\n", json_status);
+        printf ("JSON Length: %zu bytes\n\n", json_len);
+
+        if (json_data && json_len > 0)
+          {
+            size_t display_len = json_len > 1000 ? 1000 : json_len;
+            printf ("Parsed JSON Response:\n");
+            printf ("----------------------------------------\n");
+            fwrite (json_data, 1, display_len, stdout);
+            if (json_len > 1000)
+              {
+                printf ("\n... [truncated]\n");
+              }
+            printf ("\n----------------------------------------\n");
+          }
+
+        /* Free JSON data */
+        free (json_data);
+      }
+
+    /* Method 3: File Download */
+    printf ("\n=== Using Download API ===\n\n");
+
+    const char *download_url = "https://httpbin.org/image/png";
+    const char *output_file = "/tmp/socket_download.png";
+
+    if (SocketHTTPClient_download (client, download_url, output_file) < 0)
+      {
+        fprintf (stderr, "Download failed\n");
+        result = 1;
+      }
+    else
+      {
+        printf ("Download successful!\n");
+        printf ("Downloaded: %s\n", download_url);
+        printf ("Saved to: %s\n", output_file);
+        printf ("Use 'file %s' to verify the downloaded file.\n", output_file);
       }
   }
   EXCEPT (SocketHTTPClient_DNSFailed)

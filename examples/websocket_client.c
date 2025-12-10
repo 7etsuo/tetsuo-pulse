@@ -17,6 +17,7 @@
  * before creating the WebSocket.
  */
 
+#include <poll.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -91,6 +92,8 @@ main (int argc, char **argv)
         /* For non-blocking sockets, you'd poll here */
       }
 
+    printf ("WebSocket connection established\n");
+
     if (SocketWS_state (ws) != WS_STATE_OPEN)
       {
         fprintf (stderr, "Handshake failed: %s\n",
@@ -129,10 +132,40 @@ main (int argc, char **argv)
             /* Wait for echo response */
             printf ("Waiting for response...\n");
 
-            SocketWS_Message msg;
-            int recv_result = SocketWS_recv_message (ws, &msg);
+            /* Poll for message with timeout */
+            SocketWS_Message msg = {0};
+            int recv_result = -1;
+            int timeout_ms = 5000; /* 5 second timeout */
 
-            if (recv_result > 0)
+            while (timeout_ms > 0 && running)
+              {
+                /* Check if message is available */
+                if (SocketWS_recv_available (ws) > 0)
+                  {
+                    recv_result = SocketWS_recv_message (ws, &msg);
+                    break;
+                  }
+
+                /* Process any incoming data */
+                struct pollfd pfd = { .fd = Socket_fd (SocketWS_socket (ws)),
+                                      .events = POLLIN };
+                int poll_result = poll (&pfd, 1, 100); /* 100ms poll */
+
+                if (poll_result > 0)
+                  {
+                    SocketWS_process (ws, (unsigned)pfd.revents);
+                  }
+                else if (poll_result < 0 && errno != EINTR)
+                  {
+                    fprintf (stderr, "Poll error\n");
+                    recv_result = -1;
+                    break;
+                  }
+
+                timeout_ms -= 100;
+              }
+
+            if (recv_result == 0 && msg.data)
               {
                 printf ("Received (%s, %zu bytes): ",
                         msg.type == WS_OPCODE_TEXT ? "text" : "binary",
@@ -147,7 +180,7 @@ main (int argc, char **argv)
                   }
                 free (msg.data);
               }
-            else if (recv_result == 0)
+            else if (SocketWS_state (ws) == WS_STATE_CLOSED)
               {
                 printf ("Server closed connection\n");
                 printf ("Close code: %d\n", SocketWS_close_code (ws));
@@ -159,7 +192,7 @@ main (int argc, char **argv)
               }
             else
               {
-                fprintf (stderr, "Receive error: %s\n",
+                fprintf (stderr, "Receive error or timeout: %s\n",
                          SocketWS_error_string (SocketWS_last_error (ws)));
               }
 
@@ -172,9 +205,35 @@ main (int argc, char **argv)
             unsigned char binary_data[] = { 0x01, 0x02, 0x03, 0x04, 0x05 };
             SocketWS_send_binary (ws, binary_data, sizeof (binary_data));
 
-            /* Receive the echo */
-            recv_result = SocketWS_recv_message (ws, &msg);
-            if (recv_result > 0)
+            /* Receive the binary echo */
+            msg.data = NULL;
+            timeout_ms = 3000; /* 3 second timeout for binary */
+
+            while (timeout_ms > 0 && running)
+              {
+                if (SocketWS_recv_available (ws) > 0)
+                  {
+                    recv_result = SocketWS_recv_message (ws, &msg);
+                    break;
+                  }
+
+                struct pollfd pfd = { .fd = Socket_fd (SocketWS_socket (ws)),
+                                      .events = POLLIN };
+                int poll_result = poll (&pfd, 1, 100);
+
+                if (poll_result > 0)
+                  {
+                    SocketWS_process (ws, (unsigned)pfd.revents);
+                  }
+                else if (poll_result < 0 && errno != EINTR)
+                  {
+                    break;
+                  }
+
+                timeout_ms -= 100;
+              }
+
+            if (recv_result == 0 && msg.data)
               {
                 printf ("Received binary echo: %zu bytes\n", msg.len);
                 free (msg.data);
@@ -186,14 +245,20 @@ main (int argc, char **argv)
         SocketWS_close (ws, WS_CLOSE_NORMAL, "Example complete");
 
         /* Wait for close confirmation */
-        SocketWS_Message close_msg;
         while (SocketWS_state (ws) != WS_STATE_CLOSED && running)
           {
-            if (SocketWS_recv_message (ws, &close_msg) <= 0)
+            struct pollfd pfd = { .fd = Socket_fd (SocketWS_socket (ws)),
+                                  .events = POLLIN };
+            int poll_result = poll (&pfd, 1, 100);
+
+            if (poll_result > 0)
+              {
+                SocketWS_process (ws, (unsigned)pfd.revents);
+              }
+            else if (poll_result < 0 && errno != EINTR)
               {
                 break;
               }
-            free (close_msg.data);
           }
 
         printf ("Connection closed cleanly\n");
