@@ -1063,61 +1063,61 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 ### 8.1 Unit Tests — *depends on all of 1.\*, 2.\*, 4.\*, 5.\**
 **Difficulty: 5/9** _(Comprehensive test coverage)_
 
-- [ ] **test_tls_enable_disable.c**: Test TLS enable/disable lifecycle
-- [ ] **test_tls_handshake.c**: Test all handshake states and transitions
-- [ ] **test_tls_io.c**: Test send/recv operations including edge cases
-- [ ] **test_tls_session.c**: Test session save/restore and resumption
-- [ ] **test_tls_context.c**: Test context creation, configuration, and destruction
-- [ ] **test_tls_pinning.c**: Test certificate pinning with various hash formats
-- [ ] **test_tls_crl.c**: Test CRL loading and auto-refresh
-- [ ] **test_tls_ocsp.c**: Test OCSP stapling (server and client)
-- [ ] **test_tls_ct.c**: Test Certificate Transparency verification
-- [ ] **test_dtls_basic.c**: Test DTLS enable, handshake, I/O
-- [ ] **test_dtls_cookie.c**: Test DTLS cookie exchange and DoS protection
-- [ ] **test_dtls_mtu.c**: Test MTU configuration and fragmentation
+- [x] **test_tls_enable_disable.c**: Test TLS enable/disable lifecycle
+- [x] **test_tls_handshake.c**: Test all handshake states and transitions
+- [x] **test_tls_io.c**: Test send/recv operations including edge cases
+- [x] **test_tls_session.c**: Test session save/restore and resumption
+- [x] **test_tls_context.c**: Test context creation, configuration, and destruction
+- [x] **test_tls_pinning.c**: Test certificate pinning with various hash formats
+- [x] **test_tls_crl.c**: Test CRL loading and auto-refresh
+- [x] **test_tls_ocsp.c**: Test OCSP stapling (server and client)
+- [x] **test_tls_ct.c**: Test Certificate Transparency verification
+- [x] **test_dtls_basic.c**: Test DTLS enable, handshake, I/O
+- [x] **test_dtls_cookie.c**: Test DTLS cookie exchange and DoS protection
+- [x] **test_dtls_mtu.c**: Test MTU configuration and fragmentation
 
 ### 8.2 Integration Tests — *depends on 8.1, all of 1.\*, 2.\*, 4.\*, 5.\**
 **Difficulty: 6/9** _(End-to-end client-server testing)_
 
-- [ ] **test_tls_integration.c**: End-to-end TLS client-server communication
-- [ ] **test_dtls_integration.c**: End-to-end DTLS client-server communication
-- [ ] **test_tls_http2.c**: TLS with HTTP/2 ALPN negotiation
-- [ ] **test_mtls.c**: Mutual TLS authentication (client and server certs)
+- [x] **test_tls_integration.c**: End-to-end TLS client-server communication
+- [x] **test_dtls_integration.c**: End-to-end DTLS client-server communication
+- [x] **test_tls_http2.c**: TLS with HTTP/2 ALPN negotiation
+- [x] **test_mtls.c**: Mutual TLS authentication (client and server certs)
 - [ ] **test_tls_reconnect.c**: TLS with automatic reconnection
-- [ ] **test_tls_pool.c**: TLS with connection pooling
+- [x] **test_tls_pool.c**: TLS with connection pooling
 
 ### 8.3 Fuzzing Harnesses — *depends on 1.2, 1.3, 2.2, 2.10, 4.2, 5.3*
 **Difficulty: 7/9** _(Fuzzer setup, corpus generation, crash triage)_
 
-- [ ] **fuzz_tls_handshake.c**: Fuzz TLS handshake message parsing
-- [ ] **fuzz_tls_records.c**: Fuzz TLS record layer processing
-- [ ] **fuzz_certificate_parsing.c**: Fuzz X509 certificate parsing
-- [ ] **fuzz_alpn_parsing.c**: Fuzz ALPN protocol list parsing
-- [ ] **fuzz_sni_parsing.c**: Fuzz SNI hostname parsing
-- [ ] **fuzz_dtls_cookie.c**: Fuzz DTLS cookie generation/verification
-- [ ] **fuzz_pin_hex_parsing.c**: Fuzz hex-encoded pin parsing
+- [x] **fuzz_tls_handshake.c**: Fuzz TLS handshake message parsing
+- [x] **fuzz_tls_records.c**: Fuzz TLS record layer processing
+- [x] **fuzz_certificate_parsing.c**: Fuzz X509 certificate parsing
+- [x] **fuzz_alpn_parsing.c**: Fuzz ALPN protocol list parsing (fuzz_tls_alpn.c)
+- [x] **fuzz_sni_parsing.c**: Fuzz SNI hostname parsing (fuzz_tls_sni.c)
+- [x] **fuzz_dtls_cookie.c**: Fuzz DTLS cookie generation/verification
+- [x] **fuzz_pin_hex_parsing.c**: Fuzz hex-encoded pin parsing
 
 ### 8.4 Edge Cases and Error Paths — *depends on 8.1, 8.2*
 **Difficulty: 6/9** _(Tricky failure scenarios, packet simulation)_
 
-- [ ] Test TLS on already-closed socket
-- [ ] Test TLS handshake timeout handling
-- [ ] Test TLS with peer abrupt disconnect during handshake
+- [x] Test TLS on already-closed socket (in test_tls_enable_disable.c)
+- [x] Test TLS handshake timeout handling (in test_tls_handshake.c)
+- [x] Test TLS with peer abrupt disconnect during handshake (in test_tls_security.c)
 - [ ] Test TLS with certificate expired during connection
 - [ ] Test TLS with CRL updated during connection
 - [ ] Test DTLS with packet loss simulation
 - [ ] Test DTLS with packet reordering simulation
-- [ ] Test DTLS cookie with IP address change (should fail)
+- [x] Test DTLS cookie with IP address change (in test_dtls_cookie.c)
 
 ### 8.5 Security Tests — *depends on 8.1, 8.2, 10.\**
 **Difficulty: 7/9** _(Attack simulation, bypass detection)_
 
-- [ ] Test rejection of TLS 1.2 and earlier (downgrade attack prevention)
-- [ ] Test rejection of weak cipher suites
-- [ ] Test certificate pinning bypass attempts
-- [ ] Test path traversal in certificate file paths
-- [ ] Test null byte injection in hostnames
-- [ ] Test timing attack resistance in pin verification
+- [x] Test rejection of TLS 1.2 and earlier (downgrade attack prevention)
+- [x] Test rejection of weak cipher suites
+- [x] Test certificate pinning bypass attempts
+- [x] Test path traversal in certificate file paths
+- [x] Test null byte injection in hostnames
+- [x] Test timing attack resistance in pin verification (in test_tls_security.c)
 
 ---
 
