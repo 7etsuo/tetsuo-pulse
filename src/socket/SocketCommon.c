@@ -121,6 +121,21 @@ SocketCommon_get_dns_timeout (void)
   return timeout;
 }
 
+/**
+ * SocketCommon_shutdown_globals - Free global resources like DNS resolver
+ * Called at program exit to avoid leaks.
+ */
+void
+SocketCommon_shutdown_globals (void)
+{
+  if (g_dns_resolver)
+    {
+      SocketDNS_free (&g_dns_resolver);
+      g_dns_resolver = NULL;
+    }
+  /* Add other global cleanup here if needed */
+}
+
 const Except_T SocketCommon_Failed
     = { &SocketCommon_Failed, "SocketCommon operation failed" };
 

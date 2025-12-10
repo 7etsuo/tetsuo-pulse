@@ -1190,4 +1190,13 @@ extern void SocketCommon_set_dns_timeout (int timeout_ms);
  */
 extern int SocketCommon_get_dns_timeout (void);
 
+/**
+ * @brief Shutdown global resources (e.g., DNS resolver) to prevent leaks in tests
+ * @ingroup core_io
+ * Call at program exit after all operations complete.
+ * @threadsafe Yes - but call from main thread only.
+ * @note Frees global DNS resolver and other static resources.
+ */
+extern void SocketCommon_shutdown_globals (void);
+
 #endif /* SOCKETCOMMON_INCLUDED */

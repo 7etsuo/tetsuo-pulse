@@ -64,6 +64,45 @@ add_executable(example_graceful_shutdown graceful_shutdown.c)
 target_link_libraries(example_graceful_shutdown ${EXAMPLE_LIBS})
 
 # =============================================================================
+# Networking Examples (Core Socket APIs)
+# =============================================================================
+
+add_executable(example_tcp_echo_server tcp_echo_server.c)
+target_link_libraries(example_tcp_echo_server ${EXAMPLE_LIBS})
+
+add_executable(example_tcp_echo_client tcp_echo_client.c)
+target_link_libraries(example_tcp_echo_client ${EXAMPLE_LIBS})
+
+add_executable(example_udp_echo_server udp_echo_server.c)
+target_link_libraries(example_udp_echo_server ${EXAMPLE_LIBS})
+
+add_executable(example_udp_echo_client udp_echo_client.c)
+target_link_libraries(example_udp_echo_client ${EXAMPLE_LIBS})
+
+# =============================================================================
+# DNS Example
+# =============================================================================
+
+add_executable(example_dns_lookup dns_lookup.c)
+target_link_libraries(example_dns_lookup ${EXAMPLE_LIBS})
+
+# =============================================================================
+# TLS Example (conditional)
+# =============================================================================
+
+if(OPENSSL_FOUND)
+    add_executable(example_tls_client tls_client.c)
+    target_link_libraries(example_tls_client ${EXAMPLE_LIBS})
+endif()
+
+# =============================================================================
+# Connection Pool Example
+# =============================================================================
+
+add_executable(example_connection_pool connection_pool.c)
+target_link_libraries(example_connection_pool ${EXAMPLE_LIBS})
+
+# =============================================================================
 # Installation (optional)
 # =============================================================================
 
