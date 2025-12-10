@@ -26,6 +26,7 @@
 #include "socket/Socket.h"
 #include "socket/SocketAsync.h"
 #include "socket/SocketBuf.h"
+#include "socket/SocketCommon.h"
 #include "socket/SocketDgram.h"
 #include "test/Test.h"
 
@@ -857,6 +858,32 @@ TEST (integration_pool_cleanup_idle)
   END_TRY;
 }
 
+/* Helper callbacks for pool iterator test - must be static to avoid
+ * nested function issues with setjmp/longjmp in TRY/EXCEPT blocks */
+static void
+pool_test_count_cb (Connection_T conn, void *data)
+{
+  (void)conn;
+  int *count = (int *)data;
+  (*count)++;
+}
+
+static int
+pool_test_find_cb (Connection_T conn, void *data)
+{
+  (void)conn;
+  (void)data;
+  return 1; /* Accept first */
+}
+
+static int
+pool_test_filter_cb (Connection_T conn, void *data)
+{
+  (void)conn;
+  (void)data;
+  return 1; /* Accept all */
+}
+
 TEST (integration_pool_iterator_and_statistics)
 {
   setup_signals ();
@@ -866,93 +893,47 @@ TEST (integration_pool_iterator_and_statistics)
 
   /* Create some connections */
   Socket_T sockets[5] = { NULL };
-  Connection_T connections[5] = { NULL };
-  int connection_count = 0;
 
-  TRY
-  {
-    /* Add connections to pool */
-    for (int i = 0; i < 5; i++)
+  /* Add connections to pool */
+  for (int i = 0; i < 5; i++)
     {
       sockets[i] = Socket_new (AF_INET, SOCK_STREAM, 0);
       track_socket (sockets[i]);
-      connections[i] = SocketPool_add (pool, sockets[i]);
-      ASSERT_NOT_NULL (connections[i]);
-      connection_count++;
+      Connection_T conn = SocketPool_add (pool, sockets[i]);
+      ASSERT_NOT_NULL (conn);
     }
 
-  /* Test statistics functions
-   * Note: In this simple pool model, all connections are counted as both
-   * "idle" and "active" - these functions return the same value. */
+  /* Test statistics functions */
   ASSERT_EQ (SocketPool_get_idle_count (pool), 5);
-  ASSERT_EQ (SocketPool_get_active_count (pool), 5); /* Same as idle in this model */
+  ASSERT_EQ (SocketPool_get_active_count (pool), 5);
   ASSERT_EQ (SocketPool_count (pool), 5);
 
   /* Test iterator pattern with SocketPool_foreach */
-  volatile int foreach_count = 0;
-  void count_connections (Connection_T conn, void *data)
-  {
-    (void)conn;
-    volatile int *count = (volatile int *)data;
-    (*count)++;
-  }
-  SocketPool_foreach (pool, count_connections, (void *)&foreach_count);
+  int foreach_count = 0;
+  SocketPool_foreach (pool, pool_test_count_cb, &foreach_count);
   ASSERT_EQ (foreach_count, 5);
 
   /* Test SocketPool_find with predicate */
-  Connection_T found = NULL;
-  int find_idle (Connection_T conn, void *data)
-  {
-    (void)conn;
-    (void)data;
-    return SocketPool_get_idle_count (pool) > 0; /* All are idle */
-  }
-  found = SocketPool_find (pool, find_idle, NULL);
+  Connection_T found = SocketPool_find (pool, pool_test_find_cb, NULL);
   ASSERT_NOT_NULL (found);
 
   /* Test SocketPool_filter */
   Connection_T filtered[10];
-  size_t filtered_count = 0;
-  int filter_all (Connection_T conn, void *data)
-  {
-    (void)conn;
-    (void)data;
-    return 1; /* Accept all */
-  }
-  filtered_count = SocketPool_filter (pool, filter_all, NULL, filtered, 10);
+  size_t filtered_count = SocketPool_filter (pool, pool_test_filter_cb, NULL, filtered, 10);
   ASSERT_EQ (filtered_count, 5);
 
-  /* Test shrink functionality */
+  /* Test shrink functionality - with 5 connections added to pool of 10,
+   * there are 5 free slots remaining */
   size_t shrunk = SocketPool_shrink (pool);
-  ASSERT_EQ (shrunk, 0); /* No unused capacity to shrink */
+  ASSERT_EQ (shrunk, 5);
 
-  /* Test idle callback */
-  volatile int idle_callback_called = 0;
-  void idle_callback (Connection_T conn, void *data)
-  {
-    (void)conn;
-    volatile int *called = (volatile int *)data;
-    (*called)++;
-  }
-  SocketPool_set_idle_callback (pool, idle_callback, (void *)&idle_callback_called);
-
-  /* Remove one connection (simulates it becoming active) */
+  /* Remove one connection */
   SocketPool_remove (pool, sockets[0]);
   untrack_socket (sockets[0]);
   Socket_free (&sockets[0]);
-  connection_count--;
+  sockets[0] = NULL;
 
-  /* The callback should be called when the connection becomes idle again */
-  /* Since we just removed it, it should trigger the idle callback */
-  /* Note: In a real scenario, this would be called when a connection becomes idle */
-  }
-  EXCEPT (SocketPool_Failed)
-  {
-    (void)0;
-  }
-  FINALLY
-  {
-  /* Clean up remaining connections (sockets[1..4], since sockets[0] was already freed) */
+  /* Clean up remaining connections */
   for (int i = 1; i < 5; i++)
     {
       if (sockets[i])
@@ -963,15 +944,10 @@ TEST (integration_pool_iterator_and_statistics)
         }
     }
 
-  if (pool)
-    {
-      SocketPool_cleanup (pool, 0);
-      ASSERT_EQ (SocketPool_count (pool), 0);
-    }
+  SocketPool_cleanup (pool, 0);
+  ASSERT_EQ (SocketPool_count (pool), 0);
   SocketPool_free (&pool);
   Arena_dispose (&arena);
-  }
-  END_TRY;
   assert_no_tracked_sockets ();
   assert_no_socket_leaks ();
 }
@@ -1118,7 +1094,8 @@ TEST (integration_dns_cache_with_resolution)
           ASSERT (stats.hit_rate <= 1.0);
         }
 
-      freeaddrinfo (result);
+      /* Use SocketCommon_free_addrinfo for results from SocketDNS_resolve_sync */
+      SocketCommon_free_addrinfo (result);
     }
 
   /* Test cache clear after resolution */
@@ -2072,6 +2049,14 @@ TEST (integration_event_poll_backend_and_sockets)
   assert_no_socket_leaks ();
 }
 
+/* Helper function: timer callback for integration tests */
+static void
+integration_timer_callback (void *data)
+{
+  volatile int *fired = (volatile int *)data;
+  (*fired)++;
+}
+
 TEST (integration_event_timer_control)
 {
   SocketPoll_T poll = SocketPoll_new (10);
@@ -2080,14 +2065,8 @@ TEST (integration_event_timer_control)
   /* Test timer reschedule, pause, and resume */
   volatile int timer_fired = 0;
 
-  void timer_callback (void *data)
-  {
-    volatile int *fired = (volatile int *)data;
-    (*fired)++;
-  }
-
   /* Create a timer that fires in 100ms */
-  SocketTimer_T timer = SocketTimer_add (poll, 100, timer_callback, (void *)&timer_fired);
+  SocketTimer_T timer = SocketTimer_add (poll, 100, integration_timer_callback, (void *)&timer_fired);
   ASSERT_NOT_NULL (timer);
 
   /* Test reschedule - change to 50ms */
@@ -2106,7 +2085,7 @@ TEST (integration_event_timer_control)
 
   /* Test pause */
   timer_fired = 0; /* Reset */
-  SocketTimer_T timer2 = SocketTimer_add (poll, 50, timer_callback, (void *)&timer_fired);
+  SocketTimer_T timer2 = SocketTimer_add (poll, 50, integration_timer_callback, (void *)&timer_fired);
   ASSERT_NOT_NULL (timer2);
 
   /* Pause the timer */
@@ -2148,14 +2127,8 @@ TEST (integration_event_timer_pause_resume_workflow)
 
   volatile int callback_count = 0;
 
-  void test_callback (void *data)
-  {
-    volatile int *count = (volatile int *)data;
-    (*count)++;
-  }
-
   /* Create repeating timer (100 milliseconds interval) for pause/resume testing */
-  SocketTimer_T timer = SocketTimer_add_repeating (poll, 100, test_callback, (void *)&callback_count);
+  SocketTimer_T timer = SocketTimer_add_repeating (poll, 100, integration_timer_callback, (void *)&callback_count);
   ASSERT_NOT_NULL (timer);
 
   /* Pause immediately */
@@ -2831,5 +2804,9 @@ int
 main (void)
 {
   Test_run_all ();
+
+  /* Clean up global resources (e.g., global DNS resolver) to avoid leaks */
+  SocketCommon_shutdown_globals ();
+
   return Test_get_failures () > 0 ? 1 : 0;
 }
