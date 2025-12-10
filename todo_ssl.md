@@ -1126,33 +1126,33 @@ All DTLS configuration constants verified and documented with comprehensive fuzz
 ### 9.1 API Documentation — *depends on corresponding 1.\*, 2.\*, 4.\*, 5.\* being implemented*
 **Difficulty: 3/9** _(Doxygen completeness audit)_
 
-- [ ] Verify all public functions have Doxygen comments with @brief, @param, @return, @throws
-- [ ] Verify all public types have Doxygen documentation
-- [ ] Verify all public constants have documentation explaining purpose and usage
-- [ ] Add @ingroup tags for proper module grouping
+- [x] Verify all public functions have Doxygen comments with @brief, @param, @return, @throws
+- [x] Verify all public types have Doxygen documentation
+- [x] Verify all public constants have documentation explaining purpose and usage
+- [x] Add @ingroup tags for proper module grouping
 
 ### 9.2 Usage Examples — *depends on 9.1, working implementation*
 **Difficulty: 4/9** _(Working code examples with error handling)_
 
-- [ ] Add complete TLS client example in header documentation
-- [ ] Add complete TLS server example in header documentation
-- [ ] Add mTLS (mutual TLS) example
-- [ ] Add certificate pinning example with pin generation instructions
-- [ ] Add CRL auto-refresh integration example
-- [ ] Add DTLS client example
-- [ ] Add DTLS server with cookie protection example
+- [x] Add complete TLS client example in header documentation
+- [x] Add complete TLS server example in header documentation
+- [x] Add mTLS (mutual TLS) example
+- [x] Add certificate pinning example with pin generation instructions
+- [x] Add CRL auto-refresh integration example
+- [x] Add DTLS client example
+- [x] Add DTLS server with cookie protection example
 
 ### 9.3 Security Guides — *depends on 10.\*, 1.\*, 2.\**
 **Difficulty: 4/9** _(Security best practices documentation)_
 
-- [ ] Document TLS 1.3-only enforcement rationale
-- [ ] Document cipher suite selection rationale
-- [ ] Document certificate pinning best practices (pin backup keys)
-- [ ] Document CRL refresh interval recommendations
-- [ ] Document OCSP stapling configuration for production
-- [ ] Document CT validation requirements for public CAs
-- [ ] Create docs/TLS-CONFIG.md with detailed TLS configuration guide
-- [ ] Create docs/DTLS-CONFIG.md with DTLS-specific configuration guide
+- [x] Document TLS 1.3-only enforcement rationale
+- [x] Document cipher suite selection rationale
+- [x] Document certificate pinning best practices (pin backup keys)
+- [x] Document CRL refresh interval recommendations
+- [x] Document OCSP stapling configuration for production
+- [x] Document CT validation requirements for public CAs
+- [x] Create docs/TLS-CONFIG.md with detailed TLS configuration guide
+- [x] Create docs/DTLS-CONFIG.md with DTLS-specific configuration guide
 
 ---
 
