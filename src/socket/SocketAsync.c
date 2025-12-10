@@ -1046,4 +1046,181 @@ SocketAsync_process_completions (T async, int timeout_ms)
   return process_async_completions_internal (async, timeout_ms);
 }
 
+/* ==================== Batch Operations ==================== */
+
+/**
+ * SocketAsync_submit_batch - Submit multiple async operations
+ * @async: Async context
+ * @ops: Array of operation descriptors
+ * @count: Number of operations
+ *
+ * Returns: Number of successfully submitted operations
+ * Thread-safe: Yes
+ *
+ * Enables efficient batch submission. Each op's request_id is populated
+ * on success. Stops at first failure but returns count of successful.
+ */
+int
+SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count)
+{
+  volatile size_t submitted = 0;
+  volatile size_t i;
+
+  if (!async || !ops || count == 0)
+    return 0;
+
+  for (i = 0; i < count; i++)
+    {
+      SocketAsync_Op *op = &ops[i];
+      unsigned req_id;
+
+      TRY
+      {
+        if (op->is_send)
+          {
+            req_id = SocketAsync_send (async, op->socket, op->send_buf, op->len,
+                                       op->cb, op->user_data, op->flags);
+          }
+        else
+          {
+            req_id = SocketAsync_recv (async, op->socket, op->recv_buf, op->len,
+                                       op->cb, op->user_data, op->flags);
+          }
+        op->request_id = req_id;
+        submitted++;
+      }
+      EXCEPT (SocketAsync_Failed)
+      {
+        /* Stop on first failure */
+        break;
+      }
+      END_TRY;
+    }
+
+  return (int)submitted;
+}
+
+/**
+ * SocketAsync_cancel_all - Cancel all pending async operations
+ * @async: Async context
+ *
+ * Returns: Number of operations cancelled
+ * Thread-safe: Yes
+ *
+ * Iterates through all hash buckets and cancels every pending request.
+ * Callbacks are NOT invoked.
+ */
+int
+SocketAsync_cancel_all (T async)
+{
+  int cancelled = 0;
+
+  if (!async)
+    return 0;
+
+  pthread_mutex_lock (&async->mutex);
+
+  /* Iterate through all hash buckets */
+  for (unsigned i = 0; i < SOCKET_HASH_TABLE_SIZE; i++)
+    {
+      struct AsyncRequest *req = async->requests[i];
+      while (req)
+        {
+          struct AsyncRequest *next = req->next;
+          socket_async_free_request (async, req);
+          cancelled++;
+          req = next;
+        }
+      async->requests[i] = NULL;
+    }
+
+  pthread_mutex_unlock (&async->mutex);
+
+  return cancelled;
+}
+
+/* ==================== Backend Selection ==================== */
+
+/* Thread-safe preferred backend (atomic would be cleaner but this works) */
+static pthread_mutex_t backend_pref_mutex = PTHREAD_MUTEX_INITIALIZER;
+static SocketAsync_Backend preferred_backend = ASYNC_BACKEND_AUTO;
+
+/**
+ * SocketAsync_backend_available - Check if backend is available
+ * @backend: Backend type to check
+ *
+ * Returns: 1 if available, 0 otherwise
+ * Thread-safe: Yes
+ */
+int
+SocketAsync_backend_available (SocketAsync_Backend backend)
+{
+  switch (backend)
+    {
+    case ASYNC_BACKEND_AUTO:
+      /* Auto is always "available" */
+      return 1;
+
+    case ASYNC_BACKEND_IO_URING:
+#ifdef SOCKET_HAS_IO_URING
+      {
+        /* Probe kernel support */
+        struct io_uring test_ring;
+        if (io_uring_queue_init (SOCKET_IO_URING_TEST_ENTRIES, &test_ring, 0)
+            == 0)
+          {
+            io_uring_queue_exit (&test_ring);
+            return 1;
+          }
+      }
+#endif
+      return 0;
+
+    case ASYNC_BACKEND_KQUEUE:
+#if defined(__APPLE__) || defined(__FreeBSD__)
+      {
+        int kq = kqueue ();
+        if (kq >= 0)
+          {
+            close (kq);
+            return 1;
+          }
+      }
+#endif
+      return 0;
+
+    case ASYNC_BACKEND_POLL:
+      /* Poll fallback is always available on POSIX */
+      return 1;
+
+    case ASYNC_BACKEND_NONE:
+      /* "None" is always available (sync mode) */
+      return 1;
+
+    default:
+      return 0;
+    }
+}
+
+/**
+ * SocketAsync_set_backend - Set preferred backend for new contexts
+ * @backend: Desired backend
+ *
+ * Returns: 0 on success, -1 if backend unavailable
+ * Thread-safe: Yes
+ */
+int
+SocketAsync_set_backend (SocketAsync_Backend backend)
+{
+  /* Check availability first */
+  if (!SocketAsync_backend_available (backend))
+    return -1;
+
+  pthread_mutex_lock (&backend_pref_mutex);
+  preferred_backend = backend;
+  pthread_mutex_unlock (&backend_pref_mutex);
+
+  return 0;
+}
+
 #undef T

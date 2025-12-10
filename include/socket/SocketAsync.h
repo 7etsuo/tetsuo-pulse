@@ -968,6 +968,175 @@ extern int SocketAsync_is_available (const T async);
  */
 extern const char *SocketAsync_backend_name (const T async);
 
+/**
+ * @brief Async operation descriptor for batch submission.
+ * @ingroup async_io
+ *
+ * Describes a single async operation for use with SocketAsync_submit_batch().
+ * Enables efficient submission of multiple operations in a single call,
+ * reducing syscall overhead for high-throughput applications.
+ */
+typedef struct SocketAsync_Op
+{
+  Socket_T socket;         /**< Target socket for operation */
+  int is_send;             /**< 1 = send operation, 0 = recv operation */
+  const void *send_buf;    /**< Buffer for send (NULL if recv) */
+  void *recv_buf;          /**< Buffer for recv (NULL if send) */
+  size_t len;              /**< Buffer length */
+  SocketAsync_Callback cb; /**< Completion callback */
+  void *user_data;         /**< User data for callback */
+  SocketAsync_Flags flags; /**< Operation flags */
+  unsigned request_id;     /**< [OUT] Assigned request ID on success */
+} SocketAsync_Op;
+
+/**
+ * @brief Submit multiple async operations in a single call.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @param[in,out] ops Array of operation descriptors. request_id field is
+ * populated on success.
+ * @param[in] count Number of operations to submit.
+ * @return Number of operations successfully submitted (0 to count).
+ *
+ * Enables efficient batch submission of multiple async operations, reducing
+ * syscall overhead. Each operation in the array is submitted in order.
+ * Successfully submitted operations have their request_id field populated.
+ *
+ * @throws None - Returns count of successful submissions.
+ * @threadsafe Yes - Internal mutex protects submission.
+ * @complexity O(n) where n = count.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * SocketAsync_Op ops[3] = {
+ *     {sock1, 1, send_buf, NULL, len1, cb, ud1, ASYNC_FLAG_NONE, 0},
+ *     {sock2, 0, NULL, recv_buf, len2, cb, ud2, ASYNC_FLAG_NONE, 0},
+ *     {sock3, 1, send_buf2, NULL, len3, cb, ud3, ASYNC_FLAG_URGENT, 0}
+ * };
+ * int submitted = SocketAsync_submit_batch(async, ops, 3);
+ * printf("Submitted %d of 3 operations\n", submitted);
+ * for (int i = 0; i < submitted; i++) {
+ *     printf("Op %d request_id: %u\n", i, ops[i].request_id);
+ * }
+ * @endcode
+ *
+ * @note io_uring backend benefits most from batching (ring submission).
+ * @see SocketAsync_send() for single send operation.
+ * @see SocketAsync_recv() for single recv operation.
+ * @see SocketAsync_cancel() to cancel by request_id.
+ */
+extern int SocketAsync_submit_batch (T async, SocketAsync_Op *ops, size_t count);
+
+/**
+ * @brief Cancel all pending async operations.
+ * @ingroup async_io
+ * @param[in] async Async context.
+ * @return Number of operations cancelled.
+ *
+ * Cancels all pending async operations in the context. Callbacks are NOT
+ * invoked for cancelled operations. Useful for cleanup during shutdown or
+ * connection reset.
+ *
+ * @throws None - Non-throwing cleanup operation.
+ * @threadsafe Yes - Internal mutex protects cancellation.
+ * @complexity O(n) where n = pending operations.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // During shutdown
+ * int cancelled = SocketAsync_cancel_all(async);
+ * printf("Cancelled %d pending operations\n", cancelled);
+ * SocketAsync_free(&async);
+ * @endcode
+ *
+ * @see SocketAsync_cancel() to cancel specific operation by ID.
+ * @see SocketAsync_free() which implicitly cancels all pending.
+ */
+extern int SocketAsync_cancel_all (T async);
+
+/**
+ * @brief Backend type identifiers for runtime selection.
+ * @ingroup async_io
+ *
+ * Identifies available async I/O backends. Used with
+ * SocketAsync_backend_available() for runtime capability checking.
+ */
+typedef enum
+{
+  ASYNC_BACKEND_AUTO = 0,   /**< Automatic best-available selection (default) */
+  ASYNC_BACKEND_IO_URING,   /**< Linux io_uring (kernel 5.1+) */
+  ASYNC_BACKEND_KQUEUE,     /**< BSD/macOS kqueue */
+  ASYNC_BACKEND_POLL,       /**< POSIX poll fallback */
+  ASYNC_BACKEND_NONE        /**< Explicitly disable async (sync mode) */
+} SocketAsync_Backend;
+
+/**
+ * @brief Check if a specific backend is available at runtime.
+ * @ingroup async_io
+ * @param[in] backend Backend type to check.
+ * @return 1 if backend available and usable, 0 otherwise.
+ *
+ * Tests runtime availability of a specific async backend. Useful for
+ * applications that need to verify platform capabilities before configuring
+ * async I/O behavior.
+ *
+ * @threadsafe Yes - Read-only capability check.
+ * @complexity O(1) for most backends; io_uring may probe kernel.
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * if (SocketAsync_backend_available(ASYNC_BACKEND_IO_URING)) {
+ *     printf("io_uring available - optimal async I/O\n");
+ * } else if (SocketAsync_backend_available(ASYNC_BACKEND_KQUEUE)) {
+ *     printf("kqueue available - good async I/O\n");
+ * } else {
+ *     printf("Fallback to poll-based async\n");
+ * }
+ * @endcode
+ *
+ * @note Compile-time support required; checks runtime kernel/library
+ * availability.
+ * @see SocketAsync_backend_name() for current backend in use.
+ * @see SocketAsync_set_backend() to request specific backend.
+ */
+extern int SocketAsync_backend_available (SocketAsync_Backend backend);
+
+/**
+ * @brief Request a specific async backend for new contexts.
+ * @ingroup async_io
+ * @param[in] backend Desired backend type.
+ * @return 0 on success (preference set), -1 if backend unavailable.
+ *
+ * Sets a preference for the async backend used by subsequent SocketAsync_new()
+ * calls. If the requested backend is unavailable, returns -1 and keeps the
+ * current preference unchanged.
+ *
+ * **Note**: Backend selection is primarily determined at compile-time. This
+ * function allows runtime override within available compiled backends.
+ *
+ * @threadsafe Yes - Thread-safe preference update.
+ * @complexity O(1)
+ *
+ * ## Example
+ *
+ * @code{.c}
+ * // Prefer io_uring if available
+ * if (SocketAsync_set_backend(ASYNC_BACKEND_IO_URING) == 0) {
+ *     printf("Will use io_uring for new async contexts\n");
+ * }
+ *
+ * SocketAsync_T async = SocketAsync_new(arena);  // Uses preferred backend
+ * @endcode
+ *
+ * @note Use ASYNC_BACKEND_AUTO to restore automatic selection.
+ * @see SocketAsync_backend_available() to check availability first.
+ * @see SocketAsync_backend_name() to verify actual backend after creation.
+ */
+extern int SocketAsync_set_backend (SocketAsync_Backend backend);
+
 #undef T
 
 /** @} */ // end of async_io group

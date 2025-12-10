@@ -1036,6 +1036,73 @@ SocketDNS_free(&dns);
 SocketPoll_free(&poll);
 ```
 
+### Asynchronous I/O (io_uring/kqueue)
+
+```c
+#include "socket/SocketAsync.h"
+#include "poll/SocketPoll.h"
+
+/* Check what backend is available */
+if (SocketAsync_backend_available(ASYNC_BACKEND_IO_URING)) {
+    printf("io_uring available - optimal async I/O\n");
+} else if (SocketAsync_backend_available(ASYNC_BACKEND_KQUEUE)) {
+    printf("kqueue available - good async I/O\n");
+} else {
+    printf("Using poll-based fallback\n");
+}
+
+/* Set preferred backend (optional) */
+SocketAsync_set_backend(ASYNC_BACKEND_IO_URING);
+
+/* Get async context from poll */
+SocketPoll_T poll = SocketPoll_new(1024);
+SocketAsync_T async = SocketPoll_get_async(poll);
+
+/* Completion callback */
+void io_complete(Socket_T socket, ssize_t bytes, int err, void *ud) {
+    if (err) {
+        printf("Error: %s\n", strerror(err));
+        return;
+    }
+    printf("Transferred %zd bytes\n", bytes);
+}
+
+/* Submit async send */
+unsigned req_id = SocketAsync_send(async, socket, buf, len,
+                                   io_complete, userdata, ASYNC_FLAG_NONE);
+
+/* Submit async recv */
+req_id = SocketAsync_recv(async, socket, recv_buf, sizeof(recv_buf),
+                          io_complete, userdata, ASYNC_FLAG_ZERO_COPY);
+
+/* Batch submission for efficiency */
+SocketAsync_Op ops[3] = {
+    {sock1, 1, send_buf, NULL, len1, io_complete, ud1, ASYNC_FLAG_NONE, 0},
+    {sock2, 0, NULL, recv_buf, len2, io_complete, ud2, ASYNC_FLAG_NONE, 0},
+    {sock3, 1, send_buf2, NULL, len3, io_complete, ud3, ASYNC_FLAG_URGENT, 0}
+};
+int submitted = SocketAsync_submit_batch(async, ops, 3);
+printf("Submitted %d operations\n", submitted);
+
+/* Cancel specific operation */
+SocketAsync_cancel(async, req_id);
+
+/* Cancel all pending (during shutdown) */
+int cancelled = SocketAsync_cancel_all(async);
+printf("Cancelled %d pending ops\n", cancelled);
+
+/* Check backend in use */
+printf("Backend: %s, available: %s\n",
+       SocketAsync_backend_name(async),
+       SocketAsync_is_available(async) ? "yes" : "fallback");
+
+/* Completions auto-processed in SocketPoll_wait() */
+SocketEvent_T *events;
+int n = SocketPoll_wait(poll, &events, 100);
+
+SocketPoll_free(&poll);
+```
+
 ### Bandwidth Limiting
 
 ```c

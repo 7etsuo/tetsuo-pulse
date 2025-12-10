@@ -195,13 +195,13 @@
 ## Async I/O Enhancements
 
 ### Batch Operations
-- [ ] `SocketAsync_submit_batch(async, ops, count)` - Submit multiple operations
-- [ ] `SocketAsync_cancel_all(async)` - Cancel all pending operations
+- [x] `SocketAsync_submit_batch(async, ops, count)` - Submit multiple operations
+- [x] `SocketAsync_cancel_all(async)` - Cancel all pending operations
 
 ### io_uring Support (Linux 5.1+)
-- [ ] Detect io_uring availability at runtime
-- [ ] Implement io_uring backend for SocketAsync
-- [ ] `SocketAsync_set_backend(async, backend)` - Select backend
+- [x] Detect io_uring availability at runtime
+- [x] Implement io_uring backend for SocketAsync
+- [x] `SocketAsync_set_backend(async, backend)` - Select backend
 
 ---
 
