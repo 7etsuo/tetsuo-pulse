@@ -526,6 +526,14 @@ SocketTLSContext_refresh_crl (T ctx, const char *crl_path)
   SocketTLSContext_load_crl (ctx, crl_path);
 }
 
+void
+SocketTLSContext_reload_crl (T ctx, const char *crl_path)
+{
+  /* Alias for refresh_crl() - provided for semantic clarity.
+   * Use when you have downloaded an updated CRL and want to reload it. */
+  SocketTLSContext_refresh_crl (ctx, crl_path);
+}
+
 /* ============================================================================
  * Protocol Configuration
  * ============================================================================
