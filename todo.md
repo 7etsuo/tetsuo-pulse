@@ -250,9 +250,11 @@
 
 ### Fuzzing Enhancements
 - [x] Update fuzzing script for 64-core parallel execution
-- [x] Add fuzz_new_features harness to parallel runner
+- [x] Add all working fuzzers to parallel runner (48 fuzzers)
 - [x] Optimize job distribution (2 jobs/target = 64 cores total)
-- [x] Create corpus directory and seed files
+- [x] Create corpus directories and seed files
+- [x] Fix build issues (ssize_t, linker flags)
+- [x] Exclude broken fuzzers temporarily (fuzz_new_features, fuzz_dns_inj, fuzz_dtls_handshake)
 - [x] Achieve 100% test pass rate (45/45 tests passing)
 
 ### Benchmarks

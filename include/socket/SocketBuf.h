@@ -4,6 +4,7 @@
 #include "core/Arena.h"
 #include <stdbool.h>
 #include <stddef.h>
+#include <sys/types.h>  /* For ssize_t */
 
 /**
  * @file SocketBuf.h

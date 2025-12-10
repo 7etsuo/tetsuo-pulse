@@ -2035,7 +2035,7 @@ The library includes comprehensive tests in `src/test/`:
 
 ### Fuzz Testing
 
-25+ fuzz harnesses in `src/fuzz/` covering:
+61+ fuzz harnesses in `src/fuzz/` covering:
 - New features comprehensive testing
 - HTTP/1.1 parser
 - HTTP/2 frame parsing
